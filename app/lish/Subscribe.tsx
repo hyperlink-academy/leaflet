@@ -87,7 +87,9 @@ export const ManageSubscription = (props: {
   return (
     <Popover
       trigger={
-        <div className="text-accent-contrast text-sm">Manage Subscription</div>
+        <div className="text-accent-contrast text-sm w-fit">
+          Manage Subscription
+        </div>
       }
     >
       <div className="max-w-sm flex flex-col gap-1">

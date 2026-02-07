@@ -32,6 +32,7 @@ export async function getReaderFeed(
       `*,
       comments_on_documents(count),
       document_mentions_in_bsky(count),
+      recommends_on_documents(count),
       documents_in_publications!inner(publications!inner(*, publication_subscriptions!inner(*)))`,
     )
     .eq(
@@ -76,6 +77,7 @@ export async function getReaderFeed(
           documents: {
             comments_on_documents: post.comments_on_documents,
             document_mentions_in_bsky: post.document_mentions_in_bsky,
+            recommends_on_documents: post.recommends_on_documents,
             data: normalizedData,
             uri: post.uri,
             sort_date: post.sort_date,
@@ -112,5 +114,6 @@ export type Post = {
     sort_date: string;
     comments_on_documents: { count: number }[] | undefined;
     document_mentions_in_bsky: { count: number }[] | undefined;
+    recommends_on_documents: { count: number }[] | undefined;
   };
 };

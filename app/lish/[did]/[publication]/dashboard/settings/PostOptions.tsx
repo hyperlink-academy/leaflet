@@ -29,6 +29,11 @@ export const PostOptions = (props: {
       ? true
       : record.preferences.showMentions,
   );
+  let [showRecommends, setShowRecommends] = useState(
+    record?.preferences?.showRecommends === undefined
+      ? true
+      : record.preferences.showRecommends,
+  );
   let [showPrevNext, setShowPrevNext] = useState(
     record?.preferences?.showPrevNext === undefined
       ? true
@@ -53,6 +58,7 @@ export const PostOptions = (props: {
             showComments: showComments,
             showMentions: showMentions,
             showPrevNext: showPrevNext,
+            showRecommends: showRecommends,
           },
         });
         toast({ type: "success", content: <strong>Posts Updated!</strong> });
@@ -99,7 +105,21 @@ export const PostOptions = (props: {
           <div className="flex flex-col justify-start">
             <div className="font-bold">Show Mentions</div>
             <div className="text-tertiary text-sm leading-tight">
-              Display a list of posts on Bluesky that mention your post
+              Display a list Bluesky mentions about your post
+            </div>
+          </div>
+        </Toggle>
+
+        <Toggle
+          toggle={showRecommends}
+          onToggle={() => {
+            setShowRecommends(!showRecommends);
+          }}
+        >
+          <div className="flex flex-col justify-start">
+            <div className="font-bold">Show Recommends</div>
+            <div className="text-tertiary text-sm leading-tight">
+              Allow readers to recommend/like your post
             </div>
           </div>
         </Toggle>

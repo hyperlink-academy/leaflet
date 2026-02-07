@@ -105,7 +105,7 @@ export async function GET(
           })
           .select()
           .single();
-
+        console.log({ token });
         if (token) await setAuthToken(token.id);
 
         // Process successful authentication here
@@ -114,6 +114,7 @@ export async function GET(
         console.log("User authenticated as:", session.did);
         return handleAction(s.action, redirectPath);
       } catch (e) {
+        console.log(e);
         redirect(redirectPath);
       }
     }

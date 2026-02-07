@@ -60,7 +60,9 @@ export function PublishedPostsList(props: {
 
 function PublishedPostItem(props: {
   doc: PublishedDocument;
-  publication: NonNullable<NonNullable<ReturnType<typeof usePublicationData>["data"]>["publication"]>;
+  publication: NonNullable<
+    NonNullable<ReturnType<typeof usePublicationData>["data"]>["publication"]
+  >;
   pubRecord: ReturnType<typeof useNormalizedPublicationRecord>;
   showPageBackground: boolean;
 }) {
@@ -94,10 +96,7 @@ function PublishedPostItem(props: {
             <div className="flex justify-start align-top flex-row gap-1">
               {leaflet && leaflet.permission_tokens && (
                 <>
-                  <SpeedyLink
-                    className="pt-[6px]"
-                    href={`/${leaflet.leaflet}`}
-                  >
+                  <SpeedyLink className="pt-[6px]" href={`/${leaflet.leaflet}`}>
                     <EditTiny />
                   </SpeedyLink>
 
@@ -129,9 +128,7 @@ function PublishedPostItem(props: {
           </div>
 
           {doc.record.description ? (
-            <p className="italic text-secondary">
-              {doc.record.description}
-            </p>
+            <p className="italic text-secondary">{doc.record.description}</p>
           ) : null}
           <div className="text-sm text-tertiary flex gap-3 justify-between sm:justify-start items-center pt-3">
             {doc.record.publishedAt ? (
@@ -140,9 +137,12 @@ function PublishedPostItem(props: {
             <InteractionPreview
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
+              recommendsCount={doc.recommendsCount}
+              documentUri={doc.uri}
               tags={doc.record.tags || []}
               showComments={pubRecord?.preferences?.showComments !== false}
               showMentions={pubRecord?.preferences?.showMentions !== false}
+              showRecommends={pubRecord?.preferences?.showRecommends !== false}
               postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
             />
           </div>

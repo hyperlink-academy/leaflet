@@ -58,6 +58,10 @@
         "showPrevNext": {
           "default": false,
           "type": "boolean"
+        },
+        "showRecommends": {
+          "default": true,
+          "type": "boolean"
         }
       },
       "type": "object"

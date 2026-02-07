@@ -53,6 +53,7 @@ export const PostListing = (props: Post) => {
     pubRecord?.preferences?.showComments === false
       ? 0
       : props.documents.comments_on_documents?.[0]?.count || 0;
+  let recommends = props.documents.recommends_on_documents?.[0]?.count || 0;
   let tags = (postRecord?.tags as string[] | undefined) || [];
 
   // For standalone posts, link directly to the document
@@ -88,7 +89,9 @@ export const PostListing = (props: Post) => {
         >
           <h3 className="text-primary truncate">{postRecord.title}</h3>
 
-          <p className="text-secondary italic">{postRecord.description}</p>
+          <p className="text-secondary italic line-clamp-3">
+            {postRecord.description}
+          </p>
           <div className="flex flex-col-reverse md:flex-row md gap-2 text-sm text-tertiary items-center justify-start pt-1.5 md:pt-3 w-full">
             {props.publication && pubRecord && (
               <PubInfo
@@ -103,9 +106,14 @@ export const PostListing = (props: Post) => {
                 postUrl={postHref}
                 quotesCount={quotes}
                 commentsCount={comments}
+                recommendsCount={recommends}
+                documentUri={props.documents.uri}
                 tags={tags}
                 showComments={pubRecord?.preferences?.showComments !== false}
                 showMentions={pubRecord?.preferences?.showMentions !== false}
+                showRecommends={
+                  pubRecord?.preferences?.showRecommends !== false
+                }
                 share
               />
             </div>

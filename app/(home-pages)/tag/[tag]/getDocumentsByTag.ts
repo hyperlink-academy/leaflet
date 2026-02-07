@@ -21,6 +21,7 @@ export async function getDocumentsByTag(
       `*,
       comments_on_documents(count),
       document_mentions_in_bsky(count),
+      recommends_on_documents(count),
       documents_in_publications(publications(*))`,
     )
     .contains("data->tags", `["${tag}"]`)
@@ -67,6 +68,7 @@ export async function getDocumentsByTag(
         documents: {
           comments_on_documents: doc.comments_on_documents,
           document_mentions_in_bsky: doc.document_mentions_in_bsky,
+          recommends_on_documents: doc.recommends_on_documents,
           data: normalizedData,
           uri: doc.uri,
           sort_date: doc.sort_date,

@@ -77,7 +77,9 @@ async function withPublicationUpdate(
   }
 
   const aturi = new AtUri(existingPub.uri);
-  const publicationType = getPublicationType(aturi.collection) as PublicationType;
+  const publicationType = getPublicationType(
+    aturi.collection,
+  ) as PublicationType;
 
   // Normalize existing record
   const normalizedPub = normalizePublicationRecord(existingPub.record);
@@ -128,7 +130,11 @@ interface RecordOverrides {
 }
 
 /** Merges override with existing value, respecting explicit undefined */
-function resolveField<T>(override: T | undefined, existing: T | undefined, hasOverride: boolean): T | undefined {
+function resolveField<T>(
+  override: T | undefined,
+  existing: T | undefined,
+  hasOverride: boolean,
+): T | undefined {
   return hasOverride ? override : existing;
 }
 
@@ -146,17 +152,32 @@ function buildLeafletRecord(
   return {
     $type: "pub.leaflet.publication",
     name: overrides.name ?? normalizedPub?.name ?? "",
-    description: resolveField(overrides.description, normalizedPub?.description, "description" in overrides),
-    icon: resolveField(overrides.icon, normalizedPub?.icon, "icon" in overrides),
-    theme: resolveField(overrides.theme, normalizedPub?.theme, "theme" in overrides),
+    description: resolveField(
+      overrides.description,
+      normalizedPub?.description,
+      "description" in overrides,
+    ),
+    icon: resolveField(
+      overrides.icon,
+      normalizedPub?.icon,
+      "icon" in overrides,
+    ),
+    theme: resolveField(
+      overrides.theme,
+      normalizedPub?.theme,
+      "theme" in overrides,
+    ),
     base_path: overrides.basePath ?? existingBasePath,
-    preferences: preferences ? {
-      $type: "pub.leaflet.publication#preferences",
-      showInDiscover: preferences.showInDiscover,
-      showComments: preferences.showComments,
-      showMentions: preferences.showMentions,
-      showPrevNext: preferences.showPrevNext,
-    } : undefined,
+    preferences: preferences
+      ? {
+          $type: "pub.leaflet.publication#preferences",
+          showInDiscover: preferences.showInDiscover,
+          showComments: preferences.showComments,
+          showMentions: preferences.showMentions,
+          showPrevNext: preferences.showPrevNext,
+          showRecommends: preferences.showRecommends,
+        }
+      : undefined,
   };
 }
 
@@ -175,17 +196,36 @@ function buildStandardRecord(
   return {
     $type: "site.standard.publication",
     name: overrides.name ?? normalizedPub?.name ?? "",
-    description: resolveField(overrides.description, normalizedPub?.description, "description" in overrides),
-    icon: resolveField(overrides.icon, normalizedPub?.icon, "icon" in overrides),
-    theme: resolveField(overrides.theme, normalizedPub?.theme, "theme" in overrides),
-    basicTheme: resolveField(overrides.basicTheme, normalizedPub?.basicTheme, "basicTheme" in overrides),
+    description: resolveField(
+      overrides.description,
+      normalizedPub?.description,
+      "description" in overrides,
+    ),
+    icon: resolveField(
+      overrides.icon,
+      normalizedPub?.icon,
+      "icon" in overrides,
+    ),
+    theme: resolveField(
+      overrides.theme,
+      normalizedPub?.theme,
+      "theme" in overrides,
+    ),
+    basicTheme: resolveField(
+      overrides.basicTheme,
+      normalizedPub?.basicTheme,
+      "basicTheme" in overrides,
+    ),
     url: basePath ? `https://${basePath}` : normalizedPub?.url || "",
-    preferences: preferences ? {
-      showInDiscover: preferences.showInDiscover,
-      showComments: preferences.showComments,
-      showMentions: preferences.showMentions,
-      showPrevNext: preferences.showPrevNext,
-    } : undefined,
+    preferences: preferences
+      ? {
+          showInDiscover: preferences.showInDiscover,
+          showComments: preferences.showComments,
+          showMentions: preferences.showMentions,
+          showPrevNext: preferences.showPrevNext,
+          showRecommends: preferences.showRecommends,
+        }
+      : undefined,
   };
 }
 
@@ -217,27 +257,30 @@ export async function updatePublication({
   iconFile?: File | null;
   preferences?: Omit<PubLeafletPublication.Preferences, "$type">;
 }): Promise<UpdatePublicationResult> {
-  return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
-    // Upload icon if provided
-    let iconBlob = normalizedPub?.icon;
-    if (iconFile && iconFile.size > 0) {
-      const buffer = await iconFile.arrayBuffer();
-      const uploadResult = await agent.com.atproto.repo.uploadBlob(
-        new Uint8Array(buffer),
-        { encoding: iconFile.type },
-      );
-      if (uploadResult.data.blob) {
-        iconBlob = uploadResult.data.blob;
+  return withPublicationUpdate(
+    uri,
+    async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
+      // Upload icon if provided
+      let iconBlob = normalizedPub?.icon;
+      if (iconFile && iconFile.size > 0) {
+        const buffer = await iconFile.arrayBuffer();
+        const uploadResult = await agent.com.atproto.repo.uploadBlob(
+          new Uint8Array(buffer),
+          { encoding: iconFile.type },
+        );
+        if (uploadResult.data.blob) {
+          iconBlob = uploadResult.data.blob;
+        }
       }
-    }
 
-    return buildRecord(normalizedPub, existingBasePath, publicationType, {
-      name,
-      description,
-      icon: iconBlob,
-      preferences,
-    });
-  });
+      return buildRecord(normalizedPub, existingBasePath, publicationType, {
+        name,
+        description,
+        icon: iconBlob,
+        preferences,
+      });
+    },
+  );
 }
 
 export async function updatePublicationBasePath({
@@ -247,11 +290,14 @@ export async function updatePublicationBasePath({
   uri: string;
   base_path: string;
 }): Promise<UpdatePublicationResult> {
-  return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType }) => {
-    return buildRecord(normalizedPub, existingBasePath, publicationType, {
-      basePath: base_path,
-    });
-  });
+  return withPublicationUpdate(
+    uri,
+    async ({ normalizedPub, existingBasePath, publicationType }) => {
+      return buildRecord(normalizedPub, existingBasePath, publicationType, {
+        basePath: base_path,
+      });
+    },
+  );
 }
 
 type Color =
@@ -275,58 +321,81 @@ export async function updatePublicationTheme({
     accentText: Color;
   };
 }): Promise<UpdatePublicationResult> {
-  return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
-    // Build theme object
-    const themeData = {
-      $type: "pub.leaflet.publication#theme" as const,
-      backgroundImage: theme.backgroundImage
-        ? {
-            $type: "pub.leaflet.theme.backgroundImage",
-            image: (
-              await agent.com.atproto.repo.uploadBlob(
-                new Uint8Array(await theme.backgroundImage.arrayBuffer()),
-                { encoding: theme.backgroundImage.type },
-              )
-            )?.data.blob,
-            width: theme.backgroundRepeat || undefined,
-            repeat: !!theme.backgroundRepeat,
-          }
-        : theme.backgroundImage === null
-          ? undefined
-          : normalizedPub?.theme?.backgroundImage,
-      backgroundColor: theme.backgroundColor
-        ? {
-            ...theme.backgroundColor,
-          }
-        : undefined,
-      pageWidth: theme.pageWidth,
-      primary: {
-        ...theme.primary,
-      },
-      pageBackground: {
-        ...theme.pageBackground,
-      },
-      showPageBackground: theme.showPageBackground,
-      accentBackground: {
-        ...theme.accentBackground,
-      },
-      accentText: {
-        ...theme.accentText,
-      },
-    };
+  return withPublicationUpdate(
+    uri,
+    async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
+      // Build theme object
+      const themeData = {
+        $type: "pub.leaflet.publication#theme" as const,
+        backgroundImage: theme.backgroundImage
+          ? {
+              $type: "pub.leaflet.theme.backgroundImage",
+              image: (
+                await agent.com.atproto.repo.uploadBlob(
+                  new Uint8Array(await theme.backgroundImage.arrayBuffer()),
+                  { encoding: theme.backgroundImage.type },
+                )
+              )?.data.blob,
+              width: theme.backgroundRepeat || undefined,
+              repeat: !!theme.backgroundRepeat,
+            }
+          : theme.backgroundImage === null
+            ? undefined
+            : normalizedPub?.theme?.backgroundImage,
+        backgroundColor: theme.backgroundColor
+          ? {
+              ...theme.backgroundColor,
+            }
+          : undefined,
+        pageWidth: theme.pageWidth,
+        primary: {
+          ...theme.primary,
+        },
+        pageBackground: {
+          ...theme.pageBackground,
+        },
+        showPageBackground: theme.showPageBackground,
+        accentBackground: {
+          ...theme.accentBackground,
+        },
+        accentText: {
+          ...theme.accentText,
+        },
+      };
 
-    // Derive basicTheme from the theme colors for site.standard.publication
-    const basicTheme: NormalizedPublication["basicTheme"] = {
-      $type: "site.standard.theme.basic",
-      background: { $type: "site.standard.theme.color#rgb", r: theme.backgroundColor.r, g: theme.backgroundColor.g, b: theme.backgroundColor.b },
-      foreground: { $type: "site.standard.theme.color#rgb", r: theme.primary.r, g: theme.primary.g, b: theme.primary.b },
-      accent: { $type: "site.standard.theme.color#rgb", r: theme.accentBackground.r, g: theme.accentBackground.g, b: theme.accentBackground.b },
-      accentForeground: { $type: "site.standard.theme.color#rgb", r: theme.accentText.r, g: theme.accentText.g, b: theme.accentText.b },
-    };
+      // Derive basicTheme from the theme colors for site.standard.publication
+      const basicTheme: NormalizedPublication["basicTheme"] = {
+        $type: "site.standard.theme.basic",
+        background: {
+          $type: "site.standard.theme.color#rgb",
+          r: theme.backgroundColor.r,
+          g: theme.backgroundColor.g,
+          b: theme.backgroundColor.b,
+        },
+        foreground: {
+          $type: "site.standard.theme.color#rgb",
+          r: theme.primary.r,
+          g: theme.primary.g,
+          b: theme.primary.b,
+        },
+        accent: {
+          $type: "site.standard.theme.color#rgb",
+          r: theme.accentBackground.r,
+          g: theme.accentBackground.g,
+          b: theme.accentBackground.b,
+        },
+        accentForeground: {
+          $type: "site.standard.theme.color#rgb",
+          r: theme.accentText.r,
+          g: theme.accentText.g,
+          b: theme.accentText.b,
+        },
+      };
 
-    return buildRecord(normalizedPub, existingBasePath, publicationType, {
-      theme: themeData,
-      basicTheme,
-    });
-  });
+      return buildRecord(normalizedPub, existingBasePath, publicationType, {
+        theme: themeData,
+        basicTheme,
+      });
+    },
+  );
 }
