@@ -74,7 +74,7 @@ export function PostSettings() {
             <div className="flex flex-col justify-start">
               <div className="font-bold">Show Mentions</div>
               <div className="text-tertiary text-sm leading-tight">
-                Display a list Bluesky mentions about your post
+                Display a list of Bluesky mentions about your post
               </div>
             </div>
           </Toggle>
