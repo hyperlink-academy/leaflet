@@ -14,6 +14,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { useEntity } from "src/replicache";
 import { block } from "sharp";
+import { PostSettings } from "components/PostSettings";
 
 export function hasBlockToolbar(blockType: string | null | undefined) {
   return (
@@ -64,6 +65,7 @@ export function LeafletFooter(props: { entityID: string }) {
 
           <PublishButton entityID={props.entityID} />
           <ShareOptions />
+          <PostSettings />
           <ThemePopover entityID={props.entityID} />
         </ActionFooter>
       ) : (
