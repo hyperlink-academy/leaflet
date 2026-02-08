@@ -219,7 +219,9 @@ export function normalizeDocument(
       bskyPostRef: record.postRef,
       content,
       theme: record.theme,
-      preferences: leafletPrefs,
+      preferences: leafletPrefs
+        ? { ...leafletPrefs, $type: "site.standard.publication#preferences" as const }
+        : undefined,
     };
   }
 
