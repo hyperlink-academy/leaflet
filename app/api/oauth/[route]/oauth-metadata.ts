@@ -8,7 +8,7 @@ const hostname =
     : "https://leaflet.pub";
 
 const scope =
-  "atproto transition:generic transition:email include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts";
+  "atproto transition:generic transition:email include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts blob:*/*";
 const localconfig: OAuthClientMetadataInput = {
   client_id: `http://localhost/?redirect_uri=${encodeURI(`http://127.0.0.1:3000/api/oauth/callback`)}&scope=${encodeURIComponent(scope)}`,
   client_name: `Leaflet`,

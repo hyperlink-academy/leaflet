@@ -43,7 +43,7 @@ export async function GET(
 
       const url = await client.authorize(handle || "https://bsky.social", {
         scope:
-          "atproto transition:email include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts",
+          "atproto transition:email include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts blob:*/*",
         signal: ac.signal,
         state: JSON.stringify(state),
       });
