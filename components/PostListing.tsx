@@ -17,6 +17,7 @@ import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 import Link from "next/link";
 import { InteractionPreview } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { mergePreferences } from "src/utils/mergePreferences";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -48,9 +49,11 @@ export const PostListing = (props: Post) => {
     ? pubRecord?.theme?.showPageBackground
     : postRecord.theme?.showPageBackground ?? true;
 
+  let mergedPrefs = mergePreferences(postRecord?.preferences, pubRecord?.preferences);
+
   let quotes = props.documents.document_mentions_in_bsky?.[0]?.count || 0;
   let comments =
-    pubRecord?.preferences?.showComments === false
+    mergedPrefs.showComments === false
       ? 0
       : props.documents.comments_on_documents?.[0]?.count || 0;
   let recommends = props.documents.recommends_on_documents?.[0]?.count || 0;
@@ -109,11 +112,9 @@ export const PostListing = (props: Post) => {
                 recommendsCount={recommends}
                 documentUri={props.documents.uri}
                 tags={tags}
-                showComments={pubRecord?.preferences?.showComments !== false}
-                showMentions={pubRecord?.preferences?.showMentions !== false}
-                showRecommends={
-                  pubRecord?.preferences?.showRecommends !== false
-                }
+                showComments={mergedPrefs.showComments !== false}
+                showMentions={mergedPrefs.showMentions !== false}
+                showRecommends={mergedPrefs.showRecommends !== false}
                 share
               />
             </div>

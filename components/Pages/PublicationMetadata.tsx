@@ -21,6 +21,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { PostHeaderLayout } from "app/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
 import { Backdater } from "./Backdater";
 import { RecommendTinyEmpty } from "components/Icons/RecommendTiny";
+import { mergePreferences } from "src/utils/mergePreferences";
 
 export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
   let { rep } = useReplicache();
@@ -33,6 +34,17 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
   let title = useSubscribe(rep, (tx) => tx.get<string>("publication_title"));
   let description = useSubscribe(rep, (tx) =>
     tx.get<string>("publication_description"),
+  );
+  let postPreferences = useSubscribe(rep, (tx) =>
+    tx.get<{
+      showComments?: boolean;
+      showMentions?: boolean;
+      showRecommends?: boolean;
+    } | null>("post_preferences"),
+  );
+  let merged = mergePreferences(
+    postPreferences || undefined,
+    normalizedPublication?.preferences,
   );
   let publishedAt = normalizedDocument?.publishedAt;
 
@@ -121,28 +133,27 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
           )}
           {!props.noInteractions && (
             <div className="flex gap-2 text-border items-center">
-              {normalizedPublication?.preferences?.showRecommends !== false && (
+              {merged.showRecommends !== false && (
                 <div className="flex gap-1 items-center">
                   <RecommendTinyEmpty />—
                 </div>
               )}
 
-              {normalizedPublication?.preferences?.showMentions !== false && (
+              {merged.showMentions !== false && (
                 <div className="flex gap-1 items-center">
                   <QuoteTiny />—
                 </div>
               )}
-              {normalizedPublication?.preferences?.showComments !== false && (
+              {merged.showComments !== false && (
                 <div className="flex gap-1 items-center">
                   <CommentTiny />—
                 </div>
               )}
               {tags && (
                 <>
-                  {normalizedPublication?.preferences?.showRecommends !==
-                    false ||
-                  normalizedPublication?.preferences?.showMentions !== false ||
-                  normalizedPublication?.preferences?.showComments !== false ? (
+                  {merged.showRecommends !== false ||
+                  merged.showMentions !== false ||
+                  merged.showComments !== false ? (
                     <Separator classname="h-4!" />
                   ) : null}
                   <AddTags />

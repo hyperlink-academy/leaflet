@@ -28,6 +28,7 @@ export interface Record {
   textContent?: string
   theme?: PubLeafletPublication.Theme
   title: string
+  preferences?: $Typed<PubLeafletPublication.Preferences> | { $type: string }
   updatedAt?: string
   [k: string]: unknown
 }

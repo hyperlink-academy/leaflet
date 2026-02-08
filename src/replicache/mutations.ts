@@ -659,6 +659,11 @@ const updatePublicationDraft: Mutation<{
   tags?: string[];
   cover_image?: string | null;
   localPublishedAt?: string | null;
+  preferences?: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showRecommends?: boolean;
+  } | null;
 }> = async (args, ctx) => {
   await ctx.runOnServer(async (serverCtx) => {
     console.log("updating");
@@ -667,11 +672,17 @@ const updatePublicationDraft: Mutation<{
       title?: string;
       tags?: string[];
       cover_image?: string | null;
+      preferences?: {
+        showComments?: boolean;
+        showMentions?: boolean;
+        showRecommends?: boolean;
+      } | null;
     } = {};
     if (args.description !== undefined) updates.description = args.description;
     if (args.title !== undefined) updates.title = args.title;
     if (args.tags !== undefined) updates.tags = args.tags;
     if (args.cover_image !== undefined) updates.cover_image = args.cover_image;
+    if (args.preferences !== undefined) updates.preferences = args.preferences;
 
     if (Object.keys(updates).length > 0) {
       // First try to update leaflets_in_publications (for publications)
@@ -700,6 +711,8 @@ const updatePublicationDraft: Mutation<{
       await tx.set("publication_cover_image", args.cover_image);
     if (args.localPublishedAt !== undefined)
       await tx.set("publication_local_published_at", args.localPublishedAt);
+    if (args.preferences !== undefined)
+      await tx.set("post_preferences", args.preferences);
   });
 };
 

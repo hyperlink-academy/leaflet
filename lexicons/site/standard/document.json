@@ -57,6 +57,11 @@
             "maxLength": 5000,
             "type": "string"
           },
+          "preferences": {
+            "type": "union",
+            "refs": ["pub.leaflet.publication#preferences"],
+            "closed": false
+          },
           "updatedAt": {
             "format": "datetime",
             "type": "string"

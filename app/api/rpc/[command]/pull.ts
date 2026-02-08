@@ -9,6 +9,7 @@ import { FactWithIndexes } from "src/replicache/utils";
 import type { Attribute } from "src/replicache/attributes";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
+import type { Json } from "supabase/database.types";
 
 // First define the sub-types for V0 and V1 requests
 const pullRequestV0 = z.object({
@@ -75,6 +76,7 @@ export const pull = makeRoute({
       title: string;
       tags: string[];
       cover_image: string | null;
+      preferences: Json | null;
     }[];
     let pub_patch = publication_data?.[0]
       ? [
@@ -97,6 +99,11 @@ export const pull = makeRoute({
             op: "put",
             key: "publication_cover_image",
             value: publication_data[0].cover_image || null,
+          },
+          {
+            op: "put",
+            key: "post_preferences",
+            value: publication_data[0].preferences || null,
           },
         ]
       : [];

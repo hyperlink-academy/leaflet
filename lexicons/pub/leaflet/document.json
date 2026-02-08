@@ -46,6 +46,10 @@
             "type": "ref",
             "ref": "pub.leaflet.publication#theme"
           },
+          "preferences": {
+            "type": "ref",
+            "ref": "pub.leaflet.publication#preferences"
+          },
           "tags": {
             "type": "array",
             "items": {

@@ -28,6 +28,7 @@ import { AtUri } from "@atproto/syntax";
 export type NormalizedDocument = SiteStandardDocument.Record & {
   // Keep the original theme for components that need leaflet-specific styling
   theme?: PubLeafletPublication.Theme;
+  preferences?: SiteStandardPublication.Preferences;
 };
 
 // Normalized publication type - uses the generated site.standard.publication type
@@ -169,9 +170,13 @@ export function normalizeDocument(
 
   // Pass through site.standard records directly (theme is already in correct format if present)
   if (isStandardDocument(record)) {
+    const preferences = record.preferences as
+      | SiteStandardPublication.Preferences
+      | undefined;
     return {
       ...record,
       theme: record.theme,
+      preferences,
     } as NormalizedDocument;
   }
 
@@ -198,6 +203,10 @@ export function normalizeDocument(
         }
       : undefined;
 
+    // Extract preferences if present (available after lexicon rebuild)
+    const leafletPrefs = (record as Record<string, unknown>)
+      .preferences as SiteStandardPublication.Preferences | undefined;
+
     return {
       $type: "site.standard.document",
       title: record.title,
@@ -210,6 +219,7 @@ export function normalizeDocument(
       bskyPostRef: record.postRef,
       content,
       theme: record.theme,
+      preferences: leafletPrefs,
     };
   }
 
