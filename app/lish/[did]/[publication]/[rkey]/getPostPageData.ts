@@ -20,7 +20,8 @@ export async function getPostPageData(did: string, rkey: string) {
           publication_subscriptions(*))
         ),
         document_mentions_in_bsky(*),
-        leaflets_in_publications(*)
+        leaflets_in_publications(*),
+        recommends_on_documents(count)
         `,
     )
     .or(documentUriFilter(did, rkey))
@@ -140,6 +141,7 @@ export async function getPostPageData(did: string, rkey: string) {
         publication_subscriptions: rawPub.publication_subscriptions || [],
       }
     : null;
+  const recommendsCount = document.recommends_on_documents?.[0]?.count ?? 0;
 
   return {
     ...document,
@@ -154,6 +156,8 @@ export async function getPostPageData(did: string, rkey: string) {
     comments: document.comments_on_documents,
     mentions: document.document_mentions_in_bsky,
     leafletId: document.leaflets_in_publications[0]?.leaflet || null,
+    // Recommends data
+    recommendsCount,
   };
 }
 

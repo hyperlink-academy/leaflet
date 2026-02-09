@@ -170,6 +170,7 @@ export type SharedPageProps = {
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
+    showRecommends?: boolean;
     showPrevNext?: boolean;
   };
   pubRecord?: NormalizedPublication | null;
@@ -233,6 +234,7 @@ export function PostPages({
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
+    showRecommends?: boolean;
     showPrevNext?: boolean;
   };
   pollData: PollData[];
@@ -293,12 +295,12 @@ export function PostPages({
           showPageBackground={pubRecord?.theme?.showPageBackground}
           document_uri={document.uri}
           comments={
-            pubRecord?.preferences?.showComments === false
+            preferences.showComments === false
               ? []
               : document.comments_on_documents
           }
           quotesAndMentions={
-            pubRecord?.preferences?.showMentions === false
+            preferences.showMentions === false
               ? []
               : quotesAndMentions
           }
@@ -385,12 +387,12 @@ export function PostPages({
                 pageId={page.id}
                 document_uri={document.uri}
                 comments={
-                  pubRecord?.preferences?.showComments === false
+                  preferences.showComments === false
                     ? []
                     : document.comments_on_documents
                 }
                 quotesAndMentions={
-                  pubRecord?.preferences?.showMentions === false
+                  preferences.showMentions === false
                     ? []
                     : quotesAndMentions
                 }

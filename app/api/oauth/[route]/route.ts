@@ -42,7 +42,8 @@ export async function GET(
       const ac = new AbortController();
 
       const url = await client.authorize(handle || "https://bsky.social", {
-        scope: "atproto transition:generic transition:email",
+        scope:
+          "atproto transition:email include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts blob:*/*",
         signal: ac.signal,
         state: JSON.stringify(state),
       });
@@ -105,7 +106,7 @@ export async function GET(
           })
           .select()
           .single();
-
+        console.log({ token });
         if (token) await setAuthToken(token.id);
 
         // Process successful authentication here
@@ -114,6 +115,7 @@ export async function GET(
         console.log("User authenticated as:", session.did);
         return handleAction(s.action, redirectPath);
       } catch (e) {
+        console.log(e);
         redirect(redirectPath);
       }
     }

@@ -91,6 +91,15 @@ const PublishPostForm = (
     tx.get<string | null>("publication_cover_image"),
   );
 
+  // Get post preferences from Replicache state
+  let postPreferences = useSubscribe(rep, (tx) =>
+    tx.get<{
+      showComments?: boolean;
+      showMentions?: boolean;
+      showRecommends?: boolean;
+    } | null>("post_preferences"),
+  );
+
   // Use Replicache tags only when we have a draft
   const currentTags = props.hasDraft
     ? Array.isArray(replicacheTags)
@@ -124,6 +133,7 @@ const PublishPostForm = (
       cover_image: replicacheCoverImage,
       entitiesToDelete: props.entitiesToDelete,
       publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
+      postPreferences,
     });
 
     if (!result.success) {

@@ -589,6 +589,7 @@ export type Database = {
           description: string
           doc: string | null
           leaflet: string
+          preferences: Json | null
           publication: string
           tags: string[] | null
           title: string
@@ -599,6 +600,7 @@ export type Database = {
           description?: string
           doc?: string | null
           leaflet: string
+          preferences?: Json | null
           publication: string
           tags?: string[] | null
           title?: string
@@ -609,6 +611,7 @@ export type Database = {
           description?: string
           doc?: string | null
           leaflet?: string
+          preferences?: Json | null
           publication?: string
           tags?: string[] | null
           title?: string
@@ -645,6 +648,7 @@ export type Database = {
           description: string
           document: string
           leaflet: string
+          preferences: Json | null
           tags: string[] | null
           title: string
         }
@@ -655,6 +659,7 @@ export type Database = {
           description?: string
           document: string
           leaflet: string
+          preferences?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -665,6 +670,7 @@ export type Database = {
           description?: string
           document?: string
           leaflet?: string
+          preferences?: Json | null
           tags?: string[] | null
           title?: string
         }

@@ -19,6 +19,7 @@ import { CommentTiny } from "./Icons/CommentTiny";
 import { QuoteTiny } from "./Icons/QuoteTiny";
 import { ShareTiny } from "./Icons/ShareTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
+import { mergePreferences } from "src/utils/mergePreferences";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -58,11 +59,17 @@ export const PostListing = (props: Post) => {
     ? pubRecord?.theme?.showPageBackground
     : postRecord.theme?.showPageBackground ?? true;
 
+  let mergedPrefs = mergePreferences(
+    postRecord?.preferences,
+    pubRecord?.preferences,
+  );
+
   let quotes = props.documents.document_mentions_in_bsky?.[0]?.count || 0;
   let comments =
-    pubRecord?.preferences?.showComments === false
+    mergedPrefs.showComments === false
       ? 0
       : props.documents.comments_on_documents?.[0]?.count || 0;
+  let recommends = props.documents.recommends_on_documents?.[0]?.count || 0;
   let tags = (postRecord?.tags as string[] | undefined) || [];
 
   // For standalone posts, link directly to the document
@@ -140,8 +147,8 @@ export const PostListing = (props: Post) => {
           quotesCount={quotes}
           commentsCount={comments}
           tags={tags}
-          showComments={pubRecord?.preferences?.showComments !== false}
-          showMentions={pubRecord?.preferences?.showMentions !== false}
+          showComments={mergedPrefs.showComments !== false}
+          showMentions={mergedPrefs.showMentions !== false}
           documentUri={props.documents.uri}
           document={postRecord}
         />

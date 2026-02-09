@@ -96,6 +96,15 @@ const UpdateButton = () => {
     tx.get<string | null>("publication_cover_image"),
   );
 
+  // Get post preferences from Replicache state
+  let postPreferences = useSubscribe(rep, (tx) =>
+    tx.get<{
+      showComments?: boolean;
+      showMentions?: boolean;
+      showRecommends?: boolean;
+    } | null>("post_preferences"),
+  );
+
   // Get local published at from Replicache (session-only state, not persisted to DB)
   let publishedAt = useLocalPublishedAt((s) =>
     pub?.doc ? s[pub?.doc] : undefined,
@@ -118,6 +127,7 @@ const UpdateButton = () => {
           tags: currentTags,
           cover_image: coverImage,
           publishedAt: publishedAt?.toISOString(),
+          postPreferences,
         });
         setIsLoading(false);
         mutate();

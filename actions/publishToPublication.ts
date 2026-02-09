@@ -78,6 +78,7 @@ export async function publishToPublication({
   cover_image,
   entitiesToDelete,
   publishedAt,
+  postPreferences,
 }: {
   root_entity: string;
   publication_uri?: string;
@@ -88,6 +89,11 @@ export async function publishToPublication({
   cover_image?: string | null;
   entitiesToDelete?: string[];
   publishedAt?: string;
+  postPreferences?: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showRecommends?: boolean;
+  } | null;
 }): Promise<PublishResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -175,6 +181,9 @@ export async function publishToPublication({
     };
   }
 
+  // Resolve preferences: explicit param > draft DB value
+  const preferences = postPreferences ?? draft?.preferences;
+
   // Extract theme for standalone documents (not for publications)
   let theme: PubLeafletPublication.Theme | undefined;
   if (!publication_uri) {
@@ -245,6 +254,12 @@ export async function publishToPublication({
       ...(coverImageBlob && { coverImage: coverImageBlob }),
       // Include theme for standalone documents (not for publication documents)
       ...(!publication_uri && theme && { theme }),
+      ...(preferences && {
+        preferences: {
+          $type: "pub.leaflet.publication#preferences" as const,
+          ...preferences,
+        },
+      }),
       content: {
         $type: "pub.leaflet.content" as const,
         pages: pagesArray,
@@ -257,6 +272,12 @@ export async function publishToPublication({
       author: credentialSession.did!,
       ...(publication_uri && { publication: publication_uri }),
       ...(theme && { theme }),
+      ...(preferences && {
+        preferences: {
+          $type: "pub.leaflet.publication#preferences" as const,
+          ...preferences,
+        },
+      }),
       title: title || "Untitled",
       description: description || "",
       ...(tags !== undefined && { tags }),
