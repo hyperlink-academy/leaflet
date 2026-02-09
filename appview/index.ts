@@ -109,6 +109,15 @@ async function handleEvent(evt: Event) {
         data: record.value as Json,
       });
       if (docResult.error) console.log(docResult.error);
+      if (record.value.postRef?.uri) {
+        await inngest.send({
+          name: "appview/sync-bsky-likes",
+          data: {
+            document_uri: evt.uri.toString(),
+            bsky_post_uri: record.value.postRef.uri,
+          },
+        });
+      }
       if (record.value.publication) {
         let publicationURI = new AtUri(record.value.publication);
 
@@ -269,6 +278,15 @@ async function handleEvent(evt: Event) {
         data: record.value as Json,
       });
       if (docResult.error) console.log(docResult.error);
+      if (record.value.bskyPostRef?.uri) {
+        await inngest.send({
+          name: "appview/sync-bsky-likes",
+          data: {
+            document_uri: evt.uri.toString(),
+            bsky_post_uri: record.value.bskyPostRef.uri,
+          },
+        });
+      }
 
       // site.standard.document uses "site" field to reference the publication
       // For documents in publications, site is an AT-URI (at://did:plc:xxx/site.standard.publication/rkey)
