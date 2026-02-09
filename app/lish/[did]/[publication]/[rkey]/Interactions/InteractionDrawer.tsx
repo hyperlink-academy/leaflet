@@ -49,7 +49,7 @@ export const InteractionDrawer = (props: {
           {drawer.drawer === "quotes" ? (
             <>
               <button
-                className="text-tertiary absolute top-0 right-0"
+                className="text-tertiary absolute top-4 right-4"
                 onClick={() =>
                   setInteractionState(props.document_uri, { drawerOpen: false })
                 }
