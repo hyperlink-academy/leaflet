@@ -10,13 +10,19 @@ import { usePublicationData } from "./PublicationSWRProvider";
 import { useSmoker } from "components/Toast";
 import { useIsMobile } from "src/hooks/isMobile";
 import { SpeedyLink } from "components/SpeedyLink";
+import { ButtonSecondary, ButtonTertiary } from "components/Buttons";
+import { UpgradeModal } from "../UpgradeModal";
+import { LeafletPro } from "components/Icons/LeafletPro";
 
 export const Actions = (props: { publication: string }) => {
   return (
     <>
       <NewDraftActionButton publication={props.publication} />
+      <MobileUpgrade />
+
       <PublicationShareButton />
       <PublicationSettingsButton publication={props.publication} />
+      <DesktopUpgrade />
     </>
   );
 };
@@ -76,3 +82,42 @@ function PublicationShareButton() {
     </Menu>
   );
 }
+
+const MobileUpgrade = () => {
+  return (
+    <UpgradeModal
+      asChild
+      trigger={
+        <ActionButton
+          label="Upgrade to Leaflet Pro"
+          icon={<LeafletPro />}
+          className={`sm:hidden block bg-[var(--accent-light)]!`}
+          style={{ backgroundColor: "var(--accent-light) important!" }}
+        />
+      }
+    />
+  );
+};
+
+const DesktopUpgrade = () => {
+  return (
+    <div
+      style={{ backgroundColor: "var(--accent-light)" }}
+      className=" rounded-md mt-2 pt-2 pb-3 px-3 sm:block hidden"
+    >
+      <h4 className="text-accent-contrast text-sm">Get Leaflet Pro</h4>
+      <div className="text-xs text-secondary mb-2">
+        <strong>Analytics!</strong> Emails and membership soon.
+      </div>
+      <UpgradeModal
+        asChild
+        trigger={
+          <ButtonSecondary fullWidth compact className="text-sm!">
+            Learn more
+          </ButtonSecondary>
+        }
+      />
+      <ButtonTertiary className="mx-auto text-sm">Dismiss</ButtonTertiary>
+    </div>
+  );
+};

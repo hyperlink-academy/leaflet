@@ -12,6 +12,7 @@ import {
 } from "components/PageLayouts/DashboardLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
+import { PublicationAnalytics } from "./PublicationAnalytics";
 
 export default function PublicationDashboard({
   publication,
@@ -55,7 +56,7 @@ export default function PublicationDashboard({
             />
           ),
         },
-        Published: {
+        Posts: {
           content: (
             <PublishedPostsList
               searchValue={debouncedSearchValue}
@@ -70,6 +71,10 @@ export default function PublicationDashboard({
               showPageBackground={!!record.theme?.showPageBackground}
             />
           ),
+          controls: null,
+        },
+        Analytics: {
+          content: <PublicationAnalytics />,
           controls: null,
         },
       }}
