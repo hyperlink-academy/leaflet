@@ -168,7 +168,7 @@ export default async function Publication(props: {
                             recommendsCount={recommends}
                             documentUri={doc.documents.uri}
                             tags={tags}
-                            postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
+                            postUrl={`${getPublicationURL(publication)}${doc_record.path ?? `/${uri.rkey}`}`}
                             showComments={
                               record?.preferences?.showComments !== false
                             }
