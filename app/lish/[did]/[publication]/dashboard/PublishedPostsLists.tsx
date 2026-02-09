@@ -144,7 +144,7 @@ function PublishedPostItem(props: {
               showComments={pubRecord?.preferences?.showComments !== false}
               showMentions={pubRecord?.preferences?.showMentions !== false}
               showRecommends={pubRecord?.preferences?.showRecommends !== false}
-              postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
+              postUrl={`${getPublicationURL(publication)}${doc.record.path ?? `/${uri.rkey}`}`}
             />
           </div>
         </div>

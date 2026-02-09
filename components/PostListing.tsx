@@ -61,7 +61,7 @@ export const PostListing = (props: Post) => {
 
   // For standalone posts, link directly to the document
   let postHref = props.publication
-    ? `${props.publication.href}/${postUri.rkey}`
+    ? `${props.publication.href}${postRecord.path ?? `/${postUri.rkey}`}`
     : `/p/${postUri.host}/${postUri.rkey}`;
 
   return (
