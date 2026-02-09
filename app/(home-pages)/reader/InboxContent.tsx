@@ -73,22 +73,14 @@ export const InboxContent = (props: {
 
     return () => observer.disconnect();
   }, [data, size, setSize, isValidating]);
-  let [searchValue, setSearchValue] = useState("");
-  let [sort, setSort] = useState<"recent" | "popular">("popular");
 
   const allPosts = data ? data.flatMap((page) => page.posts) : [];
-  const postTitles = allPosts.map((p) => {
-    p.documents.data?.title;
-  });
-  const filteredPosts = allPosts
-    .filter((p) =>
-      p.documents.data?.title.toLowerCase().includes(searchValue.toLowerCase()),
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.documents.data?.publishedAt || 0).getTime() -
-        new Date(a.documents.data?.publishedAt || 0).getTime(),
-    );
+
+  const sortedPosts = allPosts.sort(
+    (a, b) =>
+      new Date(b.documents.data?.publishedAt || 0).getTime() -
+      new Date(a.documents.data?.publishedAt || 0).getTime(),
+  );
 
   if (allPosts.length === 0 && !isValidating) return <ReaderEmpty />;
 
@@ -96,34 +88,8 @@ export const InboxContent = (props: {
 
   return (
     <div className="flex flex-row gap-6 ">
-      <div className="flex flex-col gap-6 relative">
-        <div className="flex justify-between gap-4 text-tertiary">
-          <Input
-            className={`inboxSearchInput
-            appearance-none! outline-hidden!
-            w-full min-w-0 text-primary relative px-1
-            border rounded-md border-border-light focus-within:border-border
-            bg-transparent ${hasBackgroundImage ? "focus-within:bg-bg-page" : "focus-within:bg-bg-leaflet"} `}
-            type="text"
-            id="inbox-search"
-            size={1}
-            placeholder="search posts..."
-            value={searchValue}
-            onChange={(e) => {
-              setSearchValue(e.currentTarget.value);
-            }}
-          />
-          <button
-            className="flex gap-1"
-            onClick={() => {
-              setSort(sort === "popular" ? "recent" : "popular");
-            }}
-          >
-            {sort === "popular" ? "Popular" : "Recent"}
-            <SortSmall />
-          </button>
-        </div>
-        {filteredPosts.map((p) => (
+      <div className="flex flex-col gap-8 relative">
+        {sortedPosts.map((p) => (
           <PostListing {...p} key={p.documents.uri} />
         ))}
         {/* Trigger element for loading more posts */}

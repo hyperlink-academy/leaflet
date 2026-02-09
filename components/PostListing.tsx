@@ -72,13 +72,6 @@ export const PostListing = (props: Post) => {
 
   return (
     <div className="postListing flex flex-col gap-1">
-      <div className="text-sm  text-tertiary flex gap-1 items-center px-1 ">
-        <div className="flex ">
-          <div className="sm:w-4 w-4 sm:h-4 h-4 rounded-full bg-test border border-border-light first:ml-0 -ml-2" />
-          <div className="sm:w-4 w-4 sm:h-4 h-4 rounded-full bg-test border border-border-light first:ml-0 -ml-2" />
-        </div>
-        others recommend
-      </div>
       <BaseThemeProvider {...theme} local>
         <div
           id={`post-listing-${postUri}`}

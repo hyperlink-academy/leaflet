@@ -1,6 +1,5 @@
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { InboxContent } from "./InboxContent";
-import { LocalContent } from "./LocalContent";
 import { GlobalContent } from "./GlobalContent";
 import { getReaderFeed } from "./getReaderFeed";
 
@@ -19,10 +18,6 @@ export default async function Reader(props: {}) {
           content: (
             <InboxContent nextCursor={posts.nextCursor} posts={posts.posts} />
           ),
-        },
-        Friends: {
-          controls: null,
-          content: <LocalContent />,
         },
         Global: {
           controls: null,
