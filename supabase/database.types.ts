@@ -335,17 +335,20 @@ export type Database = {
       }
       documents: {
         Row: {
+          bsky_like_count: number
           data: Json
           indexed_at: string
           sort_date: string
           uri: string
         }
         Insert: {
+          bsky_like_count?: number
           data: Json
           indexed_at?: string
           uri: string
         }
         Update: {
+          bsky_like_count?: number
           data?: Json
           indexed_at?: string
           uri?: string

@@ -112,6 +112,7 @@ function PublishedPostItem(props: {
                             indexed_at: doc.indexed_at,
                             sort_date: doc.sort_date,
                             data: doc.data,
+                            bsky_like_count: doc.bsky_like_count ?? 0,
                           },
                         },
                       ],
