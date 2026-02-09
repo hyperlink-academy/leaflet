@@ -77,7 +77,7 @@ export const InteractionPreview = (props: {
               let mouseY = e.clientY;
 
               if (!props.postUrl) return;
-              navigator.clipboard.writeText(`leaflet.pub${props.postUrl}`);
+              navigator.clipboard.writeText(props.postUrl);
 
               smoker({
                 text: <strong>Copied Link!</strong>,
