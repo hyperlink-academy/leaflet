@@ -58,7 +58,8 @@ export const ActionButton = forwardRef<
       actionButton relative font-bold
       rounded-md border
       flex gap-2 items-center justify-start
-      w-max sm:w-[1000px] sm:max-w-full p-1
+      sm:w-full sm:max-w-full p-1
+      w-max
       ${smallOnMobile && "sm:text-base text-sm py-0! sm:py-1! sm:h-fit h-6"}
       ${
         primary
@@ -74,7 +75,8 @@ export const ActionButton = forwardRef<
     >
       <div className="shrink-0 flex flex-row gap-0.5">{icon}</div>
       <div
-        className={`flex flex-col ${subtext && "leading-snug"} max-w-full min-w-0 mr-1  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
+        className={`flex flex-col ${subtext && "leading-snug"}  sm:max-w-full min-w-0 mr-1  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
+        style={{ width: "-webkit-fill-available" }}
       >
         <div className="truncate text-left">{label}</div>
         {subtext && (
