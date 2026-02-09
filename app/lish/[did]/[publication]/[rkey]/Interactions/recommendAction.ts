@@ -7,6 +7,11 @@ import { TID } from "@atproto/common";
 import { AtUri, Un$Typed } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
+import { v7 } from "uuid";
+import {
+  Notification,
+  pingIdentityToUpdateNotification,
+} from "src/notifications";
 
 type RecommendResult =
   | { success: true; uri: string }
@@ -67,6 +72,22 @@ export async function recommendAction(args: {
     } as unknown as Json,
   });
   console.log(res);
+
+  // Notify the document owner
+  let documentOwner = new AtUri(args.document).host;
+  if (documentOwner !== credentialSession.did) {
+    let notification: Notification = {
+      id: v7(),
+      recipient: documentOwner,
+      data: {
+        type: "recommend",
+        document_uri: args.document,
+        recommend_uri: uri.toString(),
+      },
+    };
+    await supabaseServerClient.from("notifications").insert(notification);
+    await pingIdentityToUpdateNotification(documentOwner);
+  }
 
   return {
     success: true,

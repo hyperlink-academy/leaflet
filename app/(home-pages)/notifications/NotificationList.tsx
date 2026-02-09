@@ -11,6 +11,7 @@ import { QuoteNotification } from "./QuoteNotification";
 import { BskyPostEmbedNotification } from "./BskyPostEmbedNotification";
 import { MentionNotification } from "./MentionNotification";
 import { CommentMentionNotification } from "./CommentMentionNotification";
+import { RecommendNotification } from "./RecommendNotification";
 
 export function NotificationList({
   notifications,
@@ -57,6 +58,9 @@ export function NotificationList({
           }
           if (n.type === "comment_mention") {
             return <CommentMentionNotification key={n.id} {...n} />;
+          }
+          if (n.type === "recommend") {
+            return <RecommendNotification key={n.id} {...n} />;
           }
         })}
       </div>
