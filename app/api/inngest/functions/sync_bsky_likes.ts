@@ -1,6 +1,7 @@
 import { inngest } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtpAgent } from "@atproto/api";
+import { AtpAgent, AtUri } from "@atproto/api";
+import { idResolver } from "app/(home-pages)/reader/idResolver";
 
 const TOTAL_ITERATIONS = 144; // 36 hours at 15-minute intervals
 
@@ -12,6 +13,19 @@ export const sync_bsky_likes = inngest.createFunction(
   { event: "appview/sync-bsky-likes" },
   async ({ event, step }) => {
     const { document_uri, bsky_post_uri } = event.data;
+
+    const isBridgy = await step.run("check-bridgy", async () => {
+      const did = new AtUri(bsky_post_uri).host;
+      const doc = await idResolver.did.resolve(did);
+      const handle = doc?.alsoKnownAs
+        ?.find((a) => a.startsWith("at://"))
+        ?.replace("at://", "");
+      return handle?.includes("brid.gy") ?? false;
+    });
+
+    if (isBridgy) {
+      return { skipped: true, reason: "brid.gy post" };
+    }
 
     const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
 
