@@ -7,15 +7,11 @@ import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PostListing } from "components/PostListing";
-import { SortSmall } from "components/Icons/SortSmall";
-import { Input } from "components/Input";
 import { useHasBackgroundImage } from "components/Pages/useHasBackgroundImage";
 import {
   SelectedPostListing,
   useSelectedPostListing,
 } from "src/useSelectedPostState";
-import { AtUri } from "@atproto/api";
-import { MentionsDrawerContent } from "app/lish/[did]/[publication]/[rkey]/Interactions/Quotes";
 import { CommentsDrawerContent } from "app/lish/[did]/[publication]/[rkey]/Interactions/Comments";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { SpeedyLink } from "components/SpeedyLink";
@@ -87,8 +83,8 @@ export const InboxContent = (props: {
   let hasBackgroundImage = useHasBackgroundImage();
 
   return (
-    <div className="flex flex-row gap-6 ">
-      <div className="flex flex-col gap-8 relative">
+    <div className="flex flex-row gap-6 w-full ">
+      <div className="flex flex-col gap-8 w-full relative">
         {sortedPosts.map((p) => (
           <PostListing {...p} key={p.documents.uri} />
         ))}

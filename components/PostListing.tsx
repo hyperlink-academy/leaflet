@@ -20,6 +20,7 @@ import { QuoteTiny } from "./Icons/QuoteTiny";
 import { ShareTiny } from "./Icons/ShareTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -125,7 +126,7 @@ export const PostListing = (props: Post) => {
             <p className="postListingDescription text-secondary line-clamp-3 sm:text-base text-sm">
               {postRecord.description}
             </p>
-            <div className="flex flex-col-reverse md:flex-row md gap-2 text-sm text-tertiary items-center justify-start pt-1.5 md:pt-3 w-full">
+            <div className="flex flex-col-reverse gap-2 text-sm text-tertiary items-center justify-start pt-1.5 w-full">
               {props.publication && pubRecord && (
                 <PubInfo
                   href={props.publication.href}
@@ -163,16 +164,30 @@ const PubInfo = (props: {
   pubRecord: NormalizedPublication;
   uri: string;
 }) => {
+  let isLeaflet =
+    props.pubRecord.theme?.$type === "pub.leaflet.publication#theme";
+  let cleanUrl = props.pubRecord.url
+    ?.replace(/^https?:\/\//, "")
+    .replace(/^www\./, "");
+
   return (
-    <div className="flex flex-col md:w-auto shrink-0 w-full">
-      <hr className="md:hidden block border-border-light mb-1" />
-      <Link
-        href={props.href}
-        className="text-accent-contrast font-bold no-underline text-sm flex gap-[6px] items-center md:w-fit relative shrink-0"
-      >
-        <PubIcon tiny record={props.pubRecord} uri={props.uri} />
-        {props.pubRecord.name}
-      </Link>
+    <div className="flex flex-col shrink-0 w-full">
+      <hr className=" block border-border-light mb-1" />
+      <div className="flex justify-between gap-4 w-full ">
+        <Link
+          href={props.href}
+          className="text-accent-contrast font-bold no-underline text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
+        >
+          <PubIcon tiny record={props.pubRecord} uri={props.uri} />
+          <div className="w-max min-w-0">{props.pubRecord.name}</div>
+        </Link>
+        {!isLeaflet && (
+          <div className="text-sm flex flex-row items-center text-tertiary gap-1  min-w-0">
+            <div className="truncate min-w-0">{cleanUrl}</div>
+            <ExternalLinkTiny className="shrink-0" />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
