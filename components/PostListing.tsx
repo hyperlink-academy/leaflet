@@ -15,10 +15,10 @@ import { InteractionPreview, TagPopover } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSmoker } from "./Toast";
 import { Separator } from "./Layout";
-import { SpeedyLink } from "./SpeedyLink";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { QuoteTiny } from "./Icons/QuoteTiny";
 import { ShareTiny } from "./Icons/ShareTiny";
+import { useSelectedPostListing } from "src/useSelectedPostState";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -149,7 +149,9 @@ export const PostListing = (props: Post) => {
           tags={tags}
           showComments={pubRecord?.preferences?.showComments !== false}
           showMentions={pubRecord?.preferences?.showMentions !== false}
-        />{" "}
+          documentUri={props.documents.uri}
+          document={postRecord}
+        />
         <Share postUrl={postUrl} />
       </div>
     </div>
@@ -193,29 +195,42 @@ const Interactions = (props: {
   postUrl: string;
   showComments: boolean;
   showMentions: boolean;
+  documentUri: string;
+  document: NormalizedDocument;
 }) => {
+  let setSelectedPostListing = useSelectedPostListing(
+    (s) => s.setSelectedPostListing,
+  );
+  let selectPostListing = (drawer: "quotes" | "comments") => {
+    setSelectedPostListing({
+      document_uri: props.documentUri,
+      document: props.document,
+      drawer,
+    });
+  };
+
   return (
     <div
       className={`flex gap-2 text-tertiary text-sm  items-center justify-between px-1`}
     >
       <div className="postListingsInteractions flex gap-3">
         {!props.showMentions || props.quotesCount === 0 ? null : (
-          <SpeedyLink
+          <button
             aria-label="Post quotes"
-            href={`${props.postUrl}?interactionDrawer=quotes`}
-            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
+            onClick={() => selectPostListing("quotes")}
+            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
           >
             <QuoteTiny /> {props.quotesCount}
-          </SpeedyLink>
+          </button>
         )}
         {!props.showComments || props.commentsCount === 0 ? null : (
-          <SpeedyLink
+          <button
             aria-label="Post comments"
-            href={`${props.postUrl}?interactionDrawer=comments`}
-            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
+            onClick={() => selectPostListing("comments")}
+            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
           >
             <CommentTiny /> {props.commentsCount}
-          </SpeedyLink>
+          </button>
         )}
       </div>
     </div>

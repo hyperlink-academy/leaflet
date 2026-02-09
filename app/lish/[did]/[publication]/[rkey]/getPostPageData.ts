@@ -3,8 +3,6 @@ import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
-  type NormalizedDocument,
-  type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
@@ -33,12 +31,15 @@ export async function getPostPageData(did: string, rkey: string) {
   if (!document) return null;
 
   // Normalize the document record - this is the primary way consumers should access document data
-  const normalizedDocument = normalizeDocumentRecord(document.data, document.uri);
+  const normalizedDocument = normalizeDocumentRecord(
+    document.data,
+    document.uri,
+  );
   if (!normalizedDocument) return null;
 
   // Normalize the publication record - this is the primary way consumers should access publication data
   const normalizedPublication = normalizePublicationRecord(
-    document.documents_in_publications[0]?.publications?.record
+    document.documents_in_publications[0]?.publications?.record,
   );
 
   // Fetch constellation backlinks for mentions
@@ -83,7 +84,10 @@ export async function getPostPageData(did: string, rkey: string) {
     // Filter and sort documents by publishedAt
     const sortedDocs = allDocs
       .map((dip) => {
-        const normalizedData = normalizeDocumentRecord(dip?.documents?.data, dip?.documents?.uri);
+        const normalizedData = normalizeDocumentRecord(
+          dip?.documents?.data,
+          dip?.documents?.uri,
+        );
         return {
           uri: dip?.documents?.uri,
           title: normalizedData?.title,
@@ -98,7 +102,9 @@ export async function getPostPageData(did: string, rkey: string) {
       );
 
     // Find current document index
-    const currentIndex = sortedDocs.findIndex((doc) => doc.uri === document.uri);
+    const currentIndex = sortedDocs.findIndex(
+      (doc) => doc.uri === document.uri,
+    );
 
     if (currentIndex !== -1) {
       prevNext = {
@@ -122,13 +128,18 @@ export async function getPostPageData(did: string, rkey: string) {
 
   // Build explicit publication context for consumers
   const rawPub = document.documents_in_publications[0]?.publications;
-  const publication = rawPub ? {
-    uri: rawPub.uri,
-    name: rawPub.name,
-    identity_did: rawPub.identity_did,
-    record: rawPub.record as PubLeafletPublication.Record | SiteStandardPublication.Record | null,
-    publication_subscriptions: rawPub.publication_subscriptions || [],
-  } : null;
+  const publication = rawPub
+    ? {
+        uri: rawPub.uri,
+        name: rawPub.name,
+        identity_did: rawPub.identity_did,
+        record: rawPub.record as
+          | PubLeafletPublication.Record
+          | SiteStandardPublication.Record
+          | null,
+        publication_subscriptions: rawPub.publication_subscriptions || [],
+      }
+    : null;
 
   return {
     ...document,
