@@ -79,7 +79,16 @@ const BlockTypeToHTML: {
   mailbox: async () => null,
   poll: async () => null,
   embed: async () => null,
-  "bluesky-post": async () => null,
+  "bluesky-post": async (b, tx) => {
+    let [post] = await scanIndex(tx).eav(b.value, "block/bluesky-post");
+    if (!post) return null;
+    return (
+      <div
+        data-type="bluesky-post"
+        data-bluesky-post={JSON.stringify(post.data.value)}
+      />
+    );
+  },
   math: async (b, tx, a) => {
     let [math] = await scanIndex(tx).eav(b.value, "block/math");
     const html = Katex.renderToString(math?.data.value || "", {

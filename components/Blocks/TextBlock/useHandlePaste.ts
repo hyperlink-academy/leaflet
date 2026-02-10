@@ -396,6 +396,24 @@ const createBlockFromHTML = (
     ]);
   }
 
+  if (child.tagName === "DIV" && child.getAttribute("data-bluesky-post")) {
+    let postData = child.getAttribute("data-bluesky-post");
+    if (postData) {
+      rep.mutate.assertFact([
+        {
+          entity: entityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "bluesky-post" },
+        },
+        {
+          entity: entityID,
+          attribute: "block/bluesky-post",
+          data: { type: "bluesky-post", value: JSON.parse(postData) },
+        },
+      ]);
+    }
+  }
+
   if (child.tagName === "DIV" && child.getAttribute("data-entityid")) {
     let oldEntityID = child.getAttribute("data-entityid") as string;
     let factsData = child.getAttribute("data-facts");
@@ -593,7 +611,8 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
           "HR",
         ].includes(elementNode.tagName) ||
         elementNode.getAttribute("data-entityid") ||
-        elementNode.getAttribute("data-tex")
+        elementNode.getAttribute("data-tex") ||
+        elementNode.getAttribute("data-bluesky-post")
       ) {
         htmlBlocks.push(elementNode);
       } else {
