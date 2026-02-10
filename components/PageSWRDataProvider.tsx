@@ -8,7 +8,7 @@ import { getPollData } from "actions/pollActions";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { createContext, useContext, useMemo } from "react";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,
@@ -119,13 +119,27 @@ export function useLeafletPublicationStatus() {
   // Compute the full post URL for sharing
   let postShareLink: string | undefined;
   if (publishedInPublication?.publications && publishedInPublication.documents) {
-    // Published in a publication - use publication URL + document rkey
-    const docUri = new AtUri(publishedInPublication.documents.uri);
-    postShareLink = `${getPublicationURL(publishedInPublication.publications)}/${docUri.rkey}`;
+    const normalizedDoc = normalizeDocumentRecord(
+      publishedInPublication.documents.data,
+      publishedInPublication.documents.uri,
+    );
+    if (normalizedDoc) {
+      postShareLink = getDocumentURL(
+        normalizedDoc,
+        publishedInPublication.documents.uri,
+        publishedInPublication.publications,
+      );
+    }
   } else if (publishedStandalone?.document) {
-    // Standalone published post - use /p/{did}/{rkey} format
-    const docUri = new AtUri(publishedStandalone.document);
-    postShareLink = `/p/${docUri.host}/${docUri.rkey}`;
+    const normalizedDoc = publishedStandalone.documents
+      ? normalizeDocumentRecord(publishedStandalone.documents.data, publishedStandalone.document)
+      : null;
+    if (normalizedDoc) {
+      postShareLink = getDocumentURL(normalizedDoc, publishedStandalone.document);
+    } else {
+      const docUri = new AtUri(publishedStandalone.document);
+      postShareLink = `/p/${docUri.host}/${docUri.rkey}`;
+    }
   }
 
   return {

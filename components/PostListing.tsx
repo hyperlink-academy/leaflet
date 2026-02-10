@@ -18,6 +18,7 @@ import Link from "next/link";
 import { InteractionPreview } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -60,9 +61,7 @@ export const PostListing = (props: Post) => {
   let tags = (postRecord?.tags as string[] | undefined) || [];
 
   // For standalone posts, link directly to the document
-  let postHref = props.publication
-    ? `${props.publication.href}/${postUri.rkey}`
-    : `/p/${postUri.host}/${postUri.rkey}`;
+  let postHref = getDocumentURL(postRecord, props.documents.uri, pubRecord);
 
   return (
     <BaseThemeProvider {...theme} local>
