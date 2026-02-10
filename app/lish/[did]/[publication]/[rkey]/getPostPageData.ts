@@ -6,6 +6,7 @@ import {
 } from "src/utils/normalizeRecords";
 import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export async function getPostPageData(did: string, rkey: string) {
   let { data: documents } = await supabaseServerClient
@@ -44,11 +45,12 @@ export async function getPostPageData(did: string, rkey: string) {
   );
 
   // Fetch constellation backlinks for mentions
-  let aturi = new AtUri(document.uri);
-  const postUrl = normalizedPublication
-    ? `${normalizedPublication.url}/${aturi.rkey}`
-    : `https://leaflet.pub/p/${aturi.host}/${aturi.rkey}`;
-  const constellationBacklinks = await getConstellationBacklinks(postUrl);
+  const postUrl = getDocumentURL(normalizedDocument, document.uri, normalizedPublication);
+  // Constellation needs an absolute URL
+  const absolutePostUrl = postUrl.startsWith("/")
+    ? `https://leaflet.pub${postUrl}`
+    : postUrl;
+  const constellationBacklinks = await getConstellationBacklinks(absolutePostUrl);
 
   // Deduplicate constellation backlinks (same post could appear in both links and embeds)
   const uniqueBacklinks = Array.from(

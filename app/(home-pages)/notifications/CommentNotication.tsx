@@ -10,6 +10,7 @@ import {
   Notification,
 } from "./Notification";
 import { AtUri } from "@atproto/api";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export const CommentNotification = (props: HydratedCommentNotification) => {
   const docRecord = props.normalizedDocument;
@@ -24,13 +25,10 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
     props.commentData.bsky_profiles?.handle ||
     "Someone";
   const pubRecord = props.normalizedPublication;
-  const docUri = new AtUri(props.commentData.documents?.uri!);
-  const rkey = docUri.rkey;
-  const did = docUri.host;
 
-  const href = pubRecord
-    ? `${pubRecord.url}/${rkey}?interactionDrawer=comments`
-    : `/p/${did}/${rkey}?interactionDrawer=comments`;
+  const href =
+    getDocumentURL(docRecord, props.commentData.documents?.uri!, pubRecord) +
+    "?interactionDrawer=comments";
 
   return (
     <Notification

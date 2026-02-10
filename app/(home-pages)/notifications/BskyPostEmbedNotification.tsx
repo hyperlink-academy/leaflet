@@ -2,6 +2,7 @@ import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedBskyPostEmbedNotification } from "src/notifications";
 import { AtUri } from "@atproto/api";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export const BskyPostEmbedNotification = (
   props: HydratedBskyPostEmbedNotification,
@@ -11,11 +12,7 @@ export const BskyPostEmbedNotification = (
 
   if (!docRecord) return null;
 
-  const docUri = new AtUri(props.document.uri);
-  const rkey = docUri.rkey;
-  const did = docUri.host;
-
-  const href = pubRecord ? `${pubRecord.url}/${rkey}` : `/p/${did}/${rkey}`;
+  const href = getDocumentURL(docRecord, props.document.uri, pubRecord);
 
   const embedder = props.documentCreatorHandle
     ? `@${props.documentCreatorHandle}`

@@ -21,6 +21,7 @@ import { ShareTiny } from "./Icons/ShareTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -74,9 +75,7 @@ export const PostListing = (props: Post) => {
   let tags = (postRecord?.tags as string[] | undefined) || [];
 
   // For standalone posts, link directly to the document
-  let postUrl = props.publication
-    ? `${props.publication.href}/${postUri.rkey}`
-    : `/p/${postUri.host}/${postUri.rkey}`;
+  let postUrl = getDocumentURL(postRecord, props.documents.uri, pubRecord);
 
   return (
     <div className="postListing flex flex-col gap-1">
