@@ -9,7 +9,7 @@ import {
 } from "./PublicationSWRProvider";
 import { Fragment } from "react";
 import { useParams } from "next/navigation";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -71,6 +71,7 @@ function PublishedPostItem(props: {
   const leaflet = publication.leaflets_in_publications.find(
     (l) => l.doc === doc.uri,
   );
+  const docUrl = getDocumentURL(doc.record, doc.uri, publication);
 
   return (
     <Fragment>
@@ -87,7 +88,7 @@ function PublishedPostItem(props: {
             <a
               className="hover:no-underline!"
               target="_blank"
-              href={`${getPublicationURL(publication)}/${uri.rkey}`}
+              href={docUrl}
             >
               <h3 className="text-primary grow leading-snug">
                 {doc.record.title}
@@ -144,7 +145,7 @@ function PublishedPostItem(props: {
               showComments={pubRecord?.preferences?.showComments !== false}
               showMentions={pubRecord?.preferences?.showMentions !== false}
               showRecommends={pubRecord?.preferences?.showRecommends !== false}
-              postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
+              postUrl={docUrl}
             />
           </div>
         </div>

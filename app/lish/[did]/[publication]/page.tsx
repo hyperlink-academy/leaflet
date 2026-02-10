@@ -1,6 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
@@ -135,11 +135,12 @@ export default async function Publication(props: {
                     doc.documents.recommends_on_documents?.[0]?.count || 0;
                   let tags = doc_record.tags || [];
 
+                  const docUrl = getDocumentURL(doc_record, doc.documents.uri, publication);
                   return (
                     <React.Fragment key={doc.documents?.uri}>
                       <div className="flex w-full grow flex-col ">
                         <SpeedyLink
-                          href={`${getPublicationURL(publication)}/${uri.rkey}`}
+                          href={docUrl}
                           className="publishedPost hover:no-underline! flex flex-col"
                         >
                           <h3 className="text-primary">{doc_record.title}</h3>
@@ -168,7 +169,7 @@ export default async function Publication(props: {
                             recommendsCount={recommends}
                             documentUri={doc.documents.uri}
                             tags={tags}
-                            postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
+                            postUrl={docUrl}
                             showComments={
                               record?.preferences?.showComments !== false
                             }

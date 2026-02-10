@@ -11,6 +11,7 @@ import {
   hasLeafletContent,
 } from "src/utils/normalizeRecords";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export async function generateFeed(
   did: string,
@@ -84,12 +85,13 @@ export async function generateFeed(
         }
       }
 
+      const docUrl = getDocumentURL(record, doc.documents.uri, pubRecord);
       feed.addItem({
         title: record.title,
         description: record.description,
         date: record.publishedAt ? new Date(record.publishedAt) : new Date(),
-        id: `${pubRecord.url}/${rkey}`,
-        link: `${pubRecord.url}/${rkey}`,
+        id: docUrl,
+        link: docUrl,
         content: chunks.join(""),
       });
     }),

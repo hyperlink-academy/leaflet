@@ -5,6 +5,7 @@ import { AppBskyActorProfile } from "lexicons/api";
 import { Avatar } from "components/Avatar";
 import { AtUri } from "@atproto/api";
 import { RecommendTinyFilled } from "components/Icons/RecommendTiny";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export const RecommendNotification = (
   props: HydratedRecommendNotification,
@@ -26,11 +27,7 @@ export const RecommendNotification = (
 
   if (!docRecord) return null;
 
-  const docUri = new AtUri(props.document.uri);
-  const rkey = docUri.rkey;
-  const did = docUri.host;
-
-  const href = pubRecord ? `${pubRecord.url}/${rkey}` : `/p/${did}/${rkey}`;
+  const href = getDocumentURL(docRecord, props.document.uri, pubRecord);
 
   return (
     <Notification

@@ -9,7 +9,9 @@
       "mcp__primitive__claim_delegation",
       "mcp__primitive__tasks_update",
       "mcp__primitive__contexts_update",
-      "mcp__primitive__contexts_list"
+      "mcp__primitive__contexts_list",
+      "Bash(git add:*)",
+      "Bash(git rebase:*)"
     ]
   }
 }
