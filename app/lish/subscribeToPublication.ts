@@ -3,10 +3,7 @@
 import { AtpBaseClient } from "lexicons/api";
 import { AppBskyActorDefs, Agent as BskyAgent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";
-import {
-  restoreOAuthSession,
-  OAuthSessionError,
-} from "src/atproto-oauth";
+import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePath } from "next/cache";
@@ -79,8 +76,7 @@ export async function subscribeToPublication(
   }
 
   let bsky = new BskyAgent(credentialSession);
-  let [prefs, profile, resolveDid] = await Promise.all([
-    bsky.app.bsky.actor.getPreferences(),
+  let [profile, resolveDid] = await Promise.all([
     bsky.app.bsky.actor.profile
       .get({
         repo: credentialSession.did!,
@@ -96,13 +92,10 @@ export async function subscribeToPublication(
       handle: resolveDid?.alsoKnownAs?.[0]?.slice(5),
     });
   }
-  let savedFeeds = prefs.data.preferences.find(
-    (pref) => pref.$type === "app.bsky.actor.defs#savedFeedsPrefV2",
-  ) as AppBskyActorDefs.SavedFeedsPrefV2;
   revalidatePath("/lish/[did]/[publication]", "layout");
   return {
     success: true,
-    hasFeed: !!savedFeeds.items.find((feed) => feed.value === leafletFeedURI),
+    hasFeed: true,
   };
 }
 
@@ -111,7 +104,7 @@ type UnsubscribeResult =
   | { success: false; error: OAuthSessionError };
 
 export async function unsubscribeToPublication(
-  publication: string
+  publication: string,
 ): Promise<UnsubscribeResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -144,8 +137,12 @@ export async function unsubscribeToPublication(
   // Delete from both collections (old and new schema) - one or both may exist
   let rkey = new AtUri(existingSubscription.uri).rkey;
   await Promise.all([
-    agent.pub.leaflet.graph.subscription.delete({ repo: credentialSession.did!, rkey }).catch(() => {}),
-    agent.site.standard.graph.subscription.delete({ repo: credentialSession.did!, rkey }).catch(() => {}),
+    agent.pub.leaflet.graph.subscription
+      .delete({ repo: credentialSession.did!, rkey })
+      .catch(() => {}),
+    agent.site.standard.graph.subscription
+      .delete({ repo: credentialSession.did!, rkey })
+      .catch(() => {}),
   ]);
 
   await supabaseServerClient
