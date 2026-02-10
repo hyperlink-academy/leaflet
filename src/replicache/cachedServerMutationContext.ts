@@ -155,6 +155,20 @@ export function cachedServerMutationContext(
         });
       },
       async retractFact(factID) {
+        let cachedFact = writeCache.find(
+          (f) => f.type === "put" && f.fact.id === factID,
+        );
+        let entity: string | undefined;
+        if (cachedFact && cachedFact.type === "put") {
+          entity = cachedFact.fact.entity;
+        } else {
+          let [row] = await tx
+            .select({ entity: facts.entity })
+            .from(facts)
+            .where(driz.eq(facts.id, factID));
+          entity = row?.entity;
+        }
+        if (!entity || !(await this.checkPermission(entity))) return;
         writeCache = writeCache.filter((f) => f.fact.id !== factID);
         writeCache.push({ type: "del", fact: { id: factID } });
       },
