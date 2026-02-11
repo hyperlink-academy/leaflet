@@ -25,7 +25,7 @@ export const sync_document_metadata = inngest.createFunction(
       const isBridgy = !!doc?.service?.find(
         (s) => s.serviceEndpoint === "https://atproto.brid.gy",
       );
-      return { handle: handle ?? null, isBridgy };
+      return { handle: handle ?? null, isBridgy, doc };
     });
     if (!handleResult) return { error: "No Handle" };
 
