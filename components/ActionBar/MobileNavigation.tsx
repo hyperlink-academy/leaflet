@@ -8,6 +8,7 @@ import {
 } from "./NavigationButtons";
 import { PublicationNavigation } from "./PublicationNavigation";
 import { LoginActionButton } from "components/LoginButton";
+import { ProfileButton } from "./ProfileButton";
 
 export const MobileNavigation = (props: {
   currentPage: navPages;
@@ -50,9 +51,10 @@ export const MobileNavigation = (props: {
         )}
       </div>
       {identity?.atp_did ? (
-        <>
+        <div className="flex gap-2">
           <NotificationButton />
-        </>
+          <ProfileButton />
+        </div>
       ) : (
         <LoginActionButton />
       )}
