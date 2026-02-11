@@ -32,7 +32,7 @@ export const sync_document_metadata = inngest.createFunction(
     if (!handleResult) return { error: "No Handle" };
 
     await step.run("set-indexed", async () => {
-      await supabaseServerClient
+      return await supabaseServerClient
         .from("documents")
         .update({ indexed: !handleResult.isBridgy })
         .eq("uri", document_uri);
