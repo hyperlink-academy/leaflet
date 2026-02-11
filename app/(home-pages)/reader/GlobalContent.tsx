@@ -1,4 +1,5 @@
 "use client";
+import { use } from "react";
 import useSWR from "swr";
 import { callRPC } from "app/api/rpc/client";
 import { PostListing } from "components/PostListing";
@@ -8,11 +9,21 @@ import {
   MobileInteractionPreviewDrawer,
 } from "./InteractionDrawers";
 
-export const GlobalContent = () => {
-  const { data, isLoading } = useSWR("hot_feed", async () => {
-    const res = await callRPC("get_hot_feed", {});
-    return res as unknown as { posts: Post[] };
-  });
+export const GlobalContent = (props: {
+  promise: Promise<{ posts: Post[] }>;
+}) => {
+  const initialData = use(props.promise);
+
+  const { data, isLoading } = useSWR(
+    "hot_feed",
+    async () => {
+      const res = await callRPC("get_hot_feed", {});
+      return res as unknown as { posts: Post[] };
+    },
+    {
+      fallbackData: { posts: initialData.posts },
+    },
+  );
 
   const posts = data?.posts ?? [];
 
