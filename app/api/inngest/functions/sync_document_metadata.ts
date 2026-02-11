@@ -5,26 +5,36 @@ import { idResolver } from "app/(home-pages)/reader/idResolver";
 
 const TOTAL_ITERATIONS = 144; // 36 hours at 15-minute intervals
 
-export const sync_bsky_likes = inngest.createFunction(
+export const sync_document_metadata = inngest.createFunction(
   {
-    id: "sync_bsky_likes",
-    idempotency: "event.data.bsky_post_uri",
+    id: "sync_document_metadata",
+    idempotency: "event.data.document_uri",
   },
-  { event: "appview/sync-bsky-likes" },
+  { event: "appview/sync-document-metadata" },
   async ({ event, step }) => {
     const { document_uri, bsky_post_uri } = event.data;
 
-    const isBridgy = await step.run("check-bridgy", async () => {
-      const did = new AtUri(bsky_post_uri).host;
+    const did = new AtUri(document_uri).host;
+
+    const handleResult = await step.run("resolve-handle", async () => {
       const doc = await idResolver.did.resolve(did);
       const handle = doc?.alsoKnownAs
         ?.find((a) => a.startsWith("at://"))
         ?.replace("at://", "");
-      return handle?.includes("brid.gy") ?? false;
+      return { handle: handle ?? null, isBridgy: handle?.includes("brid.gy") ?? false };
     });
 
-    if (isBridgy) {
-      return { skipped: true, reason: "brid.gy post" };
+    if (handleResult.isBridgy) {
+      await step.run("set-unindexed", async () => {
+        await supabaseServerClient
+          .from("documents")
+          .update({ indexed: false })
+          .eq("uri", document_uri);
+      });
+    }
+
+    if (!bsky_post_uri || handleResult.isBridgy) {
+      return { handle: handleResult.handle };
     }
 
     const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
@@ -50,6 +60,6 @@ export const sync_bsky_likes = inngest.createFunction(
       likeCount = await step.run(`sync-${i}`, fetchAndUpdate);
     }
 
-    return { likeCount };
+    return { likeCount, handle: handleResult.handle };
   },
 );
