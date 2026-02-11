@@ -107,6 +107,7 @@ async function handleEvent(evt: Event) {
       let docResult = await supabase.from("documents").upsert({
         uri: evt.uri.toString(),
         data: record.value as Json,
+        indexed: false,
       });
       if (docResult.error) console.log(docResult.error);
       await inngest.send({
@@ -274,6 +275,7 @@ async function handleEvent(evt: Event) {
       let docResult = await supabase.from("documents").upsert({
         uri: evt.uri.toString(),
         data: record.value as Json,
+        indexed: false,
       });
       if (docResult.error) console.log(docResult.error);
       await inngest.send({
