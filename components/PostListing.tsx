@@ -22,6 +22,7 @@ import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import { RecommendButton } from "./RecommendButton";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -146,6 +147,7 @@ export const PostListing = (props: Post) => {
           postUrl={postUrl}
           quotesCount={quotes}
           commentsCount={comments}
+          recommendsCount={recommends}
           tags={tags}
           showComments={mergedPrefs.showComments !== false}
           showMentions={mergedPrefs.showMentions !== false}
@@ -205,6 +207,7 @@ const PostDate = (props: { publishedAt: string | undefined }) => {
 const Interactions = (props: {
   quotesCount: number;
   commentsCount: number;
+  recommendsCount: number;
   tags?: string[];
   postUrl: string;
   showComments: boolean;
@@ -228,6 +231,10 @@ const Interactions = (props: {
       className={`flex gap-2 text-tertiary text-sm  items-center justify-between px-1`}
     >
       <div className="postListingsInteractions flex gap-3">
+        <RecommendButton
+          documentUri={props.documentUri}
+          recommendsCount={props.recommendsCount}
+        />
         {!props.showMentions || props.quotesCount === 0 ? null : (
           <button
             aria-label="Post quotes"
