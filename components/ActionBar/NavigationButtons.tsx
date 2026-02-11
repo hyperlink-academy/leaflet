@@ -29,7 +29,7 @@ export const HomeButton = (props: {
       <ActionButton
         nav
         icon={<HomeSmall />}
-        label="Write"
+        label="Home"
         className={`${props.current ? "bg-bg-page! border-border-light!" : ""} w-full! ${props.className}`}
       />
     </SpeedyLink>

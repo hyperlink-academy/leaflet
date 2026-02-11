@@ -41,20 +41,18 @@ export const DesktopNavigation = (props: {
             identity?.publication_subscriptions?.length !== undefined
           }
         />
-        {currentlyWriter ? (
+        <WriterButton
+          currentPage={props.currentPage}
+          currentPubUri={thisPublication?.uri}
+        />
+        {currentlyWriter && (
           <>
-            <HomeButton current={props.currentPage === "home"} />
             <hr className="border-border-light border-dashed" />
             <PublicationButtons
               currentPage={props.currentPage}
               currentPubUri={thisPublication?.uri}
             />
           </>
-        ) : (
-          <WriterButton
-            currentPage={props.currentPage}
-            currentPubUri={thisPublication?.uri}
-          />
         )}
       </Sidebar>
     </div>

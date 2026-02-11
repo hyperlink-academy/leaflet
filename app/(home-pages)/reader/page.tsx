@@ -5,16 +5,19 @@ import { getReaderFeed } from "./getReaderFeed";
 
 export default async function Reader(props: {}) {
   let posts = await getReaderFeed();
-
   return (
     <DashboardLayout
       id="reader"
       currentPage="reader"
-      defaultTab="Inbox"
+      defaultTab="Subs"
       actions={null}
       tabs={{
-        Inbox: {
-          controls: null,
+        Subs: {
+          controls: (
+            <div className="place-self-end text text-tertiary text-sm">
+              Publications
+            </div>
+          ),
           content: (
             <InboxContent nextCursor={posts.nextCursor} posts={posts.posts} />
           ),
