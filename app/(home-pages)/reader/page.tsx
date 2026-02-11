@@ -1,32 +1,13 @@
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-import { InboxContent } from "./InboxContent";
-import { GlobalContent } from "./GlobalContent";
+import { Suspense } from "react";
 import { getReaderFeed } from "./getReaderFeed";
+import { InboxContent } from "./InboxContent";
+import { FeedSkeleton } from "./FeedSkeleton";
 
-export default async function Reader(props: {}) {
-  let posts = await getReaderFeed();
+export default async function Reader() {
+  const feedPromise = getReaderFeed();
   return (
-    <DashboardLayout
-      id="reader"
-      currentPage="reader"
-      defaultTab="Subs"
-      actions={null}
-      tabs={{
-        Subs: {
-          controls: (
-            <div className="place-self-end text text-tertiary text-sm">
-              Publications
-            </div>
-          ),
-          content: (
-            <InboxContent nextCursor={posts.nextCursor} posts={posts.posts} />
-          ),
-        },
-        Global: {
-          controls: null,
-          content: <GlobalContent />,
-        },
-      }}
-    />
+    <Suspense fallback={<FeedSkeleton />}>
+      <InboxContent promise={feedPromise} />
+    </Suspense>
   );
 }

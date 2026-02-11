@@ -71,7 +71,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
   },
 }));
 
-const DashboardIdContext = createContext<string | null>(null);
+export const DashboardIdContext = createContext<string | null>(null);
 
 export const useDashboardId = () => {
   const id = useContext(DashboardIdContext);
@@ -143,6 +143,7 @@ export function DashboardLayout<
   profileDid?: string;
   actions?: React.ReactNode;
   pageTitle?: string;
+  onTabHover?: (tabName: string) => void;
 }) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -207,6 +208,8 @@ export function DashboardLayout<
                               name={t}
                               selected={t === tab}
                               onSelect={() => setTabWithUrl(t)}
+                              onMouseEnter={() => props.onTabHover?.(t)}
+                              onPointerDown={() => props.onTabHover?.(t)}
                             />
                           );
                         })}
