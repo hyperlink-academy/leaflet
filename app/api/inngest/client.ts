@@ -51,10 +51,10 @@ export type Events = {
       documentUris?: string[];
     };
   };
-  "appview/sync-bsky-likes": {
+  "appview/sync-document-metadata": {
     data: {
       document_uri: string;
-      bsky_post_uri: string;
+      bsky_post_uri?: string;
     };
   };
   "user/write-records-to-pds": {
