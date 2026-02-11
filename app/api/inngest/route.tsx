@@ -13,7 +13,7 @@ import {
   check_oauth_session,
 } from "./functions/cleanup_expired_oauth_sessions";
 import { write_records_to_pds } from "./functions/write_records_to_pds";
-import { sync_bsky_likes } from "./functions/sync_bsky_likes";
+import { sync_document_metadata } from "./functions/sync_document_metadata";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -29,6 +29,6 @@ export const { GET, POST, PUT } = serve({
     cleanup_expired_oauth_sessions,
     check_oauth_session,
     write_records_to_pds,
-    sync_bsky_likes,
+    sync_document_metadata,
   ],
 });

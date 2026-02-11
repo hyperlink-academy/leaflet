@@ -337,20 +337,28 @@ export type Database = {
         Row: {
           bsky_like_count: number
           data: Json
+          indexed: boolean
           indexed_at: string
+          recommend_count: number
           sort_date: string
           uri: string
         }
         Insert: {
           bsky_like_count?: number
           data: Json
+          indexed?: boolean
           indexed_at?: string
+          recommend_count?: number
+          sort_date?: string
           uri: string
         }
         Update: {
           bsky_like_count?: number
           data?: Json
+          indexed?: boolean
           indexed_at?: string
+          recommend_count?: number
+          sort_date?: string
           uri?: string
         }
         Relationships: []
