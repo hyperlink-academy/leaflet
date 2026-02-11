@@ -35,7 +35,8 @@ export const sync_document_metadata = inngest.createFunction(
       return await supabaseServerClient
         .from("documents")
         .update({ indexed: !handleResult.isBridgy })
-        .eq("uri", document_uri);
+        .eq("uri", document_uri)
+        .select();
     });
 
     if (!bsky_post_uri || handleResult.isBridgy) {
