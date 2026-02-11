@@ -300,6 +300,7 @@ export async function publishToPublication({
   await supabaseServerClient.from("documents").upsert({
     uri: result.uri,
     data: record as unknown as Json,
+    indexed: true,
   });
 
   if (publication_uri) {
