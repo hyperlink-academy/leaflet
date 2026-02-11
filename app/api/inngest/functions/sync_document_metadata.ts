@@ -23,7 +23,9 @@ export const sync_document_metadata = inngest.createFunction(
         ?.replace("at://", "");
       if (!doc) return null;
       const isBridgy = !!doc?.service?.find(
-        (s) => s.serviceEndpoint === "https://atproto.brid.gy",
+        (s) =>
+          typeof s.serviceEndpoint === "string" &&
+          s.serviceEndpoint.includes("atproto.brid.gy"),
       );
       return { handle: handle ?? null, isBridgy, doc };
     });
