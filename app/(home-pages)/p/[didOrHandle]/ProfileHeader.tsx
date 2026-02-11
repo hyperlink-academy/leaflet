@@ -72,9 +72,9 @@ export const ProfileHeader = (props: {
           </pre>
         </div>
 
-        <div className="profilePublicationCards w-full overflow-x-scroll">
+        <div className="profilePubCardContainer w-full overflow-x-scroll">
           <div
-            className={`grid grid-flow-col  gap-2 mx-auto w-fit px-3 sm:px-4 ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
+            className={`profilePubCards grid grid-flow-col  gap-2 mx-auto w-fit ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
           >
             {props.publications.map((p) => (
               <PublicationCard key={p.uri} record={p.record} uri={p.uri} />
