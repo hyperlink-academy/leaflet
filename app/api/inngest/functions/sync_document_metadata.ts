@@ -21,11 +21,13 @@ export const sync_document_metadata = inngest.createFunction(
       const handle = doc?.alsoKnownAs
         ?.find((a) => a.startsWith("at://"))
         ?.replace("at://", "");
+      if (!doc) return null;
       const isBridgy = !!doc?.service?.find(
         (s) => s.serviceEndpoint === "https://atproto.brid.gy",
       );
       return { handle: handle ?? null, isBridgy };
     });
+    if (!handleResult) return { error: "No Handle" };
 
     await step.run("set-indexed", async () => {
       await supabaseServerClient
