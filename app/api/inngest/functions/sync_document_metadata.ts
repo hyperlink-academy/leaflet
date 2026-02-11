@@ -21,17 +21,18 @@ export const sync_document_metadata = inngest.createFunction(
       const handle = doc?.alsoKnownAs
         ?.find((a) => a.startsWith("at://"))
         ?.replace("at://", "");
-      return { handle: handle ?? null, isBridgy: handle?.includes("brid.gy") ?? false };
+      const isBridgy = !!doc?.service?.find(
+        (s) => s.serviceEndpoint === "https://atproto.brid.gy",
+      );
+      return { handle: handle ?? null, isBridgy };
     });
 
-    if (handleResult.isBridgy) {
-      await step.run("set-unindexed", async () => {
-        await supabaseServerClient
-          .from("documents")
-          .update({ indexed: false })
-          .eq("uri", document_uri);
-      });
-    }
+    await step.run("set-indexed", async () => {
+      await supabaseServerClient
+        .from("documents")
+        .update({ indexed: !handleResult.isBridgy })
+        .eq("uri", document_uri);
+    });
 
     if (!bsky_post_uri || handleResult.isBridgy) {
       return { handle: handleResult.handle };
