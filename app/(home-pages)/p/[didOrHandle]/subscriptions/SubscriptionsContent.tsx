@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import useSWRInfinite from "swr/infinite";
-import { PubListing } from "app/(home-pages)/discover/PubListing";
+import { PubListing } from "app/(home-pages)/p/[didOrHandle]/PubListing";
 import {
   getSubscriptions,
   type PublicationSubscription,
