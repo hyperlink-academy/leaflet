@@ -8,11 +8,12 @@ import { DesktopNavigation } from "components/ActionBar/DesktopNavigation";
 import { MobileNavigation } from "components/ActionBar/MobileNavigation";
 import { MediaContents } from "components/Media";
 import { DashboardIdContext } from "components/PageLayouts/DashboardLayout";
+import { useIdentityData } from "components/IdentityProvider";
 
-const tabs = [
-  { name: "Subs", href: "/reader" },
-  { name: "What's Hot", href: "/reader/hot" },
-  { name: "New", href: "/reader/new" },
+const allTabs = [
+  { name: "Subs", href: "/reader", requiresAuth: true },
+  { name: "What's Hot", href: "/reader/hot", requiresAuth: false },
+  { name: "New", href: "/reader/new", requiresAuth: false },
 ];
 
 export default function ReaderLayout({
@@ -21,6 +22,9 @@ export default function ReaderLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { identity } = useIdentityData();
+  const isLoggedIn = !!identity?.atp_did;
+  const tabs = allTabs.filter((tab) => !tab.requiresAuth || isLoggedIn);
 
   const isActive = (href: string) => {
     if (href === "/reader") return pathname === "/reader";
