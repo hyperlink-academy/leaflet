@@ -40,7 +40,7 @@ export const ProfileButton = () => {
     >
       {record && (
         <>
-          <SpeedyLink href={`/p/${record.handle}`}>
+          <SpeedyLink className="no-underline!" href={`/p/${record.handle}`}>
             <MenuItem onSelect={() => {}}>View Profile</MenuItem>
           </SpeedyLink>
 
