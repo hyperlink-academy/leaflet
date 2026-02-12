@@ -27,8 +27,13 @@ export default function ReaderLayout({
   const tabs = allTabs.filter((tab) => !tab.requiresAuth || isLoggedIn);
 
   const isActive = (href: string) => {
-    if (href === "/reader") return pathname === "/reader";
-    if (href === "/reader/hot" && !isLoggedIn && pathname === "/reader")
+    if (href === "/reader")
+      return pathname === "/reader" || pathname === "/";
+    if (
+      href === "/reader/hot" &&
+      !isLoggedIn &&
+      (pathname === "/reader" || pathname === "/")
+    )
       return true;
     return pathname.startsWith(href);
   };
@@ -62,7 +67,7 @@ export default function ReaderLayout({
               ))}
             </div>
             <div className="sm:block grow">
-              {pathname === "/reader" && (
+              {(pathname === "/reader" || pathname === "/") && (
                 <div className="place-self-end text text-tertiary text-sm">
                   Publications
                 </div>
