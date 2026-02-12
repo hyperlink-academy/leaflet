@@ -14,7 +14,7 @@ export const GlobalContent = (props: {
 }) => {
   const initialData = use(props.promise);
 
-  const { data, isLoading } = useSWR(
+  const { data } = useSWR(
     "hot_feed",
     async () => {
       const res = await callRPC("get_hot_feed", {});
@@ -26,12 +26,6 @@ export const GlobalContent = (props: {
   );
 
   const posts = data?.posts ?? [];
-
-  if (isLoading) {
-    return (
-      <div className="text-center text-tertiary py-8">Loading posts...</div>
-    );
-  }
 
   if (posts.length === 0) {
     return (

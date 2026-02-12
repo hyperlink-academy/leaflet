@@ -11,6 +11,7 @@ import type {
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { InteractionPreview, TagPopover } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSmoker } from "./Toast";
@@ -42,13 +43,19 @@ export const PostListing = (props: Post) => {
   let isStandalone = !pubRecord;
   let theme = usePubTheme(pubRecord?.theme || postRecord?.theme, isStandalone);
   let themeRecord = pubRecord?.theme || postRecord?.theme;
-  let el = document?.getElementById(`post-listing-${postUri}`);
+  let elRef = useRef<HTMLDivElement>(null);
+  let [hasBackgroundImage, setHasBackgroundImage] = useState(false);
 
-  let hasBackgroundImage =
-    !!themeRecord?.backgroundImage?.image &&
-    el &&
-    Number(window.getComputedStyle(el).getPropertyValue("--bg-page-alpha")) <
-      0.7;
+  useEffect(() => {
+    if (!themeRecord?.backgroundImage?.image || !elRef.current) {
+      setHasBackgroundImage(false);
+      return;
+    }
+    let alpha = Number(
+      window.getComputedStyle(elRef.current).getPropertyValue("--bg-page-alpha"),
+    );
+    setHasBackgroundImage(alpha < 0.7);
+  }, [themeRecord?.backgroundImage?.image]);
 
   let backgroundImage =
     themeRecord?.backgroundImage?.image?.ref && uri
@@ -82,6 +89,7 @@ export const PostListing = (props: Post) => {
     <div className="postListing flex flex-col gap-1">
       <BaseThemeProvider {...theme} local>
         <div
+          ref={elRef}
           id={`post-listing-${postUri}`}
           className={`
           relative
