@@ -28,6 +28,8 @@ export default function ReaderLayout({
 
   const isActive = (href: string) => {
     if (href === "/reader") return pathname === "/reader";
+    if (href === "/reader/hot" && !isLoggedIn && pathname === "/reader")
+      return true;
     return pathname.startsWith(href);
   };
 
