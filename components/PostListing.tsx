@@ -74,7 +74,7 @@ export const PostListing = (props: Post) => {
     pubRecord?.preferences,
   );
 
-  let quotes = props.documents.document_mentions_in_bsky?.[0]?.count || 0;
+  let quotes = props.documents.mentionsCount ?? props.documents.document_mentions_in_bsky?.[0]?.count ?? 0;
   let comments =
     mergedPrefs.showComments === false
       ? 0

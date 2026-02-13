@@ -5,13 +5,8 @@ import { sql } from "drizzle-orm";
 import { pool } from "supabase/pool";
 import Client from "ioredis";
 import { AtUri } from "@atproto/api";
-import { idResolver } from "./idResolver";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import {
-  normalizeDocumentRecord,
-  normalizePublicationRecord,
-} from "src/utils/normalizeRecords";
 import { supabaseServerClient } from "supabase/serverClient";
+import { enrichDocumentToPost } from "./enrichPost";
 import type { Post } from "./getReaderFeed";
 
 let redisClient: Client | null = null;
@@ -90,40 +85,7 @@ export async function getHotFeed(): Promise<{ posts: Post[] }> {
   // Enrich into Post[]
   const posts = (
     await Promise.all(
-      orderedDocs.map(async (doc) => {
-        const pub = doc.documents_in_publications?.[0]?.publications;
-        const uri = new AtUri(doc.uri);
-        const handle = await idResolver.did.resolve(uri.host);
-
-        const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
-        if (!normalizedData) return null;
-
-        const normalizedPubRecord = pub
-          ? normalizePublicationRecord(pub.record)
-          : null;
-
-        const post: Post = {
-          publication: pub
-            ? {
-                href: getPublicationURL(pub),
-                pubRecord: normalizedPubRecord,
-                uri: pub.uri || "",
-              }
-            : undefined,
-          author: handle?.alsoKnownAs?.[0]
-            ? `@${handle.alsoKnownAs[0].slice(5)}`
-            : null,
-          documents: {
-            comments_on_documents: doc.comments_on_documents,
-            document_mentions_in_bsky: doc.document_mentions_in_bsky,
-            recommends_on_documents: doc.recommends_on_documents,
-            data: normalizedData,
-            uri: doc.uri,
-            sort_date: doc.sort_date,
-          },
-        };
-        return post;
-      }),
+      orderedDocs.map((doc) => enrichDocumentToPost(doc as any)),
     )
   ).filter((post): post is Post => post !== null);
 
