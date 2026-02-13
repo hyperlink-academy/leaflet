@@ -128,7 +128,7 @@ export const PostListing = (props: Post) => {
               <img
                 src={blobRefToSrc(postRecord.coverImage.ref, postUri.host)}
                 alt={postRecord.title || ""}
-                className="w-full h-auto aspect-video object-cover rounded"
+                className="w-full h-auto aspect-video object-cover object-top-left rounded"
               />
             </div>
           )}
