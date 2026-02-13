@@ -83,9 +83,6 @@ export const InboxContent = (props: {
   return (
     <div className="flex flex-row gap-6 w-full ">
       <div className="flex flex-col gap-6 w-full relative">
-        <div className="text-sm text-tertiary italic">
-          Inbox collects posts from publications you are subscribed to
-        </div>
         {sortedPosts.map((p) => (
           <PostListing {...p} key={p.documents.uri} />
         ))}
