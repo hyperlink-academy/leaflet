@@ -3,8 +3,6 @@ import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
-  type NormalizedDocument,
-  type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
@@ -145,8 +143,6 @@ export async function getPostPageData(did: string, rkey: string) {
         publication_subscriptions: rawPub.publication_subscriptions || [],
       }
     : null;
-
-  // Get recommends count from the aggregated query result
   const recommendsCount = document.recommends_on_documents?.[0]?.count ?? 0;
 
   return {

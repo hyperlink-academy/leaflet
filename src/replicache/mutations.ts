@@ -666,7 +666,6 @@ const updatePublicationDraft: Mutation<{
   } | null;
 }> = async (args, ctx) => {
   await ctx.runOnServer(async (serverCtx) => {
-    console.log("updating");
     const updates: {
       description?: string;
       title?: string;

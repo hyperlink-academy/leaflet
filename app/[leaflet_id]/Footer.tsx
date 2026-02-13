@@ -1,6 +1,6 @@
 "use client";
 import { useUIState } from "src/useUIState";
-import { Footer as ActionFooter } from "components/ActionBar/Footer";
+import { Footer } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
@@ -36,7 +36,10 @@ export function LeafletFooter(props: { entityID: string }) {
     .value;
 
   return (
-    <Media mobile className="mobileFooter w-full z-10 touch-none -mt-[54px] ">
+    <Media
+      mobile
+      className="mobileLeafletFooter w-full z-10 touch-none -mt-[54px] "
+    >
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
       hasBlockToolbar(blockType) &&
@@ -54,7 +57,7 @@ export function LeafletFooter(props: { entityID: string }) {
           />
         </div>
       ) : entity_set.permissions.write ? (
-        <ActionFooter>
+        <Footer>
           {pub?.publications &&
           identity?.atp_did &&
           pub.publications.identity_did === identity.atp_did ? (
@@ -62,12 +65,13 @@ export function LeafletFooter(props: { entityID: string }) {
           ) : (
             <HomeButton />
           )}
-
-          <PublishButton entityID={props.entityID} />
-          <ShareOptions />
-          <PostSettings />
-          <ThemePopover entityID={props.entityID} />
-        </ActionFooter>
+          <div className="mobileLeafletActions flex gap-2 shrink-0">
+            <PublishButton entityID={props.entityID} />
+            <ShareOptions />
+            <PostSettings />
+            <ThemePopover entityID={props.entityID} />
+          </div>
+        </Footer>
       ) : (
         <div className="pb-2 px-2 z-10 flex justify-end">
           <Watermark mobile />

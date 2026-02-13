@@ -86,13 +86,7 @@ export const MentionsDrawerContent = (props: {
   });
 
   return (
-    <div className="relative w-full flex justify-between ">
-      <button
-        className="text-tertiary absolute top-0 right-0"
-        onClick={() => setInteractionState(document_uri, { drawerOpen: false })}
-      >
-        <CloseTiny />
-      </button>
+    <>
       {props.quotesAndMentions.length === 0 ? (
         <div className="opaque-container flex flex-col gap-0.5 p-[6px] text-tertiary italic text-sm text-center">
           <div className="font-bold">no quotes yet!</div>
@@ -160,7 +154,7 @@ export const MentionsDrawerContent = (props: {
           )}
         </div>
       )}
-    </div>
+    </>
   );
 };
 

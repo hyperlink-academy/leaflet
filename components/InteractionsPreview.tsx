@@ -96,7 +96,7 @@ export const InteractionPreview = (props: {
   );
 };
 
-const TagPopover = (props: { tags: string[] }) => {
+export const TagPopover = (props: { tags: string[] }) => {
   return (
     <Popover
       className="p-2! max-w-xs"

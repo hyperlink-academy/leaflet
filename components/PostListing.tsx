@@ -1,24 +1,30 @@
 "use client";
 import { AtUri } from "@atproto/api";
 import { PubIcon } from "components/ActionBar/Publications";
-import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { Separator } from "components/Layout";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { useSmoker } from "components/Toast";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import type {
   NormalizedDocument,
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { hasLeafletContent } from "lexicons/src/normalize";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
-import { InteractionPreview } from "./InteractionsPreview";
+import { useEffect, useRef, useState } from "react";
+import { InteractionPreview, TagPopover } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { useSmoker } from "./Toast";
+import { Separator } from "./Layout";
+import { CommentTiny } from "./Icons/CommentTiny";
+import { QuoteTiny } from "./Icons/QuoteTiny";
+import { ShareTiny } from "./Icons/ShareTiny";
+import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import { RecommendButton } from "./RecommendButton";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -38,6 +44,22 @@ export const PostListing = (props: Post) => {
   let isStandalone = !pubRecord;
   let theme = usePubTheme(pubRecord?.theme || postRecord?.theme, isStandalone);
   let themeRecord = pubRecord?.theme || postRecord?.theme;
+  let elRef = useRef<HTMLDivElement>(null);
+  let [hasBackgroundImage, setHasBackgroundImage] = useState(false);
+
+  useEffect(() => {
+    if (!themeRecord?.backgroundImage?.image || !elRef.current) {
+      setHasBackgroundImage(false);
+      return;
+    }
+    let alpha = Number(
+      window
+        .getComputedStyle(elRef.current)
+        .getPropertyValue("--bg-page-alpha"),
+    );
+    setHasBackgroundImage(alpha < 0.7);
+  }, [themeRecord?.backgroundImage?.image]);
+
   let backgroundImage =
     themeRecord?.backgroundImage?.image?.ref && uri
       ? blobRefToSrc(themeRecord.backgroundImage.image.ref, new AtUri(uri).host)
@@ -50,9 +72,15 @@ export const PostListing = (props: Post) => {
     ? pubRecord?.theme?.showPageBackground
     : postRecord.theme?.showPageBackground ?? true;
 
-  let mergedPrefs = mergePreferences(postRecord?.preferences, pubRecord?.preferences);
+  let mergedPrefs = mergePreferences(
+    postRecord?.preferences,
+    pubRecord?.preferences,
+  );
 
-  let quotes = props.documents.document_mentions_in_bsky?.[0]?.count || 0;
+  let quotes =
+    props.documents.mentionsCount ??
+    props.documents.document_mentions_in_bsky?.[0]?.count ??
+    0;
   let comments =
     mergedPrefs.showComments === false
       ? 0
@@ -61,66 +89,89 @@ export const PostListing = (props: Post) => {
   let tags = (postRecord?.tags as string[] | undefined) || [];
 
   // For standalone posts, link directly to the document
-  let postHref = getDocumentURL(postRecord, props.documents.uri, pubRecord);
+  let postUrl = getDocumentURL(postRecord, props.documents.uri, pubRecord);
 
   return (
-    <BaseThemeProvider {...theme} local>
-      <div
-        style={{
-          backgroundImage: backgroundImage
-            ? `url(${backgroundImage})`
-            : undefined,
-          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
-          backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
-        }}
-        className={`no-underline! flex flex-row gap-2 w-full relative
-          bg-bg-leaflet
-          border border-border-light rounded-lg
-          sm:p-2 p-2 selected-outline
-          hover:outline-accent-contrast hover:border-accent-contrast
-          `}
-      >
-        <Link className="h-full w-full absolute top-0 left-0" href={postHref} />
+    <div className="postListing flex flex-col gap-1">
+      <BaseThemeProvider {...theme} local>
         <div
-          className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2`}
-          style={{
-            backgroundColor: showPageBackground
-              ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-              : "transparent",
-          }}
+          ref={elRef}
+          id={`post-listing-${postUri}`}
+          className={`
+          relative
+          flex flex-col overflow-hidden
+          selected-outline border-border-light rounded-lg w-full  hover:outline-accent-contrast
+          hover:border-accent-contrast
+          ${showPageBackground ? "bg-bg-page " : "bg-bg-leaflet"} `}
+          style={
+            hasBackgroundImage
+              ? {
+                  backgroundImage: backgroundImage
+                    ? `url(${backgroundImage})`
+                    : undefined,
+                  backgroundRepeat: backgroundImageRepeat
+                    ? "repeat"
+                    : "no-repeat",
+                  backgroundSize: backgroundImageRepeat
+                    ? `${backgroundImageSize}px`
+                    : "cover",
+                }
+              : {}
+          }
         >
-          <h3 className="text-primary truncate">{postRecord.title}</h3>
+          <Link
+            className="h-full w-full absolute top-0 left-0"
+            href={postUrl}
+          />
+          {postRecord.coverImage && (
+            <div className="postListingImage">
+              <img
+                src={blobRefToSrc(postRecord.coverImage.ref, postUri.host)}
+                alt={postRecord.title || ""}
+                className="w-full h-auto aspect-video object-cover object-top-left rounded"
+              />
+            </div>
+          )}
+          <div className="postListingInfo px-3 py-2">
+            <h3 className="postListingTitle text-primary line-clamp-2 sm:text-lg text-base">
+              {postRecord.title}
+            </h3>
 
-          <p className="text-secondary italic line-clamp-3">
-            {postRecord.description}
-          </p>
-          <div className="flex flex-col-reverse md:flex-row md gap-2 text-sm text-tertiary items-center justify-start pt-1.5 md:pt-3 w-full">
-            {props.publication && pubRecord && (
-              <PubInfo
-                href={props.publication.href}
-                pubRecord={pubRecord}
-                uri={props.publication.uri}
-              />
-            )}
-            <div className="flex flex-row justify-between gap-2 items-center w-full">
-              <PostInfo publishedAt={postRecord.publishedAt} />
-              <InteractionPreview
-                postUrl={postHref}
-                quotesCount={quotes}
-                commentsCount={comments}
-                recommendsCount={recommends}
-                documentUri={props.documents.uri}
-                tags={tags}
-                showComments={mergedPrefs.showComments !== false}
-                showMentions={mergedPrefs.showMentions !== false}
-                showRecommends={mergedPrefs.showRecommends !== false}
-                share
-              />
+            <p className="postListingDescription text-secondary line-clamp-3 sm:text-base text-sm">
+              {postRecord.description}
+            </p>
+            <div className="flex flex-col-reverse gap-2 text-sm text-tertiary items-center justify-start pt-1.5 w-full">
+              {props.publication && pubRecord && (
+                <PubInfo
+                  href={props.publication.href}
+                  pubRecord={pubRecord}
+                  uri={props.publication.uri}
+                  postRecord={postRecord}
+                />
+              )}
+              <div className="flex flex-row justify-between gap-2 text-xs items-center w-full">
+                <PostDate publishedAt={postRecord.publishedAt} />
+                {tags.length === 0 ? null : <TagPopover tags={tags!} />}
+              </div>
             </div>
           </div>
         </div>
+      </BaseThemeProvider>
+      <div className="text-sm flex justify-between text-tertiary">
+        <Interactions
+          postUrl={postUrl}
+          quotesCount={quotes}
+          commentsCount={comments}
+          recommendsCount={recommends}
+          tags={tags}
+          showComments={mergedPrefs.showComments !== false}
+          showMentions={mergedPrefs.showMentions !== false}
+          documentUri={props.documents.uri}
+          document={postRecord}
+        />
+        <Share postUrl={postUrl} />
       </div>
-    </BaseThemeProvider>
+    </div>
   );
 };
 
@@ -128,34 +179,129 @@ const PubInfo = (props: {
   href: string;
   pubRecord: NormalizedPublication;
   uri: string;
+  postRecord: NormalizedDocument;
 }) => {
+  let isLeaflet = hasLeafletContent(props.postRecord);
+  let cleanUrl = props.pubRecord.url
+    ?.replace(/^https?:\/\//, "")
+    .replace(/^www\./, "");
+
   return (
-    <div className="flex flex-col md:w-auto shrink-0 w-full">
-      <hr className="md:hidden block border-border-light mb-2" />
-      <Link
-        href={props.href}
-        className="text-accent-contrast font-bold no-underline text-sm flex gap-1 items-center md:w-fit relative shrink-0"
-      >
-        <PubIcon small record={props.pubRecord} uri={props.uri} />
-        {props.pubRecord.name}
-      </Link>
+    <div className="flex flex-col shrink-0 w-full">
+      <hr className=" block border-border-light mb-1" />
+      <div className="flex justify-between gap-4 w-full ">
+        <Link
+          href={props.href}
+          className="text-accent-contrast font-bold no-underline text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
+        >
+          <PubIcon tiny record={props.pubRecord} uri={props.uri} />
+          <div className="w-max min-w-0">{props.pubRecord.name}</div>
+        </Link>
+        {!isLeaflet && (
+          <div className="text-sm flex flex-row items-center text-tertiary gap-1  min-w-0">
+            <div className="truncate min-w-0">{cleanUrl}</div>
+            <ExternalLinkTiny className="shrink-0" />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-const PostInfo = (props: { publishedAt: string | undefined }) => {
+const PostDate = (props: { publishedAt: string | undefined }) => {
   let localizedDate = useLocalizedDate(props.publishedAt || "", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+  if (props.publishedAt) {
+    return <div className="shrink-0 sm:text-sm text-xs">{localizedDate}</div>;
+  } else return null;
+};
+
+const Interactions = (props: {
+  quotesCount: number;
+  commentsCount: number;
+  recommendsCount: number;
+  tags?: string[];
+  postUrl: string;
+  showComments: boolean;
+  showMentions: boolean;
+  documentUri: string;
+  document: NormalizedDocument;
+}) => {
+  let setSelectedPostListing = useSelectedPostListing(
+    (s) => s.setSelectedPostListing,
+  );
+  let selectPostListing = (drawer: "quotes" | "comments") => {
+    setSelectedPostListing({
+      document_uri: props.documentUri,
+      document: props.document,
+      drawer,
+    });
+  };
+
   return (
-    <div className="flex gap-2 items-center shrink-0 self-start">
-      {props.publishedAt && (
-        <>
-          <div className="shrink-0">{localizedDate}</div>
-        </>
-      )}
+    <div
+      className={`flex gap-2 text-tertiary text-sm  items-center justify-between px-1`}
+    >
+      <div className="postListingsInteractions flex gap-3">
+        <RecommendButton
+          documentUri={props.documentUri}
+          recommendsCount={props.recommendsCount}
+        />
+        {!props.showMentions || props.quotesCount === 0 ? null : (
+          <button
+            aria-label="Post quotes"
+            onClick={() => selectPostListing("quotes")}
+            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
+          >
+            <QuoteTiny /> {props.quotesCount}
+          </button>
+        )}
+        {!props.showComments || props.commentsCount === 0 ? null : (
+          <button
+            aria-label="Post comments"
+            onClick={() => selectPostListing("comments")}
+            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
+          >
+            <CommentTiny /> {props.commentsCount}
+          </button>
+        )}
+      </div>
     </div>
+  );
+};
+
+const Share = (props: { postUrl: string }) => {
+  let smoker = useSmoker();
+  return (
+    <button
+      id={`copy-post-link-${props.postUrl}`}
+      className="flex gap-1 items-center hover:text-accent-contrast relative font-bold"
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        let mouseX = e.clientX;
+        let mouseY = e.clientY;
+
+        if (!props.postUrl) return;
+        navigator.clipboard.writeText(
+          props.postUrl.includes("http")
+            ? props.postUrl
+            : `leaflet.pub/${props.postUrl}`,
+        );
+
+        smoker({
+          text: <strong>Copied Link!</strong>,
+          position: {
+            y: mouseY,
+            x: mouseX,
+          },
+        });
+      }}
+    >
+      Share <ShareTiny />
+    </button>
   );
 };

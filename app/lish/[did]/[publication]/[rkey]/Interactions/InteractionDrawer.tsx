@@ -1,12 +1,17 @@
 "use client";
 import { Media } from "components/Media";
 import { MentionsDrawerContent } from "./Quotes";
-import { InteractionState, useInteractionState } from "./Interactions";
+import {
+  InteractionState,
+  setInteractionState,
+  useInteractionState,
+} from "./Interactions";
 import { Json } from "supabase/database.types";
 import { Comment, CommentsDrawerContent } from "./Comments";
 import { useSearchParams } from "next/navigation";
 import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
+import { CloseTiny } from "components/Icons/CloseTiny";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -39,19 +44,44 @@ export const InteractionDrawer = (props: {
       <div className="snap-center h-full  flex z-10 shrink-0 sm:max-w-prose sm:w-full w-[calc(100vw-12px)]">
         <div
           id="interaction-drawer"
-          className={`opaque-container  h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll  ${props.showPageBackground ? "rounded-l-none! rounded-r-lg! -ml-[1px]" : "rounded-lg! sm:ml-4"}`}
+          className={`opaque-container relative h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll flex flex-col  ${props.showPageBackground ? "rounded-l-none! rounded-r-lg! -ml-[1px]" : "rounded-lg! sm:ml-4"}`}
         >
           {drawer.drawer === "quotes" ? (
-            <MentionsDrawerContent
-              {...props}
-              quotesAndMentions={filteredQuotesAndMentions}
-            />
+            <>
+              <button
+                className="text-tertiary absolute top-4 right-4"
+                onClick={() =>
+                  setInteractionState(props.document_uri, { drawerOpen: false })
+                }
+              >
+                <CloseTiny />
+              </button>
+              <MentionsDrawerContent
+                {...props}
+                quotesAndMentions={filteredQuotesAndMentions}
+              />
+            </>
           ) : (
-            <CommentsDrawerContent
-              document_uri={props.document_uri}
-              comments={filteredComments}
-              pageId={props.pageId}
-            />
+            <>
+              <div className="w-full flex justify-between">
+                <h4> Comments</h4>
+                <button
+                  className="text-tertiary"
+                  onClick={() =>
+                    setInteractionState(props.document_uri, {
+                      drawerOpen: false,
+                    })
+                  }
+                >
+                  <CloseTiny />
+                </button>
+              </div>
+              <CommentsDrawerContent
+                document_uri={props.document_uri}
+                comments={filteredComments}
+                pageId={props.pageId}
+              />
+            </>
           )}
         </div>
       </div>

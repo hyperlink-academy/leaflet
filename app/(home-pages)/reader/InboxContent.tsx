@@ -1,4 +1,5 @@
 "use client";
+import { use } from "react";
 import { ButtonPrimary } from "components/Buttons";
 import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 import type { Cursor, Post } from "./getReaderFeed";
@@ -7,11 +8,17 @@ import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PostListing } from "components/PostListing";
+import { useHasBackgroundImage } from "components/Pages/useHasBackgroundImage";
+import {
+  DesktopInteractionPreviewDrawer,
+  MobileInteractionPreviewDrawer,
+} from "./InteractionDrawers";
 
-export const ReaderContent = (props: {
-  posts: Post[];
-  nextCursor: Cursor | null;
+export const InboxContent = (props: {
+  promise: Promise<{ posts: Post[]; nextCursor: Cursor | null }>;
 }) => {
+  const { posts, nextCursor } = use(props.promise);
+
   const getKey = (
     pageIndex: number,
     previousPageData: {
@@ -33,7 +40,7 @@ export const ReaderContent = (props: {
     getKey,
     ([_, cursor]) => getReaderFeed(cursor),
     {
-      fallbackData: [{ posts: props.posts, nextCursor: props.nextCursor }],
+      fallbackData: [{ posts, nextCursor }],
       revalidateFirstPage: false,
     },
   );
@@ -63,24 +70,36 @@ export const ReaderContent = (props: {
 
   const allPosts = data ? data.flatMap((page) => page.posts) : [];
 
+  const sortedPosts = allPosts.sort(
+    (a, b) =>
+      new Date(b.documents.data?.publishedAt || 0).getTime() -
+      new Date(a.documents.data?.publishedAt || 0).getTime(),
+  );
+
   if (allPosts.length === 0 && !isValidating) return <ReaderEmpty />;
 
+  let hasBackgroundImage = useHasBackgroundImage();
+
   return (
-    <div className="flex flex-col gap-3 relative">
-      {allPosts.map((p) => (
-        <PostListing {...p} key={p.documents.uri} />
-      ))}
-      {/* Trigger element for loading more posts */}
-      <div
-        ref={loadMoreRef}
-        className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
-        aria-hidden="true"
-      />
-      {isValidating && (
-        <div className="text-center text-tertiary py-4">
-          Loading more posts...
-        </div>
-      )}
+    <div className="flex flex-row gap-6 w-full ">
+      <div className="flex flex-col gap-6 w-full relative">
+        {sortedPosts.map((p) => (
+          <PostListing {...p} key={p.documents.uri} />
+        ))}
+        {/* Trigger element for loading more posts */}
+        <div
+          ref={loadMoreRef}
+          className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
+          aria-hidden="true"
+        />
+        {isValidating && (
+          <div className="text-center text-tertiary py-4">
+            Loading more posts...
+          </div>
+        )}
+      </div>
+      <DesktopInteractionPreviewDrawer />
+      <MobileInteractionPreviewDrawer />
     </div>
   );
 };
@@ -90,9 +109,9 @@ export const ReaderEmpty = () => {
     <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
       Nothing to read yet… <br />
       Subscribe to publications and find their posts here!
-      <Link href={"/discover"}>
+      <Link href={"/reader/hot"}>
         <ButtonPrimary className="mx-auto place-self-center">
-          <DiscoverSmall /> Discover Publications
+          <DiscoverSmall /> See what posts people are reading!
         </ButtonPrimary>
       </Link>
     </div>

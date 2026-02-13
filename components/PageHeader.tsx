@@ -29,7 +29,7 @@ export const Header = (props: { children: React.ReactNode }) => {
     <div
       className={`
       headerWrapper
-      sticky top-0 z-10
+      sticky top-0 z-20
       w-full bg-transparent
       `}
     >

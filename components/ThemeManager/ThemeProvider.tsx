@@ -8,6 +8,13 @@ export const CardBorderHiddenContext = createContext<boolean>(false);
 export function useCardBorderHiddenContext() {
   return useContext(CardBorderHiddenContext);
 }
+
+// Context for hasBackgroundImage
+export const HasBackgroundImageContext = createContext<boolean>(false);
+
+export function useHasBackgroundImageContext() {
+  return useContext(HasBackgroundImageContext);
+}
 import {
   colorToString,
   useColorAttribute,
@@ -79,22 +86,24 @@ export function LeafletThemeProvider(props: {
 
   return (
     <CardBorderHiddenContext.Provider value={!!cardBorderHiddenValue}>
-      <BaseThemeProvider
-        local={props.local}
-        bgLeaflet={bgLeaflet}
-        bgPage={bgPage}
-        primary={primary}
-        highlight2={highlight2}
-        highlight3={highlight3}
-        highlight1={highlight1?.data.value}
-        accent1={accent1}
-        accent2={accent2}
-        showPageBackground={showPageBackground}
-        pageWidth={pageWidth?.data.value}
-        hasBackgroundImage={hasBackgroundImage}
-      >
-        {props.children}
-      </BaseThemeProvider>
+      <HasBackgroundImageContext.Provider value={hasBackgroundImage}>
+        <BaseThemeProvider
+          local={props.local}
+          bgLeaflet={bgLeaflet}
+          bgPage={bgPage}
+          primary={primary}
+          highlight2={highlight2}
+          highlight3={highlight3}
+          highlight1={highlight1?.data.value}
+          accent1={accent1}
+          accent2={accent2}
+          showPageBackground={showPageBackground}
+          pageWidth={pageWidth?.data.value}
+          hasBackgroundImage={hasBackgroundImage}
+        >
+          {props.children}
+        </BaseThemeProvider>
+      </HasBackgroundImageContext.Provider>
     </CardBorderHiddenContext.Provider>
   );
 }
