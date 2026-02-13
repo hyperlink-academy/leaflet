@@ -8,6 +8,7 @@ import type {
   NormalizedDocument,
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { hasLeafletContent } from "lexicons/src/normalize";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
@@ -140,6 +141,7 @@ export const PostListing = (props: Post) => {
                   href={props.publication.href}
                   pubRecord={pubRecord}
                   uri={props.publication.uri}
+                  postRecord={postRecord}
                 />
               )}
               <div className="flex flex-row justify-between gap-2 text-xs items-center w-full">
@@ -172,9 +174,9 @@ const PubInfo = (props: {
   href: string;
   pubRecord: NormalizedPublication;
   uri: string;
+  postRecord: NormalizedDocument;
 }) => {
-  let isLeaflet =
-    props.pubRecord.theme?.$type === "pub.leaflet.publication#theme";
+  let isLeaflet = hasLeafletContent(props.postRecord);
   let cleanUrl = props.pubRecord.url
     ?.replace(/^https?:\/\//, "")
     .replace(/^www\./, "");

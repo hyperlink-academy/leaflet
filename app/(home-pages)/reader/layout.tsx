@@ -66,13 +66,7 @@ export default function ReaderLayout({
                 </Link>
               ))}
             </div>
-            <div className="sm:block grow">
-              {(pathname === "/reader" || pathname === "/") && (
-                <div className="place-self-end text text-tertiary text-sm">
-                  Publications
-                </div>
-              )}
-            </div>
+            <div className="sm:block grow" />
           </Header>
           {children}
         </div>
