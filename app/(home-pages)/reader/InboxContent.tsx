@@ -112,9 +112,9 @@ export const ReaderEmpty = () => {
     <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
       Nothing to read yet… <br />
       Subscribe to publications and find their posts here!
-      <Link href={"/discover"}>
+      <Link href={"/reader/hot"}>
         <ButtonPrimary className="mx-auto place-self-center">
-          <DiscoverSmall /> Discover Publications
+          <DiscoverSmall /> See what posts people are reading!
         </ButtonPrimary>
       </Link>
     </div>
