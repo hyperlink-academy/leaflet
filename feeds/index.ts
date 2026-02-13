@@ -115,6 +115,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       );
   }
   query = query
+    .eq("indexed", true)
     .or("data->postRef.not.is.null,data->bskyPostRef.not.is.null")
     .order("sort_date", { ascending: false })
     .order("uri", { ascending: false })

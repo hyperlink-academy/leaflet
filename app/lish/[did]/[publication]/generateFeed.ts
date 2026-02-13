@@ -53,49 +53,56 @@ export async function generateFeed(
     },
   });
 
-  await Promise.all(
-    publication.documents_in_publications.map(async (doc) => {
-      if (!doc.documents) return;
-      const record = normalizeDocumentRecord(
-        doc.documents?.data,
-        doc.documents?.uri,
-      );
-      const uri = new AtUri(doc.documents?.uri);
-      const rkey = uri.rkey;
-      if (!record) return;
+  let docs = publication.documents_in_publications.sort((a, b) => {
+    const dateA = a.documents?.sort_date
+      ? new Date(a.documents.sort_date).getTime()
+      : 0;
+    const dateB = b.documents?.sort_date
+      ? new Date(b.documents.sort_date).getTime()
+      : 0;
+    return dateB - dateA; // Sort in descending order (newest first)
+  });
+  for (const doc of docs) {
+    if (!doc.documents) continue;
+    const record = normalizeDocumentRecord(
+      doc.documents?.data,
+      doc.documents?.uri,
+    );
+    const uri = new AtUri(doc.documents?.uri);
+    const rkey = uri.rkey;
+    if (!record) continue;
 
-      let blocks: PubLeafletPagesLinearDocument.Block[] = [];
-      if (hasLeafletContent(record) && record.content.pages[0]) {
-        const firstPage = record.content.pages[0];
-        if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
-          blocks = firstPage.blocks || [];
-        }
+    let blocks: PubLeafletPagesLinearDocument.Block[] = [];
+    if (hasLeafletContent(record) && record.content.pages[0]) {
+      const firstPage = record.content.pages[0];
+      if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
+        blocks = firstPage.blocks || [];
       }
-      const stream = await renderToReadableStream(
-        createElement(StaticPostContent, { blocks, did: uri.host }),
-      );
-      const reader = stream.getReader();
-      const chunks = [];
+    }
+    const stream = await renderToReadableStream(
+      createElement(StaticPostContent, { blocks, did: uri.host }),
+    );
+    const reader = stream.getReader();
+    const chunks = [];
 
-      let done, value;
-      while (!done) {
-        ({ done, value } = await reader.read());
-        if (value) {
-          chunks.push(new TextDecoder().decode(value));
-        }
+    let done, value;
+    while (!done) {
+      ({ done, value } = await reader.read());
+      if (value) {
+        chunks.push(new TextDecoder().decode(value));
       }
+    }
 
-      const docUrl = getDocumentURL(record, doc.documents.uri, pubRecord);
-      feed.addItem({
-        title: record.title,
-        description: record.description,
-        date: record.publishedAt ? new Date(record.publishedAt) : new Date(),
-        id: docUrl,
-        link: docUrl,
-        content: chunks.join(""),
-      });
-    }),
-  );
+    const docUrl = getDocumentURL(record, doc.documents.uri, pubRecord);
+    feed.addItem({
+      title: record.title,
+      description: record.description,
+      date: record.publishedAt ? new Date(record.publishedAt) : new Date(),
+      id: docUrl,
+      link: docUrl,
+      content: chunks.join(""),
+    });
+  }
 
   return feed;
 }

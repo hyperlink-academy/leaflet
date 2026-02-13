@@ -275,7 +275,7 @@ export async function updatePublication({
 
       return buildRecord(normalizedPub, existingBasePath, publicationType, {
         name,
-        description,
+        ...(description !== undefined && { description }),
         icon: iconBlob,
         preferences,
       });

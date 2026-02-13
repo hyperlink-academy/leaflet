@@ -58,18 +58,22 @@ export function getDocumentURL(
   docUri: string,
   publication?: PublicationInput | NormalizedPublication | null,
 ): string {
-  const path = doc.path || "/" + new AtUri(docUri).rkey;
+  let path = doc.path || "/" + new AtUri(docUri).rkey;
+  if (path[0] !== "/") path = "/" + path;
   const aturi = new AtUri(docUri);
 
   const isNormalized =
     !!publication &&
-    (publication as NormalizedPublication).$type === "site.standard.publication";
+    (publication as NormalizedPublication).$type ===
+      "site.standard.publication";
   const normPub = isNormalized
     ? (publication as NormalizedPublication)
     : publication
       ? normalizePublicationRecord((publication as PublicationInput).record)
       : null;
-  const pubInput = isNormalized ? null : (publication as PublicationInput | null);
+  const pubInput = isNormalized
+    ? null
+    : (publication as PublicationInput | null);
 
   // Non-leaflet documents always use the full publication site URL
   if (doc.content && !hasLeafletContent(doc) && normPub?.url) {
