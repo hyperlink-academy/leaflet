@@ -52,6 +52,7 @@ const PreviewDrawerContent = (props: {
       });
       return res;
     },
+    { keepPreviousData: false },
   );
 
   if (!props.selectedPost || !props.selectedPost.document) return null;
