@@ -53,7 +53,9 @@ export const PostListing = (props: Post) => {
       return;
     }
     let alpha = Number(
-      window.getComputedStyle(elRef.current).getPropertyValue("--bg-page-alpha"),
+      window
+        .getComputedStyle(elRef.current)
+        .getPropertyValue("--bg-page-alpha"),
     );
     setHasBackgroundImage(alpha < 0.7);
   }, [themeRecord?.backgroundImage?.image]);
@@ -75,7 +77,10 @@ export const PostListing = (props: Post) => {
     pubRecord?.preferences,
   );
 
-  let quotes = props.documents.mentionsCount ?? props.documents.document_mentions_in_bsky?.[0]?.count ?? 0;
+  let quotes =
+    props.documents.mentionsCount ??
+    props.documents.document_mentions_in_bsky?.[0]?.count ??
+    0;
   let comments =
     mergedPrefs.showComments === false
       ? 0
@@ -281,7 +286,11 @@ const Share = (props: { postUrl: string }) => {
         let mouseY = e.clientY;
 
         if (!props.postUrl) return;
-        navigator.clipboard.writeText(`leaflet.pub${props.postUrl}`);
+        navigator.clipboard.writeText(
+          props.postUrl.includes("http")
+            ? props.postUrl
+            : `leaflet.pub/${props.postUrl}`,
+        );
 
         smoker({
           text: <strong>Copied Link!</strong>,
