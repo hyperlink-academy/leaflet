@@ -1204,6 +1204,59 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksOrderedList: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.orderedList',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['children'],
+        properties: {
+          startIndex: {
+            type: 'integer',
+            description:
+              'The starting number for this ordered list. Defaults to 1 if not specified.',
+          },
+          children: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.orderedList#listItem',
+            },
+          },
+        },
+      },
+      listItem: {
+        type: 'object',
+        required: ['content'],
+        properties: {
+          content: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+            ],
+          },
+          children: {
+            type: 'array',
+            description:
+              'Nested ordered list items. Mutually exclusive with unorderedListChildren; if both are present, children takes precedence.',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.orderedList#listItem',
+            },
+          },
+          unorderedListChildren: {
+            type: 'ref',
+            description:
+              'A nested unordered list. Mutually exclusive with children; if both are present, children takes precedence.',
+            ref: 'lex:pub.leaflet.blocks.unorderedList',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksPage: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.page',
@@ -1292,10 +1345,18 @@ export const schemaDict = {
           },
           children: {
             type: 'array',
+            description:
+              'Nested unordered list items. Mutually exclusive with orderedListChildren; if both are present, children takes precedence.',
             items: {
               type: 'ref',
               ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
             },
+          },
+          orderedListChildren: {
+            type: 'ref',
+            description:
+              'Nested ordered list items. Mutually exclusive with children; if both are present, children takes precedence.',
+            ref: 'lex:pub.leaflet.blocks.orderedList',
           },
         },
       },
@@ -1579,6 +1640,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.orderedList',
               'lex:pub.leaflet.blocks.website',
               'lex:pub.leaflet.blocks.math',
               'lex:pub.leaflet.blocks.code',
@@ -1680,6 +1742,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.orderedList',
               'lex:pub.leaflet.blocks.website',
               'lex:pub.leaflet.blocks.math',
               'lex:pub.leaflet.blocks.code',
@@ -2451,6 +2514,7 @@ export const ids = {
   PubLeafletBlocksIframe: 'pub.leaflet.blocks.iframe',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
+  PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',

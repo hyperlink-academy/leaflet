@@ -5,7 +5,7 @@ import { Block } from "./Block";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";

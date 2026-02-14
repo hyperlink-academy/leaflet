@@ -87,6 +87,10 @@ export const useHandlePaste = (
         if (
           !(children.length === 1 && children[0].tagName === "IMG" && hasImage)
         ) {
+          const pasteParent = propsRef.current.listData
+            ? propsRef.current.listData.parent
+            : propsRef.current.parent;
+
           children.forEach((child, index) => {
             createBlockFromHTML(child, {
               undoManager,
@@ -95,9 +99,7 @@ export const useHandlePaste = (
               activeBlockProps: propsRef,
               entity_set,
               rep,
-              parent: propsRef.current.listData
-                ? propsRef.current.listData.parent
-                : propsRef.current.parent,
+              parent: pasteParent,
               getPosition: () => {
                 currentPosition = generateKeyBetween(
                   currentPosition || null,
@@ -169,6 +171,8 @@ const createBlockFromHTML = (
     getPosition,
     parent,
     parentType,
+    listStyle,
+    depth = 1,
   }: {
     parentType: "canvas" | "doc";
     parent: string;
@@ -179,15 +183,18 @@ const createBlockFromHTML = (
     undoManager: UndoManager;
     entity_set: { set: string };
     getPosition: () => string;
+    listStyle?: "ordered" | "unordered";
+    depth?: number;
   },
 ) => {
   let type: Fact<"block/type">["data"]["value"] | null;
   let headingLevel: number | null = null;
   let hasChildren = false;
 
-  if (child.tagName === "UL") {
+  if (child.tagName === "UL" || child.tagName === "OL") {
     let children = Array.from(child.children);
     if (children.length > 0) hasChildren = true;
+    const childListStyle = child.tagName === "OL" ? "ordered" : "unordered";
     for (let c of children) {
       createBlockFromHTML(c, {
         first: first && c === children[0],
@@ -199,6 +206,8 @@ const createBlockFromHTML = (
         getPosition,
         parent,
         parentType,
+        listStyle: childListStyle,
+        depth,
       });
     }
   }
@@ -482,9 +491,10 @@ const createBlockFromHTML = (
   }
 
   if (child.tagName === "LI") {
-    let ul = Array.from(child.children)
+    // Look for nested UL or OL
+    let nestedList = Array.from(child.children)
       .flatMap((f) => flattenHTMLToTextBlocks(f as HTMLElement))
-      .find((f) => f.tagName === "UL");
+      .find((f) => f.tagName === "UL" || f.tagName === "OL");
     let checked = child.getAttribute("data-checked");
     if (checked !== null) {
       rep.mutate.assertFact({
@@ -498,10 +508,18 @@ const createBlockFromHTML = (
       attribute: "block/is-list",
       data: { type: "boolean", value: true },
     });
-    if (ul) {
+    // Set list style if provided (from parent OL/UL)
+    if (listStyle) {
+      rep.mutate.assertFact({
+        entity: entityID,
+        attribute: "block/list-style",
+        data: { type: "list-style-union", value: listStyle },
+      });
+    }
+    if (nestedList) {
       hasChildren = true;
       let currentPosition: string | null = null;
-      createBlockFromHTML(ul, {
+      createBlockFromHTML(nestedList, {
         parentType,
         first: false,
         last: last,
@@ -514,6 +532,7 @@ const createBlockFromHTML = (
           return currentPosition;
         },
         parent: entityID,
+        depth: depth + 1,
       });
     }
   }
@@ -605,6 +624,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
           "H6",
           "LI",
           "UL",
+          "OL",
           "IMG",
           "A",
           "SPAN",

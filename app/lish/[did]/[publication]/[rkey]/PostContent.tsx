@@ -6,6 +6,7 @@ import {
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
+  PubLeafletBlocksOrderedList,
   PubLeafletBlocksWebsite,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
@@ -237,6 +238,26 @@ export let Block = ({
         </ul>
       );
     }
+    case PubLeafletBlocksOrderedList.isMain(b.block): {
+      return (
+        <ol className="-ml-px sm:ml-[9px] pb-2" start={b.block.startIndex || 1}>
+          {b.block.children.map((child, i) => (
+            <OrderedListItem
+              pollData={pollData}
+              pages={pages}
+              bskyPostData={bskyPostData}
+              index={[...index, i]}
+              item={child}
+              did={did}
+              key={i}
+              className={className}
+              pageId={pageId}
+              startIndex={b.block.startIndex || 1}
+            />
+          ))}
+        </ol>
+      );
+    }
     case PubLeafletBlocksMath.isMain(b.block): {
       return <StaticMathBlock block={b.block} />;
     }
@@ -442,6 +463,58 @@ function ListItem(props: {
       <div
         className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
       />
+      <div className="flex flex-col w-full">
+        <Block
+          pollData={props.pollData}
+          pages={props.pages}
+          bskyPostData={props.bskyPostData}
+          block={{ block: props.item.content }}
+          did={props.did}
+          isList
+          index={props.index}
+          pageId={props.pageId}
+        />
+        {children}{" "}
+      </div>
+    </li>
+  );
+}
+
+function OrderedListItem(props: {
+  index: number[];
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  item: PubLeafletBlocksOrderedList.ListItem;
+  did: string;
+  className?: string;
+  bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
+  pageId?: string;
+  startIndex?: number;
+}) {
+  const calculatedIndex = (props.startIndex || 1) + props.index[props.index.length - 1];
+  let children = props.item.children?.length ? (
+    <ol className="-ml-[7px] sm:ml-[7px]">
+      {props.item.children.map((child, index) => (
+        <OrderedListItem
+          pages={props.pages}
+          pollData={props.pollData}
+          bskyPostData={props.bskyPostData}
+          index={[...props.index, index]}
+          item={child}
+          did={props.did}
+          key={index}
+          className={props.className}
+          pageId={props.pageId}
+          startIndex={props.startIndex}
+        />
+      ))}
+    </ol>
+  ) : null;
+  return (
+    <li className={`pb-0! flex flex-row gap-2`}>
+      <div className="listMarker shrink-0 mx-2 z-1 mt-[14px]">
+        {calculatedIndex}.
+      </div>
       <div className="flex flex-col w-full">
         <Block
           pollData={props.pollData}
