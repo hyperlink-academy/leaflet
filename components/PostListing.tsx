@@ -168,6 +168,7 @@ export const PostListing = (props: Post) => {
           showMentions={mergedPrefs.showMentions !== false}
           documentUri={props.documents.uri}
           document={postRecord}
+          publication={pubRecord}
         />
         <Share postUrl={postUrl} />
       </div>
@@ -229,6 +230,7 @@ const Interactions = (props: {
   showMentions: boolean;
   documentUri: string;
   document: NormalizedDocument;
+  publication?: NormalizedPublication;
 }) => {
   let setSelectedPostListing = useSelectedPostListing(
     (s) => s.setSelectedPostListing,
@@ -237,6 +239,7 @@ const Interactions = (props: {
     setSelectedPostListing({
       document_uri: props.documentUri,
       document: props.document,
+      publication: props.publication,
       drawer,
     });
   };

@@ -1,9 +1,13 @@
 import { create } from "zustand";
-import type { NormalizedDocument } from "src/utils/normalizeRecords";
+import type {
+  NormalizedDocument,
+  NormalizedPublication,
+} from "src/utils/normalizeRecords";
 
 export type SelectedPostListing = {
   document_uri: string;
   document: NormalizedDocument;
+  publication?: NormalizedPublication;
   drawer: "quotes" | "comments";
 };
 

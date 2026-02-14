@@ -60,6 +60,7 @@ const PreviewDrawerContent = (props: {
   const postUrl = getDocumentURL(
     props.selectedPost.document,
     props.selectedPost.document_uri,
+    props.selectedPost.publication,
   );
 
   const drawerTitle =
