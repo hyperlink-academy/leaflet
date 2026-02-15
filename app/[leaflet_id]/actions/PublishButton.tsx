@@ -345,17 +345,20 @@ const PubSelector = (props: {
       <div className="text-sm text-tertiary">Publish to…</div>
       {props.publications.length === 0 || props.publications === undefined ? (
         <div className="flex flex-col gap-1">
-          <div className="flex gap-2 menuItem">
-            <LooseLeafSmall className="shrink-0" />
+          <PubOption
+            selected={props.selectedPub === "looseleaf"}
+            onSelect={() => props.setSelectedPub("looseleaf")}
+          >
+            <LooseLeafSmall />
             <div className="flex flex-col leading-snug">
               <div className="text-secondary font-bold">
                 Publish as Looseleaf
               </div>
               <div className="text-tertiary text-sm font-normal">
-                Publish this as a one off doc to AT Proto
+                Publish as a one-off doc to AT Proto
               </div>
             </div>
-          </div>
+          </PubOption>
           <div className="flex gap-2 px-2 py-1 ">
             <PublishSmall className="shrink-0 text-border" />
             <div className="flex flex-col leading-snug">
@@ -363,7 +366,7 @@ const PubSelector = (props: {
                 Publish to Publication
               </div>
               <div className="text-border text-sm font-normal">
-                Publish your writing to a blog on AT Proto
+                Publish to a blog on AT Proto
               </div>
               <hr className="my-2 drashed border-border-light border-dashed" />
               <div className="text-tertiary text-sm font-normal ">
