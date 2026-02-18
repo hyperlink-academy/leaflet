@@ -3,12 +3,20 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { AtpAgent, AtUri } from "@atproto/api";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
 
-const TOTAL_ITERATIONS = 144; // 36 hours at 15-minute intervals
+// 1m, 2m, 4m, 8m, 16m, 32m, 1h, 2h, 4h, 8h, 8h, 8h (~37h total)
+const SLEEP_INTERVALS = [
+  "1m", "2m", "4m", "8m", "16m", "32m", "1h", "2h", "4h", "8h", "8h", "8h",
+];
 
 export const sync_document_metadata = inngest.createFunction(
   {
     id: "sync_document_metadata",
-    idempotency: "event.data.document_uri",
+    debounce: {
+      key: "event.data.document_uri",
+      period: "60s",
+      timeout: "3m",
+    },
+    concurrency: [{ key: "event.data.document_uri", limit: 1 }],
   },
   { event: "appview/sync-document-metadata" },
   async ({ event, step }) => {
@@ -61,9 +69,9 @@ export const sync_document_metadata = inngest.createFunction(
 
     let likeCount = await step.run("sync-0", fetchAndUpdate);
 
-    for (let i = 1; i < TOTAL_ITERATIONS; i++) {
-      await step.sleep(`wait-${i}`, "15m");
-      likeCount = await step.run(`sync-${i}`, fetchAndUpdate);
+    for (let i = 0; i < SLEEP_INTERVALS.length; i++) {
+      await step.sleep(`wait-${i + 1}`, SLEEP_INTERVALS[i]);
+      likeCount = await step.run(`sync-${i + 1}`, fetchAndUpdate);
     }
 
     return { likeCount, handle: handleResult.handle };
