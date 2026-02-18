@@ -10,7 +10,7 @@ const SLEEP_INTERVALS = [
 
 export const sync_document_metadata = inngest.createFunction(
   {
-    id: "sync_document_metadata",
+    id: "sync_document_metadata_v2",
     debounce: {
       key: "event.data.document_uri",
       period: "60s",
