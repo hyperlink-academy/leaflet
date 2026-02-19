@@ -1048,6 +1048,9 @@ export const schemaDict = {
             type: 'ref',
             ref: 'lex:com.atproto.repo.strongRef',
           },
+          clientHost: {
+            type: 'string',
+          },
         },
       },
     },

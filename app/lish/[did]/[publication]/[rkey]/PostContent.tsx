@@ -177,6 +177,7 @@ export let Block = ({
           post={post}
           className={className}
           pageId={pageId}
+          clientHost={b.block.clientHost}
         />
       );
     }

@@ -512,12 +512,14 @@ async function processBlocksToPages(
     if (b.type === "bluesky-post") {
       let [post] = scan.eav(b.value, "block/bluesky-post");
       if (!post || !post.data.value.post) return;
+      let [hostFact] = scan.eav(b.value, "bluesky-post/host");
       let block: $Typed<PubLeafletBlocksBskyPost.Main> = {
         $type: ids.PubLeafletBlocksBskyPost,
         postRef: {
           uri: post.data.value.post.uri,
           cid: post.data.value.post.cid,
         },
+        clientHost: hostFact?.data.value,
       };
       return block;
     }

@@ -28,6 +28,7 @@ export function BskyPostContent(props: {
   quoteEnabled?: boolean;
   replyEnabled?: boolean;
   replyOnClick?: (e: React.MouseEvent) => void;
+  clientHost?: string;
 }) {
   const {
     post,
@@ -39,11 +40,12 @@ export function BskyPostContent(props: {
     quoteEnabled,
     replyEnabled,
     replyOnClick,
+    clientHost = "bsky.app",
   } = props;
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
-  const url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
+  const url = `https://${clientHost}/profile/${post.author.handle}/post/${postId}`;
 
   return (
     <div className={`bskyPost relative flex flex-col w-full `}>
@@ -138,12 +140,13 @@ export function CompactBskyPostContent(props: {
   quoteEnabled?: boolean;
   replyEnabled?: boolean;
   replyOnClick?: (e: React.MouseEvent) => void;
+  clientHost?: string;
 }) {
-  const { post, parent, quoteEnabled, replyEnabled, replyOnClick } = props;
+  const { post, parent, quoteEnabled, replyEnabled, replyOnClick, clientHost = "bsky.app" } = props;
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
-  const url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
+  const url = `https://${clientHost}/profile/${post.author.handle}/post/${postId}`;
 
   return (
     <div className="bskyPost relative flex flex-col w-full">
