@@ -12,7 +12,8 @@ import {
 
 // Derive all types from the RPC return type
 export type PublicationData = GetPublicationDataReturnType["result"];
-export type PublishedDocument = NonNullable<PublicationData>["documents"][number];
+export type PublishedDocument =
+  NonNullable<PublicationData>["documents"][number];
 export type PublicationDraft = NonNullable<PublicationData>["drafts"][number];
 
 const PublicationContext = createContext({ name: "", did: "" });
@@ -24,7 +25,6 @@ export function PublicationSWRDataProvider(props: {
 }) {
   let key = `publication-data-${props.publication_did}-${props.publication_rkey}`;
   useEffect(() => {
-    console.log("UPDATING");
     mutate(key, props.publication_data);
   }, [props.publication_data]);
   return (
@@ -64,7 +64,7 @@ export function useNormalizedPublicationRecord(): NormalizedPublication | null {
   const { data } = usePublicationData();
   return useMemo(
     () => normalizePublicationRecord(data?.publication?.record),
-    [data?.publication?.record]
+    [data?.publication?.record],
   );
 }
 

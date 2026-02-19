@@ -2,16 +2,34 @@ import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { UpgradeContent } from "../UpgradeModal";
 import { Popover } from "components/Popover";
 import { DatePicker } from "components/DatePicker";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import type { DateRange } from "react-day-picker";
 import { usePublicationData } from "./PublicationSWRProvider";
+import {
+  Combobox,
+  ComboboxResult,
+  useComboboxState,
+} from "components/Combobox";
+import { Input } from "components/Input";
+
+type referrorType = { iconSrc: string; name: string; viewCount: string };
+let refferors = [
+  { iconSrc: "", name: "Bluesky", viewCount: "12k" },
+  { iconSrc: "", name: "Reddit", viewCount: "1.2k" },
+  { iconSrc: "", name: "X", viewCount: "583" },
+  { iconSrc: "", name: "Google", viewCount: "12" },
+];
 
 export const PublicationAnalytics = () => {
   let isPro = true;
 
   let { data: publication } = usePublicationData();
   let [dateRange, setDateRange] = useState<DateRange>({ from: undefined });
+  let [selectedPost, setSelectedPost] = useState<string | undefined>(undefined);
+  let [selectedReferror, setSelectedReferror] = useState<
+    referrorType | undefined
+  >(undefined);
 
   if (!isPro)
     return (
@@ -21,12 +39,33 @@ export const PublicationAnalytics = () => {
     );
 
   return (
-    <div className="analytics">
+    <div className="analytics flex flex-col gap-6">
+      <div className="analyticsSubCount">
+        <div className="flex gap-2 justify-between items-center">
+          <h3>Subscribers</h3>
+          <DateRangeSelector
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            pubStartDate={publication?.publication?.indexed_at}
+          />
+        </div>
+        <div className="aspect-video w-full border border-border grow" />
+      </div>
       <div className="analyticsViewCount">
         <div className="flex justify-between items-center gap-2 pb-2 w-full">
           <div className="flex gap-2 items-center">
             <h3>Traffic</h3>
-            <ArrowRightTiny /> <PostSelector />
+            <ArrowRightTiny />
+            <PostSelector
+              selectedPost={selectedPost}
+              setSelectedPost={setSelectedPost}
+            />
+            {selectedReferror && (
+              <>
+                <ArrowRightTiny />
+                {selectedReferror.name}
+              </>
+            )}
           </div>
           <DateRangeSelector
             dateRange={dateRange}
@@ -34,17 +73,103 @@ export const PublicationAnalytics = () => {
             pubStartDate={publication?.publication?.indexed_at}
           />
         </div>
-        <div className="aspect-video w-full border border-border" />
+        <div className="flex gap-2">
+          <div className="aspect-video w-full border border-border grow" />
+          <TopReferrors
+            refferors={refferors}
+            setSelectedReferror={setSelectedReferror}
+            selectedReferror={selectedReferror}
+          />{" "}
+        </div>
       </div>
-
-      {/*<div>subscriber count over time</div>
-        <div>Top Referrers</div>*/}
     </div>
   );
 };
 
-const PostSelector = () => {
-  return <div>Total</div>;
+const PostSelector = (props: {
+  selectedPost: string | undefined;
+  setSelectedPost: (s: string | undefined) => void;
+}) => {
+  let { data } = usePublicationData();
+  let { documents } = data || {};
+
+  let [highlighted, setHighlighted] = useState<string | undefined>(undefined);
+  let [searchValue, setSearchValue] = useState<string>("");
+
+  let open = useComboboxState((s) => s.open);
+  let posts = documents?.map((doc) => doc.record.title);
+  let filteredPosts = useMemo(
+    () =>
+      posts &&
+      posts.filter((post) =>
+        post.toLowerCase().includes(searchValue.toLowerCase()),
+      ),
+    [searchValue],
+  );
+
+  let filteredPostsWithClear = ["All Posts", ...(filteredPosts || [])];
+
+  return (
+    <Combobox
+      trigger={
+        open ? (
+          <Input
+            autoFocus
+            placeholder="search posts…"
+            className="input-with-border py-0! text-primary"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <button className="text-tertiary">
+            {props.selectedPost ?? "All Posts"}
+          </button>
+        )
+      }
+      results={filteredPostsWithClear || []}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      onSelect={() => {
+        props.setSelectedPost(highlighted);
+      }}
+      sideOffset={2}
+    >
+      {filteredPostsWithClear.map((post) => {
+        if (post === "All Posts")
+          return (
+            <>
+              <ComboboxResult
+                result={post}
+                onSelect={() => {
+                  props.setSelectedPost(undefined);
+                }}
+                highlighted={highlighted}
+                setHighlighted={setHighlighted}
+              >
+                All Posts
+              </ComboboxResult>
+              {filteredPosts && filteredPosts.length !== 0 && (
+                <hr className="mx-1 text-tertiary" />
+              )}
+            </>
+          );
+        return (
+          <ComboboxResult
+            result={post}
+            onSelect={() => {
+              props.setSelectedPost(post);
+            }}
+            highlighted={highlighted}
+            setHighlighted={setHighlighted}
+          >
+            {post}
+          </ComboboxResult>
+        );
+      })}
+    </Combobox>
+  );
 };
 
 const DateRangeSelector = (props: {
@@ -56,9 +181,6 @@ const DateRangeSelector = (props: {
     "rounded-md px-1 text-sm border border-accent-contrast text-accent-contrast";
 
   let currentDate = new Date();
-
-  console.log("dateRange" + props.dateRange.from?.toISOString());
-  console.log("pubstart" + props.pubStartDate);
 
   let startDate = useLocalizedDate(
     props.dateRange.from?.toISOString() ||
@@ -131,5 +253,36 @@ const DateRangeSelector = (props: {
         disabled={(date) => date > new Date()}
       />
     </Popover>
+  );
+};
+
+const TopReferrors = (props: {
+  refferors: referrorType[];
+  setSelectedReferror: (ref: referrorType) => void;
+  selectedReferror: referrorType | undefined;
+}) => {
+  return (
+    <div className="topReferrors flex flex-col gap-0.5 w-full sm:w-xs">
+      {props.refferors.map((ref) => {
+        let selected = ref === props.selectedReferror;
+        return (
+          <>
+            <button
+              className={`w-full flex justify-between gap-4 px-1 items-center text-right rounded-md ${selected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
+              onClick={() => {
+                props.setSelectedReferror(ref);
+              }}
+            >
+              <div className="flex gap-2 items-center grow">
+                <img src={ref.iconSrc} className="h-4 w-4" aria-hidden />
+                {ref.name}
+              </div>
+              {ref.viewCount}
+            </button>
+            <hr className="border-border-light last:hidden" />
+          </>
+        );
+      })}
+    </div>
   );
 };

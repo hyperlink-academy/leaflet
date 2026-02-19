@@ -298,7 +298,6 @@ const ReplyPost = (props: {
               e.stopPropagation();
 
               props.toggleCollapsed(parentPostUri);
-              console.log("reply clicked");
             }}
           />
         </>

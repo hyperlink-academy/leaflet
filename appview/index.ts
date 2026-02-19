@@ -374,7 +374,6 @@ async function handleEvent(evt: Event) {
       embedRecord.embed?.media?.external?.uri?.includes(QUOTE_PARAM);
 
     if (!hasQuoteParam) return;
-    console.log("FOUND EMBED!!!");
 
     // Now validate the record since we know it contains our quote param
     let record = AppBskyFeedPost.validateRecord(evt.record);
