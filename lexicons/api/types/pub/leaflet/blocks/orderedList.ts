@@ -12,14 +12,16 @@ import {
 import type * as PubLeafletBlocksText from './text'
 import type * as PubLeafletBlocksHeader from './header'
 import type * as PubLeafletBlocksImage from './image'
-import type * as PubLeafletBlocksOrderedList from './orderedList'
+import type * as PubLeafletBlocksUnorderedList from './unorderedList'
 
 const is$typed = _is$typed,
   validate = _validate
-const id = 'pub.leaflet.blocks.unorderedList'
+const id = 'pub.leaflet.blocks.orderedList'
 
 export interface Main {
-  $type?: 'pub.leaflet.blocks.unorderedList'
+  $type?: 'pub.leaflet.blocks.orderedList'
+  /** The starting number for this ordered list. Defaults to 1 if not specified. */
+  startIndex?: number
   children: ListItem[]
 }
 
@@ -34,15 +36,15 @@ export function validateMain<V>(v: V) {
 }
 
 export interface ListItem {
-  $type?: 'pub.leaflet.blocks.unorderedList#listItem'
+  $type?: 'pub.leaflet.blocks.orderedList#listItem'
   content:
     | $Typed<PubLeafletBlocksText.Main>
     | $Typed<PubLeafletBlocksHeader.Main>
     | $Typed<PubLeafletBlocksImage.Main>
     | { $type: string }
-  /** Nested unordered list items. Mutually exclusive with orderedListChildren; if both are present, children takes precedence. */
+  /** Nested ordered list items. Mutually exclusive with unorderedListChildren; if both are present, children takes precedence. */
   children?: ListItem[]
-  orderedListChildren?: PubLeafletBlocksOrderedList.Main
+  unorderedListChildren?: PubLeafletBlocksUnorderedList.Main
 }
 
 const hashListItem = 'listItem'

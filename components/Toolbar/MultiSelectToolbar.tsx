@@ -3,7 +3,6 @@ import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { ToolbarButton } from "./index";
 import { copySelection } from "src/utils/copySelection";
 import { useSmoker, useToaster } from "components/Toast";
-
 import { Props } from "components/Icons/Props";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
 import { getSortedSelection } from "components/SelectionManager/selectionState";

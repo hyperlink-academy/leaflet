@@ -212,6 +212,7 @@ const outdentBlock: Mutation<{
   newParent: string;
   after: string;
   block: string;
+  excludeFromSiblings?: string[];
 }> = async (args, ctx) => {
   //we should be able to get normal siblings here as we care only about one level
   let newSiblings = (
@@ -225,7 +226,11 @@ const outdentBlock: Mutation<{
     (f) => f.data.value === args.block,
   );
   if (currentFactIndex === -1) return;
-  let currentSiblingsAfter = currentSiblings.slice(currentFactIndex + 1);
+  // Filter out blocks that are being processed separately (e.g., in multi-select outdent)
+  let excludeSet = new Set(args.excludeFromSiblings || []);
+  let currentSiblingsAfter = currentSiblings
+    .slice(currentFactIndex + 1)
+    .filter((sib) => !excludeSet.has(sib.data.value));
   let currentChildren = (
     await ctx.scanIndex.eav(args.block, "card/block")
   ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
