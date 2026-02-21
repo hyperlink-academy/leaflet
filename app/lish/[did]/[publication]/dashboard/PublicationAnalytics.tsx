@@ -55,15 +55,15 @@ export const PublicationAnalytics = () => {
         <div className="flex justify-between items-center gap-2 pb-2 w-full">
           <div className="flex gap-2 items-center">
             <h3>Traffic</h3>
-            <ArrowRightTiny />
+            <ArrowRightTiny className="text-border" />
             <PostSelector
               selectedPost={selectedPost}
               setSelectedPost={setSelectedPost}
             />
             {selectedReferror && (
               <>
-                <ArrowRightTiny />
-                {selectedReferror.name}
+                <ArrowRightTiny className="text-border" />
+                <div className="text-tertiary"> {selectedReferror.name}</div>
               </>
             )}
           </div>
@@ -112,21 +112,9 @@ const PostSelector = (props: {
   return (
     <Combobox
       trigger={
-        open ? (
-          <Input
-            autoFocus
-            placeholder="search posts…"
-            className="input-with-border py-0! text-primary"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-          />
-        ) : (
-          <button className="text-tertiary">
-            {props.selectedPost ?? "All Posts"}
-          </button>
-        )
+        <button className="text-tertiary">
+          {props.selectedPost ?? "All Posts"}
+        </button>
       }
       results={filteredPostsWithClear || []}
       highlighted={highlighted}
@@ -135,6 +123,9 @@ const PostSelector = (props: {
         props.setSelectedPost(highlighted);
       }}
       sideOffset={2}
+      searchValue={searchValue}
+      setSearchValue={setSearchValue}
+      showSearch
     >
       {filteredPostsWithClear.map((post) => {
         if (post === "All Posts")
@@ -151,21 +142,23 @@ const PostSelector = (props: {
                 All Posts
               </ComboboxResult>
               {filteredPosts && filteredPosts.length !== 0 && (
-                <hr className="mx-1 text-tertiary" />
+                <hr className="mx-1 border-border-light" />
               )}
             </>
           );
         return (
-          <ComboboxResult
-            result={post}
-            onSelect={() => {
-              props.setSelectedPost(post);
-            }}
-            highlighted={highlighted}
-            setHighlighted={setHighlighted}
-          >
-            {post}
-          </ComboboxResult>
+          <>
+            <ComboboxResult
+              result={post}
+              onSelect={() => {
+                props.setSelectedPost(post);
+              }}
+              highlighted={highlighted}
+              setHighlighted={setHighlighted}
+            >
+              {post}
+            </ComboboxResult>
+          </>
         );
       })}
     </Combobox>

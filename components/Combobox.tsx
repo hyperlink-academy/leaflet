@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { create } from "zustand";
+import { Input } from "./Input";
 
 export const useComboboxState = create(() => ({
   open: false,
@@ -14,6 +15,9 @@ export const Combobox = ({
   onOpenChange,
   highlighted,
   setHighlighted,
+  searchValue,
+  setSearchValue,
+  showSearch,
   trigger,
   triggerClassName,
   sideOffset,
@@ -26,6 +30,9 @@ export const Combobox = ({
   onOpenChange?: (open: boolean) => void;
   highlighted: string | undefined;
   setHighlighted: (h: string | undefined) => void;
+  searchValue?: string;
+  setSearchValue?: (s: string) => void;
+  showSearch?: boolean;
   sideOffset?: number;
 }) => {
   let ref = useRef<HTMLDivElement>(null);
@@ -112,8 +119,24 @@ export const Combobox = ({
             `}
         >
           <NestedCardThemeProvider>
-            <div className="commandMenuResults w-full max-h-(--radix-popover-content-available-height) overflow-auto flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
+            <div
+              className={`commandMenuResults w-full max-h-(--radix-popover-content-available-height) overflow-auto flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page gap-0.5 border border-border rounded-md shadow-md `}
+            >
+              {showSearch && setSearchValue ? (
+                <Input
+                  autoFocus
+                  placeholder="search…"
+                  className={`px-3 pb-1 pt-1  text-primary focus-within:outline-none! focus:outline-none! focus-visible:outline-none! appearance-none bg-bg-page border-border-light border-b group-data-[side=top]/cmd-menu:border-t group-data-[side=top]/cmd-menu:border-b-0
+                  sticky group-data-[side=top]/cmd-menu:bottom-0 top-0`}
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                />
+              ) : null}
+              <div className="space h-1 w-full bg-transparent" />
               {children}
+              <div className="space h-1 w-full bg-transparent" />
             </div>
           </NestedCardThemeProvider>
         </Popover.Content>
