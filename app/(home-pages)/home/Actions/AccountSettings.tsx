@@ -91,7 +91,7 @@ const SettingsMenu = (props: {
         </Modal>
       ) : (
         <button
-          className={`${menuItemClassName} bg-[var(--accent-light)]! border border-transparent hover:border-accent-contrast`}
+          className={`${menuItemClassName}`}
           type="button"
           onClick={() => props.setState("manage-subscription")}
         >
