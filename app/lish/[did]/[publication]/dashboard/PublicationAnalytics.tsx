@@ -11,7 +11,6 @@ import {
   ComboboxResult,
   useComboboxState,
 } from "components/Combobox";
-import { Input } from "components/Input";
 
 type referrorType = { iconSrc: string; name: string; viewCount: string };
 let refferors = [
@@ -104,7 +103,7 @@ const PostSelector = (props: {
       posts.filter((post) =>
         post.toLowerCase().includes(searchValue.toLowerCase()),
       ),
-    [searchValue],
+    [searchValue, posts],
   );
 
   let filteredPostsWithClear = ["All Posts", ...(filteredPosts || [])];
@@ -132,6 +131,7 @@ const PostSelector = (props: {
           return (
             <>
               <ComboboxResult
+                key="all posts"
                 result={post}
                 onSelect={() => {
                   props.setSelectedPost(undefined);
@@ -147,18 +147,17 @@ const PostSelector = (props: {
             </>
           );
         return (
-          <>
-            <ComboboxResult
-              result={post}
-              onSelect={() => {
-                props.setSelectedPost(post);
-              }}
-              highlighted={highlighted}
-              setHighlighted={setHighlighted}
-            >
-              {post}
-            </ComboboxResult>
-          </>
+          <ComboboxResult
+            key={post}
+            result={post}
+            onSelect={() => {
+              props.setSelectedPost(post);
+            }}
+            highlighted={highlighted}
+            setHighlighted={setHighlighted}
+          >
+            {post}
+          </ComboboxResult>
         );
       })}
     </Combobox>
@@ -261,6 +260,7 @@ const TopReferrors = (props: {
         return (
           <>
             <button
+              key={ref.name}
               className={`w-full flex justify-between gap-4 px-1 items-center text-right rounded-md ${selected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
               onClick={() => {
                 props.setSelectedReferror(ref);

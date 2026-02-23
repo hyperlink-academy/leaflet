@@ -13,8 +13,16 @@ import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { PostOptions } from "./PostOptions";
+import { UpgradeContent } from "../../UpgradeModal";
+import { Modal } from "components/Modal";
+import { ManageProSubscription } from "./ManageProSubscription";
 
-type menuState = "menu" | "general" | "theme" | "post-options";
+type menuState =
+  | "menu"
+  | "pub-settings"
+  | "theme"
+  | "post-settings"
+  | "manage-subscription";
 
 export function PublicationSettingsButton(props: { publication: string }) {
   let isMobile = useIsMobile();
@@ -37,7 +45,7 @@ export function PublicationSettingsButton(props: { publication: string }) {
         />
       }
     >
-      {state === "general" ? (
+      {state === "pub-settings" ? (
         <EditPubForm
           backToMenuAction={() => setState("menu")}
           loading={loading}
@@ -49,12 +57,14 @@ export function PublicationSettingsButton(props: { publication: string }) {
           loading={loading}
           setLoading={setLoading}
         />
-      ) : state === "post-options" ? (
+      ) : state === "post-settings" ? (
         <PostOptions
           backToMenu={() => setState("menu")}
           loading={loading}
           setLoading={setLoading}
         />
+      ) : state === "manage-subscription" ? (
+        <ManageProSubscription backToMenu={() => setState("menu")} />
       ) : (
         <PubSettingsMenu
           state={state}
@@ -75,24 +85,27 @@ const PubSettingsMenu = (props: {
 }) => {
   let menuItemClassName =
     "menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!";
+  let isPro = true;
 
   return (
     <div className="flex flex-col gap-0.5">
-      <PubSettingsHeader
-        loading={props.loading}
-        setLoadingAction={props.setLoading}
-        state={"menu"}
-      >
-        Settings
-      </PubSettingsHeader>
+      <PubSettingsHeader>Settings</PubSettingsHeader>
       <button
         className={menuItemClassName}
         type="button"
         onClick={() => {
-          props.setState("general");
+          props.setState("pub-settings");
         }}
       >
-        General Settings
+        Publiction Settings
+        <ArrowRightTiny />
+      </button>
+      <button
+        className={menuItemClassName}
+        type="button"
+        onClick={() => props.setState("post-settings")}
+      >
+        Post Settings
         <ArrowRightTiny />
       </button>
       <button
@@ -103,29 +116,42 @@ const PubSettingsMenu = (props: {
         Theme and Layout
         <ArrowRightTiny />
       </button>
-      <button
-        className={menuItemClassName}
-        type="button"
-        onClick={() => props.setState("post-options")}
-      >
-        Post Options
-        <ArrowRightTiny />
-      </button>
+      {!isPro ? (
+        <Modal
+          trigger={
+            <div
+              className={`${menuItemClassName} bg-[var(--accent-light)]! border border-transparent hover:border-accent-contrast`}
+            >
+              Get Leaflet Pro
+              <ArrowRightTiny />{" "}
+            </div>
+          }
+        >
+          <UpgradeContent />
+        </Modal>
+      ) : (
+        <button
+          className={`${menuItemClassName} bg-[var(--accent-light)]! border border-transparent hover:border-accent-contrast`}
+          type="button"
+          onClick={() => props.setState("manage-subscription")}
+        >
+          Manage Pro Subscription <ArrowRightTiny />{" "}
+        </button>
+      )}
     </div>
   );
 };
 
 export const PubSettingsHeader = (props: {
-  state: menuState;
   backToMenuAction?: () => void;
-  loading: boolean;
-  setLoadingAction: (l: boolean) => void;
+  loading?: boolean;
+  setLoadingAction?: (l: boolean) => void;
   children: React.ReactNode;
 }) => {
   return (
     <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1">
       {props.children}
-      {props.state !== "menu" && (
+      {props.backToMenuAction && (
         <div className="flex gap-2">
           <button
             type="button"
@@ -135,10 +161,11 @@ export const PubSettingsHeader = (props: {
           >
             <GoBackSmall className="text-accent-contrast" />
           </button>
-
-          <ButtonPrimary compact type="submit">
-            {props.loading ? <DotLoader /> : "Update"}
-          </ButtonPrimary>
+          {props.setLoadingAction && (
+            <ButtonPrimary compact type="submit">
+              {props.loading ? <DotLoader /> : "Update"}
+            </ButtonPrimary>
+          )}
         </div>
       )}
     </div>

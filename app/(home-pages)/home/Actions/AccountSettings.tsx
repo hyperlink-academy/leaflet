@@ -11,9 +11,14 @@ import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { useState } from "react";
 import { ThemeSetterContent } from "components/ThemeManager/ThemeSetter";
 import { useIsMobile } from "src/hooks/isMobile";
+import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ManageProSubscription";
+import { Modal } from "components/Modal";
+import { UpgradeContent } from "app/lish/[did]/[publication]/UpgradeModal";
 
 export const AccountSettings = (props: { entityID: string }) => {
-  let [state, setState] = useState<"menu" | "general" | "theme">("menu");
+  let [state, setState] = useState<
+    "menu" | "general" | "theme" | "manage-subscription"
+  >("menu");
   let isMobile = useIsMobile();
 
   return (
@@ -32,6 +37,8 @@ export const AccountSettings = (props: { entityID: string }) => {
           entityID={props.entityID}
           backToMenu={() => setState("menu")}
         />
+      ) : state === "manage-subscription" ? (
+        <ManageProSubscription backToMenu={() => setState("menu")} />
       ) : (
         <SettingsMenu state={state} setState={setState} />
       )}
@@ -40,11 +47,13 @@ export const AccountSettings = (props: { entityID: string }) => {
 };
 
 const SettingsMenu = (props: {
-  state: "menu" | "general" | "theme";
+  state: "menu" | "general" | "theme" | "manage-subscription";
   setState: (s: typeof props.state) => void;
 }) => {
   let menuItemClassName =
     "menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!";
+
+  let isPro = true;
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -67,6 +76,28 @@ const SettingsMenu = (props: {
         Account Theme
         <ArrowRightTiny />
       </button>
+      {!isPro ? (
+        <Modal
+          trigger={
+            <div
+              className={`${menuItemClassName} bg-[var(--accent-light)]! border border-transparent hover:border-accent-contrast`}
+            >
+              Get Leaflet Pro
+              <ArrowRightTiny />{" "}
+            </div>
+          }
+        >
+          <UpgradeContent />
+        </Modal>
+      ) : (
+        <button
+          className={`${menuItemClassName} bg-[var(--accent-light)]! border border-transparent hover:border-accent-contrast`}
+          type="button"
+          onClick={() => props.setState("manage-subscription")}
+        >
+          Manage Pro Subscription <ArrowRightTiny />{" "}
+        </button>
+      )}
     </div>
   );
 };

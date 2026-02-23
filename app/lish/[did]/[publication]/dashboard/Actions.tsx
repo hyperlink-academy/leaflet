@@ -22,7 +22,6 @@ export const Actions = (props: { publication: string }) => {
 
       <PublicationShareButton />
       <PublicationSettingsButton publication={props.publication} />
-      <DesktopUpgrade />
     </>
   );
 };
@@ -96,28 +95,5 @@ const MobileUpgrade = () => {
         />
       }
     />
-  );
-};
-
-const DesktopUpgrade = () => {
-  return (
-    <div
-      style={{ backgroundColor: "var(--accent-light)" }}
-      className=" rounded-md mt-2 pt-2 pb-3 px-3 sm:block hidden"
-    >
-      <h4 className="text-accent-contrast text-sm">Get Leaflet Pro</h4>
-      <div className="text-xs text-secondary mb-2">
-        <strong>Analytics!</strong> Emails and membership soon.
-      </div>
-      <UpgradeModal
-        asChild
-        trigger={
-          <ButtonSecondary fullWidth compact className="text-sm!">
-            Learn more
-          </ButtonSecondary>
-        }
-      />
-      <ButtonTertiary className="mx-auto text-sm">Dismiss</ButtonTertiary>
-    </div>
   );
 };
