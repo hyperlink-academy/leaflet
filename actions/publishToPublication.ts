@@ -143,6 +143,21 @@ export async function publishToPublication({
       .single();
     draft = data;
     existingDocUri = draft?.document;
+
+    // If updating an existing document, verify the current user is the owner
+    if (existingDocUri) {
+      let docOwner = new AtUri(existingDocUri).host;
+      if (docOwner !== identity.atp_did) {
+        return {
+          success: false,
+          error: {
+            type: "oauth_session_expired" as const,
+            message: "Not the document owner",
+            did: identity.atp_did,
+          },
+        };
+      }
+    }
   }
 
   // Heuristic: Remove title entities if this is the first time publishing
