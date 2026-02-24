@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 
 export const useSelectingMouse = create(() => ({
   start: null as null | string,

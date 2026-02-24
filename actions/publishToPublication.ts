@@ -41,7 +41,7 @@ import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
-import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
+import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
 import {

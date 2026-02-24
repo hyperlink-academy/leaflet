@@ -38,6 +38,7 @@
             "pub.leaflet.blocks.header",
             "pub.leaflet.blocks.image",
             "pub.leaflet.blocks.unorderedList",
+            "pub.leaflet.blocks.orderedList",
             "pub.leaflet.blocks.website",
             "pub.leaflet.blocks.math",
             "pub.leaflet.blocks.code",
