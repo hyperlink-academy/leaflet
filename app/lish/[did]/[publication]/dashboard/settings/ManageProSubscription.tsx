@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
 import { PubSettingsHeader } from "./PublicationSettings";
 import { cancelSubscription } from "actions/cancelSubscription";
+import { reactivateSubscription } from "actions/reactivateSubscription";
 import { useIdentityData } from "components/IdentityProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -17,7 +18,7 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
   const subscription = identity?.subscription;
   const renewalDate = useLocalizedDate(
     subscription?.current_period_end || new Date().toISOString(),
-    { month: "long", day: "numeric" },
+    { month: "long", day: "numeric", year: "numeric" },
   );
 
   async function handleCancel() {
@@ -26,6 +27,18 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
     let result = await cancelSubscription();
     if (result.ok) {
       setState("success");
+      mutate();
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+  }
+
+  async function handleReactivate() {
+    setLoading(true);
+    setError(null);
+    let result = await reactivateSubscription();
+    if (result.ok) {
       mutate();
     } else {
       setError(result.error);
@@ -47,19 +60,33 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
               <div className="text-lg font-bold text-primary">
                 {subscription?.plan || "Leaflet Pro"}
               </div>
-              {subscription?.status === "canceling"
-                ? `Access until ${renewalDate}`
-                : `Renews on ${renewalDate}`}
+              {subscription?.status === "canceled"
+                ? "Your subscription has ended"
+                : subscription?.status === "canceling"
+                  ? `Access until ${renewalDate}`
+                  : `Renews on ${renewalDate}`}
             </div>
-            {subscription?.status !== "canceling" && (
+            {subscription?.status === "canceling" && (
               <ButtonPrimary
                 className="mx-auto"
                 compact
-                onClick={() => setState("confirm")}
+                onClick={handleReactivate}
+                disabled={loading}
               >
-                Cancel Subscription
+                {loading ? <DotLoader /> : "Reactivate Subscription"}
               </ButtonPrimary>
             )}
+            {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
+            {subscription?.status !== "canceling" &&
+              subscription?.status !== "canceled" && (
+                <ButtonPrimary
+                  className="mx-auto"
+                  compact
+                  onClick={() => setState("confirm")}
+                >
+                  Cancel Subscription
+                </ButtonPrimary>
+              )}
           </>
         )}
         {state === "confirm" && (
@@ -73,9 +100,7 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
             >
               {loading ? <DotLoader /> : "Yes, Cancel it"}
             </ButtonPrimary>
-            {error && (
-              <div className="text-sm text-red-500 mt-2">{error}</div>
-            )}
+            {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
           </>
         )}
         {state === "success" && (
