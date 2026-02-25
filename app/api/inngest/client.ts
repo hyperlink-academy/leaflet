@@ -61,6 +61,28 @@ export type Events = {
       }>;
     };
   };
+  "stripe/checkout.session.completed": {
+    data: {
+      sessionId: string;
+    };
+  };
+  "stripe/customer.subscription.updated": {
+    data: {
+      subscriptionId: string;
+    };
+  };
+  "stripe/customer.subscription.deleted": {
+    data: {
+      subscriptionId: string;
+    };
+  };
+  "stripe/invoice.payment.failed": {
+    data: {
+      invoiceId: string;
+      subscriptionId: string;
+      customerId: string;
+    };
+  };
 };
 
 // Create a client to send and receive events

@@ -34,7 +34,9 @@ export async function uncachedGetIdentityData() {
                 leaflets_to_documents(*, documents(*)),
                 leaflets_in_publications(*, publications(*), documents(*))
               )
-            )
+            ),
+            user_subscriptions(plan, status, current_period_end),
+            user_entitlements(entitlement_key, granted_at, expires_at, source, metadata)
           )`,
         )
         .eq("identities.notifications.read", false)
@@ -43,6 +45,30 @@ export async function uncachedGetIdentityData() {
         .single()
     : null;
   if (!auth_res?.data?.identities) return null;
+
+  // Transform embedded entitlements into a keyed record, filtering expired
+  const now = new Date().toISOString();
+  const entitlements: Record<
+    string,
+    {
+      granted_at: string;
+      expires_at: string | null;
+      source: string | null;
+      metadata: unknown;
+    }
+  > = {};
+  for (const row of auth_res.data.identities.user_entitlements || []) {
+    if (row.expires_at && row.expires_at < now) continue;
+    entitlements[row.entitlement_key] = {
+      granted_at: row.granted_at,
+      expires_at: row.expires_at,
+      source: row.source,
+      metadata: row.metadata,
+    };
+  }
+
+  const subscription = auth_res.data.identities.user_subscriptions ?? null;
+
   if (auth_res.data.identities.atp_did) {
     //I should create a relationship table so I can do this in the above query
     let { data: rawPublications } = await supabaseServerClient
@@ -54,8 +80,15 @@ export async function uncachedGetIdentityData() {
     return {
       ...auth_res.data.identities,
       publications,
+      entitlements,
+      subscription,
     };
   }
 
-  return { ...auth_res.data.identities, publications: [] };
+  return {
+    ...auth_res.data.identities,
+    publications: [],
+    entitlements,
+    subscription,
+  };
 }

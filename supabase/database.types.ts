@@ -1295,6 +1295,82 @@ export type Database = {
           },
         ]
       }
+      user_entitlements: {
+        Row: {
+          entitlement_key: string
+          expires_at: string | null
+          granted_at: string
+          identity_id: string
+          metadata: Json | null
+          source: string | null
+        }
+        Insert: {
+          entitlement_key: string
+          expires_at?: string | null
+          granted_at?: string
+          identity_id: string
+          metadata?: Json | null
+          source?: string | null
+        }
+        Update: {
+          entitlement_key?: string
+          expires_at?: string | null
+          granted_at?: string
+          identity_id?: string
+          metadata?: Json | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_entitlements_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          identity_id: string
+          plan: string | null
+          status: string | null
+          stripe_customer_id: string
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          identity_id: string
+          plan?: string | null
+          status?: string | null
+          stripe_customer_id: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          identity_id?: string
+          plan?: string | null
+          status?: string | null
+          stripe_customer_id?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: true
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

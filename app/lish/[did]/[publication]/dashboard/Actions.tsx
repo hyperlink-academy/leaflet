@@ -13,12 +13,14 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { ButtonSecondary, ButtonTertiary } from "components/Buttons";
 import { UpgradeModal } from "../UpgradeModal";
 import { LeafletPro } from "components/Icons/LeafletPro";
+import { useIsPro } from "src/hooks/useEntitlement";
 
 export const Actions = (props: { publication: string }) => {
+  let isPro = useIsPro();
   return (
     <>
       <NewDraftActionButton publication={props.publication} />
-      <MobileUpgrade />
+      {!isPro && <MobileUpgrade />}
 
       <PublicationShareButton />
       <PublicationSettingsButton publication={props.publication} />

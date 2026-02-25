@@ -1,11 +1,37 @@
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
 import { PubSettingsHeader } from "./PublicationSettings";
+import { cancelSubscription } from "actions/cancelSubscription";
+import { useIdentityData } from "components/IdentityProvider";
+import { DotLoader } from "components/utils/DotLoader";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export const ManageProSubscription = (props: { backToMenu: () => void }) => {
   const [state, setState] = useState<"manage" | "confirm" | "success">(
     "manage",
   );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { identity, mutate } = useIdentityData();
+
+  const subscription = identity?.subscription;
+  const renewalDate = useLocalizedDate(
+    subscription?.current_period_end || new Date().toISOString(),
+    { month: "long", day: "numeric" },
+  );
+
+  async function handleCancel() {
+    setLoading(true);
+    setError(null);
+    let result = await cancelSubscription();
+    if (result.ok) {
+      setState("success");
+      mutate();
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+  }
 
   return (
     <div>
@@ -17,17 +43,23 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
           <>
             <div>
               You have a <br />
-              Pro monthly subscription
-              <div className="text-lg font-bold text-primary">$12/mo </div>
-              Renews on the 12th
+              {subscription?.plan || "Pro"} subscription
+              <div className="text-lg font-bold text-primary">
+                {subscription?.plan || "Leaflet Pro"}
+              </div>
+              {subscription?.status === "canceling"
+                ? `Access until ${renewalDate}`
+                : `Renews on ${renewalDate}`}
             </div>
-            <ButtonPrimary
-              className="mx-auto"
-              compact
-              onClick={() => setState("confirm")}
-            >
-              Cancel Subscription
-            </ButtonPrimary>
+            {subscription?.status !== "canceling" && (
+              <ButtonPrimary
+                className="mx-auto"
+                compact
+                onClick={() => setState("confirm")}
+              >
+                Cancel Subscription
+              </ButtonPrimary>
+            )}
           </>
         )}
         {state === "confirm" && (
@@ -36,14 +68,21 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
             <ButtonPrimary
               className="mx-auto"
               compact
-              onClick={() => setState("success")}
+              onClick={handleCancel}
+              disabled={loading}
             >
-              Yes, Cancel it
+              {loading ? <DotLoader /> : "Yes, Cancel it"}
             </ButtonPrimary>
+            {error && (
+              <div className="text-sm text-red-500 mt-2">{error}</div>
+            )}
           </>
         )}
         {state === "success" && (
-          <div>Your subscription has been successfully cancelled!</div>
+          <div>
+            Your subscription has been cancelled. You'll have access until{" "}
+            {renewalDate}.
+          </div>
         )}
       </div>
     </div>

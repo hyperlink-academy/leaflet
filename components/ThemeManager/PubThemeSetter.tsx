@@ -119,7 +119,6 @@ export const PubThemeSetter = (props: {
           loading={props.loading}
           setLoadingAction={props.setLoading}
           backToMenuAction={props.backToMenu}
-          state={"theme"}
         >
           Theme and Layout
         </PubSettingsHeader>

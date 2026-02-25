@@ -413,3 +413,36 @@ export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 		leaflets_in_publications_pkey: primaryKey({ columns: [table.publication, table.leaflet], name: "leaflets_in_publications_pkey"}),
 	}
 });
+
+export const user_subscriptions = pgTable("user_subscriptions", {
+	identity_id: uuid("identity_id").primaryKey().notNull().references(() => identities.id, { onDelete: "cascade" }),
+	stripe_customer_id: text("stripe_customer_id").notNull(),
+	stripe_subscription_id: text("stripe_subscription_id"),
+	plan: text("plan"),
+	status: text("status"),
+	current_period_end: timestamp("current_period_end", { withTimezone: true, mode: 'string' }),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		user_subscriptions_stripe_customer_id_key: unique("user_subscriptions_stripe_customer_id_key").on(table.stripe_customer_id),
+		user_subscriptions_stripe_subscription_id_key: unique("user_subscriptions_stripe_subscription_id_key").on(table.stripe_subscription_id),
+	}
+});
+
+export const user_entitlements = pgTable("user_entitlements", {
+	identity_id: uuid("identity_id").notNull().references(() => identities.id, { onDelete: "cascade" }),
+	entitlement_key: text("entitlement_key").notNull(),
+	granted_at: timestamp("granted_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	expires_at: timestamp("expires_at", { withTimezone: true, mode: 'string' }),
+	source: text("source"),
+	metadata: jsonb("metadata"),
+},
+(table) => {
+	return {
+		identity_id_idx: index("user_entitlements_identity_id_idx").on(table.identity_id),
+		expires_at_idx: index("user_entitlements_expires_at_idx").on(table.expires_at),
+		user_entitlements_pkey: primaryKey({ columns: [table.identity_id, table.entitlement_key], name: "user_entitlements_pkey"}),
+	}
+});

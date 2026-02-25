@@ -16,6 +16,7 @@ import { PostOptions } from "./PostOptions";
 import { UpgradeContent } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
 import { ManageProSubscription } from "./ManageProSubscription";
+import { useIsPro } from "src/hooks/useEntitlement";
 
 type menuState =
   | "menu"
@@ -85,7 +86,7 @@ const PubSettingsMenu = (props: {
 }) => {
   let menuItemClassName =
     "menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!";
-  let isPro = true;
+  let isPro = useIsPro();
 
   return (
     <div className="flex flex-col gap-0.5">

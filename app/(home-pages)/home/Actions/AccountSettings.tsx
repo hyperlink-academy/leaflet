@@ -14,6 +14,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ManageProSubscription";
 import { Modal } from "components/Modal";
 import { UpgradeContent } from "app/lish/[did]/[publication]/UpgradeModal";
+import { useIsPro } from "src/hooks/useEntitlement";
 
 export const AccountSettings = (props: { entityID: string }) => {
   let [state, setState] = useState<
@@ -53,7 +54,7 @@ const SettingsMenu = (props: {
   let menuItemClassName =
     "menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!";
 
-  let isPro = true;
+  let isPro = useIsPro();
 
   return (
     <div className="flex flex-col gap-0.5">

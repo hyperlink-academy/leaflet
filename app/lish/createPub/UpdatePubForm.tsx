@@ -99,7 +99,6 @@ export const EditPubForm = (props: {
         loading={props.loading}
         setLoadingAction={props.setLoadingAction}
         backToMenuAction={props.backToMenuAction}
-        state={"theme"}
       >
         General Settings
       </PubSettingsHeader>

@@ -1,9 +1,26 @@
 import { ButtonPrimary } from "components/Buttons";
 import { Modal } from "components/Modal";
 import { useState } from "react";
+import { createCheckoutSession } from "actions/createCheckoutSession";
+import { DotLoader } from "components/utils/DotLoader";
 
 export const UpgradeContent = () => {
   let [cadence, setCadence] = useState<"year" | "month">("year");
+  let [loading, setLoading] = useState(false);
+  let [error, setError] = useState<string | null>(null);
+
+  async function handleCheckout() {
+    setLoading(true);
+    setError(null);
+    let result = await createCheckoutSession(cadence, window.location.href);
+    if (result.ok) {
+      window.location.href = result.value.url;
+    } else {
+      setError(result.error);
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="flex flex-col justify-center text-center sm:gap-4 gap-2 w-full">
       <h2>Get Leaflet Pro!</h2>
@@ -42,9 +59,17 @@ export const UpgradeContent = () => {
                 {cadence === "year" ? "/year" : "/month"}
               </div>
             </div>
-            <ButtonPrimary fullWidth className="mx-auto">
-              Get it!
+            <ButtonPrimary
+              fullWidth
+              className="mx-auto"
+              onClick={handleCheckout}
+              disabled={loading}
+            >
+              {loading ? <DotLoader /> : "Get it!"}
             </ButtonPrimary>
+            {error && (
+              <div className="text-sm text-red-500 mt-2">{error}</div>
+            )}
           </div>
         </div>
       </div>

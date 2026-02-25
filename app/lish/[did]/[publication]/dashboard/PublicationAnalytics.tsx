@@ -11,6 +11,7 @@ import {
   ComboboxResult,
   useComboboxState,
 } from "components/Combobox";
+import { useIsPro } from "src/hooks/useEntitlement";
 
 type referrorType = { iconSrc: string; name: string; viewCount: string };
 let refferors = [
@@ -21,7 +22,7 @@ let refferors = [
 ];
 
 export const PublicationAnalytics = () => {
-  let isPro = true;
+  let isPro = useIsPro();
 
   let { data: publication } = usePublicationData();
   let [dateRange, setDateRange] = useState<DateRange>({ from: undefined });
