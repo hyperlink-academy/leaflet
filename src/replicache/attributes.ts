@@ -151,6 +151,10 @@ const BlueskyPostBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "bluesky-post/host": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 const ButtonBlockAttributes = {

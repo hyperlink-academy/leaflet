@@ -318,6 +318,8 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   );
 }
 
+const blueskyclients = ["blacksky.community/", "bsky.app/", "witchsky.app/"];
+
 const BlockifyLink = (props: {
   entityID: string;
   editorState: EditorState | undefined;
@@ -329,9 +331,10 @@ const BlockifyLink = (props: {
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
 
   let isBlueskyPost =
-    editorState?.doc.textContent.includes("bsky.app/") &&
-    editorState?.doc.textContent.includes("post");
-  // only if the line stats with http or https and doesn't have other content
+    blueskyclients.some((client) =>
+      editorState?.doc.textContent.includes(client),
+    ) && editorState?.doc.textContent.includes("post");
+  // only if the line starts with http or https and doesn't have other content
   // if its bluesky, change text to embed post
 
   if (

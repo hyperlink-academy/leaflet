@@ -9,7 +9,7 @@ import {
 } from "./PublicationSWRProvider";
 import { Fragment } from "react";
 import { useParams } from "next/navigation";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -60,7 +60,9 @@ export function PublishedPostsList(props: {
 
 function PublishedPostItem(props: {
   doc: PublishedDocument;
-  publication: NonNullable<NonNullable<ReturnType<typeof usePublicationData>["data"]>["publication"]>;
+  publication: NonNullable<
+    NonNullable<ReturnType<typeof usePublicationData>["data"]>["publication"]
+  >;
   pubRecord: ReturnType<typeof useNormalizedPublicationRecord>;
   showPageBackground: boolean;
 }) {
@@ -69,6 +71,7 @@ function PublishedPostItem(props: {
   const leaflet = publication.leaflets_in_publications.find(
     (l) => l.doc === doc.uri,
   );
+  const docUrl = getDocumentURL(doc.record, doc.uri, publication);
 
   return (
     <Fragment>
@@ -85,7 +88,7 @@ function PublishedPostItem(props: {
             <a
               className="hover:no-underline!"
               target="_blank"
-              href={`${getPublicationURL(publication)}/${uri.rkey}`}
+              href={docUrl}
             >
               <h3 className="text-primary grow leading-snug">
                 {doc.record.title}
@@ -94,10 +97,7 @@ function PublishedPostItem(props: {
             <div className="flex justify-start align-top flex-row gap-1">
               {leaflet && leaflet.permission_tokens && (
                 <>
-                  <SpeedyLink
-                    className="pt-[6px]"
-                    href={`/${leaflet.leaflet}`}
-                  >
+                  <SpeedyLink className="pt-[6px]" href={`/${leaflet.leaflet}`}>
                     <EditTiny />
                   </SpeedyLink>
 
@@ -113,6 +113,9 @@ function PublishedPostItem(props: {
                             indexed_at: doc.indexed_at,
                             sort_date: doc.sort_date,
                             data: doc.data,
+                            bsky_like_count: doc.bsky_like_count ?? 0,
+                            indexed: true,
+                            recommend_count: doc.recommendsCount ?? 0,
                           },
                         },
                       ],
@@ -129,9 +132,7 @@ function PublishedPostItem(props: {
           </div>
 
           {doc.record.description ? (
-            <p className="italic text-secondary">
-              {doc.record.description}
-            </p>
+            <p className="italic text-secondary">{doc.record.description}</p>
           ) : null}
           <div className="text-sm text-tertiary flex gap-3 justify-between sm:justify-start items-center pt-3">
             {doc.record.publishedAt ? (
@@ -140,10 +141,13 @@ function PublishedPostItem(props: {
             <InteractionPreview
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
+              recommendsCount={doc.recommendsCount}
+              documentUri={doc.uri}
               tags={doc.record.tags || []}
               showComments={pubRecord?.preferences?.showComments !== false}
               showMentions={pubRecord?.preferences?.showMentions !== false}
-              postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
+              showRecommends={pubRecord?.preferences?.showRecommends !== false}
+              postUrl={docUrl}
             />
           </div>
         </div>

@@ -1,18 +1,14 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useEntity } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { BlockProps, BlockLayout } from "../Block";
 import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
-import { AppBskyFeedDefs, AppBskyFeedPost, RichText } from "@atproto/api";
+import { AppBskyFeedDefs } from "@atproto/api";
 import { PostNotAvailable } from "./BlueskyEmbed";
 import { BlueskyPostEmpty } from "./BlueskyEmpty";
 
-import { Separator } from "components/Layout";
-import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { CommentTiny } from "components/Icons/CommentTiny";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { BskyPostContent } from "app/lish/[did]/[publication]/[rkey]/BskyPostContent";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
@@ -22,6 +18,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let post = useEntity(props.entityID, "block/bluesky-post")?.data.value;
+  let clientHost = useEntity(props.entityID, "bluesky-post/host")?.data.value;
 
   useEffect(() => {
     if (props.preview) return;
@@ -64,22 +61,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       );
 
     case AppBskyFeedDefs.isThreadViewPost(post):
-      let record = post.post
-        .record as AppBskyFeedDefs.FeedViewPost["post"]["record"];
-      let facets = record.facets;
-
-      // silliness to get the text and timestamp from the record with proper types
-      let text: string | null = null;
-      let timestamp: string | undefined = undefined;
-      if (AppBskyFeedPost.isRecord(record)) {
-        text = (record as AppBskyFeedPost.Record).text;
-        timestamp = (record as AppBskyFeedPost.Record).createdAt;
-      }
-
-      //getting the url to the post
-      let postId = post.post.uri.split("/")[4];
       let postView = post.post as PostView;
-      let url = `https://bsky.app/profile/${post.post.author.handle}/post/${postId}`;
 
       return (
         <BlockLayout
@@ -95,20 +77,9 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
             showEmbed={true}
             avatarSize="large"
             className="text-sm text-secondary  "
+            clientHost={clientHost}
           />
         </BlockLayout>
       );
   }
 };
-
-function PostDate(props: { timestamp: string }) {
-  const formattedDate = useLocalizedDate(props.timestamp, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  });
-  return <div className="text-xs text-tertiary">{formattedDate}</div>;
-}

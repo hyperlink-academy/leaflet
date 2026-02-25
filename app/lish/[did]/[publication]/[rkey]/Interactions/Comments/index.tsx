@@ -29,6 +29,7 @@ export function CommentsDrawerContent(props: {
   document_uri: string;
   comments: Comment[];
   pageId?: string;
+  noCommentBox?: boolean;
 }) {
   let { identity } = useIdentityData();
   let { localComments } = useInteractionState(props.document_uri);
@@ -55,26 +56,19 @@ export function CommentsDrawerContent(props: {
       id={"commentsDrawer"}
       className="flex flex-col gap-2 relative text-sm text-secondary"
     >
-      <div className="w-full flex justify-between">
-        <h4> Comments</h4>
-        <button
-          className="text-tertiary"
-          onClick={() =>
-            setInteractionState(props.document_uri, { drawerOpen: false })
-          }
-        >
-          <CloseTiny />
-        </button>
-      </div>
-      {identity?.atp_did ? (
-        <CommentBox doc_uri={props.document_uri} pageId={props.pageId} />
-      ) : (
-        <div className="w-full accent-container text-tertiary text-center italic p-3 flex flex-col gap-2">
-          Connect a Bluesky account to comment
-          <BlueskyLogin redirectRoute={redirectRoute} />
-        </div>
+      {!props.noCommentBox && (
+        <>
+          {identity?.atp_did ? (
+            <CommentBox doc_uri={props.document_uri} pageId={props.pageId} />
+          ) : (
+            <div className="w-full accent-container text-tertiary text-center italic p-3 flex flex-col gap-2">
+              Connect a Bluesky account to comment
+              <BlueskyLogin redirectRoute={redirectRoute} />
+            </div>
+          )}
+          <hr className="border-border-light" />
+        </>
       )}
-      <hr className="border-border-light" />
       <div className="flex flex-col gap-4 py-2">
         {comments
           .sort((a, b) => {

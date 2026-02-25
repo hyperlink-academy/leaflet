@@ -26,6 +26,7 @@ export async function getProfilePosts(
       `*,
       comments_on_documents(count),
       document_mentions_in_bsky(count),
+      recommends_on_documents(count),
       documents_in_publications(publications(*))`,
     )
     .like("uri", `at://${did}/%`)
@@ -39,18 +40,19 @@ export async function getProfilePosts(
     );
   }
 
-  let [{ data: rawDocs }, { data: rawPubs }, { data: profile }] = await Promise.all([
-    query,
-    supabaseServerClient
-      .from("publications")
-      .select("*")
-      .eq("identity_did", did),
-    supabaseServerClient
-      .from("bsky_profiles")
-      .select("handle")
-      .eq("did", did)
-      .single(),
-  ]);
+  let [{ data: rawDocs }, { data: rawPubs }, { data: profile }] =
+    await Promise.all([
+      query,
+      supabaseServerClient
+        .from("publications")
+        .select("*")
+        .eq("identity_did", did),
+      supabaseServerClient
+        .from("bsky_profiles")
+        .select("handle")
+        .eq("did", did)
+        .single(),
+    ]);
 
   // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
   const docs = deduplicateByUriOrdered(rawDocs || []);
@@ -82,6 +84,7 @@ export async function getProfilePosts(
         sort_date: doc.sort_date,
         comments_on_documents: doc.comments_on_documents,
         document_mentions_in_bsky: doc.document_mentions_in_bsky,
+        recommends_on_documents: doc.recommends_on_documents,
       },
     };
 

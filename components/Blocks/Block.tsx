@@ -419,6 +419,7 @@ const NonTextBlockOptions = (props: {
   if (focusedEntity?.entityType === "page") return;
 
   if (isMultiselected) return;
+  if (!entity_set.permissions.write) return null;
 
   return (
     <div

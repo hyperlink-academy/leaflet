@@ -3,11 +3,10 @@ import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
-  type NormalizedDocument,
-  type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export async function getPostPageData(did: string, rkey: string) {
   let { data: documents } = await supabaseServerClient
@@ -22,7 +21,8 @@ export async function getPostPageData(did: string, rkey: string) {
           publication_subscriptions(*))
         ),
         document_mentions_in_bsky(*),
-        leaflets_in_publications(*)
+        leaflets_in_publications(*),
+        recommends_on_documents(count)
         `,
     )
     .or(documentUriFilter(did, rkey))
@@ -33,20 +33,24 @@ export async function getPostPageData(did: string, rkey: string) {
   if (!document) return null;
 
   // Normalize the document record - this is the primary way consumers should access document data
-  const normalizedDocument = normalizeDocumentRecord(document.data, document.uri);
+  const normalizedDocument = normalizeDocumentRecord(
+    document.data,
+    document.uri,
+  );
   if (!normalizedDocument) return null;
 
   // Normalize the publication record - this is the primary way consumers should access publication data
   const normalizedPublication = normalizePublicationRecord(
-    document.documents_in_publications[0]?.publications?.record
+    document.documents_in_publications[0]?.publications?.record,
   );
 
   // Fetch constellation backlinks for mentions
-  let aturi = new AtUri(document.uri);
-  const postUrl = normalizedPublication
-    ? `${normalizedPublication.url}/${aturi.rkey}`
-    : `https://leaflet.pub/p/${aturi.host}/${aturi.rkey}`;
-  const constellationBacklinks = await getConstellationBacklinks(postUrl);
+  const postUrl = getDocumentURL(normalizedDocument, document.uri, normalizedPublication);
+  // Constellation needs an absolute URL
+  const absolutePostUrl = postUrl.startsWith("/")
+    ? `https://leaflet.pub${postUrl}`
+    : postUrl;
+  const constellationBacklinks = await getConstellationBacklinks(absolutePostUrl);
 
   // Deduplicate constellation backlinks (same post could appear in both links and embeds)
   const uniqueBacklinks = Array.from(
@@ -83,7 +87,10 @@ export async function getPostPageData(did: string, rkey: string) {
     // Filter and sort documents by publishedAt
     const sortedDocs = allDocs
       .map((dip) => {
-        const normalizedData = normalizeDocumentRecord(dip?.documents?.data, dip?.documents?.uri);
+        const normalizedData = normalizeDocumentRecord(
+          dip?.documents?.data,
+          dip?.documents?.uri,
+        );
         return {
           uri: dip?.documents?.uri,
           title: normalizedData?.title,
@@ -98,7 +105,9 @@ export async function getPostPageData(did: string, rkey: string) {
       );
 
     // Find current document index
-    const currentIndex = sortedDocs.findIndex((doc) => doc.uri === document.uri);
+    const currentIndex = sortedDocs.findIndex(
+      (doc) => doc.uri === document.uri,
+    );
 
     if (currentIndex !== -1) {
       prevNext = {
@@ -122,13 +131,19 @@ export async function getPostPageData(did: string, rkey: string) {
 
   // Build explicit publication context for consumers
   const rawPub = document.documents_in_publications[0]?.publications;
-  const publication = rawPub ? {
-    uri: rawPub.uri,
-    name: rawPub.name,
-    identity_did: rawPub.identity_did,
-    record: rawPub.record as PubLeafletPublication.Record | SiteStandardPublication.Record | null,
-    publication_subscriptions: rawPub.publication_subscriptions || [],
-  } : null;
+  const publication = rawPub
+    ? {
+        uri: rawPub.uri,
+        name: rawPub.name,
+        identity_did: rawPub.identity_did,
+        record: rawPub.record as
+          | PubLeafletPublication.Record
+          | SiteStandardPublication.Record
+          | null,
+        publication_subscriptions: rawPub.publication_subscriptions || [],
+      }
+    : null;
+  const recommendsCount = document.recommends_on_documents?.[0]?.count ?? 0;
 
   return {
     ...document,
@@ -143,6 +158,8 @@ export async function getPostPageData(did: string, rkey: string) {
     comments: document.comments_on_documents,
     mentions: document.document_mentions_in_bsky,
     leafletId: document.leaflets_in_publications[0]?.leaflet || null,
+    // Recommends data
+    recommendsCount,
   };
 }
 

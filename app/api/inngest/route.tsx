@@ -17,6 +17,7 @@ import { stripe_handle_checkout_completed } from "./functions/stripe_handle_chec
 import { stripe_handle_subscription_updated } from "./functions/stripe_handle_subscription_updated";
 import { stripe_handle_subscription_deleted } from "./functions/stripe_handle_subscription_deleted";
 import { stripe_handle_invoice_payment_failed } from "./functions/stripe_handle_invoice_payment_failed";
+import { sync_document_metadata } from "./functions/sync_document_metadata";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -36,5 +37,6 @@ export const { GET, POST, PUT } = serve({
     stripe_handle_subscription_updated,
     stripe_handle_subscription_deleted,
     stripe_handle_invoice_payment_failed,
+    sync_document_metadata,
   ],
 });

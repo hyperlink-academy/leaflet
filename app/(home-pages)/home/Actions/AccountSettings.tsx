@@ -1,16 +1,15 @@
 "use client";
 
-import { ActionButton } from "components/ActionBar/ActionButton";
-import { mutate } from "swr";
-import { AccountSmall } from "components/Icons/AccountSmall";
-import { LogoutSmall } from "components/Icons/LogoutSmall";
-import { Popover } from "components/Popover";
-import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
-import { SpeedyLink } from "components/SpeedyLink";
-import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { useState } from "react";
+import { mutate } from "swr";
+import { ActionButton } from "components/ActionBar/ActionButton";
+import { Popover } from "components/Popover";
 import { ThemeSetterContent } from "components/ThemeManager/ThemeSetter";
 import { useIsMobile } from "src/hooks/isMobile";
+import { PaintSmall } from "components/Icons/PaintSmall";
+import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
+import { GoBackSmall } from "components/Icons/GoBackSmall";
+import { LogoutSmall } from "components/Icons/LogoutSmall";
 import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ManageProSubscription";
 import { Modal } from "components/Modal";
 import { UpgradeContent } from "app/lish/[did]/[publication]/UpgradeModal";
@@ -25,11 +24,11 @@ export const AccountSettings = (props: { entityID: string }) => {
   return (
     <Popover
       asChild
-      onOpenChange={() => setState("menu")}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className={`max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
-      trigger={<ActionButton icon=<AccountSmall /> label="Settings" />}
+      className={`w-xs  bg-white!`}
+      arrowFill="bg-white"
+      trigger={<ActionButton smallOnMobile icon=<PaintSmall /> label="Theme" />}
     >
       {state === "general" ? (
         <GeneralSettings backToMenu={() => setState("menu")} />

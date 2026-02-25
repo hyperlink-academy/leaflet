@@ -32,6 +32,7 @@ import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
+import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 
 export function PostContent({
   blocks,
@@ -170,12 +171,13 @@ export let Block = ({
     case PubLeafletBlocksBskyPost.isMain(b.block): {
       let uri = b.block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
-      if (!post) return <div>no prefetched post rip</div>;
+      if (!post) return <PostNotAvailable />;
       return (
         <PubBlueskyPostBlock
           post={post}
           className={className}
           pageId={pageId}
+          clientHost={b.block.clientHost}
         />
       );
     }

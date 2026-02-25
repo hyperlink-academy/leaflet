@@ -7,35 +7,36 @@ import { Tag } from "./Tags";
 import { Popover } from "./Popover";
 import { TagTiny } from "./Icons/TagTiny";
 import { SpeedyLink } from "./SpeedyLink";
+import { RecommendButton } from "./RecommendButton";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
   commentsCount: number;
+  recommendsCount: number;
+  documentUri: string;
   tags?: string[];
   postUrl: string;
   showComments: boolean;
   showMentions: boolean;
+  showRecommends: boolean;
 
   share?: boolean;
 }) => {
   let smoker = useSmoker();
   let interactionsAvailable =
     (props.quotesCount > 0 && props.showMentions) ||
-    (props.showComments !== false && props.commentsCount > 0);
+    (props.showComments !== false && props.commentsCount > 0) ||
+    (props.showRecommends !== false && props.recommendsCount > 0);
 
   const tagsCount = props.tags?.length || 0;
 
   return (
-    <div
-      className={`flex gap-2 text-tertiary text-sm  items-center self-start`}
-    >
-      {tagsCount === 0 ? null : (
-        <>
-          <TagPopover tags={props.tags!} />
-          {interactionsAvailable || props.share ? (
-            <Separator classname="h-4!" />
-          ) : null}
-        </>
+    <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
+      {props.showRecommends === false ? null : (
+        <RecommendButton
+          documentUri={props.documentUri}
+          recommendsCount={props.recommendsCount}
+        />
       )}
 
       {!props.showMentions || props.quotesCount === 0 ? null : (
@@ -56,11 +57,16 @@ export const InteractionPreview = (props: {
           <CommentTiny /> {props.commentsCount}
         </SpeedyLink>
       )}
-      {interactionsAvailable && props.share ? (
-        <Separator classname="h-4! !min-h-0" />
-      ) : null}
+      {tagsCount === 0 ? null : (
+        <>
+          {interactionsAvailable ? <Separator classname="h-4!" /> : null}
+          <TagPopover tags={props.tags!} />
+        </>
+      )}
       {props.share && (
         <>
+          <Separator classname="h-4!" />
+
           <button
             id={`copy-post-link-${props.postUrl}`}
             className="flex gap-1 items-center hover:text-accent-contrast relative"
@@ -71,7 +77,7 @@ export const InteractionPreview = (props: {
               let mouseY = e.clientY;
 
               if (!props.postUrl) return;
-              navigator.clipboard.writeText(`leaflet.pub${props.postUrl}`);
+              navigator.clipboard.writeText(props.postUrl);
 
               smoker({
                 text: <strong>Copied Link!</strong>,
@@ -90,7 +96,7 @@ export const InteractionPreview = (props: {
   );
 };
 
-const TagPopover = (props: { tags: string[] }) => {
+export const TagPopover = (props: { tags: string[] }) => {
   return (
     <Popover
       className="p-2! max-w-xs"

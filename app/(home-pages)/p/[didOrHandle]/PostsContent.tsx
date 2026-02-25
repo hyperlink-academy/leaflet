@@ -68,7 +68,7 @@ export const ProfilePostsContent = (props: {
   }
 
   return (
-    <div className="flex flex-col gap-3 text-left relative">
+    <div className="profilePosts h-full flex py-4 flex-col gap-3 text-left relative">
       {allPosts.map((post) => (
         <PostListing key={post.documents.uri} {...post} />
       ))}

@@ -21,6 +21,7 @@ import {
 } from "src/utils/normalizeRecords";
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
+import { mergePreferences } from "src/utils/mergePreferences";
 
 export async function DocumentPageRenderer({
   did,
@@ -133,7 +134,7 @@ export async function DocumentPageRenderer({
             <LeafletLayout>
               <PostPages
                 document_uri={document.uri}
-                preferences={pubRecord?.preferences || {}}
+                preferences={mergePreferences(record?.preferences, pubRecord?.preferences)}
                 pubRecord={pubRecord}
                 profile={JSON.parse(JSON.stringify(profile.data))}
                 document={document}

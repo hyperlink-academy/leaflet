@@ -1048,6 +1048,9 @@ export const schemaDict = {
             type: 'ref',
             ref: 'lex:com.atproto.repo.strongRef',
           },
+          clientHost: {
+            type: 'string',
+          },
         },
       },
     },
@@ -1469,6 +1472,10 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.publication#theme',
             },
+            preferences: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#preferences',
+            },
             tags: {
               type: 'array',
               items: {
@@ -1868,6 +1875,10 @@ export const schemaDict = {
             type: 'boolean',
             default: true,
           },
+          showRecommends: {
+            type: 'boolean',
+            default: true,
+          },
         },
       },
       theme: {
@@ -2194,6 +2205,11 @@ export const schemaDict = {
               maxLength: 5000,
               type: 'string',
             },
+            preferences: {
+              type: 'union',
+              refs: ['lex:pub.leaflet.publication#preferences'],
+              closed: false,
+            },
             updatedAt: {
               format: 'datetime',
               type: 'string',
@@ -2288,6 +2304,10 @@ export const schemaDict = {
           },
           showPrevNext: {
             default: false,
+            type: 'boolean',
+          },
+          showRecommends: {
+            default: true,
             type: 'boolean',
           },
         },

@@ -81,6 +81,7 @@ export default function PublicationDashboard({
       actions={<Actions publication={publication.uri} />}
       currentPage="pub"
       publication={publication.uri}
+      pageTitle={record.name}
     />
   );
 }

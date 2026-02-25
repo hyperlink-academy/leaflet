@@ -3,6 +3,7 @@ import { ContentLayout, Notification } from "./Notification";
 import { HydratedQuoteNotification } from "src/notifications";
 import { AtUri } from "@atproto/api";
 import { Avatar } from "components/Avatar";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export const QuoteNotification = (props: HydratedQuoteNotification) => {
   const postView = props.bskyPost.post_view as any;
@@ -13,14 +14,9 @@ export const QuoteNotification = (props: HydratedQuoteNotification) => {
 
   if (!docRecord) return null;
 
-  const docUri = new AtUri(props.document.uri);
-  const rkey = docUri.rkey;
-  const did = docUri.host;
   const postText = postView.record?.text || "";
 
-  const href = pubRecord
-    ? `${pubRecord.url}/${rkey}`
-    : `/p/${did}/${rkey}`;
+  const href = getDocumentURL(docRecord, props.document.uri, pubRecord);
 
   return (
     <Notification

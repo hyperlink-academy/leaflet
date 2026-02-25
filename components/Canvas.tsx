@@ -19,10 +19,13 @@ import { Popover } from "./Popover";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { QuoteTiny } from "./Icons/QuoteTiny";
-import { PublicationMetadata } from "./Pages/PublicationMetadata";
+import { AddTags, PublicationMetadata } from "./Pages/PublicationMetadata";
 import { useLeafletPublicationData } from "./PageSWRDataProvider";
 import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
+import { RecommendTinyEmpty } from "./Icons/RecommendTiny";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { mergePreferences } from "src/utils/mergePreferences";
 
 export function Canvas(props: {
   entityID: string;
@@ -163,24 +166,49 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
 
 const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
+  let { rep } = useReplicache();
+  let postPreferences = useSubscribe(rep, (tx) =>
+    tx.get<{
+      showComments?: boolean;
+      showMentions?: boolean;
+      showRecommends?: boolean;
+    } | null>("post_preferences"),
+  );
   if (!pub || !pub.publications) return null;
 
   if (!normalizedPublication) return null;
-  let showComments = normalizedPublication.preferences?.showComments !== false;
-  let showMentions = normalizedPublication.preferences?.showMentions !== false;
+  let merged = mergePreferences(
+    postPreferences || undefined,
+    normalizedPublication.preferences,
+  );
+  let showComments = merged.showComments !== false;
+  let showMentions = merged.showMentions !== false;
+  let showRecommends = merged.showRecommends !== false;
 
   return (
     <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+      {showRecommends && (
+        <div className="flex gap-1 text-tertiary items-center">
+          <RecommendTinyEmpty className="text-border" /> —
+        </div>
+      )}
       {showComments && (
         <div className="flex gap-1 text-tertiary items-center">
           <CommentTiny className="text-border" /> —
         </div>
       )}
-      {showComments && (
+      {showMentions && (
         <div className="flex gap-1 text-tertiary items-center">
           <QuoteTiny className="text-border" /> —
         </div>
       )}
+
+      {showMentions !== false ||
+      showComments !== false ||
+      showRecommends === false ? (
+        <Separator classname="h-4!" />
+      ) : null}
+      <AddTags />
 
       {!props.isSubpage && (
         <>
@@ -191,7 +219,7 @@ const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
             className="flex flex-col gap-2 p-0! max-w-sm w-[1000px]"
             trigger={<InfoSmall />}
           >
-            <PublicationMetadata />
+            <PublicationMetadata noInteractions />
           </Popover>
         </>
       )}

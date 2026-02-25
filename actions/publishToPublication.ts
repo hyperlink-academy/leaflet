@@ -78,6 +78,7 @@ export async function publishToPublication({
   cover_image,
   entitiesToDelete,
   publishedAt,
+  postPreferences,
 }: {
   root_entity: string;
   publication_uri?: string;
@@ -88,6 +89,11 @@ export async function publishToPublication({
   cover_image?: string | null;
   entitiesToDelete?: string[];
   publishedAt?: string;
+  postPreferences?: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showRecommends?: boolean;
+  } | null;
 }): Promise<PublishResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -137,6 +143,21 @@ export async function publishToPublication({
       .single();
     draft = data;
     existingDocUri = draft?.document;
+
+    // If updating an existing document, verify the current user is the owner
+    if (existingDocUri) {
+      let docOwner = new AtUri(existingDocUri).host;
+      if (docOwner !== identity.atp_did) {
+        return {
+          success: false,
+          error: {
+            type: "oauth_session_expired" as const,
+            message: "Not the document owner",
+            did: identity.atp_did,
+          },
+        };
+      }
+    }
   }
 
   // Heuristic: Remove title entities if this is the first time publishing
@@ -174,6 +195,9 @@ export async function publishToPublication({
       theme: normalizedDoc.theme,
     };
   }
+
+  // Resolve preferences: explicit param > draft DB value
+  const preferences = postPreferences ?? draft?.preferences;
 
   // Extract theme for standalone documents (not for publications)
   let theme: PubLeafletPublication.Theme | undefined;
@@ -245,6 +269,12 @@ export async function publishToPublication({
       ...(coverImageBlob && { coverImage: coverImageBlob }),
       // Include theme for standalone documents (not for publication documents)
       ...(!publication_uri && theme && { theme }),
+      ...(preferences && {
+        preferences: {
+          $type: "pub.leaflet.publication#preferences" as const,
+          ...preferences,
+        },
+      }),
       content: {
         $type: "pub.leaflet.content" as const,
         pages: pagesArray,
@@ -257,6 +287,12 @@ export async function publishToPublication({
       author: credentialSession.did!,
       ...(publication_uri && { publication: publication_uri }),
       ...(theme && { theme }),
+      ...(preferences && {
+        preferences: {
+          $type: "pub.leaflet.publication#preferences" as const,
+          ...preferences,
+        },
+      }),
       title: title || "Untitled",
       description: description || "",
       ...(tags !== undefined && { tags }),
@@ -279,6 +315,7 @@ export async function publishToPublication({
   await supabaseServerClient.from("documents").upsert({
     uri: result.uri,
     data: record as unknown as Json,
+    indexed: true,
   });
 
   if (publication_uri) {
@@ -490,12 +527,14 @@ async function processBlocksToPages(
     if (b.type === "bluesky-post") {
       let [post] = scan.eav(b.value, "block/bluesky-post");
       if (!post || !post.data.value.post) return;
+      let [hostFact] = scan.eav(b.value, "bluesky-post/host");
       let block: $Typed<PubLeafletBlocksBskyPost.Main> = {
         $type: ids.PubLeafletBlocksBskyPost,
         postRef: {
           uri: post.data.value.post.uri,
           cid: post.data.value.post.cid,
         },
+        clientHost: hostFact?.data.value,
       };
       return block;
     }

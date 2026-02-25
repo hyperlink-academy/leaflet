@@ -18,6 +18,7 @@ const id = 'pub.leaflet.blocks.bskyPost'
 export interface Main {
   $type?: 'pub.leaflet.blocks.bskyPost'
   postRef: ComAtprotoRepoStrongRef.Main
+  clientHost?: string
 }
 
 const hashMain = 'main'

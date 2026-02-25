@@ -88,6 +88,7 @@ export const EditPubForm = (props: {
             showComments: showComments,
             showMentions: showMentions,
             showPrevNext: showPrevNext,
+            showRecommends: record?.preferences?.showRecommends ?? true,
           },
         });
         toast({ type: "success", content: "Updated!" });
@@ -193,8 +194,6 @@ export const EditPubForm = (props: {
             </p>
           </div>
         </Toggle>
-
-        
       </div>
     </form>
   );

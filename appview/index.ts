@@ -109,6 +109,13 @@ async function handleEvent(evt: Event) {
         data: record.value as Json,
       });
       if (docResult.error) console.log(docResult.error);
+      await inngest.send({
+        name: "appview/sync-document-metadata",
+        data: {
+          document_uri: evt.uri.toString(),
+          bsky_post_uri: record.value.postRef?.uri,
+        },
+      });
       if (record.value.publication) {
         let publicationURI = new AtUri(record.value.publication);
 
@@ -269,6 +276,13 @@ async function handleEvent(evt: Event) {
         data: record.value as Json,
       });
       if (docResult.error) console.log(docResult.error);
+      await inngest.send({
+        name: "appview/sync-document-metadata",
+        data: {
+          document_uri: evt.uri.toString(),
+          bsky_post_uri: record.value.bskyPostRef?.uri,
+        },
+      });
 
       // site.standard.document uses "site" field to reference the publication
       // For documents in publications, site is an AT-URI (at://did:plc:xxx/site.standard.publication/rkey)
@@ -377,7 +391,10 @@ async function handleEvent(evt: Event) {
 
     // Now validate the record since we know it contains our quote param
     let record = AppBskyFeedPost.validateRecord(evt.record);
-    if (!record.success) return;
+    if (!record.success) {
+      console.log(record.error);
+      return;
+    }
 
     let embed: string | null = null;
     if (

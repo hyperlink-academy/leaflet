@@ -5,6 +5,7 @@ import LoginForm from "app/login/LoginForm";
 import { ButtonPrimary } from "./Buttons";
 import { ActionButton } from "./ActionBar/ActionButton";
 import { AccountSmall } from "./Icons/AccountSmall";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export function LoginButton() {
   let identityData = useIdentityData();
@@ -26,11 +27,12 @@ export function LoginButton() {
 export function LoginActionButton() {
   let identityData = useIdentityData();
   if (identityData.identity) return null;
+  let isMobile = useIsMobile();
   return (
     <Popover
       asChild
-      align="start"
-      side="right"
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       trigger={
         <ActionButton secondary icon={<AccountSmall />} label="Sign In" />
       }

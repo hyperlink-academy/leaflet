@@ -40,6 +40,7 @@ export interface Preferences {
   showComments: boolean
   showMentions: boolean
   showPrevNext: boolean
+  showRecommends: boolean
 }
 
 const hashPreferences = 'preferences'

@@ -1,20 +1,13 @@
 "use server";
 
 import { getIdentityData } from "actions/getIdentityData";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { supabaseServerClient } from "supabase/serverClient";
-import { IdResolver } from "@atproto/identity";
-import type { DidCache, CacheResult, DidDocument } from "@atproto/identity";
-import Client from "ioredis";
-import { AtUri } from "@atproto/api";
-import { idResolver } from "./idResolver";
-import {
-  normalizeDocumentRecord,
-  normalizePublicationRecord,
-  type NormalizedDocument,
-  type NormalizedPublication,
+import type {
+  NormalizedDocument,
+  NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
+import { enrichDocumentToPost } from "./enrichPost";
 
 export type Cursor = {
   timestamp: string;
@@ -32,6 +25,7 @@ export async function getReaderFeed(
       `*,
       comments_on_documents(count),
       document_mentions_in_bsky(count),
+      recommends_on_documents(count),
       documents_in_publications!inner(publications!inner(*, publication_subscriptions!inner(*)))`,
     )
     .eq(
@@ -52,39 +46,9 @@ export async function getReaderFeed(
   const feed = deduplicateByUriOrdered(rawFeed || []);
 
   let posts = (
-    await Promise.all(
-      feed.map(async (post) => {
-        let pub = post.documents_in_publications[0].publications!;
-        let uri = new AtUri(post.uri);
-        let handle = await idResolver.did.resolve(uri.host);
-
-        // Normalize records - filter out unrecognized formats
-        const normalizedData = normalizeDocumentRecord(post.data, post.uri);
-        if (!normalizedData) return null;
-
-        const normalizedPubRecord = normalizePublicationRecord(pub?.record);
-
-        let p: Post = {
-          publication: {
-            href: getPublicationURL(pub),
-            pubRecord: normalizedPubRecord,
-            uri: pub?.uri || "",
-          },
-          author: handle?.alsoKnownAs?.[0]
-            ? `@${handle.alsoKnownAs[0].slice(5)}`
-            : null,
-          documents: {
-            comments_on_documents: post.comments_on_documents,
-            document_mentions_in_bsky: post.document_mentions_in_bsky,
-            data: normalizedData,
-            uri: post.uri,
-            sort_date: post.sort_date,
-          },
-        };
-        return p;
-      }) || [],
-    )
+    await Promise.all(feed.map((post) => enrichDocumentToPost(post as any)))
   ).filter((post): post is Post => post !== null);
+
   const nextCursor =
     posts.length > 0
       ? {
@@ -112,5 +76,7 @@ export type Post = {
     sort_date: string;
     comments_on_documents: { count: number }[] | undefined;
     document_mentions_in_bsky: { count: number }[] | undefined;
+    recommends_on_documents: { count: number }[] | undefined;
+    mentionsCount?: number;
   };
 };

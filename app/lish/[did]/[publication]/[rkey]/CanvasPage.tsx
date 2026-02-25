@@ -71,6 +71,7 @@ export function CanvasPage({
         preferences={preferences}
         commentsCount={getCommentCount(document.comments_on_documents, pageId)}
         quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
+        recommendsCount={document.recommendsCount}
       />
       <CanvasContent
         blocks={blocks}
@@ -205,10 +206,12 @@ const CanvasMetadata = (props: {
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
+    showRecommends?: boolean;
     showPrevNext?: boolean;
   };
   quotesCount: number | undefined;
   commentsCount: number | undefined;
+  recommendsCount: number;
 }) => {
   let isMobile = useIsMobile();
   return (
@@ -216,8 +219,10 @@ const CanvasMetadata = (props: {
       <Interactions
         quotesCount={props.quotesCount || 0}
         commentsCount={props.commentsCount || 0}
+        recommendsCount={props.recommendsCount}
         showComments={props.preferences.showComments !== false}
         showMentions={props.preferences.showMentions !== false}
+        showRecommends={props.preferences.showRecommends !== false}
         pageId={props.pageId}
       />
       {!props.isSubpage && (
@@ -233,6 +238,7 @@ const CanvasMetadata = (props: {
               data={props.data}
               profile={props.profile}
               preferences={props.preferences}
+              isCanvas
             />
           </Popover>
         </>

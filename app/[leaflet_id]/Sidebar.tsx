@@ -8,6 +8,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { PublishButton } from "./actions/PublishButton";
+import { PostSettings } from "components/PostSettings";
 import { Watermark } from "components/Watermark";
 import { BackToPubButton } from "./actions/BackToPubButton";
 import { useIdentityData } from "components/IdentityProvider";
@@ -30,6 +31,7 @@ export function LeafletSidebar() {
             <Sidebar>
               <PublishButton entityID={rootEntity} />
               <ShareOptions />
+              <PostSettings />
               <ThemePopover entityID={rootEntity} />
               <HelpButton />
               <hr className="text-border" />

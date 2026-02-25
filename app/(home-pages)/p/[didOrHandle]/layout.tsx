@@ -82,6 +82,7 @@ export default async function ProfilePageLayout(props: {
       id="profile"
       defaultTab="default"
       currentPage="profile"
+      profileDid={did}
       actions={null}
       tabs={{
         default: {
@@ -93,9 +94,7 @@ export default async function ProfilePageLayout(props: {
                 publications={publications || []}
               />
               <ProfileTabs didOrHandle={params.didOrHandle} />
-              <div className="h-full pt-3 pb-4 px-3 sm:px-4 flex flex-col">
-                {props.children}
-              </div>
+              <>{props.children}</>
             </ProfileLayout>
           ),
         },

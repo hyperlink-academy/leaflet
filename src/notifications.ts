@@ -27,7 +27,8 @@ export type NotificationData =
   | { type: "mention"; document_uri: string; mention_type: "document"; mentioned_uri: string }
   | { type: "comment_mention"; comment_uri: string; mention_type: "did" }
   | { type: "comment_mention"; comment_uri: string; mention_type: "publication"; mentioned_uri: string }
-  | { type: "comment_mention"; comment_uri: string; mention_type: "document"; mentioned_uri: string };
+  | { type: "comment_mention"; comment_uri: string; mention_type: "document"; mentioned_uri: string }
+  | { type: "recommend"; document_uri: string; recommend_uri: string };
 
 export type HydratedNotification =
   | HydratedCommentNotification
@@ -35,22 +36,24 @@ export type HydratedNotification =
   | HydratedQuoteNotification
   | HydratedBskyPostEmbedNotification
   | HydratedMentionNotification
-  | HydratedCommentMentionNotification;
+  | HydratedCommentMentionNotification
+  | HydratedRecommendNotification;
 export async function hydrateNotifications(
   notifications: NotificationRow[],
 ): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications] = await Promise.all([
+  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications, recommendNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
     hydrateSubscribeNotifications(notifications),
     hydrateQuoteNotifications(notifications),
     hydrateBskyPostEmbedNotifications(notifications),
     hydrateMentionNotifications(notifications),
     hydrateCommentMentionNotifications(notifications),
+    hydrateRecommendNotifications(notifications),
   ]);
 
   // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications];
+  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications, ...recommendNotifications];
 
   // Sort by created_at to maintain order
   allHydrated.sort(
@@ -514,6 +517,58 @@ async function hydrateCommentMentionNotifications(notifications: NotificationRow
         ),
         normalizedMentionedPublication: normalizePublicationRecord(mentionedPublication?.record),
         normalizedMentionedDocument: normalizeDocumentRecord(mentionedDoc?.data, mentionedDoc?.uri),
+      };
+    })
+    .filter((n) => n !== null);
+}
+
+export type HydratedRecommendNotification = Awaited<
+  ReturnType<typeof hydrateRecommendNotifications>
+>[0];
+
+async function hydrateRecommendNotifications(notifications: NotificationRow[]) {
+  const recommendNotifications = notifications.filter(
+    (n): n is NotificationRow & { data: ExtractNotificationType<"recommend"> } =>
+      (n.data as NotificationData)?.type === "recommend",
+  );
+
+  if (recommendNotifications.length === 0) {
+    return [];
+  }
+
+  // Fetch recommend data from the database
+  const recommendUris = recommendNotifications.map((n) => n.data.recommend_uri);
+  const documentUris = recommendNotifications.map((n) => n.data.document_uri);
+
+  const [{ data: recommends }, { data: documents }] = await Promise.all([
+    supabaseServerClient
+      .from("recommends_on_documents")
+      .select("*, identities(bsky_profiles(*))")
+      .in("uri", recommendUris),
+    supabaseServerClient
+      .from("documents")
+      .select("*, documents_in_publications(publications(*))")
+      .in("uri", documentUris),
+  ]);
+
+  return recommendNotifications
+    .map((notification) => {
+      const recommendData = recommends?.find((r) => r.uri === notification.data.recommend_uri);
+      const document = documents?.find((d) => d.uri === notification.data.document_uri);
+      if (!recommendData || !document) return null;
+      return {
+        id: notification.id,
+        recipient: notification.recipient,
+        created_at: notification.created_at,
+        type: "recommend" as const,
+        recommend_uri: notification.data.recommend_uri,
+        document_uri: notification.data.document_uri,
+        recommendData,
+        document,
+        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
+        normalizedPublication: normalizePublicationRecord(
+          document.documents_in_publications[0]?.publications?.record,
+        ),
       };
     })
     .filter((n) => n !== null);

@@ -335,19 +335,30 @@ export type Database = {
       }
       documents: {
         Row: {
+          bsky_like_count: number
           data: Json
+          indexed: boolean
           indexed_at: string
+          recommend_count: number
           sort_date: string
           uri: string
         }
         Insert: {
+          bsky_like_count?: number
           data: Json
+          indexed?: boolean
           indexed_at?: string
+          recommend_count?: number
+          sort_date?: string
           uri: string
         }
         Update: {
+          bsky_like_count?: number
           data?: Json
+          indexed?: boolean
           indexed_at?: string
+          recommend_count?: number
+          sort_date?: string
           uri?: string
         }
         Relationships: []
@@ -589,6 +600,7 @@ export type Database = {
           description: string
           doc: string | null
           leaflet: string
+          preferences: Json | null
           publication: string
           tags: string[] | null
           title: string
@@ -599,6 +611,7 @@ export type Database = {
           description?: string
           doc?: string | null
           leaflet: string
+          preferences?: Json | null
           publication: string
           tags?: string[] | null
           title?: string
@@ -609,6 +622,7 @@ export type Database = {
           description?: string
           doc?: string | null
           leaflet?: string
+          preferences?: Json | null
           publication?: string
           tags?: string[] | null
           title?: string
@@ -645,6 +659,7 @@ export type Database = {
           description: string
           document: string
           leaflet: string
+          preferences: Json | null
           tags: string[] | null
           title: string
         }
@@ -655,6 +670,7 @@ export type Database = {
           description?: string
           document: string
           leaflet: string
+          preferences?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -665,6 +681,7 @@ export type Database = {
           description?: string
           document?: string
           leaflet?: string
+          preferences?: Json | null
           tags?: string[] | null
           title?: string
         }

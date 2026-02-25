@@ -23,6 +23,7 @@ export interface Record {
   publication?: string
   author: string
   theme?: PubLeafletPublication.Theme
+  preferences?: PubLeafletPublication.Preferences
   tags?: string[]
   coverImage?: BlobRef
   pages: (

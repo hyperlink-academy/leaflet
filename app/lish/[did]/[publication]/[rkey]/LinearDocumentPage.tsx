@@ -87,8 +87,12 @@ export function LinearDocumentPage({
           pageId={pageId}
           showComments={preferences.showComments !== false}
           showMentions={preferences.showMentions !== false}
-          commentsCount={getCommentCount(document.comments_on_documents, pageId) || 0}
+          showRecommends={preferences.showRecommends !== false}
+          commentsCount={
+            getCommentCount(document.comments_on_documents, pageId) || 0
+          }
           quotesCount={getQuoteCount(document.quotesAndMentions, pageId) || 0}
+          recommendsCount={document.recommendsCount}
         />
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>

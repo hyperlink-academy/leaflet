@@ -43,6 +43,7 @@ export const PubLeafletBlocksBskyPost: LexiconDoc = {
       required: ["postRef"],
       properties: {
         postRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
+        clientHost: { type: "string" },
       },
     },
   },

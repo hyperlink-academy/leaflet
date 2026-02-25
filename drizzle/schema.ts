@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, unique, uniqueIndex, smallint, primaryKey, integer } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -225,6 +225,7 @@ export const documents = pgTable("documents", {
 	uri: text("uri").primaryKey().notNull(),
 	data: jsonb("data").notNull(),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	bsky_like_count: integer("bsky_like_count").default(0).notNull(),
 });
 
 export const atp_poll_votes = pgTable("atp_poll_votes", {

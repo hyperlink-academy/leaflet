@@ -45,6 +45,7 @@ function PublicationShareButton() {
           icon=<ShareSmall />
           label="Share"
           onClick={() => {}}
+          smallOnMobile
         />
       }
     >
