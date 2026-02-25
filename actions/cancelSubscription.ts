@@ -1,7 +1,7 @@
 "use server";
 
 import { getIdentityData } from "./getIdentityData";
-import { stripe } from "stripe/client";
+import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
 
@@ -23,7 +23,7 @@ export async function cancelSubscription(): Promise<
     return Err("No active subscription found");
   }
 
-  await stripe.subscriptions.update(sub.stripe_subscription_id, {
+  await getStripe().subscriptions.update(sub.stripe_subscription_id, {
     cancel_at_period_end: true,
   });
 

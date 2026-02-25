@@ -1,9 +1,9 @@
 "use server";
 
 import { getIdentityData } from "./getIdentityData";
-import { stripe } from "stripe/client";
+import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PRICE_IDS } from "stripe/products";
+import { getPriceId } from "stripe/products";
 import { Ok, Err, type Result } from "src/result";
 
 export async function createCheckoutSession(
@@ -15,9 +15,9 @@ export async function createCheckoutSession(
     return Err("Not authenticated");
   }
 
-  const priceId = PRICE_IDS[cadence];
+  const priceId = await getPriceId(cadence);
   if (!priceId) {
-    return Err("Price not configured. Set STRIPE_PRICE_MONTHLY_ID and STRIPE_PRICE_YEARLY_ID env vars.");
+    return Err("No Stripe price found. Run the sync script first.");
   }
 
   // Check for existing Stripe customer
@@ -43,7 +43,7 @@ export async function createCheckoutSession(
 
   const cancelUrl = returnUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
     client_reference_id: identity.id,

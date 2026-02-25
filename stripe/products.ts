@@ -23,11 +23,14 @@ export const PRICE_DEFINITIONS = {
   },
 };
 
-// Populated at runtime by sync script or looked up dynamically
-export const PRICE_IDS: Record<"month" | "year", string> = {
-  month: process.env.STRIPE_PRICE_MONTHLY_ID || "",
-  year: process.env.STRIPE_PRICE_YEARLY_ID || "",
-};
+export async function getPriceId(
+  cadence: "month" | "year",
+): Promise<string | null> {
+  const { getStripe } = await import("./client");
+  const key = PRICE_DEFINITIONS[cadence].lookup_key;
+  const prices = await getStripe().prices.list({ lookup_keys: [key] });
+  return prices.data[0]?.id ?? null;
+}
 
 export function parseEntitlements(
   metadata: Record<string, string> | null,
