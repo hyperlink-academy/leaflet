@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, unique, uniqueIndex, smallint, primaryKey, integer } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, uniqueIndex, unique, smallint, integer, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -50,6 +50,11 @@ export const comments_on_documents = pgTable("comments_on_documents", {
 	document: text("document").references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	profile: text("profile").references(() => bsky_profiles.did, { onDelete: "set null", onUpdate: "cascade" } ),
+},
+(table) => {
+	return {
+		document_idx: index("comments_on_documents_document_idx").on(table.document),
+	}
 });
 
 export const entities = pgTable("entities", {
@@ -107,6 +112,21 @@ export const bsky_posts = pgTable("bsky_posts", {
 	cid: text("cid").notNull(),
 });
 
+export const recommends_on_documents = pgTable("recommends_on_documents", {
+	uri: text("uri").primaryKey().notNull(),
+	record: jsonb("record").notNull(),
+	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	recommender_did: text("recommender_did").notNull().references(() => identities.atp_did, { onDelete: "cascade", onUpdate: "cascade" } ),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		document_idx: index("recommends_on_documents_document_idx").on(table.document),
+		recommender_did_idx: index("recommends_on_documents_recommender_did_idx").on(table.recommender_did),
+		recommender_document_idx: uniqueIndex("recommends_on_documents_recommender_document_idx").on(table.document, table.recommender_did),
+	}
+});
+
 export const bsky_profiles = pgTable("bsky_profiles", {
 	did: text("did").primaryKey().notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	record: jsonb("record").notNull(),
@@ -131,6 +151,23 @@ export const permission_tokens = pgTable("permission_tokens", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	root_entity: uuid("root_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	blocked_by_admin: boolean("blocked_by_admin"),
+});
+
+export const user_subscriptions = pgTable("user_subscriptions", {
+	identity_id: uuid("identity_id").primaryKey().notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	stripe_customer_id: text("stripe_customer_id").notNull(),
+	stripe_subscription_id: text("stripe_subscription_id"),
+	plan: text("plan"),
+	status: text("status"),
+	current_period_end: timestamp("current_period_end", { withTimezone: true, mode: 'string' }),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		stripe_customer_id_key: uniqueIndex("user_subscriptions_stripe_customer_id_key").on(table.stripe_customer_id),
+		stripe_subscription_id_key: uniqueIndex("user_subscriptions_stripe_subscription_id_key").on(table.stripe_subscription_id),
+	}
 });
 
 export const identities = pgTable("identities", {
@@ -221,13 +258,6 @@ export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_ent
 	confirmation_code: text("confirmation_code").notNull(),
 });
 
-export const documents = pgTable("documents", {
-	uri: text("uri").primaryKey().notNull(),
-	data: jsonb("data").notNull(),
-	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	bsky_like_count: integer("bsky_like_count").default(0).notNull(),
-});
-
 export const atp_poll_votes = pgTable("atp_poll_votes", {
 	uri: text("uri").primaryKey().notNull(),
 	record: jsonb("record").notNull(),
@@ -240,6 +270,23 @@ export const atp_poll_votes = pgTable("atp_poll_votes", {
 	return {
 		poll_uri_idx: index("atp_poll_votes_poll_uri_idx").on(table.poll_uri),
 		voter_did_idx: index("atp_poll_votes_voter_did_idx").on(table.voter_did),
+	}
+});
+
+export const documents = pgTable("documents", {
+	uri: text("uri").primaryKey().notNull(),
+	data: jsonb("data").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	sort_date: timestamp("sort_date", { withTimezone: true, mode: 'string' }),
+	bsky_like_count: integer("bsky_like_count").default(0).notNull(),
+	recommend_count: integer("recommend_count").default(0).notNull(),
+	indexed: boolean("indexed").default(false).notNull(),
+},
+(table) => {
+	return {
+		sort_date_idx: index("documents_sort_date_idx").on(table.uri, table.sort_date),
+		indexed_at_idx: index("documents_indexed_at_idx").on(table.indexed_at),
+		idx_documents_ranking: index("idx_documents_ranking").on(table.uri, table.sort_date, table.bsky_like_count, table.recommend_count),
 	}
 });
 
@@ -295,6 +342,7 @@ export const documents_in_publications = pgTable("documents_in_publications", {
 (table) => {
 	return {
 		publication_idx: index("documents_in_publications_publication_idx").on(table.publication),
+		document_idx: index("documents_in_publications_document_idx").on(table.document),
 		documents_in_publications_pkey: primaryKey({ columns: [table.publication, table.document], name: "documents_in_publications_pkey"}),
 	}
 });
@@ -307,6 +355,7 @@ export const document_mentions_in_bsky = pgTable("document_mentions_in_bsky", {
 },
 (table) => {
 	return {
+		document_idx: index("document_mentions_in_bsky_document_idx").on(table.document),
 		document_mentions_in_bsky_pkey: primaryKey({ columns: [table.uri, table.document], name: "document_mentions_in_bsky_pkey"}),
 	}
 });
@@ -365,18 +414,19 @@ export const site_standard_subscriptions = pgTable("site_standard_subscriptions"
 	}
 });
 
-export const leaflets_to_documents = pgTable("leaflets_to_documents", {
-	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	title: text("title").default('').notNull(),
-	description: text("description").default('').notNull(),
-	tags: text("tags").default('RRAY[').array(),
-	cover_image: text("cover_image"),
+export const user_entitlements = pgTable("user_entitlements", {
+	identity_id: uuid("identity_id").notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	entitlement_key: text("entitlement_key").notNull(),
+	granted_at: timestamp("granted_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	expires_at: timestamp("expires_at", { withTimezone: true, mode: 'string' }),
+	source: text("source"),
+	metadata: jsonb("metadata"),
 },
 (table) => {
 	return {
-		leaflets_to_documents_pkey: primaryKey({ columns: [table.leaflet, table.document], name: "leaflets_to_documents_pkey"}),
+		identity_id_idx: index("user_entitlements_identity_id_idx").on(table.identity_id),
+		expires_at_idx: index("user_entitlements_expires_at_idx").on(table.expires_at),
+		user_entitlements_pkey: primaryKey({ columns: [table.identity_id, table.entitlement_key], name: "user_entitlements_pkey"}),
 	}
 });
 
@@ -397,6 +447,22 @@ export const permission_token_rights = pgTable("permission_token_rights", {
 	}
 });
 
+export const leaflets_to_documents = pgTable("leaflets_to_documents", {
+	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	title: text("title").default('').notNull(),
+	description: text("description").default('').notNull(),
+	tags: text("tags").default('RRAY[').array(),
+	cover_image: text("cover_image"),
+	preferences: jsonb("preferences"),
+},
+(table) => {
+	return {
+		leaflets_to_documents_pkey: primaryKey({ columns: [table.leaflet, table.document], name: "leaflets_to_documents_pkey"}),
+	}
+});
+
 export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	doc: text("doc").default('').references(() => documents.uri, { onDelete: "set null" } ),
@@ -406,44 +472,13 @@ export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 	archived: boolean("archived"),
 	tags: text("tags").default('RRAY[').array(),
 	cover_image: text("cover_image"),
+	preferences: jsonb("preferences"),
 },
 (table) => {
 	return {
 		leaflet_idx: index("leaflets_in_publications_leaflet_idx").on(table.leaflet),
 		publication_idx: index("leaflets_in_publications_publication_idx").on(table.publication),
+		doc_idx: index("leaflets_in_publications_doc_idx").on(table.doc),
 		leaflets_in_publications_pkey: primaryKey({ columns: [table.publication, table.leaflet], name: "leaflets_in_publications_pkey"}),
-	}
-});
-
-export const user_subscriptions = pgTable("user_subscriptions", {
-	identity_id: uuid("identity_id").primaryKey().notNull().references(() => identities.id, { onDelete: "cascade" }),
-	stripe_customer_id: text("stripe_customer_id").notNull(),
-	stripe_subscription_id: text("stripe_subscription_id"),
-	plan: text("plan"),
-	status: text("status"),
-	current_period_end: timestamp("current_period_end", { withTimezone: true, mode: 'string' }),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-},
-(table) => {
-	return {
-		user_subscriptions_stripe_customer_id_key: unique("user_subscriptions_stripe_customer_id_key").on(table.stripe_customer_id),
-		user_subscriptions_stripe_subscription_id_key: unique("user_subscriptions_stripe_subscription_id_key").on(table.stripe_subscription_id),
-	}
-});
-
-export const user_entitlements = pgTable("user_entitlements", {
-	identity_id: uuid("identity_id").notNull().references(() => identities.id, { onDelete: "cascade" }),
-	entitlement_key: text("entitlement_key").notNull(),
-	granted_at: timestamp("granted_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	expires_at: timestamp("expires_at", { withTimezone: true, mode: 'string' }),
-	source: text("source"),
-	metadata: jsonb("metadata"),
-},
-(table) => {
-	return {
-		identity_id_idx: index("user_entitlements_identity_id_idx").on(table.identity_id),
-		expires_at_idx: index("user_entitlements_expires_at_idx").on(table.expires_at),
-		user_entitlements_pkey: primaryKey({ columns: [table.identity_id, table.entitlement_key], name: "user_entitlements_pkey"}),
 	}
 });
