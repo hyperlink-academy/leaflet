@@ -154,11 +154,46 @@ export const inputrules = (
         if (propsRef.current.listData) return null;
         let tr = state.tr;
         tr.delete(0, 2);
-        repRef.current?.mutate.assertFact({
-          entity: propsRef.current.entityID,
-          attribute: "block/is-list",
-          data: { type: "boolean", value: true },
-        });
+        repRef.current?.mutate.assertFact([
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          },
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/list-style",
+            data: { type: "list-style-union", value: "unordered" },
+          },
+        ]);
+        return tr;
+      }),
+
+      // Ordered List - respect the starting number typed (supports "1." or "1)")
+      new InputRule(/^(\d+)[.)]\s$/, (state, match) => {
+        if (propsRef.current.listData) return null;
+        let tr = state.tr;
+        tr.delete(0, match[0].length);
+        const startNumber = parseInt(match[1], 10);
+        repRef.current?.mutate.assertFact([
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          },
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/list-style",
+            data: { type: "list-style-union", value: "ordered" },
+          },
+        ]);
+        if (startNumber > 1) {
+          repRef.current?.mutate.assertFact({
+            entity: propsRef.current.entityID,
+            attribute: "block/list-number",
+            data: { type: "number", value: startNumber },
+          });
+        }
         return tr;
       }),
 

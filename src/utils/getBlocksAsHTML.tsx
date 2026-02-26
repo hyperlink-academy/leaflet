@@ -16,15 +16,19 @@ export async function getBlocksAsHTML(
     let parsed = parseBlocksToList(selectedBlocks);
     for (let pb of parsed) {
       if (pb.type === "block") result.push(await renderBlock(pb.block, tx));
-      else
+      else {
+        // Check if the first child is an ordered list
+        let isOrdered = pb.children[0]?.block.listData?.listStyle === "ordered";
+        let tag = isOrdered ? "ol" : "ul";
         result.push(
-          `<ul>${(
+          `<${tag}>${(
             await Promise.all(
               pb.children.map(async (c) => await renderList(c, tx)),
             )
           ).join("\n")}
-          </ul>`,
+          </${tag}>`,
         );
+      }
     }
     return result;
   });
@@ -36,10 +40,15 @@ async function renderList(l: List, tx: ReadTransaction): Promise<string> {
     await Promise.all(l.children.map(async (c) => await renderList(c, tx)))
   ).join("\n");
   let [checked] = await scanIndex(tx).eav(l.block.value, "block/check-list");
+
+  // Check if nested children are ordered or unordered
+  let isOrdered = l.children[0]?.block.listData?.listStyle === "ordered";
+  let tag = isOrdered ? "ol" : "ul";
+
   return `<li ${checked ? `data-checked=${checked.data.value}` : ""}>${await renderBlock(l.block, tx)} ${
     l.children.length > 0
       ? `
-  <ul>${children}</ul>
+  <${tag}>${children}</${tag}>
   `
       : ""
   }</li>`;
