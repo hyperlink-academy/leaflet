@@ -240,9 +240,10 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksOrderedList.isMain(b.block): {
+      let block = b.block;
       return (
-        <ol className="-ml-px sm:ml-[9px] pb-2" start={b.block.startIndex || 1}>
-          {b.block.children.map((child, i) => (
+        <ol className="-ml-px sm:ml-[9px] pb-2" start={block.startIndex || 1}>
+          {block.children.map((child, i) => (
             <OrderedListItem
               pollData={pollData}
               pages={pages}
@@ -253,7 +254,7 @@ export let Block = ({
               key={i}
               className={className}
               pageId={pageId}
-              startIndex={b.block.startIndex || 1}
+              startIndex={block.startIndex || 1}
             />
           ))}
         </ol>
