@@ -92,7 +92,7 @@ export function DocLinkBlock(props: {
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
-  let [title, description] = props.blocks
+  let [title, description, thirdLine] = props.blocks
     .map((b) => b.block)
     .filter(
       (b) => PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
@@ -128,6 +128,18 @@ export function DocLinkBlock(props: {
                   <TextBlock
                     facets={description.facets}
                     plaintext={description.plaintext}
+                    index={[]}
+                    preview
+                  />
+                </div>
+              )}
+              {thirdLine && (
+                <div
+                  className={`pageBlockLineThree outline-none resize-none align-top gap-2 ${thirdLine.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                >
+                  <TextBlock
+                    facets={thirdLine.facets}
+                    plaintext={thirdLine.plaintext}
                     index={[]}
                     preview
                   />
