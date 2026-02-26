@@ -64,8 +64,6 @@ DB_URL=postgresql://postgres:postgres@localhost:54322/postgres
 # Leaflet specific
 LEAFLET_APP_PASSWORD=any-password-you-want
 
-# Feed Service (for publication features, optional)
-FEED_SERVICE_URL=http://localhost:3001
 ```
 
 #### Database Migrations
@@ -88,12 +86,9 @@ FEED_SERVICE_URL=http://localhost:3001
 
 #### Feed service setup (optional)
 
-Setup instructions to run a local feed service from a docker container. This step isn't necessary if you're not working on publication or BlueSky integration features.
+Setup instructions to run a local feed service. This step isn't necessary if you're not working on publication or BlueSky integration features.
 
-1. Clone the repo `git clone https://github.com/hyperlink-academy/leaflet-feeds.git`
-2. Update your `.env.local` to include the FEED_SERVICE_URL (if not already set): `FEED_SERVICE_URL=http://localhost:3001`
-3. Change to the directory and build the docker container `docker build -t leaflet-feeds .`
-4. Run the docker container on port 3001 (to avoid conflicts with the main app): `docker run -p 3001:3000 leaflet-feeds`
+1. Run `npm run start-feed-service-dev` to start the feed service with hot reloading on `http://localhost:3030`.
 
 #### Troubleshooting
 
