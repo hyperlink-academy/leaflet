@@ -46,11 +46,13 @@ export async function POST(req: NextRequest) {
 
     case "invoice.payment_failed": {
       const invoice = event.data.object;
-      const subDetails = invoice.parent?.subscription_details;
+      const sub = invoice.parent?.subscription_details?.subscription;
       const subId =
-        typeof subDetails?.subscription === "string"
-          ? subDetails.subscription
-          : subDetails?.subscription?.id || "";
+        typeof sub === "string"
+          ? sub
+          : typeof sub === "object" && sub
+            ? sub.id
+            : "";
       await inngest.send({
         name: "stripe/invoice.payment.failed",
         data: {

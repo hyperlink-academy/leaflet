@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
 
     if (identityId && sub) {
       const periodEnd = sub.items.data[0]?.current_period_end ?? 0;
+      const lookupKey = sub.items.data[0]?.price.lookup_key;
       const entitlements = parseEntitlements(PRODUCT_DEFINITION.metadata);
 
       // Optimistic upsert — idempotent with webhook handler
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
           identity_id: identityId,
           stripe_customer_id: customerId,
           stripe_subscription_id: sub.id,
-          plan: PRODUCT_DEFINITION.name,
+          plan: lookupKey,
           status: sub.status,
           current_period_end: new Date(periodEnd * 1000).toISOString(),
           updated_at: new Date().toISOString(),

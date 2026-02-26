@@ -50,6 +50,7 @@ export async function createCheckoutSession(
     ...(customerId
       ? { customer: customerId }
       : { customer_email: identity.email || undefined }),
+    subscription_data: { metadata: { identity_id: identity.id } },
     success_url: successUrl.toString(),
     cancel_url: cancelUrl,
   });

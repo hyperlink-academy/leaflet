@@ -15,6 +15,7 @@ export const stripe_handle_checkout_completed = inngest.createFunction(
       const sub =
         typeof s.subscription === "object" ? s.subscription : null;
       const periodEnd = sub?.items.data[0]?.current_period_end ?? 0;
+      const lookupKey = sub?.items.data[0]?.price.lookup_key ?? null;
 
       return {
         identityId: s.client_reference_id,
@@ -22,6 +23,7 @@ export const stripe_handle_checkout_completed = inngest.createFunction(
         subId: sub?.id ?? null,
         subStatus: sub?.status ?? null,
         periodEnd,
+        lookupKey,
       };
     });
 
@@ -37,7 +39,7 @@ export const stripe_handle_checkout_completed = inngest.createFunction(
           identity_id: session.identityId!,
           stripe_customer_id: session.customerId,
           stripe_subscription_id: session.subId!,
-          plan: PRODUCT_DEFINITION.name,
+          plan: session.lookupKey,
           status: session.subStatus,
           current_period_end: new Date(
             session.periodEnd * 1000,
