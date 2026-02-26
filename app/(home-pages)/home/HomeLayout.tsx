@@ -137,7 +137,11 @@ export function HomeLeafletList(props: {
         return { ...result, titles };
       }
     },
-    { fallbackData: { facts: props.initialFacts, titles: props.titles } },
+    {
+      fallbackData: { facts: props.initialFacts, titles: props.titles },
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
   );
 
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {

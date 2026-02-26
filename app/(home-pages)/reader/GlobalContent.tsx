@@ -22,6 +22,8 @@ export const GlobalContent = (props: {
     },
     {
       fallbackData: { posts: initialData.posts },
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
     },
   );
 
