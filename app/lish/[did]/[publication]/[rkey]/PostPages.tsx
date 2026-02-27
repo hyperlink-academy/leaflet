@@ -28,6 +28,7 @@ import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { ThreadPage as ThreadPageComponent } from "./ThreadPage";
 import { BlueskyQuotesPage } from "./BlueskyQuotesPage";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 // Page types
 export type DocPage = { type: "doc"; id: string };
@@ -248,10 +249,7 @@ export function PostPages({
   if (!document || !record) return null;
 
   let theme = pubRecord?.theme || record.theme || null;
-  // For publication posts, respect the publication's showPageBackground setting
-  // For standalone documents, default to showing page background
-  let isInPublication = !!pubRecord;
-  let hasPageBackground = isInPublication ? !!theme?.showPageBackground : true;
+  let hasPageBackground = !useCardBorderHidden();
 
   let firstPage = pages[0] as
     | PubLeafletPagesLinearDocument.Main

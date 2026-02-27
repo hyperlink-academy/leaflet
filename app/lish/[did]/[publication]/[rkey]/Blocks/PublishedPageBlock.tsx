@@ -167,9 +167,8 @@ export function PagePreview(props: {
 }) {
   let previewRef = useRef<HTMLDivElement | null>(null);
   let { rootEntity } = useReplicache();
-  const { theme } = useDocument();
   let pageWidth = `var(--page-width-unitless)`;
-  let cardBorderHidden = !theme?.showPageBackground;
+  let cardBorderHidden = useCardBorderHidden();
   return (
     <div
       ref={previewRef}
