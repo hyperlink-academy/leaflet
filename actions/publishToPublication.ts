@@ -259,7 +259,7 @@ export async function publishToPublication({
 
     record = {
       $type: "site.standard.document",
-      title: title || "Untitled",
+      title: title || "",
       site: siteUri,
       path: "/" + rkey,
       publishedAt:
@@ -293,7 +293,7 @@ export async function publishToPublication({
           ...preferences,
         },
       }),
-      title: title || "Untitled",
+      title: title || "",
       description: description || "",
       ...(tags !== undefined && { tags }),
       ...(coverImageBlob && { coverImage: coverImageBlob }),
@@ -338,7 +338,7 @@ export async function publishToPublication({
     await supabaseServerClient.from("leaflets_to_documents").upsert({
       leaflet: leaflet_id,
       document: result.uri,
-      title: title || "Untitled",
+      title: title || "",
       description: description || "",
     });
 

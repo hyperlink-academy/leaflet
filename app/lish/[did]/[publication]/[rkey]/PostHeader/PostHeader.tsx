@@ -123,11 +123,11 @@ export const PostHeaderLayout = (props: {
       <div className="pubInfo flex text-accent-contrast font-bold justify-between w-full">
         {props.pubLink}
       </div>
-      <h2
-        className={`postTitle text-xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent ${!props.postTitle && "text-tertiary italic"}`}
-      >
-        {props.postTitle ? props.postTitle : "Untitled"}
-      </h2>
+      {props.postTitle && (
+        <h2 className="postTitle text-xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent">
+          {props.postTitle}
+        </h2>
+      )}
       {props.postDescription ? (
         <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
           {props.postDescription}

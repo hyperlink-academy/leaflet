@@ -20,6 +20,7 @@ import {
   normalizePublicationRecord,
   normalizeDocumentRecord,
 } from "src/utils/normalizeRecords";
+import { getFirstParagraph } from "src/utils/getFirstParagraph";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -143,9 +144,11 @@ export default async function Publication(props: {
                           href={docUrl}
                           className="publishedPost hover:no-underline! flex flex-col"
                         >
-                          <h3 className="text-primary">{doc_record.title}</h3>
-                          <p className="italic text-secondary">
-                            {doc_record.description}
+                          {doc_record.title && (
+                            <h3 className="text-primary">{doc_record.title}</h3>
+                          )}
+                          <p className="italic text-secondary line-clamp-3">
+                            {doc_record.description || getFirstParagraph(doc_record)}
                           </p>
                         </SpeedyLink>
 
