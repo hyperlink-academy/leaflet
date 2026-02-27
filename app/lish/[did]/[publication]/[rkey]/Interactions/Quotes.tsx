@@ -26,6 +26,15 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { ThreadLink, QuotesLink } from "../PostLinks";
 import { BskyPostContent } from "../BskyPostContent";
 
+function engagementScore(post: PostView | undefined): number {
+  if (!post) return 0;
+  return (
+    (post.likeCount ?? 0) +
+    (post.replyCount ?? 0) * 1.5 +
+    (post.quoteCount ?? 0) * 1.5
+  );
+}
+
 // Helper to get SWR key for quotes
 export function getQuotesSWRKey(uris: string[]) {
   if (uris.length === 0) return null;
@@ -84,6 +93,18 @@ export const MentionsDrawerContent = (props: {
   bskyPosts?.forEach((pv) => {
     postViewMap.set(pv.uri, pv);
   });
+
+  // Sort by engagement: likes count 1, replies and quotes count 1.5
+  const byEngagement = (
+    a: { uri: string },
+    b: { uri: string },
+  ) => {
+    const scoreA = engagementScore(postViewMap.get(a.uri));
+    const scoreB = engagementScore(postViewMap.get(b.uri));
+    return scoreB - scoreA;
+  };
+  quotesWithLinks.sort(byEngagement);
+  directMentions.sort(byEngagement);
 
   return (
     <>
