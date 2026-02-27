@@ -61,7 +61,7 @@ export const NewContent = (props: {
 
   const allPosts = data ? data.flatMap((page) => page.posts) : [];
 
-  if (allPosts.length === 0 && !isValidating) {
+  if (allPosts.length === 0) {
     return (
       <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
         No posts yet. Check back soon!
@@ -80,7 +80,7 @@ export const NewContent = (props: {
           className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
           aria-hidden="true"
         />
-        {isValidating && (
+        {isValidating && allPosts.length > 0 && (
           <div className="text-center text-tertiary py-4">
             Loading more posts...
           </div>

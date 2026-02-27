@@ -76,7 +76,7 @@ export const InboxContent = (props: {
       new Date(a.documents.data?.publishedAt || 0).getTime(),
   );
 
-  if (allPosts.length === 0 && !isValidating) return <ReaderEmpty />;
+  if (allPosts.length === 0) return <ReaderEmpty />;
 
   let hasBackgroundImage = useHasBackgroundImage();
 
@@ -92,7 +92,7 @@ export const InboxContent = (props: {
           className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
           aria-hidden="true"
         />
-        {isValidating && (
+        {isValidating && allPosts.length > 0 && (
           <div className="text-center text-tertiary py-4">
             Loading more posts...
           </div>
