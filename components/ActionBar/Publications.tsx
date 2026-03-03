@@ -41,7 +41,7 @@ export const PublicationButtons = (props: {
 
   return (
     <div
-      className={`pubListWrapper w-full  flex flex-col sm:bg-transparent sm:border-0 ${props.className}`}
+      className={`pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0 ${props.className}`}
     >
       {hasLooseleafs && (
         <>
