@@ -6,7 +6,6 @@ import type {
   NormalizedDocument,
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
-import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { enrichDocumentToPost } from "./enrichPost";
 
 export type Cursor = {
@@ -19,35 +18,50 @@ export async function getReaderFeed(
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   let auth_res = await getIdentityData();
   if (!auth_res?.atp_did) return { posts: [], nextCursor: null };
-  let query = supabaseServerClient
-    .from("documents")
-    .select(
-      `*,
-      comments_on_documents(count),
-      document_mentions_in_bsky(count),
-      recommends_on_documents(count),
-      documents_in_publications!inner(publications!inner(*, publication_subscriptions!inner(*)))`,
-    )
-    .eq(
-      "documents_in_publications.publications.publication_subscriptions.identity",
-      auth_res.atp_did,
-    )
-    .order("sort_date", { ascending: false })
-    .order("uri", { ascending: false })
-    .limit(25);
-  if (cursor) {
-    query = query.or(
-      `sort_date.lt.${cursor.timestamp},and(sort_date.eq.${cursor.timestamp},uri.lt.${cursor.uri})`,
-    );
-  }
-  let { data: rawFeed, error } = await query;
 
-  // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
-  const feed = deduplicateByUriOrdered(rawFeed || []);
+  const { data: rawFeed, error } = await supabaseServerClient.rpc(
+    "get_reader_feed",
+    {
+      p_identity: auth_res.atp_did,
+      p_cursor_timestamp: cursor?.timestamp ?? null,
+      p_cursor_uri: cursor?.uri ?? null,
+      p_limit: 25,
+    },
+  );
+  if (error) {
+    console.error("[getReaderFeed] rpc error:", error);
+    return { posts: [], nextCursor: null };
+  }
+
+  if (rawFeed.length === 0) return { posts: [], nextCursor: null };
+
+  // Reshape rows to match the structure enrichDocumentToPost expects
+  const feed = rawFeed.map((row: any) => ({
+    uri: row.uri,
+    data: row.data,
+    sort_date: row.sort_date,
+    comments_on_documents: [{ count: Number(row.comments_count) }],
+    document_mentions_in_bsky: [{ count: Number(row.mentions_count) }],
+    recommends_on_documents: [{ count: Number(row.recommends_count) }],
+    documents_in_publications: row.publication_uri
+      ? [
+          {
+            publications: {
+              uri: row.publication_uri,
+              record: row.publication_record,
+              name: row.publication_name,
+            },
+          },
+        ]
+      : [],
+  }));
 
   let posts = (
     await Promise.all(feed.map((post) => enrichDocumentToPost(post as any)))
   ).filter((post): post is Post => post !== null);
+  if (feed.length > 0 && posts.length !== feed.length) {
+    console.log(`[getReaderFeed] ${feed.length - posts.length}/${feed.length} posts dropped during enrichment`);
+  }
 
   const nextCursor =
     posts.length > 0
