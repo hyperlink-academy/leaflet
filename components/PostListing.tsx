@@ -133,9 +133,11 @@ export const PostListing = (props: Post) => {
             </div>
           )}
           <div className="postListingInfo px-3 py-2">
-            <h3 className="postListingTitle text-primary line-clamp-2 sm:text-lg text-base">
-              {postRecord.title}
-            </h3>
+            {postRecord.title && (
+              <h3 className="postListingTitle text-primary line-clamp-2 sm:text-lg text-base">
+                {postRecord.title}
+              </h3>
+            )}
 
             <p className="postListingDescription text-secondary line-clamp-3 sm:text-base text-sm">
               {postRecord.description}

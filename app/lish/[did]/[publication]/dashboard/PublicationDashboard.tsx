@@ -74,7 +74,11 @@ export default function PublicationDashboard({
           controls: null,
         },
         Analytics: {
-          content: <PublicationAnalytics />,
+          content: (
+            <PublicationAnalytics
+              showPageBackground={!!record.theme?.showPageBackground}
+            />
+          ),
           controls: null,
         },
       }}
