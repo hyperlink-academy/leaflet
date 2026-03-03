@@ -23,8 +23,8 @@ export async function getReaderFeed(
     "get_reader_feed",
     {
       p_identity: auth_res.atp_did,
-      p_cursor_timestamp: cursor?.timestamp ?? null,
-      p_cursor_uri: cursor?.uri ?? null,
+      p_cursor_timestamp: cursor?.timestamp,
+      p_cursor_uri: cursor?.uri,
       p_limit: 25,
     },
   );
