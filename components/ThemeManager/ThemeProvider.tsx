@@ -122,6 +122,7 @@ export const BaseThemeProvider = ({
   showPageBackground,
   pageWidth,
   hasBackgroundImage,
+  className,
   children,
 }: {
   local?: boolean;
@@ -136,6 +137,7 @@ export const BaseThemeProvider = ({
   highlight2: AriaColor;
   highlight3: AriaColor;
   pageWidth?: number;
+  className?: string;
   children: React.ReactNode;
 }) => {
   // When showPageBackground is false and there's no background image,
@@ -239,7 +241,7 @@ export const BaseThemeProvider = ({
   ]);
   return (
     <div
-      className="leafletWrapper w-full text-primary h-full min-h-fit flex flex-col bg-center items-stretch "
+      className={`leafletWrapper w-full text-primary h-full min-h-fit flex flex-col bg-center items-stretch ${className || ""}`}
       style={
         {
           "--bg-leaflet": colorToString(bgLeaflet, "rgb"),

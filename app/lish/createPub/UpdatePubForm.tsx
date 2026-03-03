@@ -74,6 +74,7 @@ export const EditPubForm = (props: {
 
   return (
     <form
+      className="min-h-0 flex-1 flex flex-col pb-2"
       onSubmit={async (e) => {
         if (!pubData) return;
         e.preventDefault();
@@ -104,7 +105,7 @@ export const EditPubForm = (props: {
       >
         General Settings
       </PubSettingsHeader>
-      <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2">
+      <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2 overflow-y-auto min-h-0">
         <div className="flex items-center justify-between gap-2 mt-2 ">
           <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
             Logo <span className="font-normal">(optional)</span>
