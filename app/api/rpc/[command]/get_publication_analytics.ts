@@ -43,24 +43,22 @@ export const get_publication_analytics = makeRoute({
       };
     }
 
-    const origin = `https://${domain}/`;
-
     const [trafficResult, referrersResult, pagesResult] = await Promise.all([
       tinybird.publicationTraffic.query({
-        domain: origin,
+        domain,
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         ...(path ? { path } : {}),
       }),
       tinybird.publicationTopReferrers.query({
-        domain: origin,
+        domain,
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         ...(path ? { path } : {}),
         limit: 10,
       }),
       tinybird.publicationTopPages.query({
-        domain: origin,
+        domain,
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         limit: 20,

@@ -98,10 +98,11 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
       sql: `
         SELECT
           toDate(fromUnixTimestamp64Milli(timestamp)) AS day,
-          count() AS pageviews
+          count() AS pageviews,
+          uniq(deviceId) AS visitors
         FROM analytics_events
         WHERE eventType = 'pageview'
-          AND origin = {{String(domain)}}
+          AND domain(origin) = {{String(domain)}}
           {% if defined(date_from) %}
             AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
           {% end %}
@@ -119,6 +120,7 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
   output: {
     day: t.date(),
     pageviews: t.uint64(),
+    visitors: t.uint64(),
   },
 });
 
@@ -148,9 +150,9 @@ export const publicationTopReferrers = defineEndpoint(
           count() AS pageviews
         FROM analytics_events
         WHERE eventType = 'pageview'
-          AND origin = {{String(domain)}}
+          AND domain(origin) = {{String(domain)}}
           AND referrer != ''
-          AND domain(referrer) != domain({{String(domain)}})
+          AND domain(referrer) != {{String(domain)}}
           {% if defined(date_from) %}
             AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
           {% end %}
@@ -200,7 +202,7 @@ export const publicationTopPages = defineEndpoint("publication_top_pages", {
           count() AS pageviews
         FROM analytics_events
         WHERE eventType = 'pageview'
-          AND origin = {{String(domain)}}
+          AND domain(origin) = {{String(domain)}}
           {% if defined(date_from) %}
             AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
           {% end %}

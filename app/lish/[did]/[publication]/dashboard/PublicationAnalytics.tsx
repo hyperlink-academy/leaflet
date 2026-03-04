@@ -2,7 +2,7 @@ import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { UpgradeContent } from "../UpgradeModal";
 import { Popover } from "components/Popover";
 import { DatePicker } from "components/DatePicker";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import type { DateRange } from "react-day-picker";
 import { usePublicationData } from "./PublicationSWRProvider";
@@ -21,6 +21,30 @@ import {
 } from "recharts";
 
 type ReferrerType = { referrer_host: string; pageviews: number };
+type TrafficMetric = "pageviews" | "visitors";
+
+const dayTickFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+});
+
+function formatDayTick(value: string) {
+  let d = new Date(value + "T00:00:00");
+  if (isNaN(d.getTime())) return value;
+  return dayTickFormatter.format(d);
+}
+
+function formatYTick(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toLocaleString();
+}
+
+function endOfDay(date: Date): Date {
+  let d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
 
 function fillDailyGaps<T extends { day: string }>(
   data: T[],
@@ -28,8 +52,7 @@ function fillDailyGaps<T extends { day: string }>(
   from?: Date,
   to?: Date,
 ): T[] {
-  let start =
-    from || (data.length > 0 ? new Date(data[0].day) : null);
+  let start = from || (data.length > 0 ? new Date(data[0].day) : null);
   let end =
     to || (data.length > 0 ? new Date(data[data.length - 1].day) : null);
   if (!start || !end) return data;
@@ -55,17 +78,24 @@ export const PublicationAnalytics = (props: {
   let isPro = useIsPro();
 
   let { data: publication } = usePublicationData();
-  let [dateRange, setDateRange] = useState<DateRange>({ from: undefined });
+  let [dateRange, setDateRange] = useState<DateRange>(() => {
+    let from = new Date();
+    from.setDate(from.getDate() - 7);
+    return { from, to: new Date() };
+  });
+  let [datePreset, setDatePreset] = useState<string | null>("Last Week");
   let [selectedPost, setSelectedPost] = useState<
     { title: string; path: string } | undefined
   >(undefined);
   let [selectedReferror, setSelectedReferror] = useState<
     ReferrerType | undefined
   >(undefined);
+  let [trafficMetric, setTrafficMetric] =
+    useState<TrafficMetric>("visitors");
 
   let publicationUri = publication?.publication?.uri;
 
-  let { data: analyticsData } = useSWR(
+  let { data: analyticsData, isLoading: analyticsLoading } = useSWR(
     publicationUri
       ? [
           "publication-analytics",
@@ -79,14 +109,14 @@ export const PublicationAnalytics = (props: {
       let res = await callRPC("get_publication_analytics", {
         publication_uri: publicationUri!,
         ...(dateRange.from ? { from: dateRange.from.toISOString() } : {}),
-        ...(dateRange.to ? { to: dateRange.to.toISOString() } : {}),
+        ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
         ...(selectedPost ? { path: `/${selectedPost.path}` } : {}),
       });
       return res?.result;
     },
   );
 
-  let { data: subscribersData } = useSWR(
+  let { data: subscribersData, isLoading: subscribersLoading } = useSWR(
     publicationUri
       ? [
           "publication-subscribers-timeseries",
@@ -99,7 +129,7 @@ export const PublicationAnalytics = (props: {
       let res = await callRPC("get_publication_subscribers_timeseries", {
         publication_uri: publicationUri!,
         ...(dateRange.from ? { from: dateRange.from.toISOString() } : {}),
-        ...(dateRange.to ? { to: dateRange.to.toISOString() } : {}),
+        ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
       });
       return res?.result;
     },
@@ -109,9 +139,9 @@ export const PublicationAnalytics = (props: {
     () =>
       fillDailyGaps(
         analyticsData?.traffic || [],
-        (day) => ({ day, pageviews: 0 }),
+        (day) => ({ day, pageviews: 0, visitors: 0 }),
         dateRange.from,
-        dateRange.to,
+        dateRange.to ?? new Date(),
       ),
     [analyticsData?.traffic, dateRange.from, dateRange.to],
   );
@@ -125,27 +155,16 @@ export const PublicationAnalytics = (props: {
 
   return (
     <div className="analytics flex flex-col gap-6">
-      <div
-        className={`analyticsSubCount rounded-lg border ${
-          props.showPageBackground
-            ? "border-border-light p-2"
-            : "border-transparent"
-        }`}
-        style={{
-          backgroundColor: props.showPageBackground
-            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-            : "transparent",
-        }}
-      >
-        <div className="flex gap-2 justify-between items-center">
-          <h3>Subscribers</h3>
-          <DateRangeSelector
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            pubStartDate={publication?.publication?.indexed_at}
-          />
-        </div>
-        <SubscribersChart data={subscribersData?.timeseries || []} />
+      <div className="flex justify-end gap-2">
+        <MetricToggle metric={trafficMetric} setMetric={setTrafficMetric} />
+        <DateRangeSelector
+          dateRange={dateRange}
+          setDateRange={setDateRange}
+          datePreset={datePreset}
+          setDatePreset={setDatePreset}
+          pubStartDate={publication?.publication?.indexed_at}
+          showBackground={props.showPageBackground}
+        />
       </div>
       <div
         className={`analyticsViewCount rounded-lg border ${
@@ -159,46 +178,94 @@ export const PublicationAnalytics = (props: {
             : "transparent",
         }}
       >
-        <div className="flex justify-between items-center gap-2 pb-2 w-full">
-          <div className="flex gap-2 items-center">
-            <h3>Traffic</h3>
-            <ArrowRightTiny className="text-border" />
-            <PostSelector
-              selectedPost={selectedPost}
-              setSelectedPost={setSelectedPost}
-            />
-            {selectedReferror && (
-              <>
-                <ArrowRightTiny className="text-border" />
-                <div className="text-tertiary">
-                  {" "}
-                  {selectedReferror.referrer_host}
-                </div>
-              </>
-            )}
-          </div>
-          <DateRangeSelector
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            pubStartDate={publication?.publication?.indexed_at}
+        <div className="flex items-center gap-2 pb-2 w-full">
+          <h3>Traffic</h3>
+          <ArrowRightTiny className="text-border" />
+          <PostSelector
+            selectedPost={selectedPost}
+            setSelectedPost={setSelectedPost}
           />
+          {selectedReferror && (
+            <>
+              <ArrowRightTiny className="text-border" />
+              <div className="text-tertiary">
+                {" "}
+                {selectedReferror.referrer_host}
+              </div>
+            </>
+          )}
         </div>
-        <div className="flex gap-2">
-          <TrafficChart data={filledTraffic} />
+        <TrafficChart data={filledTraffic} isLoading={analyticsLoading} metric={trafficMetric} />
+        <div className="flex gap-4 mt-2">
+          <TopPages
+            pages={analyticsData?.topPages || []}
+            selectedPost={selectedPost}
+            setSelectedPost={setSelectedPost}
+            isLoading={analyticsLoading}
+          />
           <TopReferrors
             refferors={analyticsData?.topReferrers || []}
             setSelectedReferror={setSelectedReferror}
             selectedReferror={selectedReferror}
-          />{" "}
+            isLoading={analyticsLoading}
+          />
         </div>
+      </div>
+      <div
+        className={`analyticsSubCount rounded-lg border ${
+          props.showPageBackground
+            ? "border-border-light p-2"
+            : "border-transparent"
+        }`}
+        style={{
+          backgroundColor: props.showPageBackground
+            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+            : "transparent",
+        }}
+      >
+        <h3>Subscribers</h3>
+        <SubscribersChart
+          data={subscribersData?.timeseries || []}
+          isLoading={subscribersLoading}
+        />
       </div>
     </div>
   );
 };
 
+const ChartSkeleton = () => (
+  <div className="aspect-video w-full grow animate-pulse">
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={[]}>
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="var(--color-border-light)"
+        />
+        <XAxis tick={false} stroke="var(--color-border-light)" tickMargin={8} />
+        <YAxis tick={false} stroke="var(--color-border-light)" tickMargin={4} />
+      </AreaChart>
+    </ResponsiveContainer>
+  </div>
+);
+
+const ListSkeleton = ({ rows = 4 }: { rows?: number }) => (
+  <div className="flex flex-col gap-2 animate-pulse">
+    {Array.from({ length: rows }).map((_, i) => (
+      <div key={i} className="flex justify-between items-center py-1.5 px-1">
+        <div className="h-4 bg-border-light rounded w-2/3" />
+        <div className="h-4 bg-border-light rounded w-8" />
+      </div>
+    ))}
+  </div>
+);
+
 const SubscribersChart = (props: {
   data: { day: string; total_subscribers: number }[];
+  isLoading: boolean;
 }) => {
+  if (props.isLoading) {
+    return <ChartSkeleton />;
+  }
   if (props.data.length === 0) {
     return (
       <div className="aspect-video w-full border border-border grow flex items-center justify-center text-tertiary">
@@ -210,21 +277,35 @@ const SubscribersChart = (props: {
     <div className="aspect-video w-full grow">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={props.data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="var(--tertiary)" />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="var(--color-border-light)"
+          />
+          <XAxis
+            dataKey="day"
+            tick={{ fontSize: 12, fill: "var(--color-secondary)" }}
+            stroke="var(--color-border-light)"
+            tickFormatter={formatDayTick}
+            interval="preserveStartEnd"
+            minTickGap={40}
+            tickMargin={8}
+          />
           <YAxis
-            tick={{ fontSize: 12 }}
-            stroke="var(--tertiary)"
+            tick={{ fontSize: 12, fill: "var(--color-secondary)" }}
+            stroke="var(--color-border-light)"
             allowDecimals={false}
+            tickFormatter={formatYTick}
+            tickMargin={4}
           />
           <Tooltip />
           <Area
             type="monotone"
             dataKey="total_subscribers"
             name="Subscribers"
-            stroke="var(--accent-contrast)"
-            fill="var(--accent-contrast)"
+            stroke="var(--color-accent-contrast)"
+            fill="var(--color-accent-contrast)"
             fillOpacity={0.1}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -233,8 +314,34 @@ const SubscribersChart = (props: {
 };
 
 const TrafficChart = (props: {
-  data: { day: string; pageviews: number }[];
+  data: { day: string; pageviews: number; visitors: number }[];
+  isLoading: boolean;
+  metric: TrafficMetric;
 }) => {
+  let today = new Date().toISOString().slice(0, 10);
+  let metricLabel = props.metric === "pageviews" ? "pageviews" : "visitors";
+
+  let chartData = useMemo(() => {
+    if (props.data.length === 0) return [];
+    return props.data.map((d, i) => {
+      let value = d[props.metric];
+      let isToday = d.day === today;
+      let isBeforeToday =
+        i === props.data.length - 2 &&
+        props.data[props.data.length - 1]?.day === today;
+      return {
+        day: d.day,
+        // Solid line: all points except today
+        complete: isToday ? undefined : value,
+        // Dashed line: bridge from yesterday to today
+        partial: isToday || isBeforeToday ? value : undefined,
+      };
+    });
+  }, [props.data, props.metric, today]);
+
+  if (props.isLoading) {
+    return <ChartSkeleton />;
+  }
   if (props.data.length === 0) {
     return (
       <div className="aspect-video w-full border border-border grow flex items-center justify-center text-tertiary">
@@ -245,25 +352,91 @@ const TrafficChart = (props: {
   return (
     <div className="aspect-video w-full grow">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={props.data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="var(--tertiary)" />
-          <YAxis
-            tick={{ fontSize: 12 }}
-            stroke="var(--tertiary)"
-            allowDecimals={false}
+        <AreaChart data={chartData}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="var(--color-border-light)"
           />
-          <Tooltip />
+          <XAxis
+            dataKey="day"
+            tick={{ fontSize: 12, fill: "var(--color-secondary)" }}
+            stroke="var(--color-border-light)"
+            tickFormatter={formatDayTick}
+            interval="preserveStartEnd"
+            minTickGap={40}
+            tickMargin={8}
+          />
+          <YAxis
+            tick={{ fontSize: 12, fill: "var(--color-secondary)" }}
+            stroke="var(--color-border-light)"
+            allowDecimals={false}
+            tickFormatter={formatYTick}
+            tickMargin={4}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              let pageviews =
+                payload.find((p) => p.dataKey === "complete")?.value ??
+                payload.find((p) => p.dataKey === "partial")?.value;
+              return (
+                <div className="rounded border border-border-light bg-white p-2 text-sm shadow-sm">
+                  <div className="text-tertiary">
+                    {formatDayTick(String(label))}
+                  </div>
+                  <div>{Number(pageviews).toLocaleString()} {metricLabel}</div>
+                </div>
+              );
+            }}
+          />
           <Area
-            type="monotone"
-            dataKey="pageviews"
+            type="linear"
+            dataKey="complete"
             name="Pageviews"
-            stroke="var(--accent-contrast)"
-            fill="var(--accent-contrast)"
+            stroke="var(--color-accent-contrast)"
+            fill="var(--color-accent-contrast)"
             fillOpacity={0.1}
+            isAnimationActive={false}
+          />
+          <Area
+            type="linear"
+            dataKey="partial"
+            name="partial"
+            stroke="var(--color-accent-contrast)"
+            strokeDasharray="4 4"
+            fill="var(--color-accent-contrast)"
+            fillOpacity={0.1}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>
+    </div>
+  );
+};
+
+const MetricToggle = (props: {
+  metric: TrafficMetric;
+  setMetric: (m: TrafficMetric) => void;
+}) => {
+  let options: { value: TrafficMetric; label: string }[] = [
+    { value: "visitors", label: "Visitors" },
+    { value: "pageviews", label: "Pageviews" },
+  ];
+  return (
+    <div className="flex rounded-md border border-border-light text-sm overflow-hidden">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => props.setMetric(opt.value)}
+          className={`px-2 py-1 ${
+            props.metric === opt.value
+              ? "bg-accent-contrast text-white"
+              : "bg-bg-page text-tertiary hover:text-primary"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
     </div>
   );
 };
@@ -365,6 +538,9 @@ const DateRangeSelector = (props: {
   pubStartDate: string | undefined;
   dateRange: DateRange;
   setDateRange: (dateRange: DateRange) => void;
+  datePreset: string | null;
+  setDatePreset: (preset: string | null) => void;
+  showBackground?: boolean;
 }) => {
   let buttonClass =
     "rounded-md px-1 text-sm border border-accent-contrast text-accent-contrast";
@@ -390,17 +566,24 @@ const DateRangeSelector = (props: {
   );
 
   function handleDateChange(range: DateRange | undefined) {
-    if (range) props.setDateRange(range);
+    if (range) {
+      props.setDateRange(range);
+      props.setDatePreset(null);
+    }
   }
 
   return (
     <Popover
       className={"w-fit"}
       trigger={
-        <div className="text-tertiary ml-0">
-          {props.dateRange.from === undefined
-            ? "All Time"
-            : `${startDate} - ${endDate}`}
+        <div
+          className={`w-36 text-center text-tertiary text-sm border border-border-light rounded-md px-2 py-1 hover:border-border ${props.showBackground ? "bg-bg-page" : ""}`}
+        >
+          {props.datePreset
+            ? props.datePreset
+            : props.dateRange.from === undefined
+              ? "All Time"
+              : `${startDate} - ${endDate}`}
         </div>
       }
     >
@@ -408,6 +591,7 @@ const DateRangeSelector = (props: {
         <button
           onClick={() => {
             props.setDateRange({ from: undefined, to: undefined });
+            props.setDatePreset("All Time");
           }}
           className={`${buttonClass}`}
         >
@@ -418,6 +602,7 @@ const DateRangeSelector = (props: {
             let from = new Date();
             from.setDate(from.getDate() - 7);
             props.setDateRange({ from, to: new Date() });
+            props.setDatePreset("Last Week");
           }}
           className={`${buttonClass}`}
         >
@@ -428,6 +613,7 @@ const DateRangeSelector = (props: {
             let from = new Date();
             from.setMonth(from.getMonth() - 1);
             props.setDateRange({ from, to: new Date() });
+            props.setDatePreset("Last Month");
           }}
           className={`${buttonClass}`}
         >
@@ -445,33 +631,116 @@ const DateRangeSelector = (props: {
   );
 };
 
+const TopPages = (props: {
+  pages: { path: string; pageviews: number }[];
+  selectedPost: { title: string; path: string } | undefined;
+  setSelectedPost: (s: { title: string; path: string } | undefined) => void;
+  isLoading: boolean;
+}) => {
+  let { data } = usePublicationData();
+  let docsByPath = useMemo(() => {
+    let map = new Map<string, { title: string; path: string }>();
+    for (let doc of data?.documents || []) {
+      let path = doc.record.path || "";
+      let normalized = path.startsWith("/") ? path : `/${path}`;
+      map.set(normalized, { title: doc.record.title, path });
+    }
+    return map;
+  }, [data?.documents]);
+
+  return (
+    <div className="flex flex-col w-full">
+      <h4 className="text-sm font-bold text-tertiary pb-1">Top Pages</h4>
+      <div className="h-64 overflow-y-auto">
+        {props.isLoading && <ListSkeleton />}
+        {!props.isLoading && props.pages.length === 0 && (
+          <div className="text-tertiary text-sm">No page data</div>
+        )}
+        {props.pages.map((page) => {
+          let doc = docsByPath.get(page.path);
+          let isSelected = selectedPostPath(props.selectedPost) === page.path;
+          return (
+            <Fragment key={page.path}>
+              <button
+                className={`w-full flex justify-between gap-4 px-1 py-1.5 items-center text-sm rounded-md ${isSelected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
+                onClick={() => {
+                  if (isSelected) {
+                    props.setSelectedPost(undefined);
+                  } else {
+                    let path = page.path.replace(/^\//, "");
+                    props.setSelectedPost({
+                      title: doc?.title || page.path,
+                      path,
+                    });
+                  }
+                }}
+              >
+                <div className="truncate text-left">
+                  {doc ? (
+                    <>
+                      <div className="truncate">{doc.title}</div>
+                      <div className="truncate text-tertiary text-xs">
+                        {page.path}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="truncate">{page.path}</div>
+                  )}
+                </div>
+                <div className="shrink-0 tabular-nums">
+                  {page.pageviews.toLocaleString()}
+                </div>
+              </button>
+              <hr className="border-border-light last:hidden" />
+            </Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+function selectedPostPath(
+  post: { title: string; path: string } | undefined,
+): string | undefined {
+  if (!post) return undefined;
+  return post.path.startsWith("/") ? post.path : `/${post.path}`;
+}
+
 const TopReferrors = (props: {
   refferors: ReferrerType[];
   setSelectedReferror: (ref: ReferrerType) => void;
   selectedReferror: ReferrerType | undefined;
+  isLoading: boolean;
 }) => {
   return (
-    <div className="topReferrors flex flex-col gap-0.5 w-full sm:w-xs">
-      {props.refferors.map((ref) => {
-        let selected = ref === props.selectedReferror;
-        return (
-          <>
-            <button
-              key={ref.referrer_host}
-              className={`w-full flex justify-between gap-4 px-1 items-center text-right rounded-md ${selected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
-              onClick={() => {
-                props.setSelectedReferror(ref);
-              }}
-            >
-              <div className="flex gap-2 items-center grow">
-                {ref.referrer_host}
-              </div>
-              {ref.pageviews.toLocaleString()}
-            </button>
-            <hr className="border-border-light last:hidden" />
-          </>
-        );
-      })}
+    <div className="topReferrors flex flex-col w-full">
+      <h4 className="text-sm font-bold text-tertiary pb-1">Top Referrers</h4>
+      <div className="h-64 overflow-y-auto">
+        {props.isLoading && <ListSkeleton />}
+        {!props.isLoading && props.refferors.length === 0 && (
+          <div className="text-tertiary text-sm">No referrer data</div>
+        )}
+        {props.refferors.map((ref) => {
+          let selected = ref === props.selectedReferror;
+          return (
+            <Fragment key={ref.referrer_host}>
+              <button
+                className={`w-full flex justify-between gap-4 px-1 py-1.5 items-center text-right text-sm rounded-md ${selected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
+                onClick={() => {
+                  props.setSelectedReferror(ref);
+                }}
+              >
+                <div className="flex gap-2 items-center grow">
+                  {ref.referrer_host}
+                </div>
+                {ref.pageviews.toLocaleString()}
+              </button>
+              <hr className="border-border-light last:hidden" />
+            </Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 };

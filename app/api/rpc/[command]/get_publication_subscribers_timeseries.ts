@@ -56,7 +56,6 @@ export const get_publication_subscribers_timeseries = makeRoute({
       dailyCounts[day] = (dailyCounts[day] || 0) + 1;
     }
 
-    const days = Object.keys(dailyCounts).sort();
     let cumulative = 0;
 
     // If we have a from filter, get the count of subscriptions before that date
@@ -69,10 +68,27 @@ export const get_publication_subscribers_timeseries = makeRoute({
       cumulative = count || 0;
     }
 
-    const timeseries = days.map((day) => {
-      cumulative += dailyCounts[day];
-      return { day, total_subscribers: cumulative };
-    });
+    // Build timeseries over the full date range, filling gaps with the
+    // running cumulative so the chart always has data points to display.
+    const timeseries: { day: string; total_subscribers: number }[] = [];
+    if (from && to) {
+      const cursor = new Date(from);
+      cursor.setUTCHours(0, 0, 0, 0);
+      const end = new Date(to);
+      end.setUTCHours(0, 0, 0, 0);
+      while (cursor <= end) {
+        const key = cursor.toISOString().slice(0, 10);
+        cumulative += dailyCounts[key] || 0;
+        timeseries.push({ day: key, total_subscribers: cumulative });
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+      }
+    } else {
+      const days = Object.keys(dailyCounts).sort();
+      for (const day of days) {
+        cumulative += dailyCounts[day];
+        timeseries.push({ day, total_subscribers: cumulative });
+      }
+    }
 
     return { result: { timeseries } };
   },
