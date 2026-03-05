@@ -8,6 +8,10 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { TextBlockCore } from "../Blocks/TextBlockCore";
+import {
+  FootnoteItemLayout,
+  FootnoteSectionLayout,
+} from "components/Footnotes/FootnoteItemLayout";
 
 export type PublishedFootnote = {
   footnoteId: string;
@@ -74,43 +78,43 @@ export function PublishedFootnoteSection(props: {
   if (props.footnotes.length === 0) return null;
 
   return (
-    <div className="footnote-section px-3 sm:px-4 pb-2 mt-4">
-      <hr className="border-border-light mb-3" />
-      <div className="flex flex-col gap-2">
-        {props.footnotes.map((fn) => (
-          <div
-            key={fn.footnoteId}
-            id={`fn-${fn.footnoteId}`}
-            className="flex items-start gap-2 text-xs"
-          >
-            <a
-              href={`#fnref-${fn.footnoteId}`}
-              className="text-accent-contrast font-medium shrink-0 mt-0.5 text-xs no-underline hover:underline"
-            >
-              {fn.index}.
-            </a>
-            <div className="text-secondary min-w-0">
-              {fn.contentPlaintext ? (
-                <TextBlockCore
-                  plaintext={fn.contentPlaintext}
-                  facets={fn.contentFacets}
-                  index={[]}
-                />
-              ) : (
-                <span className="italic text-tertiary">Empty footnote</span>
-              )}
-            </div>
-            <a
-              href={`#fnref-${fn.footnoteId}`}
-              className="text-accent-contrast shrink-0 mt-0.5 text-xs no-underline hover:underline"
-              title="Back to text"
-              aria-label={`Back to footnote ${fn.index} in text`}
-            >
-              ↩
-            </a>
-          </div>
-        ))}
-      </div>
-    </div>
+    <FootnoteSectionLayout className="mt-4">
+      {props.footnotes.map((fn) => (
+        <PublishedFootnoteItem key={fn.footnoteId} footnote={fn} />
+      ))}
+    </FootnoteSectionLayout>
+  );
+}
+
+export function PublishedFootnoteItem(props: {
+  footnote: PublishedFootnote;
+}) {
+  let fn = props.footnote;
+  return (
+    <FootnoteItemLayout
+      index={fn.index}
+      indexHref={`#fnref-${fn.footnoteId}`}
+      id={`fn-${fn.footnoteId}`}
+      trailing={
+        <a
+          href={`#fnref-${fn.footnoteId}`}
+          className="text-accent-contrast shrink-0 mt-0.5 text-xs no-underline hover:underline"
+          title="Back to text"
+          aria-label={`Back to footnote ${fn.index} in text`}
+        >
+          ↩
+        </a>
+      }
+    >
+      {fn.contentPlaintext ? (
+        <TextBlockCore
+          plaintext={fn.contentPlaintext}
+          facets={fn.contentFacets}
+          index={[]}
+        />
+      ) : (
+        <span className="italic text-tertiary">Empty footnote</span>
+      )}
+    </FootnoteItemLayout>
   );
 }

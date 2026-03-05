@@ -12,6 +12,7 @@ import {
   trackUndoRedo,
 } from "components/Blocks/TextBlock/mountProsemirror";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { FootnoteItemLayout } from "./FootnoteItemLayout";
 
 export function FootnoteEditor(props: {
   footnoteEntityID: string;
@@ -97,36 +98,33 @@ export function FootnoteEditor(props: {
   }, [props.footnoteEntityID, value, props.editable, props.autoFocus, rep.undoManager]);
 
   return (
-    <div className="footnote-editor flex items-start gap-2 text-xs group/footnote" data-footnote-editor={props.footnoteEntityID}>
-      <button
-        className="text-accent-contrast font-medium shrink-0 text-xs leading-normal hover:underline cursor-pointer"
-        onClick={() => {
-          let ref = document.querySelector(
-            `.footnote-ref[data-footnote-id="${props.footnoteEntityID}"]`,
-          );
-          if (ref) {
-            ref.scrollIntoView({ behavior: "smooth", block: "center" });
-          }
-        }}
-        title="Jump to footnote in text"
-      >
-        {props.index}.
-      </button>
+    <FootnoteItemLayout
+      index={props.index}
+      indexAction={() => {
+        let ref = document.querySelector(
+          `.footnote-ref[data-footnote-id="${props.footnoteEntityID}"]`,
+        );
+        if (ref) {
+          ref.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }}
+      trailing={
+        props.editable && props.onDelete ? (
+          <button
+            className="shrink-0 mt-0.5 text-tertiary hover:text-primary opacity-0 group-hover/footnote:opacity-100 transition-opacity"
+            onClick={props.onDelete}
+            title="Delete footnote"
+          >
+            <CloseTiny />
+          </button>
+        ) : undefined
+      }
+    >
       <div
         ref={mountRef}
-        className="grow outline-hidden min-w-0 text-secondary [&_.ProseMirror]:outline-hidden"
-        style={{ wordBreak: "break-word" }}
+        className="outline-hidden"
       />
-      {props.editable && props.onDelete && (
-        <button
-          className="shrink-0 mt-0.5 text-tertiary hover:text-primary opacity-0 group-hover/footnote:opacity-100 transition-opacity"
-          onClick={props.onDelete}
-          title="Delete footnote"
-        >
-          <CloseTiny />
-        </button>
-      )}
-    </div>
+    </FootnoteItemLayout>
   );
 }
 
