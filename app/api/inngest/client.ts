@@ -1,6 +1,6 @@
 import { Inngest } from "inngest";
-
 import { EventSchemas } from "inngest";
+import { Json } from "supabase/database.types";
 
 export type Events = {
   "feeds/index-follows": {
@@ -51,10 +51,13 @@ export type Events = {
       documentUris?: string[];
     };
   };
-  "appview/sync-document-metadata": {
+  "appview/index-document": {
     data: {
       document_uri: string;
+      document_data: Json;
       bsky_post_uri?: string;
+      publication: string | null;
+      did: string;
     };
   };
   "user/write-records-to-pds": {

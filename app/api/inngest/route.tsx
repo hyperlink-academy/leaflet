@@ -13,7 +13,7 @@ import {
   check_oauth_session,
 } from "./functions/cleanup_expired_oauth_sessions";
 import { write_records_to_pds } from "./functions/write_records_to_pds";
-import { sync_document_metadata } from "./functions/sync_document_metadata";
+import { index_document } from "./functions/index_document";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -29,6 +29,6 @@ export const { GET, POST, PUT } = serve({
     cleanup_expired_oauth_sessions,
     check_oauth_session,
     write_records_to_pds,
-    sync_document_metadata,
+    index_document,
   ],
 });
