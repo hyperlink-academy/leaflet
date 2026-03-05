@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useEffect, useState } from "react";
-import { EditorState } from "prosemirror-state";
+import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
@@ -10,6 +10,7 @@ import { Replicache } from "replicache";
 import { produce } from "immer";
 
 import { schema } from "./schema";
+import { UndoManager } from "src/undoManager";
 import { TextBlockKeymap } from "./keymap";
 import { inputrules } from "./inputRules";
 import { highlightSelectionPlugin } from "./plugins";
@@ -184,8 +185,6 @@ export function useMountProsemirror({
       useEditorStates.setState((s) => {
         let oldEditorState = this.state;
         let newState = this.state.apply(tr);
-        let addToHistory = tr.getMeta("addToHistory");
-        let isBulkOp = tr.getMeta("bulkOp");
         let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
 
         // Diff for removed/added footnote nodes
@@ -212,31 +211,23 @@ export function useMountProsemirror({
         }
 
         // Handle undo/redo history with timeout-based grouping
-        if (addToHistory !== false && docHasChanges) {
-          if (actionTimeout.current) window.clearTimeout(actionTimeout.current);
-          else if (!isBulkOp) rep.undoManager.startGroup();
+        let isBulkOp = tr.getMeta("bulkOp");
+        let setState = (s: EditorState) => () =>
+          useEditorStates.setState(
+            produce((draft) => {
+              let view = draft.editorStates[entityID]?.view;
+              if (!view?.hasFocus() && !isBulkOp) view?.focus();
+              draft.editorStates[entityID]!.editor = s;
+            }),
+          );
 
-          if (!isBulkOp) {
-            actionTimeout.current = window.setTimeout(() => {
-              rep.undoManager.endGroup();
-              actionTimeout.current = null;
-            }, 200);
-          }
-
-          let setState = (s: EditorState) => () =>
-            useEditorStates.setState(
-              produce((draft) => {
-                let view = draft.editorStates[entityID]?.view;
-                if (!view?.hasFocus() && !isBulkOp) view?.focus();
-                draft.editorStates[entityID]!.editor = s;
-              }),
-            );
-
-          rep.undoManager.add({
-            redo: setState(newState),
-            undo: setState(oldEditorState),
-          });
-        }
+        trackUndoRedo(
+          tr,
+          rep.undoManager,
+          actionTimeout,
+          setState(oldEditorState),
+          setState(newState),
+        );
 
         return {
           editorStates: {
@@ -255,7 +246,33 @@ export function useMountProsemirror({
   return { mountRef, actionTimeout };
 }
 
-function useYJSValue(entityID: string) {
+export function trackUndoRedo(
+  tr: Transaction,
+  undoManager: UndoManager,
+  actionTimeout: { current: number | null },
+  undo: () => void,
+  redo: () => void,
+) {
+  let addToHistory = tr.getMeta("addToHistory");
+  let isBulkOp = tr.getMeta("bulkOp");
+  let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
+
+  if (addToHistory !== false && docHasChanges) {
+    if (actionTimeout.current) window.clearTimeout(actionTimeout.current);
+    else if (!isBulkOp) undoManager.startGroup();
+
+    if (!isBulkOp) {
+      actionTimeout.current = window.setTimeout(() => {
+        undoManager.endGroup();
+        actionTimeout.current = null;
+      }, 200);
+    }
+
+    undoManager.add({ undo, redo });
+  }
+}
+
+export function useYJSValue(entityID: string) {
   const [ydoc] = useState(new Y.Doc());
   const docStateFromReplicache = useEntity(entityID, "block/text");
   let rep = useReplicache();

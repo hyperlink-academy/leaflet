@@ -1,14 +1,16 @@
-import { useLayoutEffect, useRef, useState, useEffect } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin } from "y-prosemirror";
-import * as Y from "yjs";
-import * as base64 from "base64-js";
 import { schema } from "components/Blocks/TextBlock/schema";
-import { useEntity, useReplicache } from "src/replicache";
+import { useReplicache } from "src/replicache";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
+import {
+  useYJSValue,
+  trackUndoRedo,
+} from "components/Blocks/TextBlock/mountProsemirror";
 import { CloseTiny } from "components/Icons/CloseTiny";
 
 export function FootnoteEditor(props: {
@@ -20,7 +22,8 @@ export function FootnoteEditor(props: {
 }) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let rep = useReplicache();
-  let value = useFootnoteYJS(props.footnoteEntityID);
+  let value = useYJSValue(props.footnoteEntityID);
+  let actionTimeout = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     if (!mountRef.current || !value) return;
@@ -63,8 +66,23 @@ export function FootnoteEditor(props: {
         state,
         editable: () => props.editable,
         dispatchTransaction(this: EditorView, tr) {
+          let oldState = this.state;
           let newState = this.state.apply(tr);
           this.updateState(newState);
+
+          trackUndoRedo(
+            tr,
+            rep.undoManager,
+            actionTimeout,
+            () => {
+              this.focus();
+              this.updateState(oldState);
+            },
+            () => {
+              this.focus();
+              this.updateState(newState);
+            },
+          );
         },
       },
     );
@@ -76,7 +94,7 @@ export function FootnoteEditor(props: {
     return () => {
       view.destroy();
     };
-  }, [props.footnoteEntityID, value, props.editable, props.autoFocus]);
+  }, [props.footnoteEntityID, value, props.editable, props.autoFocus, rep.undoManager]);
 
   return (
     <div className="footnote-editor flex items-start gap-2 text-xs group/footnote" data-footnote-editor={props.footnoteEntityID}>
@@ -112,45 +130,3 @@ export function FootnoteEditor(props: {
   );
 }
 
-function useFootnoteYJS(footnoteEntityID: string) {
-  const [ydoc] = useState(new Y.Doc());
-  const docState = useEntity(footnoteEntityID, "block/text");
-  let rep = useReplicache();
-  const [yText] = useState(ydoc.getXmlFragment("prosemirror"));
-
-  if (docState) {
-    const update = base64.toByteArray(docState.data.value);
-    Y.applyUpdate(ydoc, update);
-  }
-
-  useEffect(() => {
-    if (!rep.rep) return;
-    let timeout = null as null | number;
-    const updateReplicache = async () => {
-      const update = Y.encodeStateAsUpdate(ydoc);
-      await rep.rep?.mutate.assertFact({
-        ignoreUndo: true,
-        entity: footnoteEntityID,
-        attribute: "block/text",
-        data: {
-          value: base64.fromByteArray(update),
-          type: "text",
-        },
-      });
-    };
-    const f = async (_events: Y.YEvent<any>[], transaction: Y.Transaction) => {
-      if (!transaction.origin) return;
-      if (timeout) clearTimeout(timeout);
-      timeout = window.setTimeout(async () => {
-        updateReplicache();
-      }, 300);
-    };
-
-    yText.observeDeep(f);
-    return () => {
-      yText.unobserveDeep(f);
-    };
-  }, [yText, footnoteEntityID, rep, ydoc]);
-
-  return yText;
-}
