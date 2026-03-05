@@ -185,6 +185,7 @@ export type SharedPageProps = {
   pageId?: string;
   pageOptions?: React.ReactNode;
   allPages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  hasContentToRight?: boolean;
 };
 
 // Component that renders either Canvas or Linear page based on page type
@@ -286,7 +287,13 @@ export function PostPages({
     <>
       {!sharedProps.fullPageScroll && <BookendSpacer />}
 
-      <PageRenderer page={firstPage} {...sharedProps} />
+      <PageRenderer
+        page={firstPage}
+        {...sharedProps}
+        hasContentToRight={
+          openPageIds.length > 0 || !!(drawer && !drawer.pageId)
+        }
+      />
 
       {drawer && !drawer.pageId && (
         <InteractionDrawer
@@ -306,7 +313,7 @@ export function PostPages({
         />
       )}
 
-      {openPageIds.map((openPage) => {
+      {openPageIds.map((openPage, openPageIndex) => {
         const pageKey = getPageKey(openPage);
 
         // Handle thread pages
@@ -372,6 +379,10 @@ export function PostPages({
               {...sharedProps}
               fullPageScroll={false}
               pageId={page.id}
+              hasContentToRight={
+                openPageIndex < openPageIds.length - 1 ||
+                !!(drawer && drawer.pageId === page.id)
+              }
               pageOptions={
                 <PageOptions
                   onClick={() => closePage(openPage)}

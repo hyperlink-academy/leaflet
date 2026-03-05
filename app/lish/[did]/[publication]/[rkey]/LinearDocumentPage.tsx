@@ -27,6 +27,7 @@ import {
   buildFootnoteIndexMap,
   PublishedFootnoteSection,
 } from "./Footnotes/PublishedFootnotes";
+import { PublishedFootnoteSideColumn } from "./Footnotes/PublishedFootnoteSideColumn";
 
 export function LinearDocumentPage({
   blocks,
@@ -69,6 +70,11 @@ export function LinearDocumentPage({
           !!drawer && (pageId ? drawer.pageId === pageId : !drawer.pageId)
         }
         pageOptions={pageOptions}
+        footnoteSideColumn={
+          !props.hasContentToRight ? (
+            <PublishedFootnoteSideColumn footnotes={footnotes} />
+          ) : undefined
+        }
       >
         {!isSubpage && profile && (
           <PostHeader
