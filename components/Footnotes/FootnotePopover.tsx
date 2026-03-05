@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { create } from "zustand";
 import { useFootnoteContext } from "./FootnoteContext";
 import { FootnoteEditor } from "./FootnoteEditor";
@@ -32,6 +32,18 @@ export function FootnotePopover() {
   let [position, setPosition] = useState<{ top: number; left: number; arrowLeft: number } | null>(null);
 
   let footnote = footnotes.find((fn) => fn.footnoteEntityID === activeFootnoteID);
+
+  // Compute the displayed index from DOM order (matching CSS counters)
+  // rather than the data model order, which may differ if footnotes
+  // were inserted out of order within a block.
+  let displayIndex = useMemo(() => {
+    if (!anchorElement || !footnote) return footnote?.index ?? 0;
+    let container = anchorElement.closest('.postPageContent');
+    if (!container) return footnote.index;
+    let allRefs = Array.from(container.querySelectorAll('.footnote-ref'));
+    let pos = allRefs.indexOf(anchorElement);
+    return pos >= 0 ? pos + 1 : footnote.index;
+  }, [anchorElement, footnote]);
 
   let updatePosition = useCallback(() => {
     if (!anchorElement || !popoverRef.current) return;
@@ -110,7 +122,7 @@ export function FootnotePopover() {
     >
       <FootnoteEditor
         footnoteEntityID={footnote.footnoteEntityID}
-        index={footnote.index}
+        index={displayIndex}
         editable={permissions.write}
         onDelete={
           permissions.write

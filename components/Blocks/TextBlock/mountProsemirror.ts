@@ -91,7 +91,7 @@ export function useMountProsemirror({
             if (!sup) return;
 
             // On mobile/tablet, show popover
-            let isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+            let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
             if (!isDesktop) {
               let store = useFootnotePopoverStore.getState();
               if (store.activeFootnoteID === footnoteID) {
