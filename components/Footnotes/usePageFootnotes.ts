@@ -39,10 +39,10 @@ export function usePageFootnotes(pageID: string) {
         }
       }
 
-      return { footnotes, indexMap };
+      return { pageID, footnotes, indexMap };
     },
     { dependencies: [pageID] },
   );
 
-  return data || { footnotes: [], indexMap: {} as Record<string, number> };
+  return data || { pageID, footnotes: [], indexMap: {} as Record<string, number> };
 }

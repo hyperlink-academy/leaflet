@@ -10,6 +10,7 @@ export const useUIState = create(
       focusedEntity: null as
         | { entityType: "page"; entityID: string }
         | { entityType: "block"; entityID: string; parent: string }
+        | { entityType: "footnote"; entityID: string; parent: string }
         | null,
       foldedBlocks: [] as string[],
       openPages: [] as string[],
@@ -47,6 +48,7 @@ export const useUIState = create(
         b:
           | { entityType: "page"; entityID: string }
           | { entityType: "block"; entityID: string; parent: string }
+          | { entityType: "footnote"; entityID: string; parent: string }
           | null,
       ) => set(() => ({ focusedEntity: b })),
       setSelectedBlock: (block: SelectedBlock) =>

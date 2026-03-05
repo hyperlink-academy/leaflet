@@ -544,10 +544,12 @@ pre.shiki {
   transition: opacity 200ms ease;
 }
 .footnote-side-item:hover,
-.footnote-side-item:focus-within {
+.footnote-side-item:focus-within,
+.footnote-side-item.footnote-side-focused {
   max-height: 40em;
 }
 .footnote-side-item:hover::after,
-.footnote-side-item:focus-within::after {
+.footnote-side-item:focus-within::after,
+.footnote-side-item.footnote-side-focused::after {
   opacity: 0;
 }

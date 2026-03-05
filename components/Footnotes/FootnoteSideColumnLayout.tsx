@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, ReactNode } from "react";
+import { useUIState } from "src/useUIState";
 
 export type FootnoteSideItem = {
   id: string;
@@ -131,6 +132,11 @@ function SideItem(props: {
 }) {
   let ref = useRef<HTMLDivElement>(null);
   let [overflows, setOverflows] = useState(false);
+  let isFocused = useUIState(
+    (s) =>
+      s.focusedEntity?.entityType === "footnote" &&
+      s.focusedEntity.entityID === props.id,
+  );
 
   useEffect(() => {
     let el = ref.current;
@@ -158,7 +164,7 @@ function SideItem(props: {
     <div
       ref={ref}
       data-footnote-side-id={props.id}
-      className={`absolute left-0 right-0 text-xs footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}`}
+      className={`absolute left-0 right-0 text-xs footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}${isFocused ? " footnote-side-focused" : ""}`}
       style={{ top: props.top }}
     >
       {props.children}
