@@ -1,23 +1,19 @@
 -- Add missing indexes on document foreign keys used by get_profile_posts
-CREATE INDEX IF NOT EXISTS comments_on_documents_document_idx
+CREATE INDEX CONCURRENTLY IF NOT EXISTS comments_on_documents_document_idx
   ON public.comments_on_documents (document);
 
-CREATE INDEX IF NOT EXISTS document_mentions_in_bsky_document_idx
+CREATE INDEX CONCURRENTLY IF NOT EXISTS document_mentions_in_bsky_document_idx
   ON public.document_mentions_in_bsky (document);
 
-CREATE INDEX IF NOT EXISTS documents_in_publications_document_idx
+CREATE INDEX CONCURRENTLY IF NOT EXISTS documents_in_publications_document_idx
   ON public.documents_in_publications (document);
 
--- Add a stored generated column to extract the DID from at:// URIs
--- at://did:plc:xxx/collection/rkey -> did:plc:xxx
-ALTER TABLE public.documents
-  ADD COLUMN identity_did text GENERATED ALWAYS AS (split_part(uri, '/', 3)) STORED;
+-- Expression index to look up documents by DID without adding a column
+-- at://did:plc:xxx/collection/rkey -> split_part gives did:plc:xxx
+CREATE INDEX CONCURRENTLY IF NOT EXISTS documents_identity_did_sort_idx
+  ON public.documents (split_part(uri, '/', 3), sort_date DESC, uri DESC);
 
--- Composite index for efficient profile post lookups: filter by DID, order by sort_date
-CREATE INDEX documents_identity_did_sort_idx
-  ON public.documents (identity_did, sort_date DESC, uri DESC);
-
--- Rewrite get_profile_posts to use the new identity_did column
+-- Rewrite get_profile_posts to use the expression index
 CREATE OR REPLACE FUNCTION get_profile_posts(
   p_did text,
   p_cursor_sort_date timestamptz DEFAULT NULL,
@@ -55,7 +51,7 @@ AS $$
     WHERE dip.document = d.uri
     LIMIT 1
   ) pub ON true
-  WHERE d.identity_did = p_did
+  WHERE split_part(d.uri, '/', 3) = p_did
     AND (
       p_cursor_sort_date IS NULL
       OR d.sort_date < p_cursor_sort_date
