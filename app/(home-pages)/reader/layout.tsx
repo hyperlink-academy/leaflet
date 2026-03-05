@@ -12,7 +12,7 @@ import { useIdentityData } from "components/IdentityProvider";
 
 const allTabs = [
   { name: "Subs", href: "/reader", requiresAuth: true },
-  { name: "What's Hot", href: "/reader/hot", requiresAuth: false },
+  { name: "Trending", href: "/reader/hot", requiresAuth: false },
   { name: "New", href: "/reader/new", requiresAuth: false },
 ];
 
@@ -27,8 +27,7 @@ export default function ReaderLayout({
   const tabs = allTabs.filter((tab) => !tab.requiresAuth || isLoggedIn);
 
   const isActive = (href: string) => {
-    if (href === "/reader")
-      return pathname === "/reader" || pathname === "/";
+    if (href === "/reader") return pathname === "/reader" || pathname === "/";
     if (
       href === "/reader/hot" &&
       !isLoggedIn &&

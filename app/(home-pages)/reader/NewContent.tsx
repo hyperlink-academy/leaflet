@@ -10,6 +10,7 @@ import {
   DesktopInteractionPreviewDrawer,
   MobileInteractionPreviewDrawer,
 } from "./InteractionDrawers";
+import { useSelectedPostListing } from "src/useSelectedPostState";
 
 export const NewContent = (props: {
   promise: Promise<{ posts: Post[]; nextCursor: Cursor | null }>;
@@ -36,6 +37,8 @@ export const NewContent = (props: {
       revalidateFirstPage: false,
     },
   );
+
+  let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -71,9 +74,13 @@ export const NewContent = (props: {
 
   return (
     <div className="flex flex-row gap-6 w-full">
-      <div className="flex flex-col gap-6 w-full relative">
+      <div className="flex flex-col gap-6 w-full grow min-w-0 relative">
         {allPosts.map((p) => (
-          <PostListing {...p} key={p.documents.uri} />
+          <PostListing
+            {...p}
+            key={p.documents.uri}
+            selected={selectedPost?.document_uri === p.documents.uri}
+          />
         ))}
         <div
           ref={loadMoreRef}

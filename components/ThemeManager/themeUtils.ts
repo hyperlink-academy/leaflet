@@ -12,8 +12,8 @@ export const ThemeDefaults = {
   //everywhere else, accent-background = accent-1 and accent-text = accent-2.
   // we just need to create a migration pipeline before we can change this
   "theme/accent-text": "#FFFFFF",
-  "theme/accent-background": "#0000FF",
-  "theme/accent-contrast": "#0000FF",
+  "theme/accent-background": "#639431",
+  "theme/accent-contrast": "#639431",
 };
 
 // used to calculate the contrast between page and accent1, accent2, and determin which is higher contrast
