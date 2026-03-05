@@ -22,6 +22,11 @@ import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { PostPrevNextButtons } from "./PostPrevNextButtons";
 import { PostSubscribe } from "./PostSubscribe";
+import {
+  collectFootnotesFromBlocks,
+  buildFootnoteIndexMap,
+  PublishedFootnoteSection,
+} from "./Footnotes/PublishedFootnotes";
 
 export function LinearDocumentPage({
   blocks,
@@ -47,6 +52,8 @@ export function LinearDocumentPage({
   } = props;
   let drawer = useDrawerOpen(document_uri);
   const { pages } = useLeafletContent();
+  const footnotes = collectFootnotesFromBlocks(blocks);
+  const footnoteIndexMap = buildFootnoteIndexMap(footnotes);
 
   if (!document) return null;
 
@@ -78,7 +85,9 @@ export function LinearDocumentPage({
           blocks={blocks}
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}
+          footnoteIndexMap={footnoteIndexMap}
         />
+        <PublishedFootnoteSection footnotes={footnotes} />
         <PostSubscribe />
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}

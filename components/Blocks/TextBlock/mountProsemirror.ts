@@ -24,6 +24,7 @@ import { useHandlePaste } from "./useHandlePaste";
 import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
+import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 
 export function useMountProsemirror({
   props,
@@ -80,6 +81,46 @@ export function useMountProsemirror({
         handlePaste,
         handleClickOn: (_view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
+
+          // Check for footnote inline nodes
+          if (node?.type === schema.nodes.footnote) {
+            let footnoteID = node.attrs.footnoteEntityID;
+            let supEl = _event.target as HTMLElement;
+            let sup = supEl.closest(".footnote-ref") as HTMLElement | null;
+            if (!sup) return;
+
+            // On mobile/tablet, show popover
+            let isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+            if (!isDesktop) {
+              let store = useFootnotePopoverStore.getState();
+              if (store.activeFootnoteID === footnoteID) {
+                store.close();
+              } else {
+                store.open(footnoteID, sup);
+              }
+              return;
+            }
+
+            // On desktop, prefer the side column editor if visible
+            let sideColumn = document.querySelector(".footnote-side-column");
+            let editor = sideColumn?.querySelector(
+              `[data-footnote-editor="${footnoteID}"]`,
+            ) as HTMLElement | null;
+            // Fall back to the bottom section
+            if (!editor) {
+              editor = document.querySelector(
+                `[data-footnote-editor="${footnoteID}"]`,
+              ) as HTMLElement | null;
+            }
+            if (editor) {
+              editor.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              let pm = editor.querySelector(".ProseMirror") as HTMLElement | null;
+              if (pm) {
+                setTimeout(() => pm!.focus(), 100);
+              }
+            }
+            return;
+          }
 
           // Check for didMention inline nodes
           if (node?.type === schema.nodes.didMention) {
@@ -146,6 +187,29 @@ export function useMountProsemirror({
         let addToHistory = tr.getMeta("addToHistory");
         let isBulkOp = tr.getMeta("bulkOp");
         let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
+
+        // Diff for removed/added footnote nodes
+        if (docHasChanges) {
+          let oldFootnotes = new Set<string>();
+          let newFootnotes = new Set<string>();
+          oldEditorState.doc.descendants((n) => {
+            if (n.type.name === "footnote")
+              oldFootnotes.add(n.attrs.footnoteEntityID);
+          });
+          newState.doc.descendants((n) => {
+            if (n.type.name === "footnote")
+              newFootnotes.add(n.attrs.footnoteEntityID);
+          });
+          // Removed footnotes
+          for (let id of oldFootnotes) {
+            if (!newFootnotes.has(id)) {
+              repRef.current?.mutate.deleteFootnote({
+                footnoteEntityID: id,
+                blockID: entityID,
+              });
+            }
+          }
+        }
 
         // Handle undo/redo history with timeout-based grouping
         if (addToHistory !== false && docHasChanges) {

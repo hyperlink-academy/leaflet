@@ -20,6 +20,7 @@ export function BaseTextBlock(props: Omit<TextBlockCoreProps, "renderers">) {
       renderers={{
         DidMention: DidMentionWithPopover,
       }}
+      footnoteIndexMap={props.footnoteIndexMap}
     />
   );
 }

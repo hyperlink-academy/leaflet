@@ -113,6 +113,19 @@ export async function deleteBlock(
   // close the pages
   pagesToClose.forEach((page) => page && useUIState.getState().closePage(page));
 
+  // Clean up footnotes from blocks being deleted
+  for (let entity of entities) {
+    let footnotes = await rep.query((tx) =>
+      scanIndex(tx).eav(entity, "block/footnote"),
+    );
+    for (let fn of footnotes) {
+      await rep.mutate.deleteFootnote({
+        footnoteEntityID: fn.data.value,
+        blockID: entity,
+      });
+    }
+  }
+
   await Promise.all(
     entities.map((entity) =>
       rep?.mutate.removeBlock({

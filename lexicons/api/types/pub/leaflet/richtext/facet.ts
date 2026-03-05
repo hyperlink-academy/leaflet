@@ -29,6 +29,7 @@ export interface Main {
     | $Typed<Id>
     | $Typed<Bold>
     | $Typed<Italic>
+    | $Typed<Footnote>
     | { $type: string }
   )[]
 }
@@ -212,4 +213,22 @@ export function isItalic<V>(v: V) {
 
 export function validateItalic<V>(v: V) {
   return validate<Italic & V>(v, id, hashItalic)
+}
+
+/** Facet feature for a footnote reference */
+export interface Footnote {
+  $type?: 'pub.leaflet.richtext.facet#footnote'
+  footnoteId: string
+  contentPlaintext: string
+  contentFacets?: Main[]
+}
+
+const hashFootnote = 'footnote'
+
+export function isFootnote<V>(v: V) {
+  return is$typed(v, id, hashFootnote)
+}
+
+export function validateFootnote<V>(v: V) {
+  return validate<Footnote & V>(v, id, hashFootnote)
 }

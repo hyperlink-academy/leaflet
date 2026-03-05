@@ -91,6 +91,21 @@ export function RenderYJSFragment({
                   );
                 }
 
+                // Handle footnote inline nodes
+                if (
+                  node.constructor === XmlElement &&
+                  node.nodeName === "footnote"
+                ) {
+                  const id = node.getAttribute("footnoteEntityID") || "";
+                  return (
+                    <span
+                      key={index}
+                      className="footnote-ref"
+                      data-footnote-id={id}
+                    />
+                  );
+                }
+
                 // Handle atMention inline nodes
                 if (
                   node.constructor === XmlElement &&

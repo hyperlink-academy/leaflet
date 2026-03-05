@@ -485,6 +485,17 @@ async function processBlocksToPages(
     ).flat();
   }
   async function blockToRecord(b: Block, did: string) {
+    const footnoteContentResolver = (footnoteEntityID: string) => {
+      let [content] = scan.eav(footnoteEntityID, "block/text");
+      if (!content) return { plaintext: "", facets: [] as PubLeafletRichtextFacet.Main[] };
+      let doc = new Y.Doc();
+      const update = base64.toByteArray(content.data.value);
+      Y.applyUpdate(doc, update);
+      let nodes = doc.getXmlElement("prosemirror").toArray();
+      let plaintext = YJSFragmentToString(nodes[0]);
+      let { facets } = YJSFragmentToFacets(nodes[0]);
+      return { plaintext, facets };
+    };
     const getBlockContent = (b: string) => {
       let [content] = scan.eav(b, "block/text");
       if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
@@ -493,7 +504,7 @@ async function processBlocksToPages(
       Y.applyUpdate(doc, update);
       let nodes = doc.getXmlElement("prosemirror").toArray();
       let stringValue = YJSFragmentToString(nodes[0]);
-      let { facets } = YJSFragmentToFacets(nodes[0]);
+      let { facets } = YJSFragmentToFacets(nodes[0], 0, footnoteContentResolver);
       return [stringValue, facets] as const;
     };
     if (b.type === "card") {
@@ -759,8 +770,34 @@ async function processBlocksToPages(
 function YJSFragmentToFacets(
   node: Y.XmlElement | Y.XmlText | Y.XmlHook,
   byteOffset: number = 0,
+  footnoteContentResolver?: (footnoteEntityID: string) => { plaintext: string; facets: PubLeafletRichtextFacet.Main[] },
 ): { facets: PubLeafletRichtextFacet.Main[]; byteLength: number } {
   if (node.constructor === Y.XmlElement) {
+    // Handle footnote inline nodes
+    if (node.nodeName === "footnote") {
+      const footnoteEntityID = node.getAttribute("footnoteEntityID") || "";
+      const placeholder = "*";
+      const unicodestring = new UnicodeString(placeholder);
+      let footnoteContent = footnoteContentResolver?.(footnoteEntityID);
+      const facet: PubLeafletRichtextFacet.Main = {
+        index: {
+          byteStart: byteOffset,
+          byteEnd: byteOffset + unicodestring.length,
+        },
+        features: [
+          {
+            $type: "pub.leaflet.richtext.facet#footnote",
+            footnoteId: footnoteEntityID,
+            contentPlaintext: footnoteContent?.plaintext || "",
+            ...(footnoteContent?.facets?.length
+              ? { contentFacets: footnoteContent.facets }
+              : {}),
+          },
+        ],
+      };
+      return { facets: [facet], byteLength: unicodestring.length };
+    }
+
     // Handle inline mention nodes
     if (node.nodeName === "didMention") {
       const text = node.getAttribute("text") || "";
@@ -807,7 +844,7 @@ function YJSFragmentToFacets(
     let allFacets: PubLeafletRichtextFacet.Main[] = [];
     let currentOffset = byteOffset;
     for (const child of node.toArray()) {
-      const result = YJSFragmentToFacets(child, currentOffset);
+      const result = YJSFragmentToFacets(child, currentOffset, footnoteContentResolver);
       allFacets.push(...result.facets);
       currentOffset += result.byteLength;
     }

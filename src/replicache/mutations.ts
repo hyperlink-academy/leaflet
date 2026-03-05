@@ -720,6 +720,37 @@ const updatePublicationDraft: Mutation<{
   });
 };
 
+const createFootnote: Mutation<{
+  footnoteEntityID: string;
+  blockID: string;
+  permission_set: string;
+  position: string;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.footnoteEntityID,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.blockID,
+    attribute: "block/footnote",
+    data: {
+      type: "ordered-reference",
+      value: args.footnoteEntityID,
+      position: args.position,
+    },
+  });
+};
+
+const deleteFootnote: Mutation<{
+  footnoteEntityID: string;
+  blockID: string;
+}> = async (args, ctx) => {
+  let footnotes = await ctx.scanIndex.eav(args.blockID, "block/footnote");
+  let fact = footnotes.find((f) => f.data.value === args.footnoteEntityID);
+  if (fact) await ctx.retractFact(fact.id);
+  await ctx.deleteEntity(args.footnoteEntityID);
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -743,4 +774,6 @@ export const mutations = {
   addPollOption,
   removePollOption,
   updatePublicationDraft,
+  createFootnote,
+  deleteFootnote,
 };

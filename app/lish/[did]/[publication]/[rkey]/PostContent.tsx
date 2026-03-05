@@ -45,6 +45,7 @@ export function PostContent({
   pageId,
   pages,
   pollData,
+  footnoteIndexMap,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -55,6 +56,7 @@ export function PostContent({
   bskyPostData: AppBskyFeedDefs.PostView[];
   pollData: PollData[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  footnoteIndexMap?: Map<string, number>;
 }) {
   return (
     <div
@@ -75,6 +77,7 @@ export function PostContent({
             preview={preview}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
             pollData={pollData}
+            footnoteIndexMap={footnoteIndexMap}
           />
         );
       })}
@@ -94,6 +97,7 @@ export let Block = ({
   pageId,
   pages,
   pollData,
+  footnoteIndexMap,
 }: {
   pageId?: string;
   preview?: boolean;
@@ -106,6 +110,7 @@ export let Block = ({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   pollData: PollData[];
+  footnoteIndexMap?: Map<string, number>;
 }) => {
   let b = block;
   let blockProps = {
@@ -361,6 +366,7 @@ export let Block = ({
             index={index}
             preview={preview}
             pageId={pageId}
+            footnoteIndexMap={footnoteIndexMap}
           />
         </blockquote>
       );
@@ -377,6 +383,7 @@ export let Block = ({
             index={index}
             preview={preview}
             pageId={pageId}
+            footnoteIndexMap={footnoteIndexMap}
           />
         </p>
       );
@@ -390,6 +397,7 @@ export let Block = ({
               index={index}
               preview={preview}
               pageId={pageId}
+              footnoteIndexMap={footnoteIndexMap}
             />
           </h2>
         );
@@ -401,6 +409,7 @@ export let Block = ({
               index={index}
               preview={preview}
               pageId={pageId}
+              footnoteIndexMap={footnoteIndexMap}
             />
           </h3>
         );
@@ -412,6 +421,7 @@ export let Block = ({
               index={index}
               preview={preview}
               pageId={pageId}
+              footnoteIndexMap={footnoteIndexMap}
             />
           </h4>
         );
@@ -424,6 +434,7 @@ export let Block = ({
             index={index}
             preview={preview}
             pageId={pageId}
+            footnoteIndexMap={footnoteIndexMap}
           />
         </h6>
       );
