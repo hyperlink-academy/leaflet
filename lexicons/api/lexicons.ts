@@ -1995,6 +1995,14 @@ export const schemaDict = {
               'lex:pub.leaflet.theme.color#rgb',
             ],
           },
+          headingFont: {
+            type: 'string',
+            maxLength: 100,
+          },
+          bodyFont: {
+            type: 'string',
+            maxLength: 100,
+          },
         },
       },
     },

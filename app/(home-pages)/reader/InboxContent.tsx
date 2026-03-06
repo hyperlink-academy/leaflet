@@ -8,17 +8,16 @@ import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PostListing } from "components/PostListing";
-import { useHasBackgroundImage } from "components/Pages/useHasBackgroundImage";
 import {
   DesktopInteractionPreviewDrawer,
   MobileInteractionPreviewDrawer,
 } from "./InteractionDrawers";
+import { useSelectedPostListing } from "src/useSelectedPostState";
 
 export const InboxContent = (props: {
   promise: Promise<{ posts: Post[]; nextCursor: Cursor | null }>;
 }) => {
   const { posts, nextCursor } = use(props.promise);
-
   const getKey = (
     pageIndex: number,
     previousPageData: {
@@ -46,6 +45,8 @@ export const InboxContent = (props: {
   );
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
 
   // Set up intersection observer to load more when trigger element is visible
   useEffect(() => {
@@ -78,13 +79,15 @@ export const InboxContent = (props: {
 
   if (allPosts.length === 0) return <ReaderEmpty />;
 
-  let hasBackgroundImage = useHasBackgroundImage();
-
   return (
-    <div className="flex flex-row gap-6 w-full ">
-      <div className="flex flex-col gap-6 w-full relative">
+    <div className="inboxReader flex flex-row gap-6 w-full ">
+      <div className="inboxPostListings flex flex-col gap-6 min-w-0 grow w-full relative">
         {sortedPosts.map((p) => (
-          <PostListing {...p} key={p.documents.uri} />
+          <PostListing
+            {...p}
+            key={p.documents.uri}
+            selected={selectedPost?.document_uri === p.documents.uri}
+          />
         ))}
         {/* Trigger element for loading more posts */}
         <div

@@ -50,6 +50,8 @@ export const PubLeafletPublication: LexiconDoc = {
         showPageBackground: { type: "boolean", default: false },
         accentBackground: ColorUnion,
         accentText: ColorUnion,
+        headingFont: { type: "string", maxLength: 100 },
+        bodyFont: { type: "string", maxLength: 100 },
       },
     },
   },

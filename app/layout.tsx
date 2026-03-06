@@ -39,11 +39,11 @@ export const preferredRegion = ["sfo1"];
 const quattro = localFont({
   src: [
     {
-      path: "../public/fonts/iAWriterQuattroV.ttf",
+      path: "../public/fonts/iaw-quattro-vf.woff2",
       style: "normal",
     },
     {
-      path: "../public/fonts/iAWriterQuattroV-Italic.ttf",
+      path: "../public/fonts/iaw-quattro-vf-Italic.woff2",
       style: "italic",
     },
   ],

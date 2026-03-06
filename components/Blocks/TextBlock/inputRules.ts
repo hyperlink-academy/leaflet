@@ -212,7 +212,7 @@ export const inputrules = (
       }),
 
       //Header
-      new InputRule(/^([#]{1,3})\s$/, (state, match) => {
+      new InputRule(/^([#]{1,4})\s$/, (state, match) => {
         let tr = state.tr;
         tr.delete(0, match[0].length);
         let headingLevel = match[1].length;

@@ -1360,6 +1360,25 @@ export type Database = {
           like: unknown
         }[]
       }
+      get_profile_posts: {
+        Args: {
+          p_did: string
+          p_cursor_sort_date?: string | null
+          p_cursor_uri?: string | null
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          data: Json
+          sort_date: string
+          comments_count: number
+          mentions_count: number
+          recommends_count: number
+          publication_uri: string
+          publication_record: Json
+          publication_name: string
+        }[]
+      }
       get_reader_feed: {
         Args: {
           p_identity: string

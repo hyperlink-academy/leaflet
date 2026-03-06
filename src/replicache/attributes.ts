@@ -203,7 +203,11 @@ const PollBlockAttributes = {
 } as const;
 
 export const ThemeAttributes = {
-  "theme/font": {
+  "theme/heading-font": {
+    type: "string",
+    cardinality: "one",
+  },
+  "theme/body-font": {
     type: "string",
     cardinality: "one",
   },

@@ -21,6 +21,7 @@ import { pickers, setColorAttribute } from "../ThemeSetter";
 import { ImageInput, ImageSettings } from "./ImagePicker";
 
 import { ColorPicker, thumbStyle } from "./ColorPicker";
+import { FontPicker } from "./TextPickers";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Replicache } from "replicache";
 import { CanvasBackgroundPattern } from "components/Canvas";
@@ -31,6 +32,8 @@ export const PageThemePickers = (props: {
   entityID: string;
   openPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
+  home?: boolean;
+  hideFonts?: boolean;
 }) => {
   let { rep } = useReplicache();
   let set = useMemo(() => {
@@ -57,6 +60,12 @@ export const PageThemePickers = (props: {
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
       />
+      {!props.home && !props.hideFonts && (
+        <>
+          <FontPicker label="Heading" entityID={props.entityID} attribute="theme/heading-font" />
+          <FontPicker label="Body" entityID={props.entityID} attribute="theme/body-font" />
+        </>
+      )}
     </div>
   );
 };

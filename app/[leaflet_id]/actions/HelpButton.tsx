@@ -19,10 +19,12 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       asChild
-      className="max-w-xs w-full"
+      className="max-w-xs w-full p-0!"
       trigger={<ActionButton icon={<HelpSmall />} label="About" />}
     >
-      <div className="flex flex-col text-sm gap-2 text-secondary">
+      <div
+        className={`flex flex-col text-sm gap-2 p-3  text-secondary max-h-[70vh] overflow-y-auto p-2" : ""}`}
+      >
         {/* about links */}
         <HelpLink text="📖 Leaflet Manual" url="https://about.leaflet.pub" />
         <HelpLink text="💡 Make with Leaflet" url="https://make.leaflet.pub" />

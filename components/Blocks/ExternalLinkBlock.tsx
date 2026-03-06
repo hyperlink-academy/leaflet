@@ -78,7 +78,7 @@ export const ExternalLinkBlock = (
         <div className="pt-2 pb-2 px-3 grow min-w-0">
           <div className="flex flex-col w-full min-w-0 h-full grow ">
             <div
-              className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
+              className={`linkBlockTitle bg-transparent -mb-0.5  border-none font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
               style={{
                 overflow: "hidden",
                 textOverflow: "ellipsis",
