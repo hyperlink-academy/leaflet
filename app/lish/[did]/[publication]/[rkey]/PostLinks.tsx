@@ -1,7 +1,7 @@
 "use client";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { preload } from "swr";
-import { openPage, OpenPage } from "./PostPages";
+import { openPage, OpenPage } from "./postPageState";
 
 type ThreadViewPost = AppBskyFeedDefs.ThreadViewPost;
 type NotFoundPost = AppBskyFeedDefs.NotFoundPost;

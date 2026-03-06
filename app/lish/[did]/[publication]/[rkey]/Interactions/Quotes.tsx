@@ -18,7 +18,7 @@ import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
-import { openPage } from "../PostPages";
+import { openPage } from "../postPageState";
 import useSWR, { mutate } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
 import { CommentTiny } from "components/Icons/CommentTiny";

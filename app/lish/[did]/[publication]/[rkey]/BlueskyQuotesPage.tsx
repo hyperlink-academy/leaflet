@@ -5,7 +5,7 @@ import { PageWrapper } from "components/Pages/Page";
 import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 import { DotLoader } from "components/utils/DotLoader";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { openPage } from "./PostPages";
+import { openPage } from "./postPageState";
 import { BskyPostContent } from "./BskyPostContent";
 import {
   QuotesLink,

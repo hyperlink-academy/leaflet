@@ -16,7 +16,7 @@ import {
 import { AppBskyFeedDefs } from "@atproto/api";
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
-import { openPage, useOpenPages } from "../PostPages";
+import { openPage, useOpenPages } from "../postPageState";
 import {
   openInteractionDrawer,
   setInteractionState,
@@ -38,7 +38,6 @@ export function PublishedPageLinkBlock(props: {
   isCanvas?: boolean;
   pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
-  //switch to use actually state
   let openPages = useOpenPages();
   let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
   return (
@@ -209,9 +208,7 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
   let comments = allComments.filter(
     (c) => (c.record as PubLeafletComment.Record)?.onPage === props.pageId,
   ).length;
-  let quotes = mentions.filter((q) =>
-    q.link.includes(props.pageId),
-  ).length;
+  let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
