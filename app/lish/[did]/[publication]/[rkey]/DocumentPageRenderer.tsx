@@ -15,10 +15,14 @@ import { PostPages } from "./PostPages";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { LeafletLayout } from "components/LeafletLayout";
 import { fetchPollData } from "./fetchPollData";
-import { getDocumentPages, hasLeafletContent } from "src/utils/normalizeRecords";
+import {
+  getDocumentPages,
+  hasLeafletContent,
+} from "src/utils/normalizeRecords";
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { FontLoader } from "components/FontLoader";
+import { mergePreferences } from "src/utils/mergePreferences";
 
 export async function DocumentPageRenderer({
   did,
@@ -120,16 +124,23 @@ export async function DocumentPageRenderer({
     <DocumentProvider value={document}>
       <LeafletContentProvider value={{ pages }}>
         <FontLoader headingFontId={document.theme?.headingFont} bodyFontId={document.theme?.bodyFont} />
-        <PublicationThemeProvider theme={document.theme} pub_creator={pub_creator} isStandalone={isStandalone}>
-          <PublicationBackgroundProvider theme={document.theme} pub_creator={pub_creator}>
+        <PublicationThemeProvider
+          theme={document.theme}
+          pub_creator={pub_creator}
+          isStandalone={isStandalone}
+        >
+          <PublicationBackgroundProvider
+            theme={document.theme}
+            pub_creator={pub_creator}
+          >
             <LeafletLayout>
               <PostPages
                 document_uri={document.uri}
-                preferences={pubRecord?.preferences || {}}
+                preferences={mergePreferences(record?.preferences, pubRecord?.preferences)}
                 pubRecord={pubRecord}
                 profile={JSON.parse(JSON.stringify(profile.data))}
                 document={document}
-                bskyPostData={bskyPostData}
+                bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                 did={did}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 pollData={pollData}

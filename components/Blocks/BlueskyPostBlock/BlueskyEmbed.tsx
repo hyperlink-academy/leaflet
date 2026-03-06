@@ -10,10 +10,18 @@ import {
   AppBskyGraphDefs,
   AppBskyLabelerDefs,
 } from "@atproto/api";
+import { Avatar } from "components/Avatar";
+import {
+  OpenPage,
+  openPage,
+} from "app/lish/[did]/[publication]/[rkey]/PostPages";
 
 export const BlueskyEmbed = (props: {
   embed: Exclude<AppBskyFeedDefs.PostView["embed"], undefined>;
   postUrl?: string;
+  className?: string;
+  compact?: boolean;
+  parent?: OpenPage;
 }) => {
   // check this file from bluesky for ref
   // https://github.com/bluesky-social/social-app/blob/main/bskyembed/src/components/embed.tsx
@@ -21,7 +29,7 @@ export const BlueskyEmbed = (props: {
     case AppBskyEmbedImages.isView(props.embed):
       let imageEmbed = props.embed;
       return (
-        <div className="flex flex-wrap rounded-md w-full overflow-hidden">
+        <div className="imageEmbed flex flex-wrap rounded-md w-full overflow-hidden">
           {imageEmbed.images.map(
             (
               image: {
@@ -68,7 +76,7 @@ export const BlueskyEmbed = (props: {
       let isGif = externalEmbed.external.uri.includes(".gif");
       if (isGif) {
         return (
-          <div className="flex flex-col border border-border-light rounded-md overflow-hidden aspect-video">
+          <div className="flex flex-col border border-border-light rounded-md overflow-hidden aspect-video w-full ">
             <img
               src={externalEmbed.external.uri}
               alt={externalEmbed.external.title}
@@ -81,29 +89,37 @@ export const BlueskyEmbed = (props: {
         <a
           href={externalEmbed.external.uri}
           target="_blank"
-          className="group flex flex-col border border-border-light rounded-md overflow-hidden hover:no-underline sm:hover:border-accent-contrast selected-border"
+          className={`externalLinkEmbed group  border border-border-light rounded-md overflow-hidden hover:no-underline sm:hover:border-accent-contrast selected-border w-full ${props.compact ? "flex items-stretch" : "flex flex-col"}
+            ${props.className}`}
         >
           {externalEmbed.external.thumb === undefined ? null : (
             <>
-              <div className="w-full aspect-[1.91/1] overflow-hidden">
+              <div
+                className={` overflow-hidden shrink-0 ${props.compact ? "aspect-square h-[113px] hidden sm:block" : "aspect-[1.91/1] w-full "}`}
+              >
                 <img
                   src={externalEmbed.external.thumb}
                   alt={externalEmbed.external.title}
-                  className="w-full h-full object-cover"
+                  className={`object-cover ${props.compact ? "h-full" : "w-full h-full"}`}
                 />
               </div>
-              <hr className="border-border-light" />
+              {!props.compact && <hr className="border-border-light" />}
             </>
           )}
-          <div className="p-2 flex flex-col gap-1">
-            <div className="flex flex-col">
-              <h4>{externalEmbed.external.title}</h4>
-              <p className="text-secondary">
+          <div
+            className={`p-2 flex flex-col w-full min-w-0  ${props.compact && "sm:pl-3 py-1"}`}
+          >
+            <h4 className="truncate shrink-0" style={{ fontSize: "inherit" }}>
+              {externalEmbed.external.title}{" "}
+            </h4>
+            <div className="grow">
+              <p className="text-secondary line-clamp-2">
                 {externalEmbed.external.description}
               </p>
             </div>
-            <hr className="border-border-light mt-1" />
-            <div className="text-tertiary text-xs sm:group-hover:text-accent-contrast">
+
+            <hr className="border-border-light my-1" />
+            <div className="text-tertiary text-xs shrink-0 sm:group-hover:text-accent-contrast truncate">
               {externalEmbed.external.uri}
             </div>
           </div>
@@ -116,7 +132,7 @@ export const BlueskyEmbed = (props: {
         : 16 / 9;
       return (
         <div
-          className="rounded-md overflow-hidden relative w-full"
+          className={`videoEmbed rounded-md overflow-hidden relative w-full ${props.className}`}
           style={{ aspectRatio: String(videoAspectRatio) }}
         >
           <img
@@ -147,40 +163,49 @@ export const BlueskyEmbed = (props: {
           text = (record.value as AppBskyFeedPost.Record).text;
         }
         return (
-          <div
-            className={`flex flex-col gap-0.5 relative w-full overflow-hidden p-2! text-xs  block-border`}
-          >
-            <div className="bskyAuthor w-full flex items-center ">
-              {record.author.avatar && (
-                <img
-                  src={record.author?.avatar}
-                  alt={`${record.author?.displayName}'s avatar`}
-                  className="shink-0 w-6 h-6 rounded-full border border-border-light mr-[6px]"
-                />
-              )}
-              <div className=" font-bold text-secondary mr-1">
-                {record.author?.displayName}
-              </div>
-              <a
-                className="text-xs text-tertiary hover:underline"
-                target="_blank"
-                href={`https://bsky.app/profile/${record.author?.handle}`}
-              >
-                @{record.author?.handle}
-              </a>
-            </div>
+          <button
+            className={`bskyPostEmbed text-left w-full flex gap-2 items-start relative  overflow-hidden p-2! text-xs  block-border hover:border-accent-contrast! `}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
 
-            <div className="flex flex-col gap-2 ">
-              {text && (
-                <pre className="whitespace-pre-wrap text-secondary">{text}</pre>
-              )}
-              {record.embeds !== undefined
-                ? record.embeds.map((embed, index) => (
-                    <BlueskyEmbed embed={embed} key={index} />
-                  ))
-                : null}
+              openPage(props.parent, { type: "thread", uri: record.uri });
+            }}
+          >
+            <Avatar
+              src={record.author?.avatar}
+              displayName={record.author?.displayName}
+              size="small"
+            />
+            <div className="flex flex-col ">
+              <div className="flex gap-1">
+                <div className=" font-bold text-secondary mr-1">
+                  {record.author?.displayName}
+                </div>
+                <a
+                  className="text-xs text-tertiary hover:underline"
+                  target="_blank"
+                  href={`https://bsky.app/profile/${record.author?.handle}`}
+                >
+                  @{record.author?.handle}
+                </a>
+              </div>
+              <div className="flex flex-col gap-2 ">
+                {text && (
+                  <pre
+                    className={`whitespace-pre-wrap text-secondary ${props.compact ? "line-clamp-6" : ""}`}
+                  >
+                    {text}
+                  </pre>
+                )}
+                {/*{record.embeds !== undefined
+                  ? record.embeds.map((embed, index) => (
+                      <BlueskyEmbed embed={embed} key={index} compact />
+                    ))
+                  : null}*/}
+              </div>
             </div>
-          </div>
+          </button>
         );
       }
 
@@ -207,7 +232,7 @@ export const BlueskyEmbed = (props: {
     case AppBskyEmbedRecordWithMedia.isView(props.embed) &&
       AppBskyEmbedRecord.isViewRecord(props.embed.record.record):
       return (
-        <div className={`flex flex-col gap-2`}>
+        <div className={`bskyEmbed flex flex-col gap-2`}>
           <BlueskyEmbed embed={props.embed.media} />
           <BlueskyEmbed
             embed={{

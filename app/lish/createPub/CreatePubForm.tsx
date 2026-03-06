@@ -58,6 +58,7 @@ export const CreatePubForm = () => {
             showComments: true,
             showMentions: true,
             showPrevNext: true,
+            showRecommends: true,
           },
         });
 

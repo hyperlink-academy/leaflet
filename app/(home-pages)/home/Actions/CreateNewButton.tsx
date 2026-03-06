@@ -26,8 +26,9 @@ export const CreateNewLeafletButton = (props: {}) => {
         <ActionButton
           id="new-leaflet-button"
           primary
-          icon=<AddTiny className="m-1 shrink-0" />
+          icon=<AddTiny className="sm:m-1 shrink-0 sm:scale-100 scale-75" />
           label="New"
+          smallOnMobile
         />
       }
     >

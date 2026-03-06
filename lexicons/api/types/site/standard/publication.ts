@@ -15,7 +15,7 @@ const id = 'site.standard.publication'
 export interface Record {
   $type: 'site.standard.publication'
   basicTheme?: SiteStandardThemeBasic.Main
-  theme?: PubLeafletPublication.Theme
+  theme?: $Typed<PubLeafletPublication.Theme> | { $type: string }
   description?: string
   icon?: BlobRef
   name: string
@@ -40,6 +40,7 @@ export interface Preferences {
   showComments: boolean
   showMentions: boolean
   showPrevNext: boolean
+  showRecommends: boolean
 }
 
 const hashPreferences = 'preferences'

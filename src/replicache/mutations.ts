@@ -4,6 +4,7 @@ import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
+import { v7 } from "uuid";
 
 export type MutationContext = {
   permission_token_id: string;
@@ -211,6 +212,7 @@ const outdentBlock: Mutation<{
   newParent: string;
   after: string;
   block: string;
+  excludeFromSiblings?: string[];
 }> = async (args, ctx) => {
   //we should be able to get normal siblings here as we care only about one level
   let newSiblings = (
@@ -224,7 +226,11 @@ const outdentBlock: Mutation<{
     (f) => f.data.value === args.block,
   );
   if (currentFactIndex === -1) return;
-  let currentSiblingsAfter = currentSiblings.slice(currentFactIndex + 1);
+  // Filter out blocks that are being processed separately (e.g., in multi-select outdent)
+  let excludeSet = new Set(args.excludeFromSiblings || []);
+  let currentSiblingsAfter = currentSiblings
+    .slice(currentFactIndex + 1)
+    .filter((sib) => !excludeSet.has(sib.data.value));
   let currentChildren = (
     await ctx.scanIndex.eav(args.block, "card/block")
   ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
@@ -307,11 +313,6 @@ const removeBlock: Mutation<
   { blockEntity: string } | { blockEntity: string }[]
 > = async (args, ctx) => {
   for (let block of [args].flat()) {
-    let [isLocked] = await ctx.scanIndex.eav(
-      block.blockEntity,
-      "block/is-locked",
-    );
-    if (isLocked?.data.value) continue;
     let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
     await ctx.runOnServer(async ({ supabase }) => {
       if (image) {
@@ -427,17 +428,42 @@ const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
     },
   });
 };
-const moveBlockDown: Mutation<{ entityID: string; parent: string }> = async (
-  args,
-  ctx,
-) => {
+const moveBlockDown: Mutation<{
+  entityID: string;
+  parent: string;
+  permission_set?: string;
+}> = async (args, ctx) => {
   let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
     (a, b) => (a.data.position > b.data.position ? 1 : -1),
   );
   let index = children.findIndex((f) => f.data.value === args.entityID);
   if (index === -1) return;
   let next = children[index + 1];
-  if (!next) return;
+  if (!next) {
+    // If this is the last block, create a new empty block above it using the addBlock helper
+    if (!args.permission_set) return; // Can't create block without permission_set
+
+    let newEntityID = v7();
+    let previousBlock = children[index - 1];
+    let position = generateKeyBetween(
+      previousBlock?.data.position || null,
+      children[index].data.position,
+    );
+
+    // Call the addBlock mutation helper directly
+    await addBlock(
+      {
+        parent: args.parent,
+        permission_set: args.permission_set,
+        factID: v7(),
+        type: "text",
+        newEntityID: newEntityID,
+        position: position,
+      },
+      ctx,
+    );
+    return;
+  }
   await ctx.retractFact(children[index].id);
   await ctx.assertFact({
     id: children[index].id,
@@ -638,19 +664,29 @@ const updatePublicationDraft: Mutation<{
   tags?: string[];
   cover_image?: string | null;
   localPublishedAt?: string | null;
+  preferences?: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showRecommends?: boolean;
+  } | null;
 }> = async (args, ctx) => {
   await ctx.runOnServer(async (serverCtx) => {
-    console.log("updating");
     const updates: {
       description?: string;
       title?: string;
       tags?: string[];
       cover_image?: string | null;
+      preferences?: {
+        showComments?: boolean;
+        showMentions?: boolean;
+        showRecommends?: boolean;
+      } | null;
     } = {};
     if (args.description !== undefined) updates.description = args.description;
     if (args.title !== undefined) updates.title = args.title;
     if (args.tags !== undefined) updates.tags = args.tags;
     if (args.cover_image !== undefined) updates.cover_image = args.cover_image;
+    if (args.preferences !== undefined) updates.preferences = args.preferences;
 
     if (Object.keys(updates).length > 0) {
       // First try to update leaflets_in_publications (for publications)
@@ -679,6 +715,8 @@ const updatePublicationDraft: Mutation<{
       await tx.set("publication_cover_image", args.cover_image);
     if (args.localPublishedAt !== undefined)
       await tx.set("publication_local_published_at", args.localPublishedAt);
+    if (args.preferences !== undefined)
+      await tx.set("post_preferences", args.preferences);
   });
 };
 

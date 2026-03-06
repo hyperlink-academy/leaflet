@@ -29,10 +29,12 @@ export async function getSubscriptions(
 
   let query = supabaseServerClient
     .from("publication_subscriptions")
-    .select(`*, publications(*, documents_in_publications(*, documents(*)))`)
+    .select(
+      `*, publications(*, publication_subscriptions(*), documents_in_publications(*, documents(*)))`,
+    )
     .order(`created_at`, { ascending: false })
     .order(`uri`, { ascending: false })
-    .order("indexed_at", {
+    .order("documents(sort_date)", {
       ascending: false,
       referencedTable: "publications.documents_in_publications",
     })
@@ -51,7 +53,7 @@ export async function getSubscriptions(
     await Promise.all(
       pubs?.map(async (pub) => {
         const normalizedRecord = normalizePublicationRecord(
-          pub.publications?.record
+          pub.publications?.record,
         );
         if (!normalizedRecord) return null;
         let id = await idResolver.did.resolve(pub.publications?.identity_did!);
@@ -62,10 +64,9 @@ export async function getSubscriptions(
             ? { handle: `@${id.alsoKnownAs[0].slice(5)}` }
             : undefined,
         } as PublicationSubscription;
-      }) || []
+      }) || [],
     )
   ).filter((sub): sub is PublicationSubscription => sub !== null);
-
   const nextCursor =
     pubs && pubs.length > 0
       ? {
@@ -83,8 +84,9 @@ export async function getSubscriptions(
 export type PublicationSubscription = {
   authorProfile?: { handle: string };
   record: NormalizedPublication;
+  publication_subscriptions: { identity: string }[];
   uri: string;
   documents_in_publications: {
-    documents: { data?: Json; indexed_at: string } | null;
+    documents: { data?: Json; sort_date: string } | null;
   }[];
 };

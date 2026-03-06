@@ -92,7 +92,7 @@ export function DocLinkBlock(props: {
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
-  let [title, description] = props.blocks
+  let [title, description, thirdLine] = props.blocks
     .map((b) => b.block)
     .filter(
       (b) => PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
@@ -133,6 +133,18 @@ export function DocLinkBlock(props: {
                   />
                 </div>
               )}
+              {thirdLine && (
+                <div
+                  className={`pageBlockLineThree outline-none resize-none align-top gap-2 ${thirdLine.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                >
+                  <TextBlock
+                    facets={thirdLine.facets}
+                    plaintext={thirdLine.plaintext}
+                    index={[]}
+                    preview
+                  />
+                </div>
+              )}
             </div>
 
             <Interactions
@@ -155,9 +167,8 @@ export function PagePreview(props: {
 }) {
   let previewRef = useRef<HTMLDivElement | null>(null);
   let { rootEntity } = useReplicache();
-  const { theme } = useDocument();
   let pageWidth = `var(--page-width-unitless)`;
-  let cardBorderHidden = !theme?.showPageBackground;
+  let cardBorderHidden = useCardBorderHidden();
   return (
     <div
       ref={previewRef}

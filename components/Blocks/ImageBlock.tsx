@@ -19,7 +19,16 @@ import { set } from "colorjs.io/fn";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useSubscribe } from "src/replicache/useSubscribe";
-import { ImageCoverImage } from "components/Icons/ImageCoverImage";
+import {
+  ImageCoverImage,
+  ImageCoverImageRemove,
+} from "components/Icons/ImageCoverImage";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
+import { CheckTiny } from "components/Icons/CheckTiny";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
@@ -28,7 +37,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.value),
   );
-  let isLocked = useEntity(props.value, "block/is-locked")?.data.value;
   let isFullBleed = useEntity(props.value, "image/full-bleed")?.data.value;
   let isFirst = props.previousBlock === null;
   let isLast = props.nextBlock === null;
@@ -84,16 +92,15 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     return (
       <BlockLayout
         hasBackground="accent"
-        isSelected={!!isSelected && !isLocked}
+        isSelected={!!isSelected}
         borderOnHover
         className=" group/image-block text-tertiary hover:text-accent-contrast hover:font-bold h-[104px]  border-dashed rounded-lg"
       >
         <label
           className={`
-
             w-full h-full hover:cursor-pointer
             flex flex-col items-center justify-center
-            ${props.pageType === "canvas" && "bg-bg-page"}`}
+           `}
           onMouseDown={(e) => e.preventDefault()}
           onDragOver={(e) => {
             e.preventDefault();
@@ -102,7 +109,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           onDrop={async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (isLocked) return;
             const files = e.dataTransfer.files;
             if (files && files.length > 0) {
               const file = files[0];
@@ -119,7 +125,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             Upload An Image
           </div>
           <input
-            disabled={isLocked}
             className="h-0 w-0 hidden"
             type="file"
             accept="image/*"
@@ -134,23 +139,22 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     );
   }
 
-  let imageClassName = isFullBleed
-    ? ""
-    : isSelected
-      ? "block-border-selected border-transparent! "
-      : "block-border border-transparent!";
-
   let isLocalUpload = localImages.get(image.data.src);
 
   let blockClassName = `
     relative group/image border-transparent! p-0! w-fit!
-    ${isFullBleed && "-mx-3 sm:-mx-4"}
+    ${isFullBleed && "-mx-[14px] sm:-mx-[18px] rounded-[0px]! sm:outline-offset-[-16px]! -outline-offset[-12px]!"}
     ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-1" : "") : ""}
     ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-2" : "") : ""}
     `;
 
   return (
-    <BlockLayout isSelected={!!isSelected} className={blockClassName}>
+    <BlockLayout
+      hasAlignment
+      isSelected={!!isSelected}
+      className={blockClassName}
+      optionsClassName={isFullBleed ? "top-[-8px]!" : ""}
+    >
       {isLocalUpload || image.data.local ? (
         <img
           loading="lazy"
@@ -168,7 +172,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           }
           height={image?.data.height}
           width={image?.data.width}
-          className={imageClassName}
         />
       )}
       {altText !== undefined && !props.preview ? (
@@ -204,32 +207,38 @@ const CoverImageButton = (props: { entityID: string }) => {
   );
 
   // Only show if focused, in a publication, has write permissions, and no cover image is set
-  if (
-    !isFocused ||
-    !pubData?.publications ||
-    !entity_set.permissions.write ||
-    coverImage
-  )
+  if (!isFocused || !pubData?.publications || !entity_set.permissions.write)
     return null;
-
-  return (
-    <div className="absolute top-2 left-2">
-      <button
-        className="flex items-center gap-1 text-xs bg-bg-page/80 hover:bg-bg-page text-secondary hover:text-primary px-2 py-1 rounded-md border border-border hover:border-primary transition-colors"
+  if (coverImage)
+    return (
+      <ButtonSecondary
+        className="absolute top-2 right-2"
         onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
           await rep?.mutate.updatePublicationDraft({
-            cover_image: props.entityID,
+            cover_image: null,
           });
         }}
       >
-        <span className="w-4 h-4 flex items-center justify-center">
-          <ImageCoverImage />
-        </span>
-        Set as Cover
-      </button>
-    </div>
+        Remove Cover Image
+        <ImageCoverImageRemove />
+      </ButtonSecondary>
+    );
+  return (
+    <ButtonPrimary
+      className="absolute top-2 right-2"
+      onClick={async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        await rep?.mutate.updatePublicationDraft({
+          cover_image: props.entityID,
+        });
+      }}
+    >
+      Use as Cover Image
+      <ImageCoverImage />
+    </ButtonPrimary>
   );
 };
 

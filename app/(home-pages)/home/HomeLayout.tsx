@@ -23,11 +23,7 @@ import { Actions } from "./Actions/Actions";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
-import {
-  DiscoverBanner,
-  HomeEmptyState,
-  PublicationBanner,
-} from "./HomeEmpty/HomeEmpty";
+import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
 
 export type Leaflet = {
   added_at: string;
@@ -103,6 +99,7 @@ export const HomeLayout = (props: {
           ),
         },
       }}
+      pageTitle={"Home"}
     />
   );
 };
@@ -140,7 +137,11 @@ export function HomeLeafletList(props: {
         return { ...result, titles };
       }
     },
-    { fallbackData: { facts: props.initialFacts, titles: props.titles } },
+    {
+      fallbackData: { facts: props.initialFacts, titles: props.titles },
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
   );
 
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
@@ -170,10 +171,6 @@ export function HomeLeafletList(props: {
         showPreview
       />
       <div className="spacer h-4 w-full bg-transparent shrink-0 " />
-
-      {leaflets.filter((l) => !!l.token.leaflets_in_publications).length ===
-        0 && <PublicationBanner small />}
-      <DiscoverBanner small />
     </>
   );
 }
@@ -204,7 +201,7 @@ export function LeafletList(props: {
       className={`
         leafletList
         w-full
-        ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 pt-2"} `}
+        ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2"} `}
     >
       {props.leaflets.map(({ token: leaflet, added_at, archived }, index) => (
         <ReplicacheProvider

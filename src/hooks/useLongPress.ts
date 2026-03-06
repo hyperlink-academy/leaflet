@@ -90,7 +90,7 @@ export const useLongPress = (cb: () => void, cancel?: boolean) => {
   return useMemo(
     () => ({
       isLongPress: isLongPress,
-      handlers: {
+      longPressHandlers: {
         onPointerDown,
         onPointerUp: end,
         onClickCapture: click,

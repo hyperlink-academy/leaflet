@@ -1,5 +1,6 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { EntitySetProvider } from "components/EntitySetProvider";
+import { NavStateTracker } from "components/NavStateTracker";
 import {
   ThemeProvider,
   ThemeBackgroundProvider,
@@ -13,6 +14,7 @@ export default async function HomePagesLayout(props: {
   if (!identityData?.home_leaflet)
     return (
       <>
+        <NavStateTracker />
         <ThemeProvider entityID={""}>{props.children}</ThemeProvider>
       </>
     );
@@ -34,6 +36,7 @@ export default async function HomePagesLayout(props: {
       >
         <ThemeProvider entityID={root_entity}>
           <ThemeBackgroundProvider entityID={root_entity}>
+            <NavStateTracker />
             {props.children}
           </ThemeBackgroundProvider>
         </ThemeProvider>

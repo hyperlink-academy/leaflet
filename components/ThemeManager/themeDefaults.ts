@@ -9,13 +9,13 @@ export const PubThemeDefaults = {
   pageBackground: "#FDFCFA",
   primary: "#272727",
   accentText: "#FFFFFF",
-  accentBackground: "#0000FF",
+  accentBackground: "#639431",
 } as const;
 
 // RGB color defaults (parsed from hex values above)
 export const PubThemeDefaultsRGB = {
   background: { r: 253, g: 252, b: 250 }, // #FDFCFA
   foreground: { r: 39, g: 39, b: 39 }, // #272727
-  accent: { r: 0, g: 0, b: 255 }, // #0000FF
+  accent: { r: 99, g: 148, b: 49 }, // #639431
   accentForeground: { r: 255, g: 255, b: 255 }, // #FFFFFF
 } as const;

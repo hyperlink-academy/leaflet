@@ -11,19 +11,15 @@ import { addShortcut } from "src/shortcuts";
 import { ListToolbar } from "./ListToolbar";
 import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
-import { BlockToolbar } from "./BlockToolbar";
+import { ImageToolbar } from "./ImageToolbar";
 import { MultiselectToolbar } from "./MultiSelectToolbar";
-import { AreYouSure } from "components/Blocks/DeleteBlock";
-import { deleteBlock } from "src/utils/deleteBlock";
 import { TooltipButton } from "components/Buttons";
 import { TextAlignmentToolbar } from "./TextAlignmentToolbar";
 import { useIsMobile } from "src/hooks/isMobile";
 import { CloseTiny } from "components/Icons/CloseTiny";
 
 export type ToolbarTypes =
-  | "areYouSure"
   | "default"
-  | "block"
   | "multiselect"
   | "highlight"
   | "link"
@@ -31,18 +27,18 @@ export type ToolbarTypes =
   | "text-alignment"
   | "list"
   | "linkBlock"
-  | "img-alt-text";
+  | "img-alt-text"
+  | "image";
 
-export const Toolbar = (props: { pageID: string; blockID: string }) => {
-  let { rep } = useReplicache();
-
+export const Toolbar = (props: {
+  pageID: string;
+  blockID: string;
+  blockType: string | null | undefined;
+}) => {
   let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
 
-  let focusedEntity = useUIState((s) => s.focusedEntity);
-  let selectedBlocks = useUIState((s) => s.selectedBlocks);
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
-
-  let blockType = useEntity(props.blockID, "block/type")?.data.value;
+  let selectedBlocks = useUIState((s) => s.selectedBlocks);
 
   let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
   let setLastUsedHighlight = (color: "1" | "2" | "3") =>
@@ -64,31 +60,28 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
     };
   }, [toolbarState]);
 
-  useEffect(() => {
-    if (!blockType) return;
-    if (
-      blockType !== "heading" &&
-      blockType !== "text" &&
-      blockType !== "blockquote"
-    ) {
-      setToolbarState("block");
-    } else {
-      setToolbarState("default");
-    }
-  }, [blockType]);
+  let isTextBlock =
+    props.blockType === "heading" ||
+    props.blockType === "text" ||
+    props.blockType === "blockquote";
 
   useEffect(() => {
-    if (
-      selectedBlocks.length > 1 &&
-      !["areYousure", "text-alignment"].includes(toolbarState)
-    ) {
+    if (selectedBlocks.length > 1) {
       setToolbarState("multiselect");
-    } else if (toolbarState === "multiselect") {
+      return;
+    }
+    if (isTextBlock) {
       setToolbarState("default");
     }
-  }, [selectedBlocks.length, toolbarState]);
-  let isMobile = useIsMobile();
+    if (props.blockType === "image") {
+      setToolbarState("image");
+    }
+    if (props.blockType === "button" || props.blockType === "datetime") {
+      setToolbarState("text-alignment");
+    } else null;
+  }, [props.blockType, selectedBlocks]);
 
+  let isMobile = useIsMobile();
   return (
     <Tooltip.Provider>
       <div
@@ -125,64 +118,43 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
             <TextBlockTypeToolbar onClose={() => setToolbarState("default")} />
           ) : toolbarState === "text-alignment" ? (
             <TextAlignmentToolbar />
-          ) : toolbarState === "block" ? (
-            <BlockToolbar setToolbarState={setToolbarState} />
+          ) : toolbarState === "image" ? (
+            <ImageToolbar setToolbarState={setToolbarState} />
           ) : toolbarState === "multiselect" ? (
             <MultiselectToolbar setToolbarState={setToolbarState} />
-          ) : toolbarState === "areYouSure" ? (
-            <AreYouSure
-              compact
-              type={blockType}
-              entityID={selectedBlocks.map((b) => b.value)}
-              onClick={() => {
-                rep &&
-                  deleteBlock(
-                    selectedBlocks.map((b) => b.value),
-                    rep,
-                  );
-              }}
-              closeAreYouSure={() => {
-                setToolbarState(
-                  selectedBlocks.length > 1
-                    ? "multiselect"
-                    : blockType !== "heading" && blockType !== "text"
-                      ? "block"
-                      : "default",
-                );
-              }}
-            />
           ) : null}
         </div>
         {/* if the thing is are you sure state, don't show the x... is each thing handling its own are you sure? theres no need for that */}
-        {toolbarState !== "areYouSure" && (
-          <button
-            className="toolbarBackToDefault hover:text-accent-contrast"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              if (
-                toolbarState === "multiselect" ||
-                toolbarState === "block" ||
-                toolbarState === "default"
-              ) {
-                useUIState.setState(() => ({
-                  focusedEntity: {
-                    entityType: "page",
-                    entityID: props.pageID,
-                  },
-                  selectedBlocks: [],
-                }));
-              } else {
-                if (blockType !== "heading" && blockType !== "text") {
-                  setToolbarState("block");
-                } else {
-                  setToolbarState("default");
-                }
+
+        <button
+          className="toolbarBackToDefault hover:text-accent-contrast"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            if (
+              toolbarState === "multiselect" ||
+              toolbarState === "image" ||
+              toolbarState === "default"
+            ) {
+              // close the toolbar
+              useUIState.setState(() => ({
+                focusedEntity: {
+                  entityType: "page",
+                  entityID: props.pageID,
+                },
+                selectedBlocks: [],
+              }));
+            } else {
+              if (props.blockType === "image") {
+                setToolbarState("image");
               }
-            }}
-          >
-            <CloseTiny />
-          </button>
-        )}
+              if (isTextBlock) {
+                setToolbarState("default");
+              }
+            }
+          }}
+        >
+          <CloseTiny />
+        </button>
       </div>
     </Tooltip.Provider>
   );
@@ -198,9 +170,7 @@ export const ToolbarButton = (props: {
   hiddenOnCanvas?: boolean;
 }) => {
   let focusedEntity = useUIState((s) => s.focusedEntity);
-  let isLocked = useEntity(focusedEntity?.entityID || null, "block/is-locked");
-  let isDisabled =
-    props.disabled === undefined ? !!isLocked?.data.value : props.disabled;
+  let isDisabled = props.disabled;
 
   let focusedEntityType = useEntity(
     focusedEntity?.entityType === "page"

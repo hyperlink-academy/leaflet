@@ -14,7 +14,7 @@ import {
   useLeafletPublicationData,
 } from "components/PageSWRDataProvider";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import { useIsMobile } from "src/hooks/isMobile";
 
@@ -89,12 +89,14 @@ const ShareMenu = (props: {
   let { permission_token } = useReplicache();
   let { data: pub, normalizedDocument } = useLeafletPublicationData();
 
-  let docURI = pub?.documents ? new AtUri(pub?.documents.uri) : null;
-  let postLink = !docURI
-    ? null
-    : pub?.publications
-      ? `${getPublicationURL(pub.publications)}/${docURI.rkey}`
-      : `p/${docURI.host}/${docURI.rkey}`;
+  let postLink =
+    pub?.documents && normalizedDocument
+      ? getDocumentURL(
+          normalizedDocument,
+          pub.documents.uri,
+          pub?.publications || null,
+        )
+      : null;
   let publishLink = useReadOnlyShareLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {

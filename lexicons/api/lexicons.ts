@@ -1048,6 +1048,9 @@ export const schemaDict = {
             type: 'ref',
             ref: 'lex:com.atproto.repo.strongRef',
           },
+          clientHost: {
+            type: 'string',
+          },
         },
       },
     },
@@ -1204,6 +1207,59 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksOrderedList: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.orderedList',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['children'],
+        properties: {
+          startIndex: {
+            type: 'integer',
+            description:
+              'The starting number for this ordered list. Defaults to 1 if not specified.',
+          },
+          children: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.orderedList#listItem',
+            },
+          },
+        },
+      },
+      listItem: {
+        type: 'object',
+        required: ['content'],
+        properties: {
+          content: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+            ],
+          },
+          children: {
+            type: 'array',
+            description:
+              'Nested ordered list items. Mutually exclusive with unorderedListChildren; if both are present, children takes precedence.',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.orderedList#listItem',
+            },
+          },
+          unorderedListChildren: {
+            type: 'ref',
+            description:
+              'A nested unordered list. Mutually exclusive with children; if both are present, children takes precedence.',
+            ref: 'lex:pub.leaflet.blocks.unorderedList',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksPage: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.page',
@@ -1292,10 +1348,18 @@ export const schemaDict = {
           },
           children: {
             type: 'array',
+            description:
+              'Nested unordered list items. Mutually exclusive with orderedListChildren; if both are present, children takes precedence.',
             items: {
               type: 'ref',
               ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
             },
+          },
+          orderedListChildren: {
+            type: 'ref',
+            description:
+              'Nested ordered list items. Mutually exclusive with children; if both are present, children takes precedence.',
+            ref: 'lex:pub.leaflet.blocks.orderedList',
           },
         },
       },
@@ -1469,6 +1533,10 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.publication#theme',
             },
+            preferences: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#preferences',
+            },
             tags: {
               type: 'array',
               items: {
@@ -1517,6 +1585,31 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletInteractionsRecommend: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.recommend',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record representing a recommend on a document',
+        record: {
+          type: 'object',
+          required: ['subject', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletPagesCanvas: {
     lexicon: 1,
     id: 'pub.leaflet.pages.canvas',
@@ -1550,6 +1643,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.orderedList',
               'lex:pub.leaflet.blocks.website',
               'lex:pub.leaflet.blocks.math',
               'lex:pub.leaflet.blocks.code',
@@ -1651,6 +1745,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.orderedList',
               'lex:pub.leaflet.blocks.website',
               'lex:pub.leaflet.blocks.math',
               'lex:pub.leaflet.blocks.code',
@@ -1840,6 +1935,10 @@ export const schemaDict = {
             default: true,
           },
           showPrevNext: {
+            type: 'boolean',
+            default: true,
+          },
+          showRecommends: {
             type: 'boolean',
             default: true,
           },
@@ -2177,6 +2276,11 @@ export const schemaDict = {
               maxLength: 5000,
               type: 'string',
             },
+            preferences: {
+              type: 'union',
+              refs: ['lex:pub.leaflet.publication#preferences'],
+              closed: false,
+            },
             updatedAt: {
               format: 'datetime',
               type: 'string',
@@ -2223,8 +2327,8 @@ export const schemaDict = {
               type: 'ref',
             },
             theme: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.publication#theme',
+              type: 'union',
+              refs: ['lex:pub.leaflet.publication#theme'],
             },
             description: {
               maxGraphemes: 300,
@@ -2271,6 +2375,10 @@ export const schemaDict = {
           },
           showPrevNext: {
             default: false,
+            type: 'boolean',
+          },
+          showRecommends: {
+            default: true,
             type: 'boolean',
           },
         },
@@ -2417,6 +2525,7 @@ export const ids = {
   PubLeafletBlocksIframe: 'pub.leaflet.blocks.iframe',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
+  PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
@@ -2426,6 +2535,7 @@ export const ids = {
   PubLeafletContent: 'pub.leaflet.content',
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
+  PubLeafletInteractionsRecommend: 'pub.leaflet.interactions.recommend',
   PubLeafletPagesCanvas: 'pub.leaflet.pages.canvas',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletPollDefinition: 'pub.leaflet.poll.definition',

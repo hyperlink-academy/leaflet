@@ -99,6 +99,14 @@ const BlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "block/list-style": {
+    type: "list-style-union",
+    cardinality: "one",
+  },
+  "block/list-number": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const MailboxAttributes = {
@@ -148,6 +156,10 @@ const EmbedBlockAttributes = {
 
 const BlueskyPostBlockAttributes = {
   "bluesky-post/url": {
+    type: "string",
+    cardinality: "one",
+  },
+  "bluesky-post/host": {
     type: "string",
     cardinality: "one",
   },
@@ -358,6 +370,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
     value: "dot" | "grid" | "plain";
+  };
+  "list-style-union": {
+    type: "list-style-union";
+    value: "ordered" | "unordered";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

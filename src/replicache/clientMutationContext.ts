@@ -67,6 +67,13 @@ export function clientMutationContext(
             textData.value = base64.fromByteArray(updateBytes);
           }
         }
+      } else if (f.id) {
+        // For cardinality "many" with an explicit ID, fetch the existing fact
+        // so undo can restore it instead of deleting
+        let fact = await tx.get(f.id);
+        if (fact) {
+          existingFact = [fact as Fact<any>];
+        }
       }
       if (!ignoreUndo)
         undoManager.add({

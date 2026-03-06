@@ -27,13 +27,14 @@ export function PublicationSettingsButton(props: { publication: string }) {
       onOpenChange={() => setState("menu")}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className={`max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
+      className={`flex flex-col max-w-xs w-[1000px] ${state === "theme" && "bg-white!"} pb-0!`}
       arrowFill={theme.colors["border-light"]}
       trigger={
         <ActionButton
           id="pub-settings-button"
           icon=<SettingsSmall />
           label="Settings"
+          smallOnMobile
         />
       }
     >
@@ -63,6 +64,7 @@ export function PublicationSettingsButton(props: { publication: string }) {
           setLoading={setLoading}
         />
       )}
+      <div className="spacer h-2 w-full" aria-hidden />
     </Popover>
   );
 }
@@ -92,7 +94,15 @@ const PubSettingsMenu = (props: {
           props.setState("general");
         }}
       >
-        General Settings
+        Publication Settings
+        <ArrowRightTiny />
+      </button>
+      <button
+        className={menuItemClassName}
+        type="button"
+        onClick={() => props.setState("post-options")}
+      >
+        Post Settings
         <ArrowRightTiny />
       </button>
       <button
@@ -101,14 +111,6 @@ const PubSettingsMenu = (props: {
         onClick={() => props.setState("theme")}
       >
         Theme and Layout
-        <ArrowRightTiny />
-      </button>
-      <button
-        className={menuItemClassName}
-        type="button"
-        onClick={() => props.setState("post-options")}
-      >
-        Post Options
         <ArrowRightTiny />
       </button>
     </div>
@@ -123,7 +125,7 @@ export const PubSettingsHeader = (props: {
   children: React.ReactNode;
 }) => {
   return (
-    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1">
+    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1 flex-shrink-0">
       {props.children}
       {props.state !== "menu" && (
         <div className="flex gap-2">

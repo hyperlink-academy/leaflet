@@ -2,6 +2,7 @@ import { MentionTiny } from "components/Icons/MentionTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedMentionNotification } from "src/notifications";
 import { AtUri } from "@atproto/api";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export const MentionNotification = (props: HydratedMentionNotification) => {
   const docRecord = props.normalizedDocument;
@@ -9,13 +10,7 @@ export const MentionNotification = (props: HydratedMentionNotification) => {
 
   if (!docRecord) return null;
 
-  const docUri = new AtUri(props.document.uri);
-  const rkey = docUri.rkey;
-  const did = docUri.host;
-
-  const href = pubRecord
-    ? `${pubRecord.url}/${rkey}`
-    : `/p/${did}/${rkey}`;
+  const href = getDocumentURL(docRecord, props.document.uri, pubRecord);
 
   let actionText: React.ReactNode;
   let mentionedItemName: string | undefined;

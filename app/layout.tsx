@@ -12,8 +12,11 @@ import { RouteUIStateManager } from "components/RouteUIStateManger";
 
 export const metadata = {
   title: "Leaflet",
-  description: "tiny interconnected social documents",
+  description: "Read and publish on the Atmosphere",
   metadataBase: new URL(`https://leaflet.pub`),
+  openGraph: {
+    images: ["/open-graph.png"],
+  },
   appleWebApp: {
     title: "Leaflet",
     statusBarStyle: "black-translucent",

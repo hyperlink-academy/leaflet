@@ -335,18 +335,30 @@ export type Database = {
       }
       documents: {
         Row: {
+          bsky_like_count: number
           data: Json
+          indexed: boolean
           indexed_at: string
+          recommend_count: number
+          sort_date: string
           uri: string
         }
         Insert: {
+          bsky_like_count?: number
           data: Json
+          indexed?: boolean
           indexed_at?: string
+          recommend_count?: number
+          sort_date?: string
           uri: string
         }
         Update: {
+          bsky_like_count?: number
           data?: Json
+          indexed?: boolean
           indexed_at?: string
+          recommend_count?: number
+          sort_date?: string
           uri?: string
         }
         Relationships: []
@@ -551,6 +563,7 @@ export type Database = {
           home_page: string
           id: string
           interface_state: Json | null
+          metadata: Json | null
         }
         Insert: {
           atp_did?: string | null
@@ -559,6 +572,7 @@ export type Database = {
           home_page?: string
           id?: string
           interface_state?: Json | null
+          metadata?: Json | null
         }
         Update: {
           atp_did?: string | null
@@ -567,6 +581,7 @@ export type Database = {
           home_page?: string
           id?: string
           interface_state?: Json | null
+          metadata?: Json | null
         }
         Relationships: [
           {
@@ -585,6 +600,7 @@ export type Database = {
           description: string
           doc: string | null
           leaflet: string
+          preferences: Json | null
           publication: string
           tags: string[] | null
           title: string
@@ -595,6 +611,7 @@ export type Database = {
           description?: string
           doc?: string | null
           leaflet: string
+          preferences?: Json | null
           publication: string
           tags?: string[] | null
           title?: string
@@ -605,6 +622,7 @@ export type Database = {
           description?: string
           doc?: string | null
           leaflet?: string
+          preferences?: Json | null
           publication?: string
           tags?: string[] | null
           title?: string
@@ -641,6 +659,7 @@ export type Database = {
           description: string
           document: string
           leaflet: string
+          preferences: Json | null
           tags: string[] | null
           title: string
         }
@@ -651,6 +670,7 @@ export type Database = {
           description?: string
           document: string
           leaflet: string
+          preferences?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -661,6 +681,7 @@ export type Database = {
           description?: string
           document?: string
           leaflet?: string
+          preferences?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -1071,6 +1092,45 @@ export type Database = {
           },
         ]
       }
+      recommends_on_documents: {
+        Row: {
+          document: string
+          indexed_at: string
+          recommender_did: string
+          record: Json
+          uri: string
+        }
+        Insert: {
+          document: string
+          indexed_at?: string
+          recommender_did: string
+          record: Json
+          uri: string
+        }
+        Update: {
+          document?: string
+          indexed_at?: string
+          recommender_did?: string
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommends_on_documents_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "recommends_on_documents_recommender_did_fkey"
+            columns: ["recommender_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
+      }
       replicache_clients: {
         Row: {
           client_group: string
@@ -1299,6 +1359,50 @@ export type Database = {
         Returns: {
           like: unknown
         }[]
+      }
+      get_profile_posts: {
+        Args: {
+          p_did: string
+          p_cursor_sort_date?: string | null
+          p_cursor_uri?: string | null
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          data: Json
+          sort_date: string
+          comments_count: number
+          mentions_count: number
+          recommends_count: number
+          publication_uri: string
+          publication_record: Json
+          publication_name: string
+        }[]
+      }
+      get_reader_feed: {
+        Args: {
+          p_identity: string
+          p_cursor_timestamp?: string
+          p_cursor_uri?: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          data: Json
+          sort_date: string
+          comments_count: number
+          mentions_count: number
+          recommends_count: number
+          publication_uri: string
+          publication_record: Json
+          publication_name: string
+        }[]
+      }
+      parse_iso_timestamp: {
+        Args: {
+          "": string
+        }
+        Returns: string
       }
       pull_data: {
         Args: {

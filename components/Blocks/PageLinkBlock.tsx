@@ -13,7 +13,13 @@ import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
-export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
+export function PageLinkBlock(
+  props: BlockProps & {
+    preview?: boolean;
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) {
   let page = useEntity(props.entityID, "block/card");
   let type =
     useEntity(page?.data.value || null, "page/type")?.data.value || "doc";
@@ -32,6 +38,8 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
       <BlockLayout
         hasBackground="page"
         isSelected={!!isSelected}
+        areYouSure={props.areYouSure}
+        setAreYouSure={props.setAreYouSure}
         className={`cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
         flex overflow-clip p-0!

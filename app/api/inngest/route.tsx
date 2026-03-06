@@ -5,6 +5,15 @@ import { come_online } from "./functions/come_online";
 import { batched_update_profiles } from "./functions/batched_update_profiles";
 import { index_follows } from "./functions/index_follows";
 import { migrate_user_to_standard } from "./functions/migrate_user_to_standard";
+import { fix_standard_document_publications } from "./functions/fix_standard_document_publications";
+import { fix_incorrect_site_values } from "./functions/fix_incorrect_site_values";
+import { fix_standard_document_postref } from "./functions/fix_standard_document_postref";
+import {
+  cleanup_expired_oauth_sessions,
+  check_oauth_session,
+} from "./functions/cleanup_expired_oauth_sessions";
+import { write_records_to_pds } from "./functions/write_records_to_pds";
+import { index_document } from "./functions/index_document";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -14,5 +23,12 @@ export const { GET, POST, PUT } = serve({
     batched_update_profiles,
     index_follows,
     migrate_user_to_standard,
+    fix_standard_document_publications,
+    fix_incorrect_site_values,
+    fix_standard_document_postref,
+    cleanup_expired_oauth_sessions,
+    check_oauth_session,
+    write_records_to_pds,
+    index_document,
   ],
 });

@@ -6,8 +6,8 @@ import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
-import { indent, outdent, outdentFull } from "src/utils/list-operations";
+import { getBlocksWithType } from "src/replicache/getBlocks";
+import { indent, outdentFull, multiSelectOutdent } from "src/utils/list-operations";
 import { addShortcut, Shortcut } from "src/shortcuts";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
@@ -17,6 +17,7 @@ import { deleteBlock } from "src/utils/deleteBlock";
 import { schema } from "../Blocks/TextBlock/schema";
 import { MarkType } from "prosemirror-model";
 import { useSelectingMouse, getSortedSelection } from "./selectionState";
+import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 
 //How should I model selection? As ranges w/ a start and end? Store *blocks* so that I can just construct ranges?
 // How does this relate to *when dragging* ?
@@ -240,35 +241,8 @@ export function SelectionManager() {
         shift: true,
         key: ["ArrowDown", "J"],
         handler: async () => {
-          let [sortedBlocks, siblings] = await getSortedSelectionBound();
-          let block = sortedBlocks[0];
-          let nextBlock = siblings
-            .slice(siblings.findIndex((s) => s.value === block.value) + 1)
-            .find(
-              (f) =>
-                f.listData &&
-                block.listData &&
-                !f.listData.path.find((f) => f.entity === block.value),
-            );
-          if (
-            nextBlock?.listData &&
-            block.listData &&
-            nextBlock.listData.depth === block.listData.depth - 1
-          ) {
-            if (useUIState.getState().foldedBlocks.includes(nextBlock.value))
-              useUIState.getState().toggleFold(nextBlock.value);
-            await rep?.mutate.moveBlock({
-              block: block.value,
-              oldParent: block.listData?.parent,
-              newParent: nextBlock.value,
-              position: { type: "first" },
-            });
-          } else {
-            await rep?.mutate.moveBlockDown({
-              entityID: block.value,
-              parent: block.listData?.parent || block.parent,
-            });
-          }
+          if (!rep) return;
+          await moveBlockDown(rep, entity_set.set);
         },
       },
       {
@@ -276,44 +250,8 @@ export function SelectionManager() {
         shift: true,
         key: ["ArrowUp", "K"],
         handler: async () => {
-          let [sortedBlocks, siblings] = await getSortedSelectionBound();
-          let block = sortedBlocks[0];
-          let previousBlock =
-            siblings?.[siblings.findIndex((s) => s.value === block.value) - 1];
-          if (previousBlock.value === block.listData?.parent) {
-            previousBlock =
-              siblings?.[
-                siblings.findIndex((s) => s.value === block.value) - 2
-              ];
-          }
-
-          if (
-            previousBlock?.listData &&
-            block.listData &&
-            block.listData.depth > 1 &&
-            !previousBlock.listData.path.find(
-              (f) => f.entity === block.listData?.parent,
-            )
-          ) {
-            let depth = block.listData.depth;
-            let newParent = previousBlock.listData.path.find(
-              (f) => f.depth === depth - 1,
-            );
-            if (!newParent) return;
-            if (useUIState.getState().foldedBlocks.includes(newParent.entity))
-              useUIState.getState().toggleFold(newParent.entity);
-            rep?.mutate.moveBlock({
-              block: block.value,
-              oldParent: block.listData?.parent,
-              newParent: newParent.entity,
-              position: { type: "end" },
-            });
-          } else {
-            rep?.mutate.moveBlockUp({
-              entityID: block.value,
-              parent: block.listData?.parent || block.parent,
-            });
-          }
+          if (!rep) return;
+          await moveBlockUp(rep);
         },
       },
 
@@ -548,27 +486,10 @@ export function SelectionManager() {
           let [sortedSelection, siblings] = await getSortedSelectionBound();
           if (sortedSelection.length <= 1) return;
           e.preventDefault();
+
           if (e.shiftKey) {
-            for (let i = siblings.length - 1; i >= 0; i--) {
-              let block = siblings[i];
-              if (!sortedSelection.find((s) => s.value === block.value))
-                continue;
-              if (
-                sortedSelection.find((s) => s.value === block.listData?.parent)
-              )
-                continue;
-              let parentoffset = 1;
-              let previousBlock = siblings[i - parentoffset];
-              while (
-                previousBlock &&
-                sortedSelection.find((s) => previousBlock.value === s.value)
-              ) {
-                parentoffset += 1;
-                previousBlock = siblings[i - parentoffset];
-              }
-              if (!block.listData || !previousBlock.listData) continue;
-              outdent(block, previousBlock, rep);
-            }
+            let { foldedBlocks, toggleFold } = useUIState.getState();
+            await multiSelectOutdent(sortedSelection, siblings, rep, { foldedBlocks, toggleFold });
           } else {
             for (let i = 0; i < siblings.length; i++) {
               let block = siblings[i];
@@ -588,7 +509,9 @@ export function SelectionManager() {
                 previousBlock = siblings[i - parentoffset];
               }
               if (!block.listData || !previousBlock.listData) continue;
-              indent(block, previousBlock, rep);
+              let { foldedBlocks, toggleFold } = useUIState.getState();
+
+              await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
             }
           }
         }

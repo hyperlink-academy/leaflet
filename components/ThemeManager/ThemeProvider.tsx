@@ -8,6 +8,13 @@ export const CardBorderHiddenContext = createContext<boolean>(false);
 export function useCardBorderHiddenContext() {
   return useContext(CardBorderHiddenContext);
 }
+
+// Context for hasBackgroundImage
+export const HasBackgroundImageContext = createContext<boolean>(false);
+
+export function useHasBackgroundImageContext() {
+  return useContext(HasBackgroundImageContext);
+}
 import {
   colorToString,
   useColorAttribute,
@@ -87,24 +94,26 @@ export function LeafletThemeProvider(props: {
 
   return (
     <CardBorderHiddenContext.Provider value={!!cardBorderHiddenValue}>
-      <BaseThemeProvider
-        local={props.local}
-        bgLeaflet={bgLeaflet}
-        bgPage={bgPage}
-        primary={primary}
-        highlight2={highlight2}
-        highlight3={highlight3}
-        highlight1={highlight1?.data.value}
-        accent1={accent1}
-        accent2={accent2}
-        showPageBackground={showPageBackground}
-        pageWidth={pageWidth?.data.value}
-        hasBackgroundImage={hasBackgroundImage}
-        headingFontId={headingFontId}
-        bodyFontId={bodyFontId}
-      >
-        {props.children}
-      </BaseThemeProvider>
+      <HasBackgroundImageContext.Provider value={hasBackgroundImage}>
+        <BaseThemeProvider
+          local={props.local}
+          bgLeaflet={bgLeaflet}
+          bgPage={bgPage}
+          primary={primary}
+          highlight2={highlight2}
+          highlight3={highlight3}
+          highlight1={highlight1?.data.value}
+          accent1={accent1}
+          accent2={accent2}
+          showPageBackground={showPageBackground}
+          pageWidth={pageWidth?.data.value}
+          hasBackgroundImage={hasBackgroundImage}
+          headingFontId={headingFontId}
+          bodyFontId={bodyFontId}
+        >
+          {props.children}
+        </BaseThemeProvider>
+      </HasBackgroundImageContext.Provider>
     </CardBorderHiddenContext.Provider>
   );
 }
@@ -125,6 +134,7 @@ export const BaseThemeProvider = ({
   hasBackgroundImage,
   headingFontId,
   bodyFontId,
+  className,
   children,
 }: {
   local?: boolean;
@@ -141,6 +151,7 @@ export const BaseThemeProvider = ({
   pageWidth?: number;
   headingFontId?: string;
   bodyFontId?: string;
+  className?: string;
   children: React.ReactNode;
 }) => {
   // When showPageBackground is false and there's no background image,
@@ -293,7 +304,7 @@ export const BaseThemeProvider = ({
   ]);
   return (
     <div
-      className="leafletWrapper w-full text-primary h-full min-h-fit flex flex-col bg-center items-stretch "
+      className={`leafletWrapper w-full text-primary h-full min-h-fit flex flex-col bg-center items-stretch ${className || ""}`}
       style={
         {
           "--bg-leaflet": colorToString(bgLeaflet, "rgb"),

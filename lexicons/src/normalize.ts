@@ -14,7 +14,7 @@
  */
 
 import type * as PubLeafletDocument from "../api/types/pub/leaflet/document";
-import type * as PubLeafletPublication from "../api/types/pub/leaflet/publication";
+import * as PubLeafletPublication from "../api/types/pub/leaflet/publication";
 import type * as PubLeafletContent from "../api/types/pub/leaflet/content";
 import type * as SiteStandardDocument from "../api/types/site/standard/document";
 import type * as SiteStandardPublication from "../api/types/site/standard/publication";
@@ -28,16 +28,30 @@ import { AtUri } from "@atproto/syntax";
 export type NormalizedDocument = SiteStandardDocument.Record & {
   // Keep the original theme for components that need leaflet-specific styling
   theme?: PubLeafletPublication.Theme;
+  preferences?: SiteStandardPublication.Preferences;
 };
 
 // Normalized publication type - uses the generated site.standard.publication type
-export type NormalizedPublication = SiteStandardPublication.Record;
+// with the theme narrowed to only the valid pub.leaflet.publication#theme type
+// (isTheme validates that $type is present, so we use $Typed)
+// Note: We explicitly list fields rather than using Omit because the generated Record type
+// has an index signature [k: string]: unknown that interferes with property typing
+export type NormalizedPublication = {
+  $type: "site.standard.publication";
+  name: string;
+  url: string;
+  description?: string;
+  icon?: SiteStandardPublication.Record["icon"];
+  basicTheme?: SiteStandardThemeBasic.Main;
+  theme?: $Typed<PubLeafletPublication.Theme>;
+  preferences?: SiteStandardPublication.Preferences;
+};
 
 /**
  * Checks if the record is a pub.leaflet.document
  */
 export function isLeafletDocument(
-  record: unknown
+  record: unknown,
 ): record is PubLeafletDocument.Record {
   if (!record || typeof record !== "object") return false;
   const r = record as Record<string, unknown>;
@@ -52,7 +66,7 @@ export function isLeafletDocument(
  * Checks if the record is a site.standard.document
  */
 export function isStandardDocument(
-  record: unknown
+  record: unknown,
 ): record is SiteStandardDocument.Record {
   if (!record || typeof record !== "object") return false;
   const r = record as Record<string, unknown>;
@@ -63,7 +77,7 @@ export function isStandardDocument(
  * Checks if the record is a pub.leaflet.publication
  */
 export function isLeafletPublication(
-  record: unknown
+  record: unknown,
 ): record is PubLeafletPublication.Record {
   if (!record || typeof record !== "object") return false;
   const r = record as Record<string, unknown>;
@@ -78,7 +92,7 @@ export function isLeafletPublication(
  * Checks if the record is a site.standard.publication
  */
 export function isStandardPublication(
-  record: unknown
+  record: unknown,
 ): record is SiteStandardPublication.Record {
   if (!record || typeof record !== "object") return false;
   const r = record as Record<string, unknown>;
@@ -93,7 +107,7 @@ function extractRgb(
     | $Typed<PubLeafletThemeColor.Rgba>
     | $Typed<PubLeafletThemeColor.Rgb>
     | { $type: string }
-    | undefined
+    | undefined,
 ): { r: number; g: number; b: number } | undefined {
   if (!color || typeof color !== "object") return undefined;
   const c = color as Record<string, unknown>;
@@ -111,12 +125,13 @@ function extractRgb(
  * Converts a pub.leaflet theme to a site.standard.theme.basic format
  */
 export function leafletThemeToBasicTheme(
-  theme: PubLeafletPublication.Theme | undefined
+  theme: PubLeafletPublication.Theme | undefined,
 ): SiteStandardThemeBasic.Main | undefined {
   if (!theme) return undefined;
 
   const background = extractRgb(theme.backgroundColor);
-  const accent = extractRgb(theme.accentBackground) || extractRgb(theme.primary);
+  const accent =
+    extractRgb(theme.accentBackground) || extractRgb(theme.primary);
   const accentForeground = extractRgb(theme.accentText);
 
   // If we don't have the required colors, return undefined
@@ -147,14 +162,21 @@ export function leafletThemeToBasicTheme(
  * @param uri - Optional document URI, used to extract the rkey for the path field when normalizing pub.leaflet records
  * @returns A normalized document in site.standard format, or null if invalid/unrecognized
  */
-export function normalizeDocument(record: unknown, uri?: string): NormalizedDocument | null {
+export function normalizeDocument(
+  record: unknown,
+  uri?: string,
+): NormalizedDocument | null {
   if (!record || typeof record !== "object") return null;
 
   // Pass through site.standard records directly (theme is already in correct format if present)
   if (isStandardDocument(record)) {
+    const preferences = record.preferences as
+      | SiteStandardPublication.Preferences
+      | undefined;
     return {
       ...record,
       theme: record.theme,
+      preferences,
     } as NormalizedDocument;
   }
 
@@ -181,6 +203,10 @@ export function normalizeDocument(record: unknown, uri?: string): NormalizedDocu
         }
       : undefined;
 
+    // Extract preferences if present (available after lexicon rebuild)
+    const leafletPrefs = (record as Record<string, unknown>)
+      .preferences as SiteStandardPublication.Preferences | undefined;
+
     return {
       $type: "site.standard.document",
       title: record.title,
@@ -193,6 +219,9 @@ export function normalizeDocument(record: unknown, uri?: string): NormalizedDocu
       bskyPostRef: record.postRef,
       content,
       theme: record.theme,
+      preferences: leafletPrefs
+        ? { ...leafletPrefs, $type: "site.standard.publication#preferences" as const }
+        : undefined,
     };
   }
 
@@ -206,13 +235,20 @@ export function normalizeDocument(record: unknown, uri?: string): NormalizedDocu
  * @returns A normalized publication in site.standard format, or null if invalid/unrecognized
  */
 export function normalizePublication(
-  record: unknown
+  record: unknown,
 ): NormalizedPublication | null {
   if (!record || typeof record !== "object") return null;
 
-  // Pass through site.standard records directly
+  // Pass through site.standard records directly, but validate the theme
   if (isStandardPublication(record)) {
-    return record;
+    // Validate theme - only keep if it's a valid pub.leaflet.publication#theme
+    const theme = PubLeafletPublication.isTheme(record.theme)
+      ? (record.theme as $Typed<PubLeafletPublication.Theme>)
+      : undefined;
+    return {
+      ...record,
+      theme,
+    };
   }
 
   if (isLeafletPublication(record)) {
@@ -225,6 +261,21 @@ export function normalizePublication(
 
     const basicTheme = leafletThemeToBasicTheme(record.theme);
 
+    // Validate theme - only keep if it's a valid pub.leaflet.publication#theme with $type set
+    // For legacy records without $type, add it during normalization
+    let theme: $Typed<PubLeafletPublication.Theme> | undefined;
+    if (record.theme) {
+      if (PubLeafletPublication.isTheme(record.theme)) {
+        theme = record.theme as $Typed<PubLeafletPublication.Theme>;
+      } else {
+        // Legacy theme without $type - add it
+        theme = {
+          ...record.theme,
+          $type: "pub.leaflet.publication#theme",
+        };
+      }
+    }
+
     // Convert preferences to site.standard format (strip/replace $type)
     const preferences: SiteStandardPublication.Preferences | undefined =
       record.preferences
@@ -233,6 +284,7 @@ export function normalizePublication(
             showComments: record.preferences.showComments,
             showMentions: record.preferences.showMentions,
             showPrevNext: record.preferences.showPrevNext,
+            showRecommends: record.preferences.showRecommends,
           }
         : undefined;
 
@@ -243,7 +295,7 @@ export function normalizePublication(
       description: record.description,
       icon: record.icon,
       basicTheme,
-      theme: record.theme,
+      theme,
       preferences,
     };
   }
@@ -255,7 +307,7 @@ export function normalizePublication(
  * Type guard to check if a normalized document has leaflet content
  */
 export function hasLeafletContent(
-  doc: NormalizedDocument
+  doc: NormalizedDocument,
 ): doc is NormalizedDocument & {
   content: $Typed<PubLeafletContent.Main>;
 } {
@@ -269,7 +321,7 @@ export function hasLeafletContent(
  * Gets the pages array from a normalized document, handling both formats
  */
 export function getDocumentPages(
-  doc: NormalizedDocument
+  doc: NormalizedDocument,
 ): PubLeafletContent.Main["pages"] | undefined {
   if (!doc.content) return undefined;
 

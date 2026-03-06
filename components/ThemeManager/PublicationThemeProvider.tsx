@@ -129,7 +129,11 @@ export const usePubTheme = (
   } else if (theme && !theme.pageBackground) {
     bgPage = bgLeaflet;
   }
-  let showPageBackground = theme?.showPageBackground;
+  // For standalone documents, default to showing page background
+  // For publications, default to hiding it (borderless)
+  let showPageBackground = isStandalone
+    ? theme?.showPageBackground !== false
+    : !!theme?.showPageBackground;
   let pageWidth = theme?.pageWidth;
 
   let primary = useColor(theme, "primary");

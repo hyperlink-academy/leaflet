@@ -109,7 +109,6 @@ export const TagSearchInput = (props: {
   }
 
   function selectTag(tag: string) {
-    console.log("selected " + tag);
     props.setSelectedTags([...props.selectedTags, tag]);
     clearTagInput();
   }

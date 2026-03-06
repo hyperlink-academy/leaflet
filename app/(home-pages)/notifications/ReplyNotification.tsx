@@ -10,6 +10,7 @@ import { HydratedCommentNotification } from "src/notifications";
 import { PubLeafletComment } from "lexicons/api";
 import { AppBskyActorProfile, AtUri } from "@atproto/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 
 export const ReplyNotification = (props: HydratedCommentNotification) => {
   const docRecord = props.normalizedDocument;
@@ -32,14 +33,11 @@ export const ReplyNotification = (props: HydratedCommentNotification) => {
     props.parentData?.bsky_profiles?.handle ||
     "Someone";
 
-  const docUri = new AtUri(props.commentData.documents?.uri!);
-  const rkey = docUri.rkey;
-  const did = docUri.host;
   const pubRecord = props.normalizedPublication;
 
-  const href = pubRecord
-    ? `${pubRecord.url}/${rkey}?interactionDrawer=comments`
-    : `/p/${did}/${rkey}?interactionDrawer=comments`;
+  const href =
+    getDocumentURL(docRecord, props.commentData.documents?.uri!, pubRecord) +
+    "?interactionDrawer=comments";
 
   return (
     <Notification

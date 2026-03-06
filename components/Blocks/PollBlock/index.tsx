@@ -20,13 +20,23 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { PublicationPollBlock } from "../PublicationPollBlock";
 import { usePollBlockUIState } from "./pollBlockState";
 
-export const PollBlock = (props: BlockProps) => {
+export const PollBlock = (
+  props: BlockProps & {
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) => {
   let { data: pub } = useLeafletPublicationData();
   if (!pub) return <LeafletPollBlock {...props} />;
   return <PublicationPollBlock {...props} />;
 };
 
-export const LeafletPollBlock = (props: BlockProps) => {
+export const LeafletPollBlock = (
+  props: BlockProps & {
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
@@ -64,6 +74,8 @@ export const LeafletPollBlock = (props: BlockProps) => {
     <BlockLayout
       isSelected={!!isSelected}
       hasBackground={"accent"}
+      areYouSure={props.areYouSure}
+      setAreYouSure={props.setAreYouSure}
       className="poll flex flex-col gap-2 w-full"
     >
       {pollState === "editing" ? (

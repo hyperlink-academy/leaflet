@@ -18,7 +18,6 @@ export const BlueskyPostEmpty = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let isLocked = useEntity(props.entityID, "block/is-locked")?.data.value;
 
   let entity_set = useEntitySetContext();
   let [urlValue, setUrlValue] = useState("");
@@ -91,7 +90,6 @@ export const BlueskyPostEmpty = (props: BlockProps) => {
           className="w-full grow border-none outline-hidden bg-transparent "
           placeholder="bsky.app/post-url"
           value={urlValue}
-          disabled={isLocked}
           onChange={(e) => setUrlValue(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -109,7 +107,7 @@ export const BlueskyPostEmpty = (props: BlockProps) => {
         <button
           type="submit"
           id="bluesky-post-block-submit"
-          className={`p-1 ${isSelected && !isLocked ? "text-accent-contrast" : "text-border"}`}
+          className={`p-1 ${isSelected ? "text-accent-contrast" : "text-border"}`}
           onMouseDown={(e) => {
             e.preventDefault();
             errorSmokers(e.clientX + 12, e.clientY);

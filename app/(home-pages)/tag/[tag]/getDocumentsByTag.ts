@@ -21,10 +21,11 @@ export async function getDocumentsByTag(
       `*,
       comments_on_documents(count),
       document_mentions_in_bsky(count),
+      recommends_on_documents(count),
       documents_in_publications(publications(*))`,
     )
     .contains("data->tags", `["${tag}"]`)
-    .order("indexed_at", { ascending: false })
+    .order("sort_date", { ascending: false })
     .limit(50);
 
   if (error) {
@@ -67,9 +68,10 @@ export async function getDocumentsByTag(
         documents: {
           comments_on_documents: doc.comments_on_documents,
           document_mentions_in_bsky: doc.document_mentions_in_bsky,
+          recommends_on_documents: doc.recommends_on_documents,
           data: normalizedData,
           uri: doc.uri,
-          indexed_at: doc.indexed_at,
+          sort_date: doc.sort_date,
         },
       };
       return post;

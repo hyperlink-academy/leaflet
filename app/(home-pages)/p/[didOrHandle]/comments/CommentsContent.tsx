@@ -85,7 +85,7 @@ export const ProfileCommentsContent = (props: {
   }
 
   return (
-    <div className="flex flex-col gap-2 text-left relative">
+    <div className="flex flex-col gap-2 py-4 text-left relative">
       {allComments.map((comment) => (
         <CommentItem key={comment.uri} comment={comment} />
       ))}

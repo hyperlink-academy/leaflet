@@ -48,7 +48,9 @@ export function focusBlock(
     }
 
     if (pos?.offset !== undefined) {
-      el?.focus();
+      // trying to focus the block in a subpage causes the page to flash and scroll back to the parent page.
+      // idk how to fix so i'm giving up -- celine
+      // el?.focus();
       requestAnimationFrame(() => {
         el?.setSelectionRange(pos.offset, pos.offset);
       });

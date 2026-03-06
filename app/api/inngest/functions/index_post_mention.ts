@@ -3,7 +3,10 @@ import { inngest } from "../client";
 import { AtpAgent, AtUri } from "@atproto/api";
 import { Json } from "supabase/database.types";
 import { ids } from "lexicons/api/lexicons";
-import { Notification, pingIdentityToUpdateNotification } from "src/notifications";
+import {
+  Notification,
+  pingIdentityToUpdateNotification,
+} from "src/notifications";
 import { v7 } from "uuid";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
 import { documentUriFilter } from "src/utils/uriHelpers";
@@ -60,7 +63,11 @@ export const index_post_mention = inngest.createFunction(
       let { data: pub, error } = await supabaseServerClient
         .from("publications")
         .select("*")
-        .or(`record->>base_path.eq.${url.host},record->>url.eq.https://${url.host}`)
+        .or(
+          `record->>base_path.eq.${url.host},record->>url.eq.https://${url.host}`,
+        )
+        .order("uri", { ascending: false })
+        .limit(1)
         .single();
 
       if (!pub) {
@@ -80,7 +87,9 @@ export const index_post_mention = inngest.createFunction(
       const docData = docDataArr?.[0];
 
       if (!docData) {
-        return { message: `No document found for publication ${url.host}/${path[0]}` };
+        return {
+          message: `No document found for publication ${url.host}/${path[0]}`,
+        };
       }
 
       documentUri = docData.uri;

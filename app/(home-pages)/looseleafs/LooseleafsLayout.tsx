@@ -47,6 +47,7 @@ export const LooseleafsLayout = (props: {
           ),
         },
       }}
+      pageTitle="Looseleafs"
     />
   );
 };

@@ -11,6 +11,9 @@
         "postRef": {
           "type": "ref",
           "ref": "com.atproto.repo.strongRef"
+        },
+        "clientHost": {
+          "type": "string"
         }
       }
     }

@@ -41,7 +41,7 @@ import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
-import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
+import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
 import {
@@ -65,7 +65,7 @@ import {
 } from "src/utils/collectionHelpers";
 
 type PublishResult =
-  | { success: true; rkey: string; record: PubLeafletDocument.Record }
+  | { success: true; rkey: string; record: SiteStandardDocument.Record }
   | { success: false; error: OAuthSessionError };
 
 export async function publishToPublication({
@@ -78,6 +78,7 @@ export async function publishToPublication({
   cover_image,
   entitiesToDelete,
   publishedAt,
+  postPreferences,
 }: {
   root_entity: string;
   publication_uri?: string;
@@ -88,6 +89,11 @@ export async function publishToPublication({
   cover_image?: string | null;
   entitiesToDelete?: string[];
   publishedAt?: string;
+  postPreferences?: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showRecommends?: boolean;
+  } | null;
 }): Promise<PublishResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -137,6 +143,21 @@ export async function publishToPublication({
       .single();
     draft = data;
     existingDocUri = draft?.document;
+
+    // If updating an existing document, verify the current user is the owner
+    if (existingDocUri) {
+      let docOwner = new AtUri(existingDocUri).host;
+      if (docOwner !== identity.atp_did) {
+        return {
+          success: false,
+          error: {
+            type: "oauth_session_expired" as const,
+            message: "Not the document owner",
+            did: identity.atp_did,
+          },
+        };
+      }
+    }
   }
 
   // Heuristic: Remove title entities if this is the first time publishing
@@ -175,6 +196,9 @@ export async function publishToPublication({
     };
   }
 
+  // Resolve preferences: explicit param > draft DB value
+  const preferences = postPreferences ?? draft?.preferences;
+
   // Extract theme for standalone documents (not for publications)
   let theme: PubLeafletPublication.Theme | undefined;
   if (!publication_uri) {
@@ -199,7 +223,9 @@ export async function publishToPublication({
   }
 
   // Determine the collection to use - preserve existing schema if updating
-  const existingCollection = existingDocUri ? new AtUri(existingDocUri).collection : undefined;
+  const existingCollection = existingDocUri
+    ? new AtUri(existingDocUri).collection
+    : undefined;
   const documentType = getDocumentType(existingCollection);
 
   // Build the pages array (used by both formats)
@@ -228,13 +254,14 @@ export async function publishToPublication({
   if (documentType === "site.standard.document") {
     // site.standard.document format
     // For standalone docs, use HTTPS URL; for publication docs, use the publication AT-URI
-    const siteUri = publication_uri || `https://leaflet.pub/p/${credentialSession.did}`;
+    const siteUri =
+      publication_uri || `https://leaflet.pub/p/${credentialSession.did}`;
 
     record = {
       $type: "site.standard.document",
-      title: title || "Untitled",
+      title: title || "",
       site: siteUri,
-      path: rkey,
+      path: "/" + rkey,
       publishedAt:
         publishedAt || existingRecord.publishedAt || new Date().toISOString(),
       ...(description && { description }),
@@ -242,6 +269,12 @@ export async function publishToPublication({
       ...(coverImageBlob && { coverImage: coverImageBlob }),
       // Include theme for standalone documents (not for publication documents)
       ...(!publication_uri && theme && { theme }),
+      ...(preferences && {
+        preferences: {
+          $type: "pub.leaflet.publication#preferences" as const,
+          ...preferences,
+        },
+      }),
       content: {
         $type: "pub.leaflet.content" as const,
         pages: pagesArray,
@@ -254,7 +287,13 @@ export async function publishToPublication({
       author: credentialSession.did!,
       ...(publication_uri && { publication: publication_uri }),
       ...(theme && { theme }),
-      title: title || "Untitled",
+      ...(preferences && {
+        preferences: {
+          $type: "pub.leaflet.publication#preferences" as const,
+          ...preferences,
+        },
+      }),
+      title: title || "",
       description: description || "",
       ...(tags !== undefined && { tags }),
       ...(coverImageBlob && { coverImage: coverImageBlob }),
@@ -276,6 +315,7 @@ export async function publishToPublication({
   await supabaseServerClient.from("documents").upsert({
     uri: result.uri,
     data: record as unknown as Json,
+    indexed: true,
   });
 
   if (publication_uri) {
@@ -298,7 +338,7 @@ export async function publishToPublication({
     await supabaseServerClient.from("leaflets_to_documents").upsert({
       leaflet: leaflet_id,
       document: result.uri,
-      title: title || "Untitled",
+      title: title || "",
       description: description || "",
     });
 
@@ -487,12 +527,14 @@ async function processBlocksToPages(
     if (b.type === "bluesky-post") {
       let [post] = scan.eav(b.value, "block/bluesky-post");
       if (!post || !post.data.value.post) return;
+      let [hostFact] = scan.eav(b.value, "bluesky-post/host");
       let block: $Typed<PubLeafletBlocksBskyPost.Main> = {
         $type: ids.PubLeafletBlocksBskyPost,
         postRef: {
           uri: post.data.value.post.uri,
           cid: post.data.value.post.cid,
         },
+        clientHost: hostFact?.data.value,
       };
       return block;
     }
@@ -903,6 +945,7 @@ async function createMentionNotifications(
   const mentionedDids = new Set<string>();
   const mentionedPublications = new Map<string, string>(); // Map of DID -> publication URI
   const mentionedDocuments = new Map<string, string>(); // Map of DID -> document URI
+  const embeddedBskyPosts = new Map<string, string>(); // Map of author DID -> post URI
 
   // Extract pages from either format
   let pages: PubLeafletContent.Main["pages"] | undefined;
@@ -917,60 +960,89 @@ async function createMentionNotifications(
 
   if (!pages) return;
 
-  // Extract mentions from all text blocks in all pages
-  for (const page of pages) {
-    if (page.$type === "pub.leaflet.pages.linearDocument") {
-      const linearPage = page as PubLeafletPagesLinearDocument.Main;
-      for (const blockWrapper of linearPage.blocks) {
-        const block = blockWrapper.block;
-        if (block.$type === "pub.leaflet.blocks.text") {
-          const textBlock = block as PubLeafletBlocksText.Main;
-          if (textBlock.facets) {
-            for (const facet of textBlock.facets) {
-              for (const feature of facet.features) {
-                // Check for DID mentions
-                if (PubLeafletRichtextFacet.isDidMention(feature)) {
-                  if (feature.did !== authorDid) {
-                    mentionedDids.add(feature.did);
-                  }
+  // Helper to extract blocks from all pages (both linear and canvas)
+  function getAllBlocks(pages: PubLeafletContent.Main["pages"]) {
+    const blocks: (
+      | PubLeafletPagesLinearDocument.Block["block"]
+      | PubLeafletPagesCanvas.Block["block"]
+    )[] = [];
+    for (const page of pages) {
+      if (page.$type === "pub.leaflet.pages.linearDocument") {
+        const linearPage = page as PubLeafletPagesLinearDocument.Main;
+        for (const blockWrapper of linearPage.blocks) {
+          blocks.push(blockWrapper.block);
+        }
+      } else if (page.$type === "pub.leaflet.pages.canvas") {
+        const canvasPage = page as PubLeafletPagesCanvas.Main;
+        for (const blockWrapper of canvasPage.blocks) {
+          blocks.push(blockWrapper.block);
+        }
+      }
+    }
+    return blocks;
+  }
+
+  const allBlocks = getAllBlocks(pages);
+
+  // Extract mentions from all text blocks and embedded Bluesky posts
+  for (const block of allBlocks) {
+    // Check for embedded Bluesky posts
+    if (PubLeafletBlocksBskyPost.isMain(block)) {
+      const bskyPostUri = block.postRef.uri;
+      // Extract the author DID from the post URI (at://did:xxx/app.bsky.feed.post/xxx)
+      const postAuthorDid = new AtUri(bskyPostUri).host;
+      if (postAuthorDid !== authorDid) {
+        embeddedBskyPosts.set(postAuthorDid, bskyPostUri);
+      }
+    }
+
+    // Check for text blocks with mentions
+    if (block.$type === "pub.leaflet.blocks.text") {
+      const textBlock = block as PubLeafletBlocksText.Main;
+      if (textBlock.facets) {
+        for (const facet of textBlock.facets) {
+          for (const feature of facet.features) {
+            // Check for DID mentions
+            if (PubLeafletRichtextFacet.isDidMention(feature)) {
+              if (feature.did !== authorDid) {
+                mentionedDids.add(feature.did);
+              }
+            }
+            // Check for AT URI mentions (publications and documents)
+            if (PubLeafletRichtextFacet.isAtMention(feature)) {
+              const uri = new AtUri(feature.atURI);
+
+              if (isPublicationCollection(uri.collection)) {
+                // Get the publication owner's DID
+                const { data: publication } = await supabaseServerClient
+                  .from("publications")
+                  .select("identity_did")
+                  .eq("uri", feature.atURI)
+                  .single();
+
+                if (publication && publication.identity_did !== authorDid) {
+                  mentionedPublications.set(
+                    publication.identity_did,
+                    feature.atURI,
+                  );
                 }
-                // Check for AT URI mentions (publications and documents)
-                if (PubLeafletRichtextFacet.isAtMention(feature)) {
-                  const uri = new AtUri(feature.atURI);
+              } else if (isDocumentCollection(uri.collection)) {
+                // Get the document owner's DID
+                const { data: document } = await supabaseServerClient
+                  .from("documents")
+                  .select("uri, data")
+                  .eq("uri", feature.atURI)
+                  .single();
 
-                  if (isPublicationCollection(uri.collection)) {
-                    // Get the publication owner's DID
-                    const { data: publication } = await supabaseServerClient
-                      .from("publications")
-                      .select("identity_did")
-                      .eq("uri", feature.atURI)
-                      .single();
-
-                    if (publication && publication.identity_did !== authorDid) {
-                      mentionedPublications.set(
-                        publication.identity_did,
-                        feature.atURI,
-                      );
-                    }
-                  } else if (isDocumentCollection(uri.collection)) {
-                    // Get the document owner's DID
-                    const { data: document } = await supabaseServerClient
-                      .from("documents")
-                      .select("uri, data")
-                      .eq("uri", feature.atURI)
-                      .single();
-
-                    if (document) {
-                      const normalizedMentionedDoc = normalizeDocumentRecord(
-                        document.data,
-                      );
-                      // Get the author from the document URI (the DID is the host part)
-                      const mentionedUri = new AtUri(feature.atURI);
-                      const docAuthor = mentionedUri.host;
-                      if (normalizedMentionedDoc && docAuthor !== authorDid) {
-                        mentionedDocuments.set(docAuthor, feature.atURI);
-                      }
-                    }
+                if (document) {
+                  const normalizedMentionedDoc = normalizeDocumentRecord(
+                    document.data,
+                  );
+                  // Get the author from the document URI (the DID is the host part)
+                  const mentionedUri = new AtUri(feature.atURI);
+                  const docAuthor = mentionedUri.host;
+                  if (normalizedMentionedDoc && docAuthor !== authorDid) {
+                    mentionedDocuments.set(docAuthor, feature.atURI);
                   }
                 }
               }
@@ -1026,5 +1098,33 @@ async function createMentionNotifications(
     };
     await supabaseServerClient.from("notifications").insert(notification);
     await pingIdentityToUpdateNotification(recipientDid);
+  }
+
+  // Create notifications for embedded Bluesky posts (only if the author has a Leaflet account)
+  if (embeddedBskyPosts.size > 0) {
+    // Check which of the Bluesky post authors have Leaflet accounts
+    const { data: identities } = await supabaseServerClient
+      .from("identities")
+      .select("atp_did")
+      .in("atp_did", Array.from(embeddedBskyPosts.keys()));
+
+    const leafletUserDids = new Set(identities?.map((i) => i.atp_did) ?? []);
+
+    for (const [postAuthorDid, bskyPostUri] of embeddedBskyPosts) {
+      // Only notify if the post author has a Leaflet account
+      if (leafletUserDids.has(postAuthorDid)) {
+        const notification: Notification = {
+          id: v7(),
+          recipient: postAuthorDid,
+          data: {
+            type: "bsky_post_embed",
+            document_uri: documentUri,
+            bsky_post_uri: bskyPostUri,
+          },
+        };
+        await supabaseServerClient.from("notifications").insert(notification);
+        await pingIdentityToUpdateNotification(postAuthorDid);
+      }
+    }
   }
 }

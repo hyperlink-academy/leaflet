@@ -8,11 +8,8 @@ import {
 import sharp from "sharp";
 import { TID } from "@atproto/common";
 import { getIdentityData } from "actions/getIdentityData";
-import { AtpBaseClient, PubLeafletDocument } from "lexicons/api";
-import {
-  restoreOAuthSession,
-  OAuthSessionError,
-} from "src/atproto-oauth";
+import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
+import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import {
@@ -30,7 +27,7 @@ export async function publishPostToBsky(args: {
   url: string;
   title: string;
   description: string;
-  document_record: PubLeafletDocument.Record;
+  document_record: SiteStandardDocument.Record;
   rkey: string;
   facets: AppBskyRichtextFacet.Main[];
 }): Promise<PublishBskyResult> {
@@ -115,7 +112,7 @@ export async function publishPostToBsky(args: {
     },
   );
   let record = args.document_record;
-  record.postRef = post;
+  record.bskyPostRef = post;
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey: args.rkey,

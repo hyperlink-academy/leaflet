@@ -2,7 +2,8 @@ import { AtUri } from "@atproto/api";
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 
 export type SearchPublicationDocumentsReturnType = Awaited<
   ReturnType<(typeof search_publication_documents)["handler"]>
@@ -37,13 +38,14 @@ export const search_publication_documents = makeRoute({
     }
 
     const result = documents.map((d) => {
-      const docUri = new AtUri(d.documents.uri);
-      const pubUrl = getPublicationURL(d.publications);
+      const normalizedDoc = normalizeDocumentRecord(d.documents.data, d.documents.uri);
 
       return {
         uri: d.documents.uri,
-        title: (d.documents.data as { title?: string })?.title || "Untitled",
-        url: `${pubUrl}/${docUri.rkey}`,
+        title: normalizedDoc?.title || (d.documents.data as { title?: string })?.title || "Untitled",
+        url: normalizedDoc
+          ? getDocumentURL(normalizedDoc, d.documents.uri, d.publications)
+          : `${d.documents.uri}`,
       };
     });
 

@@ -144,6 +144,7 @@ export async function addBlueskyPostBlock(
 ) {
   //construct bsky post uri from url
   let urlParts = url?.split("/");
+  let host = urlParts ? urlParts[2] : "bsky.app"; // "bsky.app", "blacksky.community", "witchsky.app", etc.
   let userDidOrHandle = urlParts ? urlParts[4] : ""; // "schlage.town" or "did:plc:jjsc5rflv3cpv6hgtqhn2dcm"
   let collection = "app.bsky.feed.post";
   let postId = urlParts ? urlParts[6] : "";
@@ -152,20 +153,30 @@ export async function addBlueskyPostBlock(
   let post = await getBlueskyPost(uri);
   if (!post || post === undefined) return false;
 
-  await rep.mutate.assertFact({
-    entity: entityID,
-    attribute: "block/type",
-    data: { type: "block-type-union", value: "bluesky-post" },
-  });
-  await rep?.mutate.assertFact({
-    entity: entityID,
-    attribute: "block/bluesky-post",
-    data: {
-      type: "bluesky-post",
-      //TODO: this is a hack to get rid of a nested Array buffer which cannot be frozen, which replicache does on write.
-      value: JSON.parse(JSON.stringify(post.data.thread)),
+  await rep.mutate.assertFact([
+    {
+      entity: entityID,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "bluesky-post" },
     },
-  });
+    {
+      entity: entityID,
+      attribute: "block/bluesky-post",
+      data: {
+        type: "bluesky-post",
+        //TODO: this is a hack to get rid of a nested Array buffer which cannot be frozen, which replicache does on write.
+        value: JSON.parse(JSON.stringify(post.data.thread)),
+      },
+    },
+    {
+      entity: entityID,
+      attribute: "bluesky-post/host",
+      data: {
+        type: "string",
+        value: host,
+      },
+    },
+  ]);
   return true;
 }
 async function getBlueskyPost(uri: string) {

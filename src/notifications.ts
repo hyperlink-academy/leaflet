@@ -21,33 +21,39 @@ export type NotificationData =
   | { type: "comment"; comment_uri: string; parent_uri?: string }
   | { type: "subscribe"; subscription_uri: string }
   | { type: "quote"; bsky_post_uri: string; document_uri: string }
+  | { type: "bsky_post_embed"; document_uri: string; bsky_post_uri: string }
   | { type: "mention"; document_uri: string; mention_type: "did" }
   | { type: "mention"; document_uri: string; mention_type: "publication"; mentioned_uri: string }
   | { type: "mention"; document_uri: string; mention_type: "document"; mentioned_uri: string }
   | { type: "comment_mention"; comment_uri: string; mention_type: "did" }
   | { type: "comment_mention"; comment_uri: string; mention_type: "publication"; mentioned_uri: string }
-  | { type: "comment_mention"; comment_uri: string; mention_type: "document"; mentioned_uri: string };
+  | { type: "comment_mention"; comment_uri: string; mention_type: "document"; mentioned_uri: string }
+  | { type: "recommend"; document_uri: string; recommend_uri: string };
 
 export type HydratedNotification =
   | HydratedCommentNotification
   | HydratedSubscribeNotification
   | HydratedQuoteNotification
+  | HydratedBskyPostEmbedNotification
   | HydratedMentionNotification
-  | HydratedCommentMentionNotification;
+  | HydratedCommentMentionNotification
+  | HydratedRecommendNotification;
 export async function hydrateNotifications(
   notifications: NotificationRow[],
 ): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications, quoteNotifications, mentionNotifications, commentMentionNotifications] = await Promise.all([
+  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications, recommendNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
     hydrateSubscribeNotifications(notifications),
     hydrateQuoteNotifications(notifications),
+    hydrateBskyPostEmbedNotifications(notifications),
     hydrateMentionNotifications(notifications),
     hydrateCommentMentionNotifications(notifications),
+    hydrateRecommendNotifications(notifications),
   ]);
 
   // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...mentionNotifications, ...commentMentionNotifications];
+  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications, ...recommendNotifications];
 
   // Sort by created_at to maintain order
   allHydrated.sort(
@@ -198,6 +204,107 @@ async function hydrateQuoteNotifications(notifications: NotificationRow[]) {
         document_uri: notification.data.document_uri,
         bskyPost,
         document,
+        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
+        normalizedPublication: normalizePublicationRecord(
+          document.documents_in_publications[0]?.publications?.record,
+        ),
+      };
+    })
+    .filter((n) => n !== null);
+}
+
+export type HydratedBskyPostEmbedNotification = Awaited<
+  ReturnType<typeof hydrateBskyPostEmbedNotifications>
+>[0];
+
+async function hydrateBskyPostEmbedNotifications(notifications: NotificationRow[]) {
+  const bskyPostEmbedNotifications = notifications.filter(
+    (n): n is NotificationRow & { data: ExtractNotificationType<"bsky_post_embed"> } =>
+      (n.data as NotificationData)?.type === "bsky_post_embed",
+  );
+
+  if (bskyPostEmbedNotifications.length === 0) {
+    return [];
+  }
+
+  // Fetch document data (the leaflet that embedded the post)
+  const documentUris = bskyPostEmbedNotifications.map((n) => n.data.document_uri);
+  const bskyPostUris = bskyPostEmbedNotifications.map((n) => n.data.bsky_post_uri);
+
+  const [{ data: documents }, { data: cachedBskyPosts }] = await Promise.all([
+    supabaseServerClient
+      .from("documents")
+      .select("*, documents_in_publications(publications(*))")
+      .in("uri", documentUris),
+    supabaseServerClient
+      .from("bsky_posts")
+      .select("*")
+      .in("uri", bskyPostUris),
+  ]);
+
+  // Find which posts we need to fetch from the API
+  const cachedPostUris = new Set(cachedBskyPosts?.map((p) => p.uri) ?? []);
+  const missingPostUris = bskyPostUris.filter((uri) => !cachedPostUris.has(uri));
+
+  // Fetch missing posts from Bluesky API
+  const fetchedPosts = new Map<string, { text: string } | null>();
+  if (missingPostUris.length > 0) {
+    try {
+      const { AtpAgent } = await import("@atproto/api");
+      const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
+      const response = await agent.app.bsky.feed.getPosts({ uris: missingPostUris });
+      for (const post of response.data.posts) {
+        const record = post.record as { text?: string };
+        fetchedPosts.set(post.uri, { text: record.text ?? "" });
+      }
+    } catch (error) {
+      console.error("Failed to fetch Bluesky posts:", error);
+    }
+  }
+
+  // Extract unique DIDs from document URIs to resolve handles
+  const documentCreatorDids = [...new Set(documentUris.map((uri) => new AtUri(uri).host))];
+
+  // Resolve DIDs to handles in parallel
+  const didToHandleMap = new Map<string, string | null>();
+  await Promise.all(
+    documentCreatorDids.map(async (did) => {
+      try {
+        const resolved = await idResolver.did.resolve(did);
+        const handle = resolved?.alsoKnownAs?.[0]
+          ? resolved.alsoKnownAs[0].slice(5) // Remove "at://" prefix
+          : null;
+        didToHandleMap.set(did, handle);
+      } catch (error) {
+        console.error(`Failed to resolve DID ${did}:`, error);
+        didToHandleMap.set(did, null);
+      }
+    }),
+  );
+
+  return bskyPostEmbedNotifications
+    .map((notification) => {
+      const document = documents?.find((d) => d.uri === notification.data.document_uri);
+      if (!document) return null;
+
+      const documentCreatorDid = new AtUri(notification.data.document_uri).host;
+      const documentCreatorHandle = didToHandleMap.get(documentCreatorDid) ?? null;
+
+      // Get post text from cache or fetched data
+      const cachedPost = cachedBskyPosts?.find((p) => p.uri === notification.data.bsky_post_uri);
+      const postView = cachedPost?.post_view as { record?: { text?: string } } | undefined;
+      const bskyPostText = postView?.record?.text ?? fetchedPosts.get(notification.data.bsky_post_uri)?.text ?? null;
+
+      return {
+        id: notification.id,
+        recipient: notification.recipient,
+        created_at: notification.created_at,
+        type: "bsky_post_embed" as const,
+        document_uri: notification.data.document_uri,
+        bsky_post_uri: notification.data.bsky_post_uri,
+        document,
+        documentCreatorHandle,
+        bskyPostText,
         normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
         normalizedPublication: normalizePublicationRecord(
           document.documents_in_publications[0]?.publications?.record,
@@ -410,6 +517,58 @@ async function hydrateCommentMentionNotifications(notifications: NotificationRow
         ),
         normalizedMentionedPublication: normalizePublicationRecord(mentionedPublication?.record),
         normalizedMentionedDocument: normalizeDocumentRecord(mentionedDoc?.data, mentionedDoc?.uri),
+      };
+    })
+    .filter((n) => n !== null);
+}
+
+export type HydratedRecommendNotification = Awaited<
+  ReturnType<typeof hydrateRecommendNotifications>
+>[0];
+
+async function hydrateRecommendNotifications(notifications: NotificationRow[]) {
+  const recommendNotifications = notifications.filter(
+    (n): n is NotificationRow & { data: ExtractNotificationType<"recommend"> } =>
+      (n.data as NotificationData)?.type === "recommend",
+  );
+
+  if (recommendNotifications.length === 0) {
+    return [];
+  }
+
+  // Fetch recommend data from the database
+  const recommendUris = recommendNotifications.map((n) => n.data.recommend_uri);
+  const documentUris = recommendNotifications.map((n) => n.data.document_uri);
+
+  const [{ data: recommends }, { data: documents }] = await Promise.all([
+    supabaseServerClient
+      .from("recommends_on_documents")
+      .select("*, identities(bsky_profiles(*))")
+      .in("uri", recommendUris),
+    supabaseServerClient
+      .from("documents")
+      .select("*, documents_in_publications(publications(*))")
+      .in("uri", documentUris),
+  ]);
+
+  return recommendNotifications
+    .map((notification) => {
+      const recommendData = recommends?.find((r) => r.uri === notification.data.recommend_uri);
+      const document = documents?.find((d) => d.uri === notification.data.document_uri);
+      if (!recommendData || !document) return null;
+      return {
+        id: notification.id,
+        recipient: notification.recipient,
+        created_at: notification.created_at,
+        type: "recommend" as const,
+        recommend_uri: notification.data.recommend_uri,
+        document_uri: notification.data.document_uri,
+        recommendData,
+        document,
+        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
+        normalizedPublication: normalizePublicationRecord(
+          document.documents_in_publications[0]?.publications?.record,
+        ),
       };
     })
     .filter((n) => n !== null);

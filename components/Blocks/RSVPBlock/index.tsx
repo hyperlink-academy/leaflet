@@ -24,7 +24,12 @@ export type State =
     }
   | { state: "contact_details"; status: RSVP_Status };
 
-export function RSVPBlock(props: BlockProps) {
+export function RSVPBlock(
+  props: BlockProps & {
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
@@ -32,6 +37,8 @@ export function RSVPBlock(props: BlockProps) {
     <BlockLayout
       isSelected={!!isSelected}
       hasBackground={"accent"}
+      areYouSure={props.areYouSure}
+      setAreYouSure={props.setAreYouSure}
       className="rsvp relative flex flex-col gap-1 w-full rounded-lg place-items-center justify-center"
     >
       <RSVPForm entityID={props.entityID} />

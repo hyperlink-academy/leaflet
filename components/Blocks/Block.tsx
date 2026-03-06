@@ -26,13 +26,16 @@ import { PollBlock } from "./PollBlock";
 import { BlueskyPostBlock } from "./BlueskyPostBlock";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
-import { LockTiny } from "components/Icons/LockTiny";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
-import { focusPage } from "src/utils/focusPage";
+import { DeleteTiny } from "components/Icons/DeleteTiny";
+import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import { Separator } from "components/Layout";
+import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
+import { deleteBlock } from "src/utils/deleteBlock";
 
 export type Block = {
   factID: string;
@@ -42,6 +45,9 @@ export type Block = {
   type: Fact<"block/type">["data"]["value"];
   listData?: {
     checklist?: boolean;
+    listStyle?: "ordered" | "unordered";
+    listStart?: number;
+    displayNumber?: number;
     path: { depth: number; entity: string }[];
     parent: string;
     depth: number;
@@ -63,7 +69,6 @@ export const Block = memo(function Block(
   // Block handles all block level events like
   // mouse events, keyboard events and longPress, and setting AreYouSure state
   // and shared styling like padding and flex for list layouting
-  let { rep } = useReplicache();
   let mouseHandlers = useBlockMouseHandlers(props);
   let handleDrop = useHandleDrop({
     parent: props.parent,
@@ -72,7 +77,7 @@ export const Block = memo(function Block(
   });
   let entity_set = useEntitySetContext();
 
-  let { isLongPress, handlers } = useLongPress(() => {
+  let { isLongPress, longPressHandlers } = useLongPress(() => {
     if (isTextBlock[props.type]) return;
     if (isLongPress.current) {
       focusBlock(
@@ -85,6 +90,20 @@ export const Block = memo(function Block(
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
+
+  let alignmentStyle =
+    props.type === "button" || props.type === "image"
+      ? "justify-center"
+      : "justify-start";
+
+  if (alignment)
+    alignmentStyle = {
+      left: "justify-start",
+      right: "justify-end",
+      center: "justify-center",
+      justify: "justify-start",
+    }[alignment];
 
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
@@ -98,7 +117,7 @@ export const Block = memo(function Block(
 
   return (
     <div
-      {...(!props.preview ? { ...mouseHandlers, ...handlers } : {})}
+      {...(!props.preview ? { ...mouseHandlers, ...longPressHandlers } : {})}
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
       }
@@ -117,6 +136,8 @@ export const Block = memo(function Block(
         blockWrapper relative
         flex flex-row gap-2
         px-3 sm:px-4
+        z-1 w-full
+      ${alignmentStyle}
       ${
         !props.nextBlock
           ? "pb-3 sm:pb-4"
@@ -172,7 +193,9 @@ function deepEqualsBlockProps(
     if (
       prevProps.listData.checklist !== nextProps.listData.checklist ||
       prevProps.listData.parent !== nextProps.listData.parent ||
-      prevProps.listData.depth !== nextProps.listData.depth
+      prevProps.listData.depth !== nextProps.listData.depth ||
+      prevProps.listData.displayNumber !== nextProps.listData.displayNumber ||
+      prevProps.listData.listStyle !== nextProps.listData.listStyle
     ) {
       return false;
     }
@@ -255,26 +278,10 @@ export const BaseBlock = (
 ) => {
   // BaseBlock renders the actual block content, delete states, controls spacing between block and list markers
   let BlockTypeComponent = BlockTypeComponents[props.type];
-  let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
-
-  let alignmentStyle =
-    props.type === "button" || props.type === "image"
-      ? "justify-center"
-      : "justify-start";
-
-  if (alignment)
-    alignmentStyle = {
-      left: "justify-start",
-      right: "justify-end",
-      center: "justify-center",
-      justify: "justify-start",
-    }[alignment];
 
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
-    <div
-      className={`blockContentWrapper w-full grow flex gap-2 z-1 ${alignmentStyle}`}
-    >
+    <>
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -287,7 +294,7 @@ export const BaseBlock = (
       ) : (
         <BlockTypeComponent {...props} preview={props.preview} />
       )}
-    </div>
+    </>
   );
 };
 
@@ -326,11 +333,6 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
       s.selectedBlocks.length > 1,
   );
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
-  let isLocked = useEntity(props.value, "block/is-locked");
-
   let nextBlockSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
   );
@@ -338,10 +340,7 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
     s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
   );
 
-  if (isMultiselected || (isLocked?.data.value && isSelected))
-    // not sure what multiselected and selected classes are doing (?)
-    // use a hashed pattern for locked things. show this pattern if the block is selected, even if it isn't multiselected
-
+  if (isMultiselected)
     return (
       <>
         <div
@@ -354,58 +353,137 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
           ${!prevBlockSelected && "rounded-t-md"}
           ${!nextBlockSelected && "rounded-b-md"}
           `}
-          style={
-            isLocked?.data.value
-              ? {
-                  maskImage: "var(--hatchSVG)",
-                  maskRepeat: "repeat repeat",
-                }
-              : {}
-          }
-        ></div>
-        {isLocked?.data.value && (
-          <div
-            className={`
-            blockSelectionLockIndicator z-10
-            flex items-center
-            text-border rounded-full
-            absolute right-3
-
-            ${
-              props.type === "heading" || props.type === "text"
-                ? "top-[6px]"
-                : "top-0"
-            }`}
-          >
-            <LockTiny className="bg-bg-page p-0.5 rounded-full w-5 h-5" />
-          </div>
-        )}
+        />
       </>
     );
 };
 
 export const BlockLayout = (props: {
-  isSelected?: boolean;
+  isSelected: boolean;
   children: React.ReactNode;
   className?: string;
+  optionsClassName?: string;
   hasBackground?: "accent" | "page";
   borderOnHover?: boolean;
+  hasAlignment?: boolean;
+  areYouSure?: boolean;
+  setAreYouSure?: (value: boolean) => void;
 }) => {
+  // this is used to wrap non-text blocks in consistent selected styling, spacing, and top level options like delete
   return (
     <div
-      className={`block ${props.className} p-2 sm:p-3 w-full overflow-hidden
+      className={`nonTextBlockAndControls relative ${props.hasAlignment ? "w-fit" : "w-full"}`}
+    >
+      <div
+        className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
+        ${props.hasAlignment ? "w-fit" : "w-full"}
          ${props.isSelected ? "block-border-selected " : "block-border"}
          ${props.borderOnHover && "hover:border-accent-contrast! hover:outline-accent-contrast! focus-within:border-accent-contrast! focus-within:outline-accent-contrast!"}`}
-      style={{
-        backgroundColor:
-          props.hasBackground === "accent"
-            ? "var(--accent-light)"
-            : props.hasBackground === "page"
-              ? "rgb(var(--bg-page))"
-              : "transparent",
-      }}
+        style={{
+          backgroundColor:
+            props.hasBackground === "accent"
+              ? "var(--accent-light)"
+              : props.hasBackground === "page"
+                ? "rgb(var(--bg-page))"
+                : "transparent",
+        }}
+      >
+        {props.children}
+      </div>
+      {props.isSelected && (
+        <NonTextBlockOptions
+          optionsClassName={props.optionsClassName}
+          areYouSure={props.areYouSure}
+          setAreYouSure={props.setAreYouSure}
+        />
+      )}
+    </div>
+  );
+};
+
+let debounced: null | number = null;
+
+const NonTextBlockOptions = (props: {
+  areYouSure?: boolean;
+  setAreYouSure?: (value: boolean) => void;
+  optionsClassName?: string;
+}) => {
+  let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
+  let focusedEntity = useUIState((s) => s.focusedEntity);
+  let focusedEntityType = useEntity(
+    focusedEntity?.entityType === "page"
+      ? focusedEntity.entityID
+      : focusedEntity?.parent || null,
+    "page/type",
+  );
+
+  let isMultiselected = useUIState((s) => s.selectedBlocks.length > 1);
+  if (focusedEntity?.entityType === "page") return;
+
+  if (isMultiselected) return;
+  if (!entity_set.permissions.write) return null;
+
+  return (
+    <div
+      className={`flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page ${props.optionsClassName}`}
     >
-      {props.children}
+      {focusedEntityType?.data.value !== "canvas" && (
+        <>
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+
+              if (!rep) return;
+              await moveBlockDown(rep, entity_set.set);
+            }}
+          >
+            <ArrowDownTiny />
+          </button>
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+
+              if (!rep) return;
+              await moveBlockUp(rep);
+            }}
+          >
+            <ArrowDownTiny className="rotate-180" />
+          </button>
+          <Separator classname="border-bg-page! h-4! mx-0.5" />
+        </>
+      )}
+      <button
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (!rep || !focusedEntity) return;
+
+          if (props.areYouSure !== undefined && props.setAreYouSure) {
+            if (!props.areYouSure) {
+              props.setAreYouSure(true);
+              debounced = window.setTimeout(() => {
+                debounced = null;
+              }, 300);
+              return;
+            }
+
+            if (props.areYouSure) {
+              if (debounced) {
+                window.clearTimeout(debounced);
+                debounced = window.setTimeout(() => {
+                  debounced = null;
+                }, 300);
+                return;
+              }
+              await deleteBlock([focusedEntity.entityID], rep);
+            }
+          } else {
+            await deleteBlock([focusedEntity.entityID], rep);
+          }
+        }}
+      >
+        <DeleteTiny />
+      </button>
     </div>
   );
 };
@@ -420,6 +498,7 @@ export const ListMarker = (
 ) => {
   let isMobile = useIsMobile();
   let checklist = useEntity(props.value, "block/check-list");
+  let listStyle = useEntity(props.value, "block/list-style");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   let children = useEntity(props.value, "card/block");
   let folded =
@@ -429,6 +508,43 @@ export const ListMarker = (
   let depth = props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
+
+  let [editingNumber, setEditingNumber] = useState(false);
+  let [numberInputValue, setNumberInputValue] = useState("");
+
+  useEffect(() => {
+    if (!editingNumber) {
+      setNumberInputValue("");
+    }
+  }, [editingNumber]);
+
+  const handleNumberSave = async () => {
+    if (!rep || !props.listData) return;
+
+    const newNumber = parseInt(numberInputValue, 10);
+    if (isNaN(newNumber) || newNumber < 1) {
+      setEditingNumber(false);
+      return;
+    }
+
+    const currentDisplay = props.listData.displayNumber || 1;
+
+    if (newNumber === currentDisplay) {
+      // Remove override if it matches the computed number
+      await rep.mutate.retractAttribute({
+        entity: props.value,
+        attribute: "block/list-number",
+      });
+    } else {
+      await rep.mutate.assertFact({
+        entity: props.value,
+        attribute: "block/list-number",
+        data: { type: "number", value: newNumber },
+      });
+    }
+
+    setEditingNumber(false);
+  };
   return (
     <div
       className={`shrink-0  flex justify-end items-center h-3 z-1
@@ -456,14 +572,49 @@ export const ListMarker = (
         }}
         className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
-        <div
-          className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline  outline-offset-1
-                      ${
-                        folded
-                          ? "outline-secondary"
-                          : ` ${children.length > 0 ? "sm:group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
-                      }`}
-        />
+        {listStyle?.data.value === "ordered" ? (
+          editingNumber ? (
+            <input
+              type="text"
+              value={numberInputValue}
+              onChange={(e) => setNumberInputValue(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={handleNumberSave}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleNumberSave();
+                } else if (e.key === "Escape") {
+                  setEditingNumber(false);
+                }
+              }}
+              autoFocus
+              className="text-secondary font-normal text-right min-w-[2rem] w-[2rem] border border-border rounded-md px-1 py-0.5 focus:border-tertiary focus:outline-solid focus:outline-tertiary focus:outline-2 focus:outline-offset-1"
+            />
+          ) : (
+            <div
+              className="text-secondary font-normal text-right w-[2rem] cursor-pointer hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (permissions.write && listStyle?.data.value === "ordered") {
+                  setNumberInputValue(String(props.listData?.displayNumber || 1));
+                  setEditingNumber(true);
+                }
+              }}
+            >
+              {props.listData?.displayNumber || 1}.
+            </div>
+          )
+        ) : (
+          <div
+            className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline  outline-offset-1
+                        ${
+                          folded
+                            ? "outline-secondary"
+                            : ` ${children.length > 0 ? "sm:group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
+                        }`}
+          />
+        )}
       </button>
       {checklist && (
         <button

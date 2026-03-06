@@ -1,6 +1,5 @@
 "use client";
 
-import { NewDraftSecondaryButton } from "./NewDraftButton";
 import React from "react";
 import {
   usePublicationData,
@@ -22,12 +21,7 @@ export function DraftList(props: {
   if (!normalizedPubRecord) return null;
 
   return (
-    <div className="flex flex-col gap-4">
-      <NewDraftSecondaryButton
-        fullWidth
-        publication={pub_data?.publication?.uri}
-      />
-
+    <div className="flex flex-col">
       <LeafletList
         searchValue={props.searchValue}
         showPreview={false}
@@ -60,7 +54,7 @@ export function DraftList(props: {
           ),
         }}
       />
-      <div className="spacer h-12 w-full bg-transparent shrink-0 " />
+      <div className="spacer h-16 w-full bg-transparent shrink-0 " />
     </div>
   );
 }

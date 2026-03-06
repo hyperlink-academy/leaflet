@@ -1,20 +1,12 @@
 "use server";
 
 import { getIdentityData } from "actions/getIdentityData";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { supabaseServerClient } from "supabase/serverClient";
-import { IdResolver } from "@atproto/identity";
-import type { DidCache, CacheResult, DidDocument } from "@atproto/identity";
-import Client from "ioredis";
-import { AtUri } from "@atproto/api";
-import { idResolver } from "./idResolver";
-import {
-  normalizeDocumentRecord,
-  normalizePublicationRecord,
-  type NormalizedDocument,
-  type NormalizedPublication,
+import type {
+  NormalizedDocument,
+  NormalizedPublication,
 } from "src/utils/normalizeRecords";
-import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
+import { enrichDocumentToPost } from "./enrichPost";
 
 export type Cursor = {
   timestamp: string;
@@ -26,69 +18,55 @@ export async function getReaderFeed(
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   let auth_res = await getIdentityData();
   if (!auth_res?.atp_did) return { posts: [], nextCursor: null };
-  let query = supabaseServerClient
-    .from("documents")
-    .select(
-      `*,
-      comments_on_documents(count),
-      document_mentions_in_bsky(count),
-      documents_in_publications!inner(publications!inner(*, publication_subscriptions!inner(*)))`,
-    )
-    .eq(
-      "documents_in_publications.publications.publication_subscriptions.identity",
-      auth_res.atp_did,
-    )
-    .order("indexed_at", { ascending: false })
-    .order("uri", { ascending: false })
-    .limit(25);
-  if (cursor) {
-    query = query.or(
-      `indexed_at.lt.${cursor.timestamp},and(indexed_at.eq.${cursor.timestamp},uri.lt.${cursor.uri})`,
-    );
-  }
-  let { data: rawFeed, error } = await query;
 
-  // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
-  const feed = deduplicateByUriOrdered(rawFeed || []);
+  const { data: rawFeed, error } = await supabaseServerClient.rpc(
+    "get_reader_feed",
+    {
+      p_identity: auth_res.atp_did,
+      p_cursor_timestamp: cursor?.timestamp,
+      p_cursor_uri: cursor?.uri,
+      p_limit: 25,
+    },
+  );
+  if (error) {
+    console.error("[getReaderFeed] rpc error:", error);
+    return { posts: [], nextCursor: null };
+  }
+
+  if (rawFeed.length === 0) return { posts: [], nextCursor: null };
+
+  // Reshape rows to match the structure enrichDocumentToPost expects
+  const feed = rawFeed.map((row: any) => ({
+    uri: row.uri,
+    data: row.data,
+    sort_date: row.sort_date,
+    comments_on_documents: [{ count: Number(row.comments_count) }],
+    document_mentions_in_bsky: [{ count: Number(row.mentions_count) }],
+    recommends_on_documents: [{ count: Number(row.recommends_count) }],
+    documents_in_publications: row.publication_uri
+      ? [
+          {
+            publications: {
+              uri: row.publication_uri,
+              record: row.publication_record,
+              name: row.publication_name,
+            },
+          },
+        ]
+      : [],
+  }));
 
   let posts = (
-    await Promise.all(
-      feed.map(async (post) => {
-        let pub = post.documents_in_publications[0].publications!;
-        let uri = new AtUri(post.uri);
-        let handle = await idResolver.did.resolve(uri.host);
-
-        // Normalize records - filter out unrecognized formats
-        const normalizedData = normalizeDocumentRecord(post.data, post.uri);
-        if (!normalizedData) return null;
-
-        const normalizedPubRecord = normalizePublicationRecord(pub?.record);
-
-        let p: Post = {
-          publication: {
-            href: getPublicationURL(pub),
-            pubRecord: normalizedPubRecord,
-            uri: pub?.uri || "",
-          },
-          author: handle?.alsoKnownAs?.[0]
-            ? `@${handle.alsoKnownAs[0].slice(5)}`
-            : null,
-          documents: {
-            comments_on_documents: post.comments_on_documents,
-            document_mentions_in_bsky: post.document_mentions_in_bsky,
-            data: normalizedData,
-            uri: post.uri,
-            indexed_at: post.indexed_at,
-          },
-        };
-        return p;
-      }) || [],
-    )
+    await Promise.all(feed.map((post) => enrichDocumentToPost(post as any)))
   ).filter((post): post is Post => post !== null);
+  if (feed.length > 0 && posts.length !== feed.length) {
+    console.log(`[getReaderFeed] ${feed.length - posts.length}/${feed.length} posts dropped during enrichment`);
+  }
+
   const nextCursor =
     posts.length > 0
       ? {
-          timestamp: posts[posts.length - 1].documents.indexed_at,
+          timestamp: posts[posts.length - 1].documents.sort_date,
           uri: posts[posts.length - 1].documents.uri,
         }
       : null;
@@ -109,8 +87,10 @@ export type Post = {
   documents: {
     data: NormalizedDocument | null;
     uri: string;
-    indexed_at: string;
+    sort_date: string;
     comments_on_documents: { count: number }[] | undefined;
     document_mentions_in_bsky: { count: number }[] | undefined;
+    recommends_on_documents: { count: number }[] | undefined;
+    mentionsCount?: number;
   };
 };

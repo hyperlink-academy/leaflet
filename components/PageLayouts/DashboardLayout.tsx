@@ -4,12 +4,13 @@ import { useSearchParams } from "next/navigation";
 import { Header } from "../PageHeader";
 import { Footer } from "components/ActionBar/Footer";
 import { Sidebar } from "components/ActionBar/Sidebar";
+import { DesktopNavigation } from "components/ActionBar/DesktopNavigation";
+
+import { MobileNavigation } from "components/ActionBar/MobileNavigation";
 import {
-  DesktopNavigation,
-  MobileNavigation,
   navPages,
   NotificationButton,
-} from "components/ActionBar/Navigation";
+} from "components/ActionBar/NavigationButtons";
 import { create } from "zustand";
 import { Popover } from "components/Popover";
 import { Checkbox } from "components/Checkbox";
@@ -26,6 +27,7 @@ import Link from "next/link";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 import { Tab } from "components/Tab";
+import { PubIcon, PublicationButtons } from "components/ActionBar/Publications";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -69,7 +71,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
   },
 }));
 
-const DashboardIdContext = createContext<string | null>(null);
+export const DashboardIdContext = createContext<string | null>(null);
 
 export const useDashboardId = () => {
   const id = useContext(DashboardIdContext);
@@ -138,7 +140,10 @@ export function DashboardLayout<
   defaultTab: keyof T;
   currentPage: navPages;
   publication?: string;
-  actions: React.ReactNode;
+  profileDid?: string;
+  actions?: React.ReactNode;
+  pageTitle?: string;
+  onTabHover?: (tabName: string) => void;
 }) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -165,6 +170,7 @@ export function DashboardLayout<
   let [headerState, setHeaderState] = useState<"default" | "controls">(
     "default",
   );
+
   return (
     <DashboardIdContext.Provider value={props.id}>
       <div
@@ -184,6 +190,10 @@ export function DashboardLayout<
           ref={ref}
           id="home-content"
         >
+          {props.pageTitle && (
+            <PageTitle pageTitle={props.pageTitle} actions={props.actions} />
+          )}
+
           {Object.keys(props.tabs).length <= 1 && !controls ? null : (
             <>
               <Header>
@@ -198,6 +208,8 @@ export function DashboardLayout<
                               name={t}
                               selected={t === tab}
                               onSelect={() => setTabWithUrl(t)}
+                              onMouseEnter={() => props.onTabHover?.(t)}
+                              onPointerDown={() => props.onTabHover?.(t)}
                             />
                           );
                         })}
@@ -240,19 +252,30 @@ export function DashboardLayout<
         <Footer>
           <MobileNavigation
             currentPage={props.currentPage}
-            publication={props.publication}
+            currentPublicationUri={props.publication}
+            currentProfileDid={props.profileDid}
           />
-          {props.actions && (
-            <>
-              <Separator />
-              {props.actions}
-            </>
-          )}
         </Footer>
       </div>
     </DashboardIdContext.Provider>
   );
 }
+
+export const PageTitle = (props: {
+  pageTitle: string;
+  actions: React.ReactNode;
+}) => {
+  return (
+    <MediaContents
+      mobile={true}
+      className="flex justify-between items-center px-1 mt-1 -mb-1 w-full "
+    >
+      <h4 className="grow truncate">{props.pageTitle}</h4>
+      <div className="flex flex-row-reverse! gap-1">{props.actions}</div>
+      {/* <div className="shrink-0 h-6">{props.controls}</div> */}
+    </MediaContents>
+  );
+};
 
 export const HomeDashboardControls = (props: {
   searchValue: string;
@@ -447,7 +470,7 @@ const SearchInput = (props: {
         className={`dashboardSearchInput
           appearance-none! outline-hidden!
           w-full min-w-0 text-primary relative pl-7  pr-1 -my-px
-          border rounded-md border-transparent focus-within:border-border
+          border rounded-md border-border-light focus-within:border-border
           bg-transparent ${props.hasBackgroundImage ? "focus-within:bg-bg-page" : "focus-within:bg-bg-leaflet"} `}
         type="text"
         id="pubName"

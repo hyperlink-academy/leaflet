@@ -19,9 +19,13 @@ import { Popover } from "./Popover";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { QuoteTiny } from "./Icons/QuoteTiny";
-import { PublicationMetadata } from "./Pages/PublicationMetadata";
+import { AddTags, PublicationMetadata } from "./Pages/PublicationMetadata";
 import { useLeafletPublicationData } from "./PageSWRDataProvider";
 import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
+import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
+import { RecommendTinyEmpty } from "./Icons/RecommendTiny";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { mergePreferences } from "src/utils/mergePreferences";
 
 export function Canvas(props: {
   entityID: string;
@@ -162,24 +166,49 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
 
 const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
+  let { rep } = useReplicache();
+  let postPreferences = useSubscribe(rep, (tx) =>
+    tx.get<{
+      showComments?: boolean;
+      showMentions?: boolean;
+      showRecommends?: boolean;
+    } | null>("post_preferences"),
+  );
   if (!pub || !pub.publications) return null;
 
   if (!normalizedPublication) return null;
-  let showComments = normalizedPublication.preferences?.showComments !== false;
-  let showMentions = normalizedPublication.preferences?.showMentions !== false;
+  let merged = mergePreferences(
+    postPreferences || undefined,
+    normalizedPublication.preferences,
+  );
+  let showComments = merged.showComments !== false;
+  let showMentions = merged.showMentions !== false;
+  let showRecommends = merged.showRecommends !== false;
 
   return (
     <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+      {showRecommends && (
+        <div className="flex gap-1 text-tertiary items-center">
+          <RecommendTinyEmpty className="text-border" /> —
+        </div>
+      )}
       {showComments && (
         <div className="flex gap-1 text-tertiary items-center">
           <CommentTiny className="text-border" /> —
         </div>
       )}
-      {showComments && (
+      {showMentions && (
         <div className="flex gap-1 text-tertiary items-center">
           <QuoteTiny className="text-border" /> —
         </div>
       )}
+
+      {showMentions !== false ||
+      showComments !== false ||
+      showRecommends === false ? (
+        <Separator classname="h-4!" />
+      ) : null}
+      <AddTags />
 
       {!props.isSubpage && (
         <>
@@ -190,7 +219,7 @@ const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
             className="flex flex-col gap-2 p-0! max-w-sm w-[1000px]"
             trigger={<InfoSmall />}
           >
-            <PublicationMetadata />
+            <PublicationMetadata noInteractions />
           </Popover>
         </>
       )}
@@ -286,9 +315,8 @@ function CanvasBlock(props: {
     },
     [props, rep, permissions],
   );
-  let { dragDelta, handlers } = useDrag({
+  let { dragDelta, handlers: dragHandlers } = useDrag({
     onDragEnd,
-    delay: isMobile,
   });
 
   let widthOnDragEnd = useCallback(
@@ -335,18 +363,20 @@ function CanvasBlock(props: {
   );
   let rotateHandle = useDrag({ onDragEnd: RotateOnDragEnd });
 
-  let { isLongPress, handlers: longPressHandlers } = useLongPress(() => {
-    if (isLongPress.current && permissions.write) {
-      focusBlock(
-        {
-          type: type?.data.value || "text",
-          value: props.entityID,
-          parent: props.parent,
-        },
-        { type: "start" },
-      );
-    }
-  });
+  let { isLongPress, longPressHandlers: longPressHandlers } = useLongPress(
+    () => {
+      if (isLongPress.current && permissions.write) {
+        focusBlock(
+          {
+            type: type?.data.value || "text",
+            value: props.entityID,
+            parent: props.parent,
+          },
+          { type: "start" },
+        );
+      }
+    },
+  );
   let angle = 0;
   if (rotateHandle.dragDelta) {
     let originX = rect.x + rect.width / 2;
@@ -383,6 +413,8 @@ function CanvasBlock(props: {
     };
   }, [props, type?.data.value]);
   useBlockKeyboardHandlers(blockProps, areYouSure, setAreYouSure);
+  let mouseHandlers = useBlockMouseHandlers(blockProps);
+
   let isList = useEntity(props.entityID, "block/is-list");
   let isFocused = useUIState(
     (s) => s.focusedEntity?.entityID === props.entityID,
@@ -391,10 +423,9 @@ function CanvasBlock(props: {
   return (
     <div
       ref={ref}
-      {...(!props.preview ? { ...longPressHandlers } : {})}
-      {...(isMobile && permissions.write ? { ...handlers } : {})}
+      {...(!props.preview ? { ...longPressHandlers, ...mouseHandlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className={`absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3        `}
+      className={`canvasBlockWrapper absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3        `}
       style={{
         top: 0,
         left: 0,
@@ -403,10 +434,12 @@ function CanvasBlock(props: {
         transform,
       }}
     >
-      {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
-      {!props.preview && permissions.write && <Gripper {...handlers} />}
+      {!props.preview && permissions.write && (
+        <Gripper isFocused={isFocused} {...dragHandlers} />
+      )}
+
       <div
-        className={`contents ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""} `}
+        className={` w-full ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""} `}
       >
         <BaseBlock
           {...blockProps}
@@ -424,10 +457,13 @@ function CanvasBlock(props: {
         <div
           className={`resizeHandle
           cursor-e-resize shrink-0 z-10
-          hidden group-hover/canvas-block:block
-          w-[5px] h-6 -ml-[3px]
-          absolute top-1/2 right-3 -translate-y-1/2 translate-x-[2px]
-          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]`}
+         group-hover/canvas-block:block
+          sm:w-[5px] w-3 sm:h-6  h-8
+          absolute top-1/2 sm:right-2 right-1 -translate-y-1/2
+          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]
+          ${isFocused ? "block" : "hidden"}
+
+          `}
           {...widthHandle.handlers}
         />
       )}
@@ -436,11 +472,13 @@ function CanvasBlock(props: {
         <div
           className={`rotateHandle
             cursor-grab shrink-0 z-10
-            hidden group-hover/canvas-block:block
-            w-[8px] h-[8px]
-            absolute bottom-0 -right-0
+            group-hover/canvas-block:block
+            sm:w-[8px] sm:h-[8px] w-4 h-4
+            absolute sm:bottom-0 sm:right-0 -bottom-1 -right-1
             -translate-y-1/2 -translate-x-1/2
-            rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]`}
+            rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]
+            ${isFocused ? "block" : "hidden"}
+`}
           {...rotateHandle.handlers}
         />
       )}
@@ -561,25 +599,28 @@ export const CanvasBackgroundPattern = (props: {
   }
 };
 
-const Gripper = (props: { onMouseDown: (e: React.MouseEvent) => void }) => {
+const Gripper = (props: {
+  onMouseDown: (e: React.MouseEvent) => void;
+  isFocused: boolean;
+}) => {
   return (
     <div
       onMouseDown={props.onMouseDown}
       onPointerDown={props.onMouseDown}
-      className="w-[9px] shrink-0 py-1 mr-1 bg-bg-card cursor-grab touch-none"
+      className="gripper w-[9px] shrink-0 py-1 mr-1 cursor-grab touch-none"
     >
-      <Media mobile={false} className="h-full grid grid-cols-1 grid-rows-1 ">
+      <div className="h-full grid grid-cols-1 grid-rows-1 ">
         {/* the gripper is two svg's stacked on top of each other.
         One for the actual gripper, the other is an outline to endure the gripper stays visible on image backgrounds */}
         <div
-          className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-bg-page hidden group-hover/canvas-block:block"
+          className={`h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-bg-page group-hover/canvas-block:block ${props.isFocused ? "block" : "hidden"}`}
           style={{ maskImage: "var(--gripperSVG2)", maskRepeat: "repeat" }}
         />
         <div
-          className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-tertiary hidden group-hover/canvas-block:block"
+          className={`h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-tertiary group-hover/canvas-block:block ${props.isFocused ? "block" : "hidden"}`}
           style={{ maskImage: "var(--gripperSVG)", maskRepeat: "repeat" }}
         />
-      </Media>
+      </div>
     </div>
   );
 };

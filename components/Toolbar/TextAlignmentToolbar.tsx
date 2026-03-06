@@ -7,6 +7,10 @@ import { Props } from "components/Icons/Props";
 export function TextAlignmentToolbar() {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let { rep } = useReplicache();
+  let alignment = useEntity(
+    focusedBlock?.entityID || null,
+    "block/text-alignment",
+  )?.data.value;
   let setAlignment = useCallback(
     (alignment: Fact<"block/text-alignment">["data"]["value"]) => {
       let blocks = useUIState.getState().selectedBlocks;
@@ -26,18 +30,21 @@ export function TextAlignmentToolbar() {
       <ToolbarButton
         onClick={() => setAlignment("left")}
         tooltipContent="Align Left"
+        active={alignment === "left"}
       >
         <AlignLeftSmall />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => setAlignment("center")}
         tooltipContent="Align Center"
+        active={alignment === "center"}
       >
         <AlignCenterSmall />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => setAlignment("right")}
         tooltipContent="Align Right"
+        active={alignment === "right"}
       >
         <AlignRightSmall />
       </ToolbarButton>
@@ -45,6 +52,7 @@ export function TextAlignmentToolbar() {
       <ToolbarButton
         onClick={() => setAlignment("justify")}
         tooltipContent="Align Justified"
+        active={alignment === "justify"}
       >
         <AlignJustifiedSmall />
       </ToolbarButton>

@@ -24,8 +24,10 @@ import { useSearchParams } from "next/navigation";
 import LoginForm from "app/login/LoginForm";
 import { RSSSmall } from "components/Icons/RSSSmall";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
+import { RSSTiny } from "components/Icons/RSSTiny";
 
 export const SubscribeWithBluesky = (props: {
+  compact?: boolean;
   pubName: string;
   pub_uri: string;
   base_url: string;
@@ -36,8 +38,12 @@ export const SubscribeWithBluesky = (props: {
   let [successModalOpen, setSuccessModalOpen] = useState(
     !!searchParams.has("showSubscribeSuccess"),
   );
+  let [localSubscribeState, setLocalSubscribeState] = useState<
+    "subscribed" | "unsubscribed"
+  >("subscribed");
   let subscribed =
     identity?.atp_did &&
+    localSubscribeState !== "unsubscribed" &&
     props.subscribers.find((s) => s.identity === identity.atp_did);
 
   if (successModalOpen)
@@ -48,12 +54,19 @@ export const SubscribeWithBluesky = (props: {
       />
     );
   if (subscribed) {
-    return <ManageSubscription {...props} />;
+    return (
+      <ManageSubscription
+        {...props}
+        onUnsubscribe={() => setLocalSubscribeState("unsubscribed")}
+      />
+    );
   }
   return (
     <div className="flex flex-col gap-2 text-center justify-center">
       <div className="flex flex-row gap-2 place-self-center">
         <BlueskySubscribeButton
+          setLocalSubscribeState={() => setLocalSubscribeState("subscribed")}
+          compact={props.compact}
           pub_uri={props.pub_uri}
           setSuccessModalOpen={setSuccessModalOpen}
         />
@@ -63,7 +76,11 @@ export const SubscribeWithBluesky = (props: {
           target="_blank"
           aria-label="Subscribe to RSS"
         >
-          <RSSSmall className="self-center" aria-hidden />
+          {props.compact ? (
+            <RSSTiny className="self-center" aria-hidden />
+          ) : (
+            <RSSSmall className="self-center" aria-hidden />
+          )}
         </a>
       </div>
     </div>
@@ -74,6 +91,8 @@ export const ManageSubscription = (props: {
   pub_uri: string;
   subscribers: { identity: string }[];
   base_url: string;
+  compact?: boolean;
+  onUnsubscribe?: () => void;
 }) => {
   let toaster = useToaster();
   let [hasFeed] = useState(false);
@@ -83,14 +102,21 @@ export const ManageSubscription = (props: {
       content: "You unsubscribed.",
       type: "success",
     });
+    props.onUnsubscribe?.();
   }, null);
   return (
     <Popover
       trigger={
-        <div className="text-accent-contrast text-sm">Manage Subscription</div>
+        <div
+          className={`text-accent-contrast w-fit ${props.compact ? "text-xs" : "text-sm"}`}
+        >
+          Manage Subscription
+        </div>
       }
     >
-      <div className="max-w-sm flex flex-col gap-1">
+      <div
+        className={`max-w-sm flex flex-col gap-1 ${props.compact && "text-sm"}`}
+      >
         <h4>Update Options</h4>
 
         {!hasFeed && (
@@ -100,7 +126,7 @@ export const ManageSubscription = (props: {
             className=" place-self-center"
           >
             <ButtonPrimary fullWidth compact className="!px-4">
-              View Bluesky Custom Feed
+              Bluesky Custom Feed
             </ButtonPrimary>
           </a>
         )}
@@ -119,8 +145,12 @@ export const ManageSubscription = (props: {
         <hr className="border-border-light my-1" />
 
         <form action={unsubscribe}>
-          <button className="font-bold text-accent-contrast w-max place-self-center">
-            {unsubscribePending ? <DotLoader /> : "Unsubscribe"}
+          <button className="font-bold w-full text-accent-contrast text-center  mx-auto">
+            {unsubscribePending ? (
+              <DotLoader className="w-fit mx-auto" />
+            ) : (
+              "Unsubscribe"
+            )}
           </button>
         </form>
       </div>
@@ -131,6 +161,8 @@ export const ManageSubscription = (props: {
 let BlueskySubscribeButton = (props: {
   pub_uri: string;
   setSuccessModalOpen: (open: boolean) => void;
+  compact?: boolean;
+  setLocalSubscribeState: () => void;
 }) => {
   let { identity } = useIdentityData();
   let toaster = useToaster();
@@ -153,6 +185,7 @@ let BlueskySubscribeButton = (props: {
       props.setSuccessModalOpen(true);
     }
     toaster({ content: <div>You're Subscribed!</div>, type: "success" });
+    props.setLocalSubscribeState();
   }, null);
 
   let [isClient, setIsClient] = useState(false);
@@ -164,8 +197,12 @@ let BlueskySubscribeButton = (props: {
     return (
       <Popover
         asChild
+        className="max-w-xs"
         trigger={
-          <ButtonPrimary className="place-self-center">
+          <ButtonPrimary
+            compact={props.compact}
+            className={`place-self-center ${props.compact && "text-sm"}`}
+          >
             <BlueskyTiny /> Subscribe with Bluesky
           </ButtonPrimary>
         }
@@ -188,7 +225,10 @@ let BlueskySubscribeButton = (props: {
         action={subscribe}
         className="place-self-center flex flex-row gap-1"
       >
-        <ButtonPrimary>
+        <ButtonPrimary
+          compact={props.compact}
+          className={props.compact ? "text-sm" : ""}
+        >
           {subscribePending ? (
             <DotLoader />
           ) : (

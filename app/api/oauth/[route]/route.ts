@@ -11,6 +11,7 @@ import {
   ActionAfterSignIn,
   parseActionFromSearchParam,
 } from "./afterSignInActions";
+import { inngest } from "app/api/inngest/client";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -41,7 +42,8 @@ export async function GET(
       const ac = new AbortController();
 
       const url = await client.authorize(handle || "https://bsky.social", {
-        scope: "atproto transition:generic transition:email",
+        scope:
+          "atproto transition:email include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts include:app.bsky.authViewAll?aud=did:web:api.bsky.app%23bsky_appview blob:*/*",
         signal: ac.signal,
         state: JSON.stringify(state),
       });
@@ -84,6 +86,17 @@ export async function GET(
             .single();
           identity = data;
         }
+
+        // Trigger migration if identity needs it
+        const metadata = identity?.metadata as Record<string, unknown> | null;
+        if (metadata?.needsStandardSiteMigration) {
+          if (process.env.NODE_ENV === "production")
+            await inngest.send({
+              name: "user/migrate-to-standard",
+              data: { did: session.did },
+            });
+        }
+
         let { data: token } = await supabaseServerClient
           .from("email_auth_tokens")
           .insert({
@@ -93,7 +106,7 @@ export async function GET(
           })
           .select()
           .single();
-
+        console.log({ token });
         if (token) await setAuthToken(token.id);
 
         // Process successful authentication here
@@ -102,6 +115,7 @@ export async function GET(
         console.log("User authenticated as:", session.did);
         return handleAction(s.action, redirectPath);
       } catch (e) {
+        console.log(e);
         redirect(redirectPath);
       }
     }

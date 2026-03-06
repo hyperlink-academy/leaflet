@@ -18,6 +18,9 @@ import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { RecommendButton } from "components/RecommendButton";
+import { ButtonSecondary } from "components/Buttons";
+import { Separator } from "components/Layout";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -105,12 +108,18 @@ export function openInteractionDrawer(
 export const Interactions = (props: {
   quotesCount: number;
   commentsCount: number;
+  recommendsCount: number;
   className?: string;
   showComments: boolean;
   showMentions: boolean;
+  showRecommends: boolean;
   pageId?: string;
 }) => {
-  const { uri: document_uri, quotesAndMentions, normalizedDocument } = useDocument();
+  const {
+    uri: document_uri,
+    quotesAndMentions,
+    normalizedDocument,
+  } = useDocument();
   let { identity } = useIdentityData();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
@@ -124,13 +133,24 @@ export const Interactions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
-  return (
-    <div className={`flex gap-2 text-tertiary text-sm ${props.className}`}>
-      {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
+  let interactionsAvailable =
+    props.showComments || props.showMentions || props.showRecommends;
 
+  return (
+    <div
+      className={`flex gap-[10px] text-tertiary text-sm item-center ${props.className}`}
+    >
+      {props.showRecommends === false ? null : (
+        <RecommendButton
+          documentUri={document_uri}
+          recommendsCount={props.recommendsCount}
+        />
+      )}
+
+      {/*MENTIONS BUTTON*/}
       {props.quotesCount === 0 || props.showMentions === false ? null : (
         <button
-          className="flex w-fit gap-2 items-center"
+          className="flex w-fit gap-1 items-center"
           onClick={() => {
             if (!drawerOpen || drawer !== "quotes")
               openInteractionDrawer("quotes", document_uri, props.pageId);
@@ -143,9 +163,10 @@ export const Interactions = (props: {
           <QuoteTiny aria-hidden /> {props.quotesCount}
         </button>
       )}
+      {/*COMMENT BUTTON*/}
       {props.showComments === false ? null : (
         <button
-          className="flex gap-2 items-center w-fit"
+          className="flex gap-1 items-center w-fit"
           onClick={() => {
             if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
               openInteractionDrawer("comments", document_uri, props.pageId);
@@ -156,6 +177,13 @@ export const Interactions = (props: {
           <CommentTiny aria-hidden /> {props.commentsCount}
         </button>
       )}
+
+      {tagCount > 0 && (
+        <>
+          {interactionsAvailable && <Separator classname="h-4!" />}
+          <TagPopover tags={tags} tagCount={tagCount} />
+        </>
+      )}
     </div>
   );
 };
@@ -163,12 +191,20 @@ export const Interactions = (props: {
 export const ExpandedInteractions = (props: {
   quotesCount: number;
   commentsCount: number;
+  recommendsCount: number;
   className?: string;
   showComments: boolean;
   showMentions: boolean;
+  showRecommends: boolean;
   pageId?: string;
 }) => {
-  const { uri: document_uri, quotesAndMentions, normalizedDocument, publication, leafletId } = useDocument();
+  const {
+    uri: document_uri,
+    quotesAndMentions,
+    normalizedDocument,
+    publication,
+    leafletId,
+  } = useDocument();
   let { identity } = useIdentityData();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
@@ -182,7 +218,8 @@ export const ExpandedInteractions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
-  let noInteractions = !props.showComments && !props.showMentions;
+  let noInteractions =
+    !props.showComments && !props.showMentions && !props.showRecommends;
 
   let subscribed =
     identity?.atp_did &&
@@ -190,11 +227,6 @@ export const ExpandedInteractions = (props: {
     publication?.publication_subscriptions.find(
       (s) => s.identity === identity.atp_did,
     );
-
-  let isAuthor =
-    identity &&
-    identity.atp_did === publication?.identity_did &&
-    leafletId;
 
   return (
     <div
@@ -214,11 +246,17 @@ export const ExpandedInteractions = (props: {
         {noInteractions ? (
           <div />
         ) : (
-          <>
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-2 just">
+            <div className="flex gap-2 sm:flex-row flex-col">
+              {props.showRecommends === false ? null : (
+                <RecommendButton
+                  documentUri={document_uri}
+                  recommendsCount={props.recommendsCount}
+                  expanded
+                />
+              )}
               {props.quotesCount === 0 || !props.showMentions ? null : (
-                <button
-                  className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+                <ButtonSecondary
                   onClick={() => {
                     if (!drawerOpen || drawer !== "quotes")
                       openInteractionDrawer(
@@ -233,15 +271,13 @@ export const ExpandedInteractions = (props: {
                   onTouchStart={handleQuotePrefetch}
                   aria-label="Post quotes"
                 >
-                  <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
-                  <span
-                    aria-hidden
-                  >{`Mention${props.quotesCount === 1 ? "" : "s"}`}</span>
-                </button>
+                  <QuoteTiny aria-hidden /> {props.quotesCount}
+                  <Separator classname="h-4! text-accent-contrast!" />
+                  Mention{props.quotesCount > 1 ? "s" : ""}
+                </ButtonSecondary>
               )}
               {!props.showComments ? null : (
-                <button
-                  className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+                <ButtonSecondary
                   onClick={() => {
                     if (
                       !drawerOpen ||
@@ -259,27 +295,27 @@ export const ExpandedInteractions = (props: {
                   aria-label="Post comments"
                 >
                   <CommentTiny aria-hidden />{" "}
-                  {props.commentsCount > 0 ? (
-                    <span aria-hidden>
-                      {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
-                    </span>
-                  ) : (
-                    "Comment"
+                  {props.commentsCount > 0 && (
+                    <>
+                      {props.commentsCount}
+                      <Separator classname="h-4! text-accent-contrast!" />
+                    </>
                   )}
-                </button>
+                  Comment{props.commentsCount > 1 ? "s" : ""}
+                </ButtonSecondary>
               )}
             </div>
-          </>
+            {subscribed && publication && (
+              <ManageSubscription
+                base_url={getPublicationURL(publication)}
+                pub_uri={publication.uri}
+                subscribers={publication.publication_subscriptions}
+              />
+            )}
+          </div>
         )}
 
         <EditButton publication={publication} leafletId={leafletId} />
-        {subscribed && publication && (
-          <ManageSubscription
-            base_url={getPublicationURL(publication)}
-            pub_uri={publication.uri}
-            subscribers={publication.publication_subscriptions}
-          />
-        )}
       </div>
     </div>
   );
@@ -313,7 +349,10 @@ const TagList = (props: { className?: string; tags: string[] | undefined }) => {
     </div>
   );
 };
-export function getQuoteCount(quotesAndMentions: { uri: string; link?: string }[], pageId?: string) {
+export function getQuoteCount(
+  quotesAndMentions: { uri: string; link?: string }[],
+  pageId?: string,
+) {
   return getQuoteCountFromArray(quotesAndMentions, pageId);
 }
 
@@ -338,7 +377,10 @@ export function getQuoteCountFromArray(
   }
 }
 
-export function getCommentCount(comments: CommentOnDocument[], pageId?: string) {
+export function getCommentCount(
+  comments: CommentOnDocument[],
+  pageId?: string,
+) {
   if (pageId)
     return comments.filter(
       (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
@@ -362,7 +404,7 @@ const EditButton = (props: {
     return (
       <a
         href={`https://leaflet.pub/${props.leafletId}`}
-        className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1"
+        className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-md !border-accent-1 !outline-accent-1 h-fit"
       >
         <EditTiny /> Edit Post
       </a>

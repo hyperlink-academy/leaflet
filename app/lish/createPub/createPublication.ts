@@ -5,10 +5,7 @@ import {
   PubLeafletPublication,
   SiteStandardPublication,
 } from "lexicons/api";
-import {
-  restoreOAuthSession,
-  OAuthSessionError,
-} from "src/atproto-oauth";
+import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
@@ -76,7 +73,11 @@ export async function createPublication({
 
   // Build record based on publication type
   let record: SiteStandardPublication.Record | PubLeafletPublication.Record;
-  let iconBlob: Awaited<ReturnType<typeof agent.com.atproto.repo.uploadBlob>>["data"]["blob"] | undefined;
+  let iconBlob:
+    | Awaited<
+        ReturnType<typeof agent.com.atproto.repo.uploadBlob>
+      >["data"]["blob"]
+    | undefined;
 
   // Upload the icon if provided
   if (iconFile && iconFile.size > 0) {
@@ -97,16 +98,29 @@ export async function createPublication({
       ...(iconBlob && { icon: iconBlob }),
       basicTheme: {
         $type: "site.standard.theme.basic",
-        background: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.background },
-        foreground: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.foreground },
-        accent: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.accent },
-        accentForeground: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.accentForeground },
+        background: {
+          $type: "site.standard.theme.color#rgb",
+          ...PubThemeDefaultsRGB.background,
+        },
+        foreground: {
+          $type: "site.standard.theme.color#rgb",
+          ...PubThemeDefaultsRGB.foreground,
+        },
+        accent: {
+          $type: "site.standard.theme.color#rgb",
+          ...PubThemeDefaultsRGB.accent,
+        },
+        accentForeground: {
+          $type: "site.standard.theme.color#rgb",
+          ...PubThemeDefaultsRGB.accentForeground,
+        },
       },
       preferences: {
         showInDiscover: preferences.showInDiscover,
         showComments: preferences.showComments,
         showMentions: preferences.showMentions,
         showPrevNext: preferences.showPrevNext,
+        showRecommends: preferences.showRecommends,
       },
     } satisfies SiteStandardPublication.Record;
   } else {

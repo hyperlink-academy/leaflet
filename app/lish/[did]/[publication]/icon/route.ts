@@ -14,7 +14,6 @@ export async function GET(
   request: NextRequest,
   props: { params: Promise<{ did: string; publication: string }> },
 ) {
-  console.log("are we getting here?");
   const params = await props.params;
   try {
     let did = decodeURIComponent(params.did);

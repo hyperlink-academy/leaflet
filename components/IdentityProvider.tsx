@@ -34,6 +34,10 @@ export function IdentityContextProvider(props: {
 }) {
   let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
     fallbackData: props.initialValue,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+    revalidateOnMount: false,
   });
   useEffect(() => {
     mutate(props.initialValue);

@@ -28,6 +28,7 @@ import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { ThreadPage as ThreadPageComponent } from "./ThreadPage";
 import { BlueskyQuotesPage } from "./BlueskyQuotesPage";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 // Page types
 export type DocPage = { type: "doc"; id: string };
@@ -111,11 +112,26 @@ export const openPage = (
   const pageKey = getPageKey(page);
   const parentKey = parent ? getPageKey(parent) : undefined;
 
+  // Check if the page is already open
+  const currentState = usePostPageUIState.getState();
+  const existingPageIndex = currentState.pages.findIndex(
+    (p) => getPageKey(p) === pageKey,
+  );
+
+  // If page is already open, just scroll to it
+  if (existingPageIndex !== -1) {
+    if (options?.scrollIntoView !== false) {
+      scrollIntoView(`post-page-${pageKey}`);
+    }
+    return;
+  }
+
   flushSync(() => {
     usePostPageUIState.setState((state) => {
       let parentPosition = state.pages.findIndex(
         (s) => getPageKey(s) === parentKey,
       );
+      // Close any pages after the parent and add the new page
       return {
         pages:
           parentPosition === -1
@@ -127,7 +143,10 @@ export const openPage = (
   });
 
   if (options?.scrollIntoView !== false) {
-    scrollIntoView(`post-page-${pageKey}`);
+    // Use requestAnimationFrame to ensure the DOM has been painted before scrolling
+    requestAnimationFrame(() => {
+      scrollIntoView(`post-page-${pageKey}`);
+    });
   }
 };
 
@@ -152,6 +171,7 @@ export type SharedPageProps = {
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
+    showRecommends?: boolean;
     showPrevNext?: boolean;
   };
   pubRecord?: NormalizedPublication | null;
@@ -215,6 +235,7 @@ export function PostPages({
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
+    showRecommends?: boolean;
     showPrevNext?: boolean;
   };
   pollData: PollData[];
@@ -228,10 +249,7 @@ export function PostPages({
   if (!document || !record) return null;
 
   let theme = pubRecord?.theme || record.theme || null;
-  // For publication posts, respect the publication's showPageBackground setting
-  // For standalone documents, default to showing page background
-  let isInPublication = !!pubRecord;
-  let hasPageBackground = isInPublication ? !!theme?.showPageBackground : true;
+  let hasPageBackground = !useCardBorderHidden();
 
   let firstPage = pages[0] as
     | PubLeafletPagesLinearDocument.Main
@@ -275,12 +293,12 @@ export function PostPages({
           showPageBackground={pubRecord?.theme?.showPageBackground}
           document_uri={document.uri}
           comments={
-            pubRecord?.preferences?.showComments === false
+            preferences.showComments === false
               ? []
               : document.comments_on_documents
           }
           quotesAndMentions={
-            pubRecord?.preferences?.showMentions === false
+            preferences.showMentions === false
               ? []
               : quotesAndMentions
           }
@@ -297,7 +315,7 @@ export function PostPages({
             <Fragment key={pageKey}>
               <SandwichSpacer />
               <ThreadPageComponent
-                threadUri={openPage.uri}
+                parentUri={openPage.uri}
                 pageId={pageKey}
                 hasPageBackground={hasPageBackground}
                 pageOptions={
@@ -367,12 +385,12 @@ export function PostPages({
                 pageId={page.id}
                 document_uri={document.uri}
                 comments={
-                  pubRecord?.preferences?.showComments === false
+                  preferences.showComments === false
                     ? []
                     : document.comments_on_documents
                 }
                 quotesAndMentions={
-                  pubRecord?.preferences?.showMentions === false
+                  preferences.showMentions === false
                     ? []
                     : quotesAndMentions
                 }

@@ -38,10 +38,13 @@ export async function generateMetadata(props: {
 
   return {
     icons: {
-      other: {
-        rel: "alternate",
-        url: document.uri,
-      },
+      other: [
+        {
+          rel: "alternate",
+          url: document.uri,
+        },
+        { rel: "site.standard.document", url: document.uri },
+      ],
     },
     title: docRecord.title,
     description: docRecord?.description || "",

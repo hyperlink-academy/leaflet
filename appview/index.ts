@@ -11,6 +11,7 @@ import {
   PubLeafletComment,
   PubLeafletPollVote,
   PubLeafletPollDefinition,
+  PubLeafletInteractionsRecommend,
   SiteStandardDocument,
   SiteStandardPublication,
   SiteStandardGraphSubscription,
@@ -48,6 +49,7 @@ async function main() {
       ids.PubLeafletComment,
       ids.PubLeafletPollVote,
       ids.PubLeafletPollDefinition,
+      ids.PubLeafletInteractionsRecommend,
       // ids.AppBskyActorProfile,
       "app.bsky.feed.post",
       ids.SiteStandardDocument,
@@ -102,33 +104,25 @@ async function handleEvent(evt: Event) {
         console.log(record.error);
         return;
       }
-      let docResult = await supabase.from("documents").upsert({
-        uri: evt.uri.toString(),
-        data: record.value as Json,
-      });
-      if (docResult.error) console.log(docResult.error);
+      let publication: string | null = null;
       if (record.value.publication) {
         let publicationURI = new AtUri(record.value.publication);
-
         if (publicationURI.host !== evt.uri.host) {
           console.log("Unauthorized to create post!");
           return;
         }
-        let docInPublicationResult = await supabase
-          .from("documents_in_publications")
-          .upsert({
-            publication: record.value.publication,
-            document: evt.uri.toString(),
-          });
-        await supabase
-          .from("documents_in_publications")
-          .delete()
-          .neq("publication", record.value.publication)
-          .eq("document", evt.uri.toString());
-
-        if (docInPublicationResult.error)
-          console.log(docInPublicationResult.error);
+        publication = record.value.publication;
       }
+      await inngest.send({
+        name: "appview/index-document",
+        data: {
+          document_uri: evt.uri.toString(),
+          document_data: record.value as Json,
+          bsky_post_uri: record.value.postRef?.uri,
+          publication,
+          did: evt.did,
+        },
+      });
     }
     if (evt.event === "delete") {
       await supabase.from("documents").delete().eq("uri", evt.uri.toString());
@@ -210,6 +204,28 @@ async function handleEvent(evt: Event) {
         .eq("uri", evt.uri.toString());
     }
   }
+  if (evt.collection === ids.PubLeafletInteractionsRecommend) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsRecommend.validateRecord(evt.record);
+      if (!record.success) return;
+      await supabase
+        .from("identities")
+        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      let { error } = await supabase.from("recommends_on_documents").upsert({
+        uri: evt.uri.toString(),
+        recommender_did: evt.did,
+        document: record.value.subject,
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting recommend:", error);
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("recommends_on_documents")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
   if (evt.collection === ids.PubLeafletGraphSubscription) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletGraphSubscription.validateRecord(evt.record);
@@ -240,38 +256,29 @@ async function handleEvent(evt: Event) {
         console.log(record.error);
         return;
       }
-      let docResult = await supabase.from("documents").upsert({
-        uri: evt.uri.toString(),
-        data: record.value as Json,
-      });
-      if (docResult.error) console.log(docResult.error);
-
       // site.standard.document uses "site" field to reference the publication
       // For documents in publications, site is an AT-URI (at://did:plc:xxx/site.standard.publication/rkey)
       // For standalone documents, site is an HTTPS URL (https://leaflet.pub/p/did:plc:xxx)
       // Only link to publications table for AT-URI sites
+      let publication: string | null = null;
       if (record.value.site && record.value.site.startsWith("at://")) {
         let siteURI = new AtUri(record.value.site);
-
         if (siteURI.host !== evt.uri.host) {
           console.log("Unauthorized to create document in site!");
           return;
         }
-        let docInPublicationResult = await supabase
-          .from("documents_in_publications")
-          .upsert({
-            publication: record.value.site,
-            document: evt.uri.toString(),
-          });
-        await supabase
-          .from("documents_in_publications")
-          .delete()
-          .neq("publication", record.value.site)
-          .eq("document", evt.uri.toString());
-
-        if (docInPublicationResult.error)
-          console.log(docInPublicationResult.error);
+        publication = record.value.site;
       }
+      await inngest.send({
+        name: "appview/index-document",
+        data: {
+          document_uri: evt.uri.toString(),
+          document_data: record.value as Json,
+          bsky_post_uri: record.value.bskyPostRef?.uri,
+          publication,
+          did: evt.did,
+        },
+      });
     }
     if (evt.event === "delete") {
       await supabase.from("documents").delete().eq("uri", evt.uri.toString());
@@ -354,7 +361,10 @@ async function handleEvent(evt: Event) {
 
     // Now validate the record since we know it contains our quote param
     let record = AppBskyFeedPost.validateRecord(evt.record);
-    if (!record.success) return;
+    if (!record.success) {
+      console.log(record.error);
+      return;
+    }
 
     let embed: string | null = null;
     if (

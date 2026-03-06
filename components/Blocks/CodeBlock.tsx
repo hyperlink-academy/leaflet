@@ -14,6 +14,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { flushSync } from "react-dom";
 import { elementId } from "src/utils/elementId";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
+import { focusBlock } from "src/utils/focusBlock";
 
 export function CodeBlock(props: BlockProps) {
   let { rep, rootEntity } = useReplicache();
@@ -42,89 +43,18 @@ export function CodeBlock(props: BlockProps) {
   }, [content, lang, theme]);
 
   const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    let selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    let range = selection.getRangeAt(0);
-    if (!range) return;
-    let length = range.toString().length;
-    range.setStart(e.currentTarget, 0);
-    let end = range.toString().length;
-    let start = end - length;
-
-    flushSync(() => {
-      useUIState.getState().setSelectedBlock(props);
-      useUIState.getState().setFocusedBlock({
-        entityType: "block",
-        entityID: props.value,
-        parent: props.parent,
-      });
-    });
-    let el = document.getElementById(
-      elementId.block(props.entityID).input,
-    ) as HTMLTextAreaElement;
-    if (!el) return;
-    el.focus();
-    el.setSelectionRange(start, end);
+    focusBlock(
+      { parent: props.parent, value: props.value, type: "code" },
+      { type: "end" },
+    );
   }, []);
   return (
     <div className="codeBlock w-full flex flex-col rounded-md gap-0.5 ">
-      {permissions.write && (
-        <div className="text-sm text-tertiary flex justify-between">
-          <div className="flex gap-1">
-            Theme:{" "}
-            <select
-              className="codeBlockLang text-left bg-transparent pr-1 sm:max-w-none max-w-24"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              value={theme}
-              onChange={async (e) => {
-                await rep?.mutate.assertFact({
-                  attribute: "theme/code-theme",
-                  entity: rootEntity,
-                  data: { type: "string", value: e.target.value },
-                });
-              }}
-            >
-              {bundledThemesInfo.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.displayName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <select
-            className="codeBlockLang text-right bg-transparent pr-1 sm:max-w-none max-w-24"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            value={lang}
-            onChange={async (e) => {
-              localStorage.setItem(LAST_USED_CODE_LANGUAGE_KEY, e.target.value);
-              await rep?.mutate.assertFact({
-                attribute: "block/code-language",
-                entity: props.entityID,
-                data: { type: "string", value: e.target.value },
-              });
-            }}
-          >
-            <option value="plaintext">Plaintext</option>
-            {bundledLanguagesInfo.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       <BlockLayout
         isSelected={focusedBlock}
         hasBackground="accent"
         borderOnHover
-        className="p-0! min-h-[48px]"
+        className="p-0! min-h-10 sm:min-h-12"
       >
         {focusedBlock && permissions.write ? (
           <BaseTextareaBlock
@@ -171,6 +101,57 @@ export function CodeBlock(props: BlockProps) {
           />
         )}
       </BlockLayout>
+      {permissions.write && (
+        <div className="text-sm text-tertiary flex w-full justify-between">
+          <div className="codeBlockTheme grow flex gap-1">
+            Theme:{" "}
+            <select
+              className="codeBlockThemeSelect text-left bg-transparent pr-1 sm:max-w-none max-w-24 w-full"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              value={theme}
+              onChange={async (e) => {
+                await rep?.mutate.assertFact({
+                  attribute: "theme/code-theme",
+                  entity: rootEntity,
+                  data: { type: "string", value: e.target.value },
+                });
+              }}
+            >
+              {bundledThemesInfo.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.displayName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <select
+            className="codeBlockLang grow text-right bg-transparent pr-1 sm:max-w-none max-w-24 w-full"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            value={lang}
+            onChange={async (e) => {
+              localStorage.setItem(LAST_USED_CODE_LANGUAGE_KEY, e.target.value);
+              await rep?.mutate.assertFact({
+                attribute: "block/code-language",
+                entity: props.entityID,
+                data: { type: "string", value: e.target.value },
+              });
+            }}
+          >
+            <option value="plaintext">Plaintext</option>
+            {bundledLanguagesInfo.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }

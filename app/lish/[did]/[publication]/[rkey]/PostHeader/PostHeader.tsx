@@ -18,7 +18,12 @@ import { ProfilePopover } from "components/ProfilePopover";
 export function PostHeader(props: {
   data: PostPageData;
   profile: ProfileViewDetailed;
-  preferences: { showComments?: boolean; showMentions?: boolean };
+  preferences: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showRecommends?: boolean;
+  };
+  isCanvas?: boolean;
 }) {
   let { identity } = useIdentityData();
   let document = props.data;
@@ -84,12 +89,20 @@ export function PostHeader(props: {
               </>
             ) : null}
           </div>
-          <Interactions
-            showComments={props.preferences.showComments !== false}
-            showMentions={props.preferences.showMentions !== false}
-            quotesCount={getQuoteCount(document?.quotesAndMentions || []) || 0}
-            commentsCount={getCommentCount(document?.comments_on_documents || []) || 0}
-          />
+          {!props.isCanvas && (
+            <Interactions
+              showComments={props.preferences.showComments !== false}
+              showMentions={props.preferences.showMentions !== false}
+              showRecommends={props.preferences.showRecommends !== false}
+              quotesCount={
+                getQuoteCount(document?.quotesAndMentions || []) || 0
+              }
+              commentsCount={
+                getCommentCount(document?.comments_on_documents || []) || 0
+              }
+              recommendsCount={document?.recommendsCount || 0}
+            />
+          )}
         </>
       }
     />
@@ -110,11 +123,11 @@ export const PostHeaderLayout = (props: {
       <div className="pubInfo flex text-accent-contrast font-bold justify-between w-full">
         {props.pubLink}
       </div>
-      <h2
-        className={`postTitle text-xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent ${!props.postTitle && "text-tertiary italic"}`}
-      >
-        {props.postTitle ? props.postTitle : "Untitled"}
-      </h2>
+      {props.postTitle && (
+        <h2 className="postTitle text-xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent">
+          {props.postTitle}
+        </h2>
+      )}
       {props.postDescription ? (
         <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
           {props.postDescription}

@@ -16,14 +16,14 @@ export const ProfileHeader = (props: {
   popover?: boolean;
 }) => {
   let profileRecord = props.profile;
-  const profileUrl = `/p/${props.profile.handle}`;
+  const profileUrl = `https://leaflet.pub/p/${props.profile.handle}`;
 
   const avatarElement = (
     <Avatar
       src={profileRecord.avatar}
       displayName={profileRecord.displayName}
       className="profileAvatar mx-auto mt-3 sm:mt-4"
-      giant
+      size="giant"
     />
   );
 
@@ -42,8 +42,6 @@ export const ProfileHeader = (props: {
       @{props.profile.handle}
     </div>
   );
-  console.log(props.profile);
-
   return (
     <div
       className={`profileHeader flex flex-col relative `}
@@ -74,9 +72,9 @@ export const ProfileHeader = (props: {
           </pre>
         </div>
 
-        <div className="profilePublicationCards w-full overflow-x-scroll">
+        <div className="profilePubCardContainer w-full overflow-x-scroll">
           <div
-            className={`grid grid-flow-col  gap-2 mx-auto w-fit px-3 sm:px-4 ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
+            className={`profilePubCards grid grid-flow-col  gap-2 mx-auto w-fit ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
           >
             {props.publications.map((p) => (
               <PublicationCard key={p.uri} record={p.record} uri={p.uri} />
@@ -100,7 +98,10 @@ const ProfileLinks = (props: { handle: string }) => {
     </div>
   );
 };
-const PublicationCard = (props: { record: NormalizedPublication; uri: string }) => {
+const PublicationCard = (props: {
+  record: NormalizedPublication;
+  uri: string;
+}) => {
   const { record, uri } = props;
   const { bgLeaflet, bgPage, primary } = usePubTheme(record.theme);
 

@@ -11,10 +11,10 @@ export function ProfileLayout(props: { children: React.ReactNode }) {
           ${
             cardBorderHidden
               ? ""
-              : "overflow-y-scroll h-full border border-border-light rounded-lg  bg-bg-page"
+              : "overflow-y-scroll h-full border border-border-light rounded-lg  bg-bg-page px-3 sm:px-4"
           }
           max-w-prose mx-auto w-full
-          flex flex-col
+          flex flex-col pb-3
           text-center
     `}
     >

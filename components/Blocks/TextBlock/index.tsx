@@ -48,17 +48,13 @@ export function TextBlock(
     preview?: boolean;
   },
 ) {
-  let isLocked = useEntity(props.entityID, "block/is-locked");
   let initialized = useHasPageLoaded();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 
   return (
     <>
-      {(!initialized ||
-        !permission ||
-        props.preview ||
-        isLocked?.data.value) && (
+      {(!initialized || !permission || props.preview) && (
         <RenderedTextBlock
           type={props.type}
           entityID={props.entityID}
@@ -68,7 +64,7 @@ export function TextBlock(
           previousBlock={props.previousBlock}
         />
       )}
-      {permission && !props.preview && !isLocked?.data.value && (
+      {permission && !props.preview && (
         <div
           className={`w-full relative group ${!initialized ? "hidden" : ""}`}
         >
@@ -337,6 +333,8 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   );
 }
 
+const blueskyclients = ["blacksky.community/", "bsky.app/", "witchsky.app/"];
+
 const BlockifyLink = (props: {
   entityID: string;
   editorState: EditorState | undefined;
@@ -345,17 +343,16 @@ const BlockifyLink = (props: {
   let { editorState } = props;
   let rep = useReplicache();
   let smoker = useSmoker();
-  let isLocked = useEntity(props.entityID, "block/is-locked");
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
 
   let isBlueskyPost =
-    editorState?.doc.textContent.includes("bsky.app/") &&
-    editorState?.doc.textContent.includes("post");
-  // only if the line stats with http or https and doesn't have other content
+    blueskyclients.some((client) =>
+      editorState?.doc.textContent.includes(client),
+    ) && editorState?.doc.textContent.includes("post");
+  // only if the line starts with http or https and doesn't have other content
   // if its bluesky, change text to embed post
 
   if (
-    !isLocked &&
     focused &&
     editorState &&
     betterIsUrl(editorState.doc.textContent) &&

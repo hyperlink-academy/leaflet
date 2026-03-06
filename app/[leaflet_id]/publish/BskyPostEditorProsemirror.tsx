@@ -410,7 +410,6 @@ export const addMentionToEditor = (
   range: { from: number; to: number },
   view: EditorView,
 ) => {
-  console.log("view", view);
   if (!view) return;
   const { from, to } = range;
   const tr = view.state.tr;
@@ -437,7 +436,6 @@ export const addMentionToEditor = (
     });
     tr.insert(from, atMentionNode);
   }
-  console.log("yo", mention);
 
   // Add a space after the mention
   tr.insertText(" ", from + 1);
