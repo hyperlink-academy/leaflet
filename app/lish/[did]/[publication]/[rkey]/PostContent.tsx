@@ -347,9 +347,9 @@ export let Block = ({
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p
-          style={{ fontSize: blockTextSize.p }}
           className={`textBlock ${className} ${b.block.textSize === "small" ? "text-sm text-secondary" : b.block.textSize === "large" ? "text-lg" : ""}`}
           {...blockProps}
+          style={{ ...blockProps.style, fontSize: blockTextSize.p }}
         >
           <TextBlock
             facets={b.block.facets}
@@ -364,7 +364,7 @@ export let Block = ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h1 style={{ fontSize: blockTextSize.h1 }} className={`h1Block ${className}`} {...blockProps}>
+          <h1 className={`h1Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h1 }}>
             <TextBlock
               {...b.block}
               index={index}
@@ -375,7 +375,7 @@ export let Block = ({
         );
       if (b.block.level === 2)
         return (
-          <h2 style={{ fontSize: blockTextSize.h2 }} className={`h2Block ${className}`} {...blockProps}>
+          <h2 className={`h2Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h2 }}>
             <TextBlock
               {...b.block}
               index={index}
@@ -386,7 +386,7 @@ export let Block = ({
         );
       if (b.block.level === 3)
         return (
-          <h3 style={{ fontSize: blockTextSize.h3 }} className={`h3Block ${className}`} {...blockProps}>
+          <h3 className={`h3Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h3 }}>
             <TextBlock
               {...b.block}
               index={index}
@@ -398,7 +398,7 @@ export let Block = ({
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6 style={{ fontSize: blockTextSize.h4 }} className={`h6Block ${className}`} {...blockProps}>
+        <h6 className={`h6Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h4 }}>
           <TextBlock
             {...b.block}
             index={index}
