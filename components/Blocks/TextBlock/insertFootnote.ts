@@ -18,14 +18,43 @@ export async function insertFootnote(
     let scan = scanIndex(tx);
     return scan.eav(blockID, "block/footnote");
   });
-  let lastPosition =
-    existingFootnotes.length > 0
-      ? existingFootnotes
-          .map((f) => f.data.position)
-          .sort()
-          .at(-1)!
-      : null;
-  let position = generateKeyBetween(lastPosition, null);
+
+  // Build a map from footnoteEntityID to its fractional-index position
+  let positionByEntityID: Record<string, string> = {};
+  for (let f of existingFootnotes) {
+    positionByEntityID[f.data.value] = f.data.position;
+  }
+
+  // Find footnotes that appear before and after the insertion point in the text
+  let { from } = view.state.selection;
+  let beforePosition: string | null = null;
+  let afterPosition: string | null = null;
+  let foundInsertionPoint = false;
+
+  view.state.doc.descendants((node, pos) => {
+    if (node.type.name === "footnote") {
+      let entityID = node.attrs.footnoteEntityID;
+      let p = positionByEntityID[entityID];
+      if (p !== undefined) {
+        if (pos < from) {
+          // This footnote is before the insertion point
+          if (beforePosition === null || p > beforePosition) {
+            beforePosition = p;
+          }
+        } else {
+          // This footnote is at or after the insertion point
+          if (!foundInsertionPoint) {
+            afterPosition = p;
+            foundInsertionPoint = true;
+          } else if (afterPosition !== null && p < afterPosition) {
+            afterPosition = p;
+          }
+        }
+      }
+    }
+  });
+
+  let position = generateKeyBetween(beforePosition, afterPosition);
 
   await rep.mutate.createFootnote({
     footnoteEntityID,
@@ -35,7 +64,6 @@ export async function insertFootnote(
   });
 
   let node = schema.nodes.footnote.create({ footnoteEntityID });
-  let { from } = view.state.selection;
   let tr = view.state.tr.insert(from, node);
   view.dispatch(tr);
 
