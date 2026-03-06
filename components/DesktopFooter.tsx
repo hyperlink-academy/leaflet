@@ -2,6 +2,7 @@
 import { useUIState } from "src/useUIState";
 import { Media } from "./Media";
 import { Toolbar } from "./Toolbar";
+import { FootnoteToolbar } from "./Toolbar/FootnoteToolbarWrapper";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { focusBlock } from "src/utils/focusBlock";
 import { hasBlockToolbar } from "app/[leaflet_id]/Footer";
@@ -17,6 +18,10 @@ export function DesktopPageFooter(props: { pageID: string }) {
 
   let blockType = useEntity(focusedEntity?.entityID || null, "block/type")?.data
     .value;
+
+  let isFootnoteFocused =
+    focusedEntity?.entityType === "footnote" &&
+    focusedEntity.parent === props.pageID;
 
   return (
     <Media
@@ -41,6 +46,16 @@ export function DesktopPageFooter(props: { pageID: string }) {
             />
           </div>
         )}
+      {isFootnoteFocused && entity_set.permissions.write && (
+        <div
+          className="pointer-events-auto w-fit mx-auto py-1 px-3 h-9 bg-bg-page border border-border rounded-full shadow-sm"
+          onMouseDown={(e) => {
+            if (e.currentTarget === e.target) e.preventDefault();
+          }}
+        >
+          <FootnoteToolbar pageID={props.pageID} />
+        </div>
+      )}
     </Media>
   );
 }

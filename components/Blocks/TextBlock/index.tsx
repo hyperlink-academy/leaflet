@@ -25,6 +25,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
+import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { blockTextSize } from "src/utils/blockTextSize";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
@@ -170,6 +171,19 @@ export function RenderedTextBlock(props: {
       style={{
         wordBreak: "break-word",
         ...(props.type === "heading" ? { fontSize: headingFontSize[headingLevel?.data.value || 1] } : {}),
+      }}
+      onClick={(e) => {
+        let target = e.target as HTMLElement;
+        let footnoteRef = target.closest(".footnote-ref") as HTMLElement | null;
+        if (!footnoteRef) return;
+        let footnoteID = footnoteRef.dataset.footnoteId;
+        if (!footnoteID) return;
+        let store = useFootnotePopoverStore.getState();
+        if (store.activeFootnoteID === footnoteID) {
+          store.close();
+        } else {
+          store.open(footnoteID, footnoteRef);
+        }
       }}
       className={`
         ${alignmentClass}

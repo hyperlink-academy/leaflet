@@ -194,6 +194,41 @@ let baseSchema = {
         ];
       },
     } as NodeSpec,
+    footnote: {
+      attrs: { footnoteEntityID: {} },
+      group: "inline",
+      inline: true,
+      atom: true,
+      selectable: false,
+      draggable: false,
+      parseDOM: [
+        {
+          tag: "span.footnote-ref",
+          getAttrs(dom: HTMLElement) {
+            return {
+              footnoteEntityID: dom.getAttribute("data-footnote-id"),
+            };
+          },
+        },
+        {
+          tag: "sup.footnote-ref",
+          getAttrs(dom: HTMLElement) {
+            return {
+              footnoteEntityID: dom.getAttribute("data-footnote-id"),
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        return [
+          "span",
+          {
+            class: "footnote-ref",
+            "data-footnote-id": node.attrs.footnoteEntityID,
+          },
+        ];
+      },
+    } as NodeSpec,
     didMention: {
       attrs: {
         did: {},

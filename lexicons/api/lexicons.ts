@@ -2035,6 +2035,7 @@ export const schemaDict = {
                 'lex:pub.leaflet.richtext.facet#id',
                 'lex:pub.leaflet.richtext.facet#bold',
                 'lex:pub.leaflet.richtext.facet#italic',
+                'lex:pub.leaflet.richtext.facet#footnote',
               ],
             },
           },
@@ -2135,6 +2136,26 @@ export const schemaDict = {
         description: 'Facet feature for italic text',
         required: [],
         properties: {},
+      },
+      footnote: {
+        type: 'object',
+        description: 'Facet feature for a footnote reference',
+        required: ['footnoteId', 'contentPlaintext'],
+        properties: {
+          footnoteId: {
+            type: 'string',
+          },
+          contentPlaintext: {
+            type: 'string',
+          },
+          contentFacets: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.richtext.facet',
+            },
+          },
+        },
       },
     },
   },

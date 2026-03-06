@@ -107,6 +107,10 @@ const BlockAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "block/footnote": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
 } as const;
 
 const MailboxAttributes = {

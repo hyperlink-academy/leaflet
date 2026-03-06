@@ -22,6 +22,13 @@ import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { PostPrevNextButtons } from "./PostPrevNextButtons";
 import { PostSubscribe } from "./PostSubscribe";
+import {
+  collectFootnotesFromBlocks,
+  buildFootnoteIndexMap,
+  PublishedFootnoteSection,
+} from "./Footnotes/PublishedFootnotes";
+import { PublishedFootnoteSideColumn } from "./Footnotes/PublishedFootnoteSideColumn";
+import { PublishedFootnotePopover } from "./Footnotes/PublishedFootnotePopover";
 
 export function LinearDocumentPage({
   blocks,
@@ -47,6 +54,8 @@ export function LinearDocumentPage({
   } = props;
   let drawer = useDrawerOpen(document_uri);
   const { pages } = useLeafletContent();
+  const footnotes = collectFootnotesFromBlocks(blocks);
+  const footnoteIndexMap = buildFootnoteIndexMap(footnotes);
 
   if (!document) return null;
 
@@ -62,6 +71,11 @@ export function LinearDocumentPage({
           !!drawer && (pageId ? drawer.pageId === pageId : !drawer.pageId)
         }
         pageOptions={pageOptions}
+        footnoteSideColumn={
+          !props.hasContentToRight ? (
+            <PublishedFootnoteSideColumn footnotes={footnotes} fullPageScroll={fullPageScroll} />
+          ) : undefined
+        }
       >
         {!isSubpage && profile && (
           <PostHeader
@@ -78,7 +92,9 @@ export function LinearDocumentPage({
           blocks={blocks}
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}
+          footnoteIndexMap={footnoteIndexMap}
         />
+        <PublishedFootnoteSection footnotes={footnotes} />
         <PostSubscribe />
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}
@@ -96,6 +112,7 @@ export function LinearDocumentPage({
         />
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>
+      <PublishedFootnotePopover footnotes={footnotes} />
     </>
   );
 }

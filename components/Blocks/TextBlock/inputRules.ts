@@ -12,6 +12,8 @@ import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { flushSync } from "react-dom";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
+import { insertFootnote } from "./insertFootnote";
+import { useEditorStates } from "src/state/useEditorState";
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
@@ -224,6 +226,22 @@ export const inputrules = (
           attribute: "block/heading-level",
           data: { type: "number", value: headingLevel },
         });
+        return tr;
+      }),
+
+      // Footnote - [^ triggers footnote insertion
+      new InputRule(/\[\^$/, (state, match, start, end) => {
+        let tr = state.tr.delete(start, end);
+        setTimeout(() => {
+          let view = useEditorStates.getState().editorStates[propsRef.current.entityID]?.view;
+          if (!view || !repRef.current) return;
+          insertFootnote(
+            view,
+            propsRef.current.entityID,
+            repRef.current,
+            propsRef.current.entity_set.set,
+          );
+        }, 0);
         return tr;
       }),
 

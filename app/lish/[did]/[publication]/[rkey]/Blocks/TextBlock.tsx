@@ -12,6 +12,7 @@ export function TextBlock(props: {
   index: number[];
   preview?: boolean;
   pageId?: string;
+  footnoteIndexMap?: Map<string, number>;
 }) {
   let children = [];
   let highlights = useHighlight(props.index, props.pageId);
@@ -48,7 +49,7 @@ export function TextBlock(props: {
     }
     return facets;
   }, [props.plaintext, props.facets, highlights, props.preview, props.pageId]);
-  return <BaseTextBlock {...props} facets={facets} />;
+  return <BaseTextBlock {...props} facets={facets} footnoteIndexMap={props.footnoteIndexMap} />;
 }
 
 function addFacet(facets: Facet[], newFacet: Facet, length: number) {

@@ -514,3 +514,56 @@ pre.shiki {
   animation-iteration-count: 1;
   animation-timing-function: ease-in;
 }
+
+.footnote-scope {
+  counter-reset: footnote;
+}
+.footnote-ref {
+  counter-increment: footnote;
+  cursor: pointer;
+  color: rgb(var(--color-tertiary));
+  opacity: 0.7;
+}
+.footnote-ref::after {
+  content: counter(footnote);
+  vertical-align: super;
+  padding-left: 2px;
+  font-size: 75%;
+  line-height: 0rem;
+}
+.footnote-ref ~ br.ProseMirror-trailingBreak {
+  display: inline;
+  width: 4px;
+}
+.footnote-ref ~ img.ProseMirror-separator {
+  display: none;
+}
+
+.footnote-side-enter {
+  animation: footnote-fade-in 200ms ease-out;
+}
+@keyframes footnote-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.footnote-side-item {
+  max-height: 4.5em;
+  overflow: hidden;
+  transition: max-height 200ms ease, mask-image 200ms ease;
+}
+.footnote-side-item.has-overflow {
+  mask-image: linear-gradient(to bottom, white 50%, transparent 100%);
+}
+.footnote-side-item:hover,
+.footnote-side-item:focus-within,
+.footnote-side-item.footnote-side-focused {
+  max-height: 40em;
+  mask-image: none;
+}
