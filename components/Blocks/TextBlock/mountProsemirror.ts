@@ -90,9 +90,10 @@ export function useMountProsemirror({
             let sup = supEl.closest(".footnote-ref") as HTMLElement | null;
             if (!sup) return;
 
-            // On mobile/tablet, show popover
+            // On mobile/tablet or canvas, show popover
             let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
-            if (!isDesktop) {
+            let isCanvas = propsRef.current.pageType === "canvas";
+            if (!isDesktop || isCanvas) {
               let store = useFootnotePopoverStore.getState();
               if (store.activeFootnoteID === footnoteID) {
                 store.close();
@@ -115,7 +116,9 @@ export function useMountProsemirror({
             }
             if (editor) {
               editor.scrollIntoView({ behavior: "smooth", block: "nearest" });
-              let pm = editor.querySelector(".ProseMirror") as HTMLElement | null;
+              let pm = editor.querySelector(
+                ".ProseMirror",
+              ) as HTMLElement | null;
               if (pm) {
                 setTimeout(() => pm!.focus(), 100);
               }

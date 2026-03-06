@@ -14,24 +14,35 @@ export function usePageFootnotes(pageID: string) {
     rep?.rep,
     async (tx) => {
       let scan = scanIndex(tx);
-      let blocks = await scan.eav(pageID, "card/block");
-      let sorted = blocks.toSorted((a, b) =>
-        a.data.position > b.data.position ? 1 : -1,
-      );
+      let cardBlocks = await scan.eav(pageID, "card/block");
+      let canvasBlocks = await scan.eav(pageID, "canvas/block");
+
+      let sortedCardBlocks = cardBlocks
+        .map((b) => ({ value: b.data.value, position: b.data.position }))
+        .toSorted((a, b) => (a.position > b.position ? 1 : -1));
+
+      let sortedCanvasBlocks = canvasBlocks
+        .map((b) => ({ value: b.data.value, position: b.data.position }))
+        .toSorted((a, b) => {
+          if (a.position.y === b.position.y) return a.position.x - b.position.x;
+          return a.position.y - b.position.y;
+        });
+
+      let sorted = [...sortedCardBlocks, ...sortedCanvasBlocks];
 
       let footnotes: FootnoteInfo[] = [];
       let indexMap: Record<string, number> = {};
       let idx = 1;
 
       for (let block of sorted) {
-        let blockFootnotes = await scan.eav(block.data.value, "block/footnote");
+        let blockFootnotes = await scan.eav(block.value, "block/footnote");
         let sortedFootnotes = blockFootnotes.toSorted((a, b) =>
           a.data.position > b.data.position ? 1 : -1,
         );
         for (let fn of sortedFootnotes) {
           footnotes.push({
             footnoteEntityID: fn.data.value,
-            blockID: block.data.value,
+            blockID: block.value,
             index: idx,
           });
           indexMap[fn.data.value] = idx;
@@ -44,5 +55,7 @@ export function usePageFootnotes(pageID: string) {
     { dependencies: [pageID] },
   );
 
-  return data || { pageID, footnotes: [], indexMap: {} as Record<string, number> };
+  return (
+    data || { pageID, footnotes: [], indexMap: {} as Record<string, number> }
+  );
 }

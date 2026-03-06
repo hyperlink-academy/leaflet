@@ -187,27 +187,29 @@ export function FootnoteEditor(props: {
   ]);
 
   return (
-    <FootnoteItemLayout
-      index={props.index}
-      indexAction={() => {
-        let ref = document.querySelector(
-          `.footnote-ref[data-footnote-id="${props.footnoteEntityID}"]`,
-        );
-        if (ref) {
-          ref.scrollIntoView({ behavior: "smooth", block: "center" });
+    <div data-footnote-editor={props.footnoteEntityID}>
+      <FootnoteItemLayout
+        index={props.index}
+        indexAction={() => {
+          let pm = mountRef.current?.querySelector(
+            ".ProseMirror",
+          ) as HTMLElement | null;
+          if (pm) {
+            pm.focus();
+          }
+        }}
+        trailing={
+          props.editable && props.onDelete ? (
+            <FootnoteDeleteButton
+              footnoteEntityID={props.footnoteEntityID}
+              onDelete={props.onDelete}
+            />
+          ) : undefined
         }
-      }}
-      trailing={
-        props.editable && props.onDelete ? (
-          <FootnoteDeleteButton
-            footnoteEntityID={props.footnoteEntityID}
-            onDelete={props.onDelete}
-          />
-        ) : undefined
-      }
-    >
-      <div ref={mountRef} className="outline-hidden" />
-    </FootnoteItemLayout>
+      >
+        <div ref={mountRef} className="outline-hidden" />
+      </FootnoteItemLayout>
+    </div>
   );
 }
 

@@ -29,18 +29,24 @@ export function FootnotePopover() {
   let { permissions } = useEntitySetContext();
   let rep = useReplicache();
   let popoverRef = useRef<HTMLDivElement>(null);
-  let [position, setPosition] = useState<{ top: number; left: number; arrowLeft: number } | null>(null);
+  let [position, setPosition] = useState<{
+    top: number;
+    left: number;
+    arrowLeft: number;
+  } | null>(null);
 
-  let footnote = footnotes.find((fn) => fn.footnoteEntityID === activeFootnoteID);
+  let footnote = footnotes.find(
+    (fn) => fn.footnoteEntityID === activeFootnoteID,
+  );
 
   // Compute the displayed index from DOM order (matching CSS counters)
   // rather than the data model order, which may differ if footnotes
   // were inserted out of order within a block.
   let displayIndex = useMemo(() => {
     if (!anchorElement || !footnote) return footnote?.index ?? 0;
-    let container = anchorElement.closest('.postPageContent');
+    let container = anchorElement.closest(".postPageContent");
     if (!container) return footnote.index;
-    let allRefs = Array.from(container.querySelectorAll('.footnote-ref'));
+    let allRefs = Array.from(container.querySelectorAll(".footnote-ref"));
     let pos = allRefs.indexOf(anchorElement);
     return pos >= 0 ? pos + 1 : footnote.index;
   }, [anchorElement, footnote]);
@@ -58,7 +64,10 @@ export function FootnotePopover() {
 
     // Clamp horizontal position
     let padding = 12;
-    left = Math.max(padding, Math.min(left, window.innerWidth - popoverWidth - padding));
+    left = Math.max(
+      padding,
+      Math.min(left, window.innerWidth - popoverWidth - padding),
+    );
 
     // Arrow position relative to popover
     let arrowLeft = anchorRect.left + anchorRect.width / 2 - left;
@@ -113,7 +122,7 @@ export function FootnotePopover() {
   return (
     <div
       ref={popoverRef}
-      className="footnote-popover lg:hidden fixed z-50 bg-bg-page border border-border rounded-lg shadow-md px-3 py-2 w-[min(calc(100vw-24px),320px)]"
+      className="footnote-popover fixed z-50 bg-bg-page border border-border rounded-lg shadow-md px-3 py-2 w-[min(calc(100vw-24px),320px)]"
       style={{
         top: position?.top ?? -9999,
         left: position?.left ?? -9999,
@@ -124,6 +133,7 @@ export function FootnotePopover() {
         footnoteEntityID={footnote.footnoteEntityID}
         index={displayIndex}
         editable={permissions.write}
+        autoFocus={permissions.write}
         onDelete={
           permissions.write
             ? () => {
