@@ -66,6 +66,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             entityID={props.entityID}
             openPicker={openPicker}
             setOpenPicker={(pickers) => setOpenPicker(pickers)}
+            hideFonts
           />
         </div>
         <AccentPickers

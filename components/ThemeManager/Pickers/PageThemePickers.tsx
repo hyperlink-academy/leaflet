@@ -33,6 +33,7 @@ export const PageThemePickers = (props: {
   openPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
   home?: boolean;
+  hideFonts?: boolean;
 }) => {
   let { rep } = useReplicache();
   let set = useMemo(() => {
@@ -59,7 +60,7 @@ export const PageThemePickers = (props: {
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
       />
-      {!props.home && (
+      {!props.home && !props.hideFonts && (
         <>
           <FontPicker label="Heading" entityID={props.entityID} attribute="theme/heading-font" />
           <FontPicker label="Body" entityID={props.entityID} attribute="theme/body-font" />

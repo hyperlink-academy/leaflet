@@ -67,12 +67,12 @@ export const PubFontPicker = (props: {
       {showCustomInput ? (
         <div className="p-2 flex flex-col gap-2">
           <div className="text-sm text-secondary">
-            Paste a Google Fonts URL or font name
+            Paste a Google Font name
           </div>
           <Input
             value={customFontValue}
             className="w-full"
-            placeholder="e.g. Roboto or fonts.google.com/..."
+            placeholder="e.g. Roboto, Open Sans, Playfair Display"
             autoFocus
             onChange={(e) => setCustomFontValue(e.currentTarget.value)}
             onKeyDown={(e) => {
