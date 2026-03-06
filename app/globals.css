@@ -531,27 +531,14 @@ pre.shiki {
 .footnote-side-item {
   max-height: 4.5em;
   overflow: hidden;
-  transition: max-height 200ms ease;
+  transition: max-height 200ms ease, mask-image 200ms ease;
 }
-.footnote-side-item.has-overflow::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1.5em;
-  background: linear-gradient(to bottom, transparent, rgb(var(--bg-page)));
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 200ms ease;
+.footnote-side-item.has-overflow {
+  mask-image: linear-gradient(to bottom, white 50%, transparent 100%);
 }
 .footnote-side-item:hover,
 .footnote-side-item:focus-within,
 .footnote-side-item.footnote-side-focused {
   max-height: 40em;
-}
-.footnote-side-item:hover::after,
-.footnote-side-item:focus-within::after,
-.footnote-side-item.footnote-side-focused::after {
-  opacity: 0;
+  mask-image: none;
 }
