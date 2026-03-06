@@ -230,6 +230,18 @@
   .pageScrollWrapper pre {
     font-family: var(--theme-font, var(--font-quattro));
   }
+
+  /* Apply custom fonts to publication homepage */
+  .pubWrapper {
+    font-family: var(--theme-font, var(--font-quattro));
+  }
+
+  .pubWrapper h1,
+  .pubWrapper h2,
+  .pubWrapper h3,
+  .pubWrapper h4 {
+    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
+  }
   /*END FONT STYLING*/
 
   /* START GLOBAL STYLING */

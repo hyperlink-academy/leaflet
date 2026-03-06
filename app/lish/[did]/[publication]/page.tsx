@@ -21,6 +21,7 @@ import {
   normalizeDocumentRecord,
 } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
+import { FontLoader } from "components/FontLoader";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -59,6 +60,8 @@ export default async function Publication(props: {
   if (!publication) return <PubNotFound />;
   try {
     return (
+      <>
+      <FontLoader headingFontId={record?.theme?.headingFont} bodyFontId={record?.theme?.bodyFont} />
       <PublicationThemeProvider
         theme={record?.theme}
         pub_creator={publication.identity_did}
@@ -193,6 +196,7 @@ export default async function Publication(props: {
           </PublicationHomeLayout>
         </PublicationBackgroundProvider>
       </PublicationThemeProvider>
+      </>
     );
   } catch (e) {
     console.log(e);
