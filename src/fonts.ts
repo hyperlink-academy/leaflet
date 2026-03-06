@@ -6,6 +6,7 @@ export type FontConfig = {
   displayName: string;
   fontFamily: string;
   fallback: string[];
+  baseSize?: number; // base font size in px for document content
 } & (
   | {
       // Self-hosted fonts with local files
@@ -33,6 +34,7 @@ export const fonts: Record<string, FontConfig> = {
     id: "quattro",
     displayName: "iA Writer Quattro",
     fontFamily: "iA Writer Quattro V",
+    baseSize: 16,
     type: "local",
     files: [
       {
@@ -52,6 +54,7 @@ export const fonts: Record<string, FontConfig> = {
     id: "lora",
     displayName: "Lora",
     fontFamily: "Lora",
+    baseSize: 17,
     type: "local",
     files: [
       {
@@ -67,119 +70,45 @@ export const fonts: Record<string, FontConfig> = {
     ],
     fallback: ["Georgia", "serif"],
   },
-  "source-sans": {
-    id: "source-sans",
-    displayName: "Source Sans",
-    fontFamily: "Source Sans 3",
-    type: "local",
-    files: [
-      {
-        path: "/fonts/SourceSans3-Variable.woff2",
-        style: "normal",
-        weight: "200 900",
-      },
-      {
-        path: "/fonts/SourceSans3-Italic-Variable.woff2",
-        style: "italic",
-        weight: "200 900",
-      },
-    ],
-    fallback: ["system-ui", "sans-serif"],
-  },
   "atkinson-hyperlegible": {
     id: "atkinson-hyperlegible",
     displayName: "Atkinson Hyperlegible",
     fontFamily: "Atkinson Hyperlegible Next",
+    baseSize: 18,
     type: "google",
     googleFontsFamily:
       "Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800",
     fallback: ["system-ui", "sans-serif"],
   },
-  "space-mono": {
-    id: "space-mono",
-    displayName: "Space Mono",
-    fontFamily: "Space Mono",
-    type: "google",
-    googleFontsFamily: "Space+Mono:ital,wght@0,400;0,700;1,400;1,700",
-    fallback: ["monospace"],
-  },
-
   // Additional Google Fonts - Mono
   "sometype-mono": {
     id: "sometype-mono",
     displayName: "Sometype Mono",
     fontFamily: "Sometype Mono",
+    baseSize: 17,
     type: "google",
     googleFontsFamily: "Sometype+Mono:ital,wght@0,400;0,700;1,400;1,700",
     fallback: ["monospace"],
   },
 
   // Additional Google Fonts - Sans
-  "pt-sans": {
-    id: "pt-sans",
-    displayName: "PT Sans",
-    fontFamily: "PT Sans",
-    type: "google",
-    googleFontsFamily: "PT+Sans:ital,wght@0,400;0,700;1,400;1,700",
-    fallback: ["system-ui", "sans-serif"],
-  },
   montserrat: {
     id: "montserrat",
     displayName: "Montserrat",
     fontFamily: "Montserrat",
+    baseSize: 17,
     type: "google",
     googleFontsFamily: "Montserrat:ital,wght@0,400;0,700;1,400;1,700",
     fallback: ["system-ui", "sans-serif"],
   },
-  "alegreya-sans": {
-    id: "alegreya-sans",
-    displayName: "Alegreya Sans",
-    fontFamily: "Alegreya Sans",
+  "source-sans": {
+    id: "source-sans",
+    displayName: "Source Sans 3",
+    fontFamily: "Source Sans 3",
+    baseSize: 18,
     type: "google",
-    googleFontsFamily: "Alegreya+Sans:ital,wght@0,400;0,700;1,400;1,700",
+    googleFontsFamily: "Source+Sans+3:ital,wght@0,400;0,700;1,400;1,700",
     fallback: ["system-ui", "sans-serif"],
-  },
-
-  // Additional Google Fonts - Serif
-  "pt-serif": {
-    id: "pt-serif",
-    displayName: "PT Serif",
-    fontFamily: "PT Serif",
-    type: "google",
-    googleFontsFamily: "PT+Serif:ital,wght@0,400;0,700;1,400;1,700",
-    fallback: ["Georgia", "serif"],
-  },
-  "crimson-text": {
-    id: "crimson-text",
-    displayName: "Crimson Text",
-    fontFamily: "Crimson Text",
-    type: "google",
-    googleFontsFamily: "Crimson+Text:ital,wght@0,400;0,700;1,400;1,700",
-    fallback: ["Georgia", "serif"],
-  },
-  cardo: {
-    id: "cardo",
-    displayName: "Cardo",
-    fontFamily: "Cardo",
-    type: "google",
-    googleFontsFamily: "Cardo:ital,wght@0,400;0,700;1,400",
-    fallback: ["Georgia", "serif"],
-  },
-  "ibm-plex-serif": {
-    id: "ibm-plex-serif",
-    displayName: "IBM Plex Serif",
-    fontFamily: "IBM Plex Serif",
-    type: "google",
-    googleFontsFamily: "IBM+Plex+Serif:ital,wght@0,400;0,700;1,400;1,700",
-    fallback: ["Georgia", "serif"],
-  },
-  "source-serif": {
-    id: "source-serif",
-    displayName: "Source Serif 4",
-    fontFamily: "Source Serif 4",
-    type: "google",
-    googleFontsFamily: "Source+Serif+4:ital,wght@0,400;0,700;1,400;1,700",
-    fallback: ["Georgia", "serif"],
   },
 };
 

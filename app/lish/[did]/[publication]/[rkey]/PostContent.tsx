@@ -34,6 +34,7 @@ import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
+import { blockTextSize } from "src/utils/blockTextSize";
 
 export function PostContent({
   blocks,
@@ -346,6 +347,7 @@ export let Block = ({
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p
+          style={{ fontSize: blockTextSize.p }}
           className={`textBlock ${className} ${b.block.textSize === "small" ? "text-sm text-secondary" : b.block.textSize === "large" ? "text-lg" : ""}`}
           {...blockProps}
         >
@@ -362,7 +364,7 @@ export let Block = ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h2 className={`h1Block ${className}`} {...blockProps}>
+          <h2 style={{ fontSize: blockTextSize.h1 }} className={`h1Block ${className}`} {...blockProps}>
             <TextBlock
               {...b.block}
               index={index}
@@ -373,7 +375,7 @@ export let Block = ({
         );
       if (b.block.level === 2)
         return (
-          <h3 className={`h2Block ${className}`} {...blockProps}>
+          <h3 style={{ fontSize: blockTextSize.h2 }} className={`h2Block ${className}`} {...blockProps}>
             <TextBlock
               {...b.block}
               index={index}
@@ -384,7 +386,7 @@ export let Block = ({
         );
       if (b.block.level === 3)
         return (
-          <h4 className={`h3Block ${className}`} {...blockProps}>
+          <h4 style={{ fontSize: blockTextSize.h3 }} className={`h3Block ${className}`} {...blockProps}>
             <TextBlock
               {...b.block}
               index={index}
@@ -396,7 +398,7 @@ export let Block = ({
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6 className={`h6Block ${className}`} {...blockProps}>
+        <h6 style={{ fontSize: blockTextSize.h4 }} className={`h6Block ${className}`} {...blockProps}>
           <TextBlock
             {...b.block}
             index={index}
