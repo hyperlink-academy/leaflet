@@ -88,7 +88,7 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
           <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
             {leafletMetadata[0] && (
               <div
-                className={`pageBlockOne outline-hidden resize-none align-top flex gap-2 ${leafletMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
+                className={`pageBlockOne outline-hidden resize-none align-top flex gap-2 ${leafletMetadata[0].type === "heading" ? "font-bold" : ""}`}
               >
                 {leafletMetadata[0].listData && (
                   <ListMarker

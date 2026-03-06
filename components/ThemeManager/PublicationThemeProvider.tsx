@@ -141,6 +141,9 @@ export const usePubTheme = (
   let highlight2 = useColorAttribute(null, "theme/highlight-2");
   let highlight3 = useColorAttribute(null, "theme/highlight-3");
 
+  let headingFontId = theme?.headingFont;
+  let bodyFontId = theme?.bodyFont;
+
   return {
     bgLeaflet,
     bgPage,
@@ -152,6 +155,8 @@ export const usePubTheme = (
     highlight3,
     showPageBackground,
     pageWidth,
+    headingFontId,
+    bodyFontId,
   };
 };
 

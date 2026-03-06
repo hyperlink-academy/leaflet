@@ -111,7 +111,7 @@ export function DocLinkBlock(props: {
             <div className="grow">
               {title && (
                 <div
-                  className={`pageBlockOne outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold text-base" : ""}`}
+                  className={`pageBlockOne outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={title.facets}

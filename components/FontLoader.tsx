@@ -10,6 +10,7 @@ import {
   getFontPreloadLinks,
   getGoogleFontsUrl,
   getFontFamilyValue,
+  getFontBaseSize,
 } from "src/fonts";
 
 type FontLoaderProps = {
@@ -53,12 +54,14 @@ export function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps) {
 
   const headingFontValue = getFontFamilyValue(headingFont);
   const bodyFontValue = getFontFamilyValue(bodyFont);
+  const bodyFontBaseSize = getFontBaseSize(bodyFont);
 
   // Set font CSS variables scoped to .leafletWrapper so they don't affect app UI
   const fontVariableCSS = `
 .leafletWrapper {
   --theme-heading-font: ${headingFontValue};
   --theme-font: ${bodyFontValue};
+  --theme-font-base-size: ${bodyFontBaseSize}px;
 }
 `.trim();
 

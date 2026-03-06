@@ -113,6 +113,7 @@ export const fonts: Record<string, FontConfig> = {
 };
 
 export const defaultFontId = "quattro";
+export const defaultBaseSize = 16;
 
 // Parse a Google Fonts URL or string to extract the font name and family parameter
 // Supports various formats:
@@ -235,6 +236,11 @@ export function getFontPreloadLinks(
 export function getGoogleFontsUrl(font: FontConfig): string | null {
   if (font.type !== "google") return null;
   return `https://fonts.googleapis.com/css2?family=${font.googleFontsFamily}&display=swap`;
+}
+
+// Get the base font size for a font config
+export function getFontBaseSize(font: FontConfig): number {
+  return font.baseSize ?? defaultBaseSize;
 }
 
 // Get the CSS font-family value with fallbacks

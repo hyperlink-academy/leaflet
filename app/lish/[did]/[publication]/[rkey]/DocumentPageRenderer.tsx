@@ -18,6 +18,7 @@ import { fetchPollData } from "./fetchPollData";
 import { getDocumentPages, hasLeafletContent } from "src/utils/normalizeRecords";
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
+import { FontLoader } from "components/FontLoader";
 
 export async function DocumentPageRenderer({
   did,
@@ -118,6 +119,7 @@ export async function DocumentPageRenderer({
   return (
     <DocumentProvider value={document}>
       <LeafletContentProvider value={{ pages }}>
+        <FontLoader headingFontId={document.theme?.headingFont} bodyFontId={document.theme?.bodyFont} />
         <PublicationThemeProvider theme={document.theme} pub_creator={pub_creator} isStandalone={isStandalone}>
           <PublicationBackgroundProvider theme={document.theme} pub_creator={pub_creator}>
             <LeafletLayout>
