@@ -193,10 +193,6 @@
     @apply hover:underline;
   }
 
-  pre {
-    font-family: var(--font-quattro);
-  }
-
   p {
     font-size: inherit;
   }
@@ -204,6 +200,35 @@
   ::placeholder {
     @apply text-tertiary;
     @apply italic;
+  }
+
+  /* Scope custom fonts to document content only (not sidebar/UI chrome) */
+  .pageScrollWrapper {
+    font-family: var(--theme-font, var(--font-quattro));
+    font-size: var(--theme-font-base-size, 16px);
+  }
+
+  .pageScrollWrapper h1,
+  .pageScrollWrapper h2,
+  .pageScrollWrapper h3,
+  .pageScrollWrapper h4 {
+    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
+  }
+
+  /* Scale heading sizes relative to the custom base font size */
+  .pageScrollWrapper h1 { font-size: 2em; }
+  .pageScrollWrapper h2 { font-size: 1.625em; }
+  .pageScrollWrapper h3 { font-size: 1.125em; }
+  .pageScrollWrapper h4 { font-size: 1em; }
+
+  /* Scale text size classes relative to the custom base font size.
+     Tailwind's text-sm/text-base/text-lg compile to fixed rem values
+     which ignore the custom base size set on .pageScrollWrapper. */
+  .pageScrollWrapper .textSizeSmall { font-size: 0.875em; }
+  .pageScrollWrapper .textSizeLarge { font-size: 1.125em; }
+
+  .pageScrollWrapper pre {
+    font-family: var(--theme-font, var(--font-quattro));
   }
   /*END FONT STYLING*/
 

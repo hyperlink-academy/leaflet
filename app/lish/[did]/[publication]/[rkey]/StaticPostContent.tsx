@@ -12,6 +12,7 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blockTextSize } from "src/utils/blockTextSize";
 import { TextBlockCore, TextBlockCoreProps } from "./Blocks/TextBlockCore";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
@@ -119,7 +120,7 @@ let Block = async ({
     }
     case PubLeafletBlocksText.isMain(b.block):
       return (
-        <p>
+        <p style={{ fontSize: blockTextSize.p }}>
           <StaticBaseTextBlock
             facets={b.block.facets}
             plaintext={b.block.plaintext}
@@ -130,26 +131,26 @@ let Block = async ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h1>
+          <h1 style={{ fontSize: blockTextSize.h1 }}>
             <StaticBaseTextBlock {...b.block} index={[]} />
           </h1>
         );
       if (b.block.level === 2)
         return (
-          <h2>
+          <h2 style={{ fontSize: blockTextSize.h2 }}>
             <StaticBaseTextBlock {...b.block} index={[]} />
           </h2>
         );
       if (b.block.level === 3)
         return (
-          <h3>
+          <h3 style={{ fontSize: blockTextSize.h3 }}>
             <StaticBaseTextBlock {...b.block} index={[]} />
           </h3>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6>
+        <h6 style={{ fontSize: blockTextSize.h4 }}>
           <StaticBaseTextBlock {...b.block} index={[]} />
         </h6>
       );

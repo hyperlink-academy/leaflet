@@ -156,6 +156,7 @@ export const ThemeSetterContent = (props: {
           entityID={props.entityID}
           openPicker={openPicker}
           setOpenPicker={(pickers) => setOpenPicker(pickers)}
+          home={props.home}
         />
         <div className="flex flex-col -gap-[6px]">
           <div className={`flex flex-col z-10  -mb-[6px] `}>
@@ -187,6 +188,7 @@ export const ThemeSetterContent = (props: {
     </div>
   );
 };
+
 function WatermarkSetter(props: { entityID: string }) {
   let { rep } = useReplicache();
   let checked = useEntity(props.entityID, "theme/page-leaflet-watermark");
@@ -300,7 +302,7 @@ const SamplePage = (props: {
           onClick={() => {
             props.setOpenPicker("text");
           }}
-          className="cursor-pointer font-bold w-fit"
+          className="cursor-pointer font-bold w-fit [font-family:var(--theme-heading-font)]"
         >
           Hello!
         </p>

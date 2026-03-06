@@ -25,14 +25,23 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
+import { blockTextSize } from "src/utils/blockTextSize";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
 import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
-  1: "text-xl font-bold",
-  2: "text-lg font-bold",
-  3: "text-base font-bold text-secondary ",
+  1: "font-bold [font-family:var(--theme-heading-font)]",
+  2: "font-bold [font-family:var(--theme-heading-font)]",
+  3: "font-bold text-secondary [font-family:var(--theme-heading-font)]",
+  4: "font-bold text-secondary [font-family:var(--theme-heading-font)]",
+} as { [level: number]: string };
+
+const headingFontSize = {
+  1: blockTextSize.h1,
+  2: blockTextSize.h2,
+  3: blockTextSize.h3,
+  4: blockTextSize.h4,
 } as { [level: number]: string };
 
 export function TextBlock(
@@ -127,9 +136,9 @@ export function RenderedTextBlock(props: {
   }[alignment];
   let textStyle =
     textSize?.data.value === "small"
-      ? "text-sm"
+      ? "textSizeSmall"
       : textSize?.data.value === "large"
-        ? "text-lg"
+        ? "textSizeLarge"
         : "";
   let { permissions } = useEntitySetContext();
 
@@ -158,7 +167,10 @@ export function RenderedTextBlock(props: {
   }
   return (
     <div
-      style={{ wordBreak: "break-word" }} // better than tailwind break-all!
+      style={{
+        wordBreak: "break-word",
+        ...(props.type === "heading" ? { fontSize: headingFontSize[headingLevel?.data.value || 1] } : {}),
+      }}
       className={`
         ${alignmentClass}
         ${props.type === "blockquote" ? (props.previousBlock?.type === "blockquote" ? `blockquote pt-3 ` : "blockquote") : ""}
@@ -190,10 +202,10 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   }[alignment];
   let textStyle =
     textSize?.data.value === "small"
-      ? "text-sm text-secondary"
+      ? "textSizeSmall text-secondary"
       : textSize?.data.value === "large"
-        ? "text-lg text-primary"
-        : "text-base text-primary";
+        ? "textSizeLarge text-primary"
+        : "text-primary";
 
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
@@ -262,7 +274,11 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           // unless we break *only* on urls, this is better than tailwind 'break-all'
           // b/c break-all can cause breaks in the middle of words, but break-word still
           // forces break if a single text string (e.g. a url) spans more than a full line
-          style={{ wordBreak: "break-word" }}
+          style={{
+            wordBreak: "break-word",
+            fontFamily: props.type === "heading" ? "var(--theme-heading-font)" : "var(--theme-font)",
+            ...(props.type === "heading" ? { fontSize: headingFontSize[headingLevel?.data.value || 1] } : {}),
+          }}
           className={`
             ${alignmentClass}
           grow resize-none align-top whitespace-pre-wrap bg-transparent
@@ -286,6 +302,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         props.nextBlock === null ? (
           // if this is the only block on the page and is empty or is a canvas, show placeholder
           <div
+            style={props.type === "heading" ? { fontSize: headingFontSize[headingLevel?.data.value || 1] } : undefined}
             className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
               ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
               `}

@@ -33,6 +33,7 @@ import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
+import { blockTextSize } from "src/utils/blockTextSize";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 
 export function PostContent({
@@ -284,7 +285,7 @@ export let Block = ({
           <div className="pt-2 pb-2 px-3 grow min-w-0">
             <div className="flex flex-col w-full min-w-0 h-full grow ">
               <div
-                className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
+                className={`linkBlockTitle bg-transparent -mb-0.5  border-none font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
                 style={{
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -370,6 +371,7 @@ export let Block = ({
         <p
           className={`textBlock ${className} ${b.block.textSize === "small" ? "text-sm text-secondary" : b.block.textSize === "large" ? "text-lg" : ""}`}
           {...blockProps}
+          style={{ ...blockProps.style, fontSize: blockTextSize.p }}
         >
           <TextBlock
             facets={b.block.facets}
@@ -384,7 +386,18 @@ export let Block = ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h2 className={`h1Block ${className}`} {...blockProps}>
+          <h1 className={`h1Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h1 }}>
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
+          </h1>
+        );
+      if (b.block.level === 2)
+        return (
+          <h2 className={`h2Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h2 }}>
             <TextBlock
               {...b.block}
               index={index}
@@ -393,9 +406,9 @@ export let Block = ({
             />
           </h2>
         );
-      if (b.block.level === 2)
+      if (b.block.level === 3)
         return (
-          <h3 className={`h2Block ${className}`} {...blockProps}>
+          <h3 className={`h3Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h3 }}>
             <TextBlock
               {...b.block}
               index={index}
@@ -404,21 +417,10 @@ export let Block = ({
             />
           </h3>
         );
-      if (b.block.level === 3)
-        return (
-          <h4 className={`h3Block ${className}`} {...blockProps}>
-            <TextBlock
-              {...b.block}
-              index={index}
-              preview={preview}
-              pageId={pageId}
-            />
-          </h4>
-        );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6 className={`h6Block ${className}`} {...blockProps}>
+        <h6 className={`h6Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h4 }}>
           <TextBlock
             {...b.block}
             index={index}

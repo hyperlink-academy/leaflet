@@ -21,6 +21,7 @@ import {
 } from "src/utils/normalizeRecords";
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
+import { FontLoader } from "components/FontLoader";
 import { mergePreferences } from "src/utils/mergePreferences";
 
 export async function DocumentPageRenderer({
@@ -122,6 +123,7 @@ export async function DocumentPageRenderer({
   return (
     <DocumentProvider value={document}>
       <LeafletContentProvider value={{ pages }}>
+        <FontLoader headingFontId={document.theme?.headingFont} bodyFontId={document.theme?.bodyFont} />
         <PublicationThemeProvider
           theme={document.theme}
           pub_creator={pub_creator}

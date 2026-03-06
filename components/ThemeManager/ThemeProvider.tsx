@@ -29,6 +29,7 @@ import {
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
 import { getColorDifference } from "./themeUtils";
+import { getFontConfig, getGoogleFontsUrl, getFontFamilyValue, generateFontFaceCSS, getFontBaseSize } from "src/fonts";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
@@ -45,6 +46,8 @@ export function ThemeProvider(props: {
   local?: boolean;
   children: React.ReactNode;
   className?: string;
+  initialHeadingFontId?: string;
+  initialBodyFontId?: string;
 }) {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
   if (!pub || !pub.publications) return <LeafletThemeProvider {...props} />;
@@ -63,6 +66,8 @@ export function LeafletThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
   children: React.ReactNode;
+  initialHeadingFontId?: string;
+  initialBodyFontId?: string;
 }) {
   let bgLeaflet = useColorAttribute(props.entityID, "theme/page-background");
   let bgPage = useColorAttribute(props.entityID, "theme/card-background");
@@ -83,6 +88,9 @@ export function LeafletThemeProvider(props: {
   let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
 
   let pageWidth = useEntity(props.entityID, "theme/page-width");
+  // Use initial font IDs as fallback until Replicache syncs
+  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value ?? props.initialHeadingFontId;
+  let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value ?? props.initialBodyFontId;
 
   return (
     <CardBorderHiddenContext.Provider value={!!cardBorderHiddenValue}>
@@ -100,6 +108,8 @@ export function LeafletThemeProvider(props: {
           showPageBackground={showPageBackground}
           pageWidth={pageWidth?.data.value}
           hasBackgroundImage={hasBackgroundImage}
+          headingFontId={headingFontId}
+          bodyFontId={bodyFontId}
         >
           {props.children}
         </BaseThemeProvider>
@@ -122,6 +132,8 @@ export const BaseThemeProvider = ({
   showPageBackground,
   pageWidth,
   hasBackgroundImage,
+  headingFontId,
+  bodyFontId,
   className,
   children,
 }: {
@@ -137,6 +149,8 @@ export const BaseThemeProvider = ({
   highlight2: AriaColor;
   highlight3: AriaColor;
   pageWidth?: number;
+  headingFontId?: string;
+  bodyFontId?: string;
   className?: string;
   children: React.ReactNode;
 }) => {
@@ -177,6 +191,54 @@ export const BaseThemeProvider = ({
     // otherwise, choose the more contrast-y option
     accentContrast = sortedAccents[0];
   }
+
+  // Get font configs for CSS variables
+  const headingFontConfig = getFontConfig(headingFontId);
+  const bodyFontConfig = getFontConfig(bodyFontId);
+  const headingFontValue = getFontFamilyValue(headingFontConfig);
+  const bodyFontValue = getFontFamilyValue(bodyFontConfig);
+  const bodyFontBaseSize = getFontBaseSize(bodyFontConfig);
+  const headingGoogleFontsUrl = getGoogleFontsUrl(headingFontConfig);
+  const bodyGoogleFontsUrl = getGoogleFontsUrl(bodyFontConfig);
+
+  // Dynamically load Google Fonts when fonts change
+  useEffect(() => {
+    const loadGoogleFont = (url: string | null, fontFamily: string) => {
+      if (!url) return;
+
+      // Check if this font stylesheet is already in the document
+      const existingLink = document.querySelector(`link[href="${url}"]`);
+      if (existingLink) return;
+
+      // Add preconnect hints if not present
+      if (!document.querySelector('link[href="https://fonts.googleapis.com"]')) {
+        const preconnect1 = document.createElement("link");
+        preconnect1.rel = "preconnect";
+        preconnect1.href = "https://fonts.googleapis.com";
+        document.head.appendChild(preconnect1);
+
+        const preconnect2 = document.createElement("link");
+        preconnect2.rel = "preconnect";
+        preconnect2.href = "https://fonts.gstatic.com";
+        preconnect2.crossOrigin = "anonymous";
+        document.head.appendChild(preconnect2);
+      }
+
+      // Load the Google Font stylesheet
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = url;
+      document.head.appendChild(link);
+
+      // Wait for the font to actually load before it gets applied
+      if (document.fonts?.load) {
+        document.fonts.load(`1em "${fontFamily}"`);
+      }
+    };
+
+    loadGoogleFont(headingGoogleFontsUrl, headingFontConfig.fontFamily);
+    loadGoogleFont(bodyGoogleFontsUrl, bodyFontConfig.fontFamily);
+  }, [headingGoogleFontsUrl, bodyGoogleFontsUrl, headingFontConfig.fontFamily, bodyFontConfig.fontFamily]);
 
   useEffect(() => {
     if (local) return;
@@ -226,6 +288,7 @@ export const BaseThemeProvider = ({
       "--page-width-setting",
       (pageWidth || 624).toString(),
     );
+
   }, [
     local,
     bgLeaflet,
@@ -260,6 +323,9 @@ export const BaseThemeProvider = ({
           "--page-width-setting": pageWidth || 624,
           "--page-width-unitless": pageWidth || 624,
           "--page-width-units": `min(${pageWidth || 624}px, calc(100vw - 12px))`,
+          "--theme-heading-font": headingFontValue,
+          "--theme-font": bodyFontValue,
+          "--theme-font-base-size": `${bodyFontBaseSize}px`,
         } as CSSProperties
       }
     >
