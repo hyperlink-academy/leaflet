@@ -28,7 +28,8 @@ export function collectFootnotesFromBlocks(
   let idx = 1;
 
   function scanFacets(facets?: PubLeafletRichtextFacet.Main[]) {
-    if (!facets) return;
+    if (!facets || !Array.isArray(facets)) return;
+    console.log(facets);
     for (let facet of facets) {
       for (let feature of facet.features) {
         if (PubLeafletRichtextFacet.isFootnote(feature)) {
@@ -86,9 +87,7 @@ export function PublishedFootnoteSection(props: {
   );
 }
 
-export function PublishedFootnoteItem(props: {
-  footnote: PublishedFootnote;
-}) {
+export function PublishedFootnoteItem(props: { footnote: PublishedFootnote }) {
   let fn = props.footnote;
   return (
     <FootnoteItemLayout

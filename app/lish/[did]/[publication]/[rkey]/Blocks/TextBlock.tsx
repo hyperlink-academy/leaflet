@@ -18,7 +18,7 @@ export function TextBlock(props: {
   let highlights = useHighlight(props.index, props.pageId);
   let facets = useMemo(() => {
     if (props.preview) return props.facets;
-    let facets = [...(props.facets || [])];
+    let facets = [...(Array.isArray(props.facets) ? props.facets : [])];
     for (let highlight of highlights) {
       const fragmentId = props.pageId
         ? `${props.pageId}~${props.index.join(".")}_${highlight.startOffset || 0}`

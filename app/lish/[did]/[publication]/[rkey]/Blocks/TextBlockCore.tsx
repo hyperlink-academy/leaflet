@@ -154,7 +154,7 @@ export class RichText {
 
   constructor(props: { text: string; facets: Facet[] }) {
     this.unicodeText = new UnicodeString(props.text);
-    this.facets = props.facets;
+    this.facets = Array.isArray(props.facets) ? props.facets : undefined;
     if (this.facets) {
       this.facets = this.facets
         .filter((facet) => facet.index.byteStart <= facet.index.byteEnd)

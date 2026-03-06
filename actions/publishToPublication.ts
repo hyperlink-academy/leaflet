@@ -564,7 +564,7 @@ async function processBlocksToPages(
         $type: "pub.leaflet.blocks.header",
         level: Math.floor(headingLevel?.data.value || 1),
         plaintext: stringValue,
-        facets,
+        ...(facets.length > 0 && { facets }),
       };
       return block;
     }
@@ -574,7 +574,7 @@ async function processBlocksToPages(
       let block: $Typed<PubLeafletBlocksBlockquote.Main> = {
         $type: ids.PubLeafletBlocksBlockquote,
         plaintext: stringValue,
-        facets,
+        ...(facets.length > 0 && { facets }),
       };
       return block;
     }
@@ -585,7 +585,7 @@ async function processBlocksToPages(
       let block: $Typed<PubLeafletBlocksText.Main> = {
         $type: ids.PubLeafletBlocksText,
         plaintext: stringValue,
-        facets,
+        ...(facets.length > 0 && { facets }),
         ...(textSize && { textSize: textSize.data.value }),
       };
       return block;
