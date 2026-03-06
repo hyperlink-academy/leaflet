@@ -104,25 +104,40 @@ async function handleEvent(evt: Event) {
         console.log(record.error);
         return;
       }
-      let publication: string | null = null;
+      let docResult = await supabase.from("documents").upsert({
+        uri: evt.uri.toString(),
+        data: record.value as Json,
+      });
+      if (docResult.error) console.log(docResult.error);
+      await inngest.send({
+        name: "appview/sync-document-metadata",
+        data: {
+          document_uri: evt.uri.toString(),
+          bsky_post_uri: record.value.postRef?.uri,
+        },
+      });
       if (record.value.publication) {
         let publicationURI = new AtUri(record.value.publication);
+
         if (publicationURI.host !== evt.uri.host) {
           console.log("Unauthorized to create post!");
           return;
         }
-        publication = record.value.publication;
+        let docInPublicationResult = await supabase
+          .from("documents_in_publications")
+          .upsert({
+            publication: record.value.publication,
+            document: evt.uri.toString(),
+          });
+        await supabase
+          .from("documents_in_publications")
+          .delete()
+          .neq("publication", record.value.publication)
+          .eq("document", evt.uri.toString());
+
+        if (docInPublicationResult.error)
+          console.log(docInPublicationResult.error);
       }
-      await inngest.send({
-        name: "appview/index-document",
-        data: {
-          document_uri: evt.uri.toString(),
-          document_data: record.value as Json,
-          bsky_post_uri: record.value.postRef?.uri,
-          publication,
-          did: evt.did,
-        },
-      });
     }
     if (evt.event === "delete") {
       await supabase.from("documents").delete().eq("uri", evt.uri.toString());
@@ -256,29 +271,45 @@ async function handleEvent(evt: Event) {
         console.log(record.error);
         return;
       }
+      let docResult = await supabase.from("documents").upsert({
+        uri: evt.uri.toString(),
+        data: record.value as Json,
+      });
+      if (docResult.error) console.log(docResult.error);
+      await inngest.send({
+        name: "appview/sync-document-metadata",
+        data: {
+          document_uri: evt.uri.toString(),
+          bsky_post_uri: record.value.bskyPostRef?.uri,
+        },
+      });
+
       // site.standard.document uses "site" field to reference the publication
       // For documents in publications, site is an AT-URI (at://did:plc:xxx/site.standard.publication/rkey)
       // For standalone documents, site is an HTTPS URL (https://leaflet.pub/p/did:plc:xxx)
       // Only link to publications table for AT-URI sites
-      let publication: string | null = null;
       if (record.value.site && record.value.site.startsWith("at://")) {
         let siteURI = new AtUri(record.value.site);
+
         if (siteURI.host !== evt.uri.host) {
           console.log("Unauthorized to create document in site!");
           return;
         }
-        publication = record.value.site;
+        let docInPublicationResult = await supabase
+          .from("documents_in_publications")
+          .upsert({
+            publication: record.value.site,
+            document: evt.uri.toString(),
+          });
+        await supabase
+          .from("documents_in_publications")
+          .delete()
+          .neq("publication", record.value.site)
+          .eq("document", evt.uri.toString());
+
+        if (docInPublicationResult.error)
+          console.log(docInPublicationResult.error);
       }
-      await inngest.send({
-        name: "appview/index-document",
-        data: {
-          document_uri: evt.uri.toString(),
-          document_data: record.value as Json,
-          bsky_post_uri: record.value.bskyPostRef?.uri,
-          publication,
-          did: evt.did,
-        },
-      });
     }
     if (evt.event === "delete") {
       await supabase.from("documents").delete().eq("uri", evt.uri.toString());

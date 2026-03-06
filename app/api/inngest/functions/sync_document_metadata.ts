@@ -1,27 +1,16 @@
 import { inngest } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtpAgent } from "@atproto/api";
+import { AtpAgent, AtUri } from "@atproto/api";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
 
 // 1m, 2m, 4m, 8m, 16m, 32m, 1h, 2h, 4h, 8h, 8h, 8h (~37h total)
 const SLEEP_INTERVALS = [
-  "1m",
-  "2m",
-  "4m",
-  "8m",
-  "16m",
-  "32m",
-  "1h",
-  "2h",
-  "4h",
-  "8h",
-  "8h",
-  "8h",
+  "1m", "2m", "4m", "8m", "16m", "32m", "1h", "2h", "4h", "8h", "8h", "8h",
 ];
 
-export const index_document = inngest.createFunction(
+export const sync_document_metadata = inngest.createFunction(
   {
-    id: "index_document_v2",
+    id: "sync_document_metadata_v2",
     debounce: {
       key: "event.data.document_uri",
       period: "60s",
@@ -29,10 +18,11 @@ export const index_document = inngest.createFunction(
     },
     concurrency: [{ key: "event.data.document_uri", limit: 1 }],
   },
-  { event: "appview/index-document" },
+  { event: "appview/sync-document-metadata" },
   async ({ event, step }) => {
-    const { document_uri, document_data, bsky_post_uri, publication, did } =
-      event.data;
+    const { document_uri, bsky_post_uri } = event.data;
+
+    const did = new AtUri(document_uri).host;
 
     const handleResult = await step.run("resolve-handle", async () => {
       const doc = await idResolver.did.resolve(did);
@@ -49,37 +39,15 @@ export const index_document = inngest.createFunction(
     });
     if (!handleResult) return { error: "No Handle" };
 
-    if (handleResult.isBridgy) {
-      return { handle: handleResult.handle, skipped: true };
-    }
-
-    await step.run("write-document", async () => {
-      const docResult = await supabaseServerClient
+    await step.run("set-indexed", async () => {
+      return await supabaseServerClient
         .from("documents")
-        .upsert({
-          uri: document_uri,
-          data: document_data,
-          indexed: true,
-        });
-      if (docResult.error) console.log(docResult.error);
-
-      if (publication) {
-        const docInPubResult = await supabaseServerClient
-          .from("documents_in_publications")
-          .upsert({
-            publication,
-            document: document_uri,
-          });
-        await supabaseServerClient
-          .from("documents_in_publications")
-          .delete()
-          .neq("publication", publication)
-          .eq("document", document_uri);
-        if (docInPubResult.error) console.log(docInPubResult.error);
-      }
+        .update({ indexed: !handleResult.isBridgy })
+        .eq("uri", document_uri)
+        .select();
     });
 
-    if (!bsky_post_uri) {
+    if (!bsky_post_uri || handleResult.isBridgy) {
       return { handle: handleResult.handle };
     }
 
