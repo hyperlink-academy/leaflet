@@ -90,19 +90,9 @@ export const fonts: Record<string, FontConfig> = {
     id: "atkinson-hyperlegible",
     displayName: "Atkinson Hyperlegible",
     fontFamily: "Atkinson Hyperlegible Next",
-    type: "local",
-    files: [
-      {
-        path: "/fonts/AtkinsonHyperlegibleNext-Variable.woff2",
-        style: "normal",
-        weight: "200 800",
-      },
-      {
-        path: "/fonts/AtkinsonHyperlegibleNext-Italic-Variable.woff2",
-        style: "italic",
-        weight: "200 800",
-      },
-    ],
+    type: "google",
+    googleFontsFamily:
+      "Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800",
     fallback: ["system-ui", "sans-serif"],
   },
   "space-mono": {

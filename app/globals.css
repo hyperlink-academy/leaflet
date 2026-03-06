@@ -62,7 +62,7 @@
   --shadow-md: 1.2px 2.5px 2.7px -1.8px rgba(var(--primary), 0.1),
     5.6px 11.6px 12.5px -3.5px rgba(var(--primary), 0.15);
 
-  --font-sans: var(--theme-font, var(--font-quattro));
+  --font-sans: var(--font-quattro);
   --font-serif: Garamond;
 }
 
@@ -158,13 +158,6 @@
   }
 
   /* START FONT STYLING */
-  h1,
-  h2,
-  h3,
-  h4 {
-    font-family: var(--theme-heading-font, var(--theme-font));
-  }
-
   h1 {
     @apply text-2xl;
     @apply font-bold;
@@ -200,10 +193,6 @@
     @apply hover:underline;
   }
 
-  pre {
-    font-family: var(--theme-font, --font-quattro);
-  }
-
   p {
     font-size: inherit;
   }
@@ -211,6 +200,22 @@
   ::placeholder {
     @apply text-tertiary;
     @apply italic;
+  }
+
+  /* Scope custom fonts to document content only (not sidebar/UI chrome) */
+  .pageScrollWrapper {
+    font-family: var(--theme-font, var(--font-quattro));
+  }
+
+  .pageScrollWrapper h1,
+  .pageScrollWrapper h2,
+  .pageScrollWrapper h3,
+  .pageScrollWrapper h4 {
+    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
+  }
+
+  .pageScrollWrapper pre {
+    font-family: var(--theme-font, var(--font-quattro));
   }
   /*END FONT STYLING*/
 

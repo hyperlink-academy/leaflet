@@ -266,7 +266,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           // unless we break *only* on urls, this is better than tailwind 'break-all'
           // b/c break-all can cause breaks in the middle of words, but break-word still
           // forces break if a single text string (e.g. a url) spans more than a full line
-          style={{ wordBreak: "break-word" }}
+          style={{ wordBreak: "break-word", fontFamily: props.type === "heading" ? "var(--theme-heading-font)" : "var(--theme-font)" }}
           className={`
             ${alignmentClass}
           grow resize-none align-top whitespace-pre-wrap bg-transparent

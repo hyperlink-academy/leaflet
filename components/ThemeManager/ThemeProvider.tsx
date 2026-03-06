@@ -22,7 +22,7 @@ import {
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
 import { getColorDifference } from "./themeUtils";
-import { getFontConfig, getGoogleFontsUrl, getFontFamilyValue } from "src/fonts";
+import { getFontConfig, getGoogleFontsUrl, getFontFamilyValue, generateFontFaceCSS } from "src/fonts";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
@@ -277,9 +277,6 @@ export const BaseThemeProvider = ({
       (pageWidth || 624).toString(),
     );
 
-    // Set theme font CSS variables
-    el?.style.setProperty("--theme-heading-font", headingFontValue);
-    el?.style.setProperty("--theme-font", bodyFontValue);
   }, [
     local,
     bgLeaflet,
@@ -292,9 +289,7 @@ export const BaseThemeProvider = ({
     accent2,
     accentContrast,
     pageWidth,
-    headingFontValue,
-    bodyFontValue,
-  ]); // bodyFontValue sets --theme-font
+  ]);
   return (
     <div
       className="leafletWrapper w-full text-primary h-full min-h-fit flex flex-col bg-center items-stretch "

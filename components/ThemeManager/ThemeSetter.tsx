@@ -22,7 +22,6 @@ import { AccentPickers } from "./Pickers/AccentPickers";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIsMobile } from "src/hooks/isMobile";
 import { Toggle } from "components/Toggle";
-import { FontPicker } from "./Pickers/TextPickers";
 
 export type pickers =
   | "null"
@@ -157,13 +156,8 @@ export const ThemeSetterContent = (props: {
           entityID={props.entityID}
           openPicker={openPicker}
           setOpenPicker={(pickers) => setOpenPicker(pickers)}
+          home={props.home}
         />
-        {!props.home && (
-          <div className="flex flex-col gap-1 bg-bg-page p-2 rounded-md border border-primary -mt-2">
-            <FontPicker label="Heading" entityID={props.entityID} attribute="theme/heading-font" />
-            <FontPicker label="Body" entityID={props.entityID} attribute="theme/body-font" />
-          </div>
-        )}
         <div className="flex flex-col -gap-[6px]">
           <div className={`flex flex-col z-10  -mb-[6px] `}>
             <AccentPickers

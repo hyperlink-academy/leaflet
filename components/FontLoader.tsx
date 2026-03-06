@@ -54,11 +54,9 @@ export function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps) {
   const headingFontValue = getFontFamilyValue(headingFont);
   const bodyFontValue = getFontFamilyValue(bodyFont);
 
-  // Generate CSS that sets the font family via CSS variables
-  // --theme-font is used for body text (keeps backwards compatibility)
-  // --theme-heading-font is used for headings
+  // Set font CSS variables scoped to .leafletWrapper so they don't affect app UI
   const fontVariableCSS = `
-:root {
+.leafletWrapper {
   --theme-heading-font: ${headingFontValue};
   --theme-font: ${bodyFontValue};
 }
