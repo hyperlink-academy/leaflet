@@ -196,7 +196,7 @@ export const PublicationAnalytics = (props: {
           )}
         </div>
         <TrafficChart data={filledTraffic} isLoading={analyticsLoading} metric={trafficMetric} />
-        <div className="flex gap-4 mt-2">
+        <div className="flex flex-col sm:flex-row gap-4 mt-2">
           <TopPages
             pages={analyticsData?.topPages || []}
             selectedPost={selectedPost}
@@ -296,8 +296,9 @@ const SubscribersChart = (props: {
             allowDecimals={false}
             tickFormatter={formatYTick}
             tickMargin={4}
+            width={40}
           />
-          <Tooltip />
+          <Tooltip isAnimationActive={false} />
           <Area
             type="monotone"
             dataKey="total_subscribers"
@@ -372,8 +373,10 @@ const TrafficChart = (props: {
             allowDecimals={false}
             tickFormatter={formatYTick}
             tickMargin={4}
+            width={40}
           />
           <Tooltip
+            isAnimationActive={false}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               let pageviews =
