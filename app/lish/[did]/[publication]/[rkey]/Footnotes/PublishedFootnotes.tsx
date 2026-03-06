@@ -95,16 +95,6 @@ export function PublishedFootnoteItem(props: {
       index={fn.index}
       indexHref={`#fnref-${fn.footnoteId}`}
       id={`fn-${fn.footnoteId}`}
-      trailing={
-        <a
-          href={`#fnref-${fn.footnoteId}`}
-          className="text-accent-contrast shrink-0 mt-0.5 text-xs no-underline hover:underline"
-          title="Back to text"
-          aria-label={`Back to footnote ${fn.index} in text`}
-        >
-          ↩
-        </a>
-      }
     >
       {fn.contentPlaintext ? (
         <TextBlockCore
