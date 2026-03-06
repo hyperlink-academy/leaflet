@@ -16,6 +16,7 @@ type EditorFootnoteItem = {
 export function FootnoteSideColumn(props: {
   pageEntityID: string;
   visible: boolean;
+  fullPageScroll?: boolean;
 }) {
   let { footnotes } = useFootnoteContext();
   let { permissions } = useEntitySetContext();
@@ -54,6 +55,7 @@ export function FootnoteSideColumn(props: {
     <FootnoteSideColumnLayout
       items={items}
       visible={props.visible}
+      fullPageScroll={props.fullPageScroll}
       getAnchorSelector={getAnchorSelector}
       renderItem={renderItem}
     />

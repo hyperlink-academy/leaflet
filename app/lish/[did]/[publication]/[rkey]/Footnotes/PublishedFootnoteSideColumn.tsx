@@ -12,6 +12,7 @@ type PublishedFootnoteItem = PublishedFootnote & {
 
 export function PublishedFootnoteSideColumn(props: {
   footnotes: PublishedFootnote[];
+  fullPageScroll?: boolean;
 }) {
   let items: PublishedFootnoteItem[] = props.footnotes.map((fn) => ({
     ...fn,
@@ -47,6 +48,7 @@ export function PublishedFootnoteSideColumn(props: {
     <FootnoteSideColumnLayout
       items={items}
       visible={props.footnotes.length > 0}
+      fullPageScroll={props.fullPageScroll}
       getAnchorSelector={getAnchorSelector}
       renderItem={renderItem}
     />

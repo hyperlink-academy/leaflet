@@ -13,6 +13,7 @@ const GAP = 4;
 export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
   items: T[];
   visible: boolean;
+  fullPageScroll?: boolean;
   getAnchorSelector: (item: T) => string;
   renderItem: (item: T & { top: number }) => ReactNode;
 }) {
@@ -106,7 +107,11 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
   return (
     <div
       ref={containerRef}
-      className="footnote-side-column hidden lg:block absolute top-0 left-full w-[200px] ml-3 pointer-events-none"
+      className={`footnote-side-column hidden lg:block absolute top-0 w-[200px] pointer-events-none ${
+        props.fullPageScroll
+          ? "left-[calc(50%+var(--page-width-units)/2+12px)]"
+          : "left-full ml-3"
+      }`}
       style={{ height: "100%" }}
     >
       <div

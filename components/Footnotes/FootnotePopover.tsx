@@ -44,7 +44,7 @@ export function FootnotePopover() {
   // were inserted out of order within a block.
   let displayIndex = useMemo(() => {
     if (!anchorElement || !footnote) return footnote?.index ?? 0;
-    let container = anchorElement.closest(".postPageContent");
+    let container = anchorElement.closest('.footnote-scope');
     if (!container) return footnote.index;
     let allRefs = Array.from(container.querySelectorAll(".footnote-ref"));
     let pos = allRefs.indexOf(anchorElement);

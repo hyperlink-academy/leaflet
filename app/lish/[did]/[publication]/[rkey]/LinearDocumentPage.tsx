@@ -72,7 +72,7 @@ export function LinearDocumentPage({
         pageOptions={pageOptions}
         footnoteSideColumn={
           !props.hasContentToRight ? (
-            <PublishedFootnoteSideColumn footnotes={footnotes} />
+            <PublishedFootnoteSideColumn footnotes={footnotes} fullPageScroll={fullPageScroll} />
           ) : undefined
         }
       >

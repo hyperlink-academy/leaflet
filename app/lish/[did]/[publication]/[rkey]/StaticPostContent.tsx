@@ -28,7 +28,7 @@ export function StaticPostContent({
   did: string;
 }) {
   return (
-    <div className="postContent flex flex-col">
+    <div className="postContent footnote-scope flex flex-col">
       {blocks.map((b, index) => {
         return <Block block={b} did={did} key={index} />;
       })}

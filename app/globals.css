@@ -490,7 +490,7 @@ pre.shiki {
   animation-timing-function: ease-in;
 }
 
-.postPageContent {
+.footnote-scope {
   counter-reset: footnote;
 }
 .footnote-ref {

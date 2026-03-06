@@ -76,6 +76,7 @@ export function Page(props: {
             <FootnoteSideColumn
               pageEntityID={props.entityID}
               visible={sideColumnVisible}
+              fullPageScroll={props.fullPageScroll}
             />
           }
         >
@@ -146,7 +147,7 @@ export const PageWrapper = (props: {
 `}
       >
         <div
-          className={`postPageContent
+          className={`postPageContent footnote-scope
           ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : "w-full h-full"}
         `}
         >
