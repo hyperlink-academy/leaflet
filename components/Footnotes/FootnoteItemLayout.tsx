@@ -10,7 +10,7 @@ export function FootnoteItemLayout(props: {
   className?: string;
 }) {
   let indexClassName =
-    "text-accent-contrast font-medium shrink-0 text-xs leading-normal no-underline hover:underline cursor-pointer";
+    "text-tertiary font-medium shrink-0 text-xs leading-normal no-underline hover:underline cursor-pointer";
 
   let indexContent = <>{props.index}.</>;
 
@@ -48,7 +48,9 @@ export function FootnoteSectionLayout(props: {
   className?: string;
 }) {
   return (
-    <div className={`footnote-section px-3 sm:px-4 pb-2 ${props.className ?? ""}`}>
+    <div
+      className={`footnote-section px-3 sm:px-4 pb-2 ${props.className ?? ""}`}
+    >
       <hr className="border-border-light mb-3" />
       <div className="flex flex-col gap-2">{props.children}</div>
     </div>

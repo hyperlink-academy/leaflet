@@ -25,6 +25,7 @@ export const FootnoteTextToolbar = (props: {
         mark={schema.marks.strong}
         icon={<BoldSmall />}
       />
+
       <TextDecorationButton
         tooltipContent={
           <div className="flex flex-col gap-1 justify-center">

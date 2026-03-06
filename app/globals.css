@@ -496,17 +496,19 @@ pre.shiki {
 .footnote-ref {
   counter-increment: footnote;
   cursor: pointer;
-  color: rgb(var(--accent-contrast));
+  color: rgb(var(--color-tertiary));
   opacity: 0.7;
 }
 .footnote-ref::after {
   content: counter(footnote);
   vertical-align: super;
+  padding-left: 2px;
   font-size: 75%;
+  line-height: 0rem;
 }
 .footnote-ref ~ br.ProseMirror-trailingBreak {
-	display: inline;
-	width: 4px;
+  display: inline;
+  width: 4px;
 }
 .footnote-ref ~ img.ProseMirror-separator {
   display: none;

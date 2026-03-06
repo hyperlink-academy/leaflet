@@ -12,7 +12,7 @@ import {
   useYJSValue,
   trackUndoRedo,
 } from "components/Blocks/TextBlock/mountProsemirror";
-import { CloseTiny } from "components/Icons/CloseTiny";
+import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { FootnoteItemLayout } from "./FootnoteItemLayout";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
@@ -46,9 +46,7 @@ export function FootnoteEditor(props: {
         "Shift-Enter": (state, dispatch) => {
           let hardBreak = schema.nodes.hard_break.create();
           if (dispatch) {
-            dispatch(
-              state.tr.replaceSelectionWith(hardBreak).scrollIntoView(),
-            );
+            dispatch(state.tr.replaceSelectionWith(hardBreak).scrollIntoView());
           }
           return true;
         },
@@ -179,7 +177,14 @@ export function FootnoteEditor(props: {
         return { editorStates: rest };
       });
     };
-  }, [props.footnoteEntityID, value, props.editable, props.autoFocus, rep.undoManager, pageID]);
+  }, [
+    props.footnoteEntityID,
+    value,
+    props.editable,
+    props.autoFocus,
+    rep.undoManager,
+    pageID,
+  ]);
 
   return (
     <FootnoteItemLayout
@@ -194,21 +199,35 @@ export function FootnoteEditor(props: {
       }}
       trailing={
         props.editable && props.onDelete ? (
-          <button
-            className="shrink-0 mt-0.5 text-tertiary hover:text-primary opacity-0 group-hover/footnote:opacity-100 transition-opacity"
-            onClick={props.onDelete}
-            title="Delete footnote"
-          >
-            <CloseTiny />
-          </button>
+          <FootnoteDeleteButton
+            footnoteEntityID={props.footnoteEntityID}
+            onDelete={props.onDelete}
+          />
         ) : undefined
       }
     >
-      <div
-        ref={mountRef}
-        className="outline-hidden"
-      />
+      <div ref={mountRef} className="outline-hidden" />
     </FootnoteItemLayout>
   );
 }
 
+function FootnoteDeleteButton(props: {
+  footnoteEntityID: string;
+  onDelete: () => void;
+}) {
+  let isActive = useUIState(
+    (s) =>
+      s.focusedEntity?.entityType === "footnote" &&
+      s.focusedEntity.entityID === props.footnoteEntityID,
+  );
+
+  return (
+    <button
+      className={`shrink-0 mt-0.5 text-tertiary hover:text-accent-contrast transition-opacity ${isActive ? "opacity-100" : "opacity-0"}`}
+      onClick={props.onDelete}
+      title="Delete footnote"
+    >
+      <DeleteTiny />
+    </button>
+  );
+}
