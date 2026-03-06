@@ -169,7 +169,7 @@ function SideItem(props: {
     <div
       ref={ref}
       data-footnote-side-id={props.id}
-      className={`absolute left-0 right-0 text-xs footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}${isFocused ? " footnote-side-focused" : ""}`}
+      className={`absolute left-0 right-0 text-sm footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}${isFocused ? " footnote-side-focused" : ""}`}
       style={{ top: props.top }}
     >
       {props.children}

@@ -10,14 +10,14 @@ export function FootnoteItemLayout(props: {
   className?: string;
 }) {
   let indexClassName =
-    "text-tertiary font-medium shrink-0 text-xs leading-normal no-underline hover:underline cursor-pointer";
+    "text-tertiary font-medium shrink-0 text-sm leading-normal no-underline hover:underline cursor-pointer";
 
   let indexContent = <>{props.index}.</>;
 
   return (
     <div
       id={props.id}
-      className={`footnote-item flex items-start gap-2 text-xs group/footnote ${props.className ?? ""}`}
+      className={`footnote-item flex items-start gap-2 text-sm group/footnote ${props.className ?? ""}`}
     >
       {props.indexHref ? (
         <a href={props.indexHref} className={indexClassName}>
