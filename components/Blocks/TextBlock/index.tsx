@@ -34,12 +34,14 @@ const HeadingStyle = {
   1: "font-bold [font-family:var(--theme-heading-font)]",
   2: "font-bold [font-family:var(--theme-heading-font)]",
   3: "font-bold text-secondary [font-family:var(--theme-heading-font)]",
+  4: "font-bold text-secondary [font-family:var(--theme-heading-font)]",
 } as { [level: number]: string };
 
 const headingFontSize = {
   1: blockTextSize.h1,
   2: blockTextSize.h2,
   3: blockTextSize.h3,
+  4: blockTextSize.h4,
 } as { [level: number]: string };
 
 export function TextBlock(

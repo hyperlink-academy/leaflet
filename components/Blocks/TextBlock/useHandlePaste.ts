@@ -244,6 +244,11 @@ const createBlockFromHTML = (
       type = "heading";
       break;
     }
+    case "H4": {
+      headingLevel = 4;
+      type = "heading";
+      break;
+    }
     case "DIV": {
       type = "card";
       break;
