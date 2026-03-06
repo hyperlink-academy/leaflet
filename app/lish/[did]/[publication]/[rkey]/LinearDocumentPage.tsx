@@ -28,6 +28,7 @@ import {
   PublishedFootnoteSection,
 } from "./Footnotes/PublishedFootnotes";
 import { PublishedFootnoteSideColumn } from "./Footnotes/PublishedFootnoteSideColumn";
+import { PublishedFootnotePopover } from "./Footnotes/PublishedFootnotePopover";
 
 export function LinearDocumentPage({
   blocks,
@@ -111,6 +112,7 @@ export function LinearDocumentPage({
         />
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>
+      <PublishedFootnotePopover footnotes={footnotes} />
     </>
   );
 }

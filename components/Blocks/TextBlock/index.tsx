@@ -25,6 +25,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
+import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
 import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
@@ -159,6 +160,19 @@ export function RenderedTextBlock(props: {
   return (
     <div
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
+      onClick={(e) => {
+        let target = e.target as HTMLElement;
+        let footnoteRef = target.closest(".footnote-ref") as HTMLElement | null;
+        if (!footnoteRef) return;
+        let footnoteID = footnoteRef.dataset.footnoteId;
+        if (!footnoteID) return;
+        let store = useFootnotePopoverStore.getState();
+        if (store.activeFootnoteID === footnoteID) {
+          store.close();
+        } else {
+          store.open(footnoteID, footnoteRef);
+        }
+      }}
       className={`
         ${alignmentClass}
         ${props.type === "blockquote" ? (props.previousBlock?.type === "blockquote" ? `blockquote pt-3 ` : "blockquote") : ""}

@@ -5,6 +5,7 @@ import {
   RichText,
 } from "../Blocks/TextBlockCore";
 import { ReactNode } from "react";
+import { PublishedFootnoteRefRenderer } from "../Footnotes/PublishedFootnotePopover";
 
 // Re-export RichText for backwards compatibility
 export { RichText };
@@ -19,6 +20,7 @@ export function BaseTextBlock(props: Omit<TextBlockCoreProps, "renderers">) {
       {...props}
       renderers={{
         DidMention: DidMentionWithPopover,
+        FootnoteRef: PublishedFootnoteRefRenderer,
       }}
       footnoteIndexMap={props.footnoteIndexMap}
     />
