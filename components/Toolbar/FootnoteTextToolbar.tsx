@@ -5,10 +5,8 @@ import { TextDecorationButton } from "./TextDecorationButton";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { BoldSmall, ItalicSmall, StrikethroughSmall } from "./TextToolbar";
 import { isMac } from "src/utils/isDevice";
-import { ToolbarTypes } from ".";
-
 export const FootnoteTextToolbar = (props: {
-  setToolbarState: (s: ToolbarTypes) => void;
+  setToolbarState: (s: "default" | "link") => void;
 }) => {
   return (
     <>
