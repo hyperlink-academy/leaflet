@@ -1,12 +1,8 @@
 "use client";
 
-import { Color } from "react-aria-components";
 import { Input } from "components/Input";
 import { useState } from "react";
-import { useEntity, useReplicache } from "src/replicache";
 import { Menu } from "components/Menu";
-import { pickers } from "../ThemeSetter";
-import { ColorPicker } from "./ColorPicker";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useIsMobile } from "src/hooks/isMobile";
 import {
@@ -19,38 +15,15 @@ import {
   getFontConfig,
 } from "src/fonts";
 
-export const TextColorPicker = (props: {
-  openPicker: pickers;
-  setOpenPicker: (thisPicker: pickers) => void;
-  value: Color;
-  setValue: (c: Color) => void;
-}) => {
-  return (
-    <ColorPicker
-      label="Text"
-      value={props.value}
-      setValue={props.setValue}
-      thisPicker={"text"}
-      openPicker={props.openPicker}
-      setOpenPicker={props.setOpenPicker}
-      closePicker={() => props.setOpenPicker("null")}
-    />
-  );
-};
-
-type FontAttribute = "theme/heading-font" | "theme/body-font";
-
 export const FontPicker = (props: {
   label: string;
-  entityID: string;
-  attribute: FontAttribute;
+  value: string | undefined;
+  onChange: (fontId: string) => void;
 }) => {
   let isMobile = useIsMobile();
-  let { rep } = useReplicache();
   let [showCustomInput, setShowCustomInput] = useState(false);
   let [customFontValue, setCustomFontValue] = useState("");
-  let currentFont = useEntity(props.entityID, props.attribute);
-  let fontId = currentFont?.data.value || defaultFontId;
+  let fontId = props.value || defaultFontId;
   let font = getFontConfig(fontId);
   let isCustom = isCustomFontId(fontId);
 
@@ -65,11 +38,7 @@ export const FontPicker = (props: {
         parsed.fontName,
         parsed.googleFontsFamily,
       );
-      rep?.mutate.assertFact({
-        entity: props.entityID,
-        attribute: props.attribute,
-        data: { type: "string", value: customId },
-      });
+      props.onChange(customId);
       setShowCustomInput(false);
       setCustomFontValue("");
     }
@@ -141,11 +110,7 @@ export const FontPicker = (props: {
               <FontOption
                 key={fontOption.id}
                 onSelect={() => {
-                  rep?.mutate.assertFact({
-                    entity: props.entityID,
-                    attribute: props.attribute,
-                    data: { type: "string", value: fontOption.id },
-                  });
+                  props.onChange(fontOption.id);
                 }}
                 font={fontOption}
                 selected={fontOption.id === fontId}

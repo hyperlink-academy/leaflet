@@ -29,7 +29,7 @@ import {
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
 import { getColorDifference } from "./themeUtils";
-import { getFontConfig, getGoogleFontsUrl, getFontFamilyValue, generateFontFaceCSS, getFontBaseSize } from "src/fonts";
+import { getFontConfig, getGoogleFontsUrl, getFontFamilyValue, getFontBaseSize, defaultFontId } from "src/fonts";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
@@ -192,12 +192,23 @@ export const BaseThemeProvider = ({
     accentContrast = sortedAccents[0];
   }
 
-  // Get font configs for CSS variables
+  // Get font configs for CSS variables.
+  // When using the default font (Quattro), use var(--font-quattro) which is
+  // always available via next/font/local in layout.tsx, rather than the raw
+  // font-family name 'iA Writer Quattro V' which depends on a dynamic @font-face.
+  // When both heading and body are default, omit the variables entirely so the
+  // CSS fallback var(--theme-font, var(--font-quattro)) resolves naturally.
+  const isDefaultBody = !bodyFontId || bodyFontId === defaultFontId;
+  const isDefaultHeading = !headingFontId || headingFontId === defaultFontId;
   const headingFontConfig = getFontConfig(headingFontId);
   const bodyFontConfig = getFontConfig(bodyFontId);
-  const headingFontValue = getFontFamilyValue(headingFontConfig);
-  const bodyFontValue = getFontFamilyValue(bodyFontConfig);
-  const bodyFontBaseSize = getFontBaseSize(bodyFontConfig);
+  const headingFontValue = isDefaultHeading
+    ? (isDefaultBody ? undefined : "var(--font-quattro)")
+    : getFontFamilyValue(headingFontConfig);
+  const bodyFontValue = isDefaultBody
+    ? (isDefaultHeading ? undefined : "var(--font-quattro)")
+    : getFontFamilyValue(bodyFontConfig);
+  const bodyFontBaseSize = isDefaultBody ? undefined : getFontBaseSize(bodyFontConfig);
   const headingGoogleFontsUrl = getGoogleFontsUrl(headingFontConfig);
   const bodyGoogleFontsUrl = getGoogleFontsUrl(bodyFontConfig);
 
@@ -325,7 +336,7 @@ export const BaseThemeProvider = ({
           "--page-width-units": `min(${pageWidth || 624}px, calc(100vw - 12px))`,
           "--theme-heading-font": headingFontValue,
           "--theme-font": bodyFontValue,
-          "--theme-font-base-size": `${bodyFontBaseSize}px`,
+          "--theme-font-base-size": bodyFontBaseSize ? `${bodyFontBaseSize}px` : undefined,
         } as CSSProperties
       }
     >

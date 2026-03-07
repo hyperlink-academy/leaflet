@@ -6,11 +6,10 @@
 
 import {
   getFontConfig,
-  generateFontFaceCSS,
-  getFontPreloadLinks,
   getGoogleFontsUrl,
   getFontFamilyValue,
   getFontBaseSize,
+  defaultFontId,
 } from "src/fonts";
 
 type FontLoaderProps = {
@@ -22,48 +21,42 @@ export function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps) {
   const headingFont = getFontConfig(headingFontId);
   const bodyFont = getFontConfig(bodyFontId);
 
-  // Collect all unique fonts to load
-  const fontsToLoad = headingFont.id === bodyFont.id
-    ? [headingFont]
-    : [headingFont, bodyFont];
-
-  // Collect preload links (deduplicated)
-  const preloadLinksSet = new Set<string>();
-  const preloadLinks: { href: string; type: string }[] = [];
-  for (const font of fontsToLoad) {
-    for (const link of getFontPreloadLinks(font)) {
-      if (!preloadLinksSet.has(link.href)) {
-        preloadLinksSet.add(link.href);
-        preloadLinks.push(link);
-      }
-    }
-  }
-
-  // Collect font-face CSS
-  const fontFaceCSS = fontsToLoad
-    .map((font) => generateFontFaceCSS(font))
-    .filter(Boolean)
-    .join("\n\n");
+  // Don't load the default font (Quattro) here — it's already loaded via
+  // next/font/local in layout.tsx under --font-quattro. Loading it again with
+  // a different family name ('iA Writer Quattro V') causes issues when the
+  // @font-face from this component isn't available (e.g., client-side navigation).
+  const isDefaultHeading = headingFont.id === defaultFontId;
+  const isDefaultBody = bodyFont.id === defaultFontId;
 
   // Collect Google Fonts URLs (deduplicated)
+  const fontsToLoad = [headingFont, bodyFont].filter(
+    (f, i, arr) => f.id !== defaultFontId && arr.findIndex((o) => o.id === f.id) === i
+  );
   const googleFontsUrls = [...new Set(
     fontsToLoad
       .map((font) => getGoogleFontsUrl(font))
       .filter((url): url is string => url !== null)
   )];
 
-  const headingFontValue = getFontFamilyValue(headingFont);
-  const bodyFontValue = getFontFamilyValue(bodyFont);
-  const bodyFontBaseSize = getFontBaseSize(bodyFont);
+  const headingFontValue = isDefaultHeading
+    ? (isDefaultBody ? null : "var(--font-quattro)")
+    : getFontFamilyValue(headingFont);
+  const bodyFontValue = isDefaultBody
+    ? (isDefaultHeading ? null : "var(--font-quattro)")
+    : getFontFamilyValue(bodyFont);
+  const bodyFontBaseSize = isDefaultBody ? null : getFontBaseSize(bodyFont);
 
   // Set font CSS variables scoped to .leafletWrapper so they don't affect app UI
-  const fontVariableCSS = `
-.leafletWrapper {
-  --theme-heading-font: ${headingFontValue};
-  --theme-font: ${bodyFontValue};
-  --theme-font-base-size: ${bodyFontBaseSize}px;
-}
-`.trim();
+  // Don't set variables for the default font — let CSS fallback to var(--font-quattro)
+  const fontVariableLines = [
+    headingFontValue && `  --theme-heading-font: ${headingFontValue};`,
+    bodyFontValue && `  --theme-font: ${bodyFontValue};`,
+    bodyFontBaseSize && `  --theme-font-base-size: ${bodyFontBaseSize}px;`,
+  ].filter(Boolean);
+
+  const fontVariableCSS = fontVariableLines.length > 0
+    ? `.leafletWrapper {\n${fontVariableLines.join("\n")}\n}`
+    : "";
 
   return (
     <>
@@ -82,23 +75,14 @@ export function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps) {
           ))}
         </>
       )}
-      {/* Preload local font files for early discovery */}
-      {preloadLinks.map((link) => (
-        <link
-          key={link.href}
-          rel="preload"
-          href={link.href}
-          as="font"
-          type={link.type}
-          crossOrigin="anonymous"
+      {/* CSS variables scoped to .leafletWrapper for SSR (before client hydration) */}
+      {fontVariableCSS && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: fontVariableCSS,
+          }}
         />
-      ))}
-      {/* @font-face declarations (for local fonts) and CSS variable */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `${fontFaceCSS}\n\n${fontVariableCSS}`,
-        }}
-      />
+      )}
     </>
   );
 }

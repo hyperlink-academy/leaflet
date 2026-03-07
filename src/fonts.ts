@@ -1,5 +1,5 @@
-// Font configuration for self-hosted and Google Fonts
-// This replicates what next/font does but allows dynamic selection per-leaflet
+// Font configuration for Google Fonts and the default system font
+// Allows dynamic font selection per-leaflet
 
 export type FontConfig = {
   id: string;
@@ -9,45 +9,23 @@ export type FontConfig = {
   baseSize?: number; // base font size in px for document content
 } & (
   | {
-      // Self-hosted fonts with local files
-      type: "local";
-      files: {
-        path: string;
-        style: "normal" | "italic";
-        weight?: string;
-      }[];
-    }
-  | {
       // Google Fonts loaded via CDN
       type: "google";
       googleFontsFamily: string; // e.g., "Open+Sans:ital,wght@0,400;0,700;1,400;1,700"
     }
   | {
-      // System fonts (no loading required)
+      // System fonts or fonts loaded elsewhere (e.g. next/font/local)
       type: "system";
     }
 );
 
 export const fonts: Record<string, FontConfig> = {
-  // Self-hosted variable fonts (WOFF2)
   quattro: {
     id: "quattro",
     displayName: "iA Writer Quattro",
     fontFamily: "iA Writer Quattro V",
     baseSize: 16,
-    type: "local",
-    files: [
-      {
-        path: "/fonts/iaw-quattro-vf.woff2",
-        style: "normal",
-        weight: "400 700",
-      },
-      {
-        path: "/fonts/iaw-quattro-vf-Italic.woff2",
-        style: "italic",
-        weight: "400 700",
-      },
-    ],
+    type: "system", // Loaded via next/font/local in layout.tsx
     fallback: ["system-ui", "sans-serif"],
   },
   lora: {
@@ -55,19 +33,8 @@ export const fonts: Record<string, FontConfig> = {
     displayName: "Lora",
     fontFamily: "Lora",
     baseSize: 17,
-    type: "local",
-    files: [
-      {
-        path: "/fonts/Lora-Variable.woff2",
-        style: "normal",
-        weight: "400 700",
-      },
-      {
-        path: "/fonts/Lora-Italic-Variable.woff2",
-        style: "italic",
-        weight: "400 700",
-      },
-    ],
+    type: "google",
+    googleFontsFamily: "Lora:ital,wght@0,400..700;1,400..700",
     fallback: ["Georgia", "serif"],
   },
   "atkinson-hyperlegible": {
@@ -199,35 +166,6 @@ export function getFontConfig(fontId: string | undefined): FontConfig {
   }
 
   return fonts[fontId] || fonts[defaultFontId];
-}
-
-// Generate @font-face CSS for a local font
-export function generateFontFaceCSS(font: FontConfig): string {
-  if (font.type !== "local") return "";
-  return font.files
-    .map((file) => {
-      const format = file.path.endsWith(".woff2") ? "woff2" : "truetype";
-      return `
-@font-face {
-  font-family: '${font.fontFamily}';
-  src: url('${file.path}') format('${format}');
-  font-style: ${file.style};
-  font-weight: ${file.weight || "normal"};
-  font-display: swap;
-}`.trim();
-    })
-    .join("\n\n");
-}
-
-// Generate preload link attributes for a local font
-export function getFontPreloadLinks(
-  font: FontConfig,
-): { href: string; type: string }[] {
-  if (font.type !== "local") return [];
-  return font.files.map((file) => ({
-    href: file.path,
-    type: file.path.endsWith(".woff2") ? "font/woff2" : "font/ttf",
-  }));
 }
 
 // Get Google Fonts URL for a font

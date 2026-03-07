@@ -42,6 +42,8 @@ export const PageThemePickers = (props: {
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
+  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value;
+  let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value;
 
   return (
     <div
@@ -62,8 +64,16 @@ export const PageThemePickers = (props: {
       />
       {!props.home && !props.hideFonts && (
         <>
-          <FontPicker label="Heading" entityID={props.entityID} attribute="theme/heading-font" />
-          <FontPicker label="Body" entityID={props.entityID} attribute="theme/body-font" />
+          <FontPicker
+            label="Heading"
+            value={headingFontId}
+            onChange={(fontId) => rep?.mutate.assertFact({ entity: props.entityID, attribute: "theme/heading-font", data: { type: "string", value: fontId } })}
+          />
+          <FontPicker
+            label="Body"
+            value={bodyFontId}
+            onChange={(fontId) => rep?.mutate.assertFact({ entity: props.entityID, attribute: "theme/body-font", data: { type: "string", value: fontId } })}
+          />
         </>
       )}
     </div>

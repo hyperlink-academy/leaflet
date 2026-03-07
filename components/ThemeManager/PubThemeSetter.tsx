@@ -20,7 +20,7 @@ import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { PubPageWidthSetter } from "./PubPickers/PubPageWidthSetter";
-import { PubFontPicker } from "./PubPickers/PubFontPicker";
+import { FontPicker } from "./Pickers/TextPickers";
 
 export type ImageState = {
   src: string;
@@ -202,12 +202,12 @@ export const PubThemeSetter = (props: {
                 hasPageBackground={showPageBackground}
               />
               <div className="bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))] flex flex-col gap-1">
-                <PubFontPicker
+                <FontPicker
                   label="Heading"
                   value={headingFont}
                   onChange={setHeadingFont}
                 />
-                <PubFontPicker
+                <FontPicker
                   label="Body"
                   value={bodyFont}
                   onChange={setBodyFont}
