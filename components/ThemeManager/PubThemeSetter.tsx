@@ -71,6 +71,8 @@ export const PubThemeSetter = (props: {
     <BaseThemeProvider
       local
       {...localPubTheme}
+      headingFontId={headingFont}
+      bodyFontId={bodyFont}
       hasBackgroundImage={!!image}
       className="min-h-0!"
     >
@@ -288,7 +290,7 @@ const SamplePub = (props: {
       className={`bg-bg-leaflet p-3 pb-0 flex flex-col gap-3 rounded-t-md  border border-border border-b-0 h-[148px] overflow-hidden `}
     >
       <div
-        className="sampleContent rounded-t-md border-border pb-4 px-[10px] flex flex-col gap-[14px] w-[250px] mx-auto"
+        className="pubWrapper sampleContent rounded-t-md border-border pb-4 px-[10px] flex flex-col gap-[14px] w-[250px] mx-auto"
         style={{
           background: props.showPageBackground
             ? "rgba(var(--bg-page), var(--bg-page-alpha))"
@@ -308,7 +310,7 @@ const SamplePub = (props: {
             />
           )}
 
-          <div className="text-[11px] font-bold pt-[5px] text-accent-contrast">
+          <div className="text-[11px] font-bold pt-[5px] text-accent-contrast" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
             {record?.name}
           </div>
           <div className="text-[7px] font-normal text-tertiary">
@@ -321,7 +323,7 @@ const SamplePub = (props: {
         </div>
 
         <div className="flex flex-col text-[8px]  rounded-md ">
-          <div className="font-bold">A Sample Post</div>
+          <div className="font-bold" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>A Sample Post</div>
           <div className="text-secondary italic text-[6px]">
             This is a sample description about the sample post
           </div>
@@ -355,7 +357,7 @@ const SamplePost = (props: {
       className={`bg-bg-leaflet p-3 max-w-full flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-0 h-[148px] overflow-hidden`}
     >
       <div
-        className="sampleContent rounded-t-md border-border pb-0 px-[6px] flex flex-col w-[250px] mx-auto"
+        className="pubWrapper sampleContent rounded-t-md border-border pb-0 px-[6px] flex flex-col w-[250px] mx-auto"
         style={{
           background: props.showPageBackground
             ? "rgba(var(--bg-page), var(--bg-page-alpha))"
@@ -363,10 +365,10 @@ const SamplePost = (props: {
         }}
       >
         <div className="flex flex-col ">
-          <div className="text-[6px] font-bold pt-[6px] text-accent-contrast">
+          <div className="text-[6px] font-bold pt-[6px] text-accent-contrast" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
             {record?.name}
           </div>
-          <div className="text-[11px] font-bold text-primary">
+          <div className="text-[11px] font-bold text-primary" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
             A Sample Post
           </div>
           <div className="text-[7px] font-normal text-secondary italic">
