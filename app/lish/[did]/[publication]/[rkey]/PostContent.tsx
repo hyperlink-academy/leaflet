@@ -472,6 +472,25 @@ function ListItem(props: {
       ))}
     </ul>
   ) : null;
+  let orderedChildren =
+    props.item.orderedListChildren?.children?.length ? (
+      <ol className="-ml-[7px] sm:ml-[7px]">
+        {props.item.orderedListChildren.children.map((child, index) => (
+          <OrderedListItem
+            pages={props.pages}
+            pollData={props.pollData}
+            bskyPostData={props.bskyPostData}
+            index={[...props.index, index]}
+            item={child}
+            did={props.did}
+            key={index}
+            className={props.className}
+            pageId={props.pageId}
+            startIndex={props.item.orderedListChildren?.startIndex}
+          />
+        ))}
+      </ol>
+    ) : null;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
@@ -488,7 +507,8 @@ function ListItem(props: {
           index={props.index}
           pageId={props.pageId}
         />
-        {children}{" "}
+        {children}
+        {orderedChildren}
       </div>
     </li>
   );
@@ -524,6 +544,24 @@ function OrderedListItem(props: {
       ))}
     </ol>
   ) : null;
+  let unorderedChildren =
+    props.item.unorderedListChildren?.children?.length ? (
+      <ul className="-ml-[7px] sm:ml-[7px]">
+        {props.item.unorderedListChildren.children.map((child, index) => (
+          <ListItem
+            pages={props.pages}
+            pollData={props.pollData}
+            bskyPostData={props.bskyPostData}
+            index={[...props.index, index]}
+            item={child}
+            did={props.did}
+            key={index}
+            className={props.className}
+            pageId={props.pageId}
+          />
+        ))}
+      </ul>
+    ) : null;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div className="listMarker shrink-0 mx-2 z-1 mt-[14px]">
@@ -540,7 +578,8 @@ function OrderedListItem(props: {
           index={props.index}
           pageId={props.pageId}
         />
-        {children}{" "}
+        {children}
+        {unorderedChildren}
       </div>
     </li>
   );

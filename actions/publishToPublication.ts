@@ -10,6 +10,7 @@ import {
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
+  PubLeafletBlocksOrderedList,
   PubLeafletDocument,
   SiteStandardDocument,
   PubLeafletContent,
@@ -454,21 +455,66 @@ async function processBlocksToPages(
             if (alignment) block.alignment = alignment;
             return [block];
           } else {
-            let block: PubLeafletPagesLinearDocument.Block = {
-              $type: "pub.leaflet.pages.linearDocument#block",
-              block: {
-                $type: "pub.leaflet.blocks.unorderedList",
-                children: await childrenToRecord(blockOrList.children, did),
-              },
-            };
-            return [block];
+            let runs = splitListByStyle(blockOrList.children);
+            let blocks = await Promise.all(
+              runs.map(async (run) => {
+                if (run.style === "ordered") {
+                  let block: PubLeafletPagesLinearDocument.Block = {
+                    $type: "pub.leaflet.pages.linearDocument#block",
+                    block: {
+                      $type: "pub.leaflet.blocks.orderedList",
+                      startIndex:
+                        run.children[0].block.listData?.listStart || 1,
+                      children: await orderedChildrenToRecord(
+                        run.children,
+                        did,
+                      ),
+                    },
+                  };
+                  return block;
+                } else {
+                  let block: PubLeafletPagesLinearDocument.Block = {
+                    $type: "pub.leaflet.pages.linearDocument#block",
+                    block: {
+                      $type: "pub.leaflet.blocks.unorderedList",
+                      children: await unorderedChildrenToRecord(
+                        run.children,
+                        did,
+                      ),
+                    },
+                  };
+                  return block;
+                }
+              }),
+            );
+            return blocks;
           }
         }),
       )
     ).flat();
   }
 
-  async function childrenToRecord(children: List[], did: string) {
+  function splitListByStyle(children: List[]) {
+    let runs: { style: "ordered" | "unordered"; children: List[] }[] = [];
+    for (let child of children) {
+      let style: "ordered" | "unordered" =
+        child.block.listData?.listStyle === "ordered"
+          ? "ordered"
+          : "unordered";
+      let last = runs[runs.length - 1];
+      if (last && last.style === style) {
+        last.children.push(child);
+      } else {
+        runs.push({ style, children: [child] });
+      }
+    }
+    return runs;
+  }
+
+  async function unorderedChildrenToRecord(
+    children: List[],
+    did: string,
+  ): Promise<PubLeafletBlocksUnorderedList.ListItem[]> {
     return (
       await Promise.all(
         children.map(async (child) => {
@@ -477,8 +523,56 @@ async function processBlocksToPages(
           let record: PubLeafletBlocksUnorderedList.ListItem = {
             $type: "pub.leaflet.blocks.unorderedList#listItem",
             content,
-            children: await childrenToRecord(child.children, did),
           };
+          let sameStyle = child.children.filter(
+            (c) => c.block.listData?.listStyle !== "ordered",
+          );
+          let diffStyle = child.children.filter(
+            (c) => c.block.listData?.listStyle === "ordered",
+          );
+          if (sameStyle.length > 0) {
+            record.children = await unorderedChildrenToRecord(sameStyle, did);
+          }
+          if (diffStyle.length > 0) {
+            record.orderedListChildren = {
+              $type: "pub.leaflet.blocks.orderedList",
+              children: await orderedChildrenToRecord(diffStyle, did),
+            };
+          }
+          return record;
+        }),
+      )
+    ).flat();
+  }
+
+  async function orderedChildrenToRecord(
+    children: List[],
+    did: string,
+  ): Promise<PubLeafletBlocksOrderedList.ListItem[]> {
+    return (
+      await Promise.all(
+        children.map(async (child) => {
+          let content = await blockToRecord(child.block, did);
+          if (!content) return [];
+          let record: PubLeafletBlocksOrderedList.ListItem = {
+            $type: "pub.leaflet.blocks.orderedList#listItem",
+            content,
+          };
+          let sameStyle = child.children.filter(
+            (c) => c.block.listData?.listStyle === "ordered",
+          );
+          let diffStyle = child.children.filter(
+            (c) => c.block.listData?.listStyle !== "ordered",
+          );
+          if (sameStyle.length > 0) {
+            record.children = await orderedChildrenToRecord(sameStyle, did);
+          }
+          if (diffStyle.length > 0) {
+            record.unorderedListChildren = {
+              $type: "pub.leaflet.blocks.unorderedList",
+              children: await unorderedChildrenToRecord(diffStyle, did),
+            };
+          }
           return record;
         }),
       )
