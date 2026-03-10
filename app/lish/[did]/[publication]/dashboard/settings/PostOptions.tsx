@@ -71,7 +71,6 @@ export const PostOptions = (props: {
         loading={props.loading}
         setLoadingAction={props.setLoading}
         backToMenuAction={props.backToMenu}
-        state={"post-options"}
       >
         Post Options
       </PubSettingsHeader>

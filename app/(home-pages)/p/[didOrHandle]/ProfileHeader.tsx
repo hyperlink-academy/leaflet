@@ -42,6 +42,8 @@ export const ProfileHeader = (props: {
       @{props.profile.handle}
     </div>
   );
+
+
   return (
     <div
       className={`profileHeader flex flex-col relative `}

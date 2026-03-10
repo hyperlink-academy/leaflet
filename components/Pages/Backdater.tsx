@@ -61,7 +61,7 @@ export const Backdater = (props: { publishedAt: string; docURI: string }) => {
 
   return (
     <Popover
-      className="w-64 z-10 px-2!"
+      className="w-fit z-10 px-2!"
       trigger={
         <div className="underline">
           {timeAgo(localPublishedAt.toISOString())}

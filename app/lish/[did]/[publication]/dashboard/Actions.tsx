@@ -10,11 +10,19 @@ import { usePublicationData } from "./PublicationSWRProvider";
 import { useSmoker } from "components/Toast";
 import { useIsMobile } from "src/hooks/isMobile";
 import { SpeedyLink } from "components/SpeedyLink";
+import { ButtonSecondary, ButtonTertiary } from "components/Buttons";
+import { UpgradeModal } from "../UpgradeModal";
+import { LeafletPro } from "components/Icons/LeafletPro";
+import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 
 export const Actions = (props: { publication: string }) => {
+  let isPro = useIsPro();
+  let canSeePro = useCanSeePro();
   return (
     <>
       <NewDraftActionButton publication={props.publication} />
+      {canSeePro && !isPro && <MobileUpgrade />}
+
       <PublicationShareButton />
       <PublicationSettingsButton publication={props.publication} />
     </>
@@ -77,3 +85,19 @@ function PublicationShareButton() {
     </Menu>
   );
 }
+
+const MobileUpgrade = () => {
+  return (
+    <UpgradeModal
+      asChild
+      trigger={
+        <ActionButton
+          label="Upgrade to Leaflet Pro"
+          icon={<LeafletPro />}
+          className={`sm:hidden block bg-[var(--accent-light)]!`}
+          style={{ backgroundColor: "var(--accent-light) important!" }}
+        />
+      }
+    />
+  );
+};

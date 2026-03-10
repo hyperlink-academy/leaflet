@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, site_standard_documents_in_publications, documents_in_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_subscriptions, site_standard_subscriptions, leaflets_to_documents, permission_token_rights, leaflets_in_publications } from "./schema";
+import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, recommends_on_documents, poll_votes_on_entity, permission_tokens, user_subscriptions, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, site_standard_documents_in_publications, documents_in_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_subscriptions, site_standard_subscriptions, user_entitlements, permission_token_rights, leaflets_to_documents, leaflets_in_publications } from "./schema";
 
 export const notificationsRelations = relations(notifications, ({one}) => ({
 	identity: one(identities, {
@@ -12,7 +12,9 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	notifications: many(notifications),
 	publications: many(publications),
 	email_auth_tokens: many(email_auth_tokens),
+	recommends_on_documents: many(recommends_on_documents),
 	bsky_profiles: many(bsky_profiles),
+	user_subscriptions: many(user_subscriptions),
 	permission_token: one(permission_tokens, {
 		fields: [identities.home_page],
 		references: [permission_tokens.id]
@@ -36,6 +38,7 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	publication_domains: many(publication_domains),
 	publication_subscriptions: many(publication_subscriptions),
 	site_standard_subscriptions: many(site_standard_subscriptions),
+	user_entitlements: many(user_entitlements),
 }));
 
 export const publicationsRelations = relations(publications, ({one, many}) => ({
@@ -63,6 +66,7 @@ export const comments_on_documentsRelations = relations(comments_on_documents, (
 
 export const documentsRelations = relations(documents, ({many}) => ({
 	comments_on_documents: many(comments_on_documents),
+	recommends_on_documents: many(recommends_on_documents),
 	documents_in_publications: many(documents_in_publications),
 	document_mentions_in_bskies: many(document_mentions_in_bsky),
 	leaflets_to_documents: many(leaflets_to_documents),
@@ -113,6 +117,17 @@ export const email_auth_tokensRelations = relations(email_auth_tokens, ({one}) =
 	}),
 }));
 
+export const recommends_on_documentsRelations = relations(recommends_on_documents, ({one}) => ({
+	document: one(documents, {
+		fields: [recommends_on_documents.document],
+		references: [documents.uri]
+	}),
+	identity: one(identities, {
+		fields: [recommends_on_documents.recommender_did],
+		references: [identities.atp_did]
+	}),
+}));
+
 export const poll_votes_on_entityRelations = relations(poll_votes_on_entity, ({one}) => ({
 	entity_option_entity: one(entities, {
 		fields: [poll_votes_on_entity.option_entity],
@@ -140,9 +155,16 @@ export const permission_tokensRelations = relations(permission_tokens, ({one, ma
 	}),
 	email_subscriptions_to_entities: many(email_subscriptions_to_entity),
 	permission_token_on_homepages: many(permission_token_on_homepage),
-	leaflets_to_documents: many(leaflets_to_documents),
 	permission_token_rights: many(permission_token_rights),
+	leaflets_to_documents: many(leaflets_to_documents),
 	leaflets_in_publications: many(leaflets_in_publications),
+}));
+
+export const user_subscriptionsRelations = relations(user_subscriptions, ({one}) => ({
+	identity: one(identities, {
+		fields: [user_subscriptions.identity_id],
+		references: [identities.id]
+	}),
 }));
 
 export const phone_rsvps_to_entityRelations = relations(phone_rsvps_to_entity, ({one}) => ({
@@ -332,14 +354,10 @@ export const site_standard_subscriptionsRelations = relations(site_standard_subs
 	}),
 }));
 
-export const leaflets_to_documentsRelations = relations(leaflets_to_documents, ({one}) => ({
-	document: one(documents, {
-		fields: [leaflets_to_documents.document],
-		references: [documents.uri]
-	}),
-	permission_token: one(permission_tokens, {
-		fields: [leaflets_to_documents.leaflet],
-		references: [permission_tokens.id]
+export const user_entitlementsRelations = relations(user_entitlements, ({one}) => ({
+	identity: one(identities, {
+		fields: [user_entitlements.identity_id],
+		references: [identities.id]
 	}),
 }));
 
@@ -350,6 +368,17 @@ export const permission_token_rightsRelations = relations(permission_token_right
 	}),
 	permission_token: one(permission_tokens, {
 		fields: [permission_token_rights.token],
+		references: [permission_tokens.id]
+	}),
+}));
+
+export const leaflets_to_documentsRelations = relations(leaflets_to_documents, ({one}) => ({
+	document: one(documents, {
+		fields: [leaflets_to_documents.document],
+		references: [documents.uri]
+	}),
+	permission_token: one(permission_tokens, {
+		fields: [leaflets_to_documents.leaflet],
 		references: [permission_tokens.id]
 	}),
 }));

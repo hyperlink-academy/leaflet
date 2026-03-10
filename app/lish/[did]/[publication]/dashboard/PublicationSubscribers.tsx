@@ -175,7 +175,6 @@ const SubscriberListItem = (props: {
     //       );
     //       props.setCheckedSubscribers(newCheckedSubscribers);
     //     }
-    //     console.log(props.checkedSubscribers);
     //   }}
     // >
     <>

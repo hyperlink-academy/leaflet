@@ -17,6 +17,8 @@ import { get_profile_data } from "./get_profile_data";
 import { get_user_recommendations } from "./get_user_recommendations";
 import { get_hot_feed } from "./get_hot_feed";
 import { get_document_interactions } from "./get_document_interactions";
+import { get_publication_analytics } from "./get_publication_analytics";
+import { get_publication_subscribers_timeseries } from "./get_publication_subscribers_timeseries";
 
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -47,6 +49,8 @@ let Routes = [
   get_user_recommendations,
   get_hot_feed,
   get_document_interactions,
+  get_publication_analytics,
+  get_publication_subscribers_timeseries,
 ];
 export async function POST(
   req: Request,

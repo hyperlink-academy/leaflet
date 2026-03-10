@@ -1,3 +1,9 @@
+---
+name: notifications
+description: Reference for the notification system. Use when adding new notification types or modifying notification handling.
+user-invocable: false
+---
+
 # Notification System
 
 ## Overview

@@ -14,7 +14,7 @@ import { DotLoader } from "components/utils/DotLoader";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { PostOptions } from "./PostOptions";
 
-type menuState = "menu" | "general" | "theme" | "post-options";
+type menuState = "menu" | "pub-settings" | "theme" | "post-settings";
 
 export function PublicationSettingsButton(props: { publication: string }) {
   let isMobile = useIsMobile();
@@ -38,7 +38,7 @@ export function PublicationSettingsButton(props: { publication: string }) {
         />
       }
     >
-      {state === "general" ? (
+      {state === "pub-settings" ? (
         <EditPubForm
           backToMenuAction={() => setState("menu")}
           loading={loading}
@@ -50,7 +50,7 @@ export function PublicationSettingsButton(props: { publication: string }) {
           loading={loading}
           setLoading={setLoading}
         />
-      ) : state === "post-options" ? (
+      ) : state === "post-settings" ? (
         <PostOptions
           backToMenu={() => setState("menu")}
           loading={loading}
@@ -80,18 +80,12 @@ const PubSettingsMenu = (props: {
 
   return (
     <div className="flex flex-col gap-0.5">
-      <PubSettingsHeader
-        loading={props.loading}
-        setLoadingAction={props.setLoading}
-        state={"menu"}
-      >
-        Settings
-      </PubSettingsHeader>
+      <PubSettingsHeader>Settings</PubSettingsHeader>
       <button
         className={menuItemClassName}
         type="button"
         onClick={() => {
-          props.setState("general");
+          props.setState("pub-settings");
         }}
       >
         Publication Settings
@@ -100,7 +94,7 @@ const PubSettingsMenu = (props: {
       <button
         className={menuItemClassName}
         type="button"
-        onClick={() => props.setState("post-options")}
+        onClick={() => props.setState("post-settings")}
       >
         Post Settings
         <ArrowRightTiny />
@@ -118,16 +112,15 @@ const PubSettingsMenu = (props: {
 };
 
 export const PubSettingsHeader = (props: {
-  state: menuState;
   backToMenuAction?: () => void;
-  loading: boolean;
-  setLoadingAction: (l: boolean) => void;
+  loading?: boolean;
+  setLoadingAction?: (l: boolean) => void;
   children: React.ReactNode;
 }) => {
   return (
     <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1 flex-shrink-0">
       {props.children}
-      {props.state !== "menu" && (
+      {props.backToMenuAction && (
         <div className="flex gap-2">
           <button
             type="button"
@@ -137,10 +130,11 @@ export const PubSettingsHeader = (props: {
           >
             <GoBackSmall className="text-accent-contrast" />
           </button>
-
-          <ButtonPrimary compact type="submit">
-            {props.loading ? <DotLoader /> : "Update"}
-          </ButtonPrimary>
+          {props.setLoadingAction && (
+            <ButtonPrimary compact type="submit">
+              {props.loading ? <DotLoader /> : "Update"}
+            </ButtonPrimary>
+          )}
         </div>
       )}
     </div>

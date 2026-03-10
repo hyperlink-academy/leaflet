@@ -1,0 +1,30 @@
+name: Stripe Product Sync
+
+on:
+  push:
+    branches: [main]
+    paths: ["stripe/**"]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Stripe mode"
+        required: true
+        default: "test"
+        type: choice
+        options:
+          - test
+          - live
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.mode == 'live' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx tsx stripe/sync.ts
+        env:
+          STRIPE_SECRET_KEY: ${{ github.event.inputs.mode == 'live' && secrets.STRIPE_SECRET_KEY_LIVE || secrets.STRIPE_SECRET_KEY_TEST }}

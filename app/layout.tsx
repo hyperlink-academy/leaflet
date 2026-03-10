@@ -9,6 +9,8 @@ import { IdentityProviderServer } from "components/IdentityProviderServer";
 import { headers } from "next/headers";
 import { RequestHeadersProvider } from "components/Providers/RequestHeadersProvider";
 import { RouteUIStateManager } from "components/RouteUIStateManger";
+import { SubscriptionSuccessModal } from "components/SubscriptionSuccessModal";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Leaflet",
@@ -87,6 +89,9 @@ export default async function RootLayout({
                 timezone={ipTimezone}
               >
                 <ViewportSizeLayout>{children}</ViewportSizeLayout>
+                <Suspense>
+                  <SubscriptionSuccessModal />
+                </Suspense>
                 <RouteUIStateManager />
               </RequestHeadersProvider>
             </IdentityProviderServer>

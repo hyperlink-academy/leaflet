@@ -6,7 +6,7 @@ import { ThemeSetterContent } from "components/ThemeManager/ThemeSetter";
 import { useIsMobile } from "src/hooks/isMobile";
 import { PaintSmall } from "components/Icons/PaintSmall";
 
-export const AccountTheme = (props: { entityID: string }) => {
+export const AccountSettings = (props: { entityID: string }) => {
   let isMobile = useIsMobile();
 
   return (
@@ -14,7 +14,7 @@ export const AccountTheme = (props: { entityID: string }) => {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className={`w-xs  bg-white!`}
+      className={`w-xs bg-white!`}
       arrowFill="bg-white"
       trigger={<ActionButton smallOnMobile icon=<PaintSmall /> label="Theme" />}
     >

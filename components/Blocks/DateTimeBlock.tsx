@@ -166,6 +166,7 @@ export function BaseDateTimeBlock(
     >
       <div className="flex flex-col gap-3 ">
         <DatePicker
+          mode="single"
           selected={dateFact ? selectedDate : undefined}
           onSelect={handleDaySelect}
         />
