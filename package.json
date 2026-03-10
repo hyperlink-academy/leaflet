@@ -58,7 +58,7 @@
     "fractional-indexing": "^3.2.0",
     "hono": "^4.7.11",
     "immer": "^10.2.0",
-    "inngest": "^3.40.1",
+    "inngest": "^3.52.6",
     "ioredis": "^5.6.1",
     "katex": "^0.16.22",
     "l": "^0.6.0",
