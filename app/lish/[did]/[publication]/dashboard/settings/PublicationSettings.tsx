@@ -13,17 +13,8 @@ import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { PostOptions } from "./PostOptions";
-import { UpgradeContent } from "../../UpgradeModal";
-import { Modal } from "components/Modal";
-import { ManageProSubscription } from "./ManageProSubscription";
-import { useIsPro } from "src/hooks/useEntitlement";
 
-type menuState =
-  | "menu"
-  | "pub-settings"
-  | "theme"
-  | "post-settings"
-  | "manage-subscription";
+type menuState = "menu" | "pub-settings" | "theme" | "post-settings";
 
 export function PublicationSettingsButton(props: { publication: string }) {
   let isMobile = useIsMobile();
@@ -65,8 +56,6 @@ export function PublicationSettingsButton(props: { publication: string }) {
           loading={loading}
           setLoading={setLoading}
         />
-      ) : state === "manage-subscription" ? (
-        <ManageProSubscription backToMenu={() => setState("menu")} />
       ) : (
         <PubSettingsMenu
           state={state}
@@ -88,7 +77,6 @@ const PubSettingsMenu = (props: {
 }) => {
   let menuItemClassName =
     "menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!";
-  let isPro = useIsPro();
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -119,28 +107,6 @@ const PubSettingsMenu = (props: {
         Theme and Layout
         <ArrowRightTiny />
       </button>
-      {!isPro ? (
-        <Modal
-          trigger={
-            <div
-              className={`${menuItemClassName} bg-[var(--accent-light)]! border border-transparent hover:border-accent-contrast`}
-            >
-              Get Leaflet Pro
-              <ArrowRightTiny />{" "}
-            </div>
-          }
-        >
-          <UpgradeContent />
-        </Modal>
-      ) : (
-        <button
-          className={`${menuItemClassName} `}
-          type="button"
-          onClick={() => props.setState("manage-subscription")}
-        >
-          Manage Pro Subscription <ArrowRightTiny />{" "}
-        </button>
-      )}
     </div>
   );
 };

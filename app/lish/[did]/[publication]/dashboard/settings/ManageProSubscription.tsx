@@ -1,19 +1,15 @@
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
-import { PubSettingsHeader } from "./PublicationSettings";
-import { cancelSubscription } from "actions/cancelSubscription";
-import { reactivateSubscription } from "actions/reactivateSubscription";
+import { createBillingPortalSession } from "actions/createBillingPortalSession";
 import { useIdentityData } from "components/IdentityProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { GoBackSmall } from "components/Icons/GoBackSmall";
 
 export const ManageProSubscription = (props: { backToMenu: () => void }) => {
-  const [state, setState] = useState<"manage" | "confirm" | "success">(
-    "manage",
-  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { identity, mutate } = useIdentityData();
+  const { identity } = useIdentityData();
 
   const subscription = identity?.subscription;
   const renewalDate = useLocalizedDate(
@@ -21,94 +17,48 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
     { month: "long", day: "numeric", year: "numeric" },
   );
 
-  async function handleCancel() {
+  async function handleManageBilling() {
     setLoading(true);
     setError(null);
-    let result = await cancelSubscription();
+    const result = await createBillingPortalSession(window.location.href);
     if (result.ok) {
-      setState("success");
-      mutate();
+      window.location.href = result.value.url;
     } else {
       setError(result.error);
+      setLoading(false);
     }
-    setLoading(false);
-  }
-
-  async function handleReactivate() {
-    setLoading(true);
-    setError(null);
-    let result = await reactivateSubscription();
-    if (result.ok) {
-      mutate();
-    } else {
-      setError(result.error);
-    }
-    setLoading(false);
   }
 
   return (
     <div>
-      <PubSettingsHeader backToMenuAction={props.backToMenu}>
+      <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1 flex-shrink-0">
         Manage Subscription
-      </PubSettingsHeader>
+        <button type="button" onClick={props.backToMenu}>
+          <GoBackSmall className="text-accent-contrast" />
+        </button>
+      </div>
       <div className="text-secondary text-center flex flex-col justify-center gap-2 py-2">
-        {state === "manage" && (
-          <>
-            <div>
-              You have a <br />
-              {subscription?.plan || "Pro"} subscription
-              <div className="text-lg font-bold text-primary">
-                {subscription?.plan || "Leaflet Pro"}
-              </div>
-              {subscription?.status === "canceled"
-                ? "Your subscription has ended"
-                : subscription?.status === "canceling"
-                  ? `Access until ${renewalDate}`
-                  : `Renews on ${renewalDate}`}
-            </div>
-            {subscription?.status === "canceling" && (
-              <ButtonPrimary
-                className="mx-auto"
-                compact
-                onClick={handleReactivate}
-                disabled={loading}
-              >
-                {loading ? <DotLoader /> : "Reactivate Subscription"}
-              </ButtonPrimary>
-            )}
-            {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
-            {subscription?.status !== "canceling" &&
-              subscription?.status !== "canceled" && (
-                <ButtonPrimary
-                  className="mx-auto"
-                  compact
-                  onClick={() => setState("confirm")}
-                >
-                  Cancel Subscription
-                </ButtonPrimary>
-              )}
-          </>
-        )}
-        {state === "confirm" && (
-          <>
-            <div>Are you sure you'd like to cancel your subscription?</div>
-            <ButtonPrimary
-              className="mx-auto"
-              compact
-              onClick={handleCancel}
-              disabled={loading}
-            >
-              {loading ? <DotLoader /> : "Yes, Cancel it"}
-            </ButtonPrimary>
-            {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
-          </>
-        )}
-        {state === "success" && (
-          <div>
-            Your subscription has been cancelled. You'll have access until{" "}
-            {renewalDate}.
+        <div>
+          You have a <br />
+          {subscription?.plan || "Pro"} subscription
+          <div className="text-lg font-bold text-primary">
+            {subscription?.plan || "Leaflet Pro"}
           </div>
-        )}
+          {subscription?.status === "canceled"
+            ? "Your subscription has ended"
+            : subscription?.status === "canceling"
+              ? `Access until ${renewalDate}`
+              : `Renews on ${renewalDate}`}
+        </div>
+        <ButtonPrimary
+          className="mx-auto"
+          compact
+          onClick={handleManageBilling}
+          disabled={loading}
+        >
+          {loading ? <DotLoader /> : "Manage Billing"}
+        </ButtonPrimary>
+        {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
       </div>
     </div>
   );
