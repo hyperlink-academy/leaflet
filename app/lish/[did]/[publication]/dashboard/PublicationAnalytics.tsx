@@ -7,7 +7,7 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import type { DateRange } from "react-day-picker";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { Combobox, ComboboxResult } from "components/Combobox";
-import { useIsPro } from "src/hooks/useEntitlement";
+import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { callRPC } from "app/api/rpc/client";
 import useSWR from "swr";
 import {
@@ -76,6 +76,7 @@ export const PublicationAnalytics = (props: {
   showPageBackground: boolean;
 }) => {
   let isPro = useIsPro();
+  let canSeePro = useCanSeePro();
 
   let { data: publication } = usePublicationData();
   let [dateRange, setDateRange] = useState<DateRange>(() => {
@@ -145,6 +146,8 @@ export const PublicationAnalytics = (props: {
       ),
     [analyticsData?.traffic, dateRange.from, dateRange.to],
   );
+
+  if (!canSeePro) return null;
 
   if (!isPro)
     return (

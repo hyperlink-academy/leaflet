@@ -9,3 +9,7 @@ export function useHasEntitlement(key: string): boolean {
 export function useIsPro(): boolean {
   return useHasEntitlement("publication_analytics");
 }
+
+export function useCanSeePro(): boolean {
+  return useHasEntitlement("pro_plan_visible");
+}

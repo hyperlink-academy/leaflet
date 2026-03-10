@@ -4,7 +4,7 @@ export const PRODUCT_DEFINITION = {
   name: "Leaflet Pro",
   metadata: {
     product_def_id: PRODUCT_DEF_ID,
-    entitlements: JSON.stringify({ publication_analytics: true }),
+    entitlements: JSON.stringify({ publication_analytics: true, pro_plan_visible: true }),
   },
 };
 

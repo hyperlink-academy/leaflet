@@ -21,7 +21,7 @@ export const get_publication_analytics = makeRoute({
     { supabase }: Pick<Env, "supabase">,
   ) => {
     const identity = await getIdentityData();
-    if (!identity?.atp_did || !identity.entitlements?.publication_analytics) {
+    if (!identity?.atp_did || !identity.entitlements?.publication_analytics || !identity.entitlements?.pro_plan_visible) {
       return { error: "unauthorized" as const };
     }
 

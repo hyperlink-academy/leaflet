@@ -57,5 +57,7 @@ export async function GET(req: NextRequest) {
     console.error("Error processing checkout success:", err);
   }
 
-  return NextResponse.redirect(new URL(returnUrl, req.url));
+  const redirectUrl = new URL(returnUrl, req.url);
+  redirectUrl.searchParams.set("upgrade", "success");
+  return NextResponse.redirect(redirectUrl);
 }

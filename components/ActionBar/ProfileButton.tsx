@@ -12,7 +12,7 @@ import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { Modal } from "components/Modal";
 import { UpgradeContent } from "app/lish/[did]/[publication]/UpgradeModal";
 import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ManageProSubscription";
-import { useIsPro } from "src/hooks/useEntitlement";
+import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { useState } from "react";
 
 export const ProfileButton = () => {
@@ -21,6 +21,7 @@ export const ProfileButton = () => {
   let isMobile = useIsMobile();
   let [state, setState] = useState<"menu" | "manage-subscription">("menu");
   let isPro = useIsPro();
+  let canSeePro = useCanSeePro();
 
   return (
     <Popover
@@ -69,29 +70,33 @@ export const ProfileButton = () => {
               <hr className="border-border-light border-dashed" />
             </>
           )}
-          {!isPro ? (
-            <Modal
-              trigger={
-                <div className="menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline! bg-[var(--accent-light)]! border border-transparent hover:border-accent-contrast">
-                  Get Leaflet Pro
+          {canSeePro && (
+            <>
+              {!isPro ? (
+                <Modal
+                  trigger={
+                    <div className="menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline! bg-[var(--accent-light)]! border border-transparent hover:border-accent-contrast">
+                      Get Leaflet Pro
+                      <ArrowRightTiny />
+                    </div>
+                  }
+                >
+                  <UpgradeContent />
+                </Modal>
+              ) : (
+                <button
+                  className="menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!"
+                  type="button"
+                  onClick={() => setState("manage-subscription")}
+                >
+                  Manage Pro Subscription
                   <ArrowRightTiny />
-                </div>
-              }
-            >
-              <UpgradeContent />
-            </Modal>
-          ) : (
-            <button
-              className="menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!"
-              type="button"
-              onClick={() => setState("manage-subscription")}
-            >
-              Manage Pro Subscription
-              <ArrowRightTiny />
-            </button>
-          )}
+                </button>
+              )}
 
-          <hr className="border-border-light border-dashed" />
+              <hr className="border-border-light border-dashed" />
+            </>
+          )}
 
           <button
             type="button"
