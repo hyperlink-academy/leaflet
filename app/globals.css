@@ -203,7 +203,9 @@
   }
 
   /* Scope custom fonts to document content only (not sidebar/UI chrome) */
-  .pageScrollWrapper {
+  .pageScrollWrapper,
+  .footnote-side-column,
+  .footnote-popover {
     font-family: var(--theme-font, var(--font-quattro));
     font-size: var(--theme-font-base-size, 16px);
   }
