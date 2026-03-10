@@ -51,6 +51,7 @@ export async function createCheckoutSession(
       ? { customer: customerId }
       : { customer_email: identity.email || undefined }),
     subscription_data: { metadata: { identity_id: identity.id } },
+    allow_promotion_codes: true,
     success_url: successUrl.toString(),
     cancel_url: cancelUrl,
   });
