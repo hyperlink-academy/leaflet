@@ -205,7 +205,8 @@
   /* Scope custom fonts to document content only (not sidebar/UI chrome) */
   .pageScrollWrapper,
   .footnote-side-column,
-  .footnote-popover {
+  .footnote-popover,
+  #interaction-drawer {
     font-family: var(--theme-font, var(--font-quattro));
     font-size: var(--theme-font-base-size, 16px);
   }
