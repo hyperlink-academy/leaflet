@@ -13,6 +13,7 @@ import {
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationAnalytics } from "./PublicationAnalytics";
+import { useCanSeePro } from "src/hooks/useEntitlement";
 
 export default function PublicationDashboard({
   publication,
@@ -24,6 +25,7 @@ export default function PublicationDashboard({
     null
   >;
 }) {
+  let canSeePro = useCanSeePro();
   let [searchValue, setSearchValue] = useState("");
   let [debouncedSearchValue, setDebouncedSearchValue] = useState("");
 
@@ -73,14 +75,18 @@ export default function PublicationDashboard({
           ),
           controls: null,
         },
-        Analytics: {
-          content: (
-            <PublicationAnalytics
-              showPageBackground={!!record.theme?.showPageBackground}
-            />
-          ),
-          controls: null,
-        },
+        ...(canSeePro
+          ? {
+              Analytics: {
+                content: (
+                  <PublicationAnalytics
+                    showPageBackground={!!record.theme?.showPageBackground}
+                  />
+                ),
+                controls: null,
+              },
+            }
+          : {}),
       }}
       actions={<Actions publication={publication.uri} />}
       currentPage="pub"
