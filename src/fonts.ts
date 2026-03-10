@@ -119,7 +119,7 @@ export function parseGoogleFontInput(input: string): {
 
   // Treat as just a font name - construct a basic family param with common weights
   const fontName = trimmed.replace(/\+/g, " ");
-  const googleFontsFamily = `${trimmed.replace(/ /g, "+")}:wght@400;700`;
+  const googleFontsFamily = `${trimmed.replace(/ /g, "+")}:ital,wght@0,400;0,700;1,400;1,700`;
   return { fontName, googleFontsFamily };
 }
 
