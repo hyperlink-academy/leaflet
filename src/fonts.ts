@@ -147,6 +147,35 @@ export function parseCustomFontId(fontId: string): {
   return { fontName, googleFontsFamily };
 }
 
+// Ensure a Google Fonts family string includes italic variants and standard weights.
+// Handles already-stored custom font IDs that may only specify upright weights.
+function ensureItalicWeights(googleFontsFamily: string): string {
+  const [name, spec] = googleFontsFamily.split(/:(.+)/);
+  if (!name) return googleFontsFamily;
+
+  // Already includes italic axis — leave as-is
+  if (spec && spec.includes("ital")) return googleFontsFamily;
+
+  // Has wght@ with values — add italic variants for each weight
+  if (spec) {
+    const wghtMatch = spec.match(/wght@(.+)/);
+    if (wghtMatch) {
+      const weights = wghtMatch[1];
+      // Variable range like 400..700
+      if (weights.includes("..")) {
+        return `${name}:ital,wght@0,${weights};1,${weights}`;
+      }
+      // Discrete weights like 400;700
+      const uprightWeights = weights.split(";").map((w) => `0,${w}`);
+      const italicWeights = weights.split(";").map((w) => `1,${w}`);
+      return `${name}:ital,wght@${[...uprightWeights, ...italicWeights].join(";")}`;
+    }
+  }
+
+  // No weight spec at all — add standard weights with italics
+  return `${name}:ital,wght@0,400;0,700;1,400;1,700`;
+}
+
 export function getFontConfig(fontId: string | undefined): FontConfig {
   if (!fontId) return fonts[defaultFontId];
 
@@ -159,7 +188,7 @@ export function getFontConfig(fontId: string | undefined): FontConfig {
         displayName: parsed.fontName,
         fontFamily: parsed.fontName,
         type: "google",
-        googleFontsFamily: parsed.googleFontsFamily,
+        googleFontsFamily: ensureItalicWeights(parsed.googleFontsFamily),
         fallback: ["system-ui", "sans-serif"],
       };
     }
