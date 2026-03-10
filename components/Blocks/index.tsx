@@ -14,9 +14,10 @@ import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 
 import { Block } from "./Block";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { addShortcut } from "src/shortcuts";
 import { useHandleDrop } from "./useHandleDrop";
+import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
 
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
@@ -93,9 +94,17 @@ export function Blocks(props: { entityID: string }) {
       ),
   );
 
+  let { footnotes } = useFootnoteContext();
+
+  let [areFootnotes, setAreFootnotes] = useState(false);
+
+  useEffect(() => {
+    setAreFootnotes(footnotes.length > 0);
+  }, [footnotes.length]);
+
   return (
     <div
-      className={`blocks w-full flex flex-col outline-hidden h-fit min-h-full`}
+      className={`blocks w-full flex flex-col outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
       onClick={async (e) => {
         if (!permissions.write) return;
         if (useUIState.getState().selectedBlocks.length > 1) return;
@@ -167,6 +176,7 @@ export function Blocks(props: { entityID: string }) {
         lastVisibleBlock={lastVisibleBlock || undefined}
         lastRootBlock={lastRootBlock || undefined}
         entityID={props.entityID}
+        areFootnotes={areFootnotes}
       />
     </div>
   );
@@ -226,6 +236,7 @@ const BlockListBottom = (props: {
   lastRootBlock: Block | undefined;
   lastVisibleBlock: Block | undefined;
   entityID: string;
+  areFootnotes: boolean;
 }) => {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
@@ -236,9 +247,11 @@ const BlockListBottom = (props: {
   });
 
   if (!entity_set.permissions.write) return;
+  if (props.areFootnotes) return;
+
   return (
     <div
-      className="blockListClickableBottomArea shrink-0 h-[50vh]"
+      className="blockListClickableBottomArea grow shrink-0 h-[50vh]"
       onClick={() => {
         let newEntityID = v7();
         if (

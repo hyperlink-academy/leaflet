@@ -20,79 +20,59 @@ export async function getProfilePosts(
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   const limit = 20;
 
-  let query = supabaseServerClient
-    .from("documents")
-    .select(
-      `*,
-      comments_on_documents(count),
-      document_mentions_in_bsky(count),
-      recommends_on_documents(count),
-      documents_in_publications(publications(*))`,
-    )
-    .like("uri", `at://${did}/%`)
-    .order("sort_date", { ascending: false })
-    .order("uri", { ascending: false })
-    .limit(limit);
+  let [{ data: rawFeed, error }, { data: profile }] = await Promise.all([
+    supabaseServerClient.rpc("get_profile_posts", {
+      p_did: did,
+      p_cursor_sort_date: cursor?.sort_date ?? null,
+      p_cursor_uri: cursor?.uri ?? null,
+      p_limit: limit,
+    }),
+    supabaseServerClient
+      .from("bsky_profiles")
+      .select("handle")
+      .eq("did", did)
+      .single(),
+  ]);
 
-  if (cursor) {
-    query = query.or(
-      `sort_date.lt.${cursor.sort_date},and(sort_date.eq.${cursor.sort_date},uri.lt.${cursor.uri})`,
-    );
+  if (error) {
+    console.error("[getProfilePosts] rpc error:", error);
+    return { posts: [], nextCursor: null };
   }
 
-  let [{ data: rawDocs }, { data: rawPubs }, { data: profile }] =
-    await Promise.all([
-      query,
-      supabaseServerClient
-        .from("publications")
-        .select("*")
-        .eq("identity_did", did),
-      supabaseServerClient
-        .from("bsky_profiles")
-        .select("handle")
-        .eq("did", did)
-        .single(),
-    ]);
+  let feed = deduplicateByUriOrdered(rawFeed || []);
+  if (feed.length === 0) return { posts: [], nextCursor: null };
 
-  // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
-  const docs = deduplicateByUriOrdered(rawDocs || []);
-  const pubs = deduplicateByUriOrdered(rawPubs || []);
-
-  // Build a map of publications for quick lookup
-  let pubMap = new Map<string, NonNullable<typeof pubs>[number]>();
-  for (let pub of pubs || []) {
-    pubMap.set(pub.uri, pub);
-  }
-
-  // Transform data to Post[] format
   let handle = profile?.handle ? `@${profile.handle}` : null;
   let posts: Post[] = [];
 
-  for (let doc of docs || []) {
-    // Normalize records - filter out unrecognized formats
-    const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
+  for (let row of feed) {
+    const normalizedData = normalizeDocumentRecord(row.data, row.uri);
     if (!normalizedData) continue;
 
-    let pubFromDoc = doc.documents_in_publications?.[0]?.publications;
-    let pub = pubFromDoc ? pubMap.get(pubFromDoc.uri) || pubFromDoc : null;
+    const normalizedPubRecord = row.publication_record
+      ? normalizePublicationRecord(row.publication_record)
+      : null;
 
     let post: Post = {
       author: handle,
       documents: {
         data: normalizedData,
-        uri: doc.uri,
-        sort_date: doc.sort_date,
-        comments_on_documents: doc.comments_on_documents,
-        document_mentions_in_bsky: doc.document_mentions_in_bsky,
-        recommends_on_documents: doc.recommends_on_documents,
+        uri: row.uri,
+        sort_date: row.sort_date,
+        comments_on_documents: [{ count: Number(row.comments_count) }],
+        document_mentions_in_bsky: [{ count: Number(row.mentions_count) }],
+        recommends_on_documents: [{ count: Number(row.recommends_count) }],
       },
     };
 
-    if (pub) {
+    if (row.publication_uri) {
       post.publication = {
-        href: getPublicationURL(pub),
-        pubRecord: normalizePublicationRecord(pub.record),
-        uri: pub.uri,
+        href: getPublicationURL({
+          uri: row.publication_uri,
+          record: row.publication_record,
+        }),
+        pubRecord: normalizedPubRecord,
+        uri: row.publication_uri,
       };
     }
 

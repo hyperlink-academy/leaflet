@@ -45,9 +45,24 @@ export function ReaderMentionsContent(props: {
   const postViewMap = new Map<string, PostView>();
   bskyPosts?.forEach((pv) => postViewMap.set(pv.uri, pv));
 
+  // Sort by engagement: likes count 1, replies and quotes count 1.5
+  const sorted = [...props.quotesAndMentions].sort((a, b) => {
+    const postA = postViewMap.get(a.uri);
+    const postB = postViewMap.get(b.uri);
+    const scoreA =
+      (postA?.likeCount ?? 0) +
+      (postA?.replyCount ?? 0) * 1.5 +
+      (postA?.quoteCount ?? 0) * 1.5;
+    const scoreB =
+      (postB?.likeCount ?? 0) +
+      (postB?.replyCount ?? 0) * 1.5 +
+      (postB?.quoteCount ?? 0) * 1.5;
+    return scoreB - scoreA;
+  });
+
   return (
     <div className="flex flex-col gap-4 w-full">
-      {props.quotesAndMentions.map((q, index) => {
+      {sorted.map((q, index) => {
         const post = postViewMap.get(q.uri);
         if (!post) return null;
         return (
@@ -61,7 +76,7 @@ export function ReaderMentionsContent(props: {
               className="text-sm"
               compactEmbed
             />
-            {index < props.quotesAndMentions.length - 1 && (
+            {index < sorted.length - 1 && (
               <hr className="border-border-light mt-4" />
             )}
           </div>

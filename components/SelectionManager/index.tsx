@@ -6,8 +6,8 @@ import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
-import { indent, outdent, outdentFull } from "src/utils/list-operations";
+import { getBlocksWithType } from "src/replicache/getBlocks";
+import { indent, outdentFull, multiSelectOutdent } from "src/utils/list-operations";
 import { addShortcut, Shortcut } from "src/shortcuts";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
@@ -486,27 +486,10 @@ export function SelectionManager() {
           let [sortedSelection, siblings] = await getSortedSelectionBound();
           if (sortedSelection.length <= 1) return;
           e.preventDefault();
+
           if (e.shiftKey) {
-            for (let i = siblings.length - 1; i >= 0; i--) {
-              let block = siblings[i];
-              if (!sortedSelection.find((s) => s.value === block.value))
-                continue;
-              if (
-                sortedSelection.find((s) => s.value === block.listData?.parent)
-              )
-                continue;
-              let parentoffset = 1;
-              let previousBlock = siblings[i - parentoffset];
-              while (
-                previousBlock &&
-                sortedSelection.find((s) => previousBlock.value === s.value)
-              ) {
-                parentoffset += 1;
-                previousBlock = siblings[i - parentoffset];
-              }
-              if (!block.listData || !previousBlock.listData) continue;
-              outdent(block, previousBlock, rep);
-            }
+            let { foldedBlocks, toggleFold } = useUIState.getState();
+            await multiSelectOutdent(sortedSelection, siblings, rep, { foldedBlocks, toggleFold });
           } else {
             for (let i = 0; i < siblings.length; i++) {
               let block = siblings[i];
@@ -526,7 +509,9 @@ export function SelectionManager() {
                 previousBlock = siblings[i - parentoffset];
               }
               if (!block.listData || !previousBlock.listData) continue;
-              indent(block, previousBlock, rep);
+              let { foldedBlocks, toggleFold } = useUIState.getState();
+
+              await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
             }
           }
         }

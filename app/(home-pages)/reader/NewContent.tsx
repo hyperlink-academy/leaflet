@@ -10,6 +10,7 @@ import {
   DesktopInteractionPreviewDrawer,
   MobileInteractionPreviewDrawer,
 } from "./InteractionDrawers";
+import { useSelectedPostListing } from "src/useSelectedPostState";
 
 export const NewContent = (props: {
   promise: Promise<{ posts: Post[]; nextCursor: Cursor | null }>;
@@ -37,6 +38,8 @@ export const NewContent = (props: {
     },
   );
 
+  let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
+
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,7 +64,7 @@ export const NewContent = (props: {
 
   const allPosts = data ? data.flatMap((page) => page.posts) : [];
 
-  if (allPosts.length === 0 && !isValidating) {
+  if (allPosts.length === 0) {
     return (
       <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
         No posts yet. Check back soon!
@@ -71,16 +74,20 @@ export const NewContent = (props: {
 
   return (
     <div className="flex flex-row gap-6 w-full">
-      <div className="flex flex-col gap-6 w-full relative">
+      <div className="flex flex-col gap-6 w-full grow min-w-0 relative">
         {allPosts.map((p) => (
-          <PostListing {...p} key={p.documents.uri} />
+          <PostListing
+            {...p}
+            key={p.documents.uri}
+            selected={selectedPost?.document_uri === p.documents.uri}
+          />
         ))}
         <div
           ref={loadMoreRef}
           className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
           aria-hidden="true"
         />
-        {isValidating && (
+        {isValidating && allPosts.length > 0 && (
           <div className="text-center text-tertiary py-4">
             Loading more posts...
           </div>

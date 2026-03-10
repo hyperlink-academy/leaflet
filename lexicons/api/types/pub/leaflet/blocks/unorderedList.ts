@@ -12,6 +12,7 @@ import {
 import type * as PubLeafletBlocksText from './text'
 import type * as PubLeafletBlocksHeader from './header'
 import type * as PubLeafletBlocksImage from './image'
+import type * as PubLeafletBlocksOrderedList from './orderedList'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -39,7 +40,9 @@ export interface ListItem {
     | $Typed<PubLeafletBlocksHeader.Main>
     | $Typed<PubLeafletBlocksImage.Main>
     | { $type: string }
+  /** Nested unordered list items. Mutually exclusive with orderedListChildren; if both are present, children takes precedence. */
   children?: ListItem[]
+  orderedListChildren?: PubLeafletBlocksOrderedList.Main
 }
 
 const hashListItem = 'listItem'

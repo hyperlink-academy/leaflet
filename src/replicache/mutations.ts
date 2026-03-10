@@ -212,6 +212,7 @@ const outdentBlock: Mutation<{
   newParent: string;
   after: string;
   block: string;
+  excludeFromSiblings?: string[];
 }> = async (args, ctx) => {
   //we should be able to get normal siblings here as we care only about one level
   let newSiblings = (
@@ -225,7 +226,11 @@ const outdentBlock: Mutation<{
     (f) => f.data.value === args.block,
   );
   if (currentFactIndex === -1) return;
-  let currentSiblingsAfter = currentSiblings.slice(currentFactIndex + 1);
+  // Filter out blocks that are being processed separately (e.g., in multi-select outdent)
+  let excludeSet = new Set(args.excludeFromSiblings || []);
+  let currentSiblingsAfter = currentSiblings
+    .slice(currentFactIndex + 1)
+    .filter((sib) => !excludeSet.has(sib.data.value));
   let currentChildren = (
     await ctx.scanIndex.eav(args.block, "card/block")
   ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
@@ -715,6 +720,37 @@ const updatePublicationDraft: Mutation<{
   });
 };
 
+const createFootnote: Mutation<{
+  footnoteEntityID: string;
+  blockID: string;
+  permission_set: string;
+  position: string;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.footnoteEntityID,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.blockID,
+    attribute: "block/footnote",
+    data: {
+      type: "ordered-reference",
+      value: args.footnoteEntityID,
+      position: args.position,
+    },
+  });
+};
+
+const deleteFootnote: Mutation<{
+  footnoteEntityID: string;
+  blockID: string;
+}> = async (args, ctx) => {
+  let footnotes = await ctx.scanIndex.eav(args.blockID, "block/footnote");
+  let fact = footnotes.find((f) => f.data.value === args.footnoteEntityID);
+  if (fact) await ctx.retractFact(fact.id);
+  await ctx.deleteEntity(args.footnoteEntityID);
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -738,4 +774,6 @@ export const mutations = {
   addPollOption,
   removePollOption,
   updatePublicationDraft,
+  createFootnote,
+  deleteFootnote,
 };

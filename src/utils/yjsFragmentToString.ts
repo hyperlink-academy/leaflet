@@ -25,6 +25,10 @@ export function YJSFragmentToString(
     if (node.nodeName === "didMention" || node.nodeName === "atMention") {
       return node.getAttribute("text") || "";
     }
+    // Handle footnote nodes - emit placeholder
+    if (node.nodeName === "footnote") {
+      return "*";
+    }
     return node
       .toArray()
       .map((f) => YJSFragmentToString(f))

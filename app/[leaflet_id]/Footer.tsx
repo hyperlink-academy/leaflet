@@ -4,6 +4,7 @@ import { Footer } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
+import { FootnoteToolbar } from "components/Toolbar/FootnoteToolbarWrapper";
 import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
 import { HomeButton } from "app/[leaflet_id]/actions/HomeButton";
 import { PublishButton } from "./actions/PublishButton";
@@ -55,6 +56,17 @@ export function LeafletFooter(props: { entityID: string }) {
             blockID={focusedBlock.entityID}
             blockType={blockType}
           />
+        </div>
+      ) : focusedBlock &&
+        focusedBlock.entityType === "footnote" &&
+        entity_set.permissions.write ? (
+        <div
+          className="w-full z-10 p-2 flex bg-bg-page pwa-padding-bottom"
+          onMouseDown={(e) => {
+            if (e.currentTarget === e.target) e.preventDefault();
+          }}
+        >
+          <FootnoteToolbar pageID={focusedBlock.parent} />
         </div>
       ) : entity_set.permissions.write ? (
         <Footer>

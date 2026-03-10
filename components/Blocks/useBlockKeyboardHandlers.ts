@@ -62,7 +62,7 @@ export function useBlockKeyboardHandlers(
         return;
 
       undoManager.startGroup();
-      command?.({
+      await command?.({
         e,
         props,
         rep,
@@ -88,15 +88,18 @@ type Args = {
 
 const AllowedIfTextBlock = ["Tab"];
 
-function Tab({ e, props, rep }: Args) {
+async function Tab({ e, props, rep }: Args) {
   // if tab or shift tab, indent or outdent
   if (useUIState.getState().selectedBlocks.length > 1) return false;
+  let { foldedBlocks, toggleFold } = useUIState.getState();
   if (e.shiftKey) {
     e.preventDefault();
-    outdent(props, props.previousBlock, rep);
+    await outdent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
   } else {
     e.preventDefault();
-    if (props.previousBlock) indent(props, props.previousBlock, rep);
+    if (props.previousBlock) {
+      await indent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
+    }
   }
 }
 

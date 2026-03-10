@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useEffect, useState } from "react";
-import { EditorState } from "prosemirror-state";
+import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
@@ -10,6 +10,7 @@ import { Replicache } from "replicache";
 import { produce } from "immer";
 
 import { schema } from "./schema";
+import { UndoManager } from "src/undoManager";
 import { TextBlockKeymap } from "./keymap";
 import { inputrules } from "./inputRules";
 import { highlightSelectionPlugin } from "./plugins";
@@ -24,6 +25,7 @@ import { useHandlePaste } from "./useHandlePaste";
 import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
+import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 
 export function useMountProsemirror({
   props,
@@ -80,6 +82,49 @@ export function useMountProsemirror({
         handlePaste,
         handleClickOn: (_view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
+
+          // Check for footnote inline nodes
+          if (node?.type === schema.nodes.footnote) {
+            let footnoteID = node.attrs.footnoteEntityID;
+            let supEl = _event.target as HTMLElement;
+            let sup = supEl.closest(".footnote-ref") as HTMLElement | null;
+            if (!sup) return;
+
+            // On mobile/tablet or canvas, show popover
+            let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
+            let isCanvas = propsRef.current.pageType === "canvas";
+            if (!isDesktop || isCanvas) {
+              let store = useFootnotePopoverStore.getState();
+              if (store.activeFootnoteID === footnoteID) {
+                store.close();
+              } else {
+                store.open(footnoteID, sup);
+              }
+              return;
+            }
+
+            // On desktop, prefer the side column editor if visible
+            let sideColumn = document.querySelector(".footnote-side-column");
+            let editor = sideColumn?.querySelector(
+              `[data-footnote-editor="${footnoteID}"]`,
+            ) as HTMLElement | null;
+            // Fall back to the bottom section
+            if (!editor) {
+              editor = document.querySelector(
+                `[data-footnote-editor="${footnoteID}"]`,
+              ) as HTMLElement | null;
+            }
+            if (editor) {
+              editor.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              let pm = editor.querySelector(
+                ".ProseMirror",
+              ) as HTMLElement | null;
+              if (pm) {
+                setTimeout(() => pm!.focus(), 100);
+              }
+            }
+            return;
+          }
 
           // Check for didMention inline nodes
           if (node?.type === schema.nodes.didMention) {
@@ -143,36 +188,49 @@ export function useMountProsemirror({
       useEditorStates.setState((s) => {
         let oldEditorState = this.state;
         let newState = this.state.apply(tr);
-        let addToHistory = tr.getMeta("addToHistory");
-        let isBulkOp = tr.getMeta("bulkOp");
         let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
 
-        // Handle undo/redo history with timeout-based grouping
-        if (addToHistory !== false && docHasChanges) {
-          if (actionTimeout.current) window.clearTimeout(actionTimeout.current);
-          else if (!isBulkOp) rep.undoManager.startGroup();
-
-          if (!isBulkOp) {
-            actionTimeout.current = window.setTimeout(() => {
-              rep.undoManager.endGroup();
-              actionTimeout.current = null;
-            }, 200);
-          }
-
-          let setState = (s: EditorState) => () =>
-            useEditorStates.setState(
-              produce((draft) => {
-                let view = draft.editorStates[entityID]?.view;
-                if (!view?.hasFocus() && !isBulkOp) view?.focus();
-                draft.editorStates[entityID]!.editor = s;
-              }),
-            );
-
-          rep.undoManager.add({
-            redo: setState(newState),
-            undo: setState(oldEditorState),
+        // Diff for removed/added footnote nodes
+        if (docHasChanges) {
+          let oldFootnotes = new Set<string>();
+          let newFootnotes = new Set<string>();
+          oldEditorState.doc.descendants((n) => {
+            if (n.type.name === "footnote")
+              oldFootnotes.add(n.attrs.footnoteEntityID);
           });
+          newState.doc.descendants((n) => {
+            if (n.type.name === "footnote")
+              newFootnotes.add(n.attrs.footnoteEntityID);
+          });
+          // Removed footnotes
+          for (let id of oldFootnotes) {
+            if (!newFootnotes.has(id)) {
+              repRef.current?.mutate.deleteFootnote({
+                footnoteEntityID: id,
+                blockID: entityID,
+              });
+            }
+          }
         }
+
+        // Handle undo/redo history with timeout-based grouping
+        let isBulkOp = tr.getMeta("bulkOp");
+        let setState = (s: EditorState) => () =>
+          useEditorStates.setState(
+            produce((draft) => {
+              let view = draft.editorStates[entityID]?.view;
+              if (!view?.hasFocus() && !isBulkOp) view?.focus();
+              draft.editorStates[entityID]!.editor = s;
+            }),
+          );
+
+        trackUndoRedo(
+          tr,
+          rep.undoManager,
+          actionTimeout,
+          setState(oldEditorState),
+          setState(newState),
+        );
 
         return {
           editorStates: {
@@ -191,7 +249,33 @@ export function useMountProsemirror({
   return { mountRef, actionTimeout };
 }
 
-function useYJSValue(entityID: string) {
+export function trackUndoRedo(
+  tr: Transaction,
+  undoManager: UndoManager,
+  actionTimeout: { current: number | null },
+  undo: () => void,
+  redo: () => void,
+) {
+  let addToHistory = tr.getMeta("addToHistory");
+  let isBulkOp = tr.getMeta("bulkOp");
+  let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
+
+  if (addToHistory !== false && docHasChanges) {
+    if (actionTimeout.current) window.clearTimeout(actionTimeout.current);
+    else if (!isBulkOp) undoManager.startGroup();
+
+    if (!isBulkOp) {
+      actionTimeout.current = window.setTimeout(() => {
+        undoManager.endGroup();
+        actionTimeout.current = null;
+      }, 200);
+    }
+
+    undoManager.add({ undo, redo });
+  }
+}
+
+export function useYJSValue(entityID: string) {
   const [ydoc] = useState(new Y.Doc());
   const docStateFromReplicache = useEntity(entityID, "block/text");
   let rep = useReplicache();

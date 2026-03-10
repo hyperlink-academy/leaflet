@@ -39,15 +39,25 @@ export const sync_document_metadata = inngest.createFunction(
     });
     if (!handleResult) return { error: "No Handle" };
 
+    if (handleResult.isBridgy) {
+      await step.run("delete-bridgy-doc", async () => {
+        return await supabaseServerClient
+          .from("documents")
+          .delete()
+          .eq("uri", document_uri);
+      });
+      return { handle: handleResult.handle, deleted: true };
+    }
+
     await step.run("set-indexed", async () => {
       return await supabaseServerClient
         .from("documents")
-        .update({ indexed: !handleResult.isBridgy })
+        .update({ indexed: true })
         .eq("uri", document_uri)
         .select();
     });
 
-    if (!bsky_post_uri || handleResult.isBridgy) {
+    if (!bsky_post_uri) {
       return { handle: handleResult.handle };
     }
 

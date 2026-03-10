@@ -36,7 +36,7 @@ export function PublicationSettingsButton(props: { publication: string }) {
       onOpenChange={() => setState("menu")}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className={`max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
+      className={`flex flex-col max-w-xs w-[1000px] ${state === "theme" && "bg-white!"} pb-0!`}
       arrowFill={theme.colors["border-light"]}
       trigger={
         <ActionButton
@@ -75,6 +75,7 @@ export function PublicationSettingsButton(props: { publication: string }) {
           setLoading={setLoading}
         />
       )}
+      <div className="spacer h-2 w-full" aria-hidden />
     </Popover>
   );
 }
@@ -99,7 +100,7 @@ const PubSettingsMenu = (props: {
           props.setState("pub-settings");
         }}
       >
-        Publiction Settings
+        Publication Settings
         <ArrowRightTiny />
       </button>
       <button
@@ -151,7 +152,7 @@ export const PubSettingsHeader = (props: {
   children: React.ReactNode;
 }) => {
   return (
-    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1">
+    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1 flex-shrink-0">
       {props.children}
       {props.backToMenuAction && (
         <div className="flex gap-2">

@@ -31,9 +31,10 @@ export const createUndoManager = () => {
     undo: () => undoManager.undo(),
     redo: () => undoManager.redo(),
     withUndoGroup: <T>(cb: () => T) => {
-      if (!isGrouping) um.startGroup();
+      const wasGrouping = isGrouping;
+      if (!wasGrouping) um.startGroup();
       const r = cb();
-      if (!isGrouping) um.endGroup();
+      if (!wasGrouping) um.endGroup();
       return r;
     },
   };

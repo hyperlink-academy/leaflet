@@ -16,7 +16,7 @@ import {
 import { AppBskyFeedDefs } from "@atproto/api";
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
-import { openPage, useOpenPages } from "../PostPages";
+import { openPage, useOpenPages } from "../postPageState";
 import {
   openInteractionDrawer,
   setInteractionState,
@@ -38,7 +38,6 @@ export function PublishedPageLinkBlock(props: {
   isCanvas?: boolean;
   pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
-  //switch to use actually state
   let openPages = useOpenPages();
   let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
   return (
@@ -92,7 +91,7 @@ export function DocLinkBlock(props: {
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
-  let [title, description] = props.blocks
+  let [title, description, thirdLine] = props.blocks
     .map((b) => b.block)
     .filter(
       (b) => PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
@@ -111,7 +110,7 @@ export function DocLinkBlock(props: {
             <div className="grow">
               {title && (
                 <div
-                  className={`pageBlockOne outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold text-base" : ""}`}
+                  className={`pageBlockOne outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={title.facets}
@@ -128,6 +127,18 @@ export function DocLinkBlock(props: {
                   <TextBlock
                     facets={description.facets}
                     plaintext={description.plaintext}
+                    index={[]}
+                    preview
+                  />
+                </div>
+              )}
+              {thirdLine && (
+                <div
+                  className={`pageBlockLineThree outline-none resize-none align-top gap-2 ${thirdLine.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                >
+                  <TextBlock
+                    facets={thirdLine.facets}
+                    plaintext={thirdLine.plaintext}
                     index={[]}
                     preview
                   />
@@ -155,9 +166,8 @@ export function PagePreview(props: {
 }) {
   let previewRef = useRef<HTMLDivElement | null>(null);
   let { rootEntity } = useReplicache();
-  const { theme } = useDocument();
   let pageWidth = `var(--page-width-unitless)`;
-  let cardBorderHidden = !theme?.showPageBackground;
+  let cardBorderHidden = useCardBorderHidden();
   return (
     <div
       ref={previewRef}
@@ -198,9 +208,7 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
   let comments = allComments.filter(
     (c) => (c.record as PubLeafletComment.Record)?.onPage === props.pageId,
   ).length;
-  let quotes = mentions.filter((q) =>
-    q.link.includes(props.pageId),
-  ).length;
+  let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 

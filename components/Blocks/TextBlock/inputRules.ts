@@ -12,6 +12,8 @@ import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { flushSync } from "react-dom";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
+import { insertFootnote } from "./insertFootnote";
+import { useEditorStates } from "src/state/useEditorState";
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
@@ -154,11 +156,46 @@ export const inputrules = (
         if (propsRef.current.listData) return null;
         let tr = state.tr;
         tr.delete(0, 2);
-        repRef.current?.mutate.assertFact({
-          entity: propsRef.current.entityID,
-          attribute: "block/is-list",
-          data: { type: "boolean", value: true },
-        });
+        repRef.current?.mutate.assertFact([
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          },
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/list-style",
+            data: { type: "list-style-union", value: "unordered" },
+          },
+        ]);
+        return tr;
+      }),
+
+      // Ordered List - respect the starting number typed (supports "1." or "1)")
+      new InputRule(/^(\d+)[.)]\s$/, (state, match) => {
+        if (propsRef.current.listData) return null;
+        let tr = state.tr;
+        tr.delete(0, match[0].length);
+        const startNumber = parseInt(match[1], 10);
+        repRef.current?.mutate.assertFact([
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          },
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/list-style",
+            data: { type: "list-style-union", value: "ordered" },
+          },
+        ]);
+        if (startNumber > 1) {
+          repRef.current?.mutate.assertFact({
+            entity: propsRef.current.entityID,
+            attribute: "block/list-number",
+            data: { type: "number", value: startNumber },
+          });
+        }
         return tr;
       }),
 
@@ -175,7 +212,7 @@ export const inputrules = (
       }),
 
       //Header
-      new InputRule(/^([#]{1,3})\s$/, (state, match) => {
+      new InputRule(/^([#]{1,4})\s$/, (state, match) => {
         let tr = state.tr;
         tr.delete(0, match[0].length);
         let headingLevel = match[1].length;
@@ -189,6 +226,22 @@ export const inputrules = (
           attribute: "block/heading-level",
           data: { type: "number", value: headingLevel },
         });
+        return tr;
+      }),
+
+      // Footnote - [^ triggers footnote insertion
+      new InputRule(/\[\^$/, (state, match, start, end) => {
+        let tr = state.tr.delete(start, end);
+        setTimeout(() => {
+          let view = useEditorStates.getState().editorStates[propsRef.current.entityID]?.view;
+          if (!view || !repRef.current) return;
+          insertFootnote(
+            view,
+            propsRef.current.entityID,
+            repRef.current,
+            propsRef.current.entity_set.set,
+          );
+        }, 0);
         return tr;
       }),
 

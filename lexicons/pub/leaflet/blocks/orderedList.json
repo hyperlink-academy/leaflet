@@ -1,0 +1,54 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.orderedList",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "children"
+      ],
+      "properties": {
+        "startIndex": {
+          "type": "integer",
+          "description": "The starting number for this ordered list. Defaults to 1 if not specified."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "#listItem"
+          }
+        }
+      }
+    },
+    "listItem": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.blocks.text",
+            "pub.leaflet.blocks.header",
+            "pub.leaflet.blocks.image"
+          ]
+        },
+        "children": {
+          "type": "array",
+          "description": "Nested ordered list items. Mutually exclusive with unorderedListChildren; if both are present, children takes precedence.",
+          "items": {
+            "type": "ref",
+            "ref": "#listItem"
+          }
+        },
+        "unorderedListChildren": {
+          "type": "ref",
+          "description": "A nested unordered list. Mutually exclusive with children; if both are present, children takes precedence.",
+          "ref": "pub.leaflet.blocks.unorderedList"
+        }
+      }
+    }
+  }
+}

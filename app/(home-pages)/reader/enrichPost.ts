@@ -34,7 +34,10 @@ export async function enrichDocumentToPost(
   const handle = await idResolver.did.resolve(uri.host);
 
   const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
-  if (!normalizedData) return null;
+  if (!normalizedData) {
+    console.log("[enrichPost] normalizeDocumentRecord returned null for:", doc.uri);
+    return null;
+  }
 
   const normalizedPubRecord = pub
     ? normalizePublicationRecord(pub.record)

@@ -8,7 +8,7 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
-import { OpenPage, openPage } from "./PostPages";
+import { OpenPage, openPage } from "./postPageState";
 import { ThreadLink, QuotesLink } from "./PostLinks";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { Avatar } from "components/Avatar";

@@ -14,6 +14,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
+import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -48,19 +49,29 @@ export default async function LeafletPage(props: Props) {
     getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
   ]);
   let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
+
+  // Extract font settings from facts for server-side font loading
+  const { headingFontId, bodyFontId } = extractFontsFromFacts(initialFacts as any, rootEntity);
+
   return (
-    <PageSWRDataProvider
-      rsvp_data={rsvp_data}
-      poll_data={poll_data}
-      leaflet_id={res.data.id}
-      leaflet_data={res}
-    >
-      <Leaflet
-        initialFacts={initialFacts}
-        leaflet_id={rootEntity}
-        token={res.data}
-      />
-    </PageSWRDataProvider>
+    <>
+      {/* Server-side font loading with preload and @font-face */}
+      <FontLoader headingFontId={headingFontId} bodyFontId={bodyFontId} />
+      <PageSWRDataProvider
+        rsvp_data={rsvp_data}
+        poll_data={poll_data}
+        leaflet_id={res.data.id}
+        leaflet_data={res}
+      >
+        <Leaflet
+          initialFacts={initialFacts}
+          leaflet_id={rootEntity}
+          token={res.data}
+          initialHeadingFontId={headingFontId}
+          initialBodyFontId={bodyFontId}
+        />
+      </PageSWRDataProvider>
+    </>
   );
 }
 

@@ -8,17 +8,16 @@ import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PostListing } from "components/PostListing";
-import { useHasBackgroundImage } from "components/Pages/useHasBackgroundImage";
 import {
   DesktopInteractionPreviewDrawer,
   MobileInteractionPreviewDrawer,
 } from "./InteractionDrawers";
+import { useSelectedPostListing } from "src/useSelectedPostState";
 
 export const InboxContent = (props: {
   promise: Promise<{ posts: Post[]; nextCursor: Cursor | null }>;
 }) => {
   const { posts, nextCursor } = use(props.promise);
-
   const getKey = (
     pageIndex: number,
     previousPageData: {
@@ -46,6 +45,8 @@ export const InboxContent = (props: {
   );
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
 
   // Set up intersection observer to load more when trigger element is visible
   useEffect(() => {
@@ -76,15 +77,17 @@ export const InboxContent = (props: {
       new Date(a.documents.data?.publishedAt || 0).getTime(),
   );
 
-  if (allPosts.length === 0 && !isValidating) return <ReaderEmpty />;
-
-  let hasBackgroundImage = useHasBackgroundImage();
+  if (allPosts.length === 0) return <ReaderEmpty />;
 
   return (
-    <div className="flex flex-row gap-6 w-full ">
-      <div className="flex flex-col gap-6 w-full relative">
+    <div className="inboxReader flex flex-row gap-6 w-full ">
+      <div className="inboxPostListings flex flex-col gap-6 min-w-0 grow w-full relative">
         {sortedPosts.map((p) => (
-          <PostListing {...p} key={p.documents.uri} />
+          <PostListing
+            {...p}
+            key={p.documents.uri}
+            selected={selectedPost?.document_uri === p.documents.uri}
+          />
         ))}
         {/* Trigger element for loading more posts */}
         <div
@@ -92,7 +95,7 @@ export const InboxContent = (props: {
           className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
           aria-hidden="true"
         />
-        {isValidating && (
+        {isValidating && allPosts.length > 0 && (
           <div className="text-center text-tertiary py-4">
             Loading more posts...
           </div>

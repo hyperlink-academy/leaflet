@@ -8,6 +8,7 @@ import { HighlightButton } from "./HighlightToolbar";
 import { ToolbarTypes } from ".";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
+import { FootnoteButton } from "./FootnoteButton";
 import { Props } from "components/Icons/Props";
 import { isMac } from "src/utils/isDevice";
 
@@ -80,6 +81,7 @@ export const TextToolbar = (props: {
       <TextAlignmentButton setToolbarState={props.setToolbarState} />
       <ListButton setToolbarState={props.setToolbarState} />
       <Separator classname="h-6!" />
+      <FootnoteButton />
     </>
   );
 };

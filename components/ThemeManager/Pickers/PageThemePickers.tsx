@@ -21,6 +21,7 @@ import { pickers, setColorAttribute } from "../ThemeSetter";
 import { ImageInput, ImageSettings } from "./ImagePicker";
 
 import { ColorPicker, thumbStyle } from "./ColorPicker";
+import { FontPicker } from "./TextPickers";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Replicache } from "replicache";
 import { CanvasBackgroundPattern } from "components/Canvas";
@@ -31,6 +32,8 @@ export const PageThemePickers = (props: {
   entityID: string;
   openPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
+  home?: boolean;
+  hideFonts?: boolean;
 }) => {
   let { rep } = useReplicache();
   let set = useMemo(() => {
@@ -39,6 +42,8 @@ export const PageThemePickers = (props: {
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
+  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value;
+  let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value;
 
   return (
     <div
@@ -57,6 +62,20 @@ export const PageThemePickers = (props: {
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
       />
+      {!props.home && !props.hideFonts && (
+        <>
+          <FontPicker
+            label="Heading"
+            value={headingFontId}
+            onChange={(fontId) => rep?.mutate.assertFact({ entity: props.entityID, attribute: "theme/heading-font", data: { type: "string", value: fontId } })}
+          />
+          <FontPicker
+            label="Body"
+            value={bodyFontId}
+            onChange={(fontId) => rep?.mutate.assertFact({ entity: props.entityID, attribute: "theme/body-font", data: { type: "string", value: fontId } })}
+          />
+        </>
+      )}
     </div>
   );
 };

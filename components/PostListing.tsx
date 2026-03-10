@@ -13,10 +13,9 @@ import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { InteractionPreview, TagPopover } from "./InteractionsPreview";
+import { TagPopover } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSmoker } from "./Toast";
-import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { QuoteTiny } from "./Icons/QuoteTiny";
 import { ShareTiny } from "./Icons/ShareTiny";
@@ -25,8 +24,9 @@ import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { RecommendButton } from "./RecommendButton";
+import { getFirstParagraph } from "src/utils/getFirstParagraph";
 
-export const PostListing = (props: Post) => {
+export const PostListing = (props: Post & { selected?: boolean }) => {
   let pubRecord = props.publication?.pubRecord as
     | NormalizedPublication
     | undefined;
@@ -100,8 +100,8 @@ export const PostListing = (props: Post) => {
           className={`
           relative
           flex flex-col overflow-hidden
-          selected-outline border-border-light rounded-lg w-full  hover:outline-accent-contrast
-          hover:border-accent-contrast
+          selected-outline  rounded-lg w-full
+          ${props.selected ? "outline-2 outline-offset-1 outline-accent-contrast border-accent-contrast" : "hover:outline-accent-contrast hover:border-accent-contrast border-border-light"}
           ${showPageBackground ? "bg-bg-page " : "bg-bg-leaflet"} `}
           style={
             hasBackgroundImage
@@ -134,13 +134,13 @@ export const PostListing = (props: Post) => {
           )}
           <div className="postListingInfo px-3 py-2">
             {postRecord.title && (
-              <h3 className="postListingTitle text-primary line-clamp-2 sm:text-lg text-base">
+              <h3 className="postListingTitle text-primary line-clamp-2 sm:text-lg text-base pb-0.5">
                 {postRecord.title}
               </h3>
             )}
 
-            <p className="postListingDescription text-secondary line-clamp-3 sm:text-base text-sm">
-              {postRecord.description}
+            <p className="postListingDescription text-secondary line-clamp-3 leading-snug sm:text-base text-sm">
+              {postRecord.description || getFirstParagraph(postRecord)}
             </p>
             <div className="flex flex-col-reverse gap-2 text-sm text-tertiary items-center justify-start pt-1.5 w-full">
               {props.publication && pubRecord && (

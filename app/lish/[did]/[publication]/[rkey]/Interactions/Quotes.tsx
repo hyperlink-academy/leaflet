@@ -18,13 +18,22 @@ import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
-import { openPage } from "../PostPages";
+import { openPage } from "../postPageState";
 import useSWR, { mutate } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { ThreadLink, QuotesLink } from "../PostLinks";
 import { BskyPostContent } from "../BskyPostContent";
+
+function engagementScore(post: PostView | undefined): number {
+  if (!post) return 0;
+  return (
+    (post.likeCount ?? 0) +
+    (post.replyCount ?? 0) * 1.5 +
+    (post.quoteCount ?? 0) * 1.5
+  );
+}
 
 // Helper to get SWR key for quotes
 export function getQuotesSWRKey(uris: string[]) {
@@ -84,6 +93,15 @@ export const MentionsDrawerContent = (props: {
   bskyPosts?.forEach((pv) => {
     postViewMap.set(pv.uri, pv);
   });
+
+  // Sort by engagement: likes count 1, replies and quotes count 1.5
+  const byEngagement = (a: { uri: string }, b: { uri: string }) => {
+    const scoreA = engagementScore(postViewMap.get(a.uri));
+    const scoreB = engagementScore(postViewMap.get(b.uri));
+    return scoreB - scoreA;
+  };
+  quotesWithLinks.sort(byEngagement);
+  directMentions.sort(byEngagement);
 
   return (
     <>
@@ -333,6 +351,7 @@ function extractQuotedListItems(
   parentPath: number[],
 ): PubLeafletBlocksUnorderedList.ListItem[] {
   const result: PubLeafletBlocksUnorderedList.ListItem[] = [];
+  if (!Array.isArray(items)) return [];
 
   items.forEach((item, index) => {
     const itemPath = [...parentPath, index];
@@ -427,26 +446,28 @@ function trimTextBlock(
     PubLeafletBlocksText.isMain(block.block) ||
     PubLeafletBlocksHeader.isMain(block.block)
   ) {
-    adjustedFacets = block.block?.facets
-      ?.map((facet) => {
-        const facetStart = facet.index.byteStart;
-        const facetEnd = facet.index.byteEnd;
+    adjustedFacets = !Array.isArray(block.block?.facets)
+      ? []
+      : (block.block?.facets
+          ?.map((facet) => {
+            const facetStart = facet.index.byteStart;
+            const facetEnd = facet.index.byteEnd;
 
-        // Skip facets outside the quoted range
-        if (facetEnd <= startOffset || facetStart >= endOffset) {
-          return null;
-        }
+            // Skip facets outside the quoted range
+            if (facetEnd <= startOffset || facetStart >= endOffset) {
+              return null;
+            }
 
-        // Adjust facet indices
-        return {
-          ...facet,
-          index: {
-            byteStart: Math.max(0, facetStart - startOffset),
-            byteEnd: Math.min(quotedText.length, facetEnd - startOffset),
-          },
-        };
-      })
-      .filter((f) => f !== null) as typeof block.block.facets;
+            // Adjust facet indices
+            return {
+              ...facet,
+              index: {
+                byteStart: Math.max(0, facetStart - startOffset),
+                byteEnd: Math.min(quotedText.length, facetEnd - startOffset),
+              },
+            };
+          })
+          .filter((f) => f !== null) as typeof block.block.facets);
   }
 
   return {

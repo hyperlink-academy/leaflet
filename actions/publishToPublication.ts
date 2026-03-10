@@ -10,6 +10,7 @@ import {
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
+  PubLeafletBlocksOrderedList,
   PubLeafletDocument,
   SiteStandardDocument,
   PubLeafletContent,
@@ -41,7 +42,7 @@ import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
-import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
+import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
 import {
@@ -259,7 +260,7 @@ export async function publishToPublication({
 
     record = {
       $type: "site.standard.document",
-      title: title || "Untitled",
+      title: title || "",
       site: siteUri,
       path: "/" + rkey,
       publishedAt:
@@ -293,7 +294,7 @@ export async function publishToPublication({
           ...preferences,
         },
       }),
-      title: title || "Untitled",
+      title: title || "",
       description: description || "",
       ...(tags !== undefined && { tags }),
       ...(coverImageBlob && { coverImage: coverImageBlob }),
@@ -338,7 +339,7 @@ export async function publishToPublication({
     await supabaseServerClient.from("leaflets_to_documents").upsert({
       leaflet: leaflet_id,
       document: result.uri,
-      title: title || "Untitled",
+      title: title || "",
       description: description || "",
     });
 
@@ -454,21 +455,66 @@ async function processBlocksToPages(
             if (alignment) block.alignment = alignment;
             return [block];
           } else {
-            let block: PubLeafletPagesLinearDocument.Block = {
-              $type: "pub.leaflet.pages.linearDocument#block",
-              block: {
-                $type: "pub.leaflet.blocks.unorderedList",
-                children: await childrenToRecord(blockOrList.children, did),
-              },
-            };
-            return [block];
+            let runs = splitListByStyle(blockOrList.children);
+            let blocks = await Promise.all(
+              runs.map(async (run) => {
+                if (run.style === "ordered") {
+                  let block: PubLeafletPagesLinearDocument.Block = {
+                    $type: "pub.leaflet.pages.linearDocument#block",
+                    block: {
+                      $type: "pub.leaflet.blocks.orderedList",
+                      startIndex:
+                        run.children[0].block.listData?.listStart || 1,
+                      children: await orderedChildrenToRecord(
+                        run.children,
+                        did,
+                      ),
+                    },
+                  };
+                  return block;
+                } else {
+                  let block: PubLeafletPagesLinearDocument.Block = {
+                    $type: "pub.leaflet.pages.linearDocument#block",
+                    block: {
+                      $type: "pub.leaflet.blocks.unorderedList",
+                      children: await unorderedChildrenToRecord(
+                        run.children,
+                        did,
+                      ),
+                    },
+                  };
+                  return block;
+                }
+              }),
+            );
+            return blocks;
           }
         }),
       )
     ).flat();
   }
 
-  async function childrenToRecord(children: List[], did: string) {
+  function splitListByStyle(children: List[]) {
+    let runs: { style: "ordered" | "unordered"; children: List[] }[] = [];
+    for (let child of children) {
+      let style: "ordered" | "unordered" =
+        child.block.listData?.listStyle === "ordered"
+          ? "ordered"
+          : "unordered";
+      let last = runs[runs.length - 1];
+      if (last && last.style === style) {
+        last.children.push(child);
+      } else {
+        runs.push({ style, children: [child] });
+      }
+    }
+    return runs;
+  }
+
+  async function unorderedChildrenToRecord(
+    children: List[],
+    did: string,
+  ): Promise<PubLeafletBlocksUnorderedList.ListItem[]> {
     return (
       await Promise.all(
         children.map(async (child) => {
@@ -477,14 +523,73 @@ async function processBlocksToPages(
           let record: PubLeafletBlocksUnorderedList.ListItem = {
             $type: "pub.leaflet.blocks.unorderedList#listItem",
             content,
-            children: await childrenToRecord(child.children, did),
           };
+          let sameStyle = child.children.filter(
+            (c) => c.block.listData?.listStyle !== "ordered",
+          );
+          let diffStyle = child.children.filter(
+            (c) => c.block.listData?.listStyle === "ordered",
+          );
+          if (sameStyle.length > 0) {
+            record.children = await unorderedChildrenToRecord(sameStyle, did);
+          }
+          if (diffStyle.length > 0) {
+            record.orderedListChildren = {
+              $type: "pub.leaflet.blocks.orderedList",
+              children: await orderedChildrenToRecord(diffStyle, did),
+            };
+          }
+          return record;
+        }),
+      )
+    ).flat();
+  }
+
+  async function orderedChildrenToRecord(
+    children: List[],
+    did: string,
+  ): Promise<PubLeafletBlocksOrderedList.ListItem[]> {
+    return (
+      await Promise.all(
+        children.map(async (child) => {
+          let content = await blockToRecord(child.block, did);
+          if (!content) return [];
+          let record: PubLeafletBlocksOrderedList.ListItem = {
+            $type: "pub.leaflet.blocks.orderedList#listItem",
+            content,
+          };
+          let sameStyle = child.children.filter(
+            (c) => c.block.listData?.listStyle === "ordered",
+          );
+          let diffStyle = child.children.filter(
+            (c) => c.block.listData?.listStyle !== "ordered",
+          );
+          if (sameStyle.length > 0) {
+            record.children = await orderedChildrenToRecord(sameStyle, did);
+          }
+          if (diffStyle.length > 0) {
+            record.unorderedListChildren = {
+              $type: "pub.leaflet.blocks.unorderedList",
+              children: await unorderedChildrenToRecord(diffStyle, did),
+            };
+          }
           return record;
         }),
       )
     ).flat();
   }
   async function blockToRecord(b: Block, did: string) {
+    const footnoteContentResolver = (footnoteEntityID: string) => {
+      let [content] = scan.eav(footnoteEntityID, "block/text");
+      if (!content) return { plaintext: "", facets: [] as PubLeafletRichtextFacet.Main[] };
+      let doc = new Y.Doc();
+      const update = base64.toByteArray(content.data.value);
+      Y.applyUpdate(doc, update);
+      let nodes = doc.getXmlElement("prosemirror").toArray();
+      let plaintext = YJSFragmentToString(nodes[0]);
+      let { facets } = YJSFragmentToFacets(nodes[0]);
+      return { plaintext, facets };
+    };
     const getBlockContent = (b: string) => {
       let [content] = scan.eav(b, "block/text");
       if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
@@ -493,7 +598,7 @@ async function processBlocksToPages(
       Y.applyUpdate(doc, update);
       let nodes = doc.getXmlElement("prosemirror").toArray();
       let stringValue = YJSFragmentToString(nodes[0]);
-      let { facets } = YJSFragmentToFacets(nodes[0]);
+      let { facets } = YJSFragmentToFacets(nodes[0], 0, footnoteContentResolver);
       return [stringValue, facets] as const;
     };
     if (b.type === "card") {
@@ -553,7 +658,7 @@ async function processBlocksToPages(
         $type: "pub.leaflet.blocks.header",
         level: Math.floor(headingLevel?.data.value || 1),
         plaintext: stringValue,
-        facets,
+        ...(facets.length > 0 && { facets }),
       };
       return block;
     }
@@ -563,7 +668,7 @@ async function processBlocksToPages(
       let block: $Typed<PubLeafletBlocksBlockquote.Main> = {
         $type: ids.PubLeafletBlocksBlockquote,
         plaintext: stringValue,
-        facets,
+        ...(facets.length > 0 && { facets }),
       };
       return block;
     }
@@ -574,7 +679,7 @@ async function processBlocksToPages(
       let block: $Typed<PubLeafletBlocksText.Main> = {
         $type: ids.PubLeafletBlocksText,
         plaintext: stringValue,
-        facets,
+        ...(facets.length > 0 && { facets }),
         ...(textSize && { textSize: textSize.data.value }),
       };
       return block;
@@ -759,8 +864,34 @@ async function processBlocksToPages(
 function YJSFragmentToFacets(
   node: Y.XmlElement | Y.XmlText | Y.XmlHook,
   byteOffset: number = 0,
+  footnoteContentResolver?: (footnoteEntityID: string) => { plaintext: string; facets: PubLeafletRichtextFacet.Main[] },
 ): { facets: PubLeafletRichtextFacet.Main[]; byteLength: number } {
   if (node.constructor === Y.XmlElement) {
+    // Handle footnote inline nodes
+    if (node.nodeName === "footnote") {
+      const footnoteEntityID = node.getAttribute("footnoteEntityID") || "";
+      const placeholder = "*";
+      const unicodestring = new UnicodeString(placeholder);
+      let footnoteContent = footnoteContentResolver?.(footnoteEntityID);
+      const facet: PubLeafletRichtextFacet.Main = {
+        index: {
+          byteStart: byteOffset,
+          byteEnd: byteOffset + unicodestring.length,
+        },
+        features: [
+          {
+            $type: "pub.leaflet.richtext.facet#footnote",
+            footnoteId: footnoteEntityID,
+            contentPlaintext: footnoteContent?.plaintext || "",
+            ...(footnoteContent?.facets?.length
+              ? { contentFacets: footnoteContent.facets }
+              : {}),
+          },
+        ],
+      };
+      return { facets: [facet], byteLength: unicodestring.length };
+    }
+
     // Handle inline mention nodes
     if (node.nodeName === "didMention") {
       const text = node.getAttribute("text") || "";
@@ -807,7 +938,7 @@ function YJSFragmentToFacets(
     let allFacets: PubLeafletRichtextFacet.Main[] = [];
     let currentOffset = byteOffset;
     for (const child of node.toArray()) {
-      const result = YJSFragmentToFacets(child, currentOffset);
+      const result = YJSFragmentToFacets(child, currentOffset, footnoteContentResolver);
       allFacets.push(...result.facets);
       currentOffset += result.byteLength;
     }

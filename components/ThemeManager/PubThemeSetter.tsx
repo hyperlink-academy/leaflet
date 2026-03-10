@@ -20,6 +20,7 @@ import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { PubPageWidthSetter } from "./PubPickers/PubPageWidthSetter";
+import { FontPicker } from "./Pickers/TextPickers";
 
 export type ImageState = {
   src: string;
@@ -60,178 +61,205 @@ export const PubThemeSetter = (props: {
   let [pageWidth, setPageWidth] = useState<number>(
     record?.theme?.pageWidth || 624,
   );
+  let [headingFont, setHeadingFont] = useState<string | undefined>(record?.theme?.headingFont);
+  let [bodyFont, setBodyFont] = useState<string | undefined>(record?.theme?.bodyFont);
   let pubBGImage = image?.src || null;
   let leafletBGRepeat = image?.repeat || null;
   let toaster = useToaster();
 
   return (
-    <BaseThemeProvider local {...localPubTheme} hasBackgroundImage={!!image}>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (!pub) return;
-          props.setLoading(true);
-          let result = await updatePublicationTheme({
-            uri: pub.uri,
-            theme: {
-              pageBackground: ColorToRGBA(localPubTheme.bgPage),
-              showPageBackground: showPageBackground,
-              backgroundColor: image
-                ? ColorToRGBA(localPubTheme.bgLeaflet)
-                : ColorToRGB(localPubTheme.bgLeaflet),
-              backgroundRepeat: image?.repeat,
-              backgroundImage: image ? image.file : null,
-              pageWidth: pageWidth,
-              primary: ColorToRGB(localPubTheme.primary),
-              accentBackground: ColorToRGB(localPubTheme.accent1),
-              accentText: ColorToRGB(localPubTheme.accent2),
-            },
-          });
+    <BaseThemeProvider
+      local
+      {...localPubTheme}
+      headingFontId={headingFont}
+      bodyFontId={bodyFont}
+      hasBackgroundImage={!!image}
+      className="min-h-0!"
+    >
+      <div className="min-h-0 flex-1 flex flex-col pb-0.5">
+        <form
+          className="flex-shrink-0"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!pub) return;
+            props.setLoading(true);
+            let result = await updatePublicationTheme({
+              uri: pub.uri,
+              theme: {
+                pageBackground: ColorToRGBA(localPubTheme.bgPage),
+                showPageBackground: showPageBackground,
+                backgroundColor: image
+                  ? ColorToRGBA(localPubTheme.bgLeaflet)
+                  : ColorToRGB(localPubTheme.bgLeaflet),
+                backgroundRepeat: image?.repeat,
+                backgroundImage: image ? image.file : null,
+                pageWidth: pageWidth,
+                primary: ColorToRGB(localPubTheme.primary),
+                accentBackground: ColorToRGB(localPubTheme.accent1),
+                accentText: ColorToRGB(localPubTheme.accent2),
+                headingFont: headingFont,
+                bodyFont: bodyFont,
+              },
+            });
 
-          if (!result.success) {
-            props.setLoading(false);
-            if (result.error && isOAuthSessionError(result.error)) {
-              toaster({
-                content: <OAuthErrorMessage error={result.error} />,
-                type: "error",
-              });
-            } else {
-              toaster({
-                content: "Failed to update theme",
-                type: "error",
-              });
+            if (!result.success) {
+              props.setLoading(false);
+              if (result.error && isOAuthSessionError(result.error)) {
+                toaster({
+                  content: <OAuthErrorMessage error={result.error} />,
+                  type: "error",
+                });
+              } else {
+                toaster({
+                  content: "Failed to update theme",
+                  type: "error",
+                });
+              }
+              return;
             }
-            return;
-          }
 
-          mutate((pub) => {
-            if (result.publication && pub?.publication)
-              return {
-                ...pub,
-                publication: { ...pub.publication, ...result.publication },
-              };
-            return pub;
-          }, false);
-          props.setLoading(false);
-        }}
-      >
-        <PubSettingsHeader
-          loading={props.loading}
-          setLoadingAction={props.setLoading}
-          backToMenuAction={props.backToMenu}
+            mutate((pub) => {
+              if (result.publication && pub?.publication)
+                return {
+                  ...pub,
+                  publication: { ...pub.publication, ...result.publication },
+                };
+              return pub;
+            }, false);
+            props.setLoading(false);
+          }}
         >
-          Theme and Layout
-        </PubSettingsHeader>
-      </form>
-
-      <div className="themeSetterContent flex flex-col w-full overflow-y-scroll -mb-2 mt-2 ">
-        <PubPageWidthSetter
-          pageWidth={pageWidth}
-          setPageWidth={setPageWidth}
-          thisPicker="page-width"
-          openPicker={openPicker}
-          setOpenPicker={setOpenPicker}
-        />
-        <div className="themeBGLeaflet flex flex-col">
-          <div
-            className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
+          <PubSettingsHeader
+            loading={props.loading}
+            setLoadingAction={props.setLoading}
+            backToMenuAction={props.backToMenu}
+            state={"theme"}
           >
-            <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
-              <BackgroundPicker
-                bgImage={image}
-                setBgImage={setImage}
-                backgroundColor={localPubTheme.bgLeaflet}
+            Theme and Layout
+          </PubSettingsHeader>
+        </form>
+
+        <div className="themeSetterContent flex flex-col w-full overflow-y-scroll min-h-0 -mb-2 pt-2 ">
+          <PubPageWidthSetter
+            pageWidth={pageWidth}
+            setPageWidth={setPageWidth}
+            thisPicker="page-width"
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+          />
+          <div className="themeBGLeaflet flex flex-col">
+            <div
+              className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
+            >
+              <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
+                <BackgroundPicker
+                  bgImage={image}
+                  setBgImage={setImage}
+                  backgroundColor={localPubTheme.bgLeaflet}
+                  pageBackground={localPubTheme.bgPage}
+                  setPageBackground={(color) => {
+                    setTheme((t) => ({ ...t, bgPage: color }));
+                  }}
+                  setBackgroundColor={(color) => {
+                    setTheme((t) => ({ ...t, bgLeaflet: color }));
+                  }}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                  hasPageBackground={!!showPageBackground}
+                  setHasPageBackground={setShowPageBackground}
+                />
+              </div>
+
+              <SectionArrow
+                fill="white"
+                stroke="#CCCCCC"
+                className="ml-2 -mt-[1px]"
+              />
+            </div>
+          </div>
+
+          <div
+            style={{
+              backgroundImage: pubBGImage ? `url(${pubBGImage})` : undefined,
+              backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+              backgroundPosition: "center",
+              backgroundSize: !leafletBGRepeat
+                ? "cover"
+                : `calc(${leafletBGRepeat}px / 2 )`,
+            }}
+            className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
+          >
+            <div className={`flex flex-col  gap-3 z-10`}>
+              <PagePickers
                 pageBackground={localPubTheme.bgPage}
+                primary={localPubTheme.primary}
                 setPageBackground={(color) => {
                   setTheme((t) => ({ ...t, bgPage: color }));
                 }}
-                setBackgroundColor={(color) => {
-                  setTheme((t) => ({ ...t, bgLeaflet: color }));
+                setPrimary={(color) => {
+                  setTheme((t) => ({ ...t, primary: color }));
                 }}
                 openPicker={openPicker}
-                setOpenPicker={setOpenPicker}
-                hasPageBackground={!!showPageBackground}
-                setHasPageBackground={setShowPageBackground}
+                setOpenPicker={(pickers) => setOpenPicker(pickers)}
+                hasPageBackground={showPageBackground}
+              />
+              <div className="bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))] flex flex-col gap-1">
+                <FontPicker
+                  label="Heading"
+                  value={headingFont}
+                  onChange={setHeadingFont}
+                />
+                <FontPicker
+                  label="Body"
+                  value={bodyFont}
+                  onChange={setBodyFont}
+                />
+              </div>
+              <PubAccentPickers
+                accent1={localPubTheme.accent1}
+                setAccent1={(color) => {
+                  setTheme((t) => ({ ...t, accent1: color }));
+                }}
+                accent2={localPubTheme.accent2}
+                setAccent2={(color) => {
+                  setTheme((t) => ({ ...t, accent2: color }));
+                }}
+                openPicker={openPicker}
+                setOpenPicker={(pickers) => setOpenPicker(pickers)}
               />
             </div>
-
-            <SectionArrow
-              fill="white"
-              stroke="#CCCCCC"
-              className="ml-2 -mt-[1px]"
-            />
           </div>
-        </div>
-
-        <div
-          style={{
-            backgroundImage: pubBGImage ? `url(${pubBGImage})` : undefined,
-            backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: !leafletBGRepeat
-              ? "cover"
-              : `calc(${leafletBGRepeat}px / 2 )`,
-          }}
-          className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
-        >
-          <div className={`flex flex-col  gap-3 z-10`}>
-            <PagePickers
-              pageBackground={localPubTheme.bgPage}
-              primary={localPubTheme.primary}
-              setPageBackground={(color) => {
-                setTheme((t) => ({ ...t, bgPage: color }));
-              }}
-              setPrimary={(color) => {
-                setTheme((t) => ({ ...t, primary: color }));
-              }}
-              openPicker={openPicker}
-              setOpenPicker={(pickers) => setOpenPicker(pickers)}
-              hasPageBackground={showPageBackground}
-            />
-            <PubAccentPickers
-              accent1={localPubTheme.accent1}
-              setAccent1={(color) => {
-                setTheme((t) => ({ ...t, accent1: color }));
-              }}
-              accent2={localPubTheme.accent2}
-              setAccent2={(color) => {
-                setTheme((t) => ({ ...t, accent2: color }));
-              }}
-              openPicker={openPicker}
-              setOpenPicker={(pickers) => setOpenPicker(pickers)}
-            />
+          <div className="flex flex-col mt-4 ">
+            <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
+              <div className="text-sm">Preview</div>
+              <Separator classname="h-4!" />{" "}
+              <button
+                className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
+                onClick={() => setSample("pub")}
+              >
+                Pub
+              </button>
+              <button
+                className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
+                onClick={() => setSample("post")}
+              >
+                Post
+              </button>
+            </div>
+            {sample === "pub" ? (
+              <SamplePub
+                pubBGImage={pubBGImage}
+                pubBGRepeat={leafletBGRepeat}
+                showPageBackground={showPageBackground}
+              />
+            ) : (
+              <SamplePost
+                pubBGImage={pubBGImage}
+                pubBGRepeat={leafletBGRepeat}
+                showPageBackground={showPageBackground}
+              />
+            )}
           </div>
-        </div>
-        <div className="flex flex-col mt-4 ">
-          <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
-            <div className="text-sm">Preview</div>
-            <Separator classname="h-4!" />{" "}
-            <button
-              className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
-              onClick={() => setSample("pub")}
-            >
-              Pub
-            </button>
-            <button
-              className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
-              onClick={() => setSample("post")}
-            >
-              Post
-            </button>
-          </div>
-          {sample === "pub" ? (
-            <SamplePub
-              pubBGImage={pubBGImage}
-              pubBGRepeat={leafletBGRepeat}
-              showPageBackground={showPageBackground}
-            />
-          ) : (
-            <SamplePost
-              pubBGImage={pubBGImage}
-              pubBGRepeat={leafletBGRepeat}
-              showPageBackground={showPageBackground}
-            />
-          )}
         </div>
       </div>
     </BaseThemeProvider>
@@ -262,7 +290,7 @@ const SamplePub = (props: {
       className={`bg-bg-leaflet p-3 pb-0 flex flex-col gap-3 rounded-t-md  border border-border border-b-0 h-[148px] overflow-hidden `}
     >
       <div
-        className="sampleContent rounded-t-md border-border pb-4 px-[10px] flex flex-col gap-[14px] w-[250px] mx-auto"
+        className="pubWrapper sampleContent rounded-t-md border-border pb-4 px-[10px] flex flex-col gap-[14px] w-[250px] mx-auto"
         style={{
           background: props.showPageBackground
             ? "rgba(var(--bg-page), var(--bg-page-alpha))"
@@ -282,7 +310,7 @@ const SamplePub = (props: {
             />
           )}
 
-          <div className="text-[11px] font-bold pt-[5px] text-accent-contrast">
+          <div className="text-[11px] font-bold pt-[5px] text-accent-contrast" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
             {record?.name}
           </div>
           <div className="text-[7px] font-normal text-tertiary">
@@ -295,7 +323,7 @@ const SamplePub = (props: {
         </div>
 
         <div className="flex flex-col text-[8px]  rounded-md ">
-          <div className="font-bold">A Sample Post</div>
+          <div className="font-bold" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>A Sample Post</div>
           <div className="text-secondary italic text-[6px]">
             This is a sample description about the sample post
           </div>
@@ -329,7 +357,7 @@ const SamplePost = (props: {
       className={`bg-bg-leaflet p-3 max-w-full flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-0 h-[148px] overflow-hidden`}
     >
       <div
-        className="sampleContent rounded-t-md border-border pb-0 px-[6px] flex flex-col w-[250px] mx-auto"
+        className="pubWrapper sampleContent rounded-t-md border-border pb-0 px-[6px] flex flex-col w-[250px] mx-auto"
         style={{
           background: props.showPageBackground
             ? "rgba(var(--bg-page), var(--bg-page-alpha))"
@@ -337,10 +365,10 @@ const SamplePost = (props: {
         }}
       >
         <div className="flex flex-col ">
-          <div className="text-[6px] font-bold pt-[6px] text-accent-contrast">
+          <div className="text-[6px] font-bold pt-[6px] text-accent-contrast" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
             {record?.name}
           </div>
-          <div className="text-[11px] font-bold text-primary">
+          <div className="text-[11px] font-bold text-primary" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
             A Sample Post
           </div>
           <div className="text-[7px] font-normal text-secondary italic">

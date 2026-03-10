@@ -33,10 +33,16 @@
         },
         "children": {
           "type": "array",
+          "description": "Nested unordered list items. Mutually exclusive with orderedListChildren; if both are present, children takes precedence.",
           "items": {
             "type": "ref",
             "ref": "#listItem"
           }
+        },
+        "orderedListChildren": {
+          "type": "ref",
+          "description": "Nested ordered list items. Mutually exclusive with children; if both are present, children takes precedence.",
+          "ref": "pub.leaflet.blocks.orderedList"
         }
       }
     }

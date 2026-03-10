@@ -129,7 +129,11 @@ export const usePubTheme = (
   } else if (theme && !theme.pageBackground) {
     bgPage = bgLeaflet;
   }
-  let showPageBackground = theme?.showPageBackground;
+  // For standalone documents, default to showing page background
+  // For publications, default to hiding it (borderless)
+  let showPageBackground = isStandalone
+    ? theme?.showPageBackground !== false
+    : !!theme?.showPageBackground;
   let pageWidth = theme?.pageWidth;
 
   let primary = useColor(theme, "primary");
@@ -140,6 +144,9 @@ export const usePubTheme = (
   let highlight1 = useEntity(null, "theme/highlight-1")?.data.value;
   let highlight2 = useColorAttribute(null, "theme/highlight-2");
   let highlight3 = useColorAttribute(null, "theme/highlight-3");
+
+  let headingFontId = theme?.headingFont;
+  let bodyFontId = theme?.bodyFont;
 
   return {
     bgLeaflet,
@@ -152,6 +159,8 @@ export const usePubTheme = (
     highlight3,
     showPageBackground,
     pageWidth,
+    headingFontId,
+    bodyFontId,
   };
 };
 

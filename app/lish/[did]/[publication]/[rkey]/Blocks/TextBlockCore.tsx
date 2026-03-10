@@ -7,6 +7,7 @@ type Facet = PubLeafletRichtextFacet.Main;
 
 export type FacetRenderers = {
   DidMention?: (props: { did: string; children: ReactNode }) => ReactNode;
+  FootnoteRef?: (props: { footnoteId: string; index: number; children: ReactNode }) => ReactNode;
 };
 
 export type TextBlockCoreProps = {
@@ -15,6 +16,7 @@ export type TextBlockCoreProps = {
   index: number[];
   preview?: boolean;
   renderers?: FacetRenderers;
+  footnoteIndexMap?: Map<string, number>;
 };
 
 export function TextBlockCore(props: TextBlockCoreProps) {
@@ -38,9 +40,31 @@ export function TextBlockCore(props: TextBlockCoreProps) {
     let isAtMention = segment.facet?.find(PubLeafletRichtextFacet.isAtMention);
     let isUnderline = segment.facet?.find(PubLeafletRichtextFacet.isUnderline);
     let isItalic = segment.facet?.find(PubLeafletRichtextFacet.isItalic);
+    let isFootnote = segment.facet?.find(PubLeafletRichtextFacet.isFootnote);
     let isHighlighted = segment.facet?.find(
       PubLeafletRichtextFacet.isHighlight,
     );
+
+    if (isFootnote) {
+      let fnIndex = props.footnoteIndexMap?.get(isFootnote.footnoteId) ?? 0;
+      const FootnoteRenderer = props.renderers?.FootnoteRef;
+      if (FootnoteRenderer) {
+        children.push(
+          <FootnoteRenderer key={counter} footnoteId={isFootnote.footnoteId} index={fnIndex}>
+            <sup className="text-accent-contrast cursor-pointer">{fnIndex}</sup>
+          </FootnoteRenderer>,
+        );
+      } else {
+        children.push(
+          <sup key={counter} className="text-accent-contrast cursor-pointer text-[0.75em]" id={`fnref-${isFootnote.footnoteId}`}>
+            <a href={`#fn-${isFootnote.footnoteId}`} className="no-underline hover:underline">{fnIndex}</a>
+          </sup>,
+        );
+      }
+      counter++;
+      continue;
+    }
+
     let className = `
       ${isCode ? "inline-code" : ""}
       ${id ? "scroll-mt-12 scroll-mb-10" : ""}
@@ -130,7 +154,7 @@ export class RichText {
 
   constructor(props: { text: string; facets: Facet[] }) {
     this.unicodeText = new UnicodeString(props.text);
-    this.facets = props.facets;
+    this.facets = Array.isArray(props.facets) ? props.facets : undefined;
     if (this.facets) {
       this.facets = this.facets
         .filter((facet) => facet.index.byteStart <= facet.index.byteEnd)

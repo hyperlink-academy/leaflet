@@ -10,7 +10,6 @@ import { useDocument } from "contexts/DocumentContext";
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
-import { create } from "zustand/react";
 import {
   InteractionDrawer,
   useDrawerOpen,
@@ -18,149 +17,27 @@ import {
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
 import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { Fragment, useEffect } from "react";
-import { flushSync } from "react-dom";
-import { scrollIntoView } from "src/utils/scrollIntoView";
-import { useParams, useSearchParams } from "next/navigation";
-import { decodeQuotePosition } from "./quotePosition";
+import { Fragment } from "react";
 import { PollData } from "./fetchPollData";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { ThreadPage as ThreadPageComponent } from "./ThreadPage";
 import { BlueskyQuotesPage } from "./BlueskyQuotesPage";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
+import {
+  type OpenPage,
+  type DocPage,
+  type ThreadPage,
+  type QuotesPage,
+  getPageKey,
+  useOpenPages,
+  useInitializeOpenPages,
+  openPage,
+  closePage,
+} from "./postPageState";
 
-// Page types
-export type DocPage = { type: "doc"; id: string };
-export type ThreadPage = { type: "thread"; uri: string };
-export type QuotesPage = { type: "quotes"; uri: string };
-export type OpenPage = DocPage | ThreadPage | QuotesPage;
-
-// Get a stable key for a page
-const getPageKey = (page: OpenPage): string => {
-  if (page.type === "doc") return page.id;
-  if (page.type === "quotes") return `quotes:${page.uri}`;
-  return `thread:${page.uri}`;
-};
-
-const usePostPageUIState = create(() => ({
-  pages: [] as OpenPage[],
-  initialized: false,
-}));
-
-export const useOpenPages = (): OpenPage[] => {
-  const { quote } = useParams();
-  const state = usePostPageUIState((s) => s);
-  const searchParams = useSearchParams();
-  const pageParam = searchParams.get("page");
-
-  if (!state.initialized) {
-    // Check for page search param first (for comment links)
-    if (pageParam) {
-      return [{ type: "doc", id: pageParam }];
-    }
-    // Then check for quote param
-    if (quote) {
-      const decodedQuote = decodeQuotePosition(quote as string);
-      if (decodedQuote?.pageId) {
-        return [{ type: "doc", id: decodedQuote.pageId }];
-      }
-    }
-  }
-
-  return state.pages;
-};
-
-export const useInitializeOpenPages = () => {
-  const { quote } = useParams();
-  const searchParams = useSearchParams();
-  const pageParam = searchParams.get("page");
-
-  useEffect(() => {
-    const state = usePostPageUIState.getState();
-    if (!state.initialized) {
-      // Check for page search param first (for comment links)
-      if (pageParam) {
-        usePostPageUIState.setState({
-          pages: [{ type: "doc", id: pageParam }],
-          initialized: true,
-        });
-        return;
-      }
-      // Then check for quote param
-      if (quote) {
-        const decodedQuote = decodeQuotePosition(quote as string);
-        if (decodedQuote?.pageId) {
-          usePostPageUIState.setState({
-            pages: [{ type: "doc", id: decodedQuote.pageId }],
-            initialized: true,
-          });
-          return;
-        }
-      }
-      // Mark as initialized even if no pageId found
-      usePostPageUIState.setState({ initialized: true });
-    }
-  }, [quote, pageParam]);
-};
-
-export const openPage = (
-  parent: OpenPage | undefined,
-  page: OpenPage,
-  options?: { scrollIntoView?: boolean },
-) => {
-  const pageKey = getPageKey(page);
-  const parentKey = parent ? getPageKey(parent) : undefined;
-
-  // Check if the page is already open
-  const currentState = usePostPageUIState.getState();
-  const existingPageIndex = currentState.pages.findIndex(
-    (p) => getPageKey(p) === pageKey,
-  );
-
-  // If page is already open, just scroll to it
-  if (existingPageIndex !== -1) {
-    if (options?.scrollIntoView !== false) {
-      scrollIntoView(`post-page-${pageKey}`);
-    }
-    return;
-  }
-
-  flushSync(() => {
-    usePostPageUIState.setState((state) => {
-      let parentPosition = state.pages.findIndex(
-        (s) => getPageKey(s) === parentKey,
-      );
-      // Close any pages after the parent and add the new page
-      return {
-        pages:
-          parentPosition === -1
-            ? [page]
-            : [...state.pages.slice(0, parentPosition + 1), page],
-        initialized: true,
-      };
-    });
-  });
-
-  if (options?.scrollIntoView !== false) {
-    // Use requestAnimationFrame to ensure the DOM has been painted before scrolling
-    requestAnimationFrame(() => {
-      scrollIntoView(`post-page-${pageKey}`);
-    });
-  }
-};
-
-export const closePage = (page: OpenPage) => {
-  const pageKey = getPageKey(page);
-  usePostPageUIState.setState((state) => {
-    let parentPosition = state.pages.findIndex(
-      (s) => getPageKey(s) === pageKey,
-    );
-    return {
-      pages: state.pages.slice(0, parentPosition),
-      initialized: true,
-    };
-  });
-};
+export type { DocPage, ThreadPage, QuotesPage, OpenPage };
+export { getPageKey, useOpenPages, useInitializeOpenPages, openPage, closePage };
 
 // Shared props type for both page components
 export type SharedPageProps = {
@@ -184,6 +61,7 @@ export type SharedPageProps = {
   pageId?: string;
   pageOptions?: React.ReactNode;
   allPages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  hasContentToRight?: boolean;
 };
 
 // Component that renders either Canvas or Linear page based on page type
@@ -248,10 +126,7 @@ export function PostPages({
   if (!document || !record) return null;
 
   let theme = pubRecord?.theme || record.theme || null;
-  // For publication posts, respect the publication's showPageBackground setting
-  // For standalone documents, default to showing page background
-  let isInPublication = !!pubRecord;
-  let hasPageBackground = isInPublication ? !!theme?.showPageBackground : true;
+  let hasPageBackground = !useCardBorderHidden();
 
   let firstPage = pages[0] as
     | PubLeafletPagesLinearDocument.Main
@@ -288,7 +163,13 @@ export function PostPages({
     <>
       {!sharedProps.fullPageScroll && <BookendSpacer />}
 
-      <PageRenderer page={firstPage} {...sharedProps} />
+      <PageRenderer
+        page={firstPage}
+        {...sharedProps}
+        hasContentToRight={
+          openPageIds.length > 0 || !!(drawer && !drawer.pageId)
+        }
+      />
 
       {drawer && !drawer.pageId && (
         <InteractionDrawer
@@ -300,15 +181,13 @@ export function PostPages({
               : document.comments_on_documents
           }
           quotesAndMentions={
-            preferences.showMentions === false
-              ? []
-              : quotesAndMentions
+            preferences.showMentions === false ? [] : quotesAndMentions
           }
           did={did}
         />
       )}
 
-      {openPageIds.map((openPage) => {
+      {openPageIds.map((openPage, openPageIndex) => {
         const pageKey = getPageKey(openPage);
 
         // Handle thread pages
@@ -374,6 +253,10 @@ export function PostPages({
               {...sharedProps}
               fullPageScroll={false}
               pageId={page.id}
+              hasContentToRight={
+                openPageIndex < openPageIds.length - 1 ||
+                !!(drawer && drawer.pageId === page.id)
+              }
               pageOptions={
                 <PageOptions
                   onClick={() => closePage(openPage)}
@@ -392,9 +275,7 @@ export function PostPages({
                     : document.comments_on_documents
                 }
                 quotesAndMentions={
-                  preferences.showMentions === false
-                    ? []
-                    : quotesAndMentions
+                  preferences.showMentions === false ? [] : quotesAndMentions
                 }
                 did={did}
               />

@@ -193,10 +193,6 @@
     @apply hover:underline;
   }
 
-  pre {
-    font-family: var(--font-quattro);
-  }
-
   p {
     font-size: inherit;
   }
@@ -204,6 +200,47 @@
   ::placeholder {
     @apply text-tertiary;
     @apply italic;
+  }
+
+  /* Scope custom fonts to document content only (not sidebar/UI chrome) */
+  .pageScrollWrapper {
+    font-family: var(--theme-font, var(--font-quattro));
+    font-size: var(--theme-font-base-size, 16px);
+  }
+
+  .pageScrollWrapper h1,
+  .pageScrollWrapper h2,
+  .pageScrollWrapper h3,
+  .pageScrollWrapper h4 {
+    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
+  }
+
+  /* Scale heading sizes relative to the custom base font size */
+  .pageScrollWrapper h1 { font-size: 2em; }
+  .pageScrollWrapper h2 { font-size: 1.625em; }
+  .pageScrollWrapper h3 { font-size: 1.125em; }
+  .pageScrollWrapper h4 { font-size: 1em; }
+
+  /* Scale text size classes relative to the custom base font size.
+     Tailwind's text-sm/text-base/text-lg compile to fixed rem values
+     which ignore the custom base size set on .pageScrollWrapper. */
+  .pageScrollWrapper .textSizeSmall { font-size: 0.875em; }
+  .pageScrollWrapper .textSizeLarge { font-size: 1.125em; }
+
+  .pageScrollWrapper pre {
+    font-family: var(--theme-font, var(--font-quattro));
+  }
+
+  /* Apply custom fonts to publication homepage */
+  .pubWrapper {
+    font-family: var(--theme-font, var(--font-quattro));
+  }
+
+  .pubWrapper h1,
+  .pubWrapper h2,
+  .pubWrapper h3,
+  .pubWrapper h4 {
+    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
   }
   /*END FONT STYLING*/
 
@@ -488,4 +525,57 @@ pre.shiki {
   animation-duration: 1s;
   animation-iteration-count: 1;
   animation-timing-function: ease-in;
+}
+
+.footnote-scope {
+  counter-reset: footnote;
+}
+.footnote-ref {
+  counter-increment: footnote;
+  cursor: pointer;
+  color: rgb(var(--color-tertiary));
+  opacity: 0.7;
+}
+.footnote-ref::after {
+  content: counter(footnote);
+  vertical-align: super;
+  padding-left: 2px;
+  font-size: 75%;
+  line-height: 0rem;
+}
+.footnote-ref ~ br.ProseMirror-trailingBreak {
+  display: inline;
+  width: 4px;
+}
+.footnote-ref ~ img.ProseMirror-separator {
+  display: none;
+}
+
+.footnote-side-enter {
+  animation: footnote-fade-in 200ms ease-out;
+}
+@keyframes footnote-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.footnote-side-item {
+  max-height: 4.5em;
+  overflow: hidden;
+  transition: max-height 200ms ease, mask-image 200ms ease;
+}
+.footnote-side-item.has-overflow {
+  mask-image: linear-gradient(to bottom, white 50%, transparent 100%);
+}
+.footnote-side-item:hover,
+.footnote-side-item:focus-within,
+.footnote-side-item.footnote-side-focused {
+  max-height: 40em;
+  mask-image: none;
 }

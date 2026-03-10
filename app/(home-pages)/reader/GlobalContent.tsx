@@ -8,6 +8,7 @@ import {
   DesktopInteractionPreviewDrawer,
   MobileInteractionPreviewDrawer,
 } from "./InteractionDrawers";
+import { useSelectedPostListing } from "src/useSelectedPostState";
 
 export const GlobalContent = (props: {
   promise: Promise<{ posts: Post[] }>;
@@ -22,10 +23,14 @@ export const GlobalContent = (props: {
     },
     {
       fallbackData: { posts: initialData.posts },
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
     },
   );
 
   const posts = data?.posts ?? [];
+
+  let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
 
   if (posts.length === 0) {
     return (
@@ -36,10 +41,14 @@ export const GlobalContent = (props: {
   }
 
   return (
-    <div className="flex flex-row gap-6 w-full">
-      <div className="flex flex-col gap-8 w-full">
+    <div className="globalReader flex flex-row gap-6 w-full">
+      <div className="globalPostListings flex flex-col gap-6 min-w-0 grow w-full">
         {posts.map((p) => (
-          <PostListing {...p} key={p.documents.uri} />
+          <PostListing
+            {...p}
+            key={p.documents.uri}
+            selected={selectedPost?.document_uri === p.documents.uri}
+          />
         ))}
       </div>
       <DesktopInteractionPreviewDrawer />

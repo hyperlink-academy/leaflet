@@ -19,7 +19,7 @@ export const MobileInteractionPreviewDrawer = () => {
 
   return (
     <div
-      className={`z-20 fixed bottom-0 left-0 right-0 border border-border-light shrink-0 w-screen h-[90vh] px-3 bg-bg-leaflet rounded-t-lg overflow-auto ${selectedPost === null ? "hidden" : "block md:hidden "}`}
+      className={`mobileInteractionPreview shrink-0 z-20 fixed bottom-0 left-0 right-0 border border-border-light w-screen h-[90vh] px-3 bg-bg-leaflet rounded-t-lg overflow-auto ${selectedPost === null ? "hidden" : "block md:hidden "}`}
     >
       <PreviewDrawerContent selectedPost={selectedPost} />
     </div>
@@ -31,7 +31,7 @@ export const DesktopInteractionPreviewDrawer = () => {
 
   return (
     <div
-      className={`hidden md:block border border-border-light shrink-0 w-96 mr-2 px-3  h-[calc(100vh-100px)] sticky top-11 bottom-4 right-0 rounded-lg overflow-auto ${selectedPost === null ? "shadow-none border-dashed bg-transparent" : "shadow-md border-border bg-bg-page "}`}
+      className={`desktopInteractionPreview shrink-0 hidden md:block border border-border-light  w-96 mr-2 px-3  h-[calc(100vh-100px)] sticky top-11 bottom-4 right-0 rounded-lg overflow-auto ${selectedPost === null ? "shadow-none border-dashed bg-transparent" : "shadow-md border-border bg-bg-page "}`}
     >
       <PreviewDrawerContent selectedPost={selectedPost} />
     </div>
@@ -55,7 +55,12 @@ const PreviewDrawerContent = (props: {
     { keepPreviousData: false },
   );
 
-  if (!props.selectedPost || !props.selectedPost.document) return null;
+  if (!props.selectedPost || !props.selectedPost.document)
+    return (
+      <div className="italic text-tertiary pt-4 text-center">
+        Click a post's comments or mentions to preview them here!
+      </div>
+    );
 
   const postUrl = getDocumentURL(
     props.selectedPost.document,
@@ -70,22 +75,25 @@ const PreviewDrawerContent = (props: {
 
   return (
     <>
-      <div className="w-full text-sm text-tertiary flex justify-between pt-3 gap-3">
-        <div className="truncate min-w-0 grow">{drawerTitle}</div>
-        <button
-          className="text-tertiary"
-          onClick={() =>
-            useSelectedPostListing.getState().setSelectedPostListing(null)
-          }
-        >
-          <CloseTiny />
-        </button>
+      <div className="sticky top-0 bg-bg-page z-10">
+        <div className=" w-full text-sm text-tertiary flex justify-between pt-3 gap-3">
+          <div className="truncate min-w-0 grow">{drawerTitle}</div>
+          <button
+            className="text-tertiary"
+            onClick={() =>
+              useSelectedPostListing.getState().setSelectedPostListing(null)
+            }
+          >
+            <CloseTiny />
+          </button>
+        </div>
+        <SpeedyLink className="shrink-0 flex gap-1 items-center" href={postUrl}>
+          <ButtonPrimary fullWidth compact className="text-sm! mt-1">
+            See Full Post <GoToArrow />
+          </ButtonPrimary>
+        </SpeedyLink>
+        <hr className="mt-2 border-border-light" />
       </div>
-      <SpeedyLink className="shrink-0 flex gap-1 items-center" href={postUrl}>
-        <ButtonPrimary fullWidth compact className="text-sm! mt-1">
-          See Full Post <GoToArrow />
-        </ButtonPrimary>
-      </SpeedyLink>
       {isLoading ? (
         <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm mt-8">
           <span>loading</span>

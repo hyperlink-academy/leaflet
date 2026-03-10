@@ -65,7 +65,7 @@ module.exports = {
       },
 
       fontFamily: {
-        sans: ["var(--font-quattro)"],
+        sans: ["var(--theme-font, var(--font-quattro))"],
         serif: ["Garamond"],
       },
     },

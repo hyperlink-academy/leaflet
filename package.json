@@ -99,7 +99,7 @@
     "uuid": "^10.0.0",
     "y-prosemirror": "^1.2.5",
     "yjs": "^13.6.15",
-    "zustand": "^5.0.4"
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@atproto/lex-cli": "^0.9.5",

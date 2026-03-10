@@ -22,6 +22,7 @@ import { AccentPickers } from "./Pickers/AccentPickers";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIsMobile } from "src/hooks/isMobile";
 import { Toggle } from "components/Toggle";
+import { getFontConfig, getFontFamilyValue } from "src/fonts";
 
 export type pickers =
   | "null"
@@ -156,6 +157,7 @@ export const ThemeSetterContent = (props: {
           entityID={props.entityID}
           openPicker={openPicker}
           setOpenPicker={(pickers) => setOpenPicker(pickers)}
+          home={props.home}
         />
         <div className="flex flex-col -gap-[6px]">
           <div className={`flex flex-col z-10  -mb-[6px] `}>
@@ -187,6 +189,7 @@ export const ThemeSetterContent = (props: {
     </div>
   );
 };
+
 function WatermarkSetter(props: { entityID: string }) {
   let { rep } = useReplicache();
   let checked = useEntity(props.entityID, "theme/page-leaflet-watermark");
@@ -256,6 +259,12 @@ const SamplePage = (props: {
   let pageBorderHidden = useEntity(props.entityID, "theme/card-border-hidden")
     ?.data.value;
 
+  // Read font values directly since the popover is portalled outside .leafletWrapper
+  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value;
+  let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value;
+  let bodyFontFamily = getFontFamilyValue(getFontConfig(bodyFontId));
+  let headingFontFamily = getFontFamilyValue(getFontConfig(headingFontId));
+
   return (
     <div
       onClick={(e) => {
@@ -295,12 +304,13 @@ const SamplePage = (props: {
               }
         }
       />
-      <div className="z-10 relative">
+      <div className="z-10 relative" style={{ fontFamily: bodyFontFamily }}>
         <p
           onClick={() => {
             props.setOpenPicker("text");
           }}
           className="cursor-pointer font-bold w-fit"
+          style={{ fontFamily: headingFontFamily }}
         >
           Hello!
         </p>

@@ -6,6 +6,7 @@ import {
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
+  PubLeafletBlocksOrderedList,
   PubLeafletBlocksWebsite,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
@@ -32,6 +33,7 @@ import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
+import { blockTextSize } from "src/utils/blockTextSize";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 
 export function PostContent({
@@ -44,6 +46,7 @@ export function PostContent({
   pageId,
   pages,
   pollData,
+  footnoteIndexMap,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -54,6 +57,7 @@ export function PostContent({
   bskyPostData: AppBskyFeedDefs.PostView[];
   pollData: PollData[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  footnoteIndexMap?: Map<string, number>;
 }) {
   return (
     <div
@@ -74,6 +78,7 @@ export function PostContent({
             preview={preview}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
             pollData={pollData}
+            footnoteIndexMap={footnoteIndexMap}
           />
         );
       })}
@@ -93,6 +98,7 @@ export let Block = ({
   pageId,
   pages,
   pollData,
+  footnoteIndexMap,
 }: {
   pageId?: string;
   preview?: boolean;
@@ -105,6 +111,7 @@ export let Block = ({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   pollData: PollData[];
+  footnoteIndexMap?: Map<string, number>;
 }) => {
   let b = block;
   let blockProps = {
@@ -238,6 +245,27 @@ export let Block = ({
         </ul>
       );
     }
+    case PubLeafletBlocksOrderedList.isMain(b.block): {
+      let block = b.block;
+      return (
+        <ol className="-ml-px sm:ml-[9px] pb-2" start={block.startIndex || 1}>
+          {block.children.map((child, i) => (
+            <OrderedListItem
+              pollData={pollData}
+              pages={pages}
+              bskyPostData={bskyPostData}
+              index={[...index, i]}
+              item={child}
+              did={did}
+              key={i}
+              className={className}
+              pageId={pageId}
+              startIndex={block.startIndex || 1}
+            />
+          ))}
+        </ol>
+      );
+    }
     case PubLeafletBlocksMath.isMain(b.block): {
       return <StaticMathBlock block={b.block} />;
     }
@@ -262,7 +290,7 @@ export let Block = ({
           <div className="pt-2 pb-2 px-3 grow min-w-0">
             <div className="flex flex-col w-full min-w-0 h-full grow ">
               <div
-                className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
+                className={`linkBlockTitle bg-transparent -mb-0.5  border-none font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
                 style={{
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -339,6 +367,7 @@ export let Block = ({
             index={index}
             preview={preview}
             pageId={pageId}
+            footnoteIndexMap={footnoteIndexMap}
           />
         </blockquote>
       );
@@ -348,6 +377,7 @@ export let Block = ({
         <p
           className={`textBlock ${className} ${b.block.textSize === "small" ? "text-sm text-secondary" : b.block.textSize === "large" ? "text-lg" : ""}`}
           {...blockProps}
+          style={{ ...blockProps.style, fontSize: blockTextSize.p }}
         >
           <TextBlock
             facets={b.block.facets}
@@ -355,6 +385,7 @@ export let Block = ({
             index={index}
             preview={preview}
             pageId={pageId}
+            footnoteIndexMap={footnoteIndexMap}
           />
         </p>
       );
@@ -362,46 +393,49 @@ export let Block = ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h2 className={`h1Block ${className}`} {...blockProps}>
+          <h1 className={`h1Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h1 }}>
             <TextBlock
               {...b.block}
               index={index}
               preview={preview}
               pageId={pageId}
             />
-          </h2>
+          </h1>
         );
       if (b.block.level === 2)
         return (
-          <h3 className={`h2Block ${className}`} {...blockProps}>
+          <h2 className={`h2Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h2 }}>
             <TextBlock
               {...b.block}
               index={index}
               preview={preview}
               pageId={pageId}
+              footnoteIndexMap={footnoteIndexMap}
             />
-          </h3>
+          </h2>
         );
       if (b.block.level === 3)
         return (
-          <h4 className={`h3Block ${className}`} {...blockProps}>
+          <h3 className={`h3Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h3 }}>
             <TextBlock
               {...b.block}
               index={index}
               preview={preview}
               pageId={pageId}
+              footnoteIndexMap={footnoteIndexMap}
             />
-          </h4>
+          </h3>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6 className={`h6Block ${className}`} {...blockProps}>
+        <h6 className={`h6Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h4 }}>
           <TextBlock
             {...b.block}
             index={index}
             preview={preview}
             pageId={pageId}
+            footnoteIndexMap={footnoteIndexMap}
           />
         </h6>
       );
@@ -438,6 +472,25 @@ function ListItem(props: {
       ))}
     </ul>
   ) : null;
+  let orderedChildren =
+    props.item.orderedListChildren?.children?.length ? (
+      <ol className="-ml-[7px] sm:ml-[7px]">
+        {props.item.orderedListChildren.children.map((child, index) => (
+          <OrderedListItem
+            pages={props.pages}
+            pollData={props.pollData}
+            bskyPostData={props.bskyPostData}
+            index={[...props.index, index]}
+            item={child}
+            did={props.did}
+            key={index}
+            className={props.className}
+            pageId={props.pageId}
+            startIndex={props.item.orderedListChildren?.startIndex}
+          />
+        ))}
+      </ol>
+    ) : null;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
@@ -454,7 +507,79 @@ function ListItem(props: {
           index={props.index}
           pageId={props.pageId}
         />
-        {children}{" "}
+        {children}
+        {orderedChildren}
+      </div>
+    </li>
+  );
+}
+
+function OrderedListItem(props: {
+  index: number[];
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  item: PubLeafletBlocksOrderedList.ListItem;
+  did: string;
+  className?: string;
+  bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
+  pageId?: string;
+  startIndex?: number;
+}) {
+  const calculatedIndex = (props.startIndex || 1) + props.index[props.index.length - 1];
+  let children = props.item.children?.length ? (
+    <ol className="-ml-[7px] sm:ml-[7px]">
+      {props.item.children.map((child, index) => (
+        <OrderedListItem
+          pages={props.pages}
+          pollData={props.pollData}
+          bskyPostData={props.bskyPostData}
+          index={[...props.index, index]}
+          item={child}
+          did={props.did}
+          key={index}
+          className={props.className}
+          pageId={props.pageId}
+          startIndex={props.startIndex}
+        />
+      ))}
+    </ol>
+  ) : null;
+  let unorderedChildren =
+    props.item.unorderedListChildren?.children?.length ? (
+      <ul className="-ml-[7px] sm:ml-[7px]">
+        {props.item.unorderedListChildren.children.map((child, index) => (
+          <ListItem
+            pages={props.pages}
+            pollData={props.pollData}
+            bskyPostData={props.bskyPostData}
+            index={[...props.index, index]}
+            item={child}
+            did={props.did}
+            key={index}
+            className={props.className}
+            pageId={props.pageId}
+          />
+        ))}
+      </ul>
+    ) : null;
+  return (
+    <li className={`pb-0! flex flex-row gap-2`}>
+      <div className="listMarker shrink-0 mx-2 z-1 mt-[14px]">
+        {calculatedIndex}.
+      </div>
+      <div className="flex flex-col w-full">
+        <Block
+          pollData={props.pollData}
+          pages={props.pages}
+          bskyPostData={props.bskyPostData}
+          block={{ block: props.item.content }}
+          did={props.did}
+          isList
+          index={props.index}
+          pageId={props.pageId}
+        />
+        {children}
+        {unorderedChildren}
       </div>
     </li>
   );
