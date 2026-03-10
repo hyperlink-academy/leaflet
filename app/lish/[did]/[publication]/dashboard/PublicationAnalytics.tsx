@@ -151,7 +151,18 @@ export const PublicationAnalytics = (props: {
 
   if (!isPro)
     return (
-      <div className="sm:mx-auto pt-4 s">
+      <div
+        className={`sm:mx-auto pt-4 s rounded-lg border ${
+          props.showPageBackground
+            ? "border-border-light p-2"
+            : "border-transparent"
+        }`}
+        style={{
+          backgroundColor: props.showPageBackground
+            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+            : "transparent",
+        }}
+      >
         <UpgradeContent />
       </div>
     );
