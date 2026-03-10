@@ -5,6 +5,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
+import { PRODUCT_DEFINITION } from "stripe/products";
 
 export const ManageProSubscription = (props: { backToMenu: () => void }) => {
   const [loading, setLoading] = useState(false);
@@ -40,9 +41,9 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
       <div className="text-secondary text-center flex flex-col justify-center gap-2 py-2">
         <div>
           You have a <br />
-          {subscription?.plan || "Pro"} subscription
+          {PRODUCT_DEFINITION.name} subscription
           <div className="text-lg font-bold text-primary">
-            {subscription?.plan || "Leaflet Pro"}
+            {PRODUCT_DEFINITION.name}
           </div>
           {subscription?.status === "canceled"
             ? "Your subscription has ended"
