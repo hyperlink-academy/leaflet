@@ -13,10 +13,6 @@ import {
   check_oauth_session,
 } from "./functions/cleanup_expired_oauth_sessions";
 import { write_records_to_pds } from "./functions/write_records_to_pds";
-import { stripe_handle_checkout_completed } from "./functions/stripe_handle_checkout_completed";
-import { stripe_handle_subscription_updated } from "./functions/stripe_handle_subscription_updated";
-import { stripe_handle_subscription_deleted } from "./functions/stripe_handle_subscription_deleted";
-import { stripe_handle_invoice_payment_failed } from "./functions/stripe_handle_invoice_payment_failed";
 import { sync_document_metadata } from "./functions/sync_document_metadata";
 
 export const { GET, POST, PUT } = serve({
@@ -33,10 +29,6 @@ export const { GET, POST, PUT } = serve({
     cleanup_expired_oauth_sessions,
     check_oauth_session,
     write_records_to_pds,
-    stripe_handle_checkout_completed,
-    stripe_handle_subscription_updated,
-    stripe_handle_subscription_deleted,
-    stripe_handle_invoice_payment_failed,
     sync_document_metadata,
   ],
 });

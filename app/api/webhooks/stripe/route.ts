@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "stripe/client";
 import { inngest } from "app/api/inngest/client";
+import { handleCheckoutCompleted } from "./handle_checkout_completed";
+import { handleSubscriptionUpdated } from "./handle_subscription_updated";
+import { handleSubscriptionDeleted } from "./handle_subscription_deleted";
+import { handleInvoicePaymentFailed } from "./handle_invoice_payment_failed";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -22,27 +26,36 @@ export async function POST(req: NextRequest) {
   }
 
   switch (event.type) {
-    case "checkout.session.completed":
+    case "checkout.session.completed": {
+      const sessionId = event.data.object.id;
       await inngest.send({
         name: "stripe/checkout.session.completed",
-        data: { sessionId: event.data.object.id },
+        data: { sessionId },
       });
+      await handleCheckoutCompleted(sessionId);
       break;
+    }
 
     case "customer.subscription.created":
-    case "customer.subscription.updated":
+    case "customer.subscription.updated": {
+      const subscriptionId = event.data.object.id;
       await inngest.send({
         name: "stripe/customer.subscription.updated",
-        data: { subscriptionId: event.data.object.id },
+        data: { subscriptionId },
       });
+      await handleSubscriptionUpdated(subscriptionId);
       break;
+    }
 
-    case "customer.subscription.deleted":
+    case "customer.subscription.deleted": {
+      const subscriptionId = event.data.object.id;
       await inngest.send({
         name: "stripe/customer.subscription.deleted",
-        data: { subscriptionId: event.data.object.id },
+        data: { subscriptionId },
       });
+      await handleSubscriptionDeleted(subscriptionId);
       break;
+    }
 
     case "invoice.payment_failed": {
       const invoice = event.data.object;
@@ -61,6 +74,7 @@ export async function POST(req: NextRequest) {
           customerId: invoice.customer as string,
         },
       });
+      await handleInvoicePaymentFailed(subId);
       break;
     }
   }
