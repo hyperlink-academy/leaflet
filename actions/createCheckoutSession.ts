@@ -34,14 +34,14 @@ export async function createCheckoutSession(
 
   const successUrl = new URL(
     "/api/checkout/success",
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub",
   );
   successUrl.searchParams.set("session_id", "{CHECKOUT_SESSION_ID}");
   if (returnUrl) {
     successUrl.searchParams.set("return", returnUrl);
   }
 
-  const cancelUrl = returnUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const cancelUrl = returnUrl || process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
 
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
