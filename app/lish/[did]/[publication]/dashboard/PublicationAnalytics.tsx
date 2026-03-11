@@ -40,6 +40,16 @@ function formatYTick(value: number) {
   return value.toLocaleString();
 }
 
+function niceYMax(dataMax: number): number {
+  if (dataMax <= 0) return 10;
+  let rough = dataMax / 4;
+  let mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  let norm = rough / mag;
+  let step =
+    norm <= 1.5 ? mag : norm <= 3 ? 2 * mag : norm <= 7 ? 5 * mag : 10 * mag;
+  return Math.ceil(dataMax / step) * step + step;
+}
+
 function endOfDay(date: Date): Date {
   let d = new Date(date);
   d.setHours(23, 59, 59, 999);
@@ -104,6 +114,7 @@ export const PublicationAnalytics = (props: {
           dateRange.from?.toISOString(),
           dateRange.to?.toISOString(),
           selectedPost?.path,
+          selectedReferror?.referrer_host,
         ]
       : null,
     async () => {
@@ -112,6 +123,9 @@ export const PublicationAnalytics = (props: {
         ...(dateRange.from ? { from: dateRange.from.toISOString() } : {}),
         ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
         ...(selectedPost ? { path: `/${selectedPost.path}` } : {}),
+        ...(selectedReferror
+          ? { referrer_host: selectedReferror.referrer_host }
+          : {}),
       });
       return res?.result;
     },
@@ -170,7 +184,6 @@ export const PublicationAnalytics = (props: {
   return (
     <div className="analytics flex flex-col gap-6">
       <div className="flex justify-end gap-2">
-        <MetricToggle metric={trafficMetric} setMetric={setTrafficMetric} />
         <DateRangeSelector
           dateRange={dateRange}
           setDateRange={setDateRange}
@@ -194,6 +207,7 @@ export const PublicationAnalytics = (props: {
       >
         <div className="flex items-center gap-2 pb-2 w-full">
           <h3>Traffic</h3>
+          <MetricToggle metric={trafficMetric} setMetric={setTrafficMetric} />
           <ArrowRightTiny className="text-border" />
           <PostSelector
             selectedPost={selectedPost}
@@ -248,7 +262,7 @@ export const PublicationAnalytics = (props: {
 };
 
 const ChartSkeleton = () => (
-  <div className="aspect-video w-full grow animate-pulse">
+  <div className="aspect-[5/2] w-full grow animate-pulse">
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={[]}>
         <CartesianGrid
@@ -282,13 +296,13 @@ const SubscribersChart = (props: {
   }
   if (props.data.length === 0) {
     return (
-      <div className="aspect-video w-full border border-border grow flex items-center justify-center text-tertiary">
+      <div className="aspect-[5/2] w-full border border-border grow flex items-center justify-center text-tertiary">
         No subscriber data
       </div>
     );
   }
   return (
-    <div className="aspect-video w-full grow">
+    <div className="aspect-[5/2] w-full grow">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={props.data}>
           <CartesianGrid
@@ -311,6 +325,7 @@ const SubscribersChart = (props: {
             tickFormatter={formatYTick}
             tickMargin={4}
             width={40}
+            domain={[0, (max: number) => niceYMax(max)]}
           />
           <Tooltip isAnimationActive={false} />
           <Area
@@ -359,13 +374,13 @@ const TrafficChart = (props: {
   }
   if (props.data.length === 0) {
     return (
-      <div className="aspect-video w-full border border-border grow flex items-center justify-center text-tertiary">
+      <div className="aspect-[5/2] w-full border border-border grow flex items-center justify-center text-tertiary">
         No traffic data
       </div>
     );
   }
   return (
-    <div className="aspect-video w-full grow">
+    <div className="aspect-[5/2] w-full grow">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData}>
           <CartesianGrid
@@ -388,6 +403,7 @@ const TrafficChart = (props: {
             tickFormatter={formatYTick}
             tickMargin={4}
             width={40}
+            domain={[0, (max: number) => niceYMax(max)]}
           />
           <Tooltip
             isAnimationActive={false}
@@ -726,7 +742,7 @@ function selectedPostPath(
 
 const TopReferrors = (props: {
   refferors: ReferrerType[];
-  setSelectedReferror: (ref: ReferrerType) => void;
+  setSelectedReferror: (ref: ReferrerType | undefined) => void;
   selectedReferror: ReferrerType | undefined;
   isLoading: boolean;
 }) => {
@@ -739,13 +755,18 @@ const TopReferrors = (props: {
           <div className="text-tertiary text-sm">No referrer data</div>
         )}
         {props.refferors.map((ref) => {
-          let selected = ref === props.selectedReferror;
+          let selected =
+            props.selectedReferror?.referrer_host === ref.referrer_host;
           return (
             <Fragment key={ref.referrer_host}>
               <button
                 className={`w-full flex justify-between gap-4 px-1 py-1.5 items-center text-right text-sm rounded-md ${selected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
                 onClick={() => {
-                  props.setSelectedReferror(ref);
+                  if (selected) {
+                    props.setSelectedReferror(undefined);
+                  } else {
+                    props.setSelectedReferror(ref);
+                  }
                 }}
               >
                 <div className="flex gap-2 items-center grow">

@@ -15,9 +15,10 @@ export const get_publication_analytics = makeRoute({
     from: z.string().optional(),
     to: z.string().optional(),
     path: z.string().optional(),
+    referrer_host: z.string().optional(),
   }),
   handler: async (
-    { publication_uri, from, to, path },
+    { publication_uri, from, to, path, referrer_host },
     { supabase }: Pick<Env, "supabase">,
   ) => {
     const identity = await getIdentityData();
@@ -56,18 +57,21 @@ export const get_publication_analytics = makeRoute({
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         ...(path ? { path } : {}),
+        ...(referrer_host ? { referrer_host } : {}),
       }),
       tinybird.publicationTopReferrers.query({
         domains,
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         ...(path ? { path } : {}),
+        ...(referrer_host ? { referrer_host } : {}),
         limit: 10,
       }),
       tinybird.publicationTopPages.query({
         domains,
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
+        ...(referrer_host ? { referrer_host } : {}),
         limit: 20,
       }),
     ]);
