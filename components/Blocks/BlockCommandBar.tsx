@@ -58,6 +58,7 @@ export const BlockCommandBar = ({
 
   return (
     <Combobox
+      open
       triggerClassName="absolute left-0"
       results={commandResults.map((r) => r.name)}
       highlighted={highlighted}
@@ -83,7 +84,7 @@ export const BlockCommandBar = ({
         commandResults.map((result, index) => (
           <div key={index} className="contents">
             <ComboboxResult
-              className="pl-1!"
+              className="pl-0!"
               result={result.name}
               onSelect={() => {
                 rep &&

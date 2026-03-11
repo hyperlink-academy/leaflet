@@ -1,12 +1,7 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { create } from "zustand";
 import { Input } from "./Input";
-
-export const useComboboxState = create(() => ({
-  open: false,
-}));
 
 export const Combobox = ({
   results,
@@ -21,6 +16,7 @@ export const Combobox = ({
   trigger,
   triggerClassName,
   sideOffset,
+  open: openProp,
 }: {
   children: React.ReactNode;
   trigger?: React.ReactNode;
@@ -34,10 +30,11 @@ export const Combobox = ({
   setSearchValue?: (s: string) => void;
   showSearch?: boolean;
   sideOffset?: number;
+  open?: boolean;
 }) => {
   let ref = useRef<HTMLDivElement>(null);
-
-  let open = useComboboxState((s) => s.open);
+  let [internalOpen, setInternalOpen] = useState(false);
+  let open = openProp ?? internalOpen;
 
   useEffect(() => {
     if (!highlighted || !results.find((result) => result === highlighted))
@@ -80,10 +77,9 @@ export const Combobox = ({
 
       // on enter, select the highlighted item
       if (e.key === "Enter") {
+        e.preventDefault();
         onSelect?.();
-        useComboboxState.setState({
-          open: false,
-        });
+        setInternalOpen(false);
       }
     };
 
@@ -96,9 +92,7 @@ export const Combobox = ({
     <Popover.Root
       open={open}
       onOpenChange={(newOpen) => {
-        useComboboxState.setState({
-          open: newOpen,
-        });
+        setInternalOpen(newOpen);
         onOpenChange?.(newOpen);
       }}
     >
@@ -120,7 +114,7 @@ export const Combobox = ({
         >
           <NestedCardThemeProvider>
             <div
-              className={`commandMenuResults w-full max-h-(--radix-popover-content-available-height) overflow-auto flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page gap-0.5 border border-border rounded-md shadow-md `}
+              className={`commandMenuResults w-full max-h-(--radix-popover-content-available-height) overflow-auto no-scrollbar flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page gap-0.5 border border-border rounded-md shadow-md `}
             >
               {showSearch && setSearchValue ? (
                 <Input
@@ -164,12 +158,9 @@ export const ComboboxResult = (props: {
       onMouseDown={(e) => {
         e.preventDefault();
         props.onSelect();
-        useComboboxState.setState({
-          open: false,
-        });
       }}
     >
-      <div className="truncate">{props.children}</div>
+      <div className="truncate flex items-center">{props.children}</div>
     </button>
   );
 };
