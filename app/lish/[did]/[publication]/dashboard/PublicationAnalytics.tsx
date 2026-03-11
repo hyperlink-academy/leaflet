@@ -2,9 +2,10 @@ import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { UpgradeContent } from "../UpgradeModal";
 import { Popover } from "components/Popover";
 import { DatePicker } from "components/DatePicker";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import type { DateRange } from "react-day-picker";
+import { useQueryState } from "src/hooks/useQueryState";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { Combobox, ComboboxResult } from "components/Combobox";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
@@ -22,6 +23,8 @@ import {
 
 type ReferrerType = { referrer_host: string; pageviews: number };
 type TrafficMetric = "pageviews" | "visitors";
+type DatePreset = "Last Week" | "Last Month" | "All Time";
+type DateSelection = { range: DateRange; preset: DatePreset | null };
 
 const dayTickFormatter = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -89,20 +92,94 @@ export const PublicationAnalytics = (props: {
   let canSeePro = useCanSeePro();
 
   let { data: publication } = usePublicationData();
-  let [dateRange, setDateRange] = useState<DateRange>(() => {
-    let from = new Date();
-    from.setDate(from.getDate() - 7);
-    return { from, to: new Date() };
+
+  // URL params:
+  //   ?date=all        → All Time (no from/to bounds)
+  //   ?date=month      → Last Month preset
+  //   ?from=YYYY-MM-DD&to=YYYY-MM-DD → custom range
+  //   (none)           → default: Last Week
+  let [dateState, setDateState] = useQueryState<DateSelection>({
+    fromParams: (get) => {
+      let preset = get("date");
+      if (preset === "all")
+        return {
+          range: { from: undefined, to: undefined },
+          preset: "All Time",
+        };
+      if (preset === "month") {
+        let from = new Date();
+        from.setMonth(from.getMonth() - 1);
+        return { range: { from, to: new Date() }, preset: "Last Month" };
+      }
+      let fromParam = get("from");
+      let toParam = get("to");
+      if (fromParam || toParam) {
+        return {
+          range: {
+            from: fromParam ? new Date(fromParam) : undefined,
+            to: toParam ? new Date(toParam) : new Date(),
+          },
+          preset: null,
+        };
+      }
+      let from = new Date();
+      from.setDate(from.getDate() - 7);
+      return { range: { from, to: new Date() }, preset: "Last Week" };
+    },
+    toParams: ({ preset, range }) => {
+      if (preset === "All Time")
+        return { date: "all", from: null, to: null };
+      if (preset === "Last Month")
+        return { date: "month", from: null, to: null };
+      if (preset === "Last Week") return { date: null, from: null, to: null };
+      return {
+        date: null,
+        from: range.from?.toISOString().slice(0, 10) ?? null,
+        to: range.to?.toISOString().slice(0, 10) ?? null,
+      };
+    },
   });
-  let [datePreset, setDatePreset] = useState<string | null>("Last Week");
-  let [selectedPost, setSelectedPost] = useState<
-    { title: string; path: string } | undefined
-  >(undefined);
-  let [selectedReferror, setSelectedReferror] = useState<
-    ReferrerType | undefined
-  >(undefined);
-  let [trafficMetric, setTrafficMetric] =
-    useState<TrafficMetric>("visitors");
+  let { range: dateRange, preset: datePreset } = dateState;
+
+  // ?post=<path> — filter traffic to a single published post (path is the stable ID)
+  let [selectedPostPath, setSelectedPostPath] = useQueryState<
+    string | undefined
+  >({
+    fromParams: (get) => get("post") ?? undefined,
+    toParams: (v) => ({ post: v ?? null }),
+  });
+  let documents = publication?.documents;
+  let selectedPost = useMemo(() => {
+    if (!selectedPostPath) return undefined;
+    let doc = documents?.find(
+      (d) => (d.record.path || "") === selectedPostPath,
+    );
+    return {
+      title: doc?.record.title || selectedPostPath,
+      path: selectedPostPath,
+    };
+  }, [selectedPostPath, documents]);
+  let setSelectedPost = useCallback(
+    (post: { title: string; path: string } | undefined) => {
+      setSelectedPostPath(post?.path);
+    },
+    [setSelectedPostPath],
+  );
+
+  // ?referrer=<host> — filter traffic to a single referring domain
+  let [selectedReferrer, setSelectedReferrer] = useQueryState<
+    string | undefined
+  >({
+    fromParams: (get) => get("referrer") ?? undefined,
+    toParams: (v) => ({ referrer: v ?? null }),
+  });
+
+  // ?metric=pageviews — toggle between "visitors" (default) and "pageviews"
+  let [trafficMetric, setTrafficMetric] = useQueryState<TrafficMetric>({
+    fromParams: (get) =>
+      get("metric") === "pageviews" ? "pageviews" : "visitors",
+    toParams: (v) => ({ metric: v === "visitors" ? null : v }),
+  });
 
   let publicationUri = publication?.publication?.uri;
 
@@ -114,7 +191,7 @@ export const PublicationAnalytics = (props: {
           dateRange.from?.toISOString(),
           dateRange.to?.toISOString(),
           selectedPost?.path,
-          selectedReferror?.referrer_host,
+          selectedReferrer,
         ]
       : null,
     async () => {
@@ -123,9 +200,7 @@ export const PublicationAnalytics = (props: {
         ...(dateRange.from ? { from: dateRange.from.toISOString() } : {}),
         ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
         ...(selectedPost ? { path: `/${selectedPost.path}` } : {}),
-        ...(selectedReferror
-          ? { referrer_host: selectedReferror.referrer_host }
-          : {}),
+        ...(selectedReferrer ? { referrer_host: selectedReferrer } : {}),
       });
       return res?.result;
     },
@@ -185,10 +260,8 @@ export const PublicationAnalytics = (props: {
     <div className="analytics flex flex-col gap-6">
       <div className="flex justify-end gap-2">
         <DateRangeSelector
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          datePreset={datePreset}
-          setDatePreset={setDatePreset}
+          dateState={dateState}
+          setDateState={setDateState}
           pubStartDate={publication?.publication?.indexed_at}
           showBackground={props.showPageBackground}
         />
@@ -213,12 +286,12 @@ export const PublicationAnalytics = (props: {
             selectedPost={selectedPost}
             setSelectedPost={setSelectedPost}
           />
-          {selectedReferror && (
+          {selectedReferrer && (
             <>
               <ArrowRightTiny className="text-border" />
               <div className="text-tertiary">
                 {" "}
-                {selectedReferror.referrer_host}
+                {selectedReferrer}
               </div>
             </>
           )}
@@ -233,8 +306,8 @@ export const PublicationAnalytics = (props: {
           />
           <TopReferrors
             refferors={analyticsData?.topReferrers || []}
-            setSelectedReferror={setSelectedReferror}
-            selectedReferror={selectedReferror}
+            setSelectedReferrer={setSelectedReferrer}
+            selectedReferrer={selectedReferrer}
             isLoading={analyticsLoading}
           />
         </div>
@@ -569,19 +642,18 @@ const PostSelector = (props: {
 
 const DateRangeSelector = (props: {
   pubStartDate: string | undefined;
-  dateRange: DateRange;
-  setDateRange: (dateRange: DateRange) => void;
-  datePreset: string | null;
-  setDatePreset: (preset: string | null) => void;
+  dateState: DateSelection;
+  setDateState: (state: DateSelection) => void;
   showBackground?: boolean;
 }) => {
+  let { range: dateRange, preset: datePreset } = props.dateState;
   let buttonClass =
     "rounded-md px-1 text-sm border border-accent-contrast text-accent-contrast";
 
   let currentDate = new Date();
 
   let startDate = useLocalizedDate(
-    props.dateRange.from?.toISOString() ||
+    dateRange.from?.toISOString() ||
       props.pubStartDate ||
       "2025-01-01T12:00:00.000Z",
     {
@@ -591,19 +663,12 @@ const DateRangeSelector = (props: {
   );
 
   let endDate = useLocalizedDate(
-    (props.dateRange.to ?? currentDate).toISOString(),
+    (dateRange.to ?? currentDate).toISOString(),
     {
       month: "short",
       day: "numeric",
     },
   );
-
-  function handleDateChange(range: DateRange | undefined) {
-    if (range) {
-      props.setDateRange(range);
-      props.setDatePreset(null);
-    }
-  }
 
   return (
     <Popover
@@ -612,9 +677,9 @@ const DateRangeSelector = (props: {
         <div
           className={`w-36 text-center text-tertiary text-sm border border-border-light rounded-md px-2 py-1 hover:border-border ${props.showBackground ? "bg-bg-page" : ""}`}
         >
-          {props.datePreset
-            ? props.datePreset
-            : props.dateRange.from === undefined
+          {datePreset
+            ? datePreset
+            : dateRange.from === undefined
               ? "All Time"
               : `${startDate} - ${endDate}`}
         </div>
@@ -622,10 +687,12 @@ const DateRangeSelector = (props: {
     >
       <div className="flex gap-2 pt-1">
         <button
-          onClick={() => {
-            props.setDateRange({ from: undefined, to: undefined });
-            props.setDatePreset("All Time");
-          }}
+          onClick={() =>
+            props.setDateState({
+              range: { from: undefined, to: undefined },
+              preset: "All Time",
+            })
+          }
           className={`${buttonClass}`}
         >
           All
@@ -634,8 +701,10 @@ const DateRangeSelector = (props: {
           onClick={() => {
             let from = new Date();
             from.setDate(from.getDate() - 7);
-            props.setDateRange({ from, to: new Date() });
-            props.setDatePreset("Last Week");
+            props.setDateState({
+              range: { from, to: new Date() },
+              preset: "Last Week",
+            });
           }}
           className={`${buttonClass}`}
         >
@@ -645,8 +714,10 @@ const DateRangeSelector = (props: {
           onClick={() => {
             let from = new Date();
             from.setMonth(from.getMonth() - 1);
-            props.setDateRange({ from, to: new Date() });
-            props.setDatePreset("Last Month");
+            props.setDateState({
+              range: { from, to: new Date() },
+              preset: "Last Month",
+            });
           }}
           className={`${buttonClass}`}
         >
@@ -656,8 +727,10 @@ const DateRangeSelector = (props: {
       <hr className="my-2 border-border-light" />
       <DatePicker
         mode="range"
-        selected={props.dateRange}
-        onSelect={handleDateChange}
+        selected={dateRange}
+        onSelect={(range) => {
+          if (range) props.setDateState({ range, preset: null });
+        }}
         disabled={(date) => date > new Date()}
       />
     </Popover>
@@ -742,8 +815,8 @@ function selectedPostPath(
 
 const TopReferrors = (props: {
   refferors: ReferrerType[];
-  setSelectedReferror: (ref: ReferrerType | undefined) => void;
-  selectedReferror: ReferrerType | undefined;
+  setSelectedReferrer: (host: string | undefined) => void;
+  selectedReferrer: string | undefined;
   isLoading: boolean;
 }) => {
   return (
@@ -755,17 +828,16 @@ const TopReferrors = (props: {
           <div className="text-tertiary text-sm">No referrer data</div>
         )}
         {props.refferors.map((ref) => {
-          let selected =
-            props.selectedReferror?.referrer_host === ref.referrer_host;
+          let selected = props.selectedReferrer === ref.referrer_host;
           return (
             <Fragment key={ref.referrer_host}>
               <button
                 className={`w-full flex justify-between gap-4 px-1 py-1.5 items-center text-right text-sm rounded-md ${selected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
                 onClick={() => {
                   if (selected) {
-                    props.setSelectedReferror(undefined);
+                    props.setSelectedReferrer(undefined);
                   } else {
-                    props.setSelectedReferror(ref);
+                    props.setSelectedReferrer(ref.referrer_host);
                   }
                 }}
               >
