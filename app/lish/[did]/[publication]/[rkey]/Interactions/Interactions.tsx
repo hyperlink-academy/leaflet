@@ -329,8 +329,11 @@ const TagPopover = (props: {
     <Popover
       className="p-2! max-w-xs"
       trigger={
-        <div className="tags flex gap-1 items-center ">
-          <TagTiny /> {props.tagCount}
+        <div
+          className="tags flex gap-1 items-center"
+          aria-label={`${props.tagCount} tag${props.tagCount === 1 ? "" : "s"}`}
+        >
+          <TagTiny aria-hidden /> {props.tagCount}
         </div>
       }
     >
@@ -342,7 +345,7 @@ const TagPopover = (props: {
 const TagList = (props: { className?: string; tags: string[] | undefined }) => {
   if (!props.tags) return;
   return (
-    <div className="flex gap-1 flex-wrap">
+    <div className="flex gap-1 flex-wrap" role="list" aria-label="Tags">
       {props.tags.map((tag, index) => (
         <Tag name={tag} key={index} className={props.className} />
       ))}

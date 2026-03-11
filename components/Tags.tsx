@@ -20,6 +20,7 @@ export const Tag = (props: {
       <Link
         href={`https://leaflet.pub/tag/${encodeURIComponent(props.name)}`}
         className={`px-1 py-0.5 hover:no-underline! ${props.selected ? "text-accent-2" : "text-tertiary"}`}
+        aria-label={`Tag: ${props.name}`}
       >
         {props.name}{" "}
       </Link>

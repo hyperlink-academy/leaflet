@@ -101,8 +101,11 @@ export const TagPopover = (props: { tags: string[] }) => {
     <Popover
       className="p-2! max-w-xs"
       trigger={
-        <div className="relative flex gap-1 items-center hover:text-accent-contrast">
-          <TagTiny /> {props.tags.length}
+        <div
+          className="relative flex gap-1 items-center hover:text-accent-contrast"
+          aria-label={`${props.tags.length} tag${props.tags.length === 1 ? "" : "s"}`}
+        >
+          <TagTiny aria-hidden /> {props.tags.length}
         </div>
       }
     >
@@ -113,7 +116,7 @@ export const TagPopover = (props: { tags: string[] }) => {
 
 const TagList = (props: { tags: string[]; className?: string }) => {
   return (
-    <div className="flex gap-1 flex-wrap">
+    <div className="flex gap-1 flex-wrap" role="list" aria-label="Tags">
       {props.tags.map((tag, index) => (
         <Tag name={tag} key={index} className={props.className} />
       ))}
