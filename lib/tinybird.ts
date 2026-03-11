@@ -19,7 +19,10 @@ import {
   type InferRow,
   type InferParams,
   type InferOutputRow,
+  TokenDefinition,
 } from "@tinybirdco/sdk";
+
+const PROD_READ_TOKEN = { name: "prod_read_token_v1", scopes: ["READ"] };
 
 // ============================================================================
 // Datasources
@@ -87,11 +90,12 @@ export type AnalyticsEventsRow = InferRow<typeof analyticsEvents>;
 export const publicationTraffic = defineEndpoint("publication_traffic", {
   description: "Daily pageview time series for a publication domain",
   params: {
-    domain: p.string(),
+    domains: p.string(),
     date_from: p.string().optional(),
     date_to: p.string().optional(),
     path: p.string().optional(),
   },
+  tokens: [PROD_READ_TOKEN],
   nodes: [
     node({
       name: "endpoint",
@@ -102,7 +106,7 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
           uniq(deviceId) AS visitors
         FROM analytics_events
         WHERE eventType = 'pageview'
-          AND domain(origin) = {{String(domain)}}
+          AND domain(origin) IN splitByChar(',', {{String(domains)}})
           {% if defined(date_from) %}
             AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
           {% end %}
@@ -125,7 +129,9 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
 });
 
 export type PublicationTrafficParams = InferParams<typeof publicationTraffic>;
-export type PublicationTrafficOutput = InferOutputRow<typeof publicationTraffic>;
+export type PublicationTrafficOutput = InferOutputRow<
+  typeof publicationTraffic
+>;
 
 /**
  * publication_top_referrers – top referring domains for a publication.
@@ -133,9 +139,10 @@ export type PublicationTrafficOutput = InferOutputRow<typeof publicationTraffic>
 export const publicationTopReferrers = defineEndpoint(
   "publication_top_referrers",
   {
+    tokens: [PROD_READ_TOKEN],
     description: "Top referrers for a publication domain",
     params: {
-      domain: p.string(),
+      domains: p.string(),
       date_from: p.string().optional(),
       date_to: p.string().optional(),
       path: p.string().optional(),
@@ -150,9 +157,9 @@ export const publicationTopReferrers = defineEndpoint(
           count() AS pageviews
         FROM analytics_events
         WHERE eventType = 'pageview'
-          AND domain(origin) = {{String(domain)}}
+          AND domain(origin) IN splitByChar(',', {{String(domains)}})
           AND referrer != ''
-          AND domain(referrer) != {{String(domain)}}
+          AND domain(referrer) NOT IN splitByChar(',', {{String(domains)}})
           {% if defined(date_from) %}
             AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
           {% end %}
@@ -187,8 +194,9 @@ export type PublicationTopReferrersOutput = InferOutputRow<
  */
 export const publicationTopPages = defineEndpoint("publication_top_pages", {
   description: "Top pages for a publication domain",
+  tokens: [PROD_READ_TOKEN],
   params: {
-    domain: p.string(),
+    domains: p.string(),
     date_from: p.string().optional(),
     date_to: p.string().optional(),
     limit: p.int32().optional(10),
@@ -202,7 +210,7 @@ export const publicationTopPages = defineEndpoint("publication_top_pages", {
           count() AS pageviews
         FROM analytics_events
         WHERE eventType = 'pageview'
-          AND domain(origin) = {{String(domain)}}
+          AND domain(origin) IN splitByChar(',', {{String(domains)}})
           {% if defined(date_from) %}
             AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
           {% end %}

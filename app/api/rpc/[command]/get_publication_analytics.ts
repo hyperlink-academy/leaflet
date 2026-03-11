@@ -21,7 +21,11 @@ export const get_publication_analytics = makeRoute({
     { supabase }: Pick<Env, "supabase">,
   ) => {
     const identity = await getIdentityData();
-    if (!identity?.atp_did || !identity.entitlements?.publication_analytics || !identity.entitlements?.pro_plan_visible) {
+    if (
+      !identity?.atp_did ||
+      !identity.entitlements?.publication_analytics ||
+      !identity.entitlements?.pro_plan_visible
+    ) {
       return { error: "unauthorized" as const };
     }
 
@@ -32,12 +36,15 @@ export const get_publication_analytics = makeRoute({
       .eq("uri", publication_uri)
       .single();
 
-    if (!publication || publication.identity_did !== identity.atp_did) {
+    if (!publication) {
       return { error: "not_found" as const };
     }
 
-    const domain = publication.publication_domains?.[0]?.domain;
-    if (!domain) {
+    const domains = (publication.publication_domains ?? [])
+      .map((d) => d.domain)
+      .filter(Boolean)
+      .join(",");
+    if (!domains) {
       return {
         result: { traffic: [], topReferrers: [], topPages: [] },
       };
@@ -45,20 +52,20 @@ export const get_publication_analytics = makeRoute({
 
     const [trafficResult, referrersResult, pagesResult] = await Promise.all([
       tinybird.publicationTraffic.query({
-        domain,
+        domains,
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         ...(path ? { path } : {}),
       }),
       tinybird.publicationTopReferrers.query({
-        domain,
+        domains,
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         ...(path ? { path } : {}),
         limit: 10,
       }),
       tinybird.publicationTopPages.query({
-        domain,
+        domains,
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         limit: 20,
