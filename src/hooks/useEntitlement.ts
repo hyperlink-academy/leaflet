@@ -11,5 +11,5 @@ export function useIsPro(): boolean {
 }
 
 export function useCanSeePro(): boolean {
-  return useHasEntitlement("pro_plan_visible");
+  return true;
 }
