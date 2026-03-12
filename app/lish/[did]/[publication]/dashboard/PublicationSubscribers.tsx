@@ -48,7 +48,7 @@ export function PublicationSubscribers(props: {
   if (subscribers.length === 0)
     return (
       <div
-        className={`italic text-tertiary  flex flex-col gap-0 text-center justify-center mt-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
+        className={`italic text-tertiary  flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
         style={
           props.showPageBackground
             ? {

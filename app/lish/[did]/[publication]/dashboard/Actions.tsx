@@ -21,8 +21,6 @@ export const Actions = (props: { publication: string }) => {
   return (
     <>
       <NewDraftActionButton publication={props.publication} />
-      {canSeePro && !isPro && <MobileUpgrade />}
-
       <PublicationShareButton />
       <PublicationSettingsButton publication={props.publication} />
     </>
@@ -85,19 +83,3 @@ function PublicationShareButton() {
     </Menu>
   );
 }
-
-const MobileUpgrade = () => {
-  return (
-    <UpgradeModal
-      asChild
-      trigger={
-        <ActionButton
-          label="Upgrade to Leaflet Pro"
-          icon={<LeafletPro />}
-          className={`sm:hidden block bg-[var(--accent-light)]!`}
-          style={{ backgroundColor: "var(--accent-light) important!" }}
-        />
-      }
-    />
-  );
-};

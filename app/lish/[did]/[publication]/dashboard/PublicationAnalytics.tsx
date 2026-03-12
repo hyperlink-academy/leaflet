@@ -241,9 +241,9 @@ export const PublicationAnalytics = (props: {
   if (!isPro)
     return (
       <div
-        className={`sm:mx-auto pt-4 s rounded-lg border ${
+        className={`sm:mx-auto mt-2 sm:mt-4 rounded-lg border ${
           props.showPageBackground
-            ? "border-border-light p-2"
+            ? "border-border-light p-3"
             : "border-transparent"
         }`}
         style={{
@@ -296,7 +296,11 @@ export const PublicationAnalytics = (props: {
             </>
           )}
         </div>
-        <TrafficChart data={filledTraffic} isLoading={analyticsLoading} metric={trafficMetric} />
+        <TrafficChart
+          data={filledTraffic}
+          isLoading={analyticsLoading}
+          metric={trafficMetric}
+        />
         <div className="flex flex-col sm:flex-row gap-4 mt-2">
           <TopPages
             pages={analyticsData?.topPages || []}
@@ -490,7 +494,9 @@ const TrafficChart = (props: {
                   <div className="text-tertiary">
                     {formatDayTick(String(label))}
                   </div>
-                  <div>{Number(pageviews).toLocaleString()} {metricLabel}</div>
+                  <div>
+                    {Number(pageviews).toLocaleString()} {metricLabel}
+                  </div>
                 </div>
               );
             }}
