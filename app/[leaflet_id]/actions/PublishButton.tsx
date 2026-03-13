@@ -190,7 +190,7 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
         <ActionButton
           primary
           icon={<PublishSmall className="shrink-0" />}
-          label={"Publish on ATP"}
+          label={"Publish"}
         />
       }
     >
