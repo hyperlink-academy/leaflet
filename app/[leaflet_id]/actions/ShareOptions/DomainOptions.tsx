@@ -1,34 +1,28 @@
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
-
-import { useSmoker, useToaster } from "components/Toast";
-import { Input, InputWithLabel } from "components/Input";
-import useSWR from "swr";
+import { useToaster } from "components/Toast";
+import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
-import { addDomain } from "actions/domains/addDomain";
-import { callRPC } from "app/api/rpc/client";
+import { useDomainStatus } from "components/Domains/useDomainStatus";
+import { CustomDomain } from "components/Domains/DomainList";
+import {
+  getDomainAssignment,
+  describeAssignment,
+} from "components/Domains/domainAssignment";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { useReadOnlyShareLink } from ".";
-import { addDomainPath } from "actions/domains/addDomainPath";
+import { assignDomainToDocument } from "actions/domains/assignDomainToDocument";
 import { useReplicache } from "src/replicache";
-import { deleteDomain } from "actions/domains/deleteDomain";
+import { AddDomainForm } from "components/Domains/AddDomainForm";
+import { DomainSettingsView } from "components/Domains/DomainSettingsView";
 import { AddTiny } from "components/Icons/AddTiny";
 
 type DomainMenuState =
-  | {
-      state: "default";
-    }
-  | {
-      state: "domain-settings";
-      domain: string;
-    }
-  | {
-      state: "add-domain";
-    }
-  | {
-      state: "has-domain";
-      domain: string;
-    };
+  | { state: "default" }
+  | { state: "domain-settings"; domain: string }
+  | { state: "add-domain" }
+  | { state: "has-domain"; domain: string };
+
 export function CustomDomainMenu(props: {
   setShareMenuState: (s: "default") => void;
 }) {
@@ -50,14 +44,30 @@ export function CustomDomainMenu(props: {
       );
     case "domain-settings":
       return (
-        <DomainSettings domain={state.domain} setDomainMenuState={setState} />
+        <div className="px-3 py-1 max-w-full w-[600px]">
+          <DomainSettingsView
+            domain={state.domain}
+            onBack={() => setState({ state: "default" })}
+            onRemoveAssignment={() => setState({ state: "default" })}
+            onDeleteDomain={() => setState({ state: "default" })}
+          />
+        </div>
       );
     case "add-domain":
-      return <AddDomain setDomainMenuState={setState} />;
+      return (
+        <div className="px-3 py-1 max-w-full w-[600px]">
+          <AddDomainForm
+            onDomainAdded={(domain) =>
+              setState({ state: "domain-settings", domain })
+            }
+            onBack={() => setState({ state: "default" })}
+          />
+        </div>
+      );
   }
 }
 
-export const DomainOptions = (props: {
+const DomainOptions = (props: {
   setShareMenuState: (s: "default") => void;
   setDomainMenuState: (state: DomainMenuState) => void;
   domainConnected: boolean;
@@ -69,32 +79,74 @@ export const DomainOptions = (props: {
   let [selectedRoute, setSelectedRoute] = useState(
     domains?.[0]?.route.slice(1) || "",
   );
-  let { identity } = useIdentityData();
+  let { identity, mutate: mutateIdentity } = useIdentityData();
   let { permission_token } = useReplicache();
 
   let toaster = useToaster();
-  let smoker = useSmoker();
   let publishLink = useReadOnlyShareLink();
+
+  // Find the CustomDomain object for the selected domain to check its assignment
+  let selectedDomainData = identity?.custom_domains.find(
+    (d: CustomDomain) => d.domain === selectedDomain,
+  );
+  let selectedAssignment = selectedDomainData
+    ? getDomainAssignment(selectedDomainData)
+    : null;
+  let willReassign =
+    selectedAssignment && selectedAssignment.type !== "unassigned";
+
+  let [confirmingReassign, setConfirmingReassign] = useState(false);
+
+  async function doPublish() {
+    if (!selectedDomain || !publishLink) return;
+    await assignDomainToDocument({
+      domain: selectedDomain,
+      route: "/" + selectedRoute,
+      view_permission_token: publishLink,
+      edit_permission_token: permission_token.id,
+    });
+
+    toaster({
+      content: (
+        <div className="font-bold">
+          Published to custom domain!{" "}
+          <a
+            className="underline text-accent-2"
+            href={`https://${selectedDomain}/${selectedRoute}`}
+            target="_blank"
+          >
+            View
+          </a>
+        </div>
+      ),
+      type: "success",
+    });
+    mutateIdentity();
+    mutateDomains();
+    setConfirmingReassign(false);
+    props.setShareMenuState("default");
+  }
 
   return (
     <div className="px-3 py-1 flex flex-col gap-3 max-w-full w-[600px]">
       <h3 className="text-secondary">Choose a Domain</h3>
       <div className="flex flex-col gap-1 text-secondary">
-        {identity?.custom_domains
-          .filter((d) => !d.publication_domains.length)
-          .map((domain) => {
-            return (
-              <DomainOption
-                selectedRoute={selectedRoute}
-                setSelectedRoute={setSelectedRoute}
-                key={domain.domain}
-                domain={domain.domain}
-                checked={selectedDomain === domain.domain}
-                setChecked={setSelectedDomain}
-                setDomainMenuState={props.setDomainMenuState}
-              />
-            );
-          })}
+        {identity?.custom_domains.map((domain: CustomDomain) => {
+          return (
+            <DomainOption
+              selectedRoute={selectedRoute}
+              setSelectedRoute={setSelectedRoute}
+              key={domain.domain}
+              domain={domain}
+              checked={selectedDomain === domain.domain}
+              setChecked={(d) => {
+                setSelectedDomain(d);
+                setConfirmingReassign(false);
+              }}
+              setDomainMenuState={props.setDomainMenuState}
+            />
+          );
+        })}
         <button
           onMouseDown={() => {
             props.setDomainMenuState({ state: "add-domain" });
@@ -105,76 +157,67 @@ export const DomainOptions = (props: {
         </button>
       </div>
 
-      {/* ONLY SHOW IF A DOMAIN IS CURRENTLY CONNECTED */}
-      <div className="flex gap-3 items-center justify-end">
-        {props.domainConnected && (
-          <button
-            onMouseDown={() => {
-              props.setShareMenuState("default");
-              toaster({
-                content: (
-                  <div className="font-bold">
-                    Unpublished from custom domain!
-                  </div>
-                ),
-                type: "error",
-              });
+      {confirmingReassign && selectedAssignment && (
+        <div className="text-sm border border-accent-contrast rounded-md p-2 flex flex-col gap-2">
+          <p className="text-secondary">
+            <strong>{selectedDomain}</strong> is currently assigned to{" "}
+            {describeAssignment(selectedAssignment)}. Publishing here will
+            remove that assignment.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              className="text-accent-contrast text-sm"
+              onMouseDown={() => setConfirmingReassign(false)}
+            >
+              Cancel
+            </button>
+            <ButtonPrimary compact onMouseDown={doPublish}>
+              Reassign & Publish
+            </ButtonPrimary>
+          </div>
+        </div>
+      )}
+
+      {!confirmingReassign && (
+        <div className="flex gap-3 items-center justify-end">
+          {props.domainConnected && (
+            <button
+              onMouseDown={() => {
+                props.setShareMenuState("default");
+                toaster({
+                  content: (
+                    <div className="font-bold">
+                      Unpublished from custom domain!
+                    </div>
+                  ),
+                  type: "error",
+                });
+              }}
+            >
+              Unpublish
+            </button>
+          )}
+
+          <ButtonPrimary
+            id="publish-to-domain"
+            disabled={
+              domains?.[0]
+                ? domains[0].domain === selectedDomain &&
+                  domains[0].route.slice(1) === selectedRoute
+                : !selectedDomain
+            }
+            onClick={async () => {
+              if (willReassign) {
+                setConfirmingReassign(true);
+                return;
+              }
+              await doPublish();
             }}
           >
-            Unpublish
-          </button>
-        )}
-
-        <ButtonPrimary
-          id="publish-to-domain"
-          disabled={
-            domains?.[0]
-              ? domains[0].domain === selectedDomain &&
-                domains[0].route.slice(1) === selectedRoute
-              : !selectedDomain
-          }
-          onClick={async () => {
-            // let rect = document
-            //   .getElementById("publish-to-domain")
-            //   ?.getBoundingClientRect();
-            // smoker({
-            //   error: true,
-            //   text: "url already in use!",
-            //   position: {
-            //     x: rect ? rect.left : 0,
-            //     y: rect ? rect.top + 26 : 0,
-            //   },
-            // });
-            if (!selectedDomain || !publishLink) return;
-            await addDomainPath({
-              domain: selectedDomain,
-              route: "/" + selectedRoute,
-              view_permission_token: publishLink,
-              edit_permission_token: permission_token.id,
-            });
-
-            toaster({
-              content: (
-                <div className="font-bold">
-                  Published to custom domain!{" "}
-                  <a
-                    className="underline text-accent-2"
-                    href={`https://${selectedDomain}/${selectedRoute}`}
-                    target="_blank"
-                  >
-                    View
-                  </a>
-                </div>
-              ),
-              type: "success",
-            });
-            mutateDomains();
-            props.setShareMenuState("default");
-          }}
-        >
-          Publish!
-        </ButtonPrimary>
-      </div>
+            Publish!
+          </ButtonPrimary>
+        </div>
+      )}
     </div>
   );
 };
@@ -184,26 +227,26 @@ const DomainOption = (props: {
   setSelectedRoute: (s: string) => void;
   checked: boolean;
   setChecked: (checked: string) => void;
-  domain: string;
+  domain: CustomDomain;
   setDomainMenuState: (state: DomainMenuState) => void;
 }) => {
   let [value, setValue] = useState("");
-  let { data } = useSWR(props.domain, async (domain) => {
-    return await callRPC("get_domain_status", { domain });
-  });
-  let pending = data?.config?.misconfigured || data?.error;
+  let { pending } = useDomainStatus(props.domain.domain);
+  let assignment = getDomainAssignment(props.domain);
+  let assignedElsewhere = assignment.type !== "unassigned";
+
   return (
-    <label htmlFor={props.domain}>
+    <label htmlFor={props.domain.domain}>
       <input
         type="radio"
-        name={props.domain}
-        id={props.domain}
-        value={props.domain}
+        name={props.domain.domain}
+        id={props.domain.domain}
+        value={props.domain.domain}
         checked={props.checked}
         className="hidden appearance-none"
         onChange={() => {
           if (pending) return;
-          props.setChecked(props.domain);
+          props.setChecked(props.domain.domain);
         }}
       />
       <div
@@ -215,12 +258,19 @@ const DomainOption = (props: {
             pending
               ? "border-border-light text-secondary justify-between gap-2 items-center "
               : !props.checked
-                ? "flex-wrap border-border-light"
+                ? `flex-wrap border-border-light ${assignedElsewhere ? "opacity-70" : ""}`
                 : "flex-wrap border-accent-1 bg-accent-1 text-accent-2 font-bold"
           } `}
       >
-        <div className={`w-max truncate ${pending && "animate-pulse"}`}>
-          {props.domain}
+        <div className="flex justify-between w-full items-center">
+          <div className={`w-max truncate ${pending && "animate-pulse"}`}>
+            {props.domain.domain}
+          </div>
+          {!props.checked && assignedElsewhere && !pending && (
+            <span className="text-xs text-tertiary">
+              {describeAssignment(assignment)}
+            </span>
+          )}
         </div>
         {props.checked && (
           <div className="flex gap-0 w-full">
@@ -247,7 +297,7 @@ const DomainOption = (props: {
             onMouseDown={() => {
               props.setDomainMenuState({
                 state: "domain-settings",
-                domain: props.domain,
+                domain: props.domain.domain,
               });
             }}
           >
@@ -256,139 +306,5 @@ const DomainOption = (props: {
         )}
       </div>
     </label>
-  );
-};
-
-export const AddDomain = (props: {
-  setDomainMenuState: (state: DomainMenuState) => void;
-}) => {
-  let [value, setValue] = useState("");
-  let { mutate } = useIdentityData();
-  let smoker = useSmoker();
-  return (
-    <div className="flex flex-col gap-1 px-3 py-1 max-w-full w-[600px]">
-      <div>
-        <h3 className="text-secondary">Add a New Domain</h3>
-        <div className="text-xs italic text-secondary">
-          Don't include the protocol or path, just the base domain name for now
-        </div>
-      </div>
-
-      <Input
-        className="input-with-border text-primary"
-        placeholder="www.example.com"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
-
-      <ButtonPrimary
-        disabled={!value}
-        className="place-self-end mt-2"
-        onMouseDown={async (e) => {
-          // call the vercel api, set the thing...
-          let { error } = await addDomain(value);
-          if (error) {
-            smoker({
-              error: true,
-              text:
-                error === "invalid_domain"
-                  ? "Invalid domain! Use just the base domain"
-                  : error === "domain_already_in_use"
-                    ? "That domain is already in use!"
-                    : "An unknown error occured",
-              position: {
-                y: e.clientY,
-                x: e.clientX - 5,
-              },
-            });
-            return;
-          }
-          mutate();
-          props.setDomainMenuState({ state: "domain-settings", domain: value });
-        }}
-      >
-        Verify Domain
-      </ButtonPrimary>
-    </div>
-  );
-};
-
-const DomainSettings = (props: {
-  domain: string;
-  setDomainMenuState: (s: DomainMenuState) => void;
-}) => {
-  let isSubdomain = props.domain.split(".").length > 2;
-  return (
-    <div className="flex flex-col gap-1 px-3 py-1 max-w-full w-[600px]">
-      <h3 className="text-secondary">Verify Domain</h3>
-
-      <div className="text-secondary text-sm flex flex-col gap-3">
-        <div className="flex flex-col gap-[6px]">
-          <div>
-            To verify this domain, add the following record to your DNS provider
-            for <strong>{props.domain}</strong>.
-          </div>
-
-          {isSubdomain ? (
-            <div className="flex gap-3 p-1 border border-border-light rounded-md py-1">
-              <div className="flex flex-col ">
-                <div className="text-tertiary">Type</div>
-                <div>CNAME</div>
-              </div>
-              <div className="flex flex-col">
-                <div className="text-tertiary">Name</div>
-                <div style={{ wordBreak: "break-word" }}>
-                  {props.domain.split(".").slice(0, -2).join(".")}
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <div className="text-tertiary">Value</div>
-                <div style={{ wordBreak: "break-word" }}>
-                  cname.vercel-dns.com
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-3 p-1 border border-border-light rounded-md py-1">
-              <div className="flex flex-col ">
-                <div className="text-tertiary">Type</div>
-                <div>A</div>
-              </div>
-              <div className="flex flex-col">
-                <div className="text-tertiary">Name</div>
-                <div>@</div>
-              </div>
-              <div className="flex flex-col">
-                <div className="text-tertiary">Value</div>
-                <div>76.76.21.21</div>
-              </div>
-            </div>
-          )}
-        </div>
-        <div>
-          Once you do this, the status may be pending for up to a few hours.
-        </div>
-        <div>Check back later to see if verification was successful.</div>
-      </div>
-
-      <div className="flex gap-3 justify-between items-center mt-2">
-        <button
-          className="text-accent-contrast font-bold "
-          onMouseDown={async () => {
-            await deleteDomain({ domain: props.domain });
-            props.setDomainMenuState({ state: "default" });
-          }}
-        >
-          Delete Domain
-        </button>
-        <ButtonPrimary
-          onMouseDown={() => {
-            props.setDomainMenuState({ state: "default" });
-          }}
-        >
-          Back to Domains
-        </ButtonPrimary>
-      </div>
-    </div>
   );
 };

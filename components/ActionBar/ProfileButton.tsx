@@ -12,6 +12,7 @@ import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { Modal } from "components/Modal";
 import { UpgradeContent } from "app/lish/[did]/[publication]/UpgradeModal";
 import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ManageProSubscription";
+import { ManageDomains } from "components/Domains/ManageDomains";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { useState } from "react";
 
@@ -19,7 +20,9 @@ export const ProfileButton = () => {
   let { identity } = useIdentityData();
   let { data: record } = useRecordFromDid(identity?.atp_did);
   let isMobile = useIsMobile();
-  let [state, setState] = useState<"menu" | "manage-subscription">("menu");
+  let [state, setState] = useState<
+    "menu" | "manage-subscription" | "manage-domains"
+  >("menu");
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
 
@@ -51,6 +54,8 @@ export const ProfileButton = () => {
     >
       {state === "manage-subscription" ? (
         <ManageProSubscription backToMenu={() => setState("menu")} />
+      ) : state === "manage-domains" ? (
+        <ManageDomains backToMenu={() => setState("menu")} />
       ) : (
         <div className="flex flex-col gap-0.5">
           {record && (
@@ -97,6 +102,17 @@ export const ProfileButton = () => {
               <hr className="border-border-light border-dashed" />
             </>
           )}
+
+          <button
+            className="menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!"
+            type="button"
+            onClick={() => setState("manage-domains")}
+          >
+            My Domains
+            <ArrowRightTiny />
+          </button>
+
+          <hr className="border-border-light border-dashed" />
 
           <button
             type="button"
