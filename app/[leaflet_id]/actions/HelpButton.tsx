@@ -30,7 +30,7 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
         <HelpLink text="💡 Make with Leaflet" url="https://make.leaflet.pub" />
         <HelpLink
           text="✨ Explore Publications"
-          url="https://leaflet.pub/discover"
+          url="https://leaflet.pub/reader"
         />
         <HelpLink text="📣 Newsletter" url="https://buttondown.com/leaflet" />
         {/* contact links */}
