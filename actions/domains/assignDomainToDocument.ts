@@ -24,11 +24,13 @@ export async function assignDomainToDocument({
   if (!identity || !identity.custom_domains.find((d) => d.domain === domain))
     return null;
 
-  await supabase.from("publication_domains").delete().eq("domain", domain);
-  await supabase
-    .from("custom_domain_routes")
-    .delete()
-    .eq("edit_permission_token", edit_permission_token);
+  await Promise.all([
+    supabase.from("publication_domains").delete().eq("domain", domain),
+    supabase
+      .from("custom_domain_routes")
+      .delete()
+      .eq("edit_permission_token", edit_permission_token),
+  ]);
 
   await supabase.from("custom_domain_routes").insert({
     domain,

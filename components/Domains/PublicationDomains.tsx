@@ -3,7 +3,10 @@ import { useState } from "react";
 import { mutate } from "swr";
 import { useDomainStatus } from "./useDomainStatus";
 import { getDomainAssignment, describeAssignment } from "./domainAssignment";
-import { useIdentityData } from "components/IdentityProvider";
+import {
+  useIdentityData,
+  mutateIdentityData,
+} from "components/IdentityProvider";
 import { ButtonPrimary } from "components/Buttons";
 import {
   usePublicationData,
@@ -194,16 +197,33 @@ function UnassignedDomainRow(props: {
   onSettings: () => void;
 }) {
   let { pending } = useDomainStatus(props.domainData.domain);
+  let { mutate: mutateIdentity } = useIdentityData();
   let assignment = getDomainAssignment(props.domainData);
   let [confirming, setConfirming] = useState(false);
 
   async function doAssign() {
+    mutateIdentityData(mutateIdentity, (draft) => {
+      let domain = draft.custom_domains.find(
+        (d) => d.domain === props.domainData.domain,
+      );
+      if (domain) {
+        domain.custom_domain_routes = [];
+        domain.publication_domains = [
+          {
+            publication: props.publication_uri,
+            domain: props.domainData.domain,
+            identity: "",
+            created_at: new Date().toISOString(),
+          },
+        ];
+      }
+    });
+    setConfirming(false);
+    props.onAssigned();
     await assignDomainToPublication({
       domain: props.domainData.domain,
       publication_uri: props.publication_uri,
     });
-    setConfirming(false);
-    props.onAssigned();
   }
 
   return (

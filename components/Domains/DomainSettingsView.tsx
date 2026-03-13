@@ -1,11 +1,15 @@
 "use client";
 import { useState } from "react";
-import { ButtonPrimary } from "components/Buttons";
 import { useDomainStatus } from "./useDomainStatus";
 import { DotLoader } from "components/utils/DotLoader";
 import { deleteDomain } from "actions/domains/deleteDomain";
 import { removeDomainAssignment } from "actions/domains/removeDomainAssignment";
-import { useIdentityData } from "components/IdentityProvider";
+import { removeDomainRoute } from "actions/domains/removeDomainRoute";
+import {
+  useIdentityData,
+  mutateIdentityData,
+} from "components/IdentityProvider";
+import { getDomainAssignment } from "./domainAssignment";
 
 export function DomainSettingsView(props: {
   domain: string;
@@ -13,9 +17,19 @@ export function DomainSettingsView(props: {
   onRemoveAssignment?: () => void;
   onDeleteDomain?: () => void;
 }) {
-  let { data, pending: needsSetup, mutate: mutateDomainStatus } = useDomainStatus(props.domain);
-  let { mutate: mutateIdentity } = useIdentityData();
+  let {
+    data,
+    pending: needsSetup,
+    mutate: mutateDomainStatus,
+  } = useDomainStatus(props.domain);
+  let { identity, mutate: mutateIdentity } = useIdentityData();
   let isSubdomain = props.domain.split(".").length > 2;
+
+  let domainData = identity?.custom_domains.find(
+    (d) => d.domain === props.domain,
+  );
+  let assignment = domainData ? getDomainAssignment(domainData) : null;
+  let isAssigned = assignment && assignment.type !== "unassigned";
 
   return (
     <div className="flex flex-col gap-[6px] text-sm text-primary max-w-full">
@@ -100,6 +114,73 @@ export function DomainSettingsView(props: {
         <div className="text-green-600">This domain is verified!</div>
       )}
 
+      {/* Assignment list */}
+      {props.onRemoveAssignment && isAssigned && domainData && (
+        <div className="flex flex-col gap-1 mt-1">
+          <h4 className="text-tertiary text-xs">Assigned to</h4>
+          {domainData.publication_domains.length > 0 && (
+            <div className="flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light">
+              <span className="text-secondary">publication</span>
+              <button
+                className="text-accent-contrast text-xs"
+                type="button"
+                onMouseDown={async () => {
+                  mutateIdentityData(mutateIdentity, (draft) => {
+                    let domain = draft.custom_domains.find(
+                      (d) => d.domain === props.domain,
+                    );
+                    if (domain) {
+                      domain.publication_domains = [];
+                    }
+                  });
+                  props.onRemoveAssignment?.();
+                  await removeDomainAssignment({ domain: props.domain });
+                }}
+              >
+                remove
+              </button>
+            </div>
+          )}
+          {domainData.custom_domain_routes.map((route) => (
+            <div
+              key={route.id}
+              className="flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light"
+            >
+              <a
+                href={`/${route.edit_permission_token}`}
+                className="text-accent-contrast hover:underline truncate"
+              >
+                {route.route}
+              </a>
+              <button
+                className="text-accent-contrast text-xs shrink-0 ml-2"
+                type="button"
+                onMouseDown={async () => {
+                  mutateIdentityData(mutateIdentity, (draft) => {
+                    let domain = draft.custom_domains.find(
+                      (d) => d.domain === props.domain,
+                    );
+                    if (domain) {
+                      domain.custom_domain_routes =
+                        domain.custom_domain_routes.filter(
+                          (r) => r.id !== route.id,
+                        );
+                    }
+                  });
+                  // If this was the last route, go back to the list
+                  if (domainData.custom_domain_routes.length <= 1) {
+                    props.onRemoveAssignment?.();
+                  }
+                  await removeDomainRoute({ routeId: route.id });
+                }}
+              >
+                remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-col gap-2 mt-2">
         <div className="flex gap-3 justify-between items-center">
           <button
@@ -119,27 +200,18 @@ export function DomainSettingsView(props: {
         <hr className="border-border-light" />
 
         <div className="flex gap-3 justify-between items-center">
-          {props.onRemoveAssignment && (
-            <button
-              className="text-accent-contrast text-sm"
-              type="button"
-              onMouseDown={async () => {
-                await removeDomainAssignment({ domain: props.domain });
-                mutateIdentity();
-                props.onRemoveAssignment?.();
-              }}
-            >
-              Remove Assignment
-            </button>
-          )}
           {props.onDeleteDomain && (
             <button
               className="text-accent-contrast font-bold text-sm"
               type="button"
               onMouseDown={async () => {
-                await deleteDomain({ domain: props.domain });
-                mutateIdentity();
+                mutateIdentityData(mutateIdentity, (draft) => {
+                  draft.custom_domains = draft.custom_domains.filter(
+                    (d) => d.domain !== props.domain,
+                  );
+                });
                 props.onDeleteDomain?.();
+                await deleteDomain({ domain: props.domain });
               }}
             >
               Delete Domain

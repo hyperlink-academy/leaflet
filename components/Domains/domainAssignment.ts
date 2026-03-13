@@ -21,11 +21,11 @@ export function getDomainAssignment(domain: CustomDomain): DomainAssignment {
 export function describeAssignment(assignment: DomainAssignment): string {
   switch (assignment.type) {
     case "publication":
-      return "a publication";
+      return "publication";
     case "document":
       return assignment.routes.length === 1
-        ? `a leaflet at ${assignment.routes[0]}`
-        : `${assignment.routes.length} leaflets`;
+        ? "1 page"
+        : `${assignment.routes.length} pages`;
     case "unassigned":
       return "";
   }

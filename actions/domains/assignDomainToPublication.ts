@@ -27,8 +27,10 @@ export async function assignDomainToPublication({
     .single();
   if (publication?.identity_did !== identity.atp_did) return null;
 
-  await supabase.from("custom_domain_routes").delete().eq("domain", domain);
-  await supabase.from("publication_domains").delete().eq("domain", domain);
+  await Promise.all([
+    supabase.from("custom_domain_routes").delete().eq("domain", domain),
+    supabase.from("publication_domains").delete().eq("domain", domain),
+  ]);
 
   await supabase.from("publication_domains").insert({
     publication: publication_uri,

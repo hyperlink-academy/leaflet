@@ -9,19 +9,17 @@ let supabase = createServerClient<Database>(
   { cookies: {} },
 );
 
-export async function removeDomainAssignment({
-  domain,
-}: {
-  domain: string;
-}) {
+export async function removeDomainRoute({ routeId }: { routeId: string }) {
   let identity = await getIdentityData();
-  if (!identity || !identity.custom_domains.find((d) => d.domain === domain))
-    return null;
+  if (!identity) return null;
 
-  await Promise.all([
-    supabase.from("custom_domain_routes").delete().eq("domain", domain),
-    supabase.from("publication_domains").delete().eq("domain", domain),
-  ]);
+  // Verify the route belongs to one of the user's domains
+  let allRoutes = identity.custom_domains.flatMap(
+    (d) => d.custom_domain_routes,
+  );
+  if (!allRoutes.find((r) => r.id === routeId)) return null;
+
+  await supabase.from("custom_domain_routes").delete().eq("id", routeId);
 
   return true;
 }
