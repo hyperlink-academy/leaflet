@@ -54,10 +54,8 @@ function DomainRow(props: { domain: CustomDomain; onSelect: () => void }) {
         {assignmentLabel && (
           <span className="text-xs text-tertiary">{assignmentLabel}</span>
         )}
-        {pending ? (
-          <span className="text-accent-contrast text-sm">pending</span>
-        ) : (
-          <span className="text-sm text-green-600">verified</span>
+        {pending && (
+          <span className="text-accent-contrast text-sm">unverified</span>
         )}
       </div>
     </button>

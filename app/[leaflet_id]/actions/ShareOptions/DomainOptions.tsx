@@ -8,10 +8,6 @@ import {
 } from "components/IdentityProvider";
 import { useDomainStatus } from "components/Domains/useDomainStatus";
 import { CustomDomain } from "components/Domains/DomainList";
-import {
-  getDomainAssignment,
-  describeAssignment,
-} from "components/Domains/domainAssignment";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { useReadOnlyShareLink } from ".";
 import { assignDomainToDocument } from "actions/domains/assignDomainToDocument";
@@ -93,6 +89,21 @@ const DomainOptions = (props: {
     (d: CustomDomain) => d.publication_domains.length === 0,
   );
 
+  // Check if the selected route is already assigned to a different leaflet
+  let routeConflict = (() => {
+    if (!selectedDomain) return false;
+    let domain = availableDomains.find(
+      (d: CustomDomain) => d.domain === selectedDomain,
+    );
+    if (!domain) return false;
+    let route = "/" + selectedRoute;
+    return domain.custom_domain_routes.some(
+      (r) =>
+        r.route === route &&
+        r.edit_permission_token !== permission_token.id,
+    );
+  })();
+
   async function doPublish() {
     if (!selectedDomain || !publishLink) return;
     let route = "/" + selectedRoute;
@@ -173,6 +184,9 @@ const DomainOptions = (props: {
         </button>
       </div>
 
+      {routeConflict && (
+        <p className="text-error text-sm">Route already assigned</p>
+      )}
       <div className="flex gap-3 items-center justify-end">
         {props.domainConnected && (
           <button
@@ -195,10 +209,11 @@ const DomainOptions = (props: {
         <ButtonPrimary
           id="publish-to-domain"
           disabled={
-            domains?.[0]
+            routeConflict ||
+            (domains?.[0]
               ? domains[0].domain === selectedDomain &&
                 domains[0].route.slice(1) === selectedRoute
-              : !selectedDomain
+              : !selectedDomain)
           }
           onClick={doPublish}
         >
@@ -219,7 +234,6 @@ const DomainOption = (props: {
 }) => {
   let [value, setValue] = useState("");
   let { pending } = useDomainStatus(props.domain.domain);
-  let assignment = getDomainAssignment(props.domain);
 
   return (
     <label htmlFor={props.domain.domain}>
@@ -249,14 +263,9 @@ const DomainOption = (props: {
           } `}
       >
         <div className="flex justify-between w-full items-center">
-          <div className={`w-max truncate ${pending && "animate-pulse"}`}>
+          <div className={`w-max truncate ${pending ? "animate-pulse" : ""}`}>
             {props.domain.domain}
           </div>
-          {!props.checked && assignment.type === "document" && !pending && (
-            <span className="text-xs text-tertiary">
-              {describeAssignment(assignment)}
-            </span>
-          )}
         </div>
         {props.checked && (
           <div className="flex gap-0 w-full">

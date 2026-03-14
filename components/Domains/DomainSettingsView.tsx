@@ -110,9 +110,7 @@ export function DomainSettingsView(props: {
             </tbody>
           </table>
         </>
-      ) : (
-        <div className="text-green-600">This domain is verified!</div>
-      )}
+      ) : null}
 
       {/* Assignment list */}
       {props.onRemoveAssignment && isAssigned && domainData && (
