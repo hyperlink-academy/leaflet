@@ -11,6 +11,7 @@ import { CustomDomain } from "components/Domains/DomainList";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { useReadOnlyShareLink } from ".";
 import { assignDomainToDocument } from "actions/domains/assignDomainToDocument";
+import { removeDomainRoute } from "actions/domains/removeDomainRoute";
 import { useReplicache } from "src/replicache";
 import { AddDomainForm } from "components/Domains/AddDomainForm";
 import { DomainSettingsView } from "components/Domains/DomainSettingsView";
@@ -38,7 +39,6 @@ export function CustomDomainMenu(props: {
       return (
         <DomainOptions
           setDomainMenuState={setState}
-          domainConnected={false}
           setShareMenuState={props.setShareMenuState}
         />
       );
@@ -70,7 +70,6 @@ export function CustomDomainMenu(props: {
 const DomainOptions = (props: {
   setShareMenuState: (s: "default") => void;
   setDomainMenuState: (state: DomainMenuState) => void;
-  domainConnected: boolean;
 }) => {
   let { data: domains, mutate: mutateDomains } = useLeafletDomains();
   let [selectedDomain, setSelectedDomain] = useState<string | undefined>(
@@ -191,9 +190,23 @@ const DomainOptions = (props: {
         <p className="text-error text-sm">Route already assigned</p>
       )}
       <div className="flex gap-3 items-center justify-end">
-        {props.domainConnected && (
+        {domains?.[0] && (
           <button
-            onMouseDown={() => {
+            onMouseDown={async () => {
+              let route = domains[0];
+              // Optimistic update
+              mutateIdentityData(mutateIdentity, (draft) => {
+                let domain = draft.custom_domains.find(
+                  (d) => d.domain === route.domain,
+                );
+                if (domain) {
+                  domain.custom_domain_routes =
+                    domain.custom_domain_routes.filter(
+                      (r) => r.edit_permission_token !== permission_token.id,
+                    );
+                }
+              });
+              mutateDomains();
               props.setShareMenuState("default");
               toaster({
                 content: (
@@ -201,8 +214,9 @@ const DomainOptions = (props: {
                     Unpublished from custom domain!
                   </div>
                 ),
-                type: "error",
+                type: "success",
               });
+              await removeDomainRoute({ routeId: route.id });
             }}
           >
             Unpublish
