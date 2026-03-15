@@ -24,8 +24,8 @@ export function describeAssignment(assignment: DomainAssignment): string {
       return "publication";
     case "document":
       return assignment.routes.length === 1
-        ? "1 page"
-        : `${assignment.routes.length} pages`;
+        ? "1 leaflet"
+        : `${assignment.routes.length} leaflets`;
     case "unassigned":
       return "";
   }

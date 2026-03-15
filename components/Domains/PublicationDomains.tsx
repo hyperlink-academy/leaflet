@@ -270,7 +270,7 @@ function UnassignedDomainRow(props: {
               }
             }}
           >
-            {loading ? <DotLoader /> : "assign to this publication"}
+            {loading ? <DotLoader /> : "assign"}
           </button>
         )}
       </div>
