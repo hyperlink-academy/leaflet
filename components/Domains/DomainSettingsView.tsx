@@ -9,6 +9,7 @@ import {
   useIdentityData,
   mutateIdentityData,
 } from "components/IdentityProvider";
+import { ButtonPrimary } from "components/Buttons";
 import { getDomainAssignment } from "./domainAssignment";
 
 export function DomainSettingsView(props: {
@@ -197,25 +198,67 @@ export function DomainSettingsView(props: {
 
         <hr className="border-border-light" />
 
-        <div className="flex gap-3 justify-between items-center">
-          {props.onDeleteDomain && (
-            <button
-              className="text-accent-contrast font-bold text-sm"
-              type="button"
-              onMouseDown={async () => {
-                mutateIdentityData(mutateIdentity, (draft) => {
-                  draft.custom_domains = draft.custom_domains.filter(
-                    (d) => d.domain !== props.domain,
-                  );
-                });
-                props.onDeleteDomain?.();
-                await deleteDomain({ domain: props.domain });
-              }}
-            >
-              Delete Domain
-            </button>
-          )}
-        </div>
+        <DeleteDomainButton
+          domain={props.domain}
+          onDeleteDomain={props.onDeleteDomain}
+          mutateIdentity={mutateIdentity}
+        />
+      </div>
+    </div>
+  );
+}
+
+function DeleteDomainButton(props: {
+  domain: string;
+  onDeleteDomain?: () => void;
+  mutateIdentity: ReturnType<typeof useIdentityData>["mutate"];
+}) {
+  let [confirming, setConfirming] = useState(false);
+
+  if (!props.onDeleteDomain) return null;
+
+  if (!confirming) {
+    return (
+      <div className="flex gap-3 justify-between items-center">
+        <button
+          className="text-accent-contrast font-bold text-sm"
+          type="button"
+          onMouseDown={() => setConfirming(true)}
+        >
+          Delete Domain
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 text-xs">
+      <p className="text-secondary">
+        Are you sure you want to delete <strong>{props.domain}</strong>? This
+        will remove all assignments and cannot be undone.
+      </p>
+      <div className="flex gap-2 justify-end">
+        <button
+          className="text-accent-contrast"
+          onMouseDown={() => setConfirming(false)}
+          type="button"
+        >
+          Cancel
+        </button>
+        <ButtonPrimary
+          compact
+          onMouseDown={async () => {
+            mutateIdentityData(props.mutateIdentity, (draft) => {
+              draft.custom_domains = draft.custom_domains.filter(
+                (d) => d.domain !== props.domain,
+              );
+            });
+            props.onDeleteDomain?.();
+            await deleteDomain({ domain: props.domain });
+          }}
+        >
+          Delete
+        </ButtonPrimary>
       </div>
     </div>
   );
