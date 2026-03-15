@@ -94,6 +94,7 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
     date_from: p.string().optional(),
     date_to: p.string().optional(),
     path: p.string().optional(),
+    referrer_host: p.string().optional(),
   },
   tokens: [PROD_READ_TOKEN],
   nodes: [
@@ -115,6 +116,9 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
           {% end %}
           {% if defined(path) %}
             AND path = {{String(path)}}
+          {% end %}
+          {% if defined(referrer_host) %}
+            AND domain(referrer) = {{String(referrer_host)}}
           {% end %}
         GROUP BY day
         ORDER BY day ASC
@@ -146,6 +150,7 @@ export const publicationTopReferrers = defineEndpoint(
       date_from: p.string().optional(),
       date_to: p.string().optional(),
       path: p.string().optional(),
+      referrer_host: p.string().optional(),
       limit: p.int32().optional(10),
     },
     nodes: [
@@ -168,6 +173,9 @@ export const publicationTopReferrers = defineEndpoint(
           {% end %}
           {% if defined(path) %}
             AND path = {{String(path)}}
+          {% end %}
+          {% if defined(referrer_host) %}
+            AND domain(referrer) = {{String(referrer_host)}}
           {% end %}
         GROUP BY referrer_host
         ORDER BY pageviews DESC
@@ -199,6 +207,7 @@ export const publicationTopPages = defineEndpoint("publication_top_pages", {
     domains: p.string(),
     date_from: p.string().optional(),
     date_to: p.string().optional(),
+    referrer_host: p.string().optional(),
     limit: p.int32().optional(10),
   },
   nodes: [
@@ -216,6 +225,9 @@ export const publicationTopPages = defineEndpoint("publication_top_pages", {
           {% end %}
           {% if defined(date_to) %}
             AND fromUnixTimestamp64Milli(timestamp) <= parseDateTimeBestEffort({{String(date_to)}})
+          {% end %}
+          {% if defined(referrer_host) %}
+            AND domain(referrer) = {{String(referrer_host)}}
           {% end %}
         GROUP BY path
         ORDER BY pageviews DESC
