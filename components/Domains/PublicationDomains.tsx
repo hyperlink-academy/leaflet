@@ -20,6 +20,7 @@ import { DomainSettingsView } from "./DomainSettingsView";
 import { PinTiny } from "components/Icons/PinTiny";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { AddTiny } from "components/Icons/AddTiny";
+import { DotLoader } from "components/utils/DotLoader";
 import type { CustomDomain } from "./DomainList";
 
 type State =
@@ -138,6 +139,7 @@ function PubDomainRow(props: {
   onSettings: () => void;
 }) {
   let { pending } = useDomainStatus(props.domain);
+  let [loading, setLoading] = useState(false);
 
   return (
     <div className="text-sm text-secondary relative w-full flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light">
@@ -170,19 +172,28 @@ function PubDomainRow(props: {
         ) : (
           <button
             type="button"
+            disabled={loading}
             onClick={async () => {
+              setLoading(true);
               await updatePublicationBasePath({
                 uri: props.publication_uri,
                 base_path: props.domain,
               });
               mutate("publication-data");
+              setLoading(false);
             }}
             className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold px-1 py-0.5 hover:bg-accent-1 hover:text-accent-2 border-transparent outline-solid outline-transparent hover:outline-accent-1 selected-outline"
           >
-            <p className="group-hover/domain:block hidden w-max pl-1">
-              set as default
-            </p>
-            <PinTiny className="text-secondary group-hover/domain:text-accent-2 shrink-0" />
+            {loading ? (
+              <DotLoader />
+            ) : (
+              <>
+                <p className="group-hover/domain:block hidden w-max pl-1">
+                  set as default
+                </p>
+                <PinTiny className="text-secondary group-hover/domain:text-accent-2 shrink-0" />
+              </>
+            )}
           </button>
         )}
       </div>
@@ -200,8 +211,10 @@ function UnassignedDomainRow(props: {
   let { mutate: mutateIdentity } = useIdentityData();
   let assignment = getDomainAssignment(props.domainData);
   let [confirming, setConfirming] = useState(false);
+  let [loading, setLoading] = useState(false);
 
   async function doAssign() {
+    setLoading(true);
     mutateIdentityData(mutateIdentity, (draft) => {
       let domain = draft.custom_domains.find(
         (d) => d.domain === props.domainData.domain,
@@ -248,6 +261,7 @@ function UnassignedDomainRow(props: {
           <button
             className="text-accent-contrast text-xs font-bold"
             type="button"
+            disabled={loading}
             onClick={() => {
               if (assignment.type === "document") {
                 setConfirming(true);
@@ -256,7 +270,7 @@ function UnassignedDomainRow(props: {
               }
             }}
           >
-            assign to this publication
+            {loading ? <DotLoader /> : "assign to this publication"}
           </button>
         )}
       </div>
@@ -275,8 +289,8 @@ function UnassignedDomainRow(props: {
             >
               Cancel
             </button>
-            <ButtonPrimary compact onMouseDown={doAssign}>
-              Reassign
+            <ButtonPrimary compact disabled={loading} onMouseDown={doAssign}>
+              {loading ? <DotLoader /> : "Reassign"}
             </ButtonPrimary>
           </div>
         </div>

@@ -5,12 +5,14 @@ import { Input } from "components/Input";
 import { useSmoker } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
 import { addDomain } from "actions/domains/addDomain";
+import { DotLoader } from "components/utils/DotLoader";
 
 export function AddDomainForm(props: {
   onDomainAdded: (domain: string) => void;
   onBack: () => void;
 }) {
   let [value, setValue] = useState("");
+  let [loading, setLoading] = useState(false);
   let { mutate } = useIdentityData();
   let smoker = useSmoker();
 
@@ -39,10 +41,12 @@ export function AddDomainForm(props: {
           Back
         </button>
         <ButtonPrimary
-          disabled={!value}
+          disabled={!value || loading}
           onMouseDown={async (e) => {
+            setLoading(true);
             let { error } = await addDomain(value);
             if (error) {
+              setLoading(false);
               smoker({
                 error: true,
                 text:
@@ -62,7 +66,7 @@ export function AddDomainForm(props: {
             props.onDomainAdded(value);
           }}
         >
-          Verify Domain
+          {loading ? <DotLoader /> : "Verify Domain"}
         </ButtonPrimary>
       </div>
     </div>

@@ -15,6 +15,7 @@ import { useReplicache } from "src/replicache";
 import { AddDomainForm } from "components/Domains/AddDomainForm";
 import { DomainSettingsView } from "components/Domains/DomainSettingsView";
 import { AddTiny } from "components/Icons/AddTiny";
+import { DotLoader } from "components/utils/DotLoader";
 
 type DomainMenuState =
   | { state: "default" }
@@ -81,6 +82,7 @@ const DomainOptions = (props: {
   let { identity, mutate: mutateIdentity } = useIdentityData();
   let { permission_token } = useReplicache();
 
+  let [loading, setLoading] = useState(false);
   let toaster = useToaster();
   let publishLink = useReadOnlyShareLink();
 
@@ -106,6 +108,7 @@ const DomainOptions = (props: {
 
   async function doPublish() {
     if (!selectedDomain || !publishLink) return;
+    setLoading(true);
     let route = "/" + selectedRoute;
 
     // Optimistic update
@@ -209,6 +212,7 @@ const DomainOptions = (props: {
         <ButtonPrimary
           id="publish-to-domain"
           disabled={
+            loading ||
             routeConflict ||
             (domains?.[0]
               ? domains[0].domain === selectedDomain &&
@@ -217,7 +221,7 @@ const DomainOptions = (props: {
           }
           onClick={doPublish}
         >
-          Publish!
+          {loading ? <DotLoader /> : "Publish!"}
         </ButtonPrimary>
       </div>
     </div>

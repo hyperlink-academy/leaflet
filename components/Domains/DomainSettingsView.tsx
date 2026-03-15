@@ -214,6 +214,7 @@ function DeleteDomainButton(props: {
   mutateIdentity: ReturnType<typeof useIdentityData>["mutate"];
 }) {
   let [confirming, setConfirming] = useState(false);
+  let [loading, setLoading] = useState(false);
 
   if (!props.onDeleteDomain) return null;
 
@@ -247,7 +248,9 @@ function DeleteDomainButton(props: {
         </button>
         <ButtonPrimary
           compact
+          disabled={loading}
           onMouseDown={async () => {
+            setLoading(true);
             mutateIdentityData(props.mutateIdentity, (draft) => {
               draft.custom_domains = draft.custom_domains.filter(
                 (d) => d.domain !== props.domain,
@@ -257,7 +260,7 @@ function DeleteDomainButton(props: {
             await deleteDomain({ domain: props.domain });
           }}
         >
-          Delete
+          {loading ? <DotLoader /> : "Delete"}
         </ButtonPrimary>
       </div>
     </div>
