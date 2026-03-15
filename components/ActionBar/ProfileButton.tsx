@@ -13,6 +13,7 @@ import { Modal } from "components/Modal";
 import { UpgradeContent } from "app/lish/[did]/[publication]/UpgradeModal";
 import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ManageProSubscription";
 import { ManageDomains } from "components/Domains/ManageDomains";
+import { WebSmall } from "components/Icons/WebSmall";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { useState } from "react";
 
@@ -104,12 +105,12 @@ export const ProfileButton = () => {
           )}
 
           <button
-            className="menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!"
+            className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
             type="button"
             onClick={() => setState("manage-domains")}
           >
-            My Domains
-            <ArrowRightTiny />
+            <WebSmall />
+            Connected Domains
           </button>
 
           <hr className="border-border-light border-dashed" />
