@@ -19,13 +19,17 @@ export async function addImage(
   let fileID = v7();
   let url = client.storage.from("minilink-user-assets").getPublicUrl(fileID)
     .data.publicUrl;
-  let dimensions = await getImageDimensions(file);
+  // Re-encode through canvas to bake EXIF orientation into pixel data.
+  // iPhone photos have EXIF rotation metadata that browsers respect, but
+  // Supabase's image transformation pipeline strips without applying.
+  let { blob: uploadBlob, width, height } = await normalizeOrientation(file);
+
   await cache.put(
     new URL(url + "?local"),
-    new Response(file, {
+    new Response(uploadBlob, {
       headers: {
-        "Content-Type": file.type,
-        "Content-Length": file.size.toString(),
+        "Content-Type": uploadBlob.type,
+        "Content-Length": uploadBlob.size.toString(),
       },
     }),
   );
@@ -41,11 +45,11 @@ export async function addImage(
         type: "image",
         local: rep.clientID,
         src: url,
-        height: dimensions.height,
-        width: dimensions.width,
+        height,
+        width,
       },
     });
-  await client.storage.from("minilink-user-assets").upload(fileID, file, {
+  await client.storage.from("minilink-user-assets").upload(fileID, uploadBlob, {
     cacheControl: "public, max-age=31560000, immutable",
   });
   await rep.mutate.assertFact({
@@ -55,8 +59,8 @@ export async function addImage(
       fallback: thumbhash,
       type: "image",
       src: url,
-      height: dimensions.height,
-      width: dimensions.width,
+      height,
+      width,
     },
   });
 }
@@ -95,17 +99,18 @@ async function getThumbHash(file: File) {
   return thumbHash;
 }
 
-function getImageDimensions(
+async function normalizeOrientation(
   file: File,
-): Promise<{ width: number; height: number }> {
-  let url = URL.createObjectURL(file);
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = function () {
-      resolve({ width: img.width, height: img.height });
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
+): Promise<{ blob: Blob; width: number; height: number }> {
+  let bitmap = await createImageBitmap(file);
+  let canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  let ctx = canvas.getContext("2d")!;
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  let blob = await new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b!), "image/webp", 0.92),
+  );
+  return { blob, width: canvas.width, height: canvas.height };
 }
