@@ -34,6 +34,7 @@ import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
 import { blockTextSize } from "src/utils/blockTextSize";
+import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 
 export function PostContent({
@@ -391,68 +392,48 @@ export let Block = ({
       );
 
     case PubLeafletBlocksHeader.isMain(b.block): {
+      let slug = slugify(b.block.plaintext);
+      let headingProps = {
+        ...blockProps,
+        id: preview ? undefined : slug || blockProps.id,
+      };
+      let textBlockProps = {
+        ...b.block,
+        index,
+        preview,
+        pageId,
+        footnoteIndexMap,
+      };
+      let href = pageId ? `?page=${pageId}#${slug}` : `#${slug}`;
+      let link = (children: React.ReactNode) =>
+        preview || !slug ? (
+          children
+        ) : (
+          <a href={href} className="no-underline text-inherit cursor-pointer">
+            {children}
+          </a>
+        );
       if (b.block.level === 1)
         return (
-          <h1
-            className={`h1Block ${className}`}
-            {...blockProps}
-            style={{ ...blockProps.style, fontSize: blockTextSize.h1 }}
-          >
-            <TextBlock
-              {...b.block}
-              index={index}
-              preview={preview}
-              pageId={pageId}
-            />
+          <h1 className={`h1Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}>
+            {link(<TextBlock {...textBlockProps} />)}
           </h1>
         );
       if (b.block.level === 2)
         return (
-          <h2
-            className={`h2Block ${className}`}
-            {...blockProps}
-            style={{ ...blockProps.style, fontSize: blockTextSize.h2 }}
-          >
-            <TextBlock
-              {...b.block}
-              index={index}
-              preview={preview}
-              pageId={pageId}
-              footnoteIndexMap={footnoteIndexMap}
-            />
+          <h2 className={`h2Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}>
+            {link(<TextBlock {...textBlockProps} />)}
           </h2>
         );
       if (b.block.level === 3)
         return (
-          <h3
-            className={`h3Block ${className}`}
-            {...blockProps}
-            style={{ ...blockProps.style, fontSize: blockTextSize.h3 }}
-          >
-            <TextBlock
-              {...b.block}
-              index={index}
-              preview={preview}
-              pageId={pageId}
-              footnoteIndexMap={footnoteIndexMap}
-            />
+          <h3 className={`h3Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}>
+            {link(<TextBlock {...textBlockProps} />)}
           </h3>
         );
-      // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
-      // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6
-          className={`h6Block ${className}`}
-          {...blockProps}
-          style={{ ...blockProps.style, fontSize: blockTextSize.h4 }}
-        >
-          <TextBlock
-            {...b.block}
-            index={index}
-            preview={preview}
-            pageId={pageId}
-            footnoteIndexMap={footnoteIndexMap}
-          />
+        <h6 className={`h6Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}>
+          {link(<TextBlock {...textBlockProps} />)}
         </h6>
       );
     }
