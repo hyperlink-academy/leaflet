@@ -45,6 +45,14 @@ Documents are composed of **blocks** (text, image, embed, code, poll, etc.). Blo
 - **Appview** (`appview/`) consumes the firehose to index published content
 - **Feeds** (`feeds/`) provides subscription feeds for publications
 
+### Lexicon Workflow
+
+The source of truth for lexicon schemas is the TypeScript files in `lexicons/src/` (e.g. `facet.ts`, `publication.ts`, `blocks.ts`). The JSON files in `lexicons/pub/` are **generated output** — do not edit them directly, as `npm run lexgen` will overwrite them.
+
+To add or modify a lexicon:
+1. Edit the relevant source file in `lexicons/src/`
+2. Run `npm run lexgen` to regenerate both the JSON schemas and the TypeScript API types in `lexicons/api/`
+
 ### Key Directories
 
 - `app/` - Next.js App Router pages and API routes
