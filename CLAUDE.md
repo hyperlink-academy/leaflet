@@ -45,6 +45,14 @@ Documents are composed of **blocks** (text, image, embed, code, poll, etc.). Blo
 - **Appview** (`appview/`) consumes the firehose to index published content
 - **Feeds** (`feeds/`) provides subscription feeds for publications
 
+### Lexicon Workflow
+
+The source of truth for lexicon schemas is the TypeScript files in `lexicons/src/` (e.g. `facet.ts`, `publication.ts`, `blocks.ts`). The JSON files in `lexicons/pub/` are **generated output** — do not edit them directly, as `npm run lexgen` will overwrite them.
+
+To add or modify a lexicon:
+1. Edit the relevant source file in `lexicons/src/`
+2. Run `npm run lexgen` to regenerate both the JSON schemas and the TypeScript API types in `lexicons/api/`
+
 ### Key Directories
 
 - `app/` - Next.js App Router pages and API routes
@@ -62,3 +70,4 @@ Documents are composed of **blocks** (text, image, embed, code, poll, etc.). Blo
 - **Replicache mutations**: Named handlers in `src/replicache/mutations.ts`, keep server mutations idempotent
 - **React contexts**: `DocumentProvider`, `LeafletContentProvider` for page-level data
 - **Inngest functions**: Async jobs in `app/api/inngest/functions/`
+- **Icons**: Icon components live in `components/Icons/`. Each icon is a named export in its own file (e.g. `RefreshSmall.tsx`), imports `Props` from `./Props`, spreads `{...props}` on the `<svg>` element, and uses `fill="currentColor"` instead of hardcoded colors like `fill="black"`.

@@ -47,7 +47,7 @@ export function CustomDomainMenu(props: {
       );
     case "domain-settings":
       return (
-        <div className="px-3 py-1 max-w-full w-[600px]">
+        <div className="">
           <DomainSettingsView
             domain={state.domain}
             onBack={() => setState({ state: "default" })}
@@ -58,14 +58,12 @@ export function CustomDomainMenu(props: {
       );
     case "add-domain":
       return (
-        <div className="px-3 py-1 max-w-full w-[600px]">
-          <AddDomainForm
-            onDomainAdded={(domain) =>
-              setState({ state: "domain-settings", domain })
-            }
-            onBack={() => setState({ state: "default" })}
-          />
-        </div>
+        <AddDomainForm
+          onDomainAdded={(domain) =>
+            setState({ state: "domain-settings", domain })
+          }
+          onBack={() => setState({ state: "default" })}
+        />
       );
   }
 }
@@ -118,8 +116,7 @@ const DomainOptions = (props: {
     let route = "/" + selectedRoute;
     return domain.custom_domain_routes.some(
       (r) =>
-        r.route === route &&
-        r.edit_permission_token !== permission_token.id,
+        r.route === route && r.edit_permission_token !== permission_token.id,
     );
   })();
 
@@ -202,10 +199,9 @@ const DomainOptions = (props: {
                       (dd) => dd.domain === domain.domain,
                     );
                     if (d) {
-                      d.custom_domain_routes =
-                        d.custom_domain_routes.filter(
-                          (r) => r.id !== routeId,
-                        );
+                      d.custom_domain_routes = d.custom_domain_routes.filter(
+                        (r) => r.id !== routeId,
+                      );
                     }
                   });
                   mutateDomains();

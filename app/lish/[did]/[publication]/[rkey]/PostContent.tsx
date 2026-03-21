@@ -34,6 +34,7 @@ import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
 import { blockTextSize } from "src/utils/blockTextSize";
+import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 
 export function PostContent({
@@ -391,52 +392,48 @@ export let Block = ({
       );
 
     case PubLeafletBlocksHeader.isMain(b.block): {
+      let slug = slugify(b.block.plaintext);
+      let headingProps = {
+        ...blockProps,
+        id: preview ? undefined : slug || blockProps.id,
+      };
+      let textBlockProps = {
+        ...b.block,
+        index,
+        preview,
+        pageId,
+        footnoteIndexMap,
+      };
+      let href = pageId ? `?page=${pageId}#${slug}` : `#${slug}`;
+      let link = (children: React.ReactNode) =>
+        preview || !slug ? (
+          children
+        ) : (
+          <a href={href} className="no-underline text-inherit cursor-pointer">
+            {children}
+          </a>
+        );
       if (b.block.level === 1)
         return (
-          <h1 className={`h1Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h1 }}>
-            <TextBlock
-              {...b.block}
-              index={index}
-              preview={preview}
-              pageId={pageId}
-            />
+          <h1 className={`h1Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}>
+            {link(<TextBlock {...textBlockProps} />)}
           </h1>
         );
       if (b.block.level === 2)
         return (
-          <h2 className={`h2Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h2 }}>
-            <TextBlock
-              {...b.block}
-              index={index}
-              preview={preview}
-              pageId={pageId}
-              footnoteIndexMap={footnoteIndexMap}
-            />
+          <h2 className={`h2Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}>
+            {link(<TextBlock {...textBlockProps} />)}
           </h2>
         );
       if (b.block.level === 3)
         return (
-          <h3 className={`h3Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h3 }}>
-            <TextBlock
-              {...b.block}
-              index={index}
-              preview={preview}
-              pageId={pageId}
-              footnoteIndexMap={footnoteIndexMap}
-            />
+          <h3 className={`h3Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}>
+            {link(<TextBlock {...textBlockProps} />)}
           </h3>
         );
-      // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
-      // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6 className={`h6Block ${className}`} {...blockProps} style={{ ...blockProps.style, fontSize: blockTextSize.h4 }}>
-          <TextBlock
-            {...b.block}
-            index={index}
-            preview={preview}
-            pageId={pageId}
-            footnoteIndexMap={footnoteIndexMap}
-          />
+        <h6 className={`h6Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}>
+          {link(<TextBlock {...textBlockProps} />)}
         </h6>
       );
     }
@@ -472,25 +469,24 @@ function ListItem(props: {
       ))}
     </ul>
   ) : null;
-  let orderedChildren =
-    props.item.orderedListChildren?.children?.length ? (
-      <ol className="-ml-[7px] sm:ml-[7px]">
-        {props.item.orderedListChildren.children.map((child, index) => (
-          <OrderedListItem
-            pages={props.pages}
-            pollData={props.pollData}
-            bskyPostData={props.bskyPostData}
-            index={[...props.index, index]}
-            item={child}
-            did={props.did}
-            key={index}
-            className={props.className}
-            pageId={props.pageId}
-            startIndex={props.item.orderedListChildren?.startIndex}
-          />
-        ))}
-      </ol>
-    ) : null;
+  let orderedChildren = props.item.orderedListChildren?.children?.length ? (
+    <ol className="-ml-[7px] sm:ml-[7px]">
+      {props.item.orderedListChildren.children.map((child, index) => (
+        <OrderedListItem
+          pages={props.pages}
+          pollData={props.pollData}
+          bskyPostData={props.bskyPostData}
+          index={[...props.index, index]}
+          item={child}
+          did={props.did}
+          key={index}
+          className={props.className}
+          pageId={props.pageId}
+          startIndex={props.item.orderedListChildren?.startIndex}
+        />
+      ))}
+    </ol>
+  ) : null;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
@@ -525,7 +521,8 @@ function OrderedListItem(props: {
   pageId?: string;
   startIndex?: number;
 }) {
-  const calculatedIndex = (props.startIndex || 1) + props.index[props.index.length - 1];
+  const calculatedIndex =
+    (props.startIndex || 1) + props.index[props.index.length - 1];
   let children = props.item.children?.length ? (
     <ol className="-ml-[7px] sm:ml-[7px]">
       {props.item.children.map((child, index) => (
@@ -544,27 +541,26 @@ function OrderedListItem(props: {
       ))}
     </ol>
   ) : null;
-  let unorderedChildren =
-    props.item.unorderedListChildren?.children?.length ? (
-      <ul className="-ml-[7px] sm:ml-[7px]">
-        {props.item.unorderedListChildren.children.map((child, index) => (
-          <ListItem
-            pages={props.pages}
-            pollData={props.pollData}
-            bskyPostData={props.bskyPostData}
-            index={[...props.index, index]}
-            item={child}
-            did={props.did}
-            key={index}
-            className={props.className}
-            pageId={props.pageId}
-          />
-        ))}
-      </ul>
-    ) : null;
+  let unorderedChildren = props.item.unorderedListChildren?.children?.length ? (
+    <ul className="-ml-[7px] sm:ml-[7px]">
+      {props.item.unorderedListChildren.children.map((child, index) => (
+        <ListItem
+          pages={props.pages}
+          pollData={props.pollData}
+          bskyPostData={props.bskyPostData}
+          index={[...props.index, index]}
+          item={child}
+          did={props.did}
+          key={index}
+          className={props.className}
+          pageId={props.pageId}
+        />
+      ))}
+    </ul>
+  ) : null;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
-      <div className="listMarker shrink-0 mx-2 z-1 mt-[14px]">
+      <div className="listMarker shrink-0 mx-2 z-1 mt-[4px]">
         {calculatedIndex}.
       </div>
       <div className="flex flex-col w-full">

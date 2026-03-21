@@ -7,7 +7,7 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { PRODUCT_DEFINITION } from "stripe/products";
 
-export const ManageProSubscription = (props: { backToMenu: () => void }) => {
+export const ManageProSubscription = (props: {}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { identity } = useIdentityData();
@@ -34,9 +34,6 @@ export const ManageProSubscription = (props: { backToMenu: () => void }) => {
     <div>
       <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1 flex-shrink-0">
         Manage Subscription
-        <button type="button" onClick={props.backToMenu}>
-          <GoBackSmall className="text-accent-contrast" />
-        </button>
       </div>
       <div className="text-secondary text-center flex flex-col justify-center gap-2 py-2">
         <div>

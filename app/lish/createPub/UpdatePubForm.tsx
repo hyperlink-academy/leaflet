@@ -165,18 +165,13 @@ export const EditPubForm = (props: {
           onToggle={() => setShowInDiscover(!showInDiscover)}
         >
           <div className=" pt-0.5 flex flex-col  text-sm text-tertiary ">
-            <p className="font-bold">
-              Show In{" "}
-              <a href="/discover" target="_blank">
-                Discover
-              </a>
-            </p>
+            <p className="font-bold italic">Show In Discover</p>
             <p className="text-xs text-tertiary font-normal">
-              Your posts will appear on our{" "}
-              <a href="/discover" target="_blank">
-                Discover
-              </a>{" "}
-              page. You can change this at any time!
+              Your posts will appear in{" "}
+              <a href="/reader" target="_blank">
+                Leaflet Reader
+              </a>
+              . You can change this at any time!
             </p>
           </div>
         </Toggle>

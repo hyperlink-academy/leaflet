@@ -304,7 +304,7 @@ export const HomeDashboardControls = (props: {
         <DisplayToggle setState={setState} display={display} />
         <Separator classname="h-4 min-h-4!" />
 
-        {props.hasPubs ? (
+        {props.hasPubs || props.hasArchived ? (
           <>
             <FilterOptions
               hasPubs={props.hasPubs}

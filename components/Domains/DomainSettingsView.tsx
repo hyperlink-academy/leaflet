@@ -9,8 +9,10 @@ import {
   useIdentityData,
   mutateIdentityData,
 } from "components/IdentityProvider";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { getDomainAssignment } from "./domainAssignment";
+import { RefreshSmall } from "components/Icons/RefreshSmall";
+import { GoToArrow } from "components/Icons/GoToArrow";
 
 export function DomainSettingsView(props: {
   domain: string;
@@ -34,7 +36,19 @@ export function DomainSettingsView(props: {
 
   return (
     <div className="flex flex-col gap-[6px] text-sm text-primary max-w-full">
-      <h3 className="text-secondary">{props.domain}</h3>
+      <div className="w-full flex gap-2 items-center">
+        <h3 className="w-full grow min-w-0 truncate">
+          {needsSetup ? `Verify ${props.domain}` : props.domain}
+        </h3>
+        <button
+          className="text-accent-contrast rotate-180 shrink-0"
+          onMouseDown={() => props.onBack()}
+          type="button"
+        >
+          <GoToArrow />
+        </button>
+        {needsSetup && <VerifyButton verify={() => mutateDomainStatus()} />}
+      </div>
 
       {needsSetup ? (
         <>
@@ -42,26 +56,26 @@ export function DomainSettingsView(props: {
             To verify this domain, add the following record to your DNS provider
             for <strong>{props.domain}</strong>.
           </div>
-          <table className="border border-border-light rounded-md">
+          <table className="border border-border-light rounded-md text-left ">
             <thead>
               <tr>
-                <th className="p-1 py-1 text-tertiary">Type</th>
-                <th className="p-1 py-1 text-tertiary">Name</th>
-                <th className="p-1 py-1 text-tertiary">Value</th>
+                <th className="px-2 pt-1 text-tertiary">Type</th>
+                <th className="px-2 pt-1  text-tertiary">Name</th>
+                <th className="px-2 pt-1 text-tertiary">Value</th>
               </tr>
             </thead>
             <tbody>
               {data?.verification && (
                 <tr>
-                  <td className="p-1 py-1">
+                  <td className="px-2 pb-1">
                     <div>{data.verification[0].type}</div>
                   </td>
-                  <td className="p-1 py-1">
+                  <td className="px-2  pb-1">
                     <div style={{ wordBreak: "break-word" }}>
                       {data.verification[0].domain}
                     </div>
                   </td>
-                  <td className="p-1 py-1">
+                  <td className="px-2 pb-1">
                     <div style={{ wordBreak: "break-word" }}>
                       {data.verification[0].value}
                     </div>
@@ -71,15 +85,15 @@ export function DomainSettingsView(props: {
               {data?.config &&
                 (isSubdomain ? (
                   <tr>
-                    <td className="p-1 py-1">
+                    <td className="px-2 pb-1">
                       <div>CNAME</div>
                     </td>
-                    <td className="p-1 py-1">
+                    <td className="px-2 pb-1">
                       <div style={{ wordBreak: "break-word" }}>
                         {props.domain.split(".").slice(0, -2).join(".")}
                       </div>
                     </td>
-                    <td className="p-1 py-1">
+                    <td className="px-2 pb-1">
                       <div style={{ wordBreak: "break-word" }}>
                         {
                           data.config.recommendedCNAME.sort(
@@ -91,13 +105,13 @@ export function DomainSettingsView(props: {
                   </tr>
                 ) : (
                   <tr>
-                    <td className="p-1 py-1">
+                    <td className="px-2 pb-1">
                       <div>A</div>
                     </td>
-                    <td className="p-1 py-1">
+                    <td className="px-2 pb-1">
                       <div style={{ wordBreak: "break-word" }}>@</div>
                     </td>
-                    <td className="p-1 py-1">
+                    <td className="px-2 pb-1">
                       <div style={{ wordBreak: "break-word" }}>
                         {
                           data.config.recommendedIPv4.sort(
@@ -181,21 +195,6 @@ export function DomainSettingsView(props: {
       )}
 
       <div className="flex flex-col gap-2 mt-2">
-        <div className="flex gap-3 justify-between items-center">
-          <button
-            className="text-accent-contrast"
-            onMouseDown={() => props.onBack()}
-            type="button"
-          >
-            Back
-          </button>
-          <div className="flex gap-2 items-center">
-            {needsSetup && (
-              <VerifyButton verify={() => mutateDomainStatus()} />
-            )}
-          </div>
-        </div>
-
         <hr className="border-border-light" />
 
         <DeleteDomainButton
@@ -220,27 +219,26 @@ function DeleteDomainButton(props: {
 
   if (!confirming) {
     return (
-      <div className="flex gap-3 justify-between items-center">
-        <button
-          className="text-accent-contrast font-bold text-sm"
-          type="button"
-          onMouseDown={() => setConfirming(true)}
-        >
-          Delete Domain
-        </button>
-      </div>
+      <ButtonTertiary
+        fullWidth
+        compact
+        type="button"
+        onMouseDown={() => setConfirming(true)}
+      >
+        Delete Domain
+      </ButtonTertiary>
     );
   }
 
   return (
-    <div className="flex flex-col gap-1 text-xs">
-      <p className="text-secondary">
+    <div className="flex flex-col gap-1 text-sm accent-container rounded-md p-2">
+      <p className="text-secondary text-center">
         Are you sure you want to delete <strong>{props.domain}</strong>? This
         will remove all assignments and cannot be undone.
       </p>
-      <div className="flex gap-2 justify-end">
+      <div className="flex gap-2 justify-center">
         <button
-          className="text-accent-contrast"
+          className="text-accent-contrast font-bold"
           onMouseDown={() => setConfirming(false)}
           type="button"
         >
@@ -248,6 +246,7 @@ function DeleteDomainButton(props: {
         </button>
         <ButtonPrimary
           compact
+          className="text-sm"
           disabled={loading}
           onMouseDown={async () => {
             setLoading(true);
@@ -270,8 +269,9 @@ function DeleteDomainButton(props: {
 function VerifyButton(props: { verify: () => Promise<any> }) {
   let [loading, setLoading] = useState(false);
   return (
-    <button
-      className="text-accent-contrast w-fit"
+    <ButtonPrimary
+      compact
+      className="w-[118px]!"
       type="button"
       onClick={async (e) => {
         e.preventDefault();
@@ -280,7 +280,7 @@ function VerifyButton(props: { verify: () => Promise<any> }) {
         setLoading(false);
       }}
     >
-      {loading ? <DotLoader /> : "verify"}
-    </button>
+      {loading ? <DotLoader /> : "Check Status"}
+    </ButtonPrimary>
   );
 }

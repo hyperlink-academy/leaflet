@@ -14,7 +14,6 @@ export type CustomDomain = NonNullable<Identity>["custom_domains"][number];
 
 export function DomainList(props: {
   onSelectDomain: (domain: string) => void;
-  onAddDomain: () => void;
   filter?: (domain: CustomDomain) => boolean;
 }) {
   let { identity } = useIdentityData();
@@ -79,13 +78,6 @@ export function DomainList(props: {
           </div>
         </>
       )}
-      <button
-        onMouseDown={() => props.onAddDomain()}
-        className="text-accent-contrast font-bold text-sm flex gap-2 items-center px-1 py-0.5"
-        type="button"
-      >
-        <AddTiny /> Add a New Domain
-      </button>
     </div>
   );
 }

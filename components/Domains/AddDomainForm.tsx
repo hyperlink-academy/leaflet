@@ -18,11 +18,12 @@ export function AddDomainForm(props: {
 
   return (
     <div className="flex flex-col gap-1 max-w-full">
-      <div>
-        <h3 className="text-secondary">Add a New Domain</h3>
-        <div className="text-xs italic text-secondary">
-          Don&apos;t include the protocol or path, just the base domain name
-        </div>
+      <h3>Add a Domain</h3>
+      <div className="text-sm text-secondary">
+        <div className="font-bold">Just include the base domain</div>
+        Don't include the protocol{" "}
+        <span className="text-tertiary">(like https://) </span>
+        or path <span className="text-tertiary">(you can add that later)</span>
       </div>
 
       <Input

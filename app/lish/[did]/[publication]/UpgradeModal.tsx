@@ -67,9 +67,7 @@ export const UpgradeContent = () => {
             >
               {loading ? <DotLoader /> : "Get it!"}
             </ButtonPrimary>
-            {error && (
-              <div className="text-sm text-red-500 mt-2">{error}</div>
-            )}
+            {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
           </div>
         </div>
       </div>
@@ -89,5 +87,23 @@ export const UpgradeModal = (props: {
     >
       <UpgradeContent />
     </Modal>
+  );
+};
+
+export const InlineUpgrade = () => {
+  return (
+    <div className="text-center p-2 accent-container text-secondary">
+      <UpgradeModal
+        asChild
+        trigger={
+          <ButtonPrimary compact fullWidth className="text-sm">
+            Upgrade to Leaflet Pro!
+          </ButtonPrimary>
+        }
+      />
+      <div className="text-sm leading-snug text-tertiary pt-1">
+        Analytics for all your pubs! <br /> Emails and membership coming soon.
+      </div>
+    </div>
   );
 };

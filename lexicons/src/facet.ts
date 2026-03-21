@@ -64,6 +64,19 @@ const FacetItems: LexiconDoc["defs"] = {
     required: [],
     properties: {},
   },
+  footnote: {
+    type: "object",
+    description: "Facet feature for a footnote reference",
+    required: ["footnoteId", "contentPlaintext"],
+    properties: {
+      footnoteId: { type: "string" },
+      contentPlaintext: { type: "string" },
+      contentFacets: {
+        type: "array",
+        items: { type: "ref", ref: "#main" },
+      },
+    },
+  },
 };
 
 export const PubLeafletRichTextFacet = {
