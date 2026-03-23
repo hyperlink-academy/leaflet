@@ -3,10 +3,12 @@ import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksOrderedList,
+  PubLeafletBlocksPoll,
   PubLeafletBlocksUnorderedList,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
 } from "lexicons/api";
+import { type $Typed } from "lexicons/api/util";
 import { QuoteHandler } from "./QuoteHandler";
 import {
   PublicationBackgroundProvider,
@@ -67,7 +69,10 @@ export async function DocumentPageRenderer({
   let bskyPosts =
     pages.flatMap((p) => {
       let page = p as PubLeafletPagesLinearDocument.Main;
-      return extractBlocksByType(page.blocks || [], ids.PubLeafletBlocksBskyPost);
+      return extractBlocksByType<$Typed<PubLeafletBlocksBskyPost.Main>>(
+        page.blocks || [],
+        ids.PubLeafletBlocksBskyPost,
+      );
     }) || [];
 
   // Batch bsky posts into groups of 25 and fetch in parallel
@@ -80,10 +85,7 @@ export async function DocumentPageRenderer({
     bskyPostBatches.map((batch) =>
       agent.getPosts(
         {
-          uris: batch.map((p) => {
-            let block = p?.block as PubLeafletBlocksBskyPost.Main;
-            return block.postRef.uri;
-          }),
+          uris: batch.map((p) => p.block.postRef.uri),
         },
         { headers: {} },
       ),
@@ -98,10 +100,13 @@ export async function DocumentPageRenderer({
   // Extract poll blocks and fetch vote data
   let pollBlocks = pages.flatMap((p) => {
     let page = p as PubLeafletPagesLinearDocument.Main;
-    return extractBlocksByType(page.blocks || [], ids.PubLeafletBlocksPoll);
+    return extractBlocksByType<$Typed<PubLeafletBlocksPoll.Main>>(
+      page.blocks || [],
+      ids.PubLeafletBlocksPoll,
+    );
   });
   let pollData = await fetchPollData(
-    pollBlocks.map((b) => (b.block as any).pollRef.uri),
+    pollBlocks.map((b) => b.block.pollRef.uri),
   );
 
   const pubRecord = document.normalizedPublication;
@@ -158,14 +163,14 @@ export async function DocumentPageRenderer({
   );
 }
 
-function extractBlocksByType(
+function extractBlocksByType<T extends { $type: string }>(
   blocks: PubLeafletPagesLinearDocument.Block[],
   type: string,
-): { block: { $type: string; [key: string]: unknown } }[] {
-  let results: { block: { $type: string; [key: string]: unknown } }[] = [];
+): { block: T }[] {
+  let results: { block: T }[] = [];
   for (let b of blocks) {
     if (b.block.$type === type) {
-      results.push(b as { block: { $type: string; [key: string]: unknown } });
+      results.push(b as unknown as { block: T });
     }
     if (
       b.block.$type === ids.PubLeafletBlocksOrderedList ||
@@ -180,17 +185,17 @@ function extractBlocksByType(
   return results;
 }
 
-function extractFromListItems(
+function extractFromListItems<T extends { $type: string }>(
   items:
     | PubLeafletBlocksOrderedList.ListItem[]
     | PubLeafletBlocksUnorderedList.ListItem[],
   type: string,
-  results: { block: { $type: string; [key: string]: unknown } }[],
+  results: { block: T }[],
 ) {
   for (let item of items) {
     if ((item.content as { $type?: string })?.$type === type) {
       results.push({
-        block: item.content as { $type: string; [key: string]: unknown },
+        block: item.content as unknown as T,
       });
     }
     if (item.children) {
