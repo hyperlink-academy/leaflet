@@ -702,6 +702,42 @@ export type Database = {
           },
         ]
       }
+      mention_service_configs: {
+        Row: {
+          identity_did: string
+          record: Json
+          uri: string
+        }
+        Insert: {
+          identity_did: string
+          record: Json
+          uri: string
+        }
+        Update: {
+          identity_did?: string
+          record?: Json
+          uri?: string
+        }
+        Relationships: []
+      }
+      mention_services: {
+        Row: {
+          identity_did: string
+          record: Json
+          uri: string
+        }
+        Insert: {
+          identity_did: string
+          record: Json
+          uri: string
+        }
+        Update: {
+          identity_did?: string
+          record?: Json
+          uri?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
