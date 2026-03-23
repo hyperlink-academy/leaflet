@@ -28,7 +28,10 @@ import {
 } from "components/Icons/BlockTextSmall";
 import { LinkSmall } from "components/Icons/LinkSmall";
 import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
-import { ListUnorderedSmall, ListOrderedSmall } from "components/Toolbar/ListToolbar";
+import {
+  ListUnorderedSmall,
+  ListOrderedSmall,
+} from "components/Toolbar/ListToolbar";
 import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
@@ -153,6 +156,7 @@ export const blockCommands: Command[] = [
   {
     name: "Unordered List",
     icon: <ListUnorderedSmall />,
+    alternateNames: ["Bulleted List"],
     type: "text",
     onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "text");
@@ -168,6 +172,7 @@ export const blockCommands: Command[] = [
     name: "Ordered List",
     icon: <ListOrderedSmall />,
     type: "text",
+    alternateNames: ["Numbered List"],
     onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "text");
       await rep?.mutate.assertFact([
