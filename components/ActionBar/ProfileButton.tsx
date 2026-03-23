@@ -15,7 +15,6 @@ import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { LeafletPro } from "components/Icons/LeafletPro";
-import { ButtonPrimary } from "components/Buttons";
 
 export const ProfileButton = () => {
   let { identity } = useIdentityData();
