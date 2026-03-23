@@ -11,8 +11,10 @@ import {
 } from "components/IdentityProvider";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { getDomainAssignment } from "./domainAssignment";
-import { RefreshSmall } from "components/Icons/RefreshSmall";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import { useSmoker } from "components/Toast";
+import type { CustomDomain } from "./DomainList";
+import { UnlinkTiny } from "components/Icons/UnlinkTiny";
 
 export function DomainSettingsView(props: {
   domain: string;
@@ -47,7 +49,6 @@ export function DomainSettingsView(props: {
         >
           <GoToArrow />
         </button>
-        {needsSetup && <VerifyButton verify={() => mutateDomainStatus()} />}
       </div>
 
       {needsSetup ? (
@@ -56,7 +57,8 @@ export function DomainSettingsView(props: {
             To verify this domain, add the following record to your DNS provider
             for <strong>{props.domain}</strong>.
           </div>
-          <table className="border border-border-light rounded-md text-left ">
+          <div>Verfication may take up to a few hours to process.</div>
+          <table className="border border-border-light rounded-md text-left mt-2">
             <thead>
               <tr>
                 <th className="px-2 pt-1 text-tertiary">Type</th>
@@ -124,76 +126,49 @@ export function DomainSettingsView(props: {
                 ))}
             </tbody>
           </table>
+          <VerifyButton verify={() => mutateDomainStatus()} />
         </>
       ) : null}
-
       {/* Assignment list */}
-      {props.onRemoveAssignment && isAssigned && domainData && (
-        <div className="flex flex-col gap-1 mt-1">
-          <h4 className="text-tertiary text-xs">Assigned to</h4>
-          {domainData.publication_domains.length > 0 && (
-            <div className="flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light">
-              <span className="text-secondary">publication</span>
-              <button
-                className="text-accent-contrast text-xs"
-                type="button"
-                onMouseDown={async () => {
-                  mutateIdentityData(mutateIdentity, (draft) => {
-                    let domain = draft.custom_domains.find(
-                      (d) => d.domain === props.domain,
-                    );
-                    if (domain) {
-                      domain.publication_domains = [];
-                    }
-                  });
-                  props.onRemoveAssignment?.();
-                  await removeDomainAssignment({ domain: props.domain });
-                }}
-              >
-                remove
-              </button>
-            </div>
-          )}
-          {domainData.custom_domain_routes.map((route) => (
-            <div
-              key={route.id}
-              className="flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light"
-            >
-              <a
-                href={`/${route.edit_permission_token}`}
-                className="text-accent-contrast hover:underline truncate"
-              >
-                {route.route}
-              </a>
-              <button
-                className="text-accent-contrast text-xs shrink-0 ml-2"
-                type="button"
-                onMouseDown={async () => {
-                  mutateIdentityData(mutateIdentity, (draft) => {
-                    let domain = draft.custom_domains.find(
-                      (d) => d.domain === props.domain,
-                    );
-                    if (domain) {
-                      domain.custom_domain_routes =
-                        domain.custom_domain_routes.filter(
-                          (r) => r.id !== route.id,
-                        );
-                    }
-                  });
-                  // If this was the last route, go back to the list
-                  if (domainData.custom_domain_routes.length <= 1) {
-                    props.onRemoveAssignment?.();
-                  }
-                  await removeDomainRoute({ routeId: route.id });
-                }}
-              >
-                remove
-              </button>
-            </div>
-          ))}
+      {!isAssigned && (
+        <div className="text-secondary">
+          <div className="font-bold">
+            You haven't assigned this domain to anything yet!
+          </div>
+          You can assign it to either a publication from your pub settings, or
+          to any leaflet!
         </div>
       )}
-
+      {props.onRemoveAssignment && isAssigned && domainData && (
+        <div className="flex flex-col gap-1 mt-1">
+          <h4 className="text-tertiary text-sm">
+            Assigned{" "}
+            {domainData.publication_domains.length > 0
+              ? "Publications"
+              : "Leaflets"}
+          </h4>
+          {domainData.publication_domains.length > 0 ? (
+            <AssignedPublication
+              domainData={domainData}
+              domain={props.domain}
+              onRemoveAssignment={props.onRemoveAssignment}
+              mutateIdentity={mutateIdentity}
+              isLastAssignment
+            />
+          ) : (
+            domainData.custom_domain_routes.map((route) => (
+              <AssignedLeaflet
+                key={route.id}
+                route={route}
+                domain={props.domain}
+                onRemoveAssignment={props.onRemoveAssignment}
+                mutateIdentity={mutateIdentity}
+                isLastAssignment={domainData.custom_domain_routes.length === 1}
+              />
+            ))
+          )}
+        </div>
+      )}
       <div className="flex flex-col gap-2 mt-2">
         <hr className="border-border-light" />
 
@@ -206,6 +181,157 @@ export function DomainSettingsView(props: {
     </div>
   );
 }
+let containerClassName =
+  "flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light";
+
+const AssignedPublication = (props: {
+  domainData: CustomDomain;
+  domain: string;
+  onRemoveAssignment?: () => void;
+  mutateIdentity: ReturnType<typeof useIdentityData>["mutate"];
+  isLastAssignment: boolean;
+}) => {
+  let [areYouSure, setAreYouSure] = useState(false);
+
+  if (areYouSure) {
+    return (
+      <UnassignAreYouSure
+        {...props}
+        closeAreYouSure={() => {
+          setAreYouSure(false);
+        }}
+      />
+    );
+  }
+  return (
+    <div className={containerClassName}>
+      <span className="text-secondary truncate">
+        {props.domainData.publication_domains[0]?.publications?.name ??
+          "publication"}
+      </span>
+      <button
+        className="text-tertiary hover:text-accent-contrast text-sm"
+        type="button"
+        onMouseDown={() => {
+          setAreYouSure(true);
+        }}
+      >
+        <UnlinkTiny />
+      </button>
+    </div>
+  );
+};
+
+const AssignedLeaflet = (props: {
+  route: {
+    id: string;
+    edit_permission_token: string;
+    route: string;
+  };
+  domain: string;
+  onRemoveAssignment?: () => void;
+  mutateIdentity: ReturnType<typeof useIdentityData>["mutate"];
+  isLastAssignment: boolean;
+}) => {
+  let [areYouSure, setAreYouSure] = useState(false);
+
+  if (areYouSure) {
+    return (
+      <UnassignAreYouSure
+        {...props}
+        routeId={props.route.id}
+        closeAreYouSure={() => {
+          setAreYouSure(false);
+        }}
+      />
+    );
+  }
+  return (
+    <div className={containerClassName}>
+      <a
+        href={`/${props.route.edit_permission_token}`}
+        className="text-accent-contrast no-underline! truncate"
+      >
+        {props.route.route}
+      </a>
+      <button
+        className="text-tertiary hover:text-accent-contrast "
+        type="button"
+        onMouseDown={() => {
+          setAreYouSure(true);
+        }}
+      >
+        <UnlinkTiny />
+      </button>
+    </div>
+  );
+};
+
+const UnassignAreYouSure = (props: {
+  domain: string;
+  routeId?: string;
+  isLastAssignment: boolean;
+  onRemoveAssignment?: () => void;
+  mutateIdentity: ReturnType<typeof useIdentityData>["mutate"];
+  closeAreYouSure: () => void;
+}) => {
+  let {
+    domain,
+    routeId,
+    isLastAssignment,
+    onRemoveAssignment,
+    mutateIdentity,
+  } = props;
+  return (
+    <div className={`${containerClassName}`}>
+      <p className="text-secondary text-sm font-bold">Are You Sure?</p>
+      <div className="flex gap-2 items-center">
+        <ButtonPrimary
+          compact
+          type="button"
+          className="text-sm -my-px"
+          onMouseDown={async () => {
+            if (routeId) {
+              mutateIdentityData(mutateIdentity, (draft) => {
+                let domainData = draft.custom_domains.find(
+                  (d) => d.domain === domain,
+                );
+                if (domainData) {
+                  domainData.custom_domain_routes =
+                    domainData.custom_domain_routes.filter(
+                      (r) => r.id !== routeId,
+                    );
+                }
+              });
+              if (isLastAssignment) onRemoveAssignment?.();
+              await removeDomainRoute({ routeId });
+            } else {
+              mutateIdentityData(mutateIdentity, (draft) => {
+                let domainData = draft.custom_domains.find(
+                  (d) => d.domain === domain,
+                );
+                if (domainData) {
+                  domainData.publication_domains = [];
+                }
+              });
+              onRemoveAssignment?.();
+              await removeDomainAssignment({ domain });
+            }
+          }}
+        >
+          Confirm
+        </ButtonPrimary>
+        <button
+          className="text-accent-contrast font-bold"
+          type="button"
+          onMouseDown={() => props.closeAreYouSure()}
+        >
+          Nevermind
+        </button>
+      </div>
+    </div>
+  );
+};
 
 function DeleteDomainButton(props: {
   domain: string;
@@ -268,16 +394,28 @@ function DeleteDomainButton(props: {
 
 function VerifyButton(props: { verify: () => Promise<any> }) {
   let [loading, setLoading] = useState(false);
+  let smoker = useSmoker();
   return (
     <ButtonPrimary
-      compact
-      className="w-[118px]!"
+      fullWidth
+      className="mt-2"
       type="button"
       onClick={async (e) => {
         e.preventDefault();
         setLoading(true);
-        await props.verify();
+        let result = await props.verify();
         setLoading(false);
+        let stillPending =
+          result?.config?.misconfigured || result?.verification;
+        if (stillPending) {
+          smoker({
+            position: {
+              x: e.clientX,
+              y: e.clientY - 5,
+            },
+            text: "Still processing",
+          });
+        }
       }}
     >
       {loading ? <DotLoader /> : "Check Status"}

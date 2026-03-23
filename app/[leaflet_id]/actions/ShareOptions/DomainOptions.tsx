@@ -173,7 +173,7 @@ const DomainOptions = (props: {
   }
 
   return (
-    <div className="px-3 py-1 flex flex-col gap-2 max-w-full w-[600px]">
+    <div className="px-2 py-1 flex flex-col gap-2 max-w-full w-[600px]">
       <div className="flex justify-between">
         <h4>Choose a Domain</h4>
         <button
@@ -184,10 +184,9 @@ const DomainOptions = (props: {
         </button>
       </div>
       <hr className="border-border-light -mx-3" />
-      <div className="flex flex-col gap-3 text-secondary">
+      <div className="flex flex-col gap-1 text-secondary">
         {linkedDomains.length > 0 && (
           <div className="flex flex-col gap-0.5">
-            <strong className="text-sm">Currently Linked</strong>
             {linkedDomains.map((domain: CustomDomain) => (
               <LinkedDomainOption
                 key={domain.domain}
@@ -229,8 +228,8 @@ const DomainOptions = (props: {
             setDomainMenuState={props.setDomainMenuState}
           />
         )}
-        <div className="text-sm text-tertiary">
-          Add or delete domains from your profile on{" "}
+        <div className="text-sm text-tertiary leading-snug pt-1">
+          You can add or delete domains from profile settings on{" "}
           <Link href="/home" className="text-accent-contrast">
             home
           </Link>
