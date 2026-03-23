@@ -392,6 +392,15 @@ const enter =
     view?: EditorView,
   ) => {
     if (state.doc.textContent.startsWith("/")) return true;
+    // Empty list item: just outdent, don't create a new block
+    if (
+      propsRef.current.listData &&
+      propsRef.current.pageType !== "canvas" &&
+      state.doc.content.size <= 2
+    ) {
+      shifttab(propsRef, repRef)();
+      return true;
+    }
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
@@ -451,9 +460,6 @@ const enter =
         return;
       }
       if (propsRef.current.listData) {
-        if (state.doc.content.size <= 2) {
-          return shifttab(propsRef, repRef)();
-        }
         let createChild =
           propsRef.current.nextBlock?.listData &&
           propsRef.current.nextBlock.listData.depth >
