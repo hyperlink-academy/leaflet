@@ -11,7 +11,9 @@ export const highlightSelectionPlugin = new Plugin({
       // The inline decorations cause DOM mutations (wrapping text in <span>
       // elements) that break native selection handle dragging. When focused,
       // these decorations are invisible via CSS anyway.
-      if (!tr.docChanged) {
+      // On blur, we force an update via meta so the highlight is visible
+      // when focus moves to the toolbar (e.g. for entering a link).
+      if (!tr.docChanged && !tr.getMeta("updateSelectionHighlight")) {
         return oldDecorations;
       }
 
@@ -29,6 +31,14 @@ export const highlightSelectionPlugin = new Plugin({
     },
   },
   props: {
+    handleDOMEvents: {
+      blur(view) {
+        view.dispatch(
+          view.state.tr.setMeta("updateSelectionHighlight", true),
+        );
+        return false;
+      },
+    },
     decorations(state) {
       return this.getState(state);
     },
