@@ -1,11 +1,21 @@
 import { Decoration, DecorationSet } from "prosemirror-view";
 import { Plugin } from "prosemirror-state";
+import { isAndroid } from "src/utils/isDevice";
+
 export const highlightSelectionPlugin = new Plugin({
   state: {
     init(_, { doc }) {
       return DecorationSet.empty;
     },
     apply(tr, oldDecorations, oldState, newState) {
+      // On Android, skip decoration updates for selection-only changes.
+      // The inline decorations cause DOM mutations (wrapping text in <span>
+      // elements) that break native selection handle dragging. When focused,
+      // these decorations are invisible via CSS anyway.
+      if (isAndroid() && !tr.docChanged) {
+        return oldDecorations;
+      }
+
       let decorations = [];
 
       // Check if there's a selection
