@@ -338,7 +338,7 @@ pre.shiki {
   @apply box-decoration-clone;
 }
 
-.selected .selection-highlight {
+.selection-highlight {
   background-color: Highlight;
   @apply py-[1.5px];
 }
