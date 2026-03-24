@@ -121,10 +121,11 @@ export const Block = memo(function Block(
   useBlockKeyboardHandlers(props, areYouSure, setAreYouSure);
 
   const bindSwipe = useDrag(
-    ({ last, movement: [mx] }) => {
+    ({ last, movement: [mx], event }) => {
       if (!last) return;
       if (!rep || !props.listData || !entity_set.permissions.write) return;
       if (Math.abs(mx) < SWIPE_THRESHOLD) return;
+      event?.preventDefault();
       let { foldedBlocks, toggleFold } = useUIState.getState();
       if (mx > 0) {
         if (props.previousBlock) {
