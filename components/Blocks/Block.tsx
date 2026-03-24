@@ -9,6 +9,10 @@ import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { indent, outdent } from "src/utils/list-operations";
+import { useDrag } from "@use-gesture/react";
+
+const SWIPE_THRESHOLD = 50;
 
 import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
@@ -76,6 +80,8 @@ export const Block = memo(function Block(
     nextPosition: props.nextPosition,
   });
   let entity_set = useEntitySetContext();
+  let isMobile = useIsMobile();
+  let { rep } = useReplicache();
 
   let { isLongPress, longPressHandlers } = useLongPress(() => {
     if (isTextBlock[props.type]) return;
@@ -115,9 +121,67 @@ export const Block = memo(function Block(
   // THIS IS WHERE YOU SET WHETHER OR NOT AREYOUSURE IS TRIGGERED ON THE DELETE KEY
   useBlockKeyboardHandlers(props, areYouSure, setAreYouSure);
 
+  const swipeEnabled = isMobile && !!props.listData;
+  const bindSwipe = useDrag(
+    ({ last, movement: [mx], cancel, first }) => {
+      // Cancel the gesture immediately if there's an active text selection,
+      // so we don't interfere with native selection handle dragging
+      if (first) {
+        let selection = window.getSelection();
+        if (selection && !selection.isCollapsed) {
+          cancel();
+          return;
+        }
+      }
+      if (!last) return;
+      if (!rep || !props.listData || !entity_set.permissions.write) return;
+      if (Math.abs(mx) < SWIPE_THRESHOLD) return;
+      // Don't trigger indent/outdent if the user is selecting text
+      let selection = window.getSelection();
+      if (selection && !selection.isCollapsed) return;
+      let { foldedBlocks, toggleFold } = useUIState.getState();
+      if (mx > 0) {
+        if (props.previousBlock) {
+          indent(props, props.previousBlock, rep, {
+            foldedBlocks,
+            toggleFold,
+          });
+        }
+      } else {
+        outdent(props, props.previousBlock, rep, {
+          foldedBlocks,
+          toggleFold,
+        });
+      }
+    },
+    {
+      axis: "x",
+      filterTaps: true,
+      enabled: swipeEnabled,
+      // Disable pointer capture to prevent stealing pointer events from
+      // native text selection handles on mobile. Without this, setPointerCapture()
+      // routes all pointer events to the block div, breaking selection handle
+      // dragging (especially on fast movements).
+      pointer: { capture: false },
+    },
+  );
+
   return (
     <div
       {...(!props.preview ? { ...mouseHandlers, ...longPressHandlers } : {})}
+      {...(() => {
+        const swipeHandlers = bindSwipe();
+        // Merge onPointerDown from swipe gesture with longPressHandlers
+        // to avoid bindSwipe() overriding useLongPress's onPointerDown
+        if (!props.preview && swipeEnabled && longPressHandlers.onPointerDown) {
+          const swipeOnPointerDown = swipeHandlers.onPointerDown;
+          swipeHandlers.onPointerDown = (e: React.PointerEvent) => {
+            longPressHandlers.onPointerDown(e as unknown as React.MouseEvent);
+            if (swipeOnPointerDown) swipeOnPointerDown(e);
+          };
+        }
+        return swipeHandlers;
+      })()}
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
       }
@@ -137,6 +201,7 @@ export const Block = memo(function Block(
         flex flex-row gap-2
         px-3 sm:px-4
         z-1 w-full
+        ${swipeEnabled ? "touch-pan-y" : ""}
       ${alignmentStyle}
       ${
         !props.nextBlock
@@ -496,7 +561,6 @@ export const ListMarker = (
     className?: string;
   },
 ) => {
-  let isMobile = useIsMobile();
   let checklist = useEntity(props.value, "block/check-list");
   let listStyle = useEntity(props.value, "block/list-style");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
@@ -511,7 +575,6 @@ export const ListMarker = (
 
   let [editingNumber, setEditingNumber] = useState(false);
   let [numberInputValue, setNumberInputValue] = useState("");
-
   useEffect(() => {
     if (!editingNumber) {
       setNumberInputValue("");
@@ -545,6 +608,7 @@ export const ListMarker = (
 
     setEditingNumber(false);
   };
+
   return (
     <div
       className={`shrink-0  flex justify-end items-center h-3 z-1
