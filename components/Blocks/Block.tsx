@@ -123,7 +123,16 @@ export const Block = memo(function Block(
 
   const swipeEnabled = isMobile && !!props.listData;
   const bindSwipe = useDrag(
-    ({ last, movement: [mx] }) => {
+    ({ last, movement: [mx], cancel, first }) => {
+      // Cancel the gesture immediately if there's an active text selection,
+      // so we don't interfere with native selection handle dragging
+      if (first) {
+        let selection = window.getSelection();
+        if (selection && !selection.isCollapsed) {
+          cancel();
+          return;
+        }
+      }
       if (!last) return;
       if (!rep || !props.listData || !entity_set.permissions.write) return;
       if (Math.abs(mx) < SWIPE_THRESHOLD) return;
@@ -149,13 +158,30 @@ export const Block = memo(function Block(
       axis: "x",
       filterTaps: true,
       enabled: swipeEnabled,
+      // Disable pointer capture to prevent stealing pointer events from
+      // native text selection handles on mobile. Without this, setPointerCapture()
+      // routes all pointer events to the block div, breaking selection handle
+      // dragging (especially on fast movements).
+      pointer: { capture: false },
     },
   );
 
   return (
     <div
       {...(!props.preview ? { ...mouseHandlers, ...longPressHandlers } : {})}
-      {...bindSwipe()}
+      {...(() => {
+        const swipeHandlers = bindSwipe();
+        // Merge onPointerDown from swipe gesture with longPressHandlers
+        // to avoid bindSwipe() overriding useLongPress's onPointerDown
+        if (!props.preview && swipeEnabled && longPressHandlers.onPointerDown) {
+          const swipeOnPointerDown = swipeHandlers.onPointerDown;
+          swipeHandlers.onPointerDown = (e: React.PointerEvent) => {
+            longPressHandlers.onPointerDown(e as unknown as React.MouseEvent);
+            if (swipeOnPointerDown) swipeOnPointerDown(e);
+          };
+        }
+        return swipeHandlers;
+      })()}
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
       }
