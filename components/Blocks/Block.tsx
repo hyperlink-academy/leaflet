@@ -121,11 +121,15 @@ export const Block = memo(function Block(
   // THIS IS WHERE YOU SET WHETHER OR NOT AREYOUSURE IS TRIGGERED ON THE DELETE KEY
   useBlockKeyboardHandlers(props, areYouSure, setAreYouSure);
 
+  const swipeEnabled = isMobile && !!props.listData;
   const bindSwipe = useDrag(
     ({ last, movement: [mx] }) => {
       if (!last) return;
       if (!rep || !props.listData || !entity_set.permissions.write) return;
       if (Math.abs(mx) < SWIPE_THRESHOLD) return;
+      // Don't trigger indent/outdent if the user is selecting text
+      let selection = window.getSelection();
+      if (selection && !selection.isCollapsed) return;
       let { foldedBlocks, toggleFold } = useUIState.getState();
       if (mx > 0) {
         if (props.previousBlock) {
@@ -144,8 +148,7 @@ export const Block = memo(function Block(
     {
       axis: "x",
       filterTaps: true,
-      pointer: { touch: true },
-      enabled: isMobile && !!props.listData,
+      enabled: swipeEnabled,
     },
   );
 
@@ -172,7 +175,7 @@ export const Block = memo(function Block(
         flex flex-row gap-2
         px-3 sm:px-4
         z-1 w-full
-        ${props.listData ? "touch-pan-y" : ""}
+        ${swipeEnabled ? "touch-pan-y" : ""}
       ${alignmentStyle}
       ${
         !props.nextBlock
