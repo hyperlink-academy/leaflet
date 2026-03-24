@@ -9,7 +9,8 @@ import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
-
+import { indent, outdent } from "src/utils/list-operations";
+import { useDrag } from "@use-gesture/react";
 import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
@@ -36,6 +37,8 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
+
+const SWIPE_THRESHOLD = 50;
 
 export type Block = {
   factID: string;
@@ -76,6 +79,8 @@ export const Block = memo(function Block(
     nextPosition: props.nextPosition,
   });
   let entity_set = useEntitySetContext();
+  let isMobile = useIsMobile();
+  let { rep } = useReplicache();
 
   let { isLongPress, longPressHandlers } = useLongPress(() => {
     if (isTextBlock[props.type]) return;
@@ -115,9 +120,39 @@ export const Block = memo(function Block(
   // THIS IS WHERE YOU SET WHETHER OR NOT AREYOUSURE IS TRIGGERED ON THE DELETE KEY
   useBlockKeyboardHandlers(props, areYouSure, setAreYouSure);
 
+  const bindSwipe = useDrag(
+    ({ last, movement: [mx] }) => {
+      if (!last) return;
+      if (!rep || !props.listData || !entity_set.permissions.write) return;
+      if (Math.abs(mx) < SWIPE_THRESHOLD) return;
+      let { foldedBlocks, toggleFold } = useUIState.getState();
+      if (mx > 0) {
+        if (props.previousBlock) {
+          indent(props, props.previousBlock, rep, {
+            foldedBlocks,
+            toggleFold,
+          });
+        }
+      } else {
+        outdent(props, props.previousBlock, rep, {
+          foldedBlocks,
+          toggleFold,
+        });
+      }
+    },
+    {
+      axis: "x",
+      filterTaps: true,
+      pointer: { touch: true },
+      enabled: isMobile && !!props.listData,
+    },
+  );
+
   return (
     <div
-      {...(!props.preview ? { ...mouseHandlers, ...longPressHandlers } : {})}
+      {...(!props.preview
+        ? { ...mouseHandlers, ...longPressHandlers, ...bindSwipe() }
+        : {})}
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
       }
@@ -137,6 +172,7 @@ export const Block = memo(function Block(
         flex flex-row gap-2
         px-3 sm:px-4
         z-1 w-full
+        ${props.listData ? "touch-pan-y" : ""}
       ${alignmentStyle}
       ${
         !props.nextBlock
@@ -496,7 +532,6 @@ export const ListMarker = (
     className?: string;
   },
 ) => {
-  let isMobile = useIsMobile();
   let checklist = useEntity(props.value, "block/check-list");
   let listStyle = useEntity(props.value, "block/list-style");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
@@ -511,7 +546,6 @@ export const ListMarker = (
 
   let [editingNumber, setEditingNumber] = useState(false);
   let [numberInputValue, setNumberInputValue] = useState("");
-
   useEffect(() => {
     if (!editingNumber) {
       setNumberInputValue("");
@@ -545,6 +579,7 @@ export const ListMarker = (
 
     setEditingNumber(false);
   };
+
   return (
     <div
       className={`shrink-0  flex justify-end items-center h-3 z-1
