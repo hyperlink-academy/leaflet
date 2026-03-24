@@ -19,15 +19,13 @@ type PopoverState = {
   close: () => void;
 };
 
-export const usePublishedFootnotePopoverStore = create<PopoverState>(
-  (set) => ({
-    activeFootnoteId: null,
-    anchorElement: null,
-    open: (footnoteId, anchor) =>
-      set({ activeFootnoteId: footnoteId, anchorElement: anchor }),
-    close: () => set({ activeFootnoteId: null, anchorElement: null }),
-  }),
-);
+export const usePublishedFootnotePopoverStore = create<PopoverState>((set) => ({
+  activeFootnoteId: null,
+  anchorElement: null,
+  open: (footnoteId, anchor) =>
+    set({ activeFootnoteId: footnoteId, anchorElement: anchor }),
+  close: () => set({ activeFootnoteId: null, anchorElement: null }),
+}));
 
 export function PublishedFootnoteRefRenderer(props: {
   footnoteId: string;
@@ -38,7 +36,7 @@ export function PublishedFootnoteRefRenderer(props: {
   return (
     <sup
       ref={ref}
-      className="text-accent-contrast cursor-pointer"
+      className="text-accent-contrast cursor-pointer ml-0.5"
       id={`fnref-${props.footnoteId}`}
       onClick={(e) => {
         e.preventDefault();

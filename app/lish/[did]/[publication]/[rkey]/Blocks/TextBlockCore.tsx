@@ -7,7 +7,11 @@ type Facet = PubLeafletRichtextFacet.Main;
 
 export type FacetRenderers = {
   DidMention?: (props: { did: string; children: ReactNode }) => ReactNode;
-  FootnoteRef?: (props: { footnoteId: string; index: number; children: ReactNode }) => ReactNode;
+  FootnoteRef?: (props: {
+    footnoteId: string;
+    index: number;
+    children: ReactNode;
+  }) => ReactNode;
 };
 
 export type TextBlockCoreProps = {
@@ -50,14 +54,29 @@ export function TextBlockCore(props: TextBlockCoreProps) {
       const FootnoteRenderer = props.renderers?.FootnoteRef;
       if (FootnoteRenderer) {
         children.push(
-          <FootnoteRenderer key={counter} footnoteId={isFootnote.footnoteId} index={fnIndex}>
-            <sup className="text-accent-contrast cursor-pointer">{fnIndex}</sup>
+          <FootnoteRenderer
+            key={counter}
+            footnoteId={isFootnote.footnoteId}
+            index={fnIndex}
+          >
+            <sup className="text-accent-contrast cursor-pointer ml-0.5">
+              {fnIndex}
+            </sup>
           </FootnoteRenderer>,
         );
       } else {
         children.push(
-          <sup key={counter} className="text-accent-contrast cursor-pointer text-[0.75em]" id={`fnref-${isFootnote.footnoteId}`}>
-            <a href={`#fn-${isFootnote.footnoteId}`} className="no-underline hover:underline">{fnIndex}</a>
+          <sup
+            key={counter}
+            className="text-accent-contrast cursor-pointer text-[0.75em]"
+            id={`fnref-${isFootnote.footnoteId}`}
+          >
+            <a
+              href={`#fn-${isFootnote.footnoteId}`}
+              className="no-underline hover:underline"
+            >
+              {fnIndex}
+            </a>
           </sup>,
         );
       }
