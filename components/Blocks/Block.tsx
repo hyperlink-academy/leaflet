@@ -11,9 +11,6 @@ import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { indent, outdent } from "src/utils/list-operations";
 import { useDrag } from "@use-gesture/react";
-
-const SWIPE_THRESHOLD = 50;
-
 import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
@@ -40,6 +37,8 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
+
+const SWIPE_THRESHOLD = 50;
 
 export type Block = {
   factID: string;
@@ -151,8 +150,9 @@ export const Block = memo(function Block(
 
   return (
     <div
-      {...(!props.preview ? { ...mouseHandlers, ...longPressHandlers } : {})}
-      {...bindSwipe()}
+      {...(!props.preview
+        ? { ...mouseHandlers, ...longPressHandlers, ...bindSwipe() }
+        : {})}
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
       }
