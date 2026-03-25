@@ -92,7 +92,7 @@ Setup instructions to run a local feed service. This step isn't necessary if you
 
 #### Troubleshooting
 
-- Persisting articles on a fresh install over a fresh DB are usually due to stale Replicache entrys. To clear, open your browser DevTools and delete Replicache entries (usually under IndexedDB Storage)
+- Persisting articles on a fresh install over a fresh DB are usually due to stale Replicache entries. To clear, open your browser DevTools and delete Replicache entries (usually under IndexedDB Storage)
 - Supabase settings will get cached in `.next`; if you change where you're pointing your Supabase connections to, you may need to delete the `.next` folder (it will rebuild the next time you start the app).
 
 ## Technical details
