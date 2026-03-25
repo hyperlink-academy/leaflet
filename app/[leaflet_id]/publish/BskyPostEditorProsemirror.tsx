@@ -425,14 +425,19 @@ export const addMentionToEditor = (
     });
     tr.insert(from, didMentionNode);
   }
-  if (mention.type === "publication" || mention.type === "post") {
-    // Delete the @ and any query text
+  if (
+    mention.type === "publication" ||
+    mention.type === "post" ||
+    mention.type === "service_result"
+  ) {
     tr.delete(from, to);
-    let name = mention.type == "post" ? mention.title : mention.name;
-    // Insert atMention inline node
+    const text = mention.type === "post" ? mention.title : mention.name;
     const atMentionNode = schema.nodes.atMention.create({
       atURI: mention.uri,
-      text: name,
+      text,
+      ...(mention.type === "service_result" && mention.href
+        ? { href: mention.href }
+        : {}),
     });
     tr.insert(from, atMentionNode);
   }

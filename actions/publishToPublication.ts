@@ -923,6 +923,9 @@ function YJSFragmentToFacets(
           {
             $type: "pub.leaflet.richtext.facet#atMention",
             atURI: node.getAttribute("atURI"),
+            ...(node.getAttribute("href")
+              ? { href: node.getAttribute("href") }
+              : {}),
           },
         ],
       };

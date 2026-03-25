@@ -41,18 +41,23 @@ export default async function LeafletPage(props: Props) {
       </NotFoundLayout>
     );
 
-  let [{ data }, rsvp_data, poll_data] = await Promise.all([
+  let [{ data, error }, rsvp_data, poll_data] = await Promise.all([
     supabaseServerClient.rpc("get_facts", {
       root: rootEntity,
     }),
     getRSVPData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
     getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
   ]);
+  console.log("ERROR:", error);
   let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
 
   // Extract font settings from facts for server-side font loading
-  const { headingFontId, bodyFontId } = extractFontsFromFacts(initialFacts as any, rootEntity);
+  const { headingFontId, bodyFontId } = extractFontsFromFacts(
+    initialFacts as any,
+    rootEntity,
+  );
 
+  console.log(res);
   return (
     <>
       {/* Server-side font loading with preload and @font-face */}

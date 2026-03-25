@@ -114,6 +114,7 @@ export function TextBlockCore(props: TextBlockCoreProps) {
         <AtMentionLink
           key={counter}
           atURI={isAtMention.atURI}
+          href={isAtMention.href}
           className={className}
         >
           {renderedText}

@@ -5,10 +5,39 @@ import {
 } from "src/utils/collectionHelpers";
 
 /**
+ * Safely classifies an AT URI string as publication, document, or unknown.
+ * Returns { isPublication: false, isDocument: false } for invalid/external URIs.
+ */
+export function classifyAtUri(atURI: string): {
+  isPublication: boolean;
+  isDocument: boolean;
+} {
+  try {
+    const uri = new AtUri(atURI);
+    return {
+      isPublication: isPublicationCollection(uri.collection),
+      isDocument: isDocumentCollection(uri.collection),
+    };
+  } catch {
+    return { isPublication: false, isDocument: false };
+  }
+}
+
+/**
  * Converts a DID to a Bluesky profile URL
  */
 export function didToBlueskyUrl(did: string): string {
   return `https://bsky.app/profile/${did}`;
+}
+
+function tryAsHttpUrl(str: string): string | null {
+  try {
+    const url = new URL(str);
+    if (url.protocol === "http:" || url.protocol === "https:") return str;
+  } catch {
+    // Not a valid URL
+  }
+  return null;
 }
 
 /**
@@ -18,14 +47,14 @@ export function atUriToUrl(atUri: string): string {
   try {
     const uri = new AtUri(atUri);
 
-    if (isPublicationCollection(uri.collection)) {
-      return `/lish/uri/${encodeURIComponent(atUri)}`;
-    } else if (isDocumentCollection(uri.collection)) {
+    if (isPublicationCollection(uri.collection) || isDocumentCollection(uri.collection)) {
       return `/lish/uri/${encodeURIComponent(atUri)}`;
     }
 
-    return "#";
+    return tryAsHttpUrl(atUri) ?? "#";
   } catch (e) {
+    const httpUrl = tryAsHttpUrl(atUri);
+    if (httpUrl) return httpUrl;
     console.error("Failed to parse AT URI:", atUri, e);
     return "#";
   }
@@ -49,12 +78,6 @@ export function handleMentionClick(
     window.open(didToBlueskyUrl(value), "_blank", "noopener,noreferrer");
   } else {
     // Navigate to publication/document in same tab
-    const url = atUriToUrl(value);
-    if (url.startsWith("/lish/uri/")) {
-      // Redirect route - navigate to it
-      window.location.href = url;
-    } else {
-      window.location.href = url;
-    }
+    window.location.href = atUriToUrl(value);
   }
 }

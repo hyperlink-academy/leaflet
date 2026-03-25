@@ -1,6 +1,14 @@
 "use client";
 import { Agent } from "@atproto/api";
-import { useState, useEffect, Fragment, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  Fragment,
+  useRef,
+  useCallback,
+} from "react";
+import useSWR from "swr";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import * as Popover from "@radix-ui/react-popover";
 import { EditorView } from "prosemirror-view";
@@ -26,7 +34,7 @@ export function MentionAutocomplete(props: {
   const contentRef = useRef<HTMLDivElement>(null);
 
   const { suggestionIndex, setSuggestionIndex, suggestions, scope, setScope } =
-    useMentionSuggestions(searchQuery);
+    useMentionSuggestions(searchQuery, props.open);
 
   // Clear search when scope changes
   const handleScopeChange = useCallback(
@@ -110,11 +118,16 @@ export function MentionAutocomplete(props: {
           uri: selectedSuggestion.uri,
           name: selectedSuggestion.name,
         });
+      } else if (selectedSuggestion?.type === "service") {
+        e.preventDefault();
+        handleScopeChange(serviceScopeFromMention(selectedSuggestion));
       }
     } else if (e.key === "Enter") {
       e.preventDefault();
       const selectedSuggestion = suggestions[suggestionIndex];
-      if (selectedSuggestion) {
+      if (selectedSuggestion?.type === "service") {
+        handleScopeChange(serviceScopeFromMention(selectedSuggestion));
+      } else if (selectedSuggestion) {
         props.onSelect(selectedSuggestion);
         props.onOpenChange(false);
       }
@@ -139,27 +152,44 @@ export function MentionAutocomplete(props: {
   if (!props.open || !props.coords) return null;
 
   const getHeader = (type: Mention["type"], scope?: MentionScope) => {
+    // When in a built-in scope, show a back header
+    if (
+      scope?.type === "identities" ||
+      scope?.type === "publications" ||
+      scope?.type === "publication" ||
+      scope?.type === "service"
+    ) {
+      return (
+        <ScopeHeader
+          scope={scope}
+          handleScopeChange={() => {
+            handleScopeChange({ type: "default" });
+          }}
+        />
+      );
+    }
     switch (type) {
       case "did":
         return "People";
       case "publication":
         return "Publications";
       case "post":
-        if (scope) {
-          return (
-            <ScopeHeader
-              scope={scope}
-              handleScopeChange={() => {
-                handleScopeChange({ type: "default" });
-              }}
-            />
-          );
-        } else return "Posts";
+        return "Posts";
+      case "service":
+        return "Services";
+      case "service_result":
+        return null;
     }
   };
 
   const sortedSuggestions = [...suggestions].sort((a, b) => {
-    const order: Mention["type"][] = ["did", "publication", "post"];
+    const order: Mention["type"][] = [
+      "did",
+      "publication",
+      "post",
+      "service",
+      "service_result",
+    ];
     return order.indexOf(a.type) - order.indexOf(b.type);
   });
 
@@ -206,9 +236,7 @@ export function MentionAutocomplete(props: {
                 onKeyDown={handleKeyDown}
                 autoFocus
                 placeholder={
-                  scope.type === "publication"
-                    ? "Search posts..."
-                    : props.placeholder ?? "Search people & publications..."
+                  scopePlaceholder(scope, props.placeholder)
                 }
                 className="flex-1 w-full min-w-0 bg-transparent border-none outline-none text-sm placeholder:text-tertiary"
               />
@@ -227,10 +255,15 @@ export function MentionAutocomplete(props: {
                   index === 0 ||
                   (prevResult && prevResult.type !== result.type);
 
+                const key =
+                  result.type === "did"
+                    ? result.did
+                    : result.type === "service"
+                      ? result.serviceUri
+                      : result.uri;
+
                 return (
-                  <Fragment
-                    key={result.type === "did" ? result.did : result.uri}
-                  >
+                  <Fragment key={key}>
                     {showHeader && (
                       <>
                         {index > 0 && (
@@ -270,6 +303,26 @@ export function MentionAutocomplete(props: {
                             name: result.name,
                           });
                         }}
+                      />
+                    ) : result.type === "service" ? (
+                      <ServiceEntry
+                        onClick={() => {
+                          handleScopeChange(serviceScopeFromMention(result));
+                        }}
+                        onMouseDown={(e) => e.preventDefault()}
+                        name={result.name}
+                        description={result.description}
+                        selected={index === suggestionIndex}
+                      />
+                    ) : result.type === "service_result" ? (
+                      <ServiceSearchResult
+                        onClick={() => {
+                          props.onSelect(result);
+                          props.onOpenChange(false);
+                        }}
+                        onMouseDown={(e) => e.preventDefault()}
+                        name={result.name}
+                        selected={index === suggestionIndex}
                       />
                     ) : (
                       <PostResult
@@ -428,24 +481,69 @@ const PostResult = (props: {
   );
 };
 
+const ServiceEntry = (props: {
+  name: string;
+  description?: string;
+  onClick: () => void;
+  onMouseDown: (e: React.MouseEvent) => void;
+  selected?: boolean;
+}) => {
+  return (
+    <Result
+      result={
+        <>
+          <div className="truncate w-full grow min-w-0">{props.name}</div>
+          <ScopeButton onClick={props.onClick}>Search</ScopeButton>
+        </>
+      }
+      subtext={props.description}
+      onClick={props.onClick}
+      onMouseDown={props.onMouseDown}
+      selected={props.selected}
+    />
+  );
+};
+
+const ServiceSearchResult = (props: {
+  name: string;
+  onClick: () => void;
+  onMouseDown: (e: React.MouseEvent) => void;
+  selected?: boolean;
+}) => {
+  return (
+    <Result
+      result={<div className="truncate w-full">{props.name}</div>}
+      onClick={props.onClick}
+      onMouseDown={props.onMouseDown}
+      selected={props.selected}
+    />
+  );
+};
+
 const ScopeHeader = (props: {
   scope: MentionScope;
   handleScopeChange: () => void;
 }) => {
   if (props.scope.type === "default") return;
-  if (props.scope.type === "publication")
-    return (
-      <button
-        className="w-full flex flex-row gap-2 pt-1 rounded text-tertiary hover:text-accent-contrast shrink-0 text-xs"
-        onClick={() => props.handleScopeChange()}
-        onMouseDown={(e) => e.preventDefault()}
-      >
-        <GoBackTiny className="shrink-0 " />
 
-        <div className="grow w-full truncate text-left">
-          Posts from {props.scope.name}
-        </div>
-      </button>
+  const label =
+    props.scope.type === "identities"
+      ? "People"
+      : props.scope.type === "publications"
+        ? "Publications"
+        : props.scope.type === "publication"
+          ? `Posts from ${props.scope.name}`
+          : `Results from ${props.scope.name}`;
+
+  return (
+    <button
+      className="w-full flex flex-row gap-2 pt-1 rounded text-tertiary hover:text-accent-contrast shrink-0 text-xs"
+      onClick={() => props.handleScopeChange()}
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      <GoBackTiny className="shrink-0 " />
+      <div className="grow w-full truncate text-left">{label}</div>
+    </button>
     );
 };
 
@@ -458,15 +556,130 @@ export type Mention =
       avatar?: string;
     }
   | { type: "publication"; uri: string; name: string; url: string }
-  | { type: "post"; uri: string; title: string; url: string };
+  | { type: "post"; uri: string; title: string; url: string }
+  | {
+      type: "service";
+      serviceUri: string;
+      name: string;
+      description?: string;
+    }
+  | {
+      type: "service_result";
+      uri: string;
+      name: string;
+      href?: string;
+    };
 
 export type MentionScope =
   | { type: "default" }
-  | { type: "publication"; uri: string; name: string };
-function useMentionSuggestions(query: string | null) {
+  | { type: "identities" }
+  | { type: "publications" }
+  | { type: "publication"; uri: string; name: string }
+  | { type: "service"; serviceUri: string; name: string };
+
+function scopePlaceholder(scope: MentionScope, fallback?: string): string {
+  switch (scope.type) {
+    case "identities": return "Search people...";
+    case "publications": return "Search publications...";
+    case "publication": return "Search posts...";
+    case "service": return `Search ${scope.name}...`;
+    default: return fallback ?? "Search people & publications...";
+  }
+}
+
+function serviceScopeFromMention(service: Mention & { type: "service" }): MentionScope {
+  if (service.serviceUri === BUILTIN_IDENTITIES.serviceUri) return { type: "identities" };
+  if (service.serviceUri === BUILTIN_PUBLICATIONS.serviceUri) return { type: "publications" };
+  return { type: "service", serviceUri: service.serviceUri, name: service.name };
+}
+
+const BUILTIN_IDENTITIES: Mention & { type: "service" } = {
+  type: "service",
+  serviceUri: "builtin:identities",
+  name: "Identities",
+  description: "Search people on Bluesky",
+};
+const BUILTIN_PUBLICATIONS: Mention & { type: "service" } = {
+  type: "service",
+  serviceUri: "builtin:publications",
+  name: "Publications",
+  description: "Search publications on Leaflet",
+};
+
+const bskyAgent = new Agent("https://public.api.bsky.app");
+
+async function searchIdentities(
+  query: string,
+  limit: number,
+): Promise<Mention[]> {
+  const result = await bskyAgent.searchActorsTypeahead({ q: query, limit });
+  return result.data.actors.map((actor) => ({
+    type: "did" as const,
+    handle: actor.handle,
+    did: actor.did,
+    displayName: actor.displayName,
+    avatar: actor.avatar,
+  }));
+}
+
+async function searchPublications(
+  query: string,
+  limit: number,
+): Promise<Mention[]> {
+  const publications = await callRPC(`search_publication_names`, {
+    query,
+    limit,
+  });
+  return publications.result.publications.map((p) => ({
+    type: "publication" as const,
+    uri: p.uri,
+    name: p.name,
+    url: p.url,
+  }));
+}
+
+const EMPTY_SERVICES: Array<Mention> = [];
+function useMentionServices(enabled: boolean): Array<Mention> {
+  const { data } = useSWR(
+    enabled ? "mention_services" : null,
+    async () => {
+      try {
+        const result = await callRPC(`get_user_mention_services`, {});
+        return result.result.services.map(
+          (s: {
+            uri: string;
+            name: string;
+            description?: string;
+            endpoint_url: string;
+          }) => ({
+            type: "service" as const,
+            serviceUri: s.uri,
+            name: s.name,
+            description: s.description,
+          }),
+        );
+      } catch {
+        return EMPTY_SERVICES;
+      }
+    },
+    { revalidateOnFocus: false, revalidateOnReconnect: false },
+  );
+  return data || EMPTY_SERVICES;
+}
+
+function useMentionSuggestions(query: string | null, open: boolean) {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [suggestions, setSuggestions] = useState<Array<Mention>>([]);
   const [scope, setScope] = useState<MentionScope>({ type: "default" });
+  const externalServices = useMentionServices(open);
+  const allServices = useMemo(
+    () =>
+      externalServices.length > 0
+        ? [BUILTIN_IDENTITIES, BUILTIN_PUBLICATIONS, ...externalServices]
+        : EMPTY_SERVICES,
+    [externalServices],
+  );
+  const hasServices = allServices.length > 0;
 
   // Clear suggestions immediately when scope changes
   const setScopeAndClear = useCallback((newScope: MentionScope) => {
@@ -476,13 +689,20 @@ function useMentionSuggestions(query: string | null) {
 
   useDebouncedEffect(
     async () => {
+      if (!open) return;
+
       if (!query && scope.type === "default") {
-        setSuggestions([]);
+        // No query: show services if available, otherwise clear
+        setSuggestions(hasServices ? allServices : []);
         return;
       }
 
-      if (scope.type === "publication") {
-        // Search within the publication's documents
+      if (scope.type === "identities") {
+        setSuggestions(await searchIdentities(query || "", 10));
+      } else if (scope.type === "publications") {
+        setSuggestions(await searchPublications(query || "", 10));
+      } else if (scope.type === "publication") {
+        // Search within a specific publication's documents
         const documents = await callRPC(`search_publication_documents`, {
           publication_uri: scope.uri,
           query: query || "",
@@ -496,35 +716,45 @@ function useMentionSuggestions(query: string | null) {
             url: d.url,
           })),
         );
+      } else if (scope.type === "service") {
+        // Search within a mention service
+        const results = await callRPC(`proxy_mention_search`, {
+          service_uri: scope.serviceUri,
+          search: query || "",
+        });
+        setSuggestions(
+          results.result.results.map(
+            (r: { uri: string; name: string; href?: string }) => ({
+              type: "service_result" as const,
+              uri: r.uri,
+              name: r.name,
+              href: r.href,
+            }),
+          ),
+        );
+      } else if (hasServices) {
+        // Default scope with services: filter locally, fall back to identity search
+        const filtered = allServices.filter((s) =>
+          s.type === "service"
+            ? s.name.toLowerCase().includes((query || "").toLowerCase())
+            : true,
+        );
+        if (filtered.length > 0) {
+          setSuggestions(filtered);
+        } else {
+          setSuggestions(await searchIdentities(query || "", 10));
+        }
       } else {
-        // Default scope: search people and publications
-        const agent = new Agent("https://public.api.bsky.app");
-        const [result, publications] = await Promise.all([
-          agent.searchActorsTypeahead({
-            q: query || "",
-            limit: 8,
-          }),
-          callRPC(`search_publication_names`, { query: query || "", limit: 8 }),
+        // Default scope, no services: search people & publications together
+        const [identities, publications] = await Promise.all([
+          searchIdentities(query || "", 8),
+          searchPublications(query || "", 8),
         ]);
-        setSuggestions([
-          ...result.data.actors.map((actor) => ({
-            type: "did" as const,
-            handle: actor.handle,
-            did: actor.did,
-            displayName: actor.displayName,
-            avatar: actor.avatar,
-          })),
-          ...publications.result.publications.map((p) => ({
-            type: "publication" as const,
-            uri: p.uri,
-            name: p.name,
-            url: p.url,
-          })),
-        ]);
+        setSuggestions([...identities, ...publications]);
       }
     },
     300,
-    [query, scope],
+    [query, scope, open, hasServices, allServices],
   );
 
   useEffect(() => {

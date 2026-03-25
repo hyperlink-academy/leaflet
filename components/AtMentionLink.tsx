@@ -1,9 +1,4 @@
-import { AtUri } from "@atproto/api";
-import { atUriToUrl } from "src/utils/mentionUtils";
-import {
-  isDocumentCollection,
-  isPublicationCollection,
-} from "src/utils/collectionHelpers";
+import { atUriToUrl, classifyAtUri } from "src/utils/mentionUtils";
 
 /**
  * Component for rendering at-uri mentions (publications and documents) as clickable links.
@@ -12,16 +7,16 @@ import {
  */
 export function AtMentionLink({
   atURI,
+  href,
   children,
   className = "",
 }: {
   atURI: string;
+  href?: string;
   children: React.ReactNode;
   className?: string;
 }) {
-  const aturi = new AtUri(atURI);
-  const isPublication = isPublicationCollection(aturi.collection);
-  const isDocument = isDocumentCollection(aturi.collection);
+  const { isPublication, isDocument } = classifyAtUri(atURI);
 
   // Show publication icon if available
   const icon =
@@ -36,9 +31,11 @@ export function AtMentionLink({
       />
     ) : null;
 
+  const linkHref = href || atUriToUrl(atURI);
+
   return (
     <a
-      href={atUriToUrl(atURI)}
+      href={linkHref}
       target="_blank"
       rel="noopener noreferrer"
       className={`mention ${isPublication ? "font-bold" : ""} ${isDocument ? "italic" : ""} ${className}`}

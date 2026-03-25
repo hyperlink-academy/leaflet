@@ -1,11 +1,7 @@
-import { AtUri } from "@atproto/api";
 import { Schema, Node, MarkSpec, NodeSpec } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
 import { theme } from "tailwind.config";
-import {
-  isDocumentCollection,
-  isPublicationCollection,
-} from "src/utils/collectionHelpers";
+import { classifyAtUri } from "src/utils/mentionUtils";
 
 let baseSchema = {
   marks: {
@@ -131,6 +127,7 @@ let baseSchema = {
       attrs: {
         atURI: {},
         text: { default: "" },
+        href: { default: undefined },
       },
       group: "inline",
       inline: true,
@@ -144,6 +141,7 @@ let baseSchema = {
             return {
               atURI: dom.getAttribute("data-at-uri"),
               text: dom.textContent || "",
+              href: dom.getAttribute("data-href") || undefined,
             };
           },
         },
@@ -152,22 +150,23 @@ let baseSchema = {
         // NOTE: This rendering should match the AtMentionLink component in
         // components/AtMentionLink.tsx. If you update one, update the other.
         let className = "atMention mention";
-        let aturi = new AtUri(node.attrs.atURI);
-        if (isPublicationCollection(aturi.collection))
-          className += " font-bold";
-        if (isDocumentCollection(aturi.collection)) className += " italic";
+        const { isPublication, isDocument } = classifyAtUri(node.attrs.atURI);
+        if (isPublication) className += " font-bold";
+        if (isDocument) className += " italic";
+
+        const attrs: Record<string, string> = {
+          class: className,
+          "data-at-uri": node.attrs.atURI,
+        };
+        if (node.attrs.href) {
+          attrs["data-href"] = node.attrs.href;
+        }
 
         // For publications and documents, show icon
-        if (
-          isPublicationCollection(aturi.collection) ||
-          isDocumentCollection(aturi.collection)
-        ) {
+        if (isPublication || isDocument) {
           return [
             "span",
-            {
-              class: className,
-              "data-at-uri": node.attrs.atURI,
-            },
+            attrs,
             [
               "img",
               {
@@ -184,14 +183,7 @@ let baseSchema = {
           ];
         }
 
-        return [
-          "span",
-          {
-            class: className,
-            "data-at-uri": node.attrs.atURI,
-          },
-          node.attrs.text,
-        ];
+        return ["span", attrs, node.attrs.text];
       },
     } as NodeSpec,
     footnote: {

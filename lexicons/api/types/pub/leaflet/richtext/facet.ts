@@ -97,6 +97,7 @@ export function validateDidMention<V>(v: V) {
 export interface AtMention {
   $type?: 'pub.leaflet.richtext.facet#atMention'
   atURI: string
+  href?: string
 }
 
 const hashAtMention = 'atMention'

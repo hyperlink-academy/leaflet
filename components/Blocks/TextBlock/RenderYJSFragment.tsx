@@ -113,8 +113,9 @@ export function RenderYJSFragment({
                 ) {
                   const atURI = node.getAttribute("atURI") || "";
                   const text = node.getAttribute("text") || "";
+                  const href = node.getAttribute("href") || undefined;
                   return (
-                    <AtMentionLink key={index} atURI={atURI}>
+                    <AtMentionLink key={index} atURI={atURI} href={href}>
                       {text}
                     </AtMentionLink>
                   );

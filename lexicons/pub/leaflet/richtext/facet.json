@@ -88,6 +88,10 @@
         "atURI": {
           "type": "string",
           "format": "uri"
+        },
+        "href": {
+          "type": "string",
+          "format": "uri"
         }
       }
     },
@@ -140,7 +144,10 @@
     "footnote": {
       "type": "object",
       "description": "Facet feature for a footnote reference",
-      "required": ["footnoteId", "contentPlaintext"],
+      "required": [
+        "footnoteId",
+        "contentPlaintext"
+      ],
       "properties": {
         "footnoteId": {
           "type": "string"

@@ -1,0 +1,33 @@
+{
+  "lexicon": 1,
+  "id": "parts.page.mention.service",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "description": "Declares a mention service. The did is an XRPC service URL that implements parts.page.mention.searchService.",
+      "record": {
+        "type": "object",
+        "required": [
+          "name",
+          "did"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "did": {
+            "type": "string",
+            "format": "did",
+            "description": "DID of the service that implements parts.page.mention.searchService"
+          }
+        }
+      }
+    }
+  }
+}

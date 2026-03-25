@@ -2088,6 +2088,10 @@ export const schemaDict = {
             type: 'string',
             format: 'uri',
           },
+          href: {
+            type: 'string',
+            format: 'uri',
+          },
         },
       },
       code: {
@@ -2152,7 +2156,7 @@ export const schemaDict = {
             type: 'array',
             items: {
               type: 'ref',
-              ref: 'lex:pub.leaflet.richtext.facet',
+              ref: 'lex:pub.leaflet.richtext.facet#main',
             },
           },
         },

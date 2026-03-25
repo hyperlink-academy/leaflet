@@ -9,6 +9,8 @@ import {
 } from "src/utils/normalizeRecords";
 import { inngest } from "app/api/inngest/client";
 import { AtUri } from "@atproto/api";
+import { wikipedia } from "../mentions/services/wikipedia";
+import { pokemon } from "../mentions/services/pokemon";
 
 const app = new Hono();
 
@@ -25,9 +27,53 @@ app.get("/.well-known/did.json", (c) => {
         type: "BskyFeedGenerator",
         serviceEndpoint: `https://${domain}`,
       },
+      {
+        id: "#mention_search",
+        type: "MentionSearchService",
+        serviceEndpoint: `https://${domain}`,
+      },
     ],
   });
 });
+
+// Mention search services, keyed by rkey
+const mentionServices: Record<
+  string,
+  (search: string, limit: number) => Promise<{ uri: string; name: string; href?: string }[]>
+> = {
+  wikipedia,
+  pokemon,
+};
+
+app.get("/xrpc/parts.page.mention.searchService", async (c) => {
+  const serviceUri = c.req.query("service");
+  const search = c.req.query("search");
+  const limit = Math.min(
+    Math.max(parseInt(c.req.query("limit") || "20"), 1),
+    50,
+  );
+
+  if (!serviceUri || !search) {
+    return c.json({ error: "missing required parameters: service, search" }, 400);
+  }
+
+  let rkey: string;
+  try {
+    const parsed = new AtUri(serviceUri);
+    rkey = parsed.rkey;
+  } catch {
+    return c.json({ error: "invalid service AT URI" }, 400);
+  }
+
+  const handler = mentionServices[rkey];
+  if (!handler) {
+    return c.json({ error: `unknown service: ${rkey}` }, 404);
+  }
+
+  const results = await handler(search, limit);
+  return c.json({ results });
+});
+
 //Cursor format ts::uri
 
 app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
