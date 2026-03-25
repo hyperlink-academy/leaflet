@@ -13,8 +13,10 @@ import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { PostOptions } from "./PostOptions";
+import { PublicationDomains } from "components/Domains/PublicationDomains";
+import { usePublicationData } from "../PublicationSWRProvider";
 
-type menuState = "menu" | "pub-settings" | "theme" | "post-settings";
+type menuState = "menu" | "pub-settings" | "theme" | "post-settings" | "domains";
 
 export function PublicationSettingsButton(props: { publication: string }) {
   let isMobile = useIsMobile();
@@ -56,6 +58,8 @@ export function PublicationSettingsButton(props: { publication: string }) {
           loading={loading}
           setLoading={setLoading}
         />
+      ) : state === "domains" ? (
+        <PublicationDomainsView backToMenu={() => setState("menu")} />
       ) : (
         <PubSettingsMenu
           state={state}
@@ -107,9 +111,29 @@ const PubSettingsMenu = (props: {
         Theme and Layout
         <ArrowRightTiny />
       </button>
+      <button
+        className={menuItemClassName}
+        type="button"
+        onClick={() => props.setState("domains")}
+      >
+        Domains
+        <ArrowRightTiny />
+      </button>
     </div>
   );
 };
+
+function PublicationDomainsView(props: { backToMenu: () => void }) {
+  let { data } = usePublicationData();
+  let { publication: pubData } = data || {};
+  if (!pubData) return null;
+  return (
+    <PublicationDomains
+      backToMenu={props.backToMenu}
+      publication_uri={pubData.uri}
+    />
+  );
+}
 
 export const PubSettingsHeader = (props: {
   backToMenuAction?: () => void;

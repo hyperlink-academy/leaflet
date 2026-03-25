@@ -139,7 +139,7 @@ const Smoke: React.FC<
 > = (props) => {
   return (
     <div
-      className={`smoke w-max text-center pointer-events-none absolute z-50 rounded-full px-2 py-1 text-sm sm:-translate-x-1/2  ${
+      className={`smoke w-max text-center pointer-events-none absolute z-[51] rounded-full px-2 py-1 text-sm sm:-translate-x-1/2  ${
         props.alignOnMobile === "left"
           ? "-translate-x-full"
           : props.alignOnMobile === "right"
