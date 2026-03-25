@@ -1,20 +1,11 @@
-import { ManageSubscription } from "app/lish/Subscribe";
-import { ButtonPrimary } from "components/Buttons";
-import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { GoToArrow } from "components/Icons/GoToArrow";
-import { Input } from "components/Input";
-import { Modal } from "components/Modal";
-import { Popover } from "components/Popover";
 import { SubscribeButton } from "components/Subscribe/SubscribeButton";
-import Link from "next/link";
-import { useState } from "react";
 
 export const PostPubInfo = () => {
-  let newsletterMode = false;
+  let newsletterMode = true;
   let user = {
     loggedIn: false,
-    email: "thisiscelinepark@gmail.com",
-    handle: "celine",
+    email: undefined,
+    handle: undefined,
     subscribed: false,
   };
   return (

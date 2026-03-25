@@ -27,7 +27,7 @@ export const Modal = ({
         <Dialog.Content
           className={`
           z-[100] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-          overflow-y-scroll no-scrollbar w-max max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] p-3 flex flex-col
+          overflow-y-scroll no-scrollbar w-max max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] p-3 flex flex-col text-primary
 
           `}
         >

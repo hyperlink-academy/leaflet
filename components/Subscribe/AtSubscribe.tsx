@@ -49,7 +49,7 @@ export const AtSubscribe = (props: {
 export const HandleInput = (props: { compact?: boolean }) => {
   let [handleValue, setHandleValue] = useState("");
   return (
-    <>
+    <div className="flex flex-col">
       <div className="input-with-border pl-0! py-0! flex gap-0 ">
         <div className="border-r border-border text-center w-7 mr-2">@</div>
         <Input
@@ -62,7 +62,7 @@ export const HandleInput = (props: { compact?: boolean }) => {
       </div>
       {!props.compact && (
         <>
-          <div className="w-full flex gap-2 items-center my-2 ">
+          <div className="w-full flex gap-2 items-center mt-2 mb-3 ">
             <hr className="grow border-border-light" />
             <div className="shrink-0 text-sm italix text-tertiary">
               or link with
@@ -74,7 +74,7 @@ export const HandleInput = (props: { compact?: boolean }) => {
           </ButtonPrimary>
         </>
       )}
-    </>
+    </div>
   );
 };
 
