@@ -182,7 +182,9 @@ export async function publishToPublication({
     credentialSession.did!,
   );
 
-  let existingRecord: Partial<PubLeafletDocument.Record> = {};
+  let existingRecord: Partial<PubLeafletDocument.Record> & {
+    bskyPostRef?: SiteStandardDocument.Record["bskyPostRef"];
+  } = {};
   const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
   if (normalizedDoc) {
     // When reading existing data, use normalized format to extract fields
@@ -194,6 +196,7 @@ export async function publishToPublication({
       tags: normalizedDoc.tags,
       coverImage: normalizedDoc.coverImage,
       theme: normalizedDoc.theme,
+      bskyPostRef: normalizedDoc.bskyPostRef,
     };
   }
 
@@ -258,6 +261,9 @@ export async function publishToPublication({
     const siteUri =
       publication_uri || `https://leaflet.pub/p/${credentialSession.did}`;
 
+    // Preserve existing cover image BlobRef if no new one was uploaded
+    const resolvedCoverImage = coverImageBlob || existingRecord.coverImage;
+
     record = {
       $type: "site.standard.document",
       title: title || "",
@@ -267,7 +273,7 @@ export async function publishToPublication({
         publishedAt || existingRecord.publishedAt || new Date().toISOString(),
       ...(description && { description }),
       ...(tags !== undefined && { tags }),
-      ...(coverImageBlob && { coverImage: coverImageBlob }),
+      ...(resolvedCoverImage && { coverImage: resolvedCoverImage }),
       // Include theme for standalone documents (not for publication documents)
       ...(!publication_uri && theme && { theme }),
       ...(preferences && {
@@ -276,6 +282,10 @@ export async function publishToPublication({
           ...preferences,
         },
       }),
+      // Preserve existing Bluesky post reference on update
+      ...(existingRecord.bskyPostRef && {
+        bskyPostRef: existingRecord.bskyPostRef,
+      }),
       content: {
         $type: "pub.leaflet.content" as const,
         pages: pagesArray,
@@ -283,6 +293,11 @@ export async function publishToPublication({
     } satisfies SiteStandardDocument.Record;
   } else {
     // pub.leaflet.document format (legacy)
+    // Preserve existing cover image BlobRef if no new one was uploaded
+    const resolvedCoverImage = coverImageBlob || existingRecord.coverImage;
+    // Convert normalized bskyPostRef back to legacy postRef field
+    const existingPostRef = existingRecord.bskyPostRef;
+
     record = {
       $type: "pub.leaflet.document",
       author: credentialSession.did!,
@@ -297,7 +312,9 @@ export async function publishToPublication({
       title: title || "",
       description: description || "",
       ...(tags !== undefined && { tags }),
-      ...(coverImageBlob && { coverImage: coverImageBlob }),
+      ...(resolvedCoverImage && { coverImage: resolvedCoverImage }),
+      // Preserve existing Bluesky post reference on update
+      ...(existingPostRef && { postRef: existingPostRef }),
       pages: pagesArray,
       publishedAt:
         publishedAt || existingRecord.publishedAt || new Date().toISOString(),
