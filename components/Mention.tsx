@@ -9,7 +9,6 @@ import {
   useCallback,
 } from "react";
 import useSWR from "swr";
-import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import * as Popover from "@radix-ui/react-popover";
 import { EditorView } from "prosemirror-view";
 import { callRPC } from "app/api/rpc/client";
@@ -35,6 +34,19 @@ export function MentionAutocomplete(props: {
 
   const { suggestionIndex, setSuggestionIndex, suggestions, scope, setScope } =
     useMentionSuggestions(searchQuery, props.open);
+
+  const sortedSuggestions = useMemo(() => {
+    const order: Mention["type"][] = [
+      "did",
+      "publication",
+      "post",
+      "service",
+      "service_result",
+    ];
+    return [...suggestions].sort(
+      (a, b) => order.indexOf(a.type) - order.indexOf(b.type),
+    );
+  }, [suggestions]);
 
   // Clear search when scope changes
   const handleScopeChange = useCallback(
@@ -106,11 +118,11 @@ export function MentionAutocomplete(props: {
       }
     } else if (e.key === downKey) {
       e.preventDefault();
-      if (suggestionIndex < suggestions.length - 1) {
+      if (suggestionIndex < sortedSuggestions.length - 1) {
         setSuggestionIndex((i) => i + 1);
       }
     } else if (e.key === "Tab") {
-      const selectedSuggestion = suggestions[suggestionIndex];
+      const selectedSuggestion = sortedSuggestions[suggestionIndex];
       if (selectedSuggestion?.type === "publication") {
         e.preventDefault();
         handleScopeChange({
@@ -124,7 +136,7 @@ export function MentionAutocomplete(props: {
       }
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const selectedSuggestion = suggestions[suggestionIndex];
+      const selectedSuggestion = sortedSuggestions[suggestionIndex];
       if (selectedSuggestion?.type === "service") {
         handleScopeChange(serviceScopeFromMention(selectedSuggestion));
       } else if (selectedSuggestion) {
@@ -181,17 +193,6 @@ export function MentionAutocomplete(props: {
         return null;
     }
   };
-
-  const sortedSuggestions = [...suggestions].sort((a, b) => {
-    const order: Mention["type"][] = [
-      "did",
-      "publication",
-      "post",
-      "service",
-      "service_result",
-    ];
-    return order.indexOf(a.type) - order.indexOf(b.type);
-  });
 
   return (
     <Popover.Root open>
@@ -687,20 +688,27 @@ function useMentionSuggestions(query: string | null, open: boolean) {
     setScope(newScope);
   }, []);
 
-  useDebouncedEffect(
-    async () => {
-      if (!open) return;
+  useEffect(() => {
+    let stale = false;
+    // Only skip debounce for purely local operations (showing service list)
+    const delay =
+      !query && hasServices && scope.type === "default" ? 0 : 300;
+
+    const handler = setTimeout(async () => {
+      if (stale || !open) return;
 
       if (!query && scope.type === "default") {
-        // No query: show services if available, otherwise clear
+        // No query: show services if available, otherwise clear (sync, no race)
         setSuggestions(hasServices ? allServices : []);
         return;
       }
 
+      let results: Array<Mention>;
+
       if (scope.type === "identities") {
-        setSuggestions(await searchIdentities(query || "", 10));
+        results = await searchIdentities(query || "", 10);
       } else if (scope.type === "publications") {
-        setSuggestions(await searchPublications(query || "", 10));
+        results = await searchPublications(query || "", 10);
       } else if (scope.type === "publication") {
         // Search within a specific publication's documents
         const documents = await callRPC(`search_publication_documents`, {
@@ -708,29 +716,25 @@ function useMentionSuggestions(query: string | null, open: boolean) {
           query: query || "",
           limit: 10,
         });
-        setSuggestions(
-          documents.result.documents.map((d) => ({
-            type: "post" as const,
-            uri: d.uri,
-            title: d.title,
-            url: d.url,
-          })),
-        );
+        results = documents.result.documents.map((d) => ({
+          type: "post" as const,
+          uri: d.uri,
+          title: d.title,
+          url: d.url,
+        }));
       } else if (scope.type === "service") {
         // Search within a mention service
-        const results = await callRPC(`proxy_mention_search`, {
+        const res = await callRPC(`proxy_mention_search`, {
           service_uri: scope.serviceUri,
           search: query || "",
         });
-        setSuggestions(
-          results.result.results.map(
-            (r: { uri: string; name: string; href?: string }) => ({
-              type: "service_result" as const,
-              uri: r.uri,
-              name: r.name,
-              href: r.href,
-            }),
-          ),
+        results = res.result.results.map(
+          (r: { uri: string; name: string; href?: string }) => ({
+            type: "service_result" as const,
+            uri: r.uri,
+            name: r.name,
+            href: r.href,
+          }),
         );
       } else if (hasServices) {
         // Default scope with services: filter locally, fall back to identity search
@@ -740,9 +744,9 @@ function useMentionSuggestions(query: string | null, open: boolean) {
             : true,
         );
         if (filtered.length > 0) {
-          setSuggestions(filtered);
+          results = filtered;
         } else {
-          setSuggestions(await searchIdentities(query || "", 10));
+          results = await searchIdentities(query || "", 10);
         }
       } else {
         // Default scope, no services: search people & publications together
@@ -750,12 +754,20 @@ function useMentionSuggestions(query: string | null, open: boolean) {
           searchIdentities(query || "", 8),
           searchPublications(query || "", 8),
         ]);
-        setSuggestions([...identities, ...publications]);
+        results = [...identities, ...publications];
       }
-    },
-    300,
-    [query, scope, open, hasServices, allServices],
-  );
+
+      if (!stale) {
+        setSuggestions(results);
+      }
+    }, delay);
+
+    return () => {
+      stale = true;
+      clearTimeout(handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, scope, open, hasServices, allServices]);
 
   useEffect(() => {
     if (suggestionIndex > suggestions.length - 1) {
