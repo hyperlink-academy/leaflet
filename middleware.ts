@@ -1,5 +1,6 @@
 import { AtUri } from "@atproto/syntax";
 import { createClient } from "@supabase/supabase-js";
+import { getCache } from "@vercel/functions";
 import { NextRequest, NextResponse } from "next/server";
 import { Database } from "supabase/database.types";
 
@@ -19,20 +20,21 @@ export const config = {
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  {
-    global: {
-      fetch: async (...args) => {
-        const response = await fetch(args[0], {
-          ...args[1],
-          next: {
-            revalidate: 60,
-          },
-        });
-        return response;
-      },
-    },
-  },
 );
+
+const cache = getCache();
+
+async function getDomainRoutes(hostname: string) {
+  let { data } = await supabase
+    .from("custom_domains")
+    .select(
+      "*, custom_domain_routes(*), publication_domains(*, publications(*))",
+    )
+    .eq("domain", hostname)
+    .single();
+  return data;
+}
+type DomainRoutes = Awaited<ReturnType<typeof getDomainRoutes>>;
 
 const auth_callback_route = "/auth_callback";
 const receive_auth_callback_route = "/receive_auth_callback";
@@ -44,13 +46,21 @@ export default async function middleware(req: NextRequest) {
 
   if (hostname === "leaflet.pub") return;
   if (req.nextUrl.pathname === "/not-found") return;
-  let { data: routes } = await supabase
-    .from("custom_domains")
-    .select(
-      "*, custom_domain_routes(*), publication_domains(*, publications(*))",
-    )
-    .eq("domain", hostname)
-    .single();
+  let routes: DomainRoutes = null;
+  try {
+    routes = (await cache.get(`domain:${hostname}`)) as DomainRoutes;
+  } catch {}
+  if (!routes) {
+    routes = await getDomainRoutes(hostname);
+    if (routes) {
+      try {
+        await cache.set(`domain:${hostname}`, routes, {
+          ttl: 60,
+          tags: [`domain:${hostname}`],
+        });
+      } catch {}
+    }
+  }
 
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {

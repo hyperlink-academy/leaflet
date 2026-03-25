@@ -47,6 +47,7 @@
     "@tinybirdco/sdk": "^0.0.55",
     "@tiptap/core": "^2.11.5",
     "@types/mdx": "^2.0.13",
+    "@use-gesture/react": "^10.3.1",
     "@vercel/analytics": "^1.5.0",
     "@vercel/functions": "^2.2.12",
     "@vercel/sdk": "^1.11.4",

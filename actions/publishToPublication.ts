@@ -182,7 +182,7 @@ export async function publishToPublication({
     credentialSession.did!,
   );
 
-  let existingRecord: Partial<PubLeafletDocument.Record> = {};
+  let existingRecord: Partial<SiteStandardDocument.Record> = {};
   const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
   if (normalizedDoc) {
     // When reading existing data, use normalized format to extract fields
@@ -194,6 +194,7 @@ export async function publishToPublication({
       tags: normalizedDoc.tags,
       coverImage: normalizedDoc.coverImage,
       theme: normalizedDoc.theme,
+      bskyPostRef: normalizedDoc.bskyPostRef,
     };
   }
 
@@ -249,6 +250,14 @@ export async function publishToPublication({
   // Determine the rkey early since we need it for the path field
   const rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
 
+  // Resolve fields: use new values if provided, otherwise preserve existing
+  const resolvedDescription =
+    description !== undefined ? description : existingRecord.description;
+  const resolvedTags = tags !== undefined ? tags : existingRecord.tags;
+  const resolvedCoverImage = coverImageBlob ?? existingRecord.coverImage;
+  const resolvedPublishedAt =
+    publishedAt || existingRecord.publishedAt || new Date().toISOString();
+
   // Create record based on the document type
   let record: PubLeafletDocument.Record | SiteStandardDocument.Record;
 
@@ -263,11 +272,15 @@ export async function publishToPublication({
       title: title || "",
       site: siteUri,
       path: "/" + rkey,
-      publishedAt:
-        publishedAt || existingRecord.publishedAt || new Date().toISOString(),
-      ...(description && { description }),
-      ...(tags !== undefined && { tags }),
-      ...(coverImageBlob && { coverImage: coverImageBlob }),
+      publishedAt: resolvedPublishedAt,
+      ...(resolvedDescription !== undefined && {
+        description: resolvedDescription,
+      }),
+      ...(resolvedTags !== undefined && { tags: resolvedTags }),
+      ...(resolvedCoverImage && { coverImage: resolvedCoverImage }),
+      ...(existingRecord.bskyPostRef && {
+        bskyPostRef: existingRecord.bskyPostRef,
+      }),
       // Include theme for standalone documents (not for publication documents)
       ...(!publication_uri && theme && { theme }),
       ...(preferences && {
@@ -295,12 +308,14 @@ export async function publishToPublication({
         },
       }),
       title: title || "",
-      description: description || "",
-      ...(tags !== undefined && { tags }),
-      ...(coverImageBlob && { coverImage: coverImageBlob }),
+      description: resolvedDescription || "",
+      ...(resolvedTags !== undefined && { tags: resolvedTags }),
+      ...(resolvedCoverImage && { coverImage: resolvedCoverImage }),
+      ...(existingRecord.bskyPostRef && {
+        postRef: existingRecord.bskyPostRef,
+      }),
       pages: pagesArray,
-      publishedAt:
-        publishedAt || existingRecord.publishedAt || new Date().toISOString(),
+      publishedAt: resolvedPublishedAt,
     } satisfies PubLeafletDocument.Record;
   }
 
@@ -332,6 +347,8 @@ export async function publishToPublication({
         publication: publication_uri,
         title: title,
         description: description,
+        tags: resolvedTags ?? [],
+        cover_image: cover_image ?? null,
       }),
     ]);
   } else {
@@ -341,6 +358,8 @@ export async function publishToPublication({
       document: result.uri,
       title: title || "",
       description: description || "",
+      tags: resolvedTags ?? [],
+      cover_image: cover_image ?? null,
     });
 
     // Heuristic: Remove title entities if this is the first time publishing standalone

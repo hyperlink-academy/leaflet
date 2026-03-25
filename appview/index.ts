@@ -375,7 +375,6 @@ async function handleEvent(evt: Event) {
   if (evt.collection === "parts.page.mention.service") {
     if (evt.event === "create" || evt.event === "update") {
       let record = evt.record as any;
-      if (!record?.name || !record?.endpoint) return;
       let { error } = await supabase.from("mention_services").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,

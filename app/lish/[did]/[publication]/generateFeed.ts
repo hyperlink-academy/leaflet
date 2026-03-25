@@ -93,6 +93,17 @@ export async function generateFeed(
       }
     }
 
+    let content = chunks.join("");
+    // Strip <link> preload tags injected by React SSR — they trigger
+    // security warnings in RSS validators and aren't useful in feeds.
+    content = content.replace(/<link\b[^>]*>/gi, "");
+    // Convert relative URLs to absolute so RSS readers can resolve them.
+    const baseUrl = pubRecord.url.replace(/\/$/, "");
+    content = content.replace(
+      /(src|href)="\/(?!\/)/g,
+      `$1="${baseUrl}/`,
+    );
+
     const docUrl = getDocumentURL(record, doc.documents.uri, pubRecord);
     feed.addItem({
       title: record.title,
@@ -100,7 +111,7 @@ export async function generateFeed(
       date: record.publishedAt ? new Date(record.publishedAt) : new Date(),
       id: docUrl,
       link: docUrl,
-      content: chunks.join(""),
+      content,
     });
   }
 
