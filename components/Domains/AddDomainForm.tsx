@@ -24,6 +24,7 @@ export function AddDomainForm(props: {
     <form
       className="flex flex-col gap-1 max-w-full"
       onSubmit={async (e) => {
+        e.preventDefault();
         setLoading(true);
         let { error } = await addDomain(value);
         if (error) {

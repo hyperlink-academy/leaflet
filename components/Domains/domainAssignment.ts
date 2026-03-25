@@ -6,10 +6,10 @@ export type DomainAssignment =
   | { type: "document"; routes: string[] };
 
 export function getDomainAssignment(domain: CustomDomain): DomainAssignment {
-  if (domain.publication_domains.length > 0) {
+  if (domain.publication_domains && domain.publication_domains.length > 0) {
     return { type: "publication" };
   }
-  if (domain.custom_domain_routes.length > 0) {
+  if (domain.custom_domain_routes && domain.custom_domain_routes.length > 0) {
     return {
       type: "document",
       routes: domain.custom_domain_routes.map((r) => r.route),

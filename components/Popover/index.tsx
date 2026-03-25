@@ -43,7 +43,9 @@ export const Popover = (props: {
             <RadixPopover.Content
               className={`
               z-20 relative bg-bg-page
-              px-3 py-2 text-primary
+              text-primary
+              flex flex-col overflow-hidden
+              px-3 py-2
               max-w-(--radix-popover-content-available-width)
               max-h-(--radix-popover-content-available-height)
               border border-border rounded-md shadow-md

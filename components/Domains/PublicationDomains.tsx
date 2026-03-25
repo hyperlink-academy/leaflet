@@ -14,77 +14,28 @@ import {
 } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { updatePublicationBasePath } from "app/lish/createPub/updatePublication";
 import { assignDomainToPublication } from "actions/domains/assignDomainToPublication";
+import { removeDomainAssignment } from "actions/domains/removeDomainAssignment";
 import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/settings/PublicationSettings";
 import { AddDomainForm } from "./AddDomainForm";
 import { DomainSettingsView } from "./DomainSettingsView";
 import { PinTiny } from "components/Icons/PinTiny";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { AddTiny } from "components/Icons/AddTiny";
+import { UnlinkTiny } from "components/Icons/UnlinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import type { CustomDomain } from "./DomainList";
-
-type State =
-  | "list"
-  | "add-domain"
-  | { type: "domain-settings"; domain: string };
 
 export function PublicationDomains(props: {
   backToMenu: () => void;
   publication_uri: string;
 }) {
-  let [state, setState] = useState<State>("list");
-  let [loading, setLoading] = useState(false);
   let { data, mutate: mutatePubData } = usePublicationData();
-  let toaster = useToaster();
   let { publication: pubData } = data || {};
   let record = useNormalizedPublicationRecord();
   let { identity, mutate: mutateIdentity } = useIdentityData();
+  let toaster = useToaster();
   let basePath = record?.url?.replace(/^https?:\/\//, "") || "";
-
-  if (state === "add-domain") {
-    return (
-      <div>
-        <PubSettingsHeader backToMenuAction={() => setState("list")}>
-          Add Domain
-        </PubSettingsHeader>
-        <AddDomainForm
-          onDomainAdded={async (domain) => {
-            await assignDomainToPublication({
-              domain,
-              publication_uri: props.publication_uri,
-            });
-            mutateIdentity();
-            mutate("publication-data");
-            setState({ type: "domain-settings", domain });
-          }}
-          onBack={() => setState("list")}
-        />
-      </div>
-    );
-  }
-
-  if (typeof state === "object" && state.type === "domain-settings") {
-    return (
-      <div>
-        <PubSettingsHeader backToMenuAction={() => setState("list")}>
-          Domain Settings
-        </PubSettingsHeader>
-        <DomainSettingsView
-          domain={state.domain}
-          onBack={() => setState("list")}
-          onRemoveAssignment={() => {
-            mutate("publication-data");
-            setState("list");
-          }}
-          onDeleteDomain={() => {
-            mutate("publication-data");
-            setState("list");
-          }}
-        />
-      </div>
-    );
-  }
 
   let pubDomains = pubData?.publication_domains || [];
   let pubDomainNames = new Set(pubDomains.map((d) => d.domain));
@@ -95,7 +46,7 @@ export function PublicationDomains(props: {
         Domains
       </PubSettingsHeader>
       <div className="flex flex-col gap-1 py-1">
-        <h4 className="text-sm">This Publication's Domains</h4>
+        <h4 className="">This Publication's Domains</h4>
         <div className="text-xs text-tertiary -mb-1 ">DEFAULT</div>
         {pubDomains
           .filter((d) => d.domain === basePath)
@@ -106,9 +57,9 @@ export function PublicationDomains(props: {
               publication_uri={props.publication_uri}
               basePath={basePath}
               mutatePubData={mutatePubData}
-              onSettings={() =>
-                setState({ type: "domain-settings", domain: d.domain })
-              }
+              mutateIdentity={mutateIdentity}
+              toaster={toaster}
+              onSettings={() => {}}
             />
           ))}
         {pubDomains.filter((d) => d.domain !== basePath).length !== 0 && (
@@ -123,15 +74,16 @@ export function PublicationDomains(props: {
                   publication_uri={props.publication_uri}
                   basePath={basePath}
                   mutatePubData={mutatePubData}
-                  onSettings={() =>
-                    setState({ type: "domain-settings", domain: d.domain })
-                  }
+                  mutateIdentity={mutateIdentity}
+                  toaster={toaster}
+                  onSettings={() => {}}
                 />
               ))}
           </>
         )}
+
         <hr className="my-2 border-border-light" />
-        <h4 className="text-sm">Available Domains</h4>
+        <h4 className="">Available Domains</h4>
         {(() => {
           let availableDomains = (identity?.custom_domains || [])
             .filter((d) => !pubDomainNames.has(d.domain))
@@ -147,13 +99,12 @@ export function PublicationDomains(props: {
                   key={d.domain}
                   domainData={d}
                   publication_uri={props.publication_uri}
+                  mutatePubData={mutatePubData}
                   onAssigned={() => {
                     mutateIdentity();
                     mutate("publication-data");
                   }}
-                  onSettings={() =>
-                    setState({ type: "domain-settings", domain: d.domain })
-                  }
+                  onSettings={() => {}}
                 />
               ))}
               <div className="text-sm text-tertiary pt-0.5">
@@ -178,11 +129,14 @@ function PubDomainRow(props: {
   publication_uri: string;
   basePath: string;
   mutatePubData: ReturnType<typeof usePublicationData>["mutate"];
+  mutateIdentity: ReturnType<typeof useIdentityData>["mutate"];
+  toaster: ReturnType<typeof useToaster>;
   onSettings: () => void;
 }) {
   let { pending } = useDomainStatus(props.domain);
   let [loading, setLoading] = useState(false);
-  let toaster = useToaster();
+  let [unlinking, setUnlinking] = useState(false);
+  let toaster = props.toaster;
 
   return (
     <div className="text-sm text-secondary relative w-full flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light">
@@ -205,61 +159,117 @@ function PubDomainRow(props: {
             </p>
             <LoadingTiny className="animate-spin text-accent-contrast group-hover/pending:text-accent-2" />
           </button>
-        ) : props.basePath === props.domain ? null : (
-          <button
-            type="button"
-            disabled={loading}
-            onClick={async () => {
-              setLoading(true);
-              // Optimistically update the record's url so the UI
-              // immediately reflects the new default domain
-              props.mutatePubData(
-                (current) => {
-                  if (!current) return current;
-                  let pub = current.publication;
-                  if (!pub?.record) return current;
-                  let rec = pub.record as Record<string, unknown>;
-                  if (typeof rec.url !== "string") return current;
-                  let protocol =
-                    rec.url.match(/^https?:\/\//)?.[0] || "https://";
-                  return {
-                    ...current,
-                    publication: {
-                      ...pub,
-                      record: { ...rec, url: protocol + props.domain },
-                    },
-                  };
-                },
-                { revalidate: false },
-              );
-              toaster({
-                content: (
-                  <div>
-                    Default domain set to <strong>{props.domain}</strong>
-                  </div>
-                ),
-                type: "success",
-              });
-              await updatePublicationBasePath({
-                uri: props.publication_uri,
-                base_path: props.domain,
-              });
-              props.mutatePubData();
-              setLoading(false);
-            }}
-            className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold px-1 py-0 hover:bg-accent-1 hover:text-accent-2 border-transparent outline-solid outline-transparent hover:outline-accent-1 selected-outline"
-          >
-            {loading ? (
-              <DotLoader className="h-[18px]! text-xs" />
-            ) : (
-              <>
-                <p className="group-hover/domain:block hidden w-max pl-1 text-xs">
-                  set as default
-                </p>
-                <PinTiny className="text-tertiary group-hover/domain:text-accent-2 shrink-0" />
-              </>
+        ) : (
+          <>
+            {props.basePath !== props.domain && (
+              <div className="flex gap-1">
+                {!props.domain.endsWith(".leaflet.pub") && (
+                  <button
+                    type="button"
+                    disabled={unlinking}
+                    className="text-tertiary hover:text-accent-contrast shrink-0"
+                    onClick={async () => {
+                      setUnlinking(true);
+                      // Optimistically remove domain from publication data
+                      props.mutatePubData(
+                        (current) => {
+                          if (!current) return current;
+                          let pub = current.publication;
+                          if (!pub) return current;
+                          return {
+                            ...current,
+                            publication: {
+                              ...pub,
+                              publication_domains: (
+                                pub.publication_domains || []
+                              ).filter((d) => d.domain !== props.domain),
+                            },
+                          };
+                        },
+                        { revalidate: false },
+                      );
+                      // Optimistically remove publication assignment from identity data
+                      mutateIdentityData(props.mutateIdentity, (draft) => {
+                        let domain = draft.custom_domains.find(
+                          (d) => d.domain === props.domain,
+                        );
+                        if (domain) {
+                          domain.publication_domains = [];
+                        }
+                      });
+                      toaster({
+                        content: (
+                          <div>
+                            Unlinked <strong>{props.domain}</strong>
+                          </div>
+                        ),
+                        type: "success",
+                      });
+                      await removeDomainAssignment({ domain: props.domain });
+                      props.mutatePubData();
+                      props.mutateIdentity();
+                      setUnlinking(false);
+                    }}
+                  >
+                    {unlinking ? (
+                      <DotLoader className="h-[16px]! text-xs" />
+                    ) : (
+                      <UnlinkTiny />
+                    )}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={async () => {
+                    setLoading(true);
+                    // Optimistically update the record's url so the UI
+                    // immediately reflects the new default domain
+                    props.mutatePubData(
+                      (current) => {
+                        if (!current) return current;
+                        let pub = current.publication;
+                        if (!pub?.record) return current;
+                        let rec = pub.record as Record<string, unknown>;
+                        if (typeof rec.url !== "string") return current;
+                        let protocol =
+                          rec.url.match(/^https?:\/\//)?.[0] || "https://";
+                        return {
+                          ...current,
+                          publication: {
+                            ...pub,
+                            record: { ...rec, url: protocol + props.domain },
+                          },
+                        };
+                      },
+                      { revalidate: false },
+                    );
+                    toaster({
+                      content: (
+                        <div>
+                          Default domain set to <strong>{props.domain}</strong>
+                        </div>
+                      ),
+                      type: "success",
+                    });
+                    await updatePublicationBasePath({
+                      uri: props.publication_uri,
+                      base_path: props.domain,
+                    });
+                    props.mutatePubData();
+                    setLoading(false);
+                  }}
+                  className="hover:text-accent-contrast"
+                >
+                  {loading ? (
+                    <DotLoader className="h-[18px]! text-xs" />
+                  ) : (
+                    <PinTiny className="text-tertiary hover:text-accent-contrast group-hover/domain:text-accent-2 shrink-0" />
+                  )}
+                </button>
+              </div>
             )}
-          </button>
+          </>
         )}
       </div>
     </div>
@@ -269,6 +279,7 @@ function PubDomainRow(props: {
 function UnassignedDomainRow(props: {
   domainData: CustomDomain;
   publication_uri: string;
+  mutatePubData: ReturnType<typeof usePublicationData>["mutate"];
   onAssigned: () => void;
   onSettings: () => void;
 }) {
@@ -300,6 +311,29 @@ function UnassignedDomainRow(props: {
         ];
       }
     });
+    props.mutatePubData(
+      (current) => {
+        if (!current) return current;
+        let pub = current.publication;
+        if (!pub) return current;
+        return {
+          ...current,
+          publication: {
+            ...pub,
+            publication_domains: [
+              ...(pub.publication_domains || []),
+              {
+                publication: props.publication_uri,
+                domain: props.domainData.domain,
+                created_at: new Date().toISOString(),
+                identity: "",
+              },
+            ],
+          },
+        };
+      },
+      { revalidate: false },
+    );
     setConfirming(false);
     props.onAssigned();
     await assignDomainToPublication({
@@ -319,13 +353,7 @@ function UnassignedDomainRow(props: {
           {props.domainData.domain}
         </button>
         {pending ? (
-          <button
-            className="text-accent-contrast text-xs"
-            onClick={() => props.onSettings()}
-            type="button"
-          >
-            pending
-          </button>
+          <div className="text-tertiary animate-pulse  text-xs">unverfied</div>
         ) : confirming ? null : (
           <button
             className="text-accent-contrast text-xs font-bold"
