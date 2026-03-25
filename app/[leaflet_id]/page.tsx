@@ -27,15 +27,18 @@ const getCachedLeafletPageData = cache((token_id: string) =>
       );
       if (!data || error) return { data: null, error };
 
+      let row = Array.isArray(data) ? data[0] : data;
+      if (!row) return { data: null, error: null };
+
       let leafletData = {
-        ...(data.permission_token as Record<string, unknown>),
-        permission_token_rights: data.permission_token_rights || [],
-        leaflets_in_publications: data.leaflets_in_publications || [],
-        leaflets_to_documents: data.leaflets_to_documents || [],
-        custom_domain_routes: data.custom_domain_routes || [],
+        ...(row.permission_token as Record<string, unknown>),
+        permission_token_rights: row.permission_token_rights || [],
+        leaflets_in_publications: row.leaflets_in_publications || [],
+        leaflets_to_documents: row.leaflets_to_documents || [],
+        custom_domain_routes: row.custom_domain_routes || [],
       } as LeafletData;
 
-      let facts = (data.facts || []) as unknown as Fact<Attribute>[];
+      let facts = (row.facts || []) as unknown as Fact<Attribute>[];
 
       return { data: leafletData, facts, error: null };
     },
