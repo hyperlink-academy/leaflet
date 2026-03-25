@@ -316,6 +316,7 @@ function NonLinkedDomainRow(props: {
         <div className="font-bold">{props.domain.domain}/</div>
         <Input
           disabled
+          value=""
           className="w-full bg-transparent appearance-none focus:!outline-none"
           placeholder=""
         />
