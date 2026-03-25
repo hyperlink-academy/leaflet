@@ -1,11 +1,6 @@
 "use client";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { useLeafletContent } from "contexts/LeafletContentContext";
-import { PostPageData } from "./getPostPageData";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { SubscribeWithBluesky } from "app/lish/Subscribe";
-import { EditTiny } from "components/Icons/EditTiny";
 import {
   ExpandedInteractions,
   getCommentCount,
@@ -74,7 +69,10 @@ export function LinearDocumentPage({
         pageOptions={pageOptions}
         footnoteSideColumn={
           !props.hasContentToRight ? (
-            <PublishedFootnoteSideColumn footnotes={footnotes} fullPageScroll={fullPageScroll} />
+            <PublishedFootnoteSideColumn
+              footnotes={footnotes}
+              fullPageScroll={fullPageScroll}
+            />
           ) : undefined
         }
       >
@@ -96,7 +94,7 @@ export function LinearDocumentPage({
           footnoteIndexMap={footnoteIndexMap}
         />
         <PublishedFootnoteSection footnotes={footnotes} />
-        <PostSubscribe />
+        {/*<PostSubscribe />*/}
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}
         />

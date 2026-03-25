@@ -11,7 +11,7 @@ export const PublicationAuthor = (props: {
       <ProfilePopover
         didOrHandle={props.did}
         trigger={
-          <span className="hover:underline">
+          <span className="hover:text-accent-contrast">
             <strong>by {props.displayName}</strong> @{props.handle}
           </span>
         }

@@ -1,9 +1,7 @@
-import { ManageSubscription } from "app/lish/Subscribe";
+"use client";
 import { ButtonPrimary } from "components/Buttons";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { GoToArrow } from "components/Icons/GoToArrow";
 import { Input } from "components/Input";
-import { Modal } from "components/Modal";
 import { Popover } from "components/Popover";
 import Link from "next/link";
 import { useState } from "react";
@@ -14,8 +12,10 @@ import {
   LogoLeaflet,
   LogoTangled,
 } from "./Logos";
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { Separator } from "components/Layout";
 
-export const AtSubscribe = (props: {
+export const HandleSubscribe = (props: {
   compact?: boolean;
   user: {
     loggedIn: boolean;
@@ -23,7 +23,7 @@ export const AtSubscribe = (props: {
     handle: string | undefined;
   };
 }) => {
-  if (props.user.loggedIn) {
+  if (props.user.loggedIn && props.user.handle) {
     return (
       <ButtonPrimary className="mx-auto max-w-full">
         <span className="shrink-0">Subscribe as</span>
@@ -38,8 +38,9 @@ export const AtSubscribe = (props: {
     return (
       <div className="max-w-sm mx-auto">
         <HandleInput compact={props.compact} />
-        <div className="flex justify-between pt-0.5">
-          <UniversalHandleInfo />{" "}
+        <div className="flex gap-2 justify-center items-center mx-auto pt-0.5 ">
+          <UniversalHandleInfo />
+          <Separator classname="h-3! border-accent-contrast!" />
           <div className="text-sm text-accent-contrast font-bold">Create</div>
         </div>
       </div>
@@ -49,31 +50,48 @@ export const AtSubscribe = (props: {
 export const HandleInput = (props: { compact?: boolean }) => {
   let [handleValue, setHandleValue] = useState("");
   return (
-    <div className="flex flex-col">
-      <div className="input-with-border pl-0! py-0! flex gap-0 ">
-        <div className="border-r border-border text-center w-7 mr-2">@</div>
-        <Input
-          className="appearance-none! outline-none! py-0.5 grow max-w-full"
-          placeholder="universal.handle"
-          size={30}
-          value={handleValue}
-          onChange={(e) => setHandleValue(e.target.value)}
-        />
+    <div className="handleInput input-with-border relative pl-0! py-0! flex gap-0 ">
+      <div className="border-r border-border text-center w-7 shrink-0 mr-2">
+        @
       </div>
-      {!props.compact && (
-        <>
-          <div className="w-full flex gap-2 items-center mt-2 mb-3 ">
-            <hr className="grow border-border-light" />
-            <div className="shrink-0 text-sm italix text-tertiary">
-              or link with
-            </div>
-            <hr className="grow border-border-light" />
-          </div>
-          <ButtonPrimary fullWidth>
-            <BlueskyTiny /> Bluesky
-          </ButtonPrimary>
-        </>
+      <Input
+        className={`appearance-none! outline-none! py-0.5 ${props.compact ? "pr-6" : "pr-14"} grow max-w-full`}
+        placeholder="universal.handle"
+        size={30}
+        value={handleValue}
+        onChange={(e) => setHandleValue(e.target.value)}
+      />
+
+      {props.compact ? (
+        <button className="absolute text-sm py-0! right-[6px] top-[6px] leading-snug outline-none!">
+          <GoToArrow />
+        </button>
+      ) : (
+        <ButtonPrimary
+          compact
+          className="absolute text-sm py-0! right-[3px] top-[3.5px] leading-snug outline-none!"
+        >
+          Subscribe
+        </ButtonPrimary>
       )}
+    </div>
+  );
+};
+
+export const HandleInputandOAuth = () => {
+  return (
+    <div className="handleInputAndOAuth flex flex-col">
+      <HandleInput />
+      <div className="w-full flex gap-2 items-center mt-2 mb-3 ">
+        <hr className="grow border-border-light" />
+        <div className="shrink-0 text-sm italix text-tertiary">
+          or link with
+        </div>
+        <hr className="grow border-border-light" />
+      </div>
+      <ButtonPrimary fullWidth>
+        <BlueskyTiny /> Bluesky
+      </ButtonPrimary>
     </div>
   );
 };

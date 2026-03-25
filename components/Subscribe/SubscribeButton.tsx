@@ -1,4 +1,4 @@
-import { AtSubscribe } from "./AtSubscribe";
+import { HandleSubscribe } from "./HandleSubscribe";
 import { EmailSubscribe } from "./EmailSubscribe";
 
 export const SubscribeButton = (props: {
@@ -11,5 +11,5 @@ export const SubscribeButton = (props: {
 }) => {
   if (props.newsletterMode) {
     return <EmailSubscribe user={props.user} />;
-  } else return <AtSubscribe user={props.user} compact />;
+  } else return <HandleSubscribe user={props.user} />;
 };

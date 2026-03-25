@@ -1,10 +1,11 @@
+"use client";
 import * as OneTimePasswordField from "@radix-ui/react-one-time-password-field";
 import { ButtonPrimary } from "components/Buttons";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { Input } from "components/Input";
 import { Modal } from "components/Modal";
 import { useState } from "react";
-import { HandleInput, UniversalHandleInfo } from "./AtSubscribe";
+import { HandleInputandOAuth, UniversalHandleInfo } from "./HandleSubscribe";
 
 export const EmailSubscribe = (props: {
   compact?: boolean;
@@ -117,7 +118,7 @@ const EmailSubscribeSuccess = (props: {
               </div>
               <UniversalHandleInfo />
             </div>
-            <HandleInput />
+            <HandleInputandOAuth />
           </div>
         </>
       )}
