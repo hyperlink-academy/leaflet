@@ -18,33 +18,35 @@ import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
 
 type LeafletData = NonNullable<GetLeafletDataReturnType["result"]["data"]>;
 
+const fetchLeafletPageData = unstable_cache(
+  async (token_id: string) => {
+    let { data, error } = await supabaseServerClient.rpc(
+      "get_leaflet_page_data",
+      { p_token_id: token_id },
+    );
+    if (!data || error) return { data: null, error };
+
+    let row = Array.isArray(data) ? data[0] : data;
+    if (!row) return { data: null, error: null };
+
+    let leafletData = {
+      ...(row.permission_token as Record<string, unknown>),
+      permission_token_rights: row.permission_token_rights || [],
+      leaflets_in_publications: row.leaflets_in_publications || [],
+      leaflets_to_documents: row.leaflets_to_documents || [],
+      custom_domain_routes: row.custom_domain_routes || [],
+    } as LeafletData;
+
+    let facts = (row.facts || []) as unknown as Fact<Attribute>[];
+
+    return { data: leafletData, facts, error: null };
+  },
+  ["leaflet-page-data"],
+  { revalidate: 30 },
+);
+
 const getCachedLeafletPageData = cache((token_id: string) =>
-  unstable_cache(
-    async () => {
-      let { data, error } = await supabaseServerClient.rpc(
-        "get_leaflet_page_data",
-        { p_token_id: token_id },
-      );
-      if (!data || error) return { data: null, error };
-
-      let row = Array.isArray(data) ? data[0] : data;
-      if (!row) return { data: null, error: null };
-
-      let leafletData = {
-        ...(row.permission_token as Record<string, unknown>),
-        permission_token_rights: row.permission_token_rights || [],
-        leaflets_in_publications: row.leaflets_in_publications || [],
-        leaflets_to_documents: row.leaflets_to_documents || [],
-        custom_domain_routes: row.custom_domain_routes || [],
-      } as LeafletData;
-
-      let facts = (row.facts || []) as unknown as Fact<Attribute>[];
-
-      return { data: leafletData, facts, error: null };
-    },
-    [`leaflet-page-data-${token_id}`],
-    { revalidate: 30 },
-  )(),
+  fetchLeafletPageData(token_id),
 );
 
 export const preferredRegion = ["sfo1"];

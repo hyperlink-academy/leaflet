@@ -6,15 +6,16 @@ import { unstable_cache } from "next/cache";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
 import { getAuthToken } from "src/auth";
 
+const getCachedIdentityData = unstable_cache(
+  (auth_token: string) => fetchIdentityData(auth_token),
+  ["identity-data"],
+  { revalidate: 30 },
+);
+
 export const getIdentityData = cache(async () => {
   let auth_token = await getAuthToken();
   if (!auth_token) return null;
-
-  return unstable_cache(
-    () => fetchIdentityData(auth_token),
-    [`identity-${auth_token}`],
-    { revalidate: 30 },
-  )();
+  return getCachedIdentityData(auth_token);
 });
 
 export async function uncachedGetIdentityData() {
