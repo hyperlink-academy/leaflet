@@ -86,7 +86,7 @@ LEAFLET_APP_PASSWORD=any-password-you-want
 
 #### Feed Service Setup (optional)
 
-Setup instructions to run a local feed service. This step isn't necessary if you're not working on publication or BlueSky integration features.
+Setup instructions to run a local feed service. This step isn't necessary if you're not working on publication or Bluesky integration features.
 
 1. Run `npm run start-feed-service-dev` to start the feed service with hot reloading on `http://localhost:3030`.
 
