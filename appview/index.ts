@@ -55,6 +55,8 @@ async function main() {
       ids.SiteStandardDocument,
       ids.SiteStandardPublication,
       ids.SiteStandardGraphSubscription,
+      "parts.page.mention.service",
+      "parts.page.mention.config",
     ],
     handleEvent,
     onError: (err) => {
@@ -370,6 +372,41 @@ async function handleEvent(evt: Event) {
   //       .eq("did", evt.did);
   //   }
   // }
+  if (evt.collection === "parts.page.mention.service") {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = evt.record as any;
+      let { error } = await supabase.from("mention_services").upsert({
+        uri: evt.uri.toString(),
+        identity_did: evt.did,
+        record: record as Json,
+      });
+      if (error) console.log("Error upserting mention service:", error);
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("mention_services")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
+  if (evt.collection === "parts.page.mention.config") {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = evt.record as any;
+      if (!Array.isArray(record?.services)) return;
+      let { error } = await supabase.from("mention_service_configs").upsert({
+        uri: evt.uri.toString(),
+        identity_did: evt.did,
+        record: record as Json,
+      });
+      if (error) console.log("Error upserting mention config:", error);
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("mention_service_configs")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
   if (evt.collection === "app.bsky.feed.post") {
     if (evt.event !== "create") return;
 

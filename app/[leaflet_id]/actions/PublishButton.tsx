@@ -65,7 +65,7 @@ export const PublishButton = (props: { entityID: string }) => {
 
 const UpdateButton = () => {
   let [isLoading, setIsLoading] = useState(false);
-  let { data: pub, mutate } = useLeafletPublicationData();
+  let { data: pub, mutate, normalizedDocument } = useLeafletPublicationData();
   let { permission_token, rootEntity, rep } = useReplicache();
   let { identity } = useIdentityData();
   let toaster = useToaster();
@@ -88,8 +88,11 @@ const UpdateButton = () => {
       : pub?.description || "";
 
   // Get tags from Replicache state (same as draft editor)
+  // Fall back to normalized document tags if Replicache hasn't pulled yet
   let tags = useSubscribe(rep, (tx) => tx.get<string[]>("publication_tags"));
-  const currentTags = Array.isArray(tags) ? tags : [];
+  const currentTags = Array.isArray(tags)
+    ? tags
+    : normalizedDocument?.tags ?? [];
 
   // Get cover image from Replicache state
   let coverImage = useSubscribe(rep, (tx) =>

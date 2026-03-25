@@ -14,6 +14,7 @@ import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/se
 import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
+import { useState } from "react";
 import { LeafletPro } from "components/Icons/LeafletPro";
 
 export const ProfileButton = () => {
