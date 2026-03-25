@@ -1,20 +1,35 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
-export const getIdentityData = cache(uncachedGetIdentityData);
+import { getAuthToken } from "src/auth";
+
+const getCachedIdentityData = unstable_cache(
+  (auth_token: string) => fetchIdentityData(auth_token),
+  ["identity-data"],
+  { revalidate: 30 },
+);
+
+export const getIdentityData = cache(async () => {
+  let auth_token = await getAuthToken();
+  if (!auth_token) return null;
+  return getCachedIdentityData(auth_token);
+});
+
 export async function uncachedGetIdentityData() {
-  let cookieStore = await cookies();
-  let auth_token =
-    cookieStore.get("auth_token")?.value ||
-    cookieStore.get("external_auth_token")?.value;
-  let auth_res = auth_token
-    ? await supabaseServerClient
-        .from("email_auth_tokens")
-        .select(
-          `*,
+  let auth_token = await getAuthToken();
+  if (!auth_token) return null;
+
+  return fetchIdentityData(auth_token);
+}
+
+async function fetchIdentityData(auth_token: string) {
+  let auth_res = await supabaseServerClient
+    .from("email_auth_tokens")
+    .select(
+      `*,
           identities(
             *,
             bsky_profiles(*),
@@ -38,12 +53,12 @@ export async function uncachedGetIdentityData() {
             user_subscriptions(plan, status, current_period_end),
             user_entitlements(entitlement_key, granted_at, expires_at, source, metadata)
           )`,
-        )
-        .eq("identities.notifications.read", false)
-        .eq("id", auth_token)
-        .eq("confirmed", true)
-        .single()
-    : null;
+    )
+    .eq("identities.notifications.read", false)
+    .eq("id", auth_token)
+    .eq("confirmed", true)
+    .single();
+
   if (!auth_res?.data?.identities) return null;
 
   // Transform embedded entitlements into a keyed record, filtering expired

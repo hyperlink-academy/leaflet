@@ -1,6 +1,15 @@
 import { cookies, headers } from "next/headers";
 import { isProductionDomain } from "./utils/isProductionDeployment";
 
+export async function getAuthToken() {
+  let cookieStore = await cookies();
+  return (
+    cookieStore.get("auth_token")?.value ||
+    cookieStore.get("external_auth_token")?.value ||
+    null
+  );
+}
+
 export async function setAuthToken(tokenID: string) {
   let c = await cookies();
   let host = (await headers()).get("host");

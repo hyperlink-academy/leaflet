@@ -22,18 +22,14 @@ export const StaticLeafletDataContext = createContext<
 >(null);
 export function PageSWRDataProvider(props: {
   leaflet_id: string;
-  leaflet_data: GetLeafletDataReturnType["result"];
-  rsvp_data: Awaited<ReturnType<typeof getRSVPData>>;
-  poll_data: Awaited<ReturnType<typeof getPollData>>;
+  leaflet_data: GetLeafletDataReturnType["result"]["data"];
   children: React.ReactNode;
 }) {
   return (
     <SWRConfig
       value={{
         fallback: {
-          rsvp_data: props.rsvp_data,
-          poll_data: props.poll_data,
-          [`${props.leaflet_id}-leaflet_data`]: props.leaflet_data.data,
+          [`${props.leaflet_id}-leaflet_data`]: props.leaflet_data,
         },
       }}
     >
