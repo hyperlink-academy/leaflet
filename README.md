@@ -1,4 +1,4 @@
-![leaflet gh 4-up banner img](https://github.com/user-attachments/assets/991d7138-cc8b-4fbb-9919-6d2a54ae3820)
+![Leaflet GitHub 4-up banner image](https://github.com/user-attachments/assets/991d7138-cc8b-4fbb-9919-6d2a54ae3820)
 
 Leaflet is a tool for shared writing and social publishing.
 
@@ -76,24 +76,24 @@ LEAFLET_APP_PASSWORD=any-password-you-want
 
 #### Running the App
 
-1. `npm run dev` to start the development server
+1. Run `npm run dev` to start the development server
 2. Visit `http://localhost:3000` in your browser
 
 #### Stopping Local Supabase
 
 - Run `npx supabase stop` to stop the local Supabase stack
-- Add `--no-backup` flag to reset the database on next start
+- Add the `--no-backup` flag to reset the database on next start
 
 #### Feed Service Setup (optional)
 
-Setup instructions to run a local feed service. This step isn't necessary if you're not working on publication or Bluesky integration features.
+Setup instructions to run a local feed service. This step isn't necessary if you're not working on publication or BlueSky integration features.
 
 1. Run `npm run start-feed-service-dev` to start the feed service with hot reloading on `http://localhost:3030`.
 
 #### Troubleshooting
 
-- Persisting articles on a fresh install over a fresh DB are usually due to stale Replicache entries. To clear, open your browser DevTools and delete Replicache entries (usually under IndexedDB Storage)
-- Supabase settings will get cached in `.next`; if you change where you're pointing your supabase connections to you may need to delete the `.next` folder (it will rebuild the next time you start the app).
+- Persisting articles on a fresh install over a fresh DB are usually due to stale Replicache entrys. To clear, open your browser DevTools and delete Replicache entries (usually under IndexedDB Storage)
+- Supabase settings will get cached in `.next`; if you change where you're pointing your supabase connections to, you may need to delete the `.next` folder (it will rebuild the next time you start the app).
 
 ## Technical details
 
@@ -103,7 +103,7 @@ The stack:
 - [React](https://react.dev/) & [Next.js](https://nextjs.org/) for UI and app framework
 - [Supabase](https://supabase.com/) for db / storage layer
 - [Replicache](https://replicache.dev/) for realtime data sync layer
-- [TailwindCSS](https://tailwindcss.com/) for styling magic
+- [Tailwind CSS](https://tailwindcss.com/) for styling magic
 
 See the `lexicons` and `appview` directories if you're curious about our Bluesky implementation. More documentation to come; let us know if there's something you want to read about (like how to bring your own frontend using our appview!)
 
