@@ -89,7 +89,7 @@ export function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps) {
 
 // Helper to extract fonts from facts array (for server-side use)
 export function extractFontsFromFacts(
-  facts: Array<{ entity: string; attribute: string; data: { value: string } }>,
+  facts: Array<{ entity: string; attribute: string; data: { value: string } | Record<string, unknown> }>,
   rootEntity: string
 ): { headingFontId: string | undefined; bodyFontId: string | undefined } {
   const headingFontFact = facts.find(
@@ -99,7 +99,7 @@ export function extractFontsFromFacts(
     (f) => f.entity === rootEntity && f.attribute === "theme/body-font"
   );
   return {
-    headingFontId: headingFontFact?.data?.value,
-    bodyFontId: bodyFontFact?.data?.value,
+    headingFontId: headingFontFact?.data?.value as string | undefined,
+    bodyFontId: bodyFontFact?.data?.value as string | undefined,
   };
 }

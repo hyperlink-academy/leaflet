@@ -1516,6 +1516,12 @@ export type Database = {
         }
         Returns: string
       }
+      get_leaflet_page_data: {
+        Args: {
+          p_token_id: string
+        }
+        Returns: Database["public"]["CompositeTypes"]["leaflet_page_result"]
+      }
       pull_data: {
         Args: {
           token_id: string
@@ -1537,6 +1543,14 @@ export type Database = {
       rsvp_status: "GOING" | "NOT_GOING" | "MAYBE"
     }
     CompositeTypes: {
+      leaflet_page_result: {
+        permission_token: Json | null
+        permission_token_rights: Json | null
+        leaflets_in_publications: Json | null
+        leaflets_to_documents: Json | null
+        custom_domain_routes: Json | null
+        facts: Json | null
+      }
       pull_result: {
         client_groups: Json | null
         facts: Json | null

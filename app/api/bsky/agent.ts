@@ -1,14 +1,11 @@
 import { Agent } from "@atproto/api";
-import { cookies } from "next/headers";
 import { createOauthClient } from "src/atproto-oauth";
+import { getAuthToken } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 
 export async function getAuthenticatedAgent(): Promise<Agent | null> {
   try {
-    const cookieStore = await cookies();
-    const authToken =
-      cookieStore.get("auth_token")?.value ||
-      cookieStore.get("external_auth_token")?.value;
+    const authToken = await getAuthToken();
 
     if (!authToken || authToken === "null") return null;
 

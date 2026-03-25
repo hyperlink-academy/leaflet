@@ -1,20 +1,48 @@
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { Metadata } from "next";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 
-import type { Fact } from "src/replicache";
+import type { Fact, PermissionToken } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
-import { getRSVPData } from "actions/getRSVPData";
 import { PageSWRDataProvider } from "components/PageSWRDataProvider";
-import { getPollData } from "actions/pollActions";
 import { supabaseServerClient } from "supabase/serverClient";
-import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
+import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
 import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
+
+type LeafletData = NonNullable<GetLeafletDataReturnType["result"]["data"]>;
+
+const getCachedLeafletPageData = cache((token_id: string) =>
+  unstable_cache(
+    async () => {
+      let { data, error } = await supabaseServerClient.rpc(
+        "get_leaflet_page_data",
+        { p_token_id: token_id },
+      );
+      if (!data || error) return { data: null, error };
+
+      let leafletData = {
+        ...(data.permission_token as Record<string, unknown>),
+        permission_token_rights: data.permission_token_rights || [],
+        leaflets_in_publications: data.leaflets_in_publications || [],
+        leaflets_to_documents: data.leaflets_to_documents || [],
+        custom_domain_routes: data.custom_domain_routes || [],
+      } as LeafletData;
+
+      let facts = (data.facts || []) as unknown as Fact<Attribute>[];
+
+      return { data: leafletData, facts, error: null };
+    },
+    [`leaflet-page-data-${token_id}`],
+    { revalidate: 30 },
+  )(),
+);
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -25,15 +53,14 @@ type Props = {
   params: Promise<{ leaflet_id: string }>;
 };
 export default async function LeafletPage(props: Props) {
-  let { result: res } = await get_leaflet_data.handler(
-    { token_id: (await props.params).leaflet_id },
-    { supabase: supabaseServerClient },
+  let { data, facts } = await getCachedLeafletPageData(
+    (await props.params).leaflet_id,
   );
-  let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data || res.data.blocked_by_admin)
+
+  if (!data || data.blocked_by_admin)
     return (
       <NotFoundLayout>
-        <p className="font-bold">Sorry, we can't find this leaflet!</p>
+        <p className="font-bold">Sorry, we can&apos;t find this leaflet!</p>
         <p>
           This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
@@ -41,32 +68,28 @@ export default async function LeafletPage(props: Props) {
       </NotFoundLayout>
     );
 
-  let [{ data }, rsvp_data, poll_data] = await Promise.all([
-    supabaseServerClient.rpc("get_facts", {
-      root: rootEntity,
-    }),
-    getRSVPData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
-    getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
-  ]);
-  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
+  let rootEntity = data.root_entity;
+  let initialFacts = facts || [];
 
-  // Extract font settings from facts for server-side font loading
-  const { headingFontId, bodyFontId } = extractFontsFromFacts(initialFacts as any, rootEntity);
+  const { headingFontId, bodyFontId } = extractFontsFromFacts(
+    initialFacts,
+    rootEntity,
+  );
+
+  let token: PermissionToken = {
+    id: data.id,
+    root_entity: data.root_entity,
+    permission_token_rights: data.permission_token_rights,
+  };
 
   return (
     <>
-      {/* Server-side font loading with preload and @font-face */}
       <FontLoader headingFontId={headingFontId} bodyFontId={bodyFontId} />
-      <PageSWRDataProvider
-        rsvp_data={rsvp_data}
-        poll_data={poll_data}
-        leaflet_id={res.data.id}
-        leaflet_data={res}
-      >
+      <PageSWRDataProvider leaflet_id={data.id} leaflet_data={data}>
         <Leaflet
           initialFacts={initialFacts}
           leaflet_id={rootEntity}
-          token={res.data}
+          token={token}
           initialHeadingFontId={headingFontId}
           initialBodyFontId={bodyFontId}
         />
@@ -76,23 +99,24 @@ export default async function LeafletPage(props: Props) {
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  let { result: res } = await get_leaflet_data.handler(
-    { token_id: (await props.params).leaflet_id },
-    { supabase: supabaseServerClient },
+  let { data, facts } = await getCachedLeafletPageData(
+    (await props.params).leaflet_id,
   );
-  let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data) return { title: "Leaflet not found" };
-  let publication_data = getPublicationMetadataFromLeafletData(res.data);
+
+  if (!data) return { title: "Leaflet not found" };
+
+  let rootEntity = data.root_entity;
+  if (!rootEntity) return { title: "Leaflet not found" };
+
+  let publication_data = getPublicationMetadataFromLeafletData(data);
   if (publication_data) {
     return {
       title: publication_data.title || "Untitled",
       description: publication_data.description,
     };
   }
-  let { data } = await supabaseServerClient.rpc("get_facts", {
-    root: rootEntity,
-  });
-  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
+
+  let initialFacts = facts || [];
   let scan = scanIndexLocal(initialFacts);
   let firstPage =
     scan.eav(rootEntity, "root/page")[0]?.data.value || rootEntity;

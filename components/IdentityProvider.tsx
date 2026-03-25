@@ -1,5 +1,8 @@
 "use client";
-import { getIdentityData } from "actions/getIdentityData";
+import {
+  getIdentityData,
+  uncachedGetIdentityData,
+} from "actions/getIdentityData";
 import { createContext, useContext, useEffect } from "react";
 import useSWR, { KeyedMutator, mutate } from "swr";
 import { DashboardState } from "./PageLayouts/DashboardLayout";
@@ -32,7 +35,7 @@ export function IdentityContextProvider(props: {
   children: React.ReactNode;
   initialValue: Identity;
 }) {
-  let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
+  let { data: identity, mutate } = useSWR("identity", () => uncachedGetIdentityData(), {
     fallbackData: props.initialValue,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
