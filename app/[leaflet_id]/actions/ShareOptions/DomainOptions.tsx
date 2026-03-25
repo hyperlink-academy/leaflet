@@ -10,8 +10,10 @@ import { useDomainStatus } from "components/Domains/useDomainStatus";
 import { CustomDomain } from "components/Domains/DomainList";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { useReadOnlyShareLink } from ".";
-import { assignDomainToDocument } from "actions/domains/assignDomainToDocument";
-import { removeDomainRoute } from "actions/domains/removeDomainRoute";
+import {
+  assignDomainToDocument,
+  removeDomainRoute,
+} from "actions/domains";
 import { useReplicache } from "src/replicache";
 import { AddDomainForm } from "components/Domains/AddDomainForm";
 import { DomainSettingsView } from "components/Domains/DomainSettingsView";

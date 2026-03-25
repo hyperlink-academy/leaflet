@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { useDomainStatus } from "./useDomainStatus";
 import { DotLoader } from "components/utils/DotLoader";
-import { deleteDomain } from "actions/domains/deleteDomain";
-import { removeDomainAssignment } from "actions/domains/removeDomainAssignment";
-import { removeDomainRoute } from "actions/domains/removeDomainRoute";
+import {
+  deleteDomain,
+  removeDomainAssignment,
+  removeDomainRoute,
+} from "actions/domains";
 import {
   useIdentityData,
   mutateIdentityData,

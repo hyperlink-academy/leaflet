@@ -13,8 +13,10 @@ import {
   useNormalizedPublicationRecord,
 } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { updatePublicationBasePath } from "app/lish/createPub/updatePublication";
-import { assignDomainToPublication } from "actions/domains/assignDomainToPublication";
-import { removeDomainAssignment } from "actions/domains/removeDomainAssignment";
+import {
+  assignDomainToPublication,
+  removeDomainAssignment,
+} from "actions/domains";
 import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/settings/PublicationSettings";
 import { AddDomainForm } from "./AddDomainForm";
 import { DomainSettingsView } from "./DomainSettingsView";

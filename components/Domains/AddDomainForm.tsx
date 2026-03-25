@@ -4,7 +4,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { Input } from "components/Input";
 import { useSmoker } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
-import { addDomain } from "actions/domains/addDomain";
+import { addDomain } from "actions/domains";
 import { DotLoader } from "components/utils/DotLoader";
 import { GoToArrow } from "components/Icons/GoToArrow";
 
