@@ -1,12 +1,12 @@
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 
 export const dummy = {
-  newsletterMode: false,
+  newsletterMode: true,
   user: {
-    loggedIn: false,
-    email: undefined,
-    handle: undefined,
-    subscribed: false,
+    loggedIn: true,
+    email: "thisiscelinepark@gmail.com",
+    handle: "cozylittle.house",
+    subscribed: true,
   },
 };
 

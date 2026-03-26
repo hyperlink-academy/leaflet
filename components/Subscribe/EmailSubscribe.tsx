@@ -1,15 +1,16 @@
 "use client";
 import * as OneTimePasswordField from "@radix-ui/react-one-time-password-field";
 import { ButtonPrimary } from "components/Buttons";
-import { GoToArrow } from "components/Icons/GoToArrow";
+
 import { Input } from "components/Input";
 import { Modal } from "components/Modal";
 import { useState } from "react";
 import { HandleInputandOAuth, UniversalHandleInfo } from "./HandleSubscribe";
+import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
 
 export const EmailSubscribe = (props: {
+  link?: boolean;
   autoFocus?: boolean;
-  compact?: boolean;
   user: {
     loggedIn: boolean;
     email: string | undefined;
@@ -26,7 +27,7 @@ export const EmailSubscribe = (props: {
     <div className="relative input-with-border flex gap-2 w-full items-center mx-auto">
       <Input
         autoFocus={props.autoFocus}
-        className={`appearance-none! outline-none! w-full ${props.compact ? "pr-7" : "pr-22"} `}
+        className={`appearance-none! outline-none! w-full pr-22 `}
         disabled={props.user.loggedIn}
         placeholder="email@example.com"
         size={0}
@@ -37,16 +38,12 @@ export const EmailSubscribe = (props: {
         asChild
         trigger={
           <div className="absolute top-0 bottom-0 right-[4px] flex items-center">
-            {props.compact ? (
-              <GoToArrow className="text-accent-contrast mr-0.5" />
-            ) : (
-              <ButtonPrimary
-                compact
-                className="leading-tight! outline-none! text-sm!"
-              >
-                Subscribe
-              </ButtonPrimary>
-            )}
+            <ButtonPrimary
+              compact
+              className="leading-tight! outline-none! text-sm!"
+            >
+              {props.link ? "Link" : "Subscribe"}
+            </ButtonPrimary>
           </div>
         }
       >
@@ -96,34 +93,6 @@ const EmailSubscribeConfirm = (props: {
         </div>
         <OneTimePasswordField.HiddenInput />
       </OneTimePasswordField.Root>
-    </div>
-  );
-};
-
-const EmailSubscribeSuccess = (props: {
-  email: string | undefined;
-  handle: string | undefined;
-}) => {
-  return (
-    <div className="flex flex-col text-center justify-center p-4 text-secondary max-w-md">
-      <h2 className="text-primary pb-1">You've Subscribed!</h2>
-      You'll recieve new posts to <br />
-      <span className="italic">{props.email ? props.email : "your email"}</span>
-      {!props.handle && (
-        <>
-          <hr className="my-4 border-border-light" />
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col">
-              <h4>Link your universal handle</h4>
-              <div>
-                to comment, recommend, and see what your friends are reading
-              </div>
-              <UniversalHandleInfo />
-            </div>
-            <HandleInputandOAuth />
-          </div>
-        </>
-      )}
     </div>
   );
 };

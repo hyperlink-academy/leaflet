@@ -12,12 +12,11 @@ import {
   LogoLeaflet,
   LogoTangled,
 } from "./Logos";
-import { GoToArrow } from "components/Icons/GoToArrow";
+
 import { Separator } from "components/Layout";
 
-export const HandleSubscribe = (props: {
+export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
-  compact?: boolean;
   user: {
     loggedIn: boolean;
     email: string | undefined;
@@ -38,7 +37,7 @@ export const HandleSubscribe = (props: {
   } else
     return (
       <div className="max-w-sm mx-auto w-full ">
-        <HandleInput compact={props.compact} autoFocus={props.autoFocus} />
+        <HandleInput autoFocus={props.autoFocus} />
         <div className="flex gap-2 justify-center items-center mx-auto pt-0.5 ">
           <UniversalHandleInfo />
           <Separator classname="h-3! border-accent-contrast!" />
@@ -48,10 +47,28 @@ export const HandleSubscribe = (props: {
     );
 };
 
-export const HandleInput = (props: {
-  compact?: boolean;
-  autoFocus?: boolean;
-}) => {
+export const LinkHandle = (props: { compact?: boolean }) => {
+  return (
+    <div
+      className={`flex flex-col text-center justify-center ${props.compact ? "gap-3" : "gap-4"}`}
+    >
+      <div
+        className={`text-secondary flex flex-col ${props.compact && "text-sm leading-snug"}`}
+      >
+        <h4 className={`${props.compact && "text-sm"}`}>
+          Link your universal handle
+        </h4>
+        <div className="text-tertiary">
+          to comment, recommend, and see what your friends are reading
+        </div>
+        <UniversalHandleInfo />
+      </div>
+      <HandleInputandOAuth link compact />
+    </div>
+  );
+};
+
+export const HandleInput = (props: { autoFocus?: boolean; link?: boolean }) => {
   let [handleValue, setHandleValue] = useState("");
   return (
     <div className="handleInput input-with-border relative pl-0! py-0! flex gap-0 w-full">
@@ -60,7 +77,7 @@ export const HandleInput = (props: {
       </div>
       <Input
         autoFocus={props.autoFocus}
-        className={`appearance-none! outline-none! w-full py-0.5 ${props.compact ? "pr-7" : "pr-22"}`}
+        className={`appearance-none! outline-none! w-full py-0.5 pr-22`}
         placeholder="universal.handle"
         size={0}
         value={handleValue}
@@ -68,33 +85,38 @@ export const HandleInput = (props: {
       />
 
       <div className="absolute top-0 bottom-0 right-[4px] flex items-center">
-        {props.compact ? (
-          <GoToArrow className="text-accent-contrast mr-0.5" />
-        ) : (
-          <ButtonPrimary
-            compact
-            className="leading-tight! outline-none! text-sm!"
-          >
-            Subscribe
-          </ButtonPrimary>
-        )}
+        <ButtonPrimary
+          compact
+          className="leading-tight! outline-none! text-sm!"
+        >
+          {props.link ? "Link" : "Subscribe"}
+        </ButtonPrimary>
       </div>
     </div>
   );
 };
 
-export const HandleInputandOAuth = () => {
+export const HandleInputandOAuth = (props: {
+  link?: boolean;
+  compact?: boolean;
+}) => {
   return (
     <div className="handleInputAndOAuth flex flex-col">
-      <HandleInput />
-      <div className="w-full flex gap-2 items-center mt-2 mb-3 ">
+      <HandleInput link={props.link} />
+      <div
+        className={`${props.compact ? "mt-1 mb-2 text-xs" : "text-sm mt-2 mb-3"} w-full flex gap-2 items-center`}
+      >
         <hr className="grow border-border-light" />
-        <div className="shrink-0 text-sm italix text-tertiary">
-          or link with
+        <div className="shrink-0 text-tertiary">
+          or {props.link ? "link with" : "sign in via"}
         </div>
         <hr className="grow border-border-light" />
       </div>
-      <ButtonPrimary fullWidth>
+      <ButtonPrimary
+        compact={props.compact}
+        className={`${props.compact && "text-sm"} `}
+        fullWidth
+      >
         <BlueskyTiny /> Bluesky
       </ButtonPrimary>
     </div>

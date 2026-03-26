@@ -1,8 +1,9 @@
-import { HandleSubscribe } from "./HandleSubscribe";
+import { SubscribeWithHandle } from "./HandleSubscribe";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { PostPubInfo } from "app/lish/[did]/[publication]/[rkey]/PostPubInfo";
+import { ManageSubscription } from "./ManageSubscribe";
 
 export const SubscribeButton = (props: {
   autoFocus?: boolean;
@@ -19,9 +20,13 @@ export const SubscribeButton = (props: {
       className="px-0! py-3! sm:py-4! w-[1000px] sm:max-w-md max-w-full"
       asChild
       trigger={
-        <ButtonPrimary compact className="text-sm">
-          Subscribe
-        </ButtonPrimary>
+        props.user.subscribed ? (
+          <ManageSubscription {...props} />
+        ) : (
+          <ButtonPrimary compact className="text-sm">
+            Subscribe
+          </ButtonPrimary>
+        )
       }
     >
       <PostPubInfo autoFocus {...props} />
@@ -40,10 +45,12 @@ export const SubscribeInput = (props: {
   };
 }) => {
   if (props.user.subscribed) {
-    return "subbed up";
+    return <ManageSubscription {...props} />;
   }
   if (props.newsletterMode) {
     return <EmailSubscribe user={props.user} autoFocus={props.autoFocus} />;
   } else
-    return <HandleSubscribe user={props.user} autoFocus={props.autoFocus} />;
+    return (
+      <SubscribeWithHandle user={props.user} autoFocus={props.autoFocus} />
+    );
 };
