@@ -36,6 +36,8 @@ import { ButtonPrimary } from "components/Buttons";
 import { blockTextSize } from "src/utils/blockTextSize";
 import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
+import { CheckboxChecked } from "components/Icons/CheckboxChecked";
+import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 
 export function PostContent({
   blocks,
@@ -487,11 +489,17 @@ function ListItem(props: {
       ))}
     </ol>
   ) : null;
+  let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
         className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
       />
+      {isChecklist && (
+        <div className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}>
+          {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+        </div>
+      )}
       <div className="flex flex-col w-full">
         <Block
           pollData={props.pollData}
@@ -558,11 +566,17 @@ function OrderedListItem(props: {
       ))}
     </ul>
   ) : null;
+  let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div className="listMarker shrink-0 mx-2 z-1 mt-[4px]">
         {calculatedIndex}.
       </div>
+      {isChecklist && (
+        <div className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}>
+          {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+        </div>
+      )}
       <div className="flex flex-col w-full">
         <Block
           pollData={props.pollData}

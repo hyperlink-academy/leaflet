@@ -37,6 +37,8 @@ export function validateMain<V>(v: V) {
 
 export interface ListItem {
   $type?: 'pub.leaflet.blocks.orderedList#listItem'
+  /** If present, this item is a checklist item. true = checked, false = unchecked. If absent, this is a normal list item. */
+  checked?: boolean
   content:
     | $Typed<PubLeafletBlocksText.Main>
     | $Typed<PubLeafletBlocksHeader.Main>

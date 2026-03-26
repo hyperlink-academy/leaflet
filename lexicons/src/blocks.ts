@@ -212,6 +212,11 @@ export const PubLeafletBlocksOrderedList: LexiconDoc = {
       type: "object",
       required: ["content"],
       properties: {
+        checked: {
+          type: "boolean",
+          description:
+            "If present, this item is a checklist item. true = checked, false = unchecked. If absent, this is a normal list item.",
+        },
         content: {
           type: "union",
           refs: [
@@ -250,6 +255,11 @@ export const PubLeafletBlocksUnorderedList: LexiconDoc = {
       type: "object",
       required: ["content"],
       properties: {
+        checked: {
+          type: "boolean",
+          description:
+            "If present, this item is a checklist item. true = checked, false = unchecked. If absent, this is a normal list item.",
+        },
         content: {
           type: "union",
           refs: [

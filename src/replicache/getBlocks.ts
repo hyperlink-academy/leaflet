@@ -78,6 +78,7 @@ export const getBlocksWithType = async (
                     parent,
                     path: newPath,
                     checklist: !!checklist[0],
+                    checked: checklist[0]?.data.value,
                     listStyle: listStyle?.data.value,
                     listStart: listNumber?.data.value,
                   },

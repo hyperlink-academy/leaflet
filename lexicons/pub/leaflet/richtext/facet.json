@@ -140,7 +140,10 @@
     "footnote": {
       "type": "object",
       "description": "Facet feature for a footnote reference",
-      "required": ["footnoteId", "contentPlaintext"],
+      "required": [
+        "footnoteId",
+        "contentPlaintext"
+      ],
       "properties": {
         "footnoteId": {
           "type": "string"

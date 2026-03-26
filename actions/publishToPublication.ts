@@ -542,6 +542,9 @@ async function processBlocksToPages(
           let record: PubLeafletBlocksUnorderedList.ListItem = {
             $type: "pub.leaflet.blocks.unorderedList#listItem",
             content,
+            ...(child.block.listData?.checklist && {
+              checked: child.block.listData.checked ?? false,
+            }),
           };
           let sameStyle = child.children.filter(
             (c) => c.block.listData?.listStyle !== "ordered",
@@ -576,6 +579,9 @@ async function processBlocksToPages(
           let record: PubLeafletBlocksOrderedList.ListItem = {
             $type: "pub.leaflet.blocks.orderedList#listItem",
             content,
+            ...(child.block.listData?.checklist && {
+              checked: child.block.listData.checked ?? false,
+            }),
           };
           let sameStyle = child.children.filter(
             (c) => c.block.listData?.listStyle === "ordered",
