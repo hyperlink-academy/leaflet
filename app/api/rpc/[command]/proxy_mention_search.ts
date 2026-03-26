@@ -4,6 +4,8 @@ import type { Env } from "./route";
 import { getIdentityData } from "actions/getIdentityData";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient } from "lexicons/api";
+import type * as SearchService from "lexicons/api/types/parts/page/mention/searchService";
+import type * as MentionService from "lexicons/api/types/parts/page/mention/service";
 
 export type ProxyMentionSearchReturnType = Awaited<
   ReturnType<(typeof proxy_mention_search)["handler"]>
@@ -30,7 +32,8 @@ export const proxy_mention_search = makeRoute({
 
     if (!service) throw new Error("Mention service not found");
 
-    const did = (service.record as any)?.did as string;
+    const record = service.record as MentionService.Record;
+    const did = record.did;
     if (!did) throw new Error("Service has no DID");
 
     const sessionResult = await restoreOAuthSession(identity.atp_did);
@@ -46,17 +49,19 @@ export const proxy_mention_search = makeRoute({
       search,
     });
 
-    const results = Array.isArray(response.data?.results)
-      ? response.data.results
+    const data = response.data as SearchService.OutputSchema | undefined;
+    const results: SearchService.Result[] = Array.isArray(data?.results)
+      ? data.results
       : [];
 
     return {
       result: {
-        results: results.slice(0, 50).map((r: any) => ({
-          uri: String(r.uri || ""),
-          name: String(r.name || ""),
-          href: r.href ? String(r.href) : undefined,
-          icon: r.icon ? String(r.icon) : undefined,
+        results: results.slice(0, 50).map((r) => ({
+          uri: r.uri,
+          name: r.name,
+          href: r.href,
+          icon: r.icon,
+          embed: r.embed,
         })),
       },
     };

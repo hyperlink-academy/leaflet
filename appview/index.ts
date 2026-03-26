@@ -374,11 +374,10 @@ async function handleEvent(evt: Event) {
   // }
   if (evt.collection === "parts.page.mention.service") {
     if (evt.event === "create" || evt.event === "update") {
-      let record = evt.record as any;
       let { error } = await supabase.from("mention_services").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,
-        record: record as Json,
+        record: evt.record as Json,
       });
       if (error) console.log("Error upserting mention service:", error);
     }
@@ -391,12 +390,12 @@ async function handleEvent(evt: Event) {
   }
   if (evt.collection === "parts.page.mention.config") {
     if (evt.event === "create" || evt.event === "update") {
-      let record = evt.record as any;
+      let record = evt.record as Record<string, unknown> | undefined;
       if (!Array.isArray(record?.services)) return;
       let { error } = await supabase.from("mention_service_configs").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,
-        record: record as Json,
+        record: evt.record as Json,
       });
       if (error) console.log("Error upserting mention config:", error);
     }

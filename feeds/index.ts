@@ -39,7 +39,7 @@ app.get("/.well-known/did.json", (c) => {
 // Mention search services, keyed by rkey
 const mentionServices: Record<
   string,
-  (search: string, limit: number) => Promise<{ uri: string; name: string; href?: string }[]>
+  (search: string, limit: number) => Promise<{ uri: string; name: string; href?: string; icon?: string; embed?: { src: string; width?: number; height?: number } }[]>
 > = {
   wikipedia,
   pokemon,

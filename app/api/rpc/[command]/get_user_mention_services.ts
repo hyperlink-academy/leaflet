@@ -2,6 +2,8 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { getIdentityData } from "actions/getIdentityData";
+import type * as MentionConfig from "lexicons/api/types/parts/page/mention/config";
+import type * as MentionService from "lexicons/api/types/parts/page/mention/service";
 
 export type GetUserMentionServicesReturnType = Awaited<
   ReturnType<(typeof get_user_mention_services)["handler"]>
@@ -19,7 +21,7 @@ export const get_user_mention_services = makeRoute({
       .eq("identity_did", user?.atp_did)
       .single();
 
-    const services = (config?.record as any)?.services as string[] | undefined;
+    const services = (config?.record as MentionConfig.Record)?.services;
     if (!services?.length) return { result: { services: [] } };
 
     const { data: serviceRows, error } = await supabase
@@ -34,12 +36,12 @@ export const get_user_mention_services = makeRoute({
     return {
       result: {
         services: (serviceRows || []).map((s) => {
-          const record = s.record as any;
+          const record = s.record as MentionService.Record;
           return {
             uri: s.uri,
-            name: record?.name as string,
-            description: record?.description as string | undefined,
-            endpoint_url: record?.endpoint as string,
+            name: record.name,
+            description: record.description,
+            did: record.did,
           };
         }),
       },

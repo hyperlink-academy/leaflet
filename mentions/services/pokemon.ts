@@ -1,4 +1,6 @@
-type Result = { uri: string; name: string; href?: string };
+import type { MentionResult } from "./types";
+
+type Result = MentionResult;
 
 let cachedPokemon: { name: string; url: string }[] | null = null;
 

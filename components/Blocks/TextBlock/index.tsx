@@ -30,6 +30,8 @@ import { blockTextSize } from "src/utils/blockTextSize";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
 import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
+import { v7 } from "uuid";
+import { generateKeyBetween } from "fractional-indexing";
 
 const HeadingStyle = {
   1: "font-bold [font-family:var(--theme-heading-font)]",
@@ -230,8 +232,9 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     mentionCoords,
     openMentionAutocomplete,
     handleMentionSelect,
+    handleMentionEmbed,
     handleMentionOpenChange,
-  } = useMentionState(props.entityID);
+  } = useMentionState(props.entityID, props);
 
   let { mountRef, actionTimeout } = useMountProsemirror({
     props,
@@ -308,6 +311,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             onOpenChange={handleMentionOpenChange}
             view={viewRef}
             onSelect={handleMentionSelect}
+            onEmbed={handleMentionEmbed}
             coords={mentionCoords}
           />
         )}
@@ -503,10 +507,13 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
   );
 };
 
-const useMentionState = (entityID: string) => {
+const useMentionState = (entityID: string, blockProps: BlockProps) => {
   let view = useEditorStates((s) => s.editorStates[entityID])?.view;
   let viewRef = useRef(view || null);
   viewRef.current = view || null;
+
+  let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
 
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionCoords, setMentionCoords] = useState<{
@@ -570,6 +577,73 @@ const useMentionState = (entityID: string) => {
     [entityID, mentionInsertPos],
   );
 
+  const handleMentionEmbed = useCallback(
+    (mention: Mention & { type: "service_result" }) => {
+      if (!rep || !mention.embed) return;
+
+      const editorState =
+        useEditorStates.getState().editorStates[entityID]?.editor;
+      // Check if the block is empty (only the @ character)
+      const blockIsEmpty =
+        editorState && editorState.doc.textContent.replace("@", "").trim() === "";
+
+      let targetEntityID: string;
+      if (blockIsEmpty) {
+        // Replace the current block
+        targetEntityID = blockProps.entityID;
+        rep.mutate.assertFact({
+          entity: targetEntityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "embed" },
+        });
+        rep.mutate.retractAttribute({
+          entity: targetEntityID,
+          attribute: "block/text",
+        });
+      } else {
+        // Create a new block below
+        targetEntityID = v7();
+        rep.mutate.addBlock({
+          permission_set: entity_set.set,
+          factID: v7(),
+          type: "embed",
+          newEntityID: targetEntityID,
+          parent: blockProps.parent,
+          position: generateKeyBetween(
+            blockProps.position,
+            blockProps.nextPosition,
+          ),
+        });
+        // Remove the @ from the current block's editor
+        const view = useEditorStates.getState().editorStates[entityID]?.view;
+        if (view && mentionInsertPos !== null) {
+          const from = mentionInsertPos - 1;
+          const to = mentionInsertPos;
+          const tr = view.state.tr.delete(from, to);
+          view.dispatch(tr);
+        }
+      }
+
+      // Set embed attributes
+      rep.mutate.assertFact([
+        {
+          entity: targetEntityID,
+          attribute: "embed/url",
+          data: { type: "string", value: mention.embed.src },
+        },
+        {
+          entity: targetEntityID,
+          attribute: "embed/height",
+          data: {
+            type: "number",
+            value: mention.embed.height || 360,
+          },
+        },
+      ]);
+    },
+    [rep, entityID, blockProps, entity_set.set, mentionInsertPos],
+  );
+
   const handleMentionOpenChange = useCallback((open: boolean) => {
     setMentionOpen(open);
     if (!open) {
@@ -584,6 +658,7 @@ const useMentionState = (entityID: string) => {
     mentionCoords,
     openMentionAutocomplete,
     handleMentionSelect,
+    handleMentionEmbed,
     handleMentionOpenChange,
   };
 };

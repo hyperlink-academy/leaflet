@@ -1,6 +1,6 @@
-type Result = { uri: string; name: string; href?: string; icon?: string };
+import type { MentionResult } from "./types";
 
-export async function wikipedia(search: string, limit: number): Promise<Result[]> {
+export async function wikipedia(search: string, limit: number): Promise<MentionResult[]> {
   if (!search.trim()) return [];
 
   const url = new URL("https://en.wikipedia.org/w/api.php");
@@ -17,10 +17,18 @@ export async function wikipedia(search: string, limit: number): Promise<Result[]
   const titles = data[1] || [];
   const urls = data[3] || [];
 
-  return titles.map((title, i) => ({
-    uri: urls[i] || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
-    name: title,
-    href: urls[i] || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
-    icon: "https://en.wikipedia.org/static/apple-touch/wikipedia.png",
-  }));
+  return titles.map((title, i) => {
+    const articleUrl = urls[i] || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+    return {
+      uri: articleUrl,
+      name: title,
+      href: articleUrl,
+      icon: "https://en.wikipedia.org/static/apple-touch/wikipedia.png",
+      embed: {
+        src: `https://en.m.wikipedia.org/wiki/${encodeURIComponent(title)}?useskin=minerva`,
+        width: 600,
+        height: 400,
+      },
+    };
+  });
 }

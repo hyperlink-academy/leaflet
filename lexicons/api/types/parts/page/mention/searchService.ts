@@ -54,6 +54,7 @@ export interface Result {
   href?: string
   /** Optional icon URL for the mentioned entity, displayed next to the mention */
   icon?: string
+  embed?: EmbedInfo
 }
 
 const hashResult = 'result'
@@ -64,4 +65,24 @@ export function isResult<V>(v: V) {
 
 export function validateResult<V>(v: V) {
   return validate<Result & V>(v, id, hashResult)
+}
+
+export interface EmbedInfo {
+  $type?: 'parts.page.mention.searchService#embedInfo'
+  /** Source URL for the iframe embed */
+  src: string
+  /** Default width of the embed in pixels */
+  width?: number
+  /** Default height of the embed in pixels */
+  height?: number
+}
+
+const hashEmbedInfo = 'embedInfo'
+
+export function isEmbedInfo<V>(v: V) {
+  return is$typed(v, id, hashEmbedInfo)
+}
+
+export function validateEmbedInfo<V>(v: V) {
+  return validate<EmbedInfo & V>(v, id, hashEmbedInfo)
 }

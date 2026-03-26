@@ -1114,6 +1114,35 @@ export const schemaDict = {
             description:
               'Optional icon URL for the mentioned entity, displayed next to the mention',
           },
+          embed: {
+            type: 'ref',
+            ref: 'lex:parts.page.mention.searchService#embedInfo',
+            description:
+              'Optional embed info for creating an embed block instead of an inline mention',
+          },
+        },
+      },
+      embedInfo: {
+        type: 'object',
+        required: ['src'],
+        properties: {
+          src: {
+            type: 'string',
+            format: 'uri',
+            description: 'Source URL for the iframe embed',
+          },
+          width: {
+            type: 'integer',
+            minimum: 16,
+            maximum: 3200,
+            description: 'Default width of the embed in pixels',
+          },
+          height: {
+            type: 'integer',
+            minimum: 16,
+            maximum: 3200,
+            description: 'Default height of the embed in pixels',
+          },
         },
       },
     },

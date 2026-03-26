@@ -12,6 +12,7 @@ import useSWR from "swr";
 import * as Popover from "@radix-ui/react-popover";
 import { EditorView } from "prosemirror-view";
 import { callRPC } from "app/api/rpc/client";
+import type * as SearchService from "lexicons/api/types/parts/page/mention/searchService";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { SearchTiny } from "components/Icons/SearchTiny";
@@ -24,16 +25,18 @@ export function MentionAutocomplete(props: {
   onOpenChange: (open: boolean) => void;
   view: React.RefObject<EditorView | null>;
   onSelect: (mention: Mention) => void;
+  onEmbed?: (mention: Mention & { type: "service_result" }) => void;
   coords: { top: number; left: number } | null;
   placeholder?: string;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [noResults, setNoResults] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const { suggestionIndex, setSuggestionIndex, suggestions, scope, setScope } =
+  const { suggestionIndex, setSuggestionIndex, suggestions, scope, setScope, searchComplete } =
     useMentionSuggestions(searchQuery, props.open);
+
+  const noResults = searchComplete && searchQuery !== "" && suggestions.length === 0;
 
   const sortedSuggestions = useMemo(() => {
     const order: Mention["type"][] = [
@@ -72,22 +75,8 @@ export function MentionAutocomplete(props: {
       setSearchQuery("");
       setScope({ type: "default" });
       setSuggestionIndex(0);
-      setNoResults(false);
     }
   }, [props.open, setScope, setSuggestionIndex]);
-
-  // Handle timeout for showing "No results found"
-  useEffect(() => {
-    if (searchQuery && suggestions.length === 0) {
-      setNoResults(false);
-      const timer = setTimeout(() => {
-        setNoResults(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setNoResults(false);
-    }
-  }, [searchQuery, suggestions.length]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -139,6 +128,14 @@ export function MentionAutocomplete(props: {
       const selectedSuggestion = sortedSuggestions[suggestionIndex];
       if (selectedSuggestion?.type === "service") {
         handleScopeChange(serviceScopeFromMention(selectedSuggestion));
+      } else if (
+        (e.ctrlKey || e.metaKey) &&
+        selectedSuggestion?.type === "service_result" &&
+        selectedSuggestion.embed &&
+        props.onEmbed
+      ) {
+        props.onEmbed(selectedSuggestion);
+        props.onOpenChange(false);
       } else if (selectedSuggestion) {
         props.onSelect(selectedSuggestion);
         props.onOpenChange(false);
@@ -324,6 +321,15 @@ export function MentionAutocomplete(props: {
                         onMouseDown={(e) => e.preventDefault()}
                         name={result.name}
                         icon={result.icon}
+                        hasEmbed={!!result.embed}
+                        onEmbedClick={
+                          result.embed && props.onEmbed
+                            ? () => {
+                                props.onEmbed!(result);
+                                props.onOpenChange(false);
+                              }
+                            : undefined
+                        }
                         selected={index === suggestionIndex}
                       />
                     ) : (
@@ -509,6 +515,8 @@ const ServiceEntry = (props: {
 const ServiceSearchResult = (props: {
   name: string;
   icon?: string;
+  hasEmbed?: boolean;
+  onEmbedClick?: () => void;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   selected?: boolean;
@@ -524,7 +532,16 @@ const ServiceSearchResult = (props: {
           />
         ) : undefined
       }
-      result={<div className="truncate w-full">{props.name}</div>}
+      result={
+        props.hasEmbed && props.onEmbedClick ? (
+          <>
+            <div className="truncate w-full grow min-w-0">{props.name}</div>
+            <ScopeButton onClick={props.onEmbedClick}>Embed</ScopeButton>
+          </>
+        ) : (
+          <div className="truncate w-full">{props.name}</div>
+        )
+      }
       onClick={props.onClick}
       onMouseDown={props.onMouseDown}
       selected={props.selected}
@@ -581,6 +598,7 @@ export type Mention =
       name: string;
       href?: string;
       icon?: string;
+      embed?: SearchService.EmbedInfo;
     };
 
 export type MentionScope =
@@ -659,12 +677,7 @@ function useMentionServices(enabled: boolean): Array<Mention> {
       try {
         const result = await callRPC(`get_user_mention_services`, {});
         return result.result.services.map(
-          (s: {
-            uri: string;
-            name: string;
-            description?: string;
-            endpoint_url: string;
-          }) => ({
+          (s: { uri: string; name: string; description?: string }) => ({
             type: "service" as const,
             serviceUri: s.uri,
             name: s.name,
@@ -684,6 +697,7 @@ function useMentionSuggestions(query: string | null, open: boolean) {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [suggestions, setSuggestions] = useState<Array<Mention>>([]);
   const [scope, setScope] = useState<MentionScope>({ type: "default" });
+  const [searchComplete, setSearchComplete] = useState(false);
   const externalServices = useMentionServices(open);
   const allServices = useMemo(
     () =>
@@ -702,6 +716,7 @@ function useMentionSuggestions(query: string | null, open: boolean) {
 
   useEffect(() => {
     let stale = false;
+    setSearchComplete(false);
     // Default scope with services: show local filter instantly, debounce network fallback
     if (hasServices && scope.type === "default") {
       const filtered = allServices.filter((s) =>
@@ -710,9 +725,11 @@ function useMentionSuggestions(query: string | null, open: boolean) {
           : true,
       );
       setSuggestions(filtered);
+      setSearchComplete(true);
 
       // If local filter found matches, no need for network search
       if (!query || filtered.length > 0) return;
+      setSearchComplete(false);
     }
 
     const handler = setTimeout(async () => {
@@ -739,20 +756,26 @@ function useMentionSuggestions(query: string | null, open: boolean) {
         }));
       } else if (scope.type === "service") {
         // Search within a mention service
+        if (!query) {
+          if (!stale) {
+            setSuggestions([]);
+            setSearchComplete(true);
+          }
+          return;
+        }
         const res = await callRPC(`proxy_mention_search`, {
           service_uri: scope.serviceUri,
-          search: query || "",
+          search: query,
         });
-        const items = res?.result?.results ?? [];
-        results = items.map(
-          (r: { uri: string; name: string; href?: string; icon?: string }) => ({
-            type: "service_result" as const,
-            uri: r.uri,
-            name: r.name,
-            href: r.href,
-            icon: r.icon,
-          }),
-        );
+        const items: SearchService.Result[] = res?.result?.results ?? [];
+        results = items.map((r) => ({
+          type: "service_result" as const,
+          uri: r.uri,
+          name: r.name,
+          href: r.href,
+          icon: r.icon,
+          embed: r.embed,
+        }));
       } else if (hasServices) {
         // Default scope with services: local filter showed no matches, fall back to identity search
         results = await searchIdentities(query || "", 10);
@@ -767,6 +790,7 @@ function useMentionSuggestions(query: string | null, open: boolean) {
 
       if (!stale) {
         setSuggestions(results);
+        setSearchComplete(true);
       }
     }, 300);
 
@@ -789,5 +813,6 @@ function useMentionSuggestions(query: string | null, open: boolean) {
     setSuggestionIndex,
     scope,
     setScope: setScopeAndClear,
+    searchComplete,
   };
 }
