@@ -43,9 +43,7 @@ export const ManageSubscription = (props: {
         {props.user.handle && (
           <div className={prefClassName}>
             <div className="flex flex-col leading-snug">
-              Linked Handle{" "}
-                {props.user.handle}
-              </p>
+              Linked Handle {props.user.handle}
             </div>
           </div>
         )}

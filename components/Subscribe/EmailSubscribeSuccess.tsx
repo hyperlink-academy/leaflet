@@ -1,4 +1,7 @@
 "use client";
+
+import { LinkHandle } from "./HandleSubscribe";
+
 export const EmailSubscribeSuccess = (props: {
   email: string | undefined;
   handle: string | undefined;
@@ -11,7 +14,7 @@ export const EmailSubscribeSuccess = (props: {
       {!props.handle && (
         <>
           <hr className="my-4 border-border-light" />
-          <HandleLink />
+          <LinkHandle />
         </>
       )}
     </div>
