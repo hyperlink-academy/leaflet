@@ -90,6 +90,12 @@ export const PagePartsMentionSearchService: LexiconDoc = {
           format: "uri",
           description: "Optional web URL for the mentioned entity",
         },
+        icon: {
+          type: "string",
+          format: "uri",
+          description:
+            "Optional icon URL for the mentioned entity, displayed next to the mention",
+        },
       },
     },
   },

@@ -1,4 +1,4 @@
-type Result = { uri: string; name: string; href?: string };
+type Result = { uri: string; name: string; href?: string; icon?: string };
 
 export async function wikipedia(search: string, limit: number): Promise<Result[]> {
   if (!search.trim()) return [];
@@ -21,5 +21,6 @@ export async function wikipedia(search: string, limit: number): Promise<Result[]
     uri: urls[i] || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
     name: title,
     href: urls[i] || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+    icon: "https://en.wikipedia.org/static/apple-touch/wikipedia.png",
   }));
 }

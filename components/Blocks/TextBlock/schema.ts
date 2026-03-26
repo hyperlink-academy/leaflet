@@ -128,6 +128,7 @@ let baseSchema = {
         atURI: {},
         text: { default: "" },
         href: { default: undefined },
+        icon: { default: undefined },
       },
       group: "inline",
       inline: true,
@@ -142,6 +143,7 @@ let baseSchema = {
               atURI: dom.getAttribute("data-at-uri"),
               text: dom.textContent || "",
               href: dom.getAttribute("data-href") || undefined,
+              icon: dom.getAttribute("data-icon") || undefined,
             };
           },
         },
@@ -161,16 +163,24 @@ let baseSchema = {
         if (node.attrs.href) {
           attrs["data-href"] = node.attrs.href;
         }
+        if (node.attrs.icon) {
+          attrs["data-icon"] = node.attrs.icon;
+        }
 
-        // For publications and documents, show icon
-        if (isPublication || isDocument) {
+        // Show icon for publications/documents or service results
+        const iconSrc =
+          isPublication || isDocument
+            ? `/api/pub_icon?at_uri=${encodeURIComponent(node.attrs.atURI)}`
+            : node.attrs.icon ?? null;
+
+        if (iconSrc) {
           return [
             "span",
             attrs,
             [
               "img",
               {
-                src: `/api/pub_icon?at_uri=${encodeURIComponent(node.attrs.atURI)}`,
+                src: iconSrc,
                 class:
                   "inline-block w-4 h-4 rounded-full mt-[3px] mr-1 align-text-top",
                 alt: "",

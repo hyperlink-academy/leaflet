@@ -67,6 +67,7 @@ export const proxy_mention_search = makeRoute({
             uri: String(r.uri || ""),
             name: String(r.name || ""),
             href: r.href ? String(r.href) : undefined,
+            icon: r.icon ? String(r.icon) : undefined,
           })),
         },
       };

@@ -323,6 +323,7 @@ export function MentionAutocomplete(props: {
                         }}
                         onMouseDown={(e) => e.preventDefault()}
                         name={result.name}
+                        icon={result.icon}
                         selected={index === suggestionIndex}
                       />
                     ) : (
@@ -507,12 +508,22 @@ const ServiceEntry = (props: {
 
 const ServiceSearchResult = (props: {
   name: string;
+  icon?: string;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   selected?: boolean;
 }) => {
   return (
     <Result
+      icon={
+        props.icon ? (
+          <img
+            src={props.icon}
+            alt=""
+            className="w-5 h-5 rounded-full shrink-0"
+          />
+        ) : undefined
+      }
       result={<div className="truncate w-full">{props.name}</div>}
       onClick={props.onClick}
       onMouseDown={props.onMouseDown}
@@ -569,6 +580,7 @@ export type Mention =
       uri: string;
       name: string;
       href?: string;
+      icon?: string;
     };
 
 export type MentionScope =
@@ -690,18 +702,21 @@ function useMentionSuggestions(query: string | null, open: boolean) {
 
   useEffect(() => {
     let stale = false;
-    // Only skip debounce for purely local operations (showing service list)
-    const delay =
-      !query && hasServices && scope.type === "default" ? 0 : 300;
+    // Default scope with services: show local filter instantly, debounce network fallback
+    if (hasServices && scope.type === "default") {
+      const filtered = allServices.filter((s) =>
+        s.type === "service"
+          ? s.name.toLowerCase().includes((query || "").toLowerCase())
+          : true,
+      );
+      setSuggestions(filtered);
+
+      // If local filter found matches, no need for network search
+      if (!query || filtered.length > 0) return;
+    }
 
     const handler = setTimeout(async () => {
       if (stale || !open) return;
-
-      if (!query && scope.type === "default") {
-        // No query: show services if available, otherwise clear (sync, no race)
-        setSuggestions(hasServices ? allServices : []);
-        return;
-      }
 
       let results: Array<Mention>;
 
@@ -716,7 +731,7 @@ function useMentionSuggestions(query: string | null, open: boolean) {
           query: query || "",
           limit: 10,
         });
-        results = documents.result.documents.map((d) => ({
+        results = (documents?.result?.documents ?? []).map((d) => ({
           type: "post" as const,
           uri: d.uri,
           title: d.title,
@@ -728,26 +743,19 @@ function useMentionSuggestions(query: string | null, open: boolean) {
           service_uri: scope.serviceUri,
           search: query || "",
         });
-        results = res.result.results.map(
-          (r: { uri: string; name: string; href?: string }) => ({
+        const items = res?.result?.results ?? [];
+        results = items.map(
+          (r: { uri: string; name: string; href?: string; icon?: string }) => ({
             type: "service_result" as const,
             uri: r.uri,
             name: r.name,
             href: r.href,
+            icon: r.icon,
           }),
         );
       } else if (hasServices) {
-        // Default scope with services: filter locally, fall back to identity search
-        const filtered = allServices.filter((s) =>
-          s.type === "service"
-            ? s.name.toLowerCase().includes((query || "").toLowerCase())
-            : true,
-        );
-        if (filtered.length > 0) {
-          results = filtered;
-        } else {
-          results = await searchIdentities(query || "", 10);
-        }
+        // Default scope with services: local filter showed no matches, fall back to identity search
+        results = await searchIdentities(query || "", 10);
       } else {
         // Default scope, no services: search people & publications together
         const [identities, publications] = await Promise.all([
@@ -760,7 +768,7 @@ function useMentionSuggestions(query: string | null, open: boolean) {
       if (!stale) {
         setSuggestions(results);
       }
-    }, delay);
+    }, 300);
 
     return () => {
       stale = true;

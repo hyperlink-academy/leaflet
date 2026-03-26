@@ -435,9 +435,10 @@ export const addMentionToEditor = (
     const atMentionNode = schema.nodes.atMention.create({
       atURI: mention.uri,
       text,
-      ...(mention.type === "service_result" && mention.href
-        ? { href: mention.href }
-        : {}),
+      ...(mention.type === "service_result" && {
+        href: mention.href,
+        icon: mention.icon,
+      }),
     });
     tr.insert(from, atMentionNode);
   }

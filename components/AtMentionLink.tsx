@@ -8,28 +8,34 @@ import { atUriToUrl, classifyAtUri } from "src/utils/mentionUtils";
 export function AtMentionLink({
   atURI,
   href,
+  icon: iconUrl,
   children,
   className = "",
 }: {
   atURI: string;
   href?: string;
+  icon?: string;
   children: React.ReactNode;
   className?: string;
 }) {
   const { isPublication, isDocument } = classifyAtUri(atURI);
 
-  // Show publication icon if available
-  const icon =
-    isPublication || isDocument ? (
-      <img
-        src={`/api/pub_icon?at_uri=${encodeURIComponent(atURI)}`}
-        className="inline-block w-4 h-4 rounded-full mr-1 mt-[3px] align-text-top"
-        alt=""
-        width="20"
-        height="20"
-        loading="lazy"
-      />
-    ) : null;
+  // Show publication icon, or service-provided icon
+  const iconSrc =
+    isPublication || isDocument
+      ? `/api/pub_icon?at_uri=${encodeURIComponent(atURI)}`
+      : iconUrl ?? null;
+
+  const icon = iconSrc ? (
+    <img
+      src={iconSrc}
+      className="inline-block w-4 h-4 rounded-full mr-1 mt-[3px] align-text-top"
+      alt=""
+      width="20"
+      height="20"
+      loading="lazy"
+    />
+  ) : null;
 
   const linkHref = href || atUriToUrl(atURI);
 
