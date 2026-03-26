@@ -23,6 +23,9 @@ import * as ComAtprotoRepoListRecords from './types/com/atproto/repo/listRecords
 import * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 import * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 import * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
+import * as PartsPageMentionConfig from './types/parts/page/mention/config'
+import * as PartsPageMentionSearchService from './types/parts/page/mention/searchService'
+import * as PartsPageMentionService from './types/parts/page/mention/service'
 import * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
 import * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
 import * as PubLeafletBlocksButton from './types/pub/leaflet/blocks/button'
@@ -71,6 +74,9 @@ export * as ComAtprotoRepoListRecords from './types/com/atproto/repo/listRecords
 export * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 export * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 export * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
+export * as PartsPageMentionConfig from './types/parts/page/mention/config'
+export * as PartsPageMentionSearchService from './types/parts/page/mention/searchService'
+export * as PartsPageMentionService from './types/parts/page/mention/service'
 export * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
 export * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
 export * as PubLeafletBlocksButton from './types/pub/leaflet/blocks/button'
@@ -121,6 +127,7 @@ export const PUB_LEAFLET_PAGES = {
 export class AtpBaseClient extends XrpcClient {
   app: AppNS
   com: ComNS
+  parts: PartsNS
   pub: PubNS
   site: SiteNS
 
@@ -128,6 +135,7 @@ export class AtpBaseClient extends XrpcClient {
     super(options, schemas)
     this.app = new AppNS(this)
     this.com = new ComNS(this)
+    this.parts = new PartsNS(this)
     this.pub = new PubNS(this)
     this.site = new SiteNS(this)
   }
@@ -391,6 +399,221 @@ export class ComAtprotoRepoNS {
       opts?.qp,
       data,
       opts,
+    )
+  }
+}
+
+export class PartsNS {
+  _client: XrpcClient
+  page: PartsPageNS
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.page = new PartsPageNS(client)
+  }
+}
+
+export class PartsPageNS {
+  _client: XrpcClient
+  mention: PartsPageMentionNS
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.mention = new PartsPageMentionNS(client)
+  }
+}
+
+export class PartsPageMentionNS {
+  _client: XrpcClient
+  config: PartsPageMentionConfigRecord
+  service: PartsPageMentionServiceRecord
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.config = new PartsPageMentionConfigRecord(client)
+    this.service = new PartsPageMentionServiceRecord(client)
+  }
+
+  searchService(
+    params?: PartsPageMentionSearchService.QueryParams,
+    opts?: PartsPageMentionSearchService.CallOptions,
+  ): Promise<PartsPageMentionSearchService.Response> {
+    return this._client.call(
+      'parts.page.mention.searchService',
+      params,
+      undefined,
+      opts,
+    )
+  }
+}
+
+export class PartsPageMentionConfigRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PartsPageMentionConfig.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'parts.page.mention.config',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PartsPageMentionConfig.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'parts.page.mention.config',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PartsPageMentionConfig.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'parts.page.mention.config'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      {
+        collection,
+        rkey: 'self',
+        ...params,
+        record: { ...record, $type: collection },
+      },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PartsPageMentionConfig.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'parts.page.mention.config'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'parts.page.mention.config', ...params },
+      { headers },
+    )
+  }
+}
+
+export class PartsPageMentionServiceRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PartsPageMentionService.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'parts.page.mention.service',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PartsPageMentionService.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'parts.page.mention.service',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PartsPageMentionService.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'parts.page.mention.service'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PartsPageMentionService.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'parts.page.mention.service'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'parts.page.mention.service', ...params },
+      { headers },
     )
   }
 }

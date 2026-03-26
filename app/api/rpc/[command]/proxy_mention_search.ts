@@ -1,22 +1,13 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { idResolver } from "app/(home-pages)/reader/idResolver";
+import { getIdentityData } from "actions/getIdentityData";
+import { restoreOAuthSession } from "src/atproto-oauth";
+import { AtpBaseClient } from "lexicons/api";
 
 export type ProxyMentionSearchReturnType = Awaited<
   ReturnType<(typeof proxy_mention_search)["handler"]>
 >;
-
-async function resolveDidToServiceEndpoint(did: string): Promise<string> {
-  const doc = await idResolver.did.resolve(did);
-  if (!doc) throw new Error(`Could not resolve DID: ${did}`);
-  const service = doc.service?.find(
-    (s: any) => s.id === "#mention_search" || s.type === "MentionSearchService",
-  );
-  if (!service)
-    throw new Error(`No mention search service in DID document for ${did}`);
-  return service.serviceEndpoint as string;
-}
 
 export const proxy_mention_search = makeRoute({
   route: "proxy_mention_search",
@@ -28,6 +19,9 @@ export const proxy_mention_search = makeRoute({
     { service_uri, search },
     { supabase }: Pick<Env, "supabase">,
   ) => {
+    const identity = await getIdentityData();
+    if (!identity?.atp_did) throw new Error("Not authenticated");
+
     const { data: service } = await supabase
       .from("mention_services")
       .select("record")
@@ -39,40 +33,32 @@ export const proxy_mention_search = makeRoute({
     const did = (service.record as any)?.did as string;
     if (!did) throw new Error("Service has no DID");
 
-    const serviceEndpoint = await resolveDidToServiceEndpoint(did);
+    const sessionResult = await restoreOAuthSession(identity.atp_did);
+    if (!sessionResult.ok) throw new Error("OAuth session expired");
 
-    const url = new URL(
-      "/xrpc/parts.page.mention.searchService",
-      serviceEndpoint,
-    );
-    url.searchParams.set("service", service_uri);
-    url.searchParams.set("search", search);
+    const session = sessionResult.value;
+    const agent = new AtpBaseClient(session.fetchHandler.bind(session));
+    agent.setHeader("atproto-proxy", `${did}#mention_search`);
+    console.log("DID: " + did);
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await agent.call("parts.page.mention.searchService", {
+      service: service_uri,
+      search,
+    });
 
-    try {
-      const response = await fetch(url.toString(), {
-        signal: controller.signal,
-      });
-      if (!response.ok) {
-        throw new Error(`Service returned ${response.status}`);
-      }
-      const data = (await response.json()) as { results?: unknown[] };
-      const results = Array.isArray(data.results) ? data.results : [];
+    const results = Array.isArray(response.data?.results)
+      ? response.data.results
+      : [];
 
-      return {
-        result: {
-          results: results.slice(0, 50).map((r: any) => ({
-            uri: String(r.uri || ""),
-            name: String(r.name || ""),
-            href: r.href ? String(r.href) : undefined,
-            icon: r.icon ? String(r.icon) : undefined,
-          })),
-        },
-      };
-    } finally {
-      clearTimeout(timeout);
-    }
+    return {
+      result: {
+        results: results.slice(0, 50).map((r: any) => ({
+          uri: String(r.uri || ""),
+          name: String(r.name || ""),
+          href: r.href ? String(r.href) : undefined,
+          icon: r.icon ? String(r.icon) : undefined,
+        })),
+      },
+    };
   },
 });
