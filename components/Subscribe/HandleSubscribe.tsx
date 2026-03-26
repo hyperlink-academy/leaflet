@@ -16,6 +16,7 @@ import { GoToArrow } from "components/Icons/GoToArrow";
 import { Separator } from "components/Layout";
 
 export const HandleSubscribe = (props: {
+  autoFocus?: boolean;
   compact?: boolean;
   user: {
     loggedIn: boolean;
@@ -36,8 +37,8 @@ export const HandleSubscribe = (props: {
     );
   } else
     return (
-      <div className="max-w-sm mx-auto">
-        <HandleInput compact={props.compact} />
+      <div className="max-w-sm mx-auto w-full ">
+        <HandleInput compact={props.compact} autoFocus={props.autoFocus} />
         <div className="flex gap-2 justify-center items-center mx-auto pt-0.5 ">
           <UniversalHandleInfo />
           <Separator classname="h-3! border-accent-contrast!" />
@@ -47,33 +48,37 @@ export const HandleSubscribe = (props: {
     );
 };
 
-export const HandleInput = (props: { compact?: boolean }) => {
+export const HandleInput = (props: {
+  compact?: boolean;
+  autoFocus?: boolean;
+}) => {
   let [handleValue, setHandleValue] = useState("");
   return (
-    <div className="handleInput input-with-border relative pl-0! py-0! flex gap-0 ">
-      <div className="border-r border-border text-center w-7 shrink-0 mr-2">
+    <div className="handleInput input-with-border relative pl-0! py-0! flex gap-0 w-full">
+      <div className="border-r border-border text-tertiary text-center w-8 shrink-0 mr-2">
         @
       </div>
       <Input
-        className={`appearance-none! outline-none! py-0.5 ${props.compact ? "pr-6" : "pr-14"} grow max-w-full`}
+        autoFocus={props.autoFocus}
+        className={`appearance-none! outline-none! w-full py-0.5 ${props.compact ? "pr-7" : "pr-22"}`}
         placeholder="universal.handle"
-        size={30}
+        size={0}
         value={handleValue}
         onChange={(e) => setHandleValue(e.target.value)}
       />
 
-      {props.compact ? (
-        <button className="absolute text-sm py-0! right-[6px] top-[6px] leading-snug outline-none!">
-          <GoToArrow />
-        </button>
-      ) : (
-        <ButtonPrimary
-          compact
-          className="absolute text-sm py-0! right-[3px] top-[3.5px] leading-snug outline-none!"
-        >
-          Subscribe
-        </ButtonPrimary>
-      )}
+      <div className="absolute top-0 bottom-0 right-[4px] flex items-center">
+        {props.compact ? (
+          <GoToArrow className="text-accent-contrast mr-0.5" />
+        ) : (
+          <ButtonPrimary
+            compact
+            className="leading-tight! outline-none! text-sm!"
+          >
+            Subscribe
+          </ButtonPrimary>
+        )}
+      </div>
     </div>
   );
 };

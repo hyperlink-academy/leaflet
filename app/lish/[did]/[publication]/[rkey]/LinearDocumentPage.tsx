@@ -24,7 +24,7 @@ import {
 } from "./Footnotes/PublishedFootnotes";
 import { PublishedFootnoteSideColumn } from "./Footnotes/PublishedFootnoteSideColumn";
 import { PublishedFootnotePopover } from "./Footnotes/PublishedFootnotePopover";
-import { PostPubInfo } from "./PostPubInfo";
+import { dummy, PostPubInfo } from "./PostPubInfo";
 
 export function LinearDocumentPage({
   blocks,
@@ -110,7 +110,7 @@ export function LinearDocumentPage({
           recommendsCount={document.recommendsCount}
         />
         <div className={`spacer h-4 w-full`} />
-        <PostPubInfo />
+        <PostPubInfo {...dummy} />
 
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>

@@ -37,12 +37,12 @@ export const Modal = ({
           <div
             className={`
             opaque-container p-3
-            flex flex-col gap-1 rounded-lg!
+            flex flex-col rounded-lg!
             ${className}`}
           >
             {title ? (
               <Dialog.Title>
-                <h3>{title}</h3>
+                <h3 className="mb-1">{title}</h3>
               </Dialog.Title>
             ) : (
               <Dialog.Title />

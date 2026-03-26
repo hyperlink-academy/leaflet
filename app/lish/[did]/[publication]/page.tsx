@@ -20,7 +20,7 @@ import {
 } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { FontLoader } from "components/FontLoader";
-import { SubscribeButton } from "components/Subscribe/SubscribeButton";
+import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import { dummy } from "./[rkey]/PostPubInfo";
 
 export default async function Publication(props: {
@@ -102,8 +102,9 @@ export default async function Publication(props: {
                     handle={profile.handle}
                   />
                 )}
-                <div className="spacer h-4 w-full" />
-                <SubscribeButton {...dummy} />
+                <div className="pt-4 w-full max-w-sm mx-auto">
+                  <SubscribeInput {...dummy} />
+                </div>
                 {/*<div className="sm:pt-4 pt-4">
                 <SubscribeWithBluesky
                   base_url={getPublicationURL(publication)}

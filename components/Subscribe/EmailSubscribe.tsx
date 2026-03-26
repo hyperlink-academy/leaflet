@@ -8,6 +8,7 @@ import { useState } from "react";
 import { HandleInputandOAuth, UniversalHandleInfo } from "./HandleSubscribe";
 
 export const EmailSubscribe = (props: {
+  autoFocus?: boolean;
   compact?: boolean;
   user: {
     loggedIn: boolean;
@@ -22,30 +23,31 @@ export const EmailSubscribe = (props: {
     props.user.loggedIn && props.user.email ? "success" : "confirm",
   );
   return (
-    <div className="relative input-with-border flex gap-2 w-fit mx-auto">
+    <div className="relative input-with-border flex gap-2 w-full items-center mx-auto">
       <Input
-        className={`appearance-none! outline-none! max-w-full ${props.compact ? "pr-6" : "pr-14"} `}
+        autoFocus={props.autoFocus}
+        className={`appearance-none! outline-none! w-full ${props.compact ? "pr-7" : "pr-22"} `}
         disabled={props.user.loggedIn}
         placeholder="email@example.com"
-        size={30}
+        size={0}
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
       <Modal
         asChild
         trigger={
-          props.compact ? (
-            <button className="absolute text-sm py-0! right-[3px] top-[3.5px] leading-snug outline-none!">
-              <GoToArrow />
-            </button>
-          ) : (
-            <ButtonPrimary
-              compact
-              className="absolute text-sm py-0! right-[3px] top-[3.5px] leading-snug outline-none!"
-            >
-              Subscribe
-            </ButtonPrimary>
-          )
+          <div className="absolute top-0 bottom-0 right-[4px] flex items-center">
+            {props.compact ? (
+              <GoToArrow className="text-accent-contrast mr-0.5" />
+            ) : (
+              <ButtonPrimary
+                compact
+                className="leading-tight! outline-none! text-sm!"
+              >
+                Subscribe
+              </ButtonPrimary>
+            )}
+          </div>
         }
       >
         {state === "success" ? (

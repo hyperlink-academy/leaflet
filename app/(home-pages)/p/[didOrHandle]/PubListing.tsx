@@ -1,10 +1,11 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
 import { PublicationSubscription } from "app/(home-pages)/reader/getSubscriptions";
+import { dummy } from "app/lish/[did]/[publication]/[rkey]/PostPubInfo";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
 import { PubIcon } from "components/ActionBar/Publications";
-import { Separator } from "components/Layout";
+import { SubscribeButton } from "components/Subscribe/SubscribeButton";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -64,14 +65,15 @@ export const PubListing = (props: PublicationSubscription) => {
               )}
             </p>
           </div>
-          <div className="w-fit mx-auto mt-3 grow items-end flex">
-            <SubscribeWithBluesky
+          <div className="mt-3 mx-auto">
+            <SubscribeButton autoFocus {...dummy} />
+            {/*<SubscribeWithBluesky
               compact
               pub_uri={props.uri}
               pubName={props.record.name}
               subscribers={props.publication_subscriptions || []}
               base_url={getPublicationURL({ ...props })}
-            />
+            />*/}
           </div>
         </div>
       </div>
