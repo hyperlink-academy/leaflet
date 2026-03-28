@@ -66,19 +66,7 @@ export const PublicationButtons = (props: {
         </>
       )}
 
-      {identity.publications
-        ?.filter((p) => {
-          let record = p.record as any;
-          if (record.preferences?.greengale) return false;
-          if (
-            record.theme &&
-            record.theme.$type &&
-            record.theme.$type !== "pub.leaflet.publication#theme"
-          )
-            return false;
-          return true;
-        })
-        .map((d) => {
+      {identity.publications?.map((d) => {
           return (
             <PublicationOption
               {...d}
