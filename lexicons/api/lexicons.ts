@@ -1042,9 +1042,9 @@ export const schemaDict = {
       },
     },
   },
-  PartsPageMentionSearchService: {
+  PartsPageMentionSearch: {
     lexicon: 1,
-    id: 'parts.page.mention.searchService',
+    id: 'parts.page.mention.search',
     defs: {
       main: {
         type: 'query',
@@ -1083,7 +1083,7 @@ export const schemaDict = {
                 type: 'array',
                 items: {
                   type: 'ref',
-                  ref: 'lex:parts.page.mention.searchService#result',
+                  ref: 'lex:parts.page.mention.search#result',
                 },
                 maxLength: 50,
               },
@@ -1116,7 +1116,7 @@ export const schemaDict = {
           },
           embed: {
             type: 'ref',
-            ref: 'lex:parts.page.mention.searchService#embedInfo',
+            ref: 'lex:parts.page.mention.search#embedInfo',
             description:
               'Optional embed info for creating an embed block instead of an inline mention',
           },
@@ -1155,7 +1155,7 @@ export const schemaDict = {
         type: 'record',
         key: 'any',
         description:
-          'Declares a mention service. The did is an XRPC service URL that implements parts.page.mention.searchService.',
+          'Declares a mention service. The did is an XRPC service URL that implements parts.page.mention.search.',
         record: {
           type: 'object',
           required: ['name', 'did'],
@@ -1172,7 +1172,7 @@ export const schemaDict = {
               type: 'string',
               format: 'did',
               description:
-                'DID of the service that implements parts.page.mention.searchService',
+                'DID of the service that implements parts.page.mention.search',
             },
           },
         },
@@ -2707,7 +2707,7 @@ export const ids = {
   ComAtprotoRepoStrongRef: 'com.atproto.repo.strongRef',
   ComAtprotoRepoUploadBlob: 'com.atproto.repo.uploadBlob',
   PartsPageMentionConfig: 'parts.page.mention.config',
-  PartsPageMentionSearchService: 'parts.page.mention.searchService',
+  PartsPageMentionSearch: 'parts.page.mention.search',
   PartsPageMentionService: 'parts.page.mention.service',
   PubLeafletBlocksBlockquote: 'pub.leaflet.blocks.blockquote',
   PubLeafletBlocksBskyPost: 'pub.leaflet.blocks.bskyPost',

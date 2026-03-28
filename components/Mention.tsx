@@ -12,7 +12,7 @@ import useSWR from "swr";
 import * as Popover from "@radix-ui/react-popover";
 import { EditorView } from "prosemirror-view";
 import { callRPC } from "app/api/rpc/client";
-import type * as SearchService from "lexicons/api/types/parts/page/mention/searchService";
+import type * as SearchService from "lexicons/api/types/parts/page/mention/search";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { SearchTiny } from "components/Icons/SearchTiny";

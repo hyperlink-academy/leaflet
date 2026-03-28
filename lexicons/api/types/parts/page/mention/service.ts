@@ -18,7 +18,7 @@ export interface Record {
   $type: 'parts.page.mention.service'
   name: string
   description?: string
-  /** DID of the service that implements parts.page.mention.searchService */
+  /** DID of the service that implements parts.page.mention.search */
   did: string
   [k: string]: unknown
 }

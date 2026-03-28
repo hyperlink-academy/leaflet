@@ -8,7 +8,7 @@ export const PagePartsMentionService: LexiconDoc = {
       type: "record",
       key: "any",
       description:
-        "Declares a mention service. The did is an XRPC service URL that implements parts.page.mention.searchService.",
+        "Declares a mention service. The did is an XRPC service URL that implements parts.page.mention.search.",
       record: {
         type: "object",
         required: ["name", "did"],
@@ -19,7 +19,7 @@ export const PagePartsMentionService: LexiconDoc = {
             type: "string",
             format: "did",
             description:
-              "DID of the service that implements parts.page.mention.searchService",
+              "DID of the service that implements parts.page.mention.search",
           },
         },
       },
@@ -29,7 +29,7 @@ export const PagePartsMentionService: LexiconDoc = {
 
 export const PagePartsMentionSearchService: LexiconDoc = {
   lexicon: 1,
-  id: "parts.page.mention.searchService",
+  id: "parts.page.mention.search",
   defs: {
     main: {
       type: "query",

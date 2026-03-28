@@ -13,7 +13,7 @@ import {
 
 const is$typed = _is$typed,
   validate = _validate
-const id = 'parts.page.mention.searchService'
+const id = 'parts.page.mention.search'
 
 export type QueryParams = {
   /** AT URI of the parts.page.mention.service record identifying which service to query */
@@ -45,7 +45,7 @@ export function toKnownErr(e: any) {
 }
 
 export interface Result {
-  $type?: 'parts.page.mention.searchService#result'
+  $type?: 'parts.page.mention.search#result'
   /** Identifier for the mentioned entity */
   uri: string
   /** Display name for the mentioned entity */
@@ -68,7 +68,7 @@ export function validateResult<V>(v: V) {
 }
 
 export interface EmbedInfo {
-  $type?: 'parts.page.mention.searchService#embedInfo'
+  $type?: 'parts.page.mention.search#embedInfo'
   /** Source URL for the iframe embed */
   src: string
   /** Default width of the embed in pixels */

@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "parts.page.mention.searchService",
+  "id": "parts.page.mention.search",
   "defs": {
     "main": {
       "type": "query",

@@ -45,7 +45,7 @@ const mentionServices: Record<
   pokemon,
 };
 
-app.get("/xrpc/parts.page.mention.searchService", async (c) => {
+app.get("/xrpc/parts.page.mention.search", async (c) => {
   const serviceUri = c.req.query("service");
   const search = c.req.query("search");
   const limit = Math.min(

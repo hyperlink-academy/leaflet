@@ -24,7 +24,7 @@ import * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 import * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 import * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
 import * as PartsPageMentionConfig from './types/parts/page/mention/config'
-import * as PartsPageMentionSearchService from './types/parts/page/mention/searchService'
+import * as PartsPageMentionSearch from './types/parts/page/mention/search'
 import * as PartsPageMentionService from './types/parts/page/mention/service'
 import * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
 import * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
@@ -75,7 +75,7 @@ export * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 export * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 export * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
 export * as PartsPageMentionConfig from './types/parts/page/mention/config'
-export * as PartsPageMentionSearchService from './types/parts/page/mention/searchService'
+export * as PartsPageMentionSearch from './types/parts/page/mention/search'
 export * as PartsPageMentionService from './types/parts/page/mention/service'
 export * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
 export * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
@@ -434,12 +434,12 @@ export class PartsPageMentionNS {
     this.service = new PartsPageMentionServiceRecord(client)
   }
 
-  searchService(
-    params?: PartsPageMentionSearchService.QueryParams,
-    opts?: PartsPageMentionSearchService.CallOptions,
-  ): Promise<PartsPageMentionSearchService.Response> {
+  search(
+    params?: PartsPageMentionSearch.QueryParams,
+    opts?: PartsPageMentionSearch.CallOptions,
+  ): Promise<PartsPageMentionSearch.Response> {
     return this._client.call(
-      'parts.page.mention.searchService',
+      'parts.page.mention.search',
       params,
       undefined,
       opts,
