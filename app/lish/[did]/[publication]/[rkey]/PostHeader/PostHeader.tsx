@@ -17,7 +17,7 @@ import { ProfilePopover } from "components/ProfilePopover";
 
 export function PostHeader(props: {
   data: PostPageData;
-  profile: ProfileViewDetailed;
+  profile?: ProfileViewDetailed;
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;

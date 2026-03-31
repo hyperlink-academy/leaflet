@@ -52,14 +52,19 @@ export const get_profile_data = makeRoute({
       });
     }
 
-    let profileReq = agent.app.bsky.actor.getProfile({ actor: did });
+    let profileReq = agent.app.bsky.actor
+      .getProfile({ actor: did })
+      .then(
+        (res) => res.data,
+        () => undefined,
+      );
 
     let publicationsReq = supabase
       .from("publications")
       .select("*")
       .eq("identity_did", did);
 
-    let [{ data: profile }, { data: rawPublications }] = await Promise.all([
+    let [profile, { data: rawPublications }] = await Promise.all([
       profileReq,
       publicationsReq,
     ]);

@@ -46,7 +46,10 @@ export async function DocumentPageRenderer({
 
   let [document, profile] = await Promise.all([
     getPostPageData(did, rkey),
-    agent.getProfile({ actor: did }),
+    agent.getProfile({ actor: did }).then(
+      (res) => res.data,
+      () => undefined,
+    ),
   ]);
 
   const record = document?.normalizedDocument;
@@ -149,7 +152,7 @@ export async function DocumentPageRenderer({
                   pubRecord?.preferences,
                 )}
                 pubRecord={pubRecord}
-                profile={JSON.parse(JSON.stringify(profile.data))}
+                profile={profile ? JSON.parse(JSON.stringify(profile)) : undefined}
                 document={document}
                 bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                 did={did}
