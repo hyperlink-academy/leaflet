@@ -64,6 +64,7 @@ export const Popover = (props: {
                   width={16}
                   height={8}
                   viewBox="0 0 16 8"
+                  className="z-30"
                 >
                   <PopoverArrow
                     arrowFill={

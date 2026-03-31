@@ -1,9 +1,8 @@
 "use client";
 
 import { Input } from "components/Input";
-import { useState } from "react";
-import { Menu } from "components/Menu";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { useRef, useState } from "react";
+import { Menu, MenuItem, RadioMenuGroup, RadioMenuItem } from "components/Menu";
 import { useIsMobile } from "src/hooks/isMobile";
 import {
   fonts,
@@ -14,6 +13,9 @@ import {
   createCustomFontId,
   getFontConfig,
 } from "src/fonts";
+import { ButtonPrimary } from "components/Buttons";
+import { useSmoker } from "components/Toast";
+import { DotLoader } from "components/utils/DotLoader";
 
 export const FontPicker = (props: {
   label: string;
@@ -21,6 +23,8 @@ export const FontPicker = (props: {
   onChange: (fontId: string) => void;
 }) => {
   let isMobile = useIsMobile();
+  let smoker = useSmoker();
+  let inputWrapperRef = useRef<HTMLDivElement>(null);
   let [showCustomInput, setShowCustomInput] = useState(false);
   let [customFontValue, setCustomFontValue] = useState("");
   let fontId = props.value || defaultFontId;
@@ -31,9 +35,28 @@ export const FontPicker = (props: {
     a.displayName.localeCompare(b.displayName),
   );
 
-  const handleCustomSubmit = () => {
+  let [loading, setLoading] = useState(false);
+
+  const handleCustomSubmit = async () => {
     const parsed = parseGoogleFontInput(customFontValue);
-    if (parsed) {
+    if (!parsed) return;
+
+    setLoading(true);
+    try {
+      const url = `https://fonts.googleapis.com/css2?family=${parsed.googleFontsFamily}&display=swap`;
+      const res = await fetch(url, { method: "HEAD" });
+      if (!res.ok) {
+        const rect = inputWrapperRef.current?.getBoundingClientRect();
+        smoker({
+          error: true,
+          position: {
+            x: rect ? rect.left + rect.width / 2 : 0,
+            y: rect ? rect.top - 8 : 0,
+          },
+          text: "No font found!",
+        });
+        return;
+      }
       const customId = createCustomFontId(
         parsed.fontName,
         parsed.googleFontsFamily,
@@ -41,6 +64,18 @@ export const FontPicker = (props: {
       props.onChange(customId);
       setShowCustomInput(false);
       setCustomFontValue("");
+    } catch {
+      const rect = inputWrapperRef.current?.getBoundingClientRect();
+      smoker({
+        error: true,
+        position: {
+          x: rect ? rect.left + rect.width / 2 : 0,
+          y: rect ? rect.top - 8 : 0,
+        },
+        text: "No font found!",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,118 +97,95 @@ export const FontPicker = (props: {
       }
       side={isMobile ? "bottom" : "right"}
       align="start"
-      className="w-[250px] !gap-0 !outline-none max-h-72 "
+      className="w-fit !gap-0 !outline-none max-h-72 "
     >
       {showCustomInput ? (
         <div className="p-2 flex flex-col gap-2">
-          <div className="text-sm text-secondary">
-            Paste a Google Font name
+          <div>
+            <div className="font-bold text-secondary">
+              Paste any Google Font name
+            </div>
+            <div className="text-sm text-tertiary">This is case sensitive</div>
           </div>
-          <Input
-            value={customFontValue}
-            className="w-full"
-            placeholder="e.g. Roboto, Open Sans, Playfair Display"
-            autoFocus
-            onChange={(e) => setCustomFontValue(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleCustomSubmit();
-              } else if (e.key === "Escape") {
-                setShowCustomInput(false);
-                setCustomFontValue("");
-              }
-            }}
-          />
-          <div className="flex gap-2">
+          <div ref={inputWrapperRef}>
+            <Input
+              value={customFontValue}
+              className="w-full input-with-border"
+              placeholder="e.g. Roboto, Open Sans"
+              autoFocus
+              onChange={(e) => setCustomFontValue(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleCustomSubmit();
+                } else if (e.key === "Escape") {
+                  setShowCustomInput(false);
+                  setCustomFontValue("");
+                }
+              }}
+            />
+          </div>
+          <div className="flex gap-2 self-end items-center">
             <button
-              className="flex-1 px-2 py-1 text-sm rounded-md bg-accent-1 text-accent-2 hover:opacity-80"
-              onClick={handleCustomSubmit}
-            >
-              Add Font
-            </button>
-            <button
-              className="px-2 py-1 text-sm rounded-md text-secondary hover:bg-border-light"
+              className="px-1 py-0 rounded-md text-accent-contrast font-bold hover:bg-border-light"
               onClick={() => {
                 setShowCustomInput(false);
                 setCustomFontValue("");
               }}
             >
-              Cancel
+              Nevermind
             </button>
+            <ButtonPrimary
+              compact
+              className=""
+              disabled={loading}
+              onClick={handleCustomSubmit}
+            >
+              {loading ? <DotLoader /> : "Add Font"}
+            </ButtonPrimary>
           </div>
         </div>
       ) : (
         <div className="flex flex-col h-full overflow-auto gap-0 py-1">
-          {fontList.map((fontOption) => {
-            return (
-              <FontOption
-                key={fontOption.id}
-                onSelect={() => {
-                  props.onChange(fontOption.id);
-                }}
-                font={fontOption}
-                selected={fontOption.id === fontId}
-              />
-            );
-          })}
-          {isCustom && (
-            <FontOption
-              key={fontId}
-              onSelect={() => {}}
-              font={font}
-              selected={true}
-            />
-          )}
+          <RadioMenuGroup value={fontId} onValueChange={props.onChange}>
+            {fontList.map((fontOption) => {
+              return (
+                <FontOption
+                  key={fontOption.id}
+                  font={fontOption}
+                  selected={fontOption.id === fontId}
+                />
+              );
+            })}
+            {isCustom && (
+              <FontOption key={fontId} font={font} selected={true} />
+            )}
+          </RadioMenuGroup>
           <hr className="mx-2 my-1 border-border" />
-          <DropdownMenu.Item
+          <MenuItem
             onSelect={(e) => {
               e.preventDefault();
               setShowCustomInput(true);
             }}
-            className={`
-              fontOption
-              z-10 px-1 py-0.5
-              text-left text-secondary
-              data-[highlighted]:bg-border-light data-[highlighted]:text-secondary
-              hover:bg-border-light hover:text-secondary
-              outline-none
-              cursor-pointer
-            `}
           >
-            <div className="px-2 py-0 rounded-md">Custom Google Font...</div>
-          </DropdownMenu.Item>
+            Add a Custom Font
+          </MenuItem>
         </div>
       )}
     </Menu>
   );
 };
 
-const FontOption = (props: {
-  onSelect: () => void;
-  font: FontConfig;
-  selected: boolean;
-}) => {
+const FontOption = (props: { font: FontConfig; selected: boolean }) => {
   return (
-    <DropdownMenu.RadioItem
+    <RadioMenuItem
       value={props.font.id}
-      onSelect={props.onSelect}
+      selected={props.selected}
       className={`
-        fontOption
-        z-10  px-1 py-0.5
-      text-left text-secondary
-      data-[highlighted]:bg-border-light data-[highlighted]:text-secondary
-      hover:bg-border-light hover:text-secondary
-      outline-none
-      cursor-pointer
-
+        fontOption text-normal!
       `}
     >
-      <div
-        className={`px-2 py-0 rounded-md ${props.selected && "bg-accent-1 text-accent-2"}`}
-      >
-        {props.font.displayName}
-      </div>
-    </DropdownMenu.RadioItem>
+      {props.font.displayName}
+    </RadioMenuItem>
   );
 };
