@@ -1,6 +1,12 @@
 "use client";
-import { useEffect, useRef } from "react";
-import { AppBskyFeedDefs } from "@atproto/api";
+import { useEffect, useMemo, useRef } from "react";
+import {
+  AppBskyFeedDefs,
+  AppBskyFeedPost,
+  AppBskyRichtextFacet,
+  AppBskyEmbedExternal,
+} from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import useSWR from "swr";
 import { PageWrapper } from "components/Pages/Page";
 import { useDrawerOpen } from "./Interactions/InteractionDrawer";
@@ -18,6 +24,13 @@ import {
   fetchThread,
   prefetchThread,
 } from "./PostLinks";
+import { useDocument } from "contexts/DocumentContext";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import { QuoteContent } from "./Interactions/Quotes";
+import {
+  decodeQuotePosition,
+  type QuotePosition,
+} from "./quotePosition";
 
 // Re-export for backwards compatibility
 export { ThreadLink, getThreadKey, fetchThread, prefetchThread, ClientDate };
@@ -26,6 +39,105 @@ type ThreadViewPost = AppBskyFeedDefs.ThreadViewPost;
 type NotFoundPost = AppBskyFeedDefs.NotFoundPost;
 type BlockedPost = AppBskyFeedDefs.BlockedPost;
 type ThreadType = ThreadViewPost | NotFoundPost | BlockedPost;
+
+// Walk a reply chain collecting consecutive same-author posts
+// where each post is the sole reply. Returns the flat chain.
+function flattenSameAuthorChain(
+  post: ThreadViewPost,
+  rootAuthorDid: string,
+): ThreadViewPost[] {
+  if (post.post.author.did !== rootAuthorDid) return [post];
+
+  const chain: ThreadViewPost[] = [post];
+  let current = post;
+
+  while (current.replies && current.replies.length > 0) {
+    const replies = current.replies as any[];
+    const sameAuthorReplies = replies.filter(
+      (r) =>
+        AppBskyFeedDefs.isThreadViewPost(r) &&
+        (r as ThreadViewPost).post.author.did === rootAuthorDid,
+    ) as ThreadViewPost[];
+
+    // Only flatten if there's exactly one reply and it's by the same author
+    if (sameAuthorReplies.length !== 1 || replies.length !== 1) break;
+
+    chain.push(sameAuthorReplies[0]);
+    current = sameAuthorReplies[0];
+  }
+
+  return chain;
+}
+
+// Check if a URL matches any of the document's known URLs,
+// and extract the quote position if present
+function matchDocumentUrl(
+  uri: string,
+  documentUrls: string[],
+): { url: string; quotePosition: QuotePosition | null } | null {
+  try {
+    const url = new URL(uri);
+    const parts = url.pathname.split("/l-quote/");
+    const pathWithoutQuote = parts[0];
+    const quoteParam = parts[1];
+    const fullUrlWithoutQuote = (url.origin + pathWithoutQuote).replace(
+      /\/$/,
+      "",
+    );
+
+    for (const docUrl of documentUrls) {
+      const normalized = docUrl.replace(/\/$/, "");
+      if (fullUrlWithoutQuote === normalized) {
+        return {
+          url: uri,
+          quotePosition: quoteParam
+            ? decodeQuotePosition(quoteParam)
+            : null,
+        };
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+// Scan a post's facets and embed for links to the current document
+function findDocumentQuoteLink(
+  post: AppBskyFeedDefs.PostView,
+  documentUrls: string[],
+): {
+  url: string;
+  quotePosition: QuotePosition | null;
+  isEmbed: boolean;
+} | null {
+  if (documentUrls.length === 0) return null;
+
+  const record = post.record as AppBskyFeedPost.Record;
+
+  // Check facets for link URIs
+  if (record.facets) {
+    for (const facet of record.facets) {
+      for (const feature of facet.features) {
+        if (AppBskyRichtextFacet.isLink(feature)) {
+          const match = matchDocumentUrl(feature.uri, documentUrls);
+          if (match) return { ...match, isEmbed: false };
+        }
+      }
+    }
+  }
+
+  // Check external embed URI
+  if (post.embed && AppBskyEmbedExternal.isView(post.embed)) {
+    const match = matchDocumentUrl(
+      post.embed.external.uri,
+      documentUrls,
+    );
+    if (match) return { ...match, isEmbed: true };
+  }
+
+  return null;
+}
 
 export function ThreadPage(props: {
   parentUri: string;
@@ -75,6 +187,38 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
   const { post, parentUri } = props;
   const mainPostRef = useRef<HTMLDivElement>(null);
 
+  // Compute document URLs for leaflet link detection
+  const {
+    uri: docUri,
+    normalizedDocument,
+    normalizedPublication,
+  } = useDocument();
+  const docAtUri = useMemo(() => new AtUri(docUri), [docUri]);
+  const docDid = docAtUri.host;
+
+  const documentUrls = useMemo(() => {
+    const urls: string[] = [];
+    const canonicalUrl = getDocumentURL(
+      normalizedDocument,
+      docUri,
+      normalizedPublication,
+    );
+    if (canonicalUrl.startsWith("http")) {
+      urls.push(canonicalUrl);
+    } else {
+      urls.push(`https://leaflet.pub${canonicalUrl}`);
+    }
+    urls.push(`https://leaflet.pub/p/${docAtUri.host}/${docAtUri.rkey}`);
+    if (
+      normalizedDocument.site &&
+      normalizedDocument.site.startsWith("http")
+    ) {
+      const path = normalizedDocument.path || "/" + docAtUri.rkey;
+      urls.push(normalizedDocument.site + path);
+    }
+    return urls;
+  }, [docUri, docAtUri, normalizedDocument, normalizedPublication]);
+
   // Scroll the main post into view when the thread loads
   useEffect(() => {
     if (mainPostRef.current) {
@@ -100,6 +244,8 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
   if (!AppBskyFeedDefs.isThreadViewPost(post)) {
     return <PostNotAvailable />;
   }
+
+  const rootAuthorDid = post.post.author.did;
 
   // Collect all parent posts in order (oldest first)
   const parents: ThreadViewPost[] = [];
@@ -137,6 +283,9 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
             parentPostUri={post.post.uri}
             depth={0}
             parentAuthorDid={post.post.author.did}
+            rootAuthorDid={rootAuthorDid}
+            documentUrls={documentUrls}
+            docDid={docDid}
           />
         </div>
       )}
@@ -188,27 +337,43 @@ function Replies(props: {
   replies: (ThreadViewPost | NotFoundPost | BlockedPost)[];
   depth: number;
   parentAuthorDid?: string;
+  rootAuthorDid: string;
   pageUri: string;
   parentPostUri: string;
+  documentUrls: string[];
+  docDid: string;
 }) {
-  const { replies, depth, parentAuthorDid, pageUri, parentPostUri } = props;
+  const {
+    replies,
+    depth,
+    parentAuthorDid,
+    rootAuthorDid,
+    pageUri,
+    parentPostUri,
+    documentUrls,
+    docDid,
+  } = props;
   const collapsedThreads = useThreadState((s) => s.collapsedThreads);
   const toggleCollapsed = useThreadState((s) => s.toggleCollapsed);
 
   // Sort replies so that replies from the parent author come first
-  const sortedReplies = parentAuthorDid
-    ? [...replies].sort((a, b) => {
-        const aIsAuthor =
-          AppBskyFeedDefs.isThreadViewPost(a) &&
-          a.post.author.did === parentAuthorDid;
-        const bIsAuthor =
-          AppBskyFeedDefs.isThreadViewPost(b) &&
-          b.post.author.did === parentAuthorDid;
-        if (aIsAuthor && !bIsAuthor) return -1;
-        if (!aIsAuthor && bIsAuthor) return 1;
-        return 0;
-      })
-    : replies;
+  const sortedReplies = useMemo(
+    () =>
+      parentAuthorDid
+        ? [...replies].sort((a, b) => {
+            const aIsAuthor =
+              AppBskyFeedDefs.isThreadViewPost(a) &&
+              a.post.author.did === parentAuthorDid;
+            const bIsAuthor =
+              AppBskyFeedDefs.isThreadViewPost(b) &&
+              b.post.author.did === parentAuthorDid;
+            if (aIsAuthor && !bIsAuthor) return -1;
+            if (!aIsAuthor && bIsAuthor) return 1;
+            return 0;
+          })
+        : replies,
+    [replies, parentAuthorDid],
+  );
 
   return (
     <div className="replies flex flex-col gap-0 w-full">
@@ -249,23 +414,15 @@ function Replies(props: {
             isLast={index === replies.length - 1 && !hasReplies}
             pageUri={pageUri}
             parentPostUri={parentPostUri}
-            toggleCollapsed={(uri) => toggleCollapsed(uri)}
+            toggleCollapsed={toggleCollapsed}
             isCollapsed={isCollapsed}
             depth={props.depth}
+            rootAuthorDid={rootAuthorDid}
+            documentUrls={documentUrls}
+            docDid={docDid}
           />
         );
       })}
-      {pageUri && depth > 0 && replies.length > 3 && (
-        <ThreadLink
-          postUri={pageUri}
-          parent={{ type: "thread", uri: pageUri }}
-          className="flex justify-start text-sm text-accent-contrast h-fit hover:underline"
-        >
-          <div className="mx-[19px] w-0.5 h-[24px] bg-border-light" />
-          View {replies.length - 3} more{" "}
-          {replies.length === 4 ? "reply" : "replies"}
-        </ThreadLink>
-      )}
     </div>
   );
 }
@@ -278,11 +435,20 @@ const ReplyPost = (props: {
   toggleCollapsed: (uri: string) => void;
   isCollapsed: boolean;
   depth: number;
+  rootAuthorDid: string;
+  documentUrls: string[];
+  docDid: string;
 }) => {
-  const { post, pageUri, parentPostUri } = props;
-  const postView = post.post;
+  const { post, pageUri, parentPostUri, rootAuthorDid, documentUrls, docDid } = props;
 
-  const hasReplies = props.post.replies && props.post.replies.length > 0;
+  // Flatten same-author chains
+  const chain = flattenSameAuthorChain(post, rootAuthorDid);
+  const lastInChain = chain[chain.length - 1];
+  const hasReplies = lastInChain.replies && lastInChain.replies.length > 0;
+  const isTruncated =
+    !hasReplies &&
+    lastInChain.post.replyCount != null &&
+    lastInChain.post.replyCount > 0;
 
   return (
     <div className="flex h-fit relative">
@@ -296,7 +462,6 @@ const ReplyPost = (props: {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-
               props.toggleCollapsed(parentPostUri);
             }}
           />
@@ -305,33 +470,198 @@ const ReplyPost = (props: {
       <div
         className={`reply relative flex flex-col w-full ${props.depth === 0 && "mb-3"}`}
       >
-        <BskyPostContent
-          post={postView}
-          parent={{ type: "thread", uri: pageUri }}
-          showEmbed={false}
-          showBlueskyLink={false}
-          quoteEnabled
-          replyEnabled
-          replyOnClick={(e) => {
-            e.preventDefault();
-            props.toggleCollapsed(post.post.uri);
-          }}
-          className="text-sm"
-        />
-        {hasReplies && props.depth < 3 && (
-          <div className="ml-[28px] flex grow ">
+        {/* Render chain: intermediate posts compact, last post full */}
+        {chain.length > 1 ? (
+          <>
+            {chain.slice(0, -1).map((chainPost) => (
+              <div
+                key={chainPost.post.uri}
+                className="flex gap-2 relative w-full pl-[6px] pb-2"
+              >
+                <div className="absolute top-0 bottom-0 left-[6px] w-5">
+                  <div className="bg-border-light w-[2px] h-full mx-auto" />
+                </div>
+                <ReplyPostContent
+                  post={chainPost.post}
+                  pageUri={pageUri}
+                  documentUrls={documentUrls}
+                  docDid={docDid}
+                  compact
+                />
+              </div>
+            ))}
+            <ReplyPostContent
+              post={lastInChain.post}
+              pageUri={pageUri}
+              documentUrls={documentUrls}
+              docDid={docDid}
+              compact
+              toggleCollapsed={() =>
+                props.toggleCollapsed(lastInChain.post.uri)
+              }
+            />
+          </>
+        ) : (
+          <ReplyPostContent
+            post={post.post}
+            pageUri={pageUri}
+            documentUrls={documentUrls}
+            docDid={docDid}
+            toggleCollapsed={() => props.toggleCollapsed(post.post.uri)}
+          />
+        )}
+
+        {/* Render child replies */}
+        {hasReplies && props.depth < 10 && (
+          <div className="ml-[28px] flex grow">
             {!props.isCollapsed && (
               <Replies
                 pageUri={pageUri}
-                parentPostUri={post.post.uri}
-                replies={props.post.replies as any[]}
+                parentPostUri={lastInChain.post.uri}
+                replies={lastInChain.replies as any[]}
                 depth={props.depth + 1}
-                parentAuthorDid={props.post.post.author.did}
+                parentAuthorDid={lastInChain.post.author.did}
+                rootAuthorDid={rootAuthorDid}
+                documentUrls={documentUrls}
+                docDid={docDid}
               />
             )}
+          </div>
+        )}
+
+        {/* Auto-load truncated replies */}
+        {isTruncated && props.depth < 10 && !props.isCollapsed && (
+          <div className="ml-[28px] flex grow">
+            <SubThread
+              postUri={lastInChain.post.uri}
+              pageUri={pageUri}
+              depth={props.depth}
+              rootAuthorDid={rootAuthorDid}
+              documentUrls={documentUrls}
+              docDid={docDid}
+            />
+          </div>
+        )}
+
+        {/* Safety fallback at extreme depth */}
+        {(hasReplies || isTruncated) && props.depth >= 10 && (
+          <div className="ml-[28px]">
+            <ThreadLink
+              postUri={lastInChain.post.uri}
+              parent={{ type: "thread", uri: pageUri }}
+              className="text-sm text-accent-contrast hover:underline"
+            >
+              Continue thread
+            </ThreadLink>
           </div>
         )}
       </div>
     </div>
   );
 };
+
+// Renders a single post's content with optional inline quote detection
+function ReplyPostContent(props: {
+  post: AppBskyFeedDefs.PostView;
+  pageUri: string;
+  documentUrls: string[];
+  docDid: string;
+  compact?: boolean;
+  toggleCollapsed?: () => void;
+}) {
+  const { post, pageUri, documentUrls, docDid: did, compact } = props;
+
+  // Detect leaflet links in this post
+  const docLink = findDocumentQuoteLink(post, documentUrls);
+  const page = { type: "thread" as const, uri: pageUri };
+
+  const quoteBlock = docLink?.quotePosition && (
+    <div className="mb-1 ml-[32px]">
+      <QuoteContent position={docLink.quotePosition} index={0} did={did} />
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <div className="flex flex-col w-full">
+        {quoteBlock}
+        <CompactBskyPostContent
+          post={post}
+          parent={page}
+          quoteEnabled
+          replyEnabled={!!props.toggleCollapsed}
+          replyOnClick={
+            props.toggleCollapsed
+              ? (e) => {
+                  e.preventDefault();
+                  props.toggleCollapsed!();
+                }
+              : undefined
+          }
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col w-full">
+      {quoteBlock}
+      <BskyPostContent
+        post={post}
+        parent={page}
+        showEmbed={!docLink?.isEmbed}
+        showBlueskyLink={false}
+        quoteEnabled
+        replyEnabled
+        replyOnClick={
+          props.toggleCollapsed
+            ? (e) => {
+                e.preventDefault();
+                props.toggleCollapsed!();
+              }
+            : undefined
+        }
+        className="text-sm"
+      />
+    </div>
+  );
+}
+
+// Auto-loads a sub-thread when replies were truncated by the API depth limit
+function SubThread(props: {
+  postUri: string;
+  pageUri: string;
+  depth: number;
+  rootAuthorDid: string;
+  documentUrls: string[];
+  docDid: string;
+}) {
+  const { data: thread, isLoading } = useSWR(
+    getThreadKey(props.postUri),
+    () => fetchThread(props.postUri),
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-1 text-tertiary italic text-xs py-2">
+        <DotLoader />
+      </div>
+    );
+  }
+
+  if (!thread || !AppBskyFeedDefs.isThreadViewPost(thread)) return null;
+  if (!thread.replies || thread.replies.length === 0) return null;
+
+  return (
+    <Replies
+      replies={thread.replies as any[]}
+      pageUri={props.pageUri}
+      parentPostUri={props.postUri}
+      depth={props.depth + 1}
+      parentAuthorDid={thread.post.author.did}
+      rootAuthorDid={props.rootAuthorDid}
+      documentUrls={props.documentUrls}
+      docDid={props.docDid}
+    />
+  );
+}
