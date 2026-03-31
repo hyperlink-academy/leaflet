@@ -132,6 +132,7 @@ export function DashboardLayout<
     [name: string]: {
       content: React.ReactNode;
       controls: React.ReactNode;
+      icon?: React.ReactNode;
     };
   },
 >(props: {
@@ -206,6 +207,7 @@ export function DashboardLayout<
                             <Tab
                               key={t}
                               name={t}
+                              icon={props.tabs[t].icon}
                               selected={t === tab}
                               onSelect={() => setTabWithUrl(t)}
                               onMouseEnter={() => props.onTabHover?.(t)}

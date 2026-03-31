@@ -2,6 +2,7 @@ import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 
 export const Tab = (props: {
   name: string;
+  icon?: React.ReactNode;
   selected: boolean;
   onSelect: () => void;
   onMouseEnter?: () => void;
@@ -15,7 +16,7 @@ export const Tab = (props: {
       onMouseEnter={props.onMouseEnter}
       onPointerDown={props.onPointerDown}
     >
-      {props.name}
+      {props.icon ? props.icon : props.name}
       {props.href && <ExternalLinkTiny />}
     </div>
   );

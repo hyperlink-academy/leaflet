@@ -1,0 +1,83 @@
+import { Toggle } from "components/Toggle";
+
+export function PostSettings(props: {
+  showComments: boolean;
+  setShowComments: (v: boolean) => void;
+  showMentions: boolean;
+  setShowMentions: (v: boolean) => void;
+  showRecommends: boolean;
+  setShowRecommends: (v: boolean) => void;
+  showPrevNext: boolean;
+  setShowPrevNext: (v: boolean) => void;
+  showInDiscover: boolean;
+  setShowInDiscover: (v: boolean) => void;
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h3 className="font-bold text-primary">Post Settings</h3>
+
+      <h4 className="mb-0">Discovery</h4>
+      <Toggle
+        toggle={props.showInDiscover}
+        onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
+      >
+        <div className="flex flex-col justify-start">
+          <div className="font-bold">Make Public</div>
+          <div className="text-tertiary text-sm leading-tight">
+            Your posts will appear in{" "}
+            <a href="/reader" target="_blank">
+              Leaflet Reader
+            </a>{" "}
+            and show up in search and tags.
+          </div>
+        </div>
+      </Toggle>
+
+      <hr className="border-border-light" />
+
+      <h4 className="mb-0">Layout</h4>
+      <Toggle
+        toggle={props.showPrevNext}
+        onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
+      >
+        <div className="font-bold">Show Prev/Next Buttons</div>
+      </Toggle>
+
+      <hr className="border-border-light" />
+
+      <h4 className="mb-0">Interactions</h4>
+      <div className="flex flex-col gap-2">
+        <Toggle
+          toggle={props.showComments}
+          onToggle={() => props.setShowComments(!props.showComments)}
+        >
+          <div className="font-bold">Show Comments</div>
+        </Toggle>
+
+        <Toggle
+          toggle={props.showMentions}
+          onToggle={() => props.setShowMentions(!props.showMentions)}
+        >
+          <div className="flex flex-col justify-start">
+            <div className="font-bold">Show Mentions</div>
+            <div className="text-tertiary text-sm leading-tight">
+              Display a list of Bluesky mentions about your post
+            </div>
+          </div>
+        </Toggle>
+
+        <Toggle
+          toggle={props.showRecommends}
+          onToggle={() => props.setShowRecommends(!props.showRecommends)}
+        >
+          <div className="flex flex-col justify-start">
+            <div className="font-bold">Show Recommends</div>
+            <div className="text-tertiary text-sm leading-tight">
+              Allow readers to recommend/like your post
+            </div>
+          </div>
+        </Toggle>
+      </div>
+    </section>
+  );
+}
