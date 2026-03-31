@@ -149,13 +149,13 @@ export const CreatePubForm = () => {
         onChange={(e) => setShowInDiscover(e.target.checked)}
       >
         <div className=" pt-0.5 flex flex-col text-sm text-tertiary  ">
-          <p className="font-bold italic">Show In Discover</p>
+          <p className="font-bold italic">Make Public</p>
           <p className="text-sm text-tertiary font-normal">
             Your posts will appear in{" "}
             <a href="/reader" target="_blank">
               Leaflet Reader
-            </a>
-            . You can change this at any time!
+            </a>{" "}
+            and show up in search and tags. You can change this at any time!
           </p>
         </div>
       </Checkbox>
