@@ -138,8 +138,12 @@ export function useMountProsemirror({
 
           // Check for atMention inline nodes
           if (node?.type === schema.nodes.atMention) {
-            const url = atUriToUrl(node.attrs.atURI);
-            window.open(url, "_blank", "noopener,noreferrer");
+            if (node.attrs.href)
+              window.open(node.attrs.href, "_blank", "noopener,noreferrer");
+            else {
+              const url = atUriToUrl(node.attrs.atURI);
+              window.open(url, "_blank", "noopener,noreferrer");
+            }
             return;
           }
           if (node.nodeSize - 2 <= _pos) return;
