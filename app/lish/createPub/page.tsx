@@ -9,7 +9,7 @@ export default async function CreatePub() {
     return (
       <div className="createPubPage relative w-full h-full flex items-stretch bg-bg-leaflet p-4">
         <div className="createPubContent h-full flex items-center max-w-sm w-full mx-auto">
-          <div className="container w-full p-3 justify-items-center text-center">
+          <div className="frosted-container w-full p-3 justify-items-center text-center">
             <LoginForm
               text="Log in to create a publication!"
               noEmail

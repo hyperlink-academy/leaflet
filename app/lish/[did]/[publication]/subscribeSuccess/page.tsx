@@ -4,7 +4,7 @@ import { RSSSmall } from "components/Icons/RSSSmall";
 export default function SubscribeSuccess() {
   return (
     <div className="h-full w-screen bg-bg-leaflet flex place-items-center text-center ">
-      <div className="container p-4 max-w-md mx-auto justify-center place-items-center flex flex-col gap-2">
+      <div className="frosted-container p-4 max-w-md mx-auto justify-center place-items-center flex flex-col gap-2">
         <h3 className="text-secondary">You've Subscribed!</h3>
         <div className="text-tertiary">
           Add this custom feed to your Bluesky to get the updates from this and

@@ -215,20 +215,35 @@
   .pageScrollWrapper h2,
   .pageScrollWrapper h3,
   .pageScrollWrapper h4 {
-    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
+    font-family: var(
+      --theme-heading-font,
+      var(--theme-font, var(--font-quattro))
+    );
   }
 
   /* Scale heading sizes relative to the custom base font size */
-  .pageScrollWrapper h1 { font-size: 2em; }
-  .pageScrollWrapper h2 { font-size: 1.625em; }
-  .pageScrollWrapper h3 { font-size: 1.125em; }
-  .pageScrollWrapper h4 { font-size: 1em; }
+  .pageScrollWrapper h1 {
+    font-size: 2em;
+  }
+  .pageScrollWrapper h2 {
+    font-size: 1.625em;
+  }
+  .pageScrollWrapper h3 {
+    font-size: 1.125em;
+  }
+  .pageScrollWrapper h4 {
+    font-size: 1em;
+  }
 
   /* Scale text size classes relative to the custom base font size.
      Tailwind's text-sm/text-base/text-lg compile to fixed rem values
      which ignore the custom base size set on .pageScrollWrapper. */
-  .pageScrollWrapper .textSizeSmall { font-size: 0.875em; }
-  .pageScrollWrapper .textSizeLarge { font-size: 1.125em; }
+  .pageScrollWrapper .textSizeSmall {
+    font-size: 0.875em;
+  }
+  .pageScrollWrapper .textSizeLarge {
+    font-size: 1.125em;
+  }
 
   .pageScrollWrapper pre {
     font-family: var(--theme-font, var(--font-quattro));
@@ -243,7 +258,10 @@
   .pubWrapper h2,
   .pubWrapper h3,
   .pubWrapper h4 {
-    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
+    font-family: var(
+      --theme-heading-font,
+      var(--theme-font, var(--font-quattro))
+    );
   }
   /*END FONT STYLING*/
 
@@ -446,13 +464,20 @@ pre.shiki {
   @apply ml-2;
 }
 
+.container {
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
+  background: rgba(var(--bg-page), var(--bg-page-alpha));
+}
+
 .transparent-container {
   @apply border;
   @apply border-border-light;
   @apply rounded-md;
 }
 
-.container {
+.frosted-container {
   background: rgba(var(--bg-page), 0.75);
   @apply border;
   @apply border-bg-page;
@@ -571,7 +596,9 @@ pre.shiki {
 .footnote-side-item {
   max-height: 4.5em;
   overflow: hidden;
-  transition: max-height 200ms ease, mask-image 200ms ease;
+  transition:
+    max-height 200ms ease,
+    mask-image 200ms ease;
 }
 .footnote-side-item.has-overflow {
   mask-image: linear-gradient(to bottom, white 50%, transparent 100%);

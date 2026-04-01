@@ -30,7 +30,7 @@ export function Sidebar(props: {
           ${!props.alwaysOpen ? "absolute top-0 left-0 z-10 w-max" : "w-[192px] max-w-[192px]"}
           h-fit p-[6px]
           flex flex-col gap-1 justify-start border
-          rounded-md  bg-bg-page ${open && !props.alwaysOpen ? "border-border-light" : "container"}
+          rounded-md  bg-bg-page ${open && !props.alwaysOpen ? "border-border-light" : "frosted-container"}
           ${props.className}
           `}
           onMouseOver={() => {

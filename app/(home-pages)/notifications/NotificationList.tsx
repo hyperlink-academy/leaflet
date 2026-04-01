@@ -30,7 +30,7 @@ export function NotificationList({
 
   if (notifications.length === 0)
     return (
-      <div className="w-full text-sm flex flex-col gap-1 container italic text-tertiary text-center sm:p-4 p-3">
+      <div className="w-full text-sm flex flex-col gap-1 frosted-container italic text-tertiary text-center sm:p-4 p-3">
         <div className="text-base font-bold">no notifications yet...</div>
         Here, you&apos;ll find notifications about new follows, comments,
         mentions, and replies!
