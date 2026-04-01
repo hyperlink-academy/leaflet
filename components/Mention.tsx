@@ -33,7 +33,7 @@ export function MentionAutocomplete(props: {
   const inputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const { suggestionIndex, setSuggestionIndex, suggestions, scope, setScope, searchComplete } =
+  const { suggestionIndex, setSuggestionIndex, suggestions, scope, setScope, searchComplete, hasDidScopableServices } =
     useMentionSuggestions(searchQuery, props.open);
 
   const noResults = searchComplete && searchQuery !== "" && suggestions.length === 0;
@@ -119,14 +119,66 @@ export function MentionAutocomplete(props: {
           uri: selectedSuggestion.uri,
           name: selectedSuggestion.name,
         });
+      } else if (
+        selectedSuggestion?.type === "did" &&
+        hasDidScopableServices
+      ) {
+        // Tab on a DID result → show services that can be scoped to this DID
+        e.preventDefault();
+        handleScopeChange({
+          type: "did_services",
+          did: selectedSuggestion.did,
+          name: selectedSuggestion.displayName || selectedSuggestion.handle,
+        });
+      } else if (
+        selectedSuggestion?.type === "service" &&
+        scope.type === "did_services"
+      ) {
+        // Tab on a service in the DID services scope → search that service scoped to the DID
+        e.preventDefault();
+        handleScopeChange({
+          type: "service",
+          serviceUri: selectedSuggestion.serviceUri,
+          name: selectedSuggestion.name,
+          scope: scope.did,
+          serviceName: selectedSuggestion.name,
+          scopedDid: scope.did,
+          scopedDidName: scope.name,
+        });
       } else if (selectedSuggestion?.type === "service") {
         e.preventDefault();
         handleScopeChange(serviceScopeFromMention(selectedSuggestion));
+      } else if (
+        selectedSuggestion?.type === "service_result" &&
+        selectedSuggestion.subscope &&
+        scope.type === "service"
+      ) {
+        e.preventDefault();
+        handleScopeChange({
+          type: "service",
+          serviceUri: scope.serviceUri,
+          name: selectedSuggestion.name,
+          scope: selectedSuggestion.subscope.scope,
+          serviceName: scope.serviceName ?? scope.name,
+        });
       }
     } else if (e.key === "Enter") {
       e.preventDefault();
       const selectedSuggestion = sortedSuggestions[suggestionIndex];
-      if (selectedSuggestion?.type === "service") {
+      if (
+        selectedSuggestion?.type === "service" &&
+        scope.type === "did_services"
+      ) {
+        handleScopeChange({
+          type: "service",
+          serviceUri: selectedSuggestion.serviceUri,
+          name: selectedSuggestion.name,
+          scope: scope.did,
+          serviceName: selectedSuggestion.name,
+          scopedDid: scope.did,
+          scopedDidName: scope.name,
+        });
+      } else if (selectedSuggestion?.type === "service") {
         handleScopeChange(serviceScopeFromMention(selectedSuggestion));
       } else if (
         (e.ctrlKey || e.metaKey) &&
@@ -166,13 +218,30 @@ export function MentionAutocomplete(props: {
       scope?.type === "identities" ||
       scope?.type === "publications" ||
       scope?.type === "publication" ||
-      scope?.type === "service"
+      scope?.type === "service" ||
+      scope?.type === "did_services"
     ) {
       return (
         <ScopeHeader
           scope={scope}
           handleScopeChange={() => {
-            handleScopeChange({ type: "default" });
+            // When in a service entered from did_services, go back to did_services
+            if (scope.type === "service" && scope.scopedDid) {
+              handleScopeChange({
+                type: "did_services",
+                did: scope.scopedDid,
+                name: scope.scopedDidName ?? scope.scopedDid,
+              });
+            // When in a subscoped service, go back to the parent service scope
+            } else if (scope.type === "service" && scope.scope) {
+              handleScopeChange({
+                type: "service",
+                serviceUri: scope.serviceUri,
+                name: scope.serviceName ?? scope.name,
+              });
+            } else {
+              handleScopeChange({ type: "default" });
+            }
           }}
         />
       );
@@ -283,6 +352,17 @@ export function MentionAutocomplete(props: {
                         handle={result.handle}
                         avatar={result.avatar}
                         selected={index === suggestionIndex}
+                        onServicesClick={
+                          hasDidScopableServices
+                            ? () => {
+                                handleScopeChange({
+                                  type: "did_services",
+                                  did: result.did,
+                                  name: result.displayName || result.handle,
+                                });
+                              }
+                            : undefined
+                        }
                       />
                     ) : result.type === "publication" ? (
                       <PublicationResult
@@ -327,6 +407,20 @@ export function MentionAutocomplete(props: {
                             ? () => {
                                 props.onEmbed!(result);
                                 props.onOpenChange(false);
+                              }
+                            : undefined
+                        }
+                        subscope={result.subscope}
+                        onSubscopeClick={
+                          result.subscope && scope.type === "service"
+                            ? () => {
+                                handleScopeChange({
+                                  type: "service",
+                                  serviceUri: scope.serviceUri,
+                                  name: result.name,
+                                  scope: result.subscope!.scope,
+                                  serviceName: scope.serviceName ?? scope.name,
+                                });
                               }
                             : undefined
                         }
@@ -420,7 +514,9 @@ const DidResult = (props: {
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   selected?: boolean;
+  onServicesClick?: () => void;
 }) => {
+  const nameContent = props.displayName ? props.displayName : props.handle;
   return (
     <Result
       icon={
@@ -434,7 +530,16 @@ const DidResult = (props: {
           <div className="w-5 h-5 rounded-full bg-border shrink-0" />
         )
       }
-      result={props.displayName ? props.displayName : props.handle}
+      result={
+        props.onServicesClick ? (
+          <>
+            <div className="truncate w-full grow min-w-0">{nameContent}</div>
+            <ScopeButton onClick={props.onServicesClick}>Search</ScopeButton>
+          </>
+        ) : (
+          nameContent
+        )
+      }
       subtext={props.displayName && `@${props.handle}`}
       onClick={props.onClick}
       onMouseDown={props.onMouseDown}
@@ -517,10 +622,15 @@ const ServiceSearchResult = (props: {
   icon?: string;
   hasEmbed?: boolean;
   onEmbedClick?: () => void;
+  subscope?: SearchService.SubscopeInfo;
+  onSubscopeClick?: () => void;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   selected?: boolean;
 }) => {
+  const hasActions =
+    (props.hasEmbed && props.onEmbedClick) ||
+    (props.subscope && props.onSubscopeClick);
   return (
     <Result
       icon={
@@ -533,10 +643,17 @@ const ServiceSearchResult = (props: {
         ) : undefined
       }
       result={
-        props.hasEmbed && props.onEmbedClick ? (
+        hasActions ? (
           <>
             <div className="truncate w-full grow min-w-0">{props.name}</div>
-            <ScopeButton onClick={props.onEmbedClick}>Embed</ScopeButton>
+            {props.subscope && props.onSubscopeClick && (
+              <ScopeButton onClick={props.onSubscopeClick}>
+                {props.subscope.label}
+              </ScopeButton>
+            )}
+            {props.hasEmbed && props.onEmbedClick && (
+              <ScopeButton onClick={props.onEmbedClick}>Embed</ScopeButton>
+            )}
           </>
         ) : (
           <div className="truncate w-full">{props.name}</div>
@@ -562,7 +679,9 @@ const ScopeHeader = (props: {
         ? "Publications"
         : props.scope.type === "publication"
           ? `Posts from ${props.scope.name}`
-          : `Results from ${props.scope.name}`;
+          : props.scope.type === "did_services"
+            ? `Services for ${props.scope.name}`
+            : `Results from ${props.scope.name}`;
 
   return (
     <button
@@ -591,6 +710,7 @@ export type Mention =
       serviceUri: string;
       name: string;
       description?: string;
+      canBeScopedToDid?: boolean;
     }
   | {
       type: "service_result";
@@ -599,6 +719,7 @@ export type Mention =
       href?: string;
       icon?: string;
       embed?: SearchService.EmbedInfo;
+      subscope?: SearchService.SubscopeInfo;
     };
 
 export type MentionScope =
@@ -606,7 +727,8 @@ export type MentionScope =
   | { type: "identities" }
   | { type: "publications" }
   | { type: "publication"; uri: string; name: string }
-  | { type: "service"; serviceUri: string; name: string };
+  | { type: "service"; serviceUri: string; name: string; scope?: string; serviceName?: string; scopedDid?: string; scopedDidName?: string }
+  | { type: "did_services"; did: string; name: string };
 
 function scopePlaceholder(scope: MentionScope, fallback?: string): string {
   switch (scope.type) {
@@ -614,6 +736,7 @@ function scopePlaceholder(scope: MentionScope, fallback?: string): string {
     case "publications": return "Search publications...";
     case "publication": return "Search posts...";
     case "service": return `Search ${scope.name}...`;
+    case "did_services": return `Search ${scope.name} with...`;
     default: return fallback ?? "Search people & publications...";
   }
 }
@@ -677,11 +800,12 @@ function useMentionServices(enabled: boolean): Array<Mention> {
       try {
         const result = await callRPC(`get_user_mention_services`, {});
         return result.result.services.map(
-          (s: { uri: string; name: string; description?: string }) => ({
+          (s: { uri: string; name: string; description?: string; canBeScopedToDid?: boolean }) => ({
             type: "service" as const,
             serviceUri: s.uri,
             name: s.name,
             description: s.description,
+            canBeScopedToDid: s.canBeScopedToDid,
           }),
         );
       } catch {
@@ -707,6 +831,11 @@ function useMentionSuggestions(query: string | null, open: boolean) {
     [externalServices],
   );
   const hasServices = allServices.length > 0;
+  const didScopableServices = useMemo(
+    () => externalServices.filter((s) => s.type === "service" && s.canBeScopedToDid),
+    [externalServices],
+  );
+  const hasDidScopableServices = didScopableServices.length > 0;
 
   // Clear suggestions immediately when scope changes
   const setScopeAndClear = useCallback((newScope: MentionScope) => {
@@ -717,6 +846,18 @@ function useMentionSuggestions(query: string | null, open: boolean) {
   useEffect(() => {
     let stale = false;
     setSearchComplete(false);
+    // DID services scope: show DID-scopable services filtered locally
+    if (scope.type === "did_services") {
+      const filtered = didScopableServices.filter((s) =>
+        s.type === "service"
+          ? s.name.toLowerCase().includes((query || "").toLowerCase())
+          : true,
+      );
+      setSuggestions(filtered);
+      setSearchComplete(true);
+      return;
+    }
+
     // Default scope with services: show local filter instantly, debounce network fallback
     if (hasServices && scope.type === "default") {
       const filtered = allServices.filter((s) =>
@@ -756,7 +897,8 @@ function useMentionSuggestions(query: string | null, open: boolean) {
         }));
       } else if (scope.type === "service") {
         // Search within a mention service
-        if (!query) {
+        // When not in a subscope, require a query
+        if (!query && !scope.scope) {
           if (!stale) {
             setSuggestions([]);
             setSearchComplete(true);
@@ -765,7 +907,8 @@ function useMentionSuggestions(query: string | null, open: boolean) {
         }
         const res = await callRPC(`proxy_mention_search`, {
           service_uri: scope.serviceUri,
-          search: query,
+          search: query || "",
+          ...(scope.scope ? { scope: scope.scope } : {}),
         });
         const items: SearchService.Result[] = res?.result?.results ?? [];
         results = items.map((r) => ({
@@ -775,6 +918,7 @@ function useMentionSuggestions(query: string | null, open: boolean) {
           href: r.href,
           icon: r.icon,
           embed: r.embed,
+          subscope: r.subscope,
         }));
       } else if (hasServices) {
         // Default scope with services: local filter showed no matches, fall back to identity search
@@ -799,7 +943,7 @@ function useMentionSuggestions(query: string | null, open: boolean) {
       clearTimeout(handler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, scope, open, hasServices, allServices]);
+  }, [query, scope, open, hasServices, allServices, didScopableServices]);
 
   useEffect(() => {
     if (suggestionIndex > suggestions.length - 1) {
@@ -814,5 +958,6 @@ function useMentionSuggestions(query: string | null, open: boolean) {
     scope,
     setScope: setScopeAndClear,
     searchComplete,
+    hasDidScopableServices,
   };
 }
