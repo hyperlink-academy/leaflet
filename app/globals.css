@@ -469,13 +469,20 @@ pre.shiki {
   @apply ml-2;
 }
 
+.container {
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
+  background: rgba(var(--bg-page), var(--bg-page-alpha));
+}
+
 .transparent-container {
   @apply border;
   @apply border-border-light;
   @apply rounded-md;
 }
 
-.container {
+.frosted-container {
   background: rgba(var(--bg-page), 0.75);
   @apply border;
   @apply border-bg-page;

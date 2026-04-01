@@ -9,7 +9,10 @@ import {
 } from "./PublicationSWRProvider";
 import { Fragment } from "react";
 import { useParams } from "next/navigation";
-import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getPublicationURL,
+  getDocumentURL,
+} from "app/lish/createPub/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -27,7 +30,7 @@ export function PublishedPostsList(props: {
   if (!publication) return null;
   if (!documents || documents.length === 0)
     return (
-      <div className="italic text-tertiary w-full container text-center place-items-center flex flex-col gap-3 p-3">
+      <div className="italic text-tertiary w-full frosted-container text-center place-items-center flex flex-col gap-3 p-3">
         Nothing's been published yet...
       </div>
     );
@@ -85,11 +88,7 @@ function PublishedPostItem(props: {
           }}
         >
           <div className="flex justify-between gap-2">
-            <a
-              className="hover:no-underline!"
-              target="_blank"
-              href={docUrl}
-            >
+            <a className="hover:no-underline!" target="_blank" href={docUrl}>
               <h3 className="text-primary grow leading-snug">
                 {doc.record.title}
               </h3>

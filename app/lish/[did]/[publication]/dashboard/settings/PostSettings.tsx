@@ -13,39 +13,38 @@ export function PostSettings(props: {
   setShowInDiscover: (v: boolean) => void;
 }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h3 className="font-bold text-primary">Post Settings</h3>
-
-      <h4 className="mb-0">Discovery</h4>
-      <Toggle
-        toggle={props.showInDiscover}
-        onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
-      >
-        <div className="flex flex-col justify-start">
-          <div className="font-bold">Make Public</div>
-          <div className="text-tertiary text-sm leading-tight">
-            Your posts will appear in{" "}
-            <a href="/reader" target="_blank">
-              Leaflet Reader
-            </a>{" "}
-            and show up in search and tags.
+    <>
+      <div className="flex flex-col gap-3">
+        <h3 className="mb-0">Discovery</h3>
+        <Toggle
+          toggle={props.showInDiscover}
+          onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
+        >
+          <div className="flex flex-col justify-start">
+            <div className="font-bold">Make Public</div>
+            <div className="text-tertiary text-sm leading-tight">
+              Your posts will appear in{" "}
+              <a href="/reader" target="_blank">
+                Leaflet Reader
+              </a>{" "}
+              and show up in search and tags.
+            </div>
           </div>
-        </div>
-      </Toggle>
-
+        </Toggle>
+      </div>
       <hr className="border-border-light" />
 
-      <h4 className="mb-0">Layout</h4>
+      <h3 className="mb-0">Post Layout</h3>
       <Toggle
         toggle={props.showPrevNext}
         onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
       >
-        <div className="font-bold">Show Prev/Next Buttons</div>
+        <div className="font-bold">Show Prev/Next Buttons on Post</div>
       </Toggle>
 
       <hr className="border-border-light" />
 
-      <h4 className="mb-0">Interactions</h4>
+      <h3 className="mb-0">Post Interactions</h3>
       <div className="flex flex-col gap-2">
         <Toggle
           toggle={props.showComments}
@@ -78,6 +77,6 @@ export function PostSettings(props: {
           </div>
         </Toggle>
       </div>
-    </section>
+    </>
   );
 }

@@ -15,6 +15,7 @@ import { PubThemeSetter } from "components/ThemeManager/PubThemeSetter";
 import { GeneralSettings } from "./GeneralSettings";
 import { PostSettings } from "./PostSettings";
 import { ThemeSettings } from "./ThemeSettings";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 type SettingsView = "all" | "theme";
 
@@ -164,3 +165,17 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
     </form>
   );
 }
+
+export const DashboardContainer = (props: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  let cardBorderHidden = useCardBorderHidden();
+  return (
+    <div
+      className={`flex flex-col ${cardBorderHidden ? "con" : "bg-transparent"}`}
+    >
+      {props.children}
+    </div>
+  );
+};
