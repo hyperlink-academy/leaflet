@@ -16,9 +16,10 @@ export const proxy_mention_search = makeRoute({
   input: z.object({
     service_uri: z.string(),
     search: z.string(),
+    scope: z.string().optional(),
   }),
   handler: async (
-    { service_uri, search },
+    { service_uri, search, scope },
     { supabase }: Pick<Env, "supabase">,
   ) => {
     try {
@@ -47,6 +48,7 @@ export const proxy_mention_search = makeRoute({
       const response = await agent.call("parts.page.mention.search", {
         service: service_uri,
         search,
+        ...(scope ? { scope } : {}),
       });
 
       const data = response.data as SearchService.OutputSchema | undefined;
@@ -62,6 +64,7 @@ export const proxy_mention_search = makeRoute({
             href: r.href,
             icon: r.icon,
             embed: r.embed,
+            subscope: r.subscope,
           })),
         },
       };

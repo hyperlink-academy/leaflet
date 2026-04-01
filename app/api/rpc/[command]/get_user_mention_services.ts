@@ -42,6 +42,7 @@ export const get_user_mention_services = makeRoute({
             name: record.name,
             description: record.description,
             did: record.did,
+            canBeScopedToDid: record.canBeScopedToDid ?? false,
           };
         }),
       },

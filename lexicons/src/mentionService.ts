@@ -15,6 +15,7 @@ export const PagePartsMentionService: LexiconDoc = {
         properties: {
           name: { type: "string", maxLength: 200 },
           description: { type: "string", maxLength: 2000 },
+          canBeScopedToDid: { type: "boolean" },
           did: {
             type: "string",
             format: "did",
@@ -48,6 +49,11 @@ export const PagePartsMentionSearchService: LexiconDoc = {
           search: {
             type: "string",
             description: "Search query string",
+          },
+          scope: {
+            type: "string",
+            description:
+              "Optional scope identifier to narrow results within a service, as returned by a previous result's subscope.scope field",
           },
           limit: {
             type: "integer",
@@ -85,6 +91,16 @@ export const PagePartsMentionSearchService: LexiconDoc = {
           type: "string",
           description: "Display name for the mentioned entity",
         },
+        description: {
+          type: "string",
+          description: "A description for the mentioned entity",
+        },
+        labels: {
+          type: "array",
+          items: { type: "ref", ref: "#mentionLabel" },
+          description:
+            "A set of labels to be rendered with the mentionedEntity",
+        },
         href: {
           type: "string",
           format: "uri",
@@ -102,6 +118,18 @@ export const PagePartsMentionSearchService: LexiconDoc = {
           description:
             "Optional embed info for creating an embed block instead of an inline mention",
         },
+        subscope: {
+          type: "ref",
+          ref: "#subscopeInfo",
+          description:
+            "Optional subscope info indicating this result can be scoped into for further searching",
+        },
+      },
+    },
+    mentionLabel: {
+      type: "object",
+      properties: {
+        text: { type: "string" },
       },
     },
     embedInfo: {
@@ -124,6 +152,23 @@ export const PagePartsMentionSearchService: LexiconDoc = {
           minimum: 16,
           maximum: 3200,
           description: "Default height of the embed in pixels",
+        },
+      },
+    },
+    subscopeInfo: {
+      type: "object",
+      required: ["scope", "label"],
+      properties: {
+        scope: {
+          type: "string",
+          description:
+            "Scope identifier passed back to the service in subsequent search queries",
+        },
+        label: {
+          type: "string",
+          maxLength: 100,
+          description:
+            "Display label for the scope-down button (e.g. 'Posts', 'Tracks')",
         },
       },
     },

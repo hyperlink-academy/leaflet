@@ -21,6 +21,9 @@
             "type": "string",
             "maxLength": 2000
           },
+          "canBeScopedToDid": {
+            "type": "boolean"
+          },
           "did": {
             "type": "string",
             "format": "did",

@@ -20,6 +20,8 @@ export type QueryParams = {
   service: string
   /** Search query string */
   search: string
+  /** Optional scope identifier to narrow results within a service, as returned by a previous result's subscope.scope field */
+  scope?: string
   /** Maximum number of results to return */
   limit?: number
 }
@@ -50,11 +52,16 @@ export interface Result {
   uri: string
   /** Display name for the mentioned entity */
   name: string
+  /** A description for the mentioned entity */
+  description?: string
+  /** A set of labels to be rendered with the mentionedEntity */
+  labels?: MentionLabel[]
   /** Optional web URL for the mentioned entity */
   href?: string
   /** Optional icon URL for the mentioned entity, displayed next to the mention */
   icon?: string
   embed?: EmbedInfo
+  subscope?: SubscopeInfo
 }
 
 const hashResult = 'result'
@@ -65,6 +72,21 @@ export function isResult<V>(v: V) {
 
 export function validateResult<V>(v: V) {
   return validate<Result & V>(v, id, hashResult)
+}
+
+export interface MentionLabel {
+  $type?: 'parts.page.mention.search#mentionLabel'
+  text?: string
+}
+
+const hashMentionLabel = 'mentionLabel'
+
+export function isMentionLabel<V>(v: V) {
+  return is$typed(v, id, hashMentionLabel)
+}
+
+export function validateMentionLabel<V>(v: V) {
+  return validate<MentionLabel & V>(v, id, hashMentionLabel)
 }
 
 export interface EmbedInfo {
@@ -85,4 +107,22 @@ export function isEmbedInfo<V>(v: V) {
 
 export function validateEmbedInfo<V>(v: V) {
   return validate<EmbedInfo & V>(v, id, hashEmbedInfo)
+}
+
+export interface SubscopeInfo {
+  $type?: 'parts.page.mention.search#subscopeInfo'
+  /** Scope identifier passed back to the service in subsequent search queries */
+  scope: string
+  /** Display label for the scope-down button (e.g. 'Posts', 'Tracks') */
+  label: string
+}
+
+const hashSubscopeInfo = 'subscopeInfo'
+
+export function isSubscopeInfo<V>(v: V) {
+  return is$typed(v, id, hashSubscopeInfo)
+}
+
+export function validateSubscopeInfo<V>(v: V) {
+  return validate<SubscopeInfo & V>(v, id, hashSubscopeInfo)
 }
