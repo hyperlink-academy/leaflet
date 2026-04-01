@@ -2,7 +2,6 @@
 import { useMemo, useState } from "react";
 import { parseColor } from "react-aria-components";
 import { useEntity } from "src/replicache";
-import { getColorDifference } from "./themeUtils";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
