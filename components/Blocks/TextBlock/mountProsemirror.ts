@@ -153,7 +153,7 @@ export function useMountProsemirror({
             nodeAt1?.marks.find((f) => f.type === schema.marks.link) ||
             nodeAt2?.marks.find((f) => f.type === schema.marks.link);
           if (linkMark) {
-            window.open(linkMark.attrs.href, "_blank");
+            window.open(linkMark.attrs.href, "_blank", "noreferrer");
             return;
           }
         },
