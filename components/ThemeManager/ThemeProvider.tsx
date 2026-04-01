@@ -29,7 +29,13 @@ import {
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
 import { getColorDifference } from "./themeUtils";
-import { getFontConfig, getGoogleFontsUrl, getFontFamilyValue, getFontBaseSize, defaultFontId } from "src/fonts";
+import {
+  getFontConfig,
+  getGoogleFontsUrl,
+  getFontFamilyValue,
+  getFontBaseSize,
+  defaultFontId,
+} from "src/fonts";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
@@ -89,8 +95,12 @@ export function LeafletThemeProvider(props: {
 
   let pageWidth = useEntity(props.entityID, "theme/page-width");
   // Use initial font IDs as fallback until Replicache syncs
-  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value ?? props.initialHeadingFontId;
-  let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value ?? props.initialBodyFontId;
+  let headingFontId =
+    useEntity(props.entityID, "theme/heading-font")?.data.value ??
+    props.initialHeadingFontId;
+  let bodyFontId =
+    useEntity(props.entityID, "theme/body-font")?.data.value ??
+    props.initialBodyFontId;
 
   return (
     <CardBorderHiddenContext.Provider value={!!cardBorderHiddenValue}>
@@ -192,6 +202,13 @@ export const BaseThemeProvider = ({
     accentContrast = sortedAccents[0];
   }
 
+  // Check if the final accent contrast color is very similar to the text color
+  let accentContrastSimilarToText =
+    getColorDifference(
+      colorToString(accentContrast, "rgb"),
+      colorToString(primary, "rgb"),
+    ) < 0.2;
+
   // Get font configs for CSS variables.
   // When using the default font (Quattro), use var(--font-quattro) which is
   // always available via next/font/local in layout.tsx, rather than the raw
@@ -203,12 +220,18 @@ export const BaseThemeProvider = ({
   const headingFontConfig = getFontConfig(headingFontId);
   const bodyFontConfig = getFontConfig(bodyFontId);
   const headingFontValue = isDefaultHeading
-    ? (isDefaultBody ? undefined : "var(--font-quattro)")
+    ? isDefaultBody
+      ? undefined
+      : "var(--font-quattro)"
     : getFontFamilyValue(headingFontConfig);
   const bodyFontValue = isDefaultBody
-    ? (isDefaultHeading ? undefined : "var(--font-quattro)")
+    ? isDefaultHeading
+      ? undefined
+      : "var(--font-quattro)"
     : getFontFamilyValue(bodyFontConfig);
-  const bodyFontBaseSize = isDefaultBody ? undefined : getFontBaseSize(bodyFontConfig);
+  const bodyFontBaseSize = isDefaultBody
+    ? undefined
+    : getFontBaseSize(bodyFontConfig);
   const headingGoogleFontsUrl = getGoogleFontsUrl(headingFontConfig);
   const bodyGoogleFontsUrl = getGoogleFontsUrl(bodyFontConfig);
 
@@ -222,7 +245,9 @@ export const BaseThemeProvider = ({
       if (existingLink) return;
 
       // Add preconnect hints if not present
-      if (!document.querySelector('link[href="https://fonts.googleapis.com"]')) {
+      if (
+        !document.querySelector('link[href="https://fonts.googleapis.com"]')
+      ) {
         const preconnect1 = document.createElement("link");
         preconnect1.rel = "preconnect";
         preconnect1.href = "https://fonts.googleapis.com";
@@ -249,7 +274,12 @@ export const BaseThemeProvider = ({
 
     loadGoogleFont(headingGoogleFontsUrl, headingFontConfig.fontFamily);
     loadGoogleFont(bodyGoogleFontsUrl, bodyFontConfig.fontFamily);
-  }, [headingGoogleFontsUrl, bodyGoogleFontsUrl, headingFontConfig.fontFamily, bodyFontConfig.fontFamily]);
+  }, [
+    headingGoogleFontsUrl,
+    bodyGoogleFontsUrl,
+    headingFontConfig.fontFamily,
+    bodyFontConfig.fontFamily,
+  ]);
 
   useEffect(() => {
     if (local) return;
@@ -293,13 +323,20 @@ export const BaseThemeProvider = ({
       "--accent-1-is-contrast",
       accentContrast === accent1 ? "1" : "0",
     );
+    el?.style.setProperty(
+      "--accent-contrast-similar-to-text",
+      accentContrastSimilarToText ? "1" : "0",
+    );
+    el?.style.setProperty(
+      "--link-underline",
+      accentContrastSimilarToText ? "underline" : "none",
+    );
 
     // Set page width CSS variable
     el?.style.setProperty(
       "--page-width-setting",
       (pageWidth || 624).toString(),
     );
-
   }, [
     local,
     bgLeaflet,
@@ -311,6 +348,7 @@ export const BaseThemeProvider = ({
     accent1,
     accent2,
     accentContrast,
+    accentContrastSimilarToText,
     pageWidth,
   ]);
   return (
@@ -326,6 +364,12 @@ export const BaseThemeProvider = ({
           "--accent-2": colorToString(accent2, "rgb"),
           "--accent-contrast": colorToString(accentContrast, "rgb"),
           "--accent-1-is-contrast": accentContrast === accent1 ? 1 : 0,
+          "--accent-contrast-similar-to-text": accentContrastSimilarToText
+            ? 1
+            : 0,
+          "--link-underline": accentContrastSimilarToText
+            ? "underline"
+            : "none",
           "--highlight-1": highlight1
             ? `rgb(${colorToString(parseColor(`hsba(${highlight1})`), "rgb")})`
             : "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
@@ -336,7 +380,9 @@ export const BaseThemeProvider = ({
           "--page-width-units": `min(${pageWidth || 624}px, calc(100vw - 12px))`,
           "--theme-heading-font": headingFontValue,
           "--theme-font": bodyFontValue,
-          "--theme-font-base-size": bodyFontBaseSize ? `${bodyFontBaseSize}px` : undefined,
+          "--theme-font-base-size": bodyFontBaseSize
+            ? `${bodyFontBaseSize}px`
+            : undefined,
         } as CSSProperties
       }
     >
