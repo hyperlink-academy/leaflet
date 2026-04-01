@@ -192,6 +192,9 @@
     @apply text-accent-contrast;
     @apply hover:cursor-pointer;
     @apply hover:underline;
+  }
+
+  .postPageContent a {
     text-decoration-line: var(--link-underline, none);
   }
 

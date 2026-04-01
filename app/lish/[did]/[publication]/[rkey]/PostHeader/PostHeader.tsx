@@ -48,7 +48,7 @@ export function PostHeader(props: {
         <>
           {pub && (
             <SpeedyLink
-              className="font-bold hover:no-underline text-accent-contrast"
+              className="font-bold no-underline! text-accent-contrast"
               href={document && getPublicationURL(pub)}
             >
               {pub?.name}

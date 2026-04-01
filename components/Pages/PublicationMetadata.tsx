@@ -69,7 +69,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
                   ? `${getBasePublicationURL(pub.publications)}/dashboard`
                   : getPublicationURL(pub.publications)
               }
-              className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
+              className="leafletMetadata text-accent-contrast font-bold no-underline!"
             >
               {pub.publications?.name}
             </Link>
