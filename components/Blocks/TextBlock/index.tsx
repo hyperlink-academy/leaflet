@@ -27,6 +27,7 @@ import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { blockTextSize } from "src/utils/blockTextSize";
+import { getAspectRatio } from "src/utils/aspectRatio";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
 import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
@@ -625,21 +626,37 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
       }
 
       // Set embed attributes
-      rep.mutate.assertFact([
+      let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
         {
           entity: targetEntityID,
           attribute: "embed/url",
           data: { type: "string", value: mention.embed.src },
         },
-        {
+      ];
+      let aspectRatio = getAspectRatio(
+        mention.embed.aspectRatio
+          ? mention.embed.aspectRatio
+          : mention.embed.width && mention.embed.height
+            ? { width: mention.embed.width, height: mention.embed.height }
+            : undefined,
+      );
+      if (aspectRatio) {
+        facts.push({
+          entity: targetEntityID,
+          attribute: "embed/aspect-ratio",
+          data: { type: "string", value: aspectRatio },
+        });
+      } else {
+        facts.push({
           entity: targetEntityID,
           attribute: "embed/height",
           data: {
             type: "number",
             value: mention.embed.height || 360,
           },
-        },
-      ]);
+        });
+      }
+      rep.mutate.assertFact(facts);
     },
     [rep, entityID, blockProps, entity_set.set, mentionInsertPos],
   );

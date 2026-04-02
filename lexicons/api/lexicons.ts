@@ -1175,6 +1175,24 @@ export const schemaDict = {
             maximum: 3200,
             description: 'Default height of the embed in pixels',
           },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:parts.page.mention.search#aspectRatio',
+            description:
+              'Aspect ratio of the embed. If provided, takes precedence over width/height for sizing.',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
         },
       },
       subscopeInfo: {

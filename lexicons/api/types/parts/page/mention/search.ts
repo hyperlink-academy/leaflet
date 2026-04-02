@@ -97,6 +97,7 @@ export interface EmbedInfo {
   width?: number
   /** Default height of the embed in pixels */
   height?: number
+  aspectRatio?: AspectRatio
 }
 
 const hashEmbedInfo = 'embedInfo'
@@ -107,6 +108,22 @@ export function isEmbedInfo<V>(v: V) {
 
 export function validateEmbedInfo<V>(v: V) {
   return validate<EmbedInfo & V>(v, id, hashEmbedInfo)
+}
+
+export interface AspectRatio {
+  $type?: 'parts.page.mention.search#aspectRatio'
+  width: number
+  height: number
+}
+
+const hashAspectRatio = 'aspectRatio'
+
+export function isAspectRatio<V>(v: V) {
+  return is$typed(v, id, hashAspectRatio)
+}
+
+export function validateAspectRatio<V>(v: V) {
+  return validate<AspectRatio & V>(v, id, hashAspectRatio)
 }
 
 export interface SubscopeInfo {
