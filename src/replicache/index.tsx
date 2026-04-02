@@ -106,7 +106,11 @@ export function ReplicacheProvider(props: {
     if (props.initialFactsOnly) return;
     let supabase = supabaseBrowserClient();
     let newRep = new Replicache({
-      pullInterval: props.disablePull ? null : undefined,
+      pullInterval: props.disablePull
+        ? null
+        : props.token.permission_token_rights.some((r) => r.write)
+          ? null
+          : 30000,
       pushDelay: 500,
       mutators: Object.fromEntries(
         Object.keys(mutations).map((m) => {
@@ -170,29 +174,21 @@ export function ReplicacheProvider(props: {
 
     setRep(newRep);
     let channel: RealtimeChannel | null = null;
-    let pollInterval: ReturnType<typeof setInterval> | null = null;
     let hasWritePermission = props.token.permission_token_rights.some(
       (r) => r.write,
     );
-    if (!props.disablePull) {
-      if (hasWritePermission) {
-        channel = supabase.channel(`rootEntity:${props.name}`);
+    if (!props.disablePull && hasWritePermission) {
+      channel = supabase.channel(`rootEntity:${props.name}`);
 
-        channel.on("broadcast", { event: "poke" }, () => {
-          newRep.pull();
-        });
-        channel.subscribe();
-      } else {
-        pollInterval = setInterval(() => {
-          newRep.pull();
-        }, 30000);
-      }
+      channel.on("broadcast", { event: "poke" }, () => {
+        newRep.pull();
+      });
+      channel.subscribe();
     }
     return () => {
       newRep.close();
       setRep(null);
       channel?.unsubscribe();
-      if (pollInterval) clearInterval(pollInterval);
     };
   }, [props.name, props.initialFactsOnly, props.token, props.disablePull]);
   return (
