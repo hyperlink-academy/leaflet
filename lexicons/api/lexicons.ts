@@ -1367,6 +1367,22 @@ export const schemaDict = {
             minimum: 16,
             maximum: 1600,
           },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.blocks.iframe#aspectRatio',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
         },
       },
     },

@@ -283,6 +283,18 @@ export const PubLeafletBlocksIFrame: LexiconDoc = {
       properties: {
         url: { type: "string", format: "uri" },
         height: { type: "integer", minimum: 16, maximum: 1600 },
+        aspectRatio: {
+          type: "ref",
+          ref: "#aspectRatio",
+        },
+      },
+    },
+    aspectRatio: {
+      type: "object",
+      required: ["width", "height"],
+      properties: {
+        width: { type: "integer" },
+        height: { type: "integer" },
       },
     },
   },

@@ -19,6 +19,7 @@ import {
   LinkPreviewBody,
   LinkPreviewMetadataResult,
 } from "app/api/link_previews/route";
+import { getAspectRatio } from "src/utils/aspectRatio";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -31,6 +32,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   );
 
   let height = useEntity(props.entityID, "embed/height")?.data.value || 360;
+  let aspectRatio = useEntity(props.entityID, "embed/aspect-ratio")?.data.value;
 
   let heightOnDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
@@ -82,31 +84,26 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
 
   return (
     <div
-      className={`w-full ${heightHandle.dragDelta ? "pointer-events-none" : ""}`}
+      className={`w-full ${!aspectRatio && heightHandle.dragDelta ? "pointer-events-none" : ""}`}
     >
       <BlockLayout
         isSelected={!!isSelected}
         className="flex flex-col relative w-full overflow-hidden group/embedBlock p-0!"
       >
         <iframe
-          width="100%"
-          height={height + (heightHandle.dragDelta?.y || 0)}
+          className={aspectRatio ? "w-full h-auto" : "w-full"}
+          style={
+            aspectRatio
+              ? { aspectRatio }
+              : { height: height + (heightHandle.dragDelta?.y || 0) }
+          }
           src={url?.data.value}
           allow="fullscreen"
           loading="lazy"
         ></iframe>
       </BlockLayout>
-      {/* <div className="w-full overflow-x-hidden truncate text-xs italic text-accent-contrast">
-        <a
-          href={url?.data.value}
-          target="_blank"
-          className={`py-0.5 min-w-0 w-full whitespace-nowrap`}
-        >
-          {url?.data.value}
-        </a>
-      </div> */}
 
-      {!props.preview && permissions.write && (
+      {!props.preview && permissions.write && !aspectRatio && (
         <>
           <div
             data-draggable
@@ -165,6 +162,7 @@ const BlockLinkInput = (props: BlockProps) => {
 
       let embedUrl = link;
       let embedHeight = 360;
+      let embedAspectRatio: string | null = null;
 
       if (res.status === 200) {
         let data = await (res.json() as LinkPreviewMetadataResult);
@@ -172,10 +170,11 @@ const BlockLinkInput = (props: BlockProps) => {
           let embed = data.data.links.player[0];
           embedUrl = embed.href;
           embedHeight = embed.media?.height || 300;
+          embedAspectRatio = getAspectRatio(embed.media);
         }
       }
 
-      await rep.mutate.assertFact([
+      let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
         {
           entity: entity,
           attribute: "embed/url",
@@ -184,15 +183,27 @@ const BlockLinkInput = (props: BlockProps) => {
             value: embedUrl,
           },
         },
-        {
+      ];
+      if (embedAspectRatio) {
+        facts.push({
+          entity: entity,
+          attribute: "embed/aspect-ratio",
+          data: {
+            type: "string",
+            value: embedAspectRatio,
+          },
+        });
+      } else {
+        facts.push({
           entity: entity,
           attribute: "embed/height",
           data: {
             type: "number",
             value: embedHeight,
           },
-        },
-      ]);
+        });
+      }
+      await rep.mutate.assertFact(facts);
     } catch {
       // On any error, fallback to using the URL directly
       await rep.mutate.assertFact([
