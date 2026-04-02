@@ -109,7 +109,8 @@ export function ReplicacheProvider(props: {
       (r) => r.write,
     );
     let newRep = new Replicache({
-      pullInterval: props.disablePull ? null : hasWritePermission ? null : 30000,
+      pullInterval:
+        props.disablePull || hasWritePermission ? null : 30000,
       pushDelay: 500,
       mutators: Object.fromEntries(
         Object.keys(mutations).map((m) => {
