@@ -29,15 +29,23 @@ import {
   type DocPage,
   type ThreadPage,
   type QuotesPage,
+  type IframePage,
   getPageKey,
   useOpenPages,
   useInitializeOpenPages,
-  openPage,
+  openPage as openPageAction,
   closePage,
 } from "./postPageState";
+import { IframePageView } from "components/Pages/IframePageView";
 
-export type { DocPage, ThreadPage, QuotesPage, OpenPage };
-export { getPageKey, useOpenPages, useInitializeOpenPages, openPage, closePage };
+export type { DocPage, ThreadPage, QuotesPage, IframePage, OpenPage };
+export {
+  getPageKey,
+  useOpenPages,
+  useInitializeOpenPages,
+  openPageAction as openPage,
+  closePage,
+};
 
 // Shared props type for both page components
 export type SharedPageProps = {
@@ -219,6 +227,27 @@ export function PostPages({
                 postUri={openPage.uri}
                 pageId={pageKey}
                 hasPageBackground={hasPageBackground}
+                pageOptions={
+                  <PageOptions
+                    onClick={() => closePage(openPage)}
+                    hasPageBackground={hasPageBackground}
+                  />
+                }
+              />
+            </Fragment>
+          );
+        }
+
+        // Handle iframe pages
+        if (openPage.type === "iframe") {
+          return (
+            <Fragment key={pageKey}>
+              <SandwichSpacer />
+              <IframePageView
+                url={openPage.url}
+                onOpen={(url) => {
+                  openPageAction(openPage, { type: "iframe", url });
+                }}
                 pageOptions={
                   <PageOptions
                     onClick={() => closePage(openPage)}

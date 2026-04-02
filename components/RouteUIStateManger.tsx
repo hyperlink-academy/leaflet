@@ -1,9 +1,9 @@
 "use client";
-import { useUIState } from "src/useUIState";
+import { useUIState, type EditorOpenPage } from "src/useUIState";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-const routeOpenPages = new Map<string, string[]>();
+const routeOpenPages = new Map<string, EditorOpenPage[]>();
 let previousPathname = null as null | string;
 export const RouteUIStateManager = () => {
   const pathname = usePathname();

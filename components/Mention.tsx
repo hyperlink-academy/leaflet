@@ -165,6 +165,8 @@ export function MentionAutocomplete(props: {
           name: selectedSuggestion.name,
           scope: selectedSuggestion.subscope.scope,
           serviceName: scope.serviceName ?? scope.name,
+          scopedDid: scope.scopedDid,
+          scopedDidName: scope.scopedDidName,
         });
       }
     } else if (e.key === "Enter") {

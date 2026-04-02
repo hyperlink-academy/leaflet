@@ -9,12 +9,14 @@ import { useEffect } from "react";
 export type DocPage = { type: "doc"; id: string };
 export type ThreadPage = { type: "thread"; uri: string };
 export type QuotesPage = { type: "quotes"; uri: string };
-export type OpenPage = DocPage | ThreadPage | QuotesPage;
+export type IframePage = { type: "iframe"; url: string };
+export type OpenPage = DocPage | ThreadPage | QuotesPage | IframePage;
 
 // Get a stable key for a page
 export const getPageKey = (page: OpenPage): string => {
   if (page.type === "doc") return page.id;
   if (page.type === "quotes") return `quotes:${page.uri}`;
+  if (page.type === "iframe") return `iframe:${page.url}`;
   return `thread:${page.uri}`;
 };
 
