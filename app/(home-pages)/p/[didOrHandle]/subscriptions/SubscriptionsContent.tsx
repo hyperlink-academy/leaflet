@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "components/EmptyState";
 import { useEffect, useRef } from "react";
 import useSWRInfinite from "swr/infinite";
 import { PubListing } from "app/(home-pages)/p/[didOrHandle]/PubListing";
@@ -75,9 +76,7 @@ export const ProfileSubscriptionsContent = (props: {
     : [];
 
   if (allSubscriptions.length === 0 && !isValidating) {
-    return (
-      <div className="text-tertiary text-center py-4">No subscriptions yet</div>
-    );
+    return <EmptyState title="No subscriptions yet" />;
   }
 
   return (

@@ -12,6 +12,7 @@ import { BskyPostEmbedNotification } from "./BskyPostEmbedNotification";
 import { MentionNotification } from "./MentionNotification";
 import { CommentMentionNotification } from "./CommentMentionNotification";
 import { RecommendNotification } from "./RecommendNotification";
+import { EmptyState } from "components/EmptyState";
 
 export function NotificationList({
   notifications,
@@ -30,15 +31,16 @@ export function NotificationList({
 
   if (notifications.length === 0)
     return (
-      <div className="w-full text-sm flex flex-col gap-1 container italic text-tertiary text-center sm:p-4 p-3">
-        <div className="text-base font-bold">no notifications yet...</div>
-        Here, you&apos;ll find notifications about new follows, comments,
-        mentions, and replies!
-      </div>
+      <EmptyState
+        title="no notifications yet..."
+        description="Here, you'll find notifications about new follows, comments, mentions, and replies!"
+      />
     );
   return (
-    <div className="max-w-prose mx-auto w-full">
-      <div className={`flex flex-col gap-2`}>
+    <div className="max-w-prose w-full">
+      <div className={`flex flex-col gap-3`}>
+        <h1 className="sm:text-xl text-lg">Notifications</h1>
+
         {notifications.map((n) => {
           if (n.type === "comment") {
             if (n.parentData) return <ReplyNotification key={n.id} {...n} />;

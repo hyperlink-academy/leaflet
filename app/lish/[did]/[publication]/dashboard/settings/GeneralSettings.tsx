@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Input } from "components/Input";
 import { AddTiny } from "components/Icons/AddTiny";
+import { DashboardContainer } from "./SettingsContent";
 
 export function GeneralSettings(props: {
   nameValue: string;
@@ -14,7 +15,7 @@ export function GeneralSettings(props: {
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <section className="flex flex-col gap-3">
+    <DashboardContainer>
       <h3 className="font-bold text-primary">General Settings</h3>
 
       <div className="flex items-center justify-between gap-2">
@@ -80,6 +81,6 @@ export function GeneralSettings(props: {
           onChange={(e) => props.setDescriptionValue(e.currentTarget.value)}
         />
       </label>
-    </section>
+    </DashboardContainer>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
 import { EditTiny } from "components/Icons/EditTiny";
+import { EmptyState } from "components/EmptyState";
 
 import {
   usePublicationData,
@@ -29,11 +30,7 @@ export function PublishedPostsList(props: {
 
   if (!publication) return null;
   if (!documents || documents.length === 0)
-    return (
-      <div className="italic text-tertiary w-full frosted-container text-center place-items-center flex flex-col gap-3 p-3">
-        Nothing's been published yet...
-      </div>
-    );
+    return <EmptyState title="Nothing's been published yet..." />;
 
   // Sort by publishedAt (most recent first)
   const sortedDocuments = [...documents].sort((a, b) => {

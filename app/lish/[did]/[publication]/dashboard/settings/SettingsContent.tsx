@@ -25,7 +25,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
 
   if (view === "theme") {
     return (
-      <div className="flex flex-col gap-0 w-full max-w-xl pb-8">
+      <div className="flex flex-col gap-0 w-full pb-8">
         <PubThemeSetter
           backToMenu={() => setView("all")}
           loading={themeLoading}
@@ -41,11 +41,11 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
 function SettingsForm(props: { onOpenTheme: () => void }) {
   let { data } = usePublicationData();
   let { publication: pubData } = data || {};
+  let cardBorderHidden = useCardBorderHidden();
   let record = useNormalizedPublicationRecord();
   let [loading, setLoading] = useState(false);
   let toast = useToaster();
 
-  // --- General Settings state ---
   let [nameValue, setNameValue] = useState(record?.name || "");
   let [descriptionValue, setDescriptionValue] = useState(
     record?.description || "",
@@ -94,7 +94,7 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
 
   return (
     <form
-      className="flex flex-col w-full max-w-xl pb-20"
+      className="flex flex-col w-full max-w-xl pb-20 "
       onSubmit={async (e) => {
         e.preventDefault();
         if (!pubData) return;
@@ -117,7 +117,7 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
         mutate("publication-data");
       }}
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 mx-auto">
         {/* ── General Settings ── */}
         <GeneralSettings
           nameValue={nameValue}
@@ -129,7 +129,7 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
           setIconFile={setIconFile}
         />
 
-        <hr className="border-border-light" />
+        {cardBorderHidden && <hr className="border-border-light" />}
 
         {/* ── Post Settings ── */}
         <PostSettings
@@ -145,15 +145,17 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
           setShowInDiscover={setShowInDiscover}
         />
 
-        <hr className="border-border-light" />
+        {cardBorderHidden && <hr className="border-border-light" />}
 
-        {/* ── Theme ── */}
-        <ThemeSettings onOpenTheme={props.onOpenTheme} />
+        <DashboardContainer>
+          <ThemeSettings onOpenTheme={props.onOpenTheme} />
+        </DashboardContainer>
 
-        <hr className="border-border-light" />
+        {cardBorderHidden && <hr className="border-border-light" />}
 
-        {/* ── Domains ── */}
-        <DomainsInline />
+        <DashboardContainer>
+          <DomainsInline />
+        </DashboardContainer>
       </div>
 
       {/* ── Sticky Save Footer ── */}
@@ -173,7 +175,7 @@ export const DashboardContainer = (props: {
   let cardBorderHidden = useCardBorderHidden();
   return (
     <div
-      className={`flex flex-col ${cardBorderHidden ? "con" : "bg-transparent"}`}
+      className={`flex flex-col ${!cardBorderHidden ? "container p-3 sm:px-4" : "bg-transparent"}`}
     >
       {props.children}
     </div>

@@ -1,4 +1,6 @@
 import { Toggle } from "components/Toggle";
+import { DashboardContainer } from "./SettingsContent";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export function PostSettings(props: {
   showComments: boolean;
@@ -12,10 +14,11 @@ export function PostSettings(props: {
   showInDiscover: boolean;
   setShowInDiscover: (v: boolean) => void;
 }) {
+  let cardBorderHidden = useCardBorderHidden();
   return (
     <>
-      <div className="flex flex-col gap-3">
-        <h3 className="mb-0">Discovery</h3>
+      <DashboardContainer>
+        <h3 className="mb-3">Discovery</h3>
         <Toggle
           toggle={props.showInDiscover}
           onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
@@ -31,52 +34,54 @@ export function PostSettings(props: {
             </div>
           </div>
         </Toggle>
-      </div>
-      <hr className="border-border-light" />
+      </DashboardContainer>
+      {cardBorderHidden && <hr className="border-border-light" />}
 
-      <h3 className="mb-0">Post Layout</h3>
-      <Toggle
-        toggle={props.showPrevNext}
-        onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
-      >
-        <div className="font-bold">Show Prev/Next Buttons on Post</div>
-      </Toggle>
-
-      <hr className="border-border-light" />
-
-      <h3 className="mb-0">Post Interactions</h3>
-      <div className="flex flex-col gap-2">
+      <DashboardContainer>
+        <h3 className="mb-3">Post Layout</h3>
         <Toggle
-          toggle={props.showComments}
-          onToggle={() => props.setShowComments(!props.showComments)}
+          toggle={props.showPrevNext}
+          onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
         >
-          <div className="font-bold">Show Comments</div>
+          <div className="font-bold">Show Prev/Next Buttons on Post</div>
         </Toggle>
+      </DashboardContainer>
+      {cardBorderHidden && <hr className="border-border-light" />}
+      <DashboardContainer>
+        <h3 className="mb-3">Post Interactions</h3>
+        <div className="flex flex-col gap-2">
+          <Toggle
+            toggle={props.showComments}
+            onToggle={() => props.setShowComments(!props.showComments)}
+          >
+            <div className="font-bold">Show Comments</div>
+          </Toggle>
 
-        <Toggle
-          toggle={props.showMentions}
-          onToggle={() => props.setShowMentions(!props.showMentions)}
-        >
-          <div className="flex flex-col justify-start">
-            <div className="font-bold">Show Mentions</div>
-            <div className="text-tertiary text-sm leading-tight">
-              Display a list of Bluesky mentions about your post
+          <Toggle
+            toggle={props.showMentions}
+            onToggle={() => props.setShowMentions(!props.showMentions)}
+          >
+            <div className="flex flex-col justify-start">
+              <div className="font-bold">Show Mentions</div>
+              <div className="text-tertiary text-sm leading-tight">
+                Display a list of Bluesky mentions about your post
+              </div>
             </div>
-          </div>
-        </Toggle>
+          </Toggle>
 
-        <Toggle
-          toggle={props.showRecommends}
-          onToggle={() => props.setShowRecommends(!props.showRecommends)}
-        >
-          <div className="flex flex-col justify-start">
-            <div className="font-bold">Show Recommends</div>
-            <div className="text-tertiary text-sm leading-tight">
-              Allow readers to recommend/like your post
+          <Toggle
+            toggle={props.showRecommends}
+            onToggle={() => props.setShowRecommends(!props.showRecommends)}
+          >
+            <div className="flex flex-col justify-start">
+              <div className="font-bold">Show Recommends</div>
+              <div className="text-tertiary text-sm leading-tight">
+                Allow readers to recommend/like your post
+              </div>
             </div>
-          </div>
-        </Toggle>
-      </div>
+          </Toggle>
+        </div>
+      </DashboardContainer>
     </>
   );
 }
