@@ -61,6 +61,8 @@ export const proxy_mention_search = makeRoute({
           results: results.slice(0, 50).map((r) => ({
             uri: r.uri,
             name: r.name,
+            description: r.description,
+            labels: r.labels,
             href: r.href,
             icon: r.icon,
             embed: r.embed,

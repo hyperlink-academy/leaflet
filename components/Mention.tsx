@@ -33,10 +33,18 @@ export function MentionAutocomplete(props: {
   const inputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const { suggestionIndex, setSuggestionIndex, suggestions, scope, setScope, searchComplete, hasDidScopableServices } =
-    useMentionSuggestions(searchQuery, props.open);
+  const {
+    suggestionIndex,
+    setSuggestionIndex,
+    suggestions,
+    scope,
+    setScope,
+    searchComplete,
+    hasDidScopableServices,
+  } = useMentionSuggestions(searchQuery, props.open);
 
-  const noResults = searchComplete && searchQuery !== "" && suggestions.length === 0;
+  const noResults =
+    searchComplete && searchQuery !== "" && suggestions.length === 0;
 
   const sortedSuggestions = useMemo(() => {
     const order: Mention["type"][] = [
@@ -119,10 +127,7 @@ export function MentionAutocomplete(props: {
           uri: selectedSuggestion.uri,
           name: selectedSuggestion.name,
         });
-      } else if (
-        selectedSuggestion?.type === "did" &&
-        hasDidScopableServices
-      ) {
+      } else if (selectedSuggestion?.type === "did" && hasDidScopableServices) {
         // Tab on a DID result → show services that can be scoped to this DID
         e.preventDefault();
         handleScopeChange({
@@ -232,7 +237,7 @@ export function MentionAutocomplete(props: {
                 did: scope.scopedDid,
                 name: scope.scopedDidName ?? scope.scopedDid,
               });
-            // When in a subscoped service, go back to the parent service scope
+              // When in a subscoped service, go back to the parent service scope
             } else if (scope.type === "service" && scope.scope) {
               handleScopeChange({
                 type: "service",
@@ -302,9 +307,7 @@ export function MentionAutocomplete(props: {
                 }}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                placeholder={
-                  scopePlaceholder(scope, props.placeholder)
-                }
+                placeholder={scopePlaceholder(scope, props.placeholder)}
                 className="flex-1 w-full min-w-0 bg-transparent border-none outline-none text-sm placeholder:text-tertiary"
               />
             </div>
@@ -385,7 +388,19 @@ export function MentionAutocomplete(props: {
                     ) : result.type === "service" ? (
                       <ServiceEntry
                         onClick={() => {
-                          handleScopeChange(serviceScopeFromMention(result));
+                          if (scope.type === "did_services") {
+                            handleScopeChange({
+                              type: "service",
+                              serviceUri: result.serviceUri,
+                              name: result.name,
+                              scope: scope.did,
+                              serviceName: result.name,
+                              scopedDid: scope.did,
+                              scopedDidName: scope.name,
+                            });
+                          } else {
+                            handleScopeChange(serviceScopeFromMention(result));
+                          }
                         }}
                         onMouseDown={(e) => e.preventDefault()}
                         name={result.name}
@@ -400,6 +415,8 @@ export function MentionAutocomplete(props: {
                         }}
                         onMouseDown={(e) => e.preventDefault()}
                         name={result.name}
+                        description={result.description}
+                        labels={result.labels}
                         icon={result.icon}
                         hasEmbed={!!result.embed}
                         onEmbedClick={
@@ -476,7 +493,7 @@ const Result = (props: {
           {props.result}
         </div>
         {props.subtext && (
-          <div className="text-tertiary italic text-xs font-normal min-w-0 truncate pb-[1px]">
+          <div className="text-tertiary text-xs font-normal min-w-0 pb-[1px]">
             {props.subtext}
           </div>
         )}
@@ -540,7 +557,7 @@ const DidResult = (props: {
           nameContent
         )
       }
-      subtext={props.displayName && `@${props.handle}`}
+      subtext={props.displayName && <span className="truncate italic">{`@${props.handle}`}</span>}
       onClick={props.onClick}
       onMouseDown={props.onMouseDown}
       selected={props.selected}
@@ -609,7 +626,7 @@ const ServiceEntry = (props: {
           <ScopeButton onClick={props.onClick}>Search</ScopeButton>
         </>
       }
-      subtext={props.description}
+      subtext={props.description && <span className="truncate italic">{props.description}</span>}
       onClick={props.onClick}
       onMouseDown={props.onMouseDown}
       selected={props.selected}
@@ -619,6 +636,8 @@ const ServiceEntry = (props: {
 
 const ServiceSearchResult = (props: {
   name: string;
+  description?: string;
+  labels?: SearchService.MentionLabel[];
   icon?: string;
   hasEmbed?: boolean;
   onEmbedClick?: () => void;
@@ -631,6 +650,9 @@ const ServiceSearchResult = (props: {
   const hasActions =
     (props.hasEmbed && props.onEmbedClick) ||
     (props.subscope && props.onSubscopeClick);
+  const hasLabels = props.labels && props.labels.length > 0;
+  const hasDescription = !!props.description;
+  const hasSubtext = hasLabels || hasDescription;
   return (
     <Result
       icon={
@@ -645,7 +667,7 @@ const ServiceSearchResult = (props: {
       result={
         hasActions ? (
           <>
-            <div className="truncate w-full grow min-w-0">{props.name}</div>
+            <div className={`grow min-w-0 ${hasSubtext ? "line-clamp-2 whitespace-normal" : "truncate w-full"}`}>{props.name}</div>
             {props.subscope && props.onSubscopeClick && (
               <ScopeButton onClick={props.onSubscopeClick}>
                 {props.subscope.label}
@@ -656,8 +678,34 @@ const ServiceSearchResult = (props: {
             )}
           </>
         ) : (
-          <div className="truncate w-full">{props.name}</div>
+          <div className={`min-w-0 ${hasSubtext ? "line-clamp-2 whitespace-normal" : "truncate w-full"}`}>{props.name}</div>
         )
+      }
+      subtext={
+        hasSubtext ? (
+          <div className="flex flex-col gap-0.5">
+            {hasLabels && (
+              <div className="flex flex-wrap gap-1 items-center text-tertiary text-xs leading-normal">
+                {props.labels!.flatMap(
+                  (label, i) =>
+                    label.text
+                      ? [
+                          ...(i > 0
+                            ? [<span key={`sep-${i}`} className="text-border-light">|</span>]
+                            : []),
+                          <span key={i}>{label.text}</span>,
+                        ]
+                      : [],
+                )}
+              </div>
+            )}
+            {hasDescription && (
+              <span className="text-secondary text-xs truncate">
+                {props.description}
+              </span>
+            )}
+          </div>
+        ) : undefined
       }
       onClick={props.onClick}
       onMouseDown={props.onMouseDown}
@@ -692,7 +740,7 @@ const ScopeHeader = (props: {
       <GoBackTiny className="shrink-0 " />
       <div className="grow w-full truncate text-left">{label}</div>
     </button>
-    );
+  );
 };
 
 export type Mention =
@@ -716,6 +764,8 @@ export type Mention =
       type: "service_result";
       uri: string;
       name: string;
+      description?: string;
+      labels?: SearchService.MentionLabel[];
       href?: string;
       icon?: string;
       embed?: SearchService.EmbedInfo;
@@ -727,24 +777,46 @@ export type MentionScope =
   | { type: "identities" }
   | { type: "publications" }
   | { type: "publication"; uri: string; name: string }
-  | { type: "service"; serviceUri: string; name: string; scope?: string; serviceName?: string; scopedDid?: string; scopedDidName?: string }
+  | {
+      type: "service";
+      serviceUri: string;
+      name: string;
+      scope?: string;
+      serviceName?: string;
+      scopedDid?: string;
+      scopedDidName?: string;
+    }
   | { type: "did_services"; did: string; name: string };
 
 function scopePlaceholder(scope: MentionScope, fallback?: string): string {
   switch (scope.type) {
-    case "identities": return "Search people...";
-    case "publications": return "Search publications...";
-    case "publication": return "Search posts...";
-    case "service": return `Search ${scope.name}...`;
-    case "did_services": return `Search ${scope.name} with...`;
-    default: return fallback ?? "Search people & publications...";
+    case "identities":
+      return "Search people...";
+    case "publications":
+      return "Search publications...";
+    case "publication":
+      return "Search posts...";
+    case "service":
+      return `Search ${scope.name}...`;
+    case "did_services":
+      return `Search ${scope.name} with...`;
+    default:
+      return fallback ?? "Search people & publications...";
   }
 }
 
-function serviceScopeFromMention(service: Mention & { type: "service" }): MentionScope {
-  if (service.serviceUri === BUILTIN_IDENTITIES.serviceUri) return { type: "identities" };
-  if (service.serviceUri === BUILTIN_PUBLICATIONS.serviceUri) return { type: "publications" };
-  return { type: "service", serviceUri: service.serviceUri, name: service.name };
+function serviceScopeFromMention(
+  service: Mention & { type: "service" },
+): MentionScope {
+  if (service.serviceUri === BUILTIN_IDENTITIES.serviceUri)
+    return { type: "identities" };
+  if (service.serviceUri === BUILTIN_PUBLICATIONS.serviceUri)
+    return { type: "publications" };
+  return {
+    type: "service",
+    serviceUri: service.serviceUri,
+    name: service.name,
+  };
 }
 
 const BUILTIN_IDENTITIES: Mention & { type: "service" } = {
@@ -800,7 +872,12 @@ function useMentionServices(enabled: boolean): Array<Mention> {
       try {
         const result = await callRPC(`get_user_mention_services`, {});
         return result.result.services.map(
-          (s: { uri: string; name: string; description?: string; canBeScopedToDid?: boolean }) => ({
+          (s: {
+            uri: string;
+            name: string;
+            description?: string;
+            canBeScopedToDid?: boolean;
+          }) => ({
             type: "service" as const,
             serviceUri: s.uri,
             name: s.name,
@@ -832,7 +909,10 @@ function useMentionSuggestions(query: string | null, open: boolean) {
   );
   const hasServices = allServices.length > 0;
   const didScopableServices = useMemo(
-    () => externalServices.filter((s) => s.type === "service" && s.canBeScopedToDid),
+    () =>
+      externalServices.filter(
+        (s) => s.type === "service" && s.canBeScopedToDid,
+      ),
     [externalServices],
   );
   const hasDidScopableServices = didScopableServices.length > 0;
@@ -896,15 +976,6 @@ function useMentionSuggestions(query: string | null, open: boolean) {
           url: d.url,
         }));
       } else if (scope.type === "service") {
-        // Search within a mention service
-        // When not in a subscope, require a query
-        if (!query && !scope.scope) {
-          if (!stale) {
-            setSuggestions([]);
-            setSearchComplete(true);
-          }
-          return;
-        }
         const res = await callRPC(`proxy_mention_search`, {
           service_uri: scope.serviceUri,
           search: query || "",
@@ -915,6 +986,8 @@ function useMentionSuggestions(query: string | null, open: boolean) {
           type: "service_result" as const,
           uri: r.uri,
           name: r.name,
+          description: r.description,
+          labels: r.labels,
           href: r.href,
           icon: r.icon,
           embed: r.embed,
@@ -950,6 +1023,7 @@ function useMentionSuggestions(query: string | null, open: boolean) {
       setSuggestionIndex(Math.max(0, suggestions.length - 1));
     }
   }, [suggestionIndex, suggestions.length]);
+  console.log(scope);
 
   return {
     suggestions,
