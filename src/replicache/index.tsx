@@ -105,12 +105,11 @@ export function ReplicacheProvider(props: {
   useEffect(() => {
     if (props.initialFactsOnly) return;
     let supabase = supabaseBrowserClient();
+    let hasWritePermission = props.token.permission_token_rights.some(
+      (r) => r.write,
+    );
     let newRep = new Replicache({
-      pullInterval: props.disablePull
-        ? null
-        : props.token.permission_token_rights.some((r) => r.write)
-          ? null
-          : 30000,
+      pullInterval: props.disablePull ? null : hasWritePermission ? null : 30000,
       pushDelay: 500,
       mutators: Object.fromEntries(
         Object.keys(mutations).map((m) => {
@@ -174,9 +173,6 @@ export function ReplicacheProvider(props: {
 
     setRep(newRep);
     let channel: RealtimeChannel | null = null;
-    let hasWritePermission = props.token.permission_token_rights.some(
-      (r) => r.write,
-    );
     if (!props.disablePull && hasWritePermission) {
       channel = supabase.channel(`rootEntity:${props.name}`);
 
