@@ -18,7 +18,7 @@ export function PostSettings(props: {
   return (
     <>
       <DashboardContainer>
-        <h3 className="mb-3">Discovery</h3>
+        <h3>Discovery</h3>
         <Toggle
           toggle={props.showInDiscover}
           onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
@@ -38,7 +38,7 @@ export function PostSettings(props: {
       {cardBorderHidden && <hr className="border-border-light" />}
 
       <DashboardContainer>
-        <h3 className="mb-3">Post Layout</h3>
+        <h3>Post Layout</h3>
         <Toggle
           toggle={props.showPrevNext}
           onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
@@ -48,7 +48,7 @@ export function PostSettings(props: {
       </DashboardContainer>
       {cardBorderHidden && <hr className="border-border-light" />}
       <DashboardContainer>
-        <h3 className="mb-3">Post Interactions</h3>
+        <h3>Post Interactions</h3>
         <div className="flex flex-col gap-2">
           <Toggle
             toggle={props.showComments}

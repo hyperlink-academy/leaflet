@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { mutate } from "swr";
@@ -10,12 +10,15 @@ import {
   useNormalizedPublicationRecord,
 } from "../PublicationSWRProvider";
 import { updatePublication } from "app/lish/createPub/updatePublication";
-import { DomainsInline } from "./DomainsInline";
+import { PubDomainSettings } from "./PubDomainSettings";
 import { PubThemeSetter } from "components/ThemeManager/PubThemeSetter";
 import { GeneralSettings } from "./GeneralSettings";
 import { PostSettings } from "./PostSettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
+import { ManageProSubscription } from "./ManageProSubscription";
+import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
+import { InlineUpgrade } from "../../UpgradeModal";
 
 type SettingsView = "all" | "theme";
 
@@ -41,6 +44,8 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
 function SettingsForm(props: { onOpenTheme: () => void }) {
   let { data } = usePublicationData();
   let { publication: pubData } = data || {};
+  let isPro = useIsPro();
+  let canSeePro = useCanSeePro();
   let cardBorderHidden = useCardBorderHidden();
   let record = useNormalizedPublicationRecord();
   let [loading, setLoading] = useState(false);
@@ -94,7 +99,7 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
 
   return (
     <form
-      className="flex flex-col w-full max-w-xl pb-20 "
+      className="flex flex-col w-full pb-8"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!pubData) return;
@@ -117,7 +122,7 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
         mutate("publication-data");
       }}
     >
-      <div className="flex flex-col gap-6 mx-auto">
+      <div className="flex flex-col gap-6 relative ">
         {/* ── General Settings ── */}
         <GeneralSettings
           nameValue={nameValue}
@@ -154,15 +159,17 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
         {cardBorderHidden && <hr className="border-border-light" />}
 
         <DashboardContainer>
-          <DomainsInline />
+          <PubDomainSettings />
         </DashboardContainer>
-      </div>
-
-      {/* ── Sticky Save Footer ── */}
-      <div className="opaque-container sticky bottom-4 left-0 right-0 bg-bg-page border-t border-border-light p-2   px-2 flex justify-end">
-        <ButtonPrimary type="submit" disabled={loading}>
-          {loading ? <DotLoader /> : "Save Changes"}
-        </ButtonPrimary>
+        <DashboardContainer className="bg-[rgb(var(--accent-light))]">
+          {canSeePro && !isPro ? <InlineUpgrade /> : <ManageProSubscription />}
+        </DashboardContainer>
+        <div className="bg-[rgb(var(--accent-1))] text-accent-2 text-sm rounded-md sticky bottom-2 mx-2 border-border-light pr-1 pl-2 flex justify-between items-center py-1 ">
+          You have unsaved updates!
+          <ButtonSecondary type="submit" disabled={loading}>
+            {loading ? <DotLoader /> : "Update Pub"}
+          </ButtonSecondary>
+        </div>
       </div>
     </form>
   );
@@ -175,7 +182,7 @@ export const DashboardContainer = (props: {
   let cardBorderHidden = useCardBorderHidden();
   return (
     <div
-      className={`flex flex-col ${!cardBorderHidden ? "container p-3 sm:px-4" : "bg-transparent"}`}
+      className={`flex flex-col rounded-lg! gap-2 ${!cardBorderHidden ? "container p-3 sm:px-4" : "bg-transparent"}`}
     >
       {props.children}
     </div>

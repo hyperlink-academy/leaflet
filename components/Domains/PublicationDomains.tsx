@@ -17,7 +17,7 @@ import {
   assignDomainToPublication,
   removeDomainAssignment,
 } from "actions/domains";
-import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/settings/PublicationSettings";
+
 import { AddDomainForm } from "./AddDomainForm";
 import { DomainSettingsView } from "./DomainSettingsView";
 import { PinTiny } from "components/Icons/PinTiny";
@@ -44,9 +44,7 @@ export function PublicationDomains(props: {
 
   return (
     <div>
-      <PubSettingsHeader backToMenuAction={props.backToMenu}>
-        Domains
-      </PubSettingsHeader>
+      Domains
       <div className="flex flex-col gap-1 py-1">
         <h4 className="">This Publication's Domains</h4>
         <div className="text-xs text-tertiary -mb-1 ">DEFAULT</div>

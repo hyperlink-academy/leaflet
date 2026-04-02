@@ -28,7 +28,7 @@ import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import type { CustomDomain } from "components/Domains/DomainList";
 
-export const DomainsInline = () => {
+export const PubDomainSettings = () => {
   let { data, mutate: mutatePubData } = usePublicationData();
   let { publication: pubData } = data || {};
   let record = useNormalizedPublicationRecord();
@@ -42,7 +42,7 @@ export const DomainsInline = () => {
   if (!pubData) return null;
 
   return (
-    <section className="flex flex-col gap-3">
+    <>
       <h3 className="font-bold text-primary">Domains</h3>
       <div className="flex flex-col gap-1">
         <h4>This Publication&apos;s Domains</h4>
@@ -116,7 +116,7 @@ export const DomainsInline = () => {
           );
         })()}
       </div>
-    </section>
+    </>
   );
 };
 
@@ -134,12 +134,12 @@ function PubDomainRow(props: {
   let toaster = props.toaster;
 
   return (
-    <div className="text-sm text-secondary relative w-full flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light">
+    <div className=" opaque-container text-secondary relative w-full flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light">
       <span className="pr-8 truncate text-left">{props.domain}</span>
       <div className="flex justify-end items-center">
         {pending ? (
           <div className="px-1 py-0.5 flex gap-1 items-center">
-            <p className="w-max pl-1 font-bold text-xs text-tertiary">
+            <p className="w-max pl-1 font-bold text-sm text-tertiary">
               pending
             </p>
             <LoadingTiny className="animate-spin text-accent-contrast" />
@@ -323,11 +323,11 @@ function UnassignedDomainRow(props: {
   }
 
   return (
-    <div className="text-sm text-tertiary w-full flex flex-col gap-1 px-[6px] py-1 border rounded-md border-border-light border-dashed">
+    <div className="opaque-container text-tertiary w-full flex flex-col gap-1 px-[6px] py-1 border rounded-md border-border-light border-dashed">
       <div className="flex items-center justify-between">
         <span className="truncate text-left">{props.domainData.domain}</span>
         {pending ? (
-          <div className="text-tertiary animate-pulse text-xs">unverified</div>
+          <div className="text-tertiary animate-pulse text-sm">unverified</div>
         ) : confirming ? null : (
           <button
             className="text-accent-contrast text-xs font-bold"

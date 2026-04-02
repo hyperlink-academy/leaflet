@@ -32,9 +32,6 @@ export const ManageProSubscription = (props: {}) => {
 
   return (
     <div>
-      <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1 flex-shrink-0">
-        Manage Subscription
-      </div>
       <div className="text-secondary text-center flex flex-col justify-center gap-2 py-2">
         <div>
           You have a <br />

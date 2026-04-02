@@ -15,12 +15,14 @@ import { PagePickers } from "./PubPickers/PubTextPickers";
 import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
-import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/settings/PublicationSettings";
+
 import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { PubPageWidthSetter } from "./PubPickers/PubPageWidthSetter";
 import { FontPicker } from "./Pickers/TextPickers";
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { ButtonPrimary } from "components/Buttons";
 
 export type ImageState = {
   src: string;
@@ -61,8 +63,12 @@ export const PubThemeSetter = (props: {
   let [pageWidth, setPageWidth] = useState<number>(
     record?.theme?.pageWidth || 624,
   );
-  let [headingFont, setHeadingFont] = useState<string | undefined>(record?.theme?.headingFont);
-  let [bodyFont, setBodyFont] = useState<string | undefined>(record?.theme?.bodyFont);
+  let [headingFont, setHeadingFont] = useState<string | undefined>(
+    record?.theme?.headingFont,
+  );
+  let [bodyFont, setBodyFont] = useState<string | undefined>(
+    record?.theme?.bodyFont,
+  );
   let pubBGImage = image?.src || null;
   let leafletBGRepeat = image?.repeat || null;
   let toaster = useToaster();
@@ -129,13 +135,10 @@ export const PubThemeSetter = (props: {
             props.setLoading(false);
           }}
         >
-          <PubSettingsHeader
-            loading={props.loading}
-            setLoadingAction={props.setLoading}
-            backToMenuAction={props.backToMenu}
-          >
-            Theme and Layout
-          </PubSettingsHeader>
+          <button onClick={props.backToMenu}>
+            <GoToArrow />
+          </button>
+          <ButtonPrimary onClick={props.setLoading}>update</ButtonPrimary>
         </form>
 
         <div className="themeSetterContent flex flex-col w-full overflow-y-scroll min-h-0 -mb-2 pt-2 ">
@@ -309,7 +312,13 @@ const SamplePub = (props: {
             />
           )}
 
-          <div className="text-[11px] font-bold pt-[5px] text-accent-contrast" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
+          <div
+            className="text-[11px] font-bold pt-[5px] text-accent-contrast"
+            style={{
+              fontFamily:
+                "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))",
+            }}
+          >
             {record?.name}
           </div>
           <div className="text-[7px] font-normal text-tertiary">
@@ -322,7 +331,15 @@ const SamplePub = (props: {
         </div>
 
         <div className="flex flex-col text-[8px]  rounded-md ">
-          <div className="font-bold" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>A Sample Post</div>
+          <div
+            className="font-bold"
+            style={{
+              fontFamily:
+                "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))",
+            }}
+          >
+            A Sample Post
+          </div>
           <div className="text-secondary italic text-[6px]">
             This is a sample description about the sample post
           </div>
@@ -364,10 +381,22 @@ const SamplePost = (props: {
         }}
       >
         <div className="flex flex-col ">
-          <div className="text-[6px] font-bold pt-[6px] text-accent-contrast" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
+          <div
+            className="text-[6px] font-bold pt-[6px] text-accent-contrast"
+            style={{
+              fontFamily:
+                "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))",
+            }}
+          >
             {record?.name}
           </div>
-          <div className="text-[11px] font-bold text-primary" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
+          <div
+            className="text-[11px] font-bold text-primary"
+            style={{
+              fontFamily:
+                "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))",
+            }}
+          >
             A Sample Post
           </div>
           <div className="text-[7px] font-normal text-secondary italic">

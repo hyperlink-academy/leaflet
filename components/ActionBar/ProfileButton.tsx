@@ -98,7 +98,9 @@ export const ProfileButton = () => {
             {" "}
             <hr className="border-border-light border-dashed" />
             <div className="py-2">
-              <InlineUpgrade />
+              <div className="p-2 accent-container">
+                <InlineUpgrade compact />
+              </div>
             </div>
           </>
         )}
