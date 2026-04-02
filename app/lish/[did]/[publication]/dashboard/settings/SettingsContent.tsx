@@ -164,14 +164,54 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
         <DashboardContainer className="bg-[rgb(var(--accent-light))]">
           {canSeePro && !isPro ? <InlineUpgrade /> : <ManageProSubscription />}
         </DashboardContainer>
-        <div className="bg-[rgb(var(--accent-1))] text-accent-2 text-sm rounded-md sticky bottom-2 mx-2 border-border-light pr-1 pl-2 flex justify-between items-center py-1 ">
-          You have unsaved updates!
-          <ButtonSecondary type="submit" disabled={loading}>
-            {loading ? <DotLoader /> : "Update Pub"}
-          </ButtonSecondary>
-        </div>
+
+        <SettingsFooter loading={loading} />
       </div>
     </form>
+  );
+}
+
+function SettingsFooter(props: { loading: boolean }) {
+  let [distanceFromBottom, setDistanceFromBottom] = useState<number>(Infinity);
+
+  useEffect(() => {
+    const scrollContainer = document.getElementById("home-content");
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const dist =
+        scrollContainer.scrollHeight -
+        scrollContainer.scrollTop -
+        scrollContainer.clientHeight;
+      setDistanceFromBottom(dist);
+    };
+
+    handleScroll();
+    scrollContainer.addEventListener("scroll", handleScroll);
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const threshold = 100;
+  // ratio: 1 = far from bottom (full margin), 0 = at bottom (no margin)
+  const ratio = Math.min(distanceFromBottom / threshold, 1);
+  const mx = ratio * 8; // 8px = mx-2
+
+  return (
+    <div
+      className="settingsFooter sticky bottom-0 z-10"
+      style={{
+        paddingLeft: `${mx}px`,
+        paddingRight: `${mx}px`,
+        paddingBottom: `${mx}px`,
+      }}
+    >
+      <div className="bg-[rgb(var(--accent-1))] text-accent-2 text-sm rounded-md border-border-light pr-1 pl-2 flex justify-between items-center py-1">
+        You have unsaved updates!
+        <ButtonSecondary type="submit" disabled={props.loading}>
+          {props.loading ? <DotLoader /> : "Update Pub"}
+        </ButtonSecondary>
+      </div>
+    </div>
   );
 }
 
