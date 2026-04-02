@@ -170,18 +170,29 @@ export function ReplicacheProvider(props: {
 
     setRep(newRep);
     let channel: RealtimeChannel | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    let hasWritePermission = props.token.permission_token_rights.some(
+      (r) => r.write,
+    );
     if (!props.disablePull) {
-      channel = supabase.channel(`rootEntity:${props.name}`);
+      if (hasWritePermission) {
+        channel = supabase.channel(`rootEntity:${props.name}`);
 
-      channel.on("broadcast", { event: "poke" }, () => {
-        newRep.pull();
-      });
-      channel.subscribe();
+        channel.on("broadcast", { event: "poke" }, () => {
+          newRep.pull();
+        });
+        channel.subscribe();
+      } else {
+        pollInterval = setInterval(() => {
+          newRep.pull();
+        }, 30000);
+      }
     }
     return () => {
       newRep.close();
       setRep(null);
       channel?.unsubscribe();
+      if (pollInterval) clearInterval(pollInterval);
     };
   }, [props.name, props.initialFactsOnly, props.token, props.disablePull]);
   return (
