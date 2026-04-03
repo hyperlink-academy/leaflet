@@ -41,8 +41,6 @@ export function LinearDocumentPage({
     did,
     profile,
     preferences,
-    pubRecord,
-    theme,
     prerenderedCodeBlocks,
     bskyPostData,
     pollData,
@@ -73,7 +71,10 @@ export function LinearDocumentPage({
         pageOptions={pageOptions}
         footnoteSideColumn={
           !props.hasContentToRight ? (
-            <PublishedFootnoteSideColumn footnotes={footnotes} fullPageScroll={fullPageScroll} />
+            <PublishedFootnoteSideColumn
+              footnotes={footnotes}
+              fullPageScroll={fullPageScroll}
+            />
           ) : undefined
         }
       >

@@ -11,7 +11,7 @@ export function PublicationHomeLayout(props: {
   return (
     <div
       ref={props.showPageBackground ? null : ref}
-      className={`pubWrapper flex flex-col sm:py-6 h-full   ${props.showPageBackground ? "max-w-(--page-width-units) mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
+      className={`pubWrapper flex flex-col sm:py-6 min-h-full ${props.showPageBackground ? "max-w-(--page-width-units) mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
     >
       <div
         ref={!props.showPageBackground ? null : ref}

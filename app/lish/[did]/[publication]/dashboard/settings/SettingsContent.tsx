@@ -23,25 +23,6 @@ import { InlineUpgrade } from "../../UpgradeModal";
 type SettingsView = "all" | "theme";
 
 export function SettingsContent(props: { showPageBackground: boolean }) {
-  let [view, setView] = useState<SettingsView>("all");
-  let [themeLoading, setThemeLoading] = useState(false);
-
-  if (view === "theme") {
-    return (
-      <div className="flex flex-col gap-0 w-full pb-8">
-        <PubThemeSetter
-          backToMenu={() => setView("all")}
-          loading={themeLoading}
-          setLoading={setThemeLoading}
-        />
-      </div>
-    );
-  }
-
-  return <SettingsForm onOpenTheme={() => setView("theme")} />;
-}
-
-function SettingsForm(props: { onOpenTheme: () => void }) {
   let { data } = usePublicationData();
   let { publication: pubData } = data || {};
   let isPro = useIsPro();
@@ -153,7 +134,7 @@ function SettingsForm(props: { onOpenTheme: () => void }) {
         {cardBorderHidden && <hr className="border-border-light" />}
 
         <DashboardContainer>
-          <ThemeSettings onOpenTheme={props.onOpenTheme} />
+          <ThemeSettings />
         </DashboardContainer>
 
         {cardBorderHidden && <hr className="border-border-light" />}
