@@ -592,18 +592,28 @@ pre.shiki {
 }
 
 .footnote-side-item {
-  max-height: 4.5em;
   overflow: hidden;
   transition:
     max-height 200ms ease,
-    mask-image 200ms ease;
+    opacity 200ms ease;
+  background: rgba(var(--bg-page), var(--bg-page-alpha));
+  border-radius: 4px;
+  padding: 4px 6px;
 }
-.footnote-side-item.has-overflow {
-  mask-image: linear-gradient(to bottom, white 50%, transparent 100%);
+.footnote-side-item:not(:hover):not(:focus-within):not(.footnote-side-focused) {
+  max-height: calc(4.5em + 8px);
+  opacity: calc(var(--bg-page-alpha) * 0.7);
+}
+.footnote-side-item:not(:hover):not(:focus-within):not(.footnote-side-focused) .footnote-item > div:last-of-type {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .footnote-side-item:hover,
 .footnote-side-item:focus-within,
 .footnote-side-item.footnote-side-focused {
   max-height: 40em;
-  mask-image: none;
+  opacity: var(--bg-page-alpha);
 }
