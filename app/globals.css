@@ -607,6 +607,7 @@ pre.shiki {
 .footnote-side-item.footnote-side-focused {
   max-height: 40em;
   mask-image: none;
+  opacity: var(--bg-page-alpha, 1);
 }
 
 .footnote-side-item.has-page-bg {
@@ -618,9 +619,4 @@ pre.shiki {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
-}
-.footnote-side-item.has-page-bg:hover,
-.footnote-side-item.has-page-bg:focus-within,
-.footnote-side-item.has-page-bg.footnote-side-focused {
-  opacity: var(--bg-page-alpha, 1);
 }
