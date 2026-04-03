@@ -596,7 +596,8 @@ pre.shiki {
   overflow: hidden;
   transition:
     max-height 200ms ease,
-    mask-image 200ms ease;
+    mask-image 200ms ease,
+    opacity 200ms ease;
 }
 .footnote-side-item.has-overflow {
   mask-image: linear-gradient(to bottom, white 50%, transparent 100%);
@@ -606,4 +607,17 @@ pre.shiki {
 .footnote-side-item.footnote-side-focused {
   max-height: 40em;
   mask-image: none;
+}
+
+/* When page has a background, use truncation instead of fade and control opacity */
+.footnote-side-item.has-page-bg {
+  opacity: calc(var(--bg-page-alpha, 1) * 0.7);
+}
+.footnote-side-item.has-page-bg.has-overflow {
+  mask-image: none;
+}
+.footnote-side-item.has-page-bg:hover,
+.footnote-side-item.has-page-bg:focus-within,
+.footnote-side-item.has-page-bg.footnote-side-focused {
+  opacity: var(--bg-page-alpha, 1);
 }
