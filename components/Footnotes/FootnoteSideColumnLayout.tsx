@@ -171,7 +171,7 @@ function SideItem(props: {
     <div
       ref={ref}
       data-footnote-side-id={props.id}
-      className={`absolute left-0 right-0 text-sm footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}${isFocused ? " footnote-side-focused" : ""}${props.hasPageBackground ? " has-page-bg bg-bg-page rounded-md px-2 py-1 [&_.footnote-item>.grow]:line-clamp-3" : ""}`}
+      className={`absolute left-0 right-0 text-sm footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}${isFocused ? " footnote-side-focused" : ""}${props.hasPageBackground ? " has-page-bg bg-bg-page rounded-md px-2 py-1" : ""}`}
       style={{ top: props.top }}
     >
       {props.children}
