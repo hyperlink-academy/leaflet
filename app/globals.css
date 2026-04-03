@@ -612,8 +612,6 @@ pre.shiki {
 /* When page has a background, use line-clamp instead of fade and control opacity */
 .footnote-side-item.has-page-bg {
   opacity: calc(var(--bg-page-alpha, 1) * 0.7);
-}
-.footnote-side-item.has-page-bg.has-overflow {
   mask-image: none;
 }
 .footnote-side-item.has-page-bg .footnote-item-content {
@@ -626,10 +624,4 @@ pre.shiki {
 .footnote-side-item.has-page-bg:focus-within,
 .footnote-side-item.has-page-bg.footnote-side-focused {
   opacity: var(--bg-page-alpha, 1);
-}
-.footnote-side-item.has-page-bg:hover .footnote-item-content,
-.footnote-side-item.has-page-bg:focus-within .footnote-item-content,
-.footnote-side-item.has-page-bg.footnote-side-focused .footnote-item-content {
-  -webkit-line-clamp: unset;
-  display: block;
 }
