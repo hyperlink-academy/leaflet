@@ -612,4 +612,6 @@ pre.shiki {
 .footnote-side-item.has-page-bg {
   opacity: calc(var(--bg-page-alpha, 1) * 0.7);
   mask-image: none;
+  max-height: none;
+  transition: opacity 200ms ease;
 }
