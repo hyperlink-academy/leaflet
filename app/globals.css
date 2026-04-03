@@ -609,7 +609,6 @@ pre.shiki {
   mask-image: none;
 }
 
-/* When page has a background, use line-clamp instead of fade and control opacity */
 .footnote-side-item.has-page-bg {
   opacity: calc(var(--bg-page-alpha, 1) * 0.7);
   mask-image: none;
