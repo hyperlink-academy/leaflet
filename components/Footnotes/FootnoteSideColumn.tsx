@@ -5,6 +5,7 @@ import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { deleteFootnoteFromBlock } from "./deleteFootnoteFromBlock";
 import { FootnoteSideColumnLayout } from "./FootnoteSideColumnLayout";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 type EditorFootnoteItem = {
   id: string;
@@ -21,6 +22,7 @@ export function FootnoteSideColumn(props: {
   let { footnotes } = useFootnoteContext();
   let { permissions } = useEntitySetContext();
   let rep = useReplicache();
+  let cardBorderHidden = useCardBorderHidden();
 
   let items: EditorFootnoteItem[] = footnotes.map((fn) => ({
     id: fn.footnoteEntityID,
@@ -56,6 +58,7 @@ export function FootnoteSideColumn(props: {
       items={items}
       visible={props.visible}
       fullPageScroll={props.fullPageScroll}
+      hasPageBackground={!cardBorderHidden}
       getAnchorSelector={getAnchorSelector}
       renderItem={renderItem}
     />

@@ -14,6 +14,7 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
   items: T[];
   visible: boolean;
   fullPageScroll?: boolean;
+  hasPageBackground?: boolean;
   getAnchorSelector: (item: T) => string;
   renderItem: (item: T & { top: number }) => ReactNode;
 }) {
@@ -120,7 +121,7 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
         style={{ transform: `translateY(-${scrollOffset}px)` }}
       >
         {positions.map((item) => (
-          <SideItem key={item.id} id={item.id} top={item.top} onResize={calculatePositions}>
+          <SideItem key={item.id} id={item.id} top={item.top} onResize={calculatePositions} hasPageBackground={props.hasPageBackground}>
             {props.renderItem(item)}
           </SideItem>
         ))}
@@ -134,6 +135,7 @@ function SideItem(props: {
   id: string;
   top: number;
   onResize: () => void;
+  hasPageBackground?: boolean;
 }) {
   let ref = useRef<HTMLDivElement>(null);
   let [overflows, setOverflows] = useState(false);
@@ -169,7 +171,7 @@ function SideItem(props: {
     <div
       ref={ref}
       data-footnote-side-id={props.id}
-      className={`absolute left-0 right-0 text-sm footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}${isFocused ? " footnote-side-focused" : ""}`}
+      className={`absolute left-0 right-0 text-sm footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}${isFocused ? " footnote-side-focused" : ""}${props.hasPageBackground ? " bg-bg-page rounded-md px-2 py-1" : ""}`}
       style={{ top: props.top }}
     >
       {props.children}
