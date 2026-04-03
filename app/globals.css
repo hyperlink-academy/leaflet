@@ -609,15 +609,27 @@ pre.shiki {
   mask-image: none;
 }
 
-/* When page has a background, use truncation instead of fade and control opacity */
+/* When page has a background, use line-clamp instead of fade and control opacity */
 .footnote-side-item.has-page-bg {
   opacity: calc(var(--bg-page-alpha, 1) * 0.7);
 }
 .footnote-side-item.has-page-bg.has-overflow {
   mask-image: none;
 }
+.footnote-side-item.has-page-bg .footnote-item > .grow {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
 .footnote-side-item.has-page-bg:hover,
 .footnote-side-item.has-page-bg:focus-within,
 .footnote-side-item.has-page-bg.footnote-side-focused {
   opacity: var(--bg-page-alpha, 1);
+}
+.footnote-side-item.has-page-bg:hover .footnote-item > .grow,
+.footnote-side-item.has-page-bg:focus-within .footnote-item > .grow,
+.footnote-side-item.has-page-bg.footnote-side-focused .footnote-item > .grow {
+  -webkit-line-clamp: unset;
+  display: block;
 }
