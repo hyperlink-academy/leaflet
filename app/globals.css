@@ -609,14 +609,3 @@ pre.shiki {
   mask-image: none;
   opacity: var(--bg-page-alpha, 1);
 }
-
-.footnote-side-item.has-page-bg {
-  opacity: calc(var(--bg-page-alpha, 1) * 0.7);
-  mask-image: none;
-}
-.footnote-side-item.has-page-bg .footnote-item-content {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-}

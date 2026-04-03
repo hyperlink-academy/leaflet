@@ -33,7 +33,7 @@ export function FootnoteItemLayout(props: {
         </button>
       )}
       <div
-        className="footnote-item-content grow min-w-0 text-secondary [&_.ProseMirror]:outline-hidden"
+        className="grow min-w-0 text-secondary [&_.ProseMirror]:outline-hidden"
         style={{ wordBreak: "break-word" }}
       >
         {props.children}
