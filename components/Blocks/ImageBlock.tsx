@@ -209,7 +209,7 @@ const CoverImageButton = (props: { entityID: string }) => {
   // Only show if focused, in a publication, has write permissions, and no cover image is set
   if (!isFocused || !pubData?.publications || !entity_set.permissions.write)
     return null;
-  if (coverImage)
+  if (coverImage === props.entityID)
     return (
       <ButtonSecondary
         className="absolute top-2 right-2"
@@ -225,6 +225,7 @@ const CoverImageButton = (props: { entityID: string }) => {
         <ImageCoverImageRemove />
       </ButtonSecondary>
     );
+
   return (
     <ButtonPrimary
       className="absolute top-2 right-2"
