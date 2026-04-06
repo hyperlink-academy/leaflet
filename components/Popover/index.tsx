@@ -44,7 +44,7 @@ export const Popover = (props: {
               className={`
               z-20 relative bg-bg-page
               text-primary
-              flex flex-col overflow-hidden
+              flex flex-col
               px-3 py-2
               max-w-(--radix-popover-content-available-width)
               max-h-(--radix-popover-content-available-height)

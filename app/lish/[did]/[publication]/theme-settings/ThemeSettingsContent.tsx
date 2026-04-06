@@ -58,11 +58,13 @@ export function ThemeSettingsContent() {
             <Popover
               align="start"
               side="bottom"
-              className="sm:w-sm w-[1000px] rounded-lg! overflow-y-auto !p-0 bg-white! "
+              arrowFill="white"
+              border="#CCCCCC"
+              className="sm:w-sm w-[1000px] rounded-lg! !p-0 bg-white! border-[#CCCCCC]!"
               trigger={
                 <button
                   type="button"
-                  className="w-12 h-12 rounded-full bg-accent-1 text-accent-2 data-[state=open]:bg-accent-2 data-[state=open]:text-accent-1 flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-12 h-12 rounded-full bg-accent-1 text-accent-2 data-[state=open]:bg-accent-2 data-[state=open]:text-accent-1 data-[state=open]:border-accent-1 flex items-center justify-center transition-colors cursor-pointer border-2 border-acccent-2"
                 >
                   <PaintSmall />
                 </button>
@@ -70,7 +72,7 @@ export function ThemeSettingsContent() {
               asChild
             >
               <form
-                className="flex flex-col"
+                className="flex flex-col overflow-y-auto max-h-(--radix-popover-content-available-height)"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   let result = await submitTheme(setLoading);
