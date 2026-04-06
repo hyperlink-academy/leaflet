@@ -1,5 +1,4 @@
 "use client";
-import { getRSVPData } from "actions/getRSVPData";
 import { SWRConfig } from "swr";
 import { useReplicache } from "src/replicache";
 import useSWR from "swr";
@@ -8,7 +7,10 @@ import { getPollData } from "actions/pollActions";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { createContext, useContext, useMemo } from "react";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
-import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getPublicationURL,
+  getDocumentURL,
+} from "app/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,
@@ -23,7 +25,6 @@ export const StaticLeafletDataContext = createContext<
 export function PageSWRDataProvider(props: {
   leaflet_id: string;
   leaflet_data: GetLeafletDataReturnType["result"];
-  rsvp_data: Awaited<ReturnType<typeof getRSVPData>>;
   poll_data: Awaited<ReturnType<typeof getPollData>>;
   children: React.ReactNode;
 }) {
@@ -31,7 +32,6 @@ export function PageSWRDataProvider(props: {
     <SWRConfig
       value={{
         fallback: {
-          rsvp_data: props.rsvp_data,
           poll_data: props.poll_data,
           [`${props.leaflet_id}-leaflet_data`]: props.leaflet_data.data,
         },
@@ -42,14 +42,6 @@ export function PageSWRDataProvider(props: {
   );
 }
 
-export function useRSVPData() {
-  let { permission_token } = useReplicache();
-  return useSWR(`rsvp_data`, () =>
-    getRSVPData(
-      permission_token.permission_token_rights.map((pr) => pr.entity_set),
-    ),
-  );
-}
 export function usePollData() {
   let { permission_token } = useReplicache();
   return useSWR(`poll_data`, () =>
@@ -82,11 +74,11 @@ export function useLeafletPublicationData() {
   // Normalize records so consumers don't have to
   const normalizedPublication = useMemo(
     () => normalizePublicationRecord(pubData?.publications?.record),
-    [pubData?.publications?.record]
+    [pubData?.publications?.record],
   );
   const normalizedDocument = useMemo(
     () => normalizeDocumentRecord(pubData?.documents?.data),
-    [pubData?.documents?.data]
+    [pubData?.documents?.data],
   );
 
   return {
@@ -118,7 +110,10 @@ export function useLeafletPublicationStatus() {
 
   // Compute the full post URL for sharing
   let postShareLink: string | undefined;
-  if (publishedInPublication?.publications && publishedInPublication.documents) {
+  if (
+    publishedInPublication?.publications &&
+    publishedInPublication.documents
+  ) {
     const normalizedDoc = normalizeDocumentRecord(
       publishedInPublication.documents.data,
       publishedInPublication.documents.uri,
@@ -132,10 +127,16 @@ export function useLeafletPublicationStatus() {
     }
   } else if (publishedStandalone?.document) {
     const normalizedDoc = publishedStandalone.documents
-      ? normalizeDocumentRecord(publishedStandalone.documents.data, publishedStandalone.document)
+      ? normalizeDocumentRecord(
+          publishedStandalone.documents.data,
+          publishedStandalone.document,
+        )
       : null;
     if (normalizedDoc) {
-      postShareLink = getDocumentURL(normalizedDoc, publishedStandalone.document);
+      postShareLink = getDocumentURL(
+        normalizedDoc,
+        publishedStandalone.document,
+      );
     } else {
       const docUri = new AtUri(publishedStandalone.document);
       postShareLink = `/p/${docUri.host}/${docUri.rkey}`;

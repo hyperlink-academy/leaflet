@@ -1176,6 +1176,11 @@ export const schemaDict = {
             type: 'ref',
             ref: 'lex:pub.leaflet.blocks.image#aspectRatio',
           },
+          fullBleed: {
+            type: 'boolean',
+            description:
+              'Whether the image should extend to the full width of the container, ignoring padding.',
+          },
         },
       },
       aspectRatio: {

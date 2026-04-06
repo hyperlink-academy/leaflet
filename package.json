@@ -94,7 +94,6 @@
     "stripe": "^20.4.0",
     "swr": "^2.3.3",
     "thumbhash": "^0.1.1",
-    "twilio": "^5.3.7",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
     "uuid": "^10.0.0",

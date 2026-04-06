@@ -105,7 +105,7 @@ let baseSchema = {
       ],
       toDOM(node) {
         let { href } = node.attrs;
-        return ["a", { href, target: "_blank", referrerpolicy: "no-referrer" }, 0];
+        return ["a", { href, target: "_blank", referrerpolicy: "no-referrer", style: "cursor: text" }, 0];
       },
     } as MarkSpec,
   },

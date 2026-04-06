@@ -22,6 +22,7 @@ import { FootnoteContext } from "components/Footnotes/FootnoteContext";
 import { FootnoteSection } from "components/Footnotes/FootnoteSection";
 import { FootnoteSideColumn } from "components/Footnotes/FootnoteSideColumn";
 import { FootnotePopover } from "components/Footnotes/FootnotePopover";
+import { LinkPopover } from "components/LinkPopover";
 
 export function Page(props: {
   entityID: string;
@@ -89,6 +90,7 @@ export function Page(props: {
         </PageWrapper>
         <DesktopPageFooter pageID={props.entityID} />
         <FootnotePopover />
+        <LinkPopover />
       </FootnoteContext.Provider>
     </CardThemeProvider>
   );

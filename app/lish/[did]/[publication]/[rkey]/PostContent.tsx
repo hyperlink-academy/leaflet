@@ -77,11 +77,14 @@ export function PostContent({
             did={did}
             key={index}
             previousBlock={blocks[index - 1]}
+            nextBlock={blocks[index + 1]}
             index={[index]}
             preview={preview}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
             pollData={pollData}
             footnoteIndexMap={footnoteIndexMap}
+            isFirst={index === 0}
+            isLast={index === blocks.length - 1}
           />
         );
       })}
@@ -96,12 +99,15 @@ export let Block = ({
   index,
   preview,
   previousBlock,
+  nextBlock,
   prerenderedCodeBlocks,
   bskyPostData,
   pageId,
   pages,
   pollData,
   footnoteIndexMap,
+  isFirst,
+  isLast,
 }: {
   pageId?: string;
   preview?: boolean;
@@ -111,10 +117,13 @@ export let Block = ({
   isList?: boolean;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   previousBlock?: PubLeafletPagesLinearDocument.Block;
+  nextBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   pollData: PollData[];
   footnoteIndexMap?: Map<string, number>;
+  isFirst?: boolean;
+  isLast?: boolean;
 }) => {
   let b = block;
   let blockProps = {
@@ -329,16 +338,34 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksImage.isMain(b.block): {
+      let isFullBleed = b.block.fullBleed;
+      let prevIsFullBleed =
+        previousBlock?.block &&
+        PubLeafletBlocksImage.isMain(previousBlock.block) &&
+        previousBlock.block.fullBleed;
+      let nextIsFullBleed =
+        nextBlock?.block &&
+        PubLeafletBlocksImage.isMain(nextBlock.block) &&
+        nextBlock.block.fullBleed;
+
+      let fullBleedClassName = isFullBleed
+        ? `
+          -mx-3 sm:-mx-4 rounded-[0px]! sm:w-[calc(100%+32px)] w-[calc(100%+24px)]
+          ${isFirst ? "-mt-2 sm:-mt-3" : prevIsFullBleed ? "-mt-[5px]" : ""}
+          ${isLast ? "-mb-1 sm:-mb-4" : nextIsFullBleed ? "-mb-[9px]" : ""}
+        `
+        : "";
+
       return (
         <div
-          className={`imageBlock relative flex ${alignment}`}
+          className={`imageBlock relative flex ${isFullBleed ? "" : alignment} ${fullBleedClassName}`}
           {...blockProps}
         >
           <img
             alt={b.block.alt}
             height={b.block.aspectRatio?.height}
             width={b.block.aspectRatio?.width}
-            className={`rounded-lg border border-transparent ${className}`}
+            className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
             src={blobRefToSrc(b.block.image.ref, did)}
           />
           {b.block.alt && (
@@ -417,24 +444,40 @@ export let Block = ({
         );
       if (b.block.level === 1)
         return (
-          <h1 className={`h1Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}>
+          <h1
+            className={`h1Block ${className}`}
+            {...headingProps}
+            style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}
+          >
             {link(<TextBlock {...textBlockProps} />)}
           </h1>
         );
       if (b.block.level === 2)
         return (
-          <h2 className={`h2Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}>
+          <h2
+            className={`h2Block ${className}`}
+            {...headingProps}
+            style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}
+          >
             {link(<TextBlock {...textBlockProps} />)}
           </h2>
         );
       if (b.block.level === 3)
         return (
-          <h3 className={`h3Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}>
+          <h3
+            className={`h3Block ${className}`}
+            {...headingProps}
+            style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}
+          >
             {link(<TextBlock {...textBlockProps} />)}
           </h3>
         );
       return (
-        <h6 className={`h6Block ${className}`} {...headingProps} style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}>
+        <h6
+          className={`h6Block ${className}`}
+          {...headingProps}
+          style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}
+        >
           {link(<TextBlock {...textBlockProps} />)}
         </h6>
       );
@@ -496,7 +539,9 @@ function ListItem(props: {
         className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
       />
       {isChecklist && (
-        <div className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}>
+        <div
+          className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
+        >
           {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
         </div>
       )}
@@ -573,7 +618,9 @@ function OrderedListItem(props: {
         {calculatedIndex}.
       </div>
       {isChecklist && (
-        <div className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}>
+        <div
+          className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
+        >
           {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
         </div>
       )}

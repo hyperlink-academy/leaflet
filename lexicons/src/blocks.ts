@@ -180,6 +180,11 @@ export const PubLeafletBlocksImage: LexiconDoc = {
           type: "ref",
           ref: "#aspectRatio",
         },
+        fullBleed: {
+          type: "boolean",
+          description:
+            "Whether the image should extend to the full width of the container, ignoring padding.",
+        },
       },
     },
     aspectRatio: {
@@ -203,7 +208,8 @@ export const PubLeafletBlocksOrderedList: LexiconDoc = {
       properties: {
         startIndex: {
           type: "integer",
-          description: "The starting number for this ordered list. Defaults to 1 if not specified.",
+          description:
+            "The starting number for this ordered list. Defaults to 1 if not specified.",
         },
         children: { type: "array", items: { type: "ref", ref: "#listItem" } },
       },
@@ -227,12 +233,14 @@ export const PubLeafletBlocksOrderedList: LexiconDoc = {
         },
         children: {
           type: "array",
-          description: "Nested ordered list items. Mutually exclusive with unorderedListChildren; if both are present, children takes precedence.",
+          description:
+            "Nested ordered list items. Mutually exclusive with unorderedListChildren; if both are present, children takes precedence.",
           items: { type: "ref", ref: "#listItem" },
         },
         unorderedListChildren: {
           type: "ref",
-          description: "A nested unordered list. Mutually exclusive with children; if both are present, children takes precedence.",
+          description:
+            "A nested unordered list. Mutually exclusive with children; if both are present, children takes precedence.",
           ref: "pub.leaflet.blocks.unorderedList",
         },
       },
@@ -270,12 +278,14 @@ export const PubLeafletBlocksUnorderedList: LexiconDoc = {
         },
         children: {
           type: "array",
-          description: "Nested unordered list items. Mutually exclusive with orderedListChildren; if both are present, children takes precedence.",
+          description:
+            "Nested unordered list items. Mutually exclusive with orderedListChildren; if both are present, children takes precedence.",
           items: { type: "ref", ref: "#listItem" },
         },
         orderedListChildren: {
           type: "ref",
-          description: "Nested ordered list items. Mutually exclusive with children; if both are present, children takes precedence.",
+          description:
+            "Nested ordered list items. Mutually exclusive with children; if both are present, children takes precedence.",
           ref: "pub.leaflet.blocks.orderedList",
         },
       },

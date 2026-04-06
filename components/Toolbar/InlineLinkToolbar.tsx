@@ -1,12 +1,13 @@
 import { schema } from "components/Blocks/TextBlock/schema";
-import { EditorState, TextSelection } from "prosemirror-state";
+import { TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { useEffect, useState } from "react";
 import { Separator } from "components/Layout";
-import { MarkType } from "prosemirror-model";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
+import { findMarkRange } from "src/utils/prosemirror/findMarkRange";
+import { ensureProtocol } from "src/utils/ensureProtocol";
 import { Input } from "components/Input";
 import { useReplicache } from "src/replicache";
 import { CheckTiny } from "components/Icons/CheckTiny";
@@ -81,7 +82,11 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
       start = from;
       end = to;
     } else {
-      let markRange = findMarkRange(focusedEditor.editor, schema.marks.link);
+      let markRange = findMarkRange(
+        focusedEditor.editor.doc,
+        schema.marks.link,
+        from,
+      );
       start = markRange.start;
       end = markRange.end;
     }
@@ -94,12 +99,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
   }
   let [linkValue, setLinkValue] = useState(content);
   let setLink = () => {
-    let href =
-      !linkValue.startsWith("http") &&
-      !linkValue.startsWith("mailto") &&
-      !linkValue.startsWith("tel:")
-        ? `https://${linkValue}`
-        : linkValue;
+    let href = ensureProtocol(linkValue);
 
     let editor = focusedEditor?.editor;
     if (!editor || start === null || !end || !focusedBlock) return;
@@ -176,32 +176,3 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
   );
 }
 
-function findMarkRange(state: EditorState, markType: MarkType) {
-  const { from, $from } = state.selection;
-
-  // Find the start of the mark
-  let start = from;
-  let startPos = $from;
-  while (
-    startPos.parent.inlineContent &&
-    startPos.nodeBefore &&
-    startPos.nodeBefore.marks.some((mark) => mark.type === markType)
-  ) {
-    start -= startPos.nodeBefore.nodeSize;
-    startPos = state.doc.resolve(start);
-  }
-
-  // Find the end of the mark
-  let end = from;
-  let endPos = $from;
-  while (
-    endPos.parent.inlineContent &&
-    endPos.nodeAfter &&
-    endPos.nodeAfter.marks.some((mark) => mark.type === markType)
-  ) {
-    end += endPos.nodeAfter.nodeSize;
-    endPos = state.doc.resolve(end);
-  }
-
-  return { start, end };
-}
