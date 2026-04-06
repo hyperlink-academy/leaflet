@@ -724,6 +724,7 @@ async function processBlocksToPages(
       let [image] = scan.eav(b.value, "block/image");
       if (!image) return;
       let [altText] = scan.eav(b.value, "image/alt");
+      let [fullBleed] = scan.eav(b.value, "image/full-bleed");
       let blobref = await uploadImage(image.data.src);
       if (!blobref) return;
       let block: $Typed<PubLeafletBlocksImage.Main> = {
@@ -734,6 +735,7 @@ async function processBlocksToPages(
           width: Math.floor(image.data.width),
         },
         alt: altText ? altText.data.value : undefined,
+        fullBleed: fullBleed?.data.value || undefined,
       };
       return block;
     }
