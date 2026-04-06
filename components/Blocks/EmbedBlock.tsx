@@ -20,6 +20,8 @@ import {
   LinkPreviewMetadataResult,
 } from "app/api/link_previews/route";
 import { getAspectRatio } from "src/utils/aspectRatio";
+import { useIframeChannel } from "src/hooks/useIframeChannel";
+import { scrollIntoView } from "src/utils/scrollIntoView";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -49,6 +51,15 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   );
 
   let heightHandle = useDrag({ onDragEnd: heightOnDragEnd });
+
+  let { iframeRef } = useIframeChannel({
+    onOpen: (openUrl) => {
+      useUIState
+        .getState()
+        .openPage(props.parent, { type: "iframe", url: openUrl });
+      scrollIntoView(`iframe-page-${openUrl}`, "pages", 0.8);
+    },
+  });
 
   useEffect(() => {
     if (props.preview) return;
@@ -91,6 +102,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         className="flex flex-col relative w-full overflow-hidden group/embedBlock p-0!"
       >
         <iframe
+          ref={iframeRef}
           className={aspectRatio ? "w-full h-auto" : "w-full"}
           style={
             aspectRatio

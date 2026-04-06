@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useRef } from "react";
+import { newMessagePortRpcSession } from "capnweb";
+import { PartsPageHost } from "src/partsPageChannel";
 
 export function useIframeChannel(options: { onOpen: (url: string) => void }) {
-  let portRef = useRef<MessagePort | null>(null);
   let iframeElRef = useRef<HTMLIFrameElement | null>(null);
   let onOpenRef = useRef(options.onOpen);
   onOpenRef.current = options.onOpen;
 
+  let sessionRef = useRef<ReturnType<
+    typeof newMessagePortRpcSession
+  > | null>(null);
+
   let cleanup = useCallback(() => {
-    if (portRef.current) {
-      portRef.current.close();
-      portRef.current = null;
+    if (sessionRef.current) {
+      sessionRef.current[Symbol.dispose]();
+      sessionRef.current = null;
     }
   }, []);
 
@@ -20,40 +25,25 @@ export function useIframeChannel(options: { onOpen: (url: string) => void }) {
       if (event.source !== iframe.contentWindow) return;
       if (event.data?.type !== "parts.page.connect") return;
 
+      cleanup();
+
       let src = iframe.src;
       console.log("[parts.page] connect request from", src);
 
-      cleanup();
+      let { port1, port2 } = new MessageChannel();
 
-      let channel = new MessageChannel();
-      portRef.current = channel.port1;
+      let host = new PartsPageHost({
+        onOpen: (url) => {
+          console.log("[parts.page] open command from", src, url);
+          onOpenRef.current(url);
+        },
+      });
 
-      channel.port1.onmessage = (e) => {
-        let data = e.data;
-        if (
-          !data ||
-          typeof data !== "object" ||
-          typeof data.command !== "string"
-        ) {
-          console.warn("[parts.page] invalid message from", src, data);
-          return;
-        }
-
-        console.log("[parts.page] command from", src, data);
-
-        switch (data.command) {
-          case "open": {
-            if (typeof data.url === "string") {
-              onOpenRef.current(data.url);
-            }
-            break;
-          }
-        }
-      };
-
+      sessionRef.current = newMessagePortRpcSession(port1, host);
       console.log("[parts.page] channel established with", src);
+
       iframe.contentWindow.postMessage({ type: "parts.page.channel" }, "*", [
-        channel.port2,
+        port2,
       ]);
     },
     [cleanup],
@@ -69,12 +59,9 @@ export function useIframeChannel(options: { onOpen: (url: string) => void }) {
 
   let iframeRef = useCallback(
     (el: HTMLIFrameElement | null) => {
-      if (iframeElRef.current) {
-        cleanup();
-      }
       iframeElRef.current = el;
     },
-    [cleanup],
+    [],
   );
 
   return { iframeRef };
