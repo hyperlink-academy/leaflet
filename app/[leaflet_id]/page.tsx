@@ -7,7 +7,7 @@ import type { Attribute } from "src/replicache/attributes";
 import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
-import { getRSVPData } from "actions/getRSVPData";
+
 import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -41,24 +41,25 @@ export default async function LeafletPage(props: Props) {
       </NotFoundLayout>
     );
 
-  let [{ data }, rsvp_data, poll_data] = await Promise.all([
+  let [{ data }, poll_data] = await Promise.all([
     supabaseServerClient.rpc("get_facts", {
       root: rootEntity,
     }),
-    getRSVPData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
     getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
   ]);
   let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
 
   // Extract font settings from facts for server-side font loading
-  const { headingFontId, bodyFontId } = extractFontsFromFacts(initialFacts as any, rootEntity);
+  const { headingFontId, bodyFontId } = extractFontsFromFacts(
+    initialFacts as any,
+    rootEntity,
+  );
 
   return (
     <>
       {/* Server-side font loading with preload and @font-face */}
       <FontLoader headingFontId={headingFontId} bodyFontId={bodyFontId} />
       <PageSWRDataProvider
-        rsvp_data={rsvp_data}
         poll_data={poll_data}
         leaflet_id={res.data.id}
         leaflet_data={res}
