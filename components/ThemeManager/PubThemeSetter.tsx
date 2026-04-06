@@ -8,7 +8,7 @@ import { Color } from "react-aria-components";
 import { PubLeafletThemeBackgroundImage } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
-import { BaseThemeProvider } from "./ThemeProvider";
+import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
 import { PagePickers } from "./PubPickers/PubTextPickers";
@@ -169,18 +169,19 @@ export function PubThemePickerPanel(props: { state: PubThemeEditorState }) {
 
   return (
     <div className="themeSetterContent flex flex-col w-full">
-      <PubPageWidthSetter
-        pageWidth={pageWidth}
-        setPageWidth={setPageWidth}
-        thisPicker="page-width"
-        openPicker={openPicker}
-        setOpenPicker={setOpenPicker}
-      />
       <div className="themeBGLeaflet flex flex-col">
         <div
           className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
         >
           <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
+            <PubPageWidthSetter
+              pageWidth={pageWidth}
+              setPageWidth={setPageWidth}
+              thisPicker="page-width"
+              openPicker={openPicker}
+              setOpenPicker={setOpenPicker}
+            />
+            <hr className="border-[#CCCCCC] my-0.5" />
             <BackgroundPicker
               bgImage={image}
               setBgImage={setImage}
@@ -280,50 +281,52 @@ export const PubThemeSetter = (props: {
   } = state;
 
   return (
-    <BaseThemeProvider
-      local
-      {...localPubTheme}
-      headingFontId={headingFont}
-      bodyFontId={bodyFont}
-      hasBackgroundImage={!!image}
-      className="min-h-0!"
-    >
-      <div className="min-h-0 flex-1 flex flex-col pb-0.5">
-        <form
-          className="flex-shrink-0"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            await submitTheme(props.setLoading);
-          }}
-        >
-          <button onClick={props.backToMenu}>
-            <GoToArrow />
-          </button>
-        </form>
+    <CardBorderHiddenContext.Provider value={!showPageBackground}>
+      <BaseThemeProvider
+        local
+        {...localPubTheme}
+        headingFontId={headingFont}
+        bodyFontId={bodyFont}
+        hasBackgroundImage={!!image}
+        className="min-h-0!"
+      >
+        <div className="min-h-0 flex-1 flex flex-col pb-0.5">
+          <form
+            className="flex-shrink-0"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await submitTheme(props.setLoading);
+            }}
+          >
+            <button onClick={props.backToMenu}>
+              <GoToArrow />
+            </button>
+          </form>
 
-        <div className="themeSetterContent flex flex-col w-full overflow-y-scroll min-h-0 -mb-2 pt-2 ">
-          <PubThemePickerPanel state={state} />
-          <div className="flex flex-col mt-4 ">
-            <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
-              <div className="text-sm">Preview</div>
-              <Separator classname="h-4!" />{" "}
-              <button
-                className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
-                onClick={() => setSample("pub")}
-              >
-                Pub
-              </button>
-              <button
-                className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
-                onClick={() => setSample("post")}
-              >
-                Post
-              </button>
+          <div className="themeSetterContent flex flex-col w-full overflow-y-scroll min-h-0 -mb-2 pt-2 ">
+            <PubThemePickerPanel state={state} />
+            <div className="flex flex-col mt-4 ">
+              <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
+                <div className="text-sm">Preview</div>
+                <Separator classname="h-4!" />{" "}
+                <button
+                  className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
+                  onClick={() => setSample("pub")}
+                >
+                  Pub
+                </button>
+                <button
+                  className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
+                  onClick={() => setSample("post")}
+                >
+                  Post
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </BaseThemeProvider>
+      </BaseThemeProvider>
+    </CardBorderHiddenContext.Provider>
   );
 };
 

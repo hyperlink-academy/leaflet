@@ -112,7 +112,7 @@ export const PageWrapper = (props: {
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions
     <div
-      className={`pageWrapper relative shrink-0 ${props.fullPageScroll ? "w-full" : "w-max"}`}
+      className={`pageWrapper relative shrink-0 h-full ${props.fullPageScroll ? "w-full" : "w-max"}`}
     >
       {/*
         this div is the scrolling container that wraps only the contents div.

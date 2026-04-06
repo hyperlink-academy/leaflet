@@ -136,7 +136,7 @@ export function PostPreview(props: {
           ],
         }}
       >
-        <div className="w-fit pointer-events-none">
+        <div className="w-fit pointer-events-none h-full py-2 sm:py-6">
           <LinearDocumentPage
             document={fakeDocument}
             did={profile.did || FAKE_DID}

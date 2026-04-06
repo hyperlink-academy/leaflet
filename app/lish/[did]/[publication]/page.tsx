@@ -9,6 +9,10 @@ import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { PublicationContent } from "./PublicationContent";
+import {
+  PublicationThemeProvider,
+  PublicationBackgroundProvider,
+} from "components/ThemeManager/PublicationThemeProvider";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -47,15 +51,23 @@ export default async function Publication(props: {
   if (!publication) return <PubNotFound />;
   try {
     return (
-      <>
-        <PublicationContent
-          record={record}
-          publication={publication}
-          did={did}
-          profile={profile}
-          showPageBackground={showPageBackground}
-        />
-      </>
+      <PublicationThemeProvider
+        theme={record?.theme}
+        pub_creator={publication.identity_did}
+      >
+        <PublicationBackgroundProvider
+          theme={record?.theme}
+          pub_creator={publication.identity_did}
+        >
+          <PublicationContent
+            record={record}
+            publication={publication}
+            did={did}
+            profile={profile}
+            showPageBackground={showPageBackground}
+          />
+        </PublicationBackgroundProvider>
+      </PublicationThemeProvider>
     );
   } catch (e) {
     console.log(e);
