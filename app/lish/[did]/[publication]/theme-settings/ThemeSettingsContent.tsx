@@ -54,11 +54,11 @@ export function ThemeSettingsContent() {
       >
         <div className="w-full h-screen flex relative overflow-hidden">
           {/* Theme Setter Panel */}
-          <div className="absolute top-6 left-6 z-20">
+          <div className="absolute sm:top-6 sm:left-6 top-4 right-4 z-20">
             <Popover
               align="start"
               side="bottom"
-              className="sm:w-sm w-full rounded-lg! max-h-full  overflow-y-auto !p-0 bg-white! "
+              className="sm:w-sm w-[1000px] rounded-lg! overflow-y-auto !p-0 bg-white! "
               trigger={
                 <button
                   type="button"
