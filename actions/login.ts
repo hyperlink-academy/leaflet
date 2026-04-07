@@ -1,6 +1,5 @@
 "use server";
 import { drizzle } from "drizzle-orm/node-postgres";
-import postgres from "postgres";
 import {
   email_auth_tokens,
   identities,

@@ -2,7 +2,7 @@
 
 import { randomBytes } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
-import postgres from "postgres";
+
 import { email_auth_tokens, identities } from "drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
