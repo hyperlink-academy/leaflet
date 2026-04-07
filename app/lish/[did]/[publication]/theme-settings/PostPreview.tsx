@@ -2,7 +2,10 @@
 
 import { LinearDocumentPage } from "app/lish/[did]/[publication]/[rkey]/LinearDocumentPage";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
-import { DocumentProvider } from "contexts/DocumentContext";
+import {
+  DocumentProvider,
+  type PublicationContext,
+} from "contexts/DocumentContext";
 import { useIdentityData } from "components/IdentityProvider";
 import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { PubLeafletPagesLinearDocument } from "lexicons/api";
@@ -73,39 +76,36 @@ const fakeNormalizedDocument = {
   tags: ["preview", "theme"],
 };
 
-const fakeDocument: NonNullable<PostPageData> = {
-  data: {},
-  uri: FAKE_DOC_URI,
-  normalizedDocument: fakeNormalizedDocument,
-  normalizedPublication: null,
-  quotesAndMentions: [],
-  theme: null,
-  prevNext: undefined,
-  publication: null,
-  comments: [],
-  comments_on_documents: [],
-  mentions: [],
-  document_mentions_in_bsky: [],
-  leaflets_in_publications: [],
-  leafletId: null,
-  recommendsCount: 0,
-  documents_in_publications: [],
-  recommends_on_documents: [],
-} as unknown as NonNullable<PostPageData>;
-
-const fakeDocumentContextValue: DocumentContextValue = {
-  uri: FAKE_DOC_URI,
-  normalizedDocument: fakeNormalizedDocument,
-  normalizedPublication: null,
-  theme: undefined,
-  prevNext: undefined,
-  quotesAndMentions: [],
-  publication: null,
-  comments: [],
-  mentions: [],
-  leafletId: null,
-  recommendsCount: 0,
-};
+function makeFakeDocument(
+  publication?: {
+    uri: string;
+    name: string;
+    identity_did: string;
+    record: unknown;
+  } | null,
+): NonNullable<PostPageData> {
+  return {
+    data: {},
+    uri: FAKE_DOC_URI,
+    normalizedDocument: fakeNormalizedDocument,
+    normalizedPublication: null,
+    quotesAndMentions: [],
+    theme: null,
+    prevNext: undefined,
+    publication: publication || null,
+    comments: [],
+    comments_on_documents: [],
+    mentions: [],
+    document_mentions_in_bsky: [],
+    leaflets_in_publications: [],
+    leafletId: null,
+    recommendsCount: 0,
+    documents_in_publications: publication
+      ? [{ publications: publication }]
+      : [],
+    recommends_on_documents: [],
+  } as unknown as NonNullable<PostPageData>;
+}
 
 export function PostPreview(props: {
   showPageBackground: boolean;
@@ -123,6 +123,40 @@ export function PostPreview(props: {
     did: FAKE_DID,
     handle: "preview.bsky.social",
     displayName: "Preview Author",
+  };
+
+  let pubInfo: PublicationContext = publication
+    ? {
+        uri: publication.uri,
+        name: publication.name,
+        identity_did: publication.identity_did,
+        record: publication.record as NonNullable<PublicationContext>["record"],
+        publication_subscriptions: (
+          publication.publication_subscriptions || []
+        ).map((s) => ({
+          created_at: s.created_at,
+          identity: s.identity,
+          publication: s.publication,
+          record: s.record,
+          uri: s.uri,
+        })),
+      }
+    : null;
+
+  let fakeDocument = makeFakeDocument(pubInfo);
+
+  let fakeDocumentContextValue: DocumentContextValue = {
+    uri: FAKE_DOC_URI,
+    normalizedDocument: fakeNormalizedDocument,
+    normalizedPublication: null,
+    theme: undefined,
+    prevNext: undefined,
+    quotesAndMentions: [],
+    publication: pubInfo,
+    comments: [],
+    mentions: [],
+    leafletId: null,
+    recommendsCount: 0,
   };
 
   return (
