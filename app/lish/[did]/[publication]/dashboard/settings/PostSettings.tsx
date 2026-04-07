@@ -24,7 +24,7 @@ export function PostSettings(props: {
           onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
         >
           <div className="flex flex-col justify-start">
-            <div className="font-bold">Make Public</div>
+            <div className="font-bold text-secondary">Make Public</div>
             <div className="text-tertiary text-sm leading-tight">
               Your posts will appear in{" "}
               <a href="/reader" target="_blank">
@@ -35,7 +35,7 @@ export function PostSettings(props: {
           </div>
         </Toggle>
       </DashboardContainer>
-      {cardBorderHidden && <hr className="border-border-light" />}
+      {cardBorderHidden && <hr className="border-border-light my-2" />}
 
       <DashboardContainer>
         <h3>Post Layout</h3>
@@ -43,10 +43,12 @@ export function PostSettings(props: {
           toggle={props.showPrevNext}
           onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
         >
-          <div className="font-bold">Show Prev/Next Buttons on Post</div>
+          <div className="font-bold text-secondary">
+            Show Prev/Next Buttons on Post
+          </div>
         </Toggle>
       </DashboardContainer>
-      {cardBorderHidden && <hr className="border-border-light" />}
+      {cardBorderHidden && <hr className="border-border-light my-2" />}
       <DashboardContainer>
         <h3>Post Interactions</h3>
         <div className="flex flex-col gap-2">
@@ -54,7 +56,7 @@ export function PostSettings(props: {
             toggle={props.showComments}
             onToggle={() => props.setShowComments(!props.showComments)}
           >
-            <div className="font-bold">Show Comments</div>
+            <div className="font-bold text-secondary">Show Comments</div>
           </Toggle>
 
           <Toggle
@@ -62,7 +64,7 @@ export function PostSettings(props: {
             onToggle={() => props.setShowMentions(!props.showMentions)}
           >
             <div className="flex flex-col justify-start">
-              <div className="font-bold">Show Mentions</div>
+              <div className="font-bold text-secondary">Show Mentions</div>
               <div className="text-tertiary text-sm leading-tight">
                 Display a list of Bluesky mentions about your post
               </div>
@@ -74,7 +76,7 @@ export function PostSettings(props: {
             onToggle={() => props.setShowRecommends(!props.showRecommends)}
           >
             <div className="flex flex-col justify-start">
-              <div className="font-bold">Show Recommends</div>
+              <div className="font-bold text-secondary">Show Recommends</div>
               <div className="text-tertiary text-sm leading-tight">
                 Allow readers to recommend/like your post
               </div>

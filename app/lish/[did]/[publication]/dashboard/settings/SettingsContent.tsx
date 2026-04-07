@@ -17,7 +17,7 @@ import { ThemeSettings } from "./ThemeSettings";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { ManageProSubscription } from "./ManageProSubscription";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
-import { InlineUpgrade } from "../../UpgradeModal";
+import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 
 type SettingsView = "all" | "theme";
 
@@ -114,7 +114,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           setIconFile={setIconFile}
         />
 
-        {cardBorderHidden && <hr className="border-border-light" />}
+        {cardBorderHidden && <hr className="border-border-light my-2" />}
 
         {/* ── Post Settings ── */}
         <PostSettings
@@ -130,20 +130,28 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           setShowInDiscover={setShowInDiscover}
         />
 
-        {cardBorderHidden && <hr className="border-border-light" />}
+        {cardBorderHidden && <hr className="border-border-light my-2" />}
 
         <DashboardContainer>
           <ThemeSettings />
         </DashboardContainer>
 
-        {cardBorderHidden && <hr className="border-border-light" />}
+        {cardBorderHidden && <hr className="border-border-light my-2" />}
 
         <DashboardContainer>
           <PubDomainSettings />
         </DashboardContainer>
+        {cardBorderHidden && <hr className="border-border-light my-2" />}
+
         <DashboardContainer className="bg-[rgb(var(--accent-light))]">
-          {canSeePro && !isPro ? <InlineUpgrade /> : <ManageProSubscription />}
+          <h3>Leaflet Pro</h3>
+          {canSeePro && !isPro ? (
+            <UpgradeToProButton />
+          ) : (
+            <ManageProSubscription compact />
+          )}
         </DashboardContainer>
+        {cardBorderHidden && <div className="spacer h-4" />}
 
         <SettingsFooter loading={loading} />
       </div>

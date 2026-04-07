@@ -86,26 +86,36 @@ export const UpgradeModal = (props: {
   );
 };
 
-export const InlineUpgrade = (props: { compact?: boolean }) => {
+export const InlineUpgradeToPro = (props: { compact?: boolean }) => {
   return (
     <div className="text-center  text-secondary">
-      <UpgradeModal
-        asChild
-        trigger={
-          <ButtonPrimary
-            compact={props.compact}
-            fullWidth
-            className={props.compact ? `text-sm` : "text-base"}
-          >
-            Upgrade to Leaflet Pro!
-          </ButtonPrimary>
-        }
-      />
+      <UpgradeToProButton fullWidth compact={props.compact} />
       <div
         className={`${props.compact ? `text-sm` : "text-base"} leading-snug text-tertiary pt-2`}
       >
         Analytics for all your pubs! <br /> Emails and membership coming soon.
       </div>
     </div>
+  );
+};
+
+export const UpgradeToProButton = (props: {
+  fullWidth?: boolean;
+  compact?: boolean;
+}) => {
+  return (
+    <UpgradeModal
+      asChild
+      trigger={
+        <ButtonPrimary
+          type="button"
+          compact={props.compact}
+          fullWidth={props.fullWidth}
+          className={props.compact ? `text-sm` : "text-base"}
+        >
+          Upgrade to Leaflet Pro!
+        </ButtonPrimary>
+      }
+    />
   );
 };

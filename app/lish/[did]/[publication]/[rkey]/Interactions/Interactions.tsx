@@ -134,7 +134,9 @@ export const Interactions = (props: {
   const tagCount = tags?.length || 0;
 
   let interactionsAvailable =
-    props.showComments || props.showMentions || props.showRecommends;
+    props.showComments ||
+    (props.showMentions && props.quotesCount > 0) ||
+    props.showRecommends;
 
   return (
     <div
