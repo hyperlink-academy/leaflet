@@ -41,6 +41,7 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
       <a
         href={url?.data.value}
         target="_blank"
+        referrerPolicy="no-referrer"
         className={` ${alignment === "justify" ? "w-full" : "w-fit"}`}
       >
         <ButtonPrimary

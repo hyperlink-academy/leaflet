@@ -94,6 +94,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
           src={url?.data.value}
           allow="fullscreen"
           loading="lazy"
+          referrerPolicy="no-referrer"
         ></iframe>
       </BlockLayout>
       {/* <div className="w-full overflow-x-hidden truncate text-xs italic text-accent-contrast">
