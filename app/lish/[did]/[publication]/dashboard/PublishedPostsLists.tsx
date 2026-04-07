@@ -9,7 +9,10 @@ import {
 } from "./PublicationSWRProvider";
 import { Fragment } from "react";
 import { useParams } from "next/navigation";
-import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getPublicationURL,
+  getDocumentURL,
+} from "app/lish/createPub/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -23,7 +26,6 @@ export function PublishedPostsList(props: {
   let { data } = usePublicationData();
   let { publication, documents } = data || {};
   const pubRecord = useNormalizedPublicationRecord();
-
   if (!publication) return null;
   if (!documents || documents.length === 0)
     return (
@@ -85,11 +87,7 @@ function PublishedPostItem(props: {
           }}
         >
           <div className="flex justify-between gap-2">
-            <a
-              className="hover:no-underline!"
-              target="_blank"
-              href={docUrl}
-            >
+            <a className="hover:no-underline!" target="_blank" href={docUrl}>
               <h3 className="text-primary grow leading-snug">
                 {doc.record.title}
               </h3>

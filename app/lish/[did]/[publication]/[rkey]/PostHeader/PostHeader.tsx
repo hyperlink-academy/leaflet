@@ -129,7 +129,7 @@ export const PostHeaderLayout = (props: {
         </h2>
       )}
       {props.postDescription ? (
-        <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
+        <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-2">
           {props.postDescription}
         </div>
       ) : null}
