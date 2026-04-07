@@ -1,14 +1,37 @@
 import { RpcTarget } from "capnweb";
 
-export class PartsPageHost extends RpcTarget {
-  #onOpen: (url: string) => void;
+export type EmbedBlockData =
+  | { type: "text"; content: string }
+  | {
+      type: "embed";
+      url: string;
+      height?: number;
+      aspectRatio?: string;
+    };
 
-  constructor(handlers: { onOpen: (url: string) => void }) {
+export type PartsPageHandlers = {
+  onOpen: (url: string) => void;
+  onReplaceWith: (block: EmbedBlockData) => void;
+  onAddBelow: (block: EmbedBlockData) => void;
+};
+
+export class PartsPageHost extends RpcTarget {
+  #handlers: PartsPageHandlers;
+
+  constructor(handlers: PartsPageHandlers) {
     super();
-    this.#onOpen = handlers.onOpen;
+    this.#handlers = handlers;
   }
 
   open(url: string) {
-    this.#onOpen(url);
+    this.#handlers.onOpen(url);
+  }
+
+  replaceWith(block: EmbedBlockData) {
+    this.#handlers.onReplaceWith(block);
+  }
+
+  addBelow(block: EmbedBlockData) {
+    this.#handlers.onAddBelow(block);
   }
 }

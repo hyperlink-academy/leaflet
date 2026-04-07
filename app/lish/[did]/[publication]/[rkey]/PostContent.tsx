@@ -453,7 +453,12 @@ function PublishedIframeBlock(props: {
     onOpen: (url) => {
       openPageAction(parentPage, { type: "iframe", url });
     },
+    onReplaceWith: () => {},
+    onAddBelow: () => {},
   });
+
+  let iframeSrc = new URL(props.url);
+  iframeSrc.searchParams.set("parts.page.mode", "view");
 
   return (
     <iframe
@@ -461,7 +466,7 @@ function PublishedIframeBlock(props: {
       className="flex flex-col relative w-full overflow-hidden group/embedBlock block-border my-2"
       width="100%"
       height={props.height}
-      src={props.url}
+      src={iframeSrc.toString()}
       allow="fullscreen"
       loading="lazy"
     />

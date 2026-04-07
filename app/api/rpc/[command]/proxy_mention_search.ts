@@ -7,6 +7,13 @@ import { AtpBaseClient } from "lexicons/api";
 import type * as SearchService from "lexicons/api/types/parts/page/mention/search";
 import type * as MentionService from "lexicons/api/types/parts/page/mention/service";
 
+// Naive in-memory cache for mention service records (keyed by URI)
+const serviceCache = new Map<
+  string,
+  { record: MentionService.Record; expiresAt: number }
+>();
+const SERVICE_CACHE_TTL = 60_000; // 1 minute
+
 export type ProxyMentionSearchReturnType = Awaited<
   ReturnType<(typeof proxy_mention_search)["handler"]>
 >;
@@ -26,15 +33,24 @@ export const proxy_mention_search = makeRoute({
       const identity = await getIdentityData();
       if (!identity?.atp_did) throw new Error("Not authenticated");
 
-      const { data: service } = await supabase
-        .from("mention_services")
-        .select("record")
-        .eq("uri", service_uri)
-        .single();
+      let record: MentionService.Record;
+      const cached = serviceCache.get(service_uri);
+      if (cached && Date.now() < cached.expiresAt) {
+        record = cached.record;
+      } else {
+        const { data: service } = await supabase
+          .from("mention_services")
+          .select("record")
+          .eq("uri", service_uri)
+          .single();
+        if (!service) throw new Error("Mention service not found");
+        record = service.record as MentionService.Record;
+        serviceCache.set(service_uri, {
+          record,
+          expiresAt: Date.now() + SERVICE_CACHE_TTL,
+        });
+      }
 
-      if (!service) throw new Error("Mention service not found");
-
-      const record = service.record as MentionService.Record;
       const did = record.did;
       if (!did) throw new Error("Service has no DID");
 
@@ -44,6 +60,7 @@ export const proxy_mention_search = makeRoute({
       const session = sessionResult.value;
       const agent = new AtpBaseClient(session.fetchHandler.bind(session));
       agent.setHeader("atproto-proxy", `${did}#mention_search`);
+      console.log(did);
 
       const response = await agent.call("parts.page.mention.search", {
         service: service_uri,

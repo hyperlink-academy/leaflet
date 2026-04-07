@@ -1,6 +1,6 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { BlockProps, BlockLayout } from "./Block";
@@ -22,9 +22,11 @@ import {
 import { getAspectRatio } from "src/utils/aspectRatio";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { scrollIntoView } from "src/utils/scrollIntoView";
+import { EmbedBlockData } from "src/partsPageChannel";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
-  let { permissions } = useEntitySetContext();
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
   let { rep } = useReplicache();
   let url = useEntity(props.entityID, "embed/url");
   let isCanvasBlock = props.pageType === "canvas";
@@ -52,12 +54,76 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
 
   let heightHandle = useDrag({ onDragEnd: heightOnDragEnd });
 
+  let assertBlockData = useCallback(
+    async (entityID: string, block: EmbedBlockData) => {
+      if (!rep) return;
+      if (block.type === "text") {
+        await rep.mutate.assertFact([
+          {
+            entity: entityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "text" },
+          },
+          {
+            entity: entityID,
+            attribute: "block/text",
+            data: { type: "text", value: block.content },
+          },
+        ]);
+      } else {
+        let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
+          {
+            entity: entityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "embed" },
+          },
+          {
+            entity: entityID,
+            attribute: "embed/url",
+            data: { type: "string", value: block.url },
+          },
+        ];
+        if (block.aspectRatio) {
+          facts.push({
+            entity: entityID,
+            attribute: "embed/aspect-ratio",
+            data: { type: "string", value: block.aspectRatio },
+          });
+        } else if (block.height) {
+          facts.push({
+            entity: entityID,
+            attribute: "embed/height",
+            data: { type: "number", value: block.height },
+          });
+        }
+        await rep.mutate.assertFact(facts);
+      }
+    },
+    [rep],
+  );
+
   let { iframeRef } = useIframeChannel({
     onOpen: (openUrl) => {
       useUIState
         .getState()
         .openPage(props.parent, { type: "iframe", url: openUrl });
       scrollIntoView(`iframe-page-${openUrl}`, "pages", 0.8);
+    },
+    onReplaceWith: (block) => {
+      assertBlockData(props.entityID, block);
+    },
+    onAddBelow: async (block) => {
+      if (!rep) return;
+      let newEntityID = v7();
+      await rep.mutate.addBlock({
+        permission_set: entity_set.set,
+        factID: v7(),
+        parent: props.parent,
+        type: block.type === "text" ? "text" : "card",
+        position: generateKeyBetween(props.position, props.nextPosition),
+        newEntityID,
+      });
+      await assertBlockData(newEntityID, block);
     },
   });
 
@@ -91,6 +157,13 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
       </label>
     );
   }
+  let iframeSrc = useMemo(() => {
+    if (!url) return undefined;
+    let src = new URL(url.data.value);
+    src.searchParams.set("parts.page.mode", "edit");
+    return src.toString();
+  }, [url]);
+
   if (props.preview) return null;
 
   return (
@@ -109,7 +182,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
               ? { aspectRatio }
               : { height: height + (heightHandle.dragDelta?.y || 0) }
           }
-          src={url?.data.value}
+          src={iframeSrc}
           allow="fullscreen"
           loading="lazy"
         ></iframe>

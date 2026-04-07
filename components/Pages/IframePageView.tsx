@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { PageWrapper } from "./Page";
 
@@ -9,7 +9,17 @@ export function IframePageView(props: {
   pageOptions?: React.ReactNode;
   onOpen: (url: string) => void;
 }) {
-  let { iframeRef } = useIframeChannel({ onOpen: props.onOpen });
+  let { iframeRef } = useIframeChannel({
+    onOpen: props.onOpen,
+    onReplaceWith: () => {},
+    onAddBelow: () => {},
+  });
+
+  let iframeSrc = useMemo(() => {
+    let src = new URL(props.url);
+    src.searchParams.set("parts.page.mode", "edit");
+    return src.toString();
+  }, [props.url]);
 
   return (
     <PageWrapper
@@ -25,7 +35,7 @@ export function IframePageView(props: {
       <iframe
         ref={iframeRef}
         className="w-full h-full"
-        src={props.url}
+        src={iframeSrc}
         allow="fullscreen"
         loading="lazy"
       />

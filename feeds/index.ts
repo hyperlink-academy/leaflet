@@ -1,6 +1,6 @@
 import { Hono, HonoRequest } from "hono";
 import { serve } from "@hono/node-server";
-import { DidResolver } from "@atproto/identity";
+import { DidResolver, MemoryCache } from "@atproto/identity";
 import { parseReqNsid, verifyJwt } from "@atproto/xrpc-server";
 import { supabaseServerClient } from "supabase/serverClient";
 import {
@@ -190,7 +190,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   });
 });
 
-const didResolver = new DidResolver({});
+const didResolver = new DidResolver({ didCache: new MemoryCache() });
 const validateAuth = async (
   req: HonoRequest,
   serviceDid: string,

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
 import { newMessagePortRpcSession } from "capnweb";
-import { PartsPageHost } from "src/partsPageChannel";
+import { PartsPageHost, PartsPageHandlers } from "src/partsPageChannel";
 
-export function useIframeChannel(options: { onOpen: (url: string) => void }) {
+export function useIframeChannel(options: PartsPageHandlers) {
   let iframeElRef = useRef<HTMLIFrameElement | null>(null);
-  let onOpenRef = useRef(options.onOpen);
-  onOpenRef.current = options.onOpen;
+  let handlersRef = useRef(options);
+  handlersRef.current = options;
 
   let sessionRef = useRef<ReturnType<
     typeof newMessagePortRpcSession
@@ -13,6 +13,7 @@ export function useIframeChannel(options: { onOpen: (url: string) => void }) {
 
   let cleanup = useCallback(() => {
     if (sessionRef.current) {
+      console.log("[parts.page] disposing RPC session");
       sessionRef.current[Symbol.dispose]();
       sessionRef.current = null;
     }
@@ -35,12 +36,29 @@ export function useIframeChannel(options: { onOpen: (url: string) => void }) {
       let host = new PartsPageHost({
         onOpen: (url) => {
           console.log("[parts.page] open command from", src, url);
-          onOpenRef.current(url);
+          handlersRef.current.onOpen(url);
+        },
+        onReplaceWith: (block) => {
+          console.log("[parts.page] replaceWith command from", src, block);
+          handlersRef.current.onReplaceWith(block);
+        },
+        onAddBelow: (block) => {
+          console.log("[parts.page] addBelow command from", src, block);
+          handlersRef.current.onAddBelow(block);
         },
       });
 
-      sessionRef.current = newMessagePortRpcSession(port1, host);
-      console.log("[parts.page] channel established with", src);
+      console.log("[parts.page] creating RPC session for", src);
+      try {
+        sessionRef.current = newMessagePortRpcSession(port1, host);
+        console.log("[parts.page] RPC session created", {
+          src,
+          session: sessionRef.current,
+        });
+      } catch (e) {
+        console.error("[parts.page] RPC session creation failed", src, e);
+        throw e;
+      }
 
       iframe.contentWindow.postMessage({ type: "parts.page.channel" }, "*", [
         port2,
