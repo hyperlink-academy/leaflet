@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { mutate } from "swr";
@@ -11,7 +11,6 @@ import {
 } from "../PublicationSWRProvider";
 import { updatePublication } from "app/lish/createPub/updatePublication";
 import { PubDomainSettings } from "./PubDomainSettings";
-import { PubThemeSetter } from "components/ThemeManager/PubThemeSetter";
 import { GeneralSettings } from "./GeneralSettings";
 import { PostSettings } from "./PostSettings";
 import { ThemeSettings } from "./ThemeSettings";

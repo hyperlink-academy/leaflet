@@ -9,7 +9,7 @@ export function ToggleGroup<T extends string>(props: {
 }) {
   return (
     <div
-      className={`flex gap-1 p-1 bg-accent-contrast rounded-lg text-sm ${props.className || ""}`}
+      className={`flex gap-1 p-1 bg-accent-1 rounded-lg text-sm ${props.className || ""}`}
     >
       {props.options.map((option) => (
         <button
@@ -17,8 +17,8 @@ export function ToggleGroup<T extends string>(props: {
           type="button"
           className={`px-1 rounded-md ${
             props.value === option.value
-              ? "bg-accent-2 font-bold text-accent-contrast"
-              : "bg-transparent text-bg-page"
+              ? "bg-accent-2 font-bold text-accent-1"
+              : "bg-transparent text-accent-2"
           }
           ${props.optionClassName}
             `}

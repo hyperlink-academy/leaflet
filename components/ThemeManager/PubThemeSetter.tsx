@@ -4,7 +4,6 @@ import {
 } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useState } from "react";
 import { pickers, SectionArrow } from "./ThemeSetter";
-import { Color } from "react-aria-components";
 import { PubLeafletThemeBackgroundImage } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
@@ -23,6 +22,7 @@ import { PubPageWidthSetter } from "./PubPickers/PubPageWidthSetter";
 import { FontPicker } from "./Pickers/TextPickers";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { ButtonPrimary } from "components/Buttons";
+import { PresetThemePicker } from "./PubPickers/PubPresetPicker";
 
 export type ImageState = {
   src: string;
@@ -173,6 +173,7 @@ export function PubThemePickerPanel(props: { state: PubThemeEditorState }) {
         <div
           className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
         >
+          <PresetThemePicker state={props.state} />
           <div className="bgPickerBody w-full flex flex-col gap-2 p-2  border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
             <PubPageWidthSetter
               pageWidth={pageWidth}
@@ -413,89 +414,6 @@ const SamplePub = (props: {
             This is a sample description about the sample post
           </div>
           <div className="text-tertiary  text-[5px] pt-[2px]">Jan 1, 20XX </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SamplePost = (props: {
-  pubBGImage: string | null;
-  pubBGRepeat: number | null;
-  showPageBackground: boolean;
-}) => {
-  let { data } = usePublicationData();
-  let { publication } = data || {};
-  let record = useNormalizedPublicationRecord();
-  return (
-    <div
-      style={{
-        backgroundImage: props.pubBGImage
-          ? `url(${props.pubBGImage})`
-          : undefined,
-        backgroundRepeat: props.pubBGRepeat ? "repeat" : "no-repeat",
-        backgroundPosition: "center",
-        backgroundSize: !props.pubBGRepeat
-          ? "cover"
-          : `calc(${props.pubBGRepeat}px / 2 )`,
-      }}
-      className={`bg-bg-leaflet p-3 max-w-full flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-0 h-[148px] overflow-hidden`}
-    >
-      <div
-        className="pubWrapper sampleContent rounded-t-md border-border pb-0 px-[6px] flex flex-col w-[250px] mx-auto"
-        style={{
-          background: props.showPageBackground
-            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-            : undefined,
-        }}
-      >
-        <div className="flex flex-col ">
-          <div
-            className="text-[6px] font-bold pt-[6px] text-accent-contrast"
-            style={{
-              fontFamily:
-                "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))",
-            }}
-          >
-            {record?.name}
-          </div>
-          <div
-            className="text-[11px] font-bold text-primary"
-            style={{
-              fontFamily:
-                "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))",
-            }}
-          >
-            A Sample Post
-          </div>
-          <div className="text-[7px] font-normal text-secondary italic">
-            A short sample description about the sample post
-          </div>
-          <div className="text-tertiary  text-[5px] pt-[2px]">Jan 1, 20XX </div>
-        </div>
-        <div className="text-[6px] pt-[8px] flex flex-col gap-[6px]">
-          <div>
-            Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque
-            faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi
-            pretium tellus duis convallis. Tempus leo eu aenean sed diam urna
-            tempor.
-          </div>
-
-          <div>
-            Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis
-            massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit
-            semper vel class aptent taciti sociosqu. Ad litora torquent per
-            conubia nostra inceptos himenaeos.
-          </div>
-          <div>
-            Sed et nisi semper, egestas purus a, egestas nulla. Nulla ultricies,
-            purus non dapibus tincidunt, nunc sem rhoncus sem, vel malesuada
-            tellus enim sit amet magna. Donec ac justo a ipsum fermentum
-            vulputate. Etiam sit amet viverra leo. Aenean accumsan consectetur
-            velit. Vivamus at justo a nisl imperdiet dictum. Donec scelerisque
-            ex eget turpis scelerisque tincidunt. Proin non convallis nibh, eget
-            aliquet ex. Curabitur ornare a ipsum in ultrices.
-          </div>
         </div>
       </div>
     </div>
