@@ -94,7 +94,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         hasBackground="accent"
         isSelected={!!isSelected}
         borderOnHover
-        className=" group/image-block text-tertiary hover:text-accent-contrast hover:font-bold h-[104px]  border-dashed rounded-lg"
+        className={` group/image-block text-tertiary hover:text-accent-contrast hover:font-bold h-[104px]  border-dashed rounded-lg `}
       >
         <label
           className={`
@@ -144,8 +144,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let blockClassName = `
     relative group/image border-transparent! p-0! w-fit!
     ${isFullBleed && "-mx-[14px] sm:-mx-[18px] rounded-[0px]! sm:outline-offset-[-16px]! -outline-offset[-12px]!"}
-    ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-1" : "") : ""}
-    ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-2" : "") : ""}
+    ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-[5px]" : "") : ""}
+    ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-[9px]" : "") : ""}
     `;
 
   return (
@@ -153,7 +153,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       hasAlignment
       isSelected={!!isSelected}
       className={blockClassName}
-      optionsClassName={isFullBleed ? "top-[-8px]!" : ""}
+      optionsClassName={isFullBleed ? "top-[-8px]! border-none!" : ""}
     >
       {isLocalUpload || image.data.local ? (
         <img
@@ -209,7 +209,7 @@ const CoverImageButton = (props: { entityID: string }) => {
   // Only show if focused, in a publication, has write permissions, and no cover image is set
   if (!isFocused || !pubData?.publications || !entity_set.permissions.write)
     return null;
-  if (coverImage)
+  if (coverImage === props.entityID)
     return (
       <ButtonSecondary
         className="absolute top-2 right-2"
@@ -225,6 +225,7 @@ const CoverImageButton = (props: { entityID: string }) => {
         <ImageCoverImageRemove />
       </ButtonSecondary>
     );
+
   return (
     <ButtonPrimary
       className="absolute top-2 right-2"

@@ -48,6 +48,7 @@ export type Block = {
   type: Fact<"block/type">["data"]["value"];
   listData?: {
     checklist?: boolean;
+    checked?: boolean;
     listStyle?: "ordered" | "unordered";
     listStart?: number;
     displayNumber?: number;

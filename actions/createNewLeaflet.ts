@@ -12,7 +12,6 @@ import {
   email_auth_tokens,
 } from "drizzle/schema";
 import { redirect } from "next/navigation";
-import postgres from "postgres";
 import { v7 } from "uuid";
 import { sql, eq, and } from "drizzle-orm";
 import { cookies } from "next/headers";

@@ -12,6 +12,8 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { CheckboxChecked } from "components/Icons/CheckboxChecked";
+import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { blockTextSize } from "src/utils/blockTextSize";
 import { TextBlockCore, TextBlockCoreProps } from "./Blocks/TextBlockCore";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
@@ -165,11 +167,17 @@ function ListItem(props: {
   did: string;
   className?: string;
 }) {
+  let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
         className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
       />
+      {isChecklist && (
+        <div className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}>
+          {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+        </div>
+      )}
       <div className="flex flex-col">
         <Block block={{ block: props.item.content }} did={props.did} isList />
         {props.item.children?.length ? (

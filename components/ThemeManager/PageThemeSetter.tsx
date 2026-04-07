@@ -11,7 +11,6 @@ import { theme } from "tailwind.config";
 import { ButtonPrimary } from "components/Buttons";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { AccentPickers } from "./Pickers/AccentPickers";
-import Page from "twilio/lib/base/Page";
 
 export const PageThemeSetter = (props: { entityID: string }) => {
   let { rootEntity } = useReplicache();

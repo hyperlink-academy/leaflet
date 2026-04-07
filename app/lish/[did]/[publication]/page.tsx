@@ -1,6 +1,9 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
-import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getPublicationURL,
+  getDocumentURL,
+} from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import React from "react";
@@ -102,17 +105,14 @@ export default async function Publication(props: {
                     handle={profile.handle}
                   />
                 )}
-                <div className="pt-4 w-full max-w-sm mx-auto">
-                  <SubscribeInput {...dummy} />
+                <div className="sm:pt-4 pt-4">
+                  <SubscribeWithBluesky
+                    base_url={getPublicationURL(publication)}
+                    pubName={publication.name}
+                    pub_uri={publication.uri}
+                    subscribers={publication.publication_subscriptions}
+                  />
                 </div>
-                {/*<div className="sm:pt-4 pt-4">
-                <SubscribeWithBluesky
-                  base_url={getPublicationURL(publication)}
-                  pubName={publication.name}
-                  pub_uri={publication.uri}
-                  subscribers={publication.publication_subscriptions}
-                />
-              </div>*/}
               </div>
               <div className="publicationPostList w-full flex flex-col gap-4">
                 {publication.documents_in_publications
@@ -155,7 +155,7 @@ export default async function Publication(props: {
                         <div className="flex w-full grow flex-col ">
                           <SpeedyLink
                             href={docUrl}
-                            className="publishedPost hover:no-underline! flex flex-col"
+                            className="publishedPost no-underline! flex flex-col"
                           >
                             {doc_record.title && (
                               <h3 className="text-primary">

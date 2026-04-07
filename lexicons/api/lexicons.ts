@@ -1176,6 +1176,11 @@ export const schemaDict = {
             type: 'ref',
             ref: 'lex:pub.leaflet.blocks.image#aspectRatio',
           },
+          fullBleed: {
+            type: 'boolean',
+            description:
+              'Whether the image should extend to the full width of the container, ignoring padding.',
+          },
         },
       },
       aspectRatio: {
@@ -1233,6 +1238,11 @@ export const schemaDict = {
         type: 'object',
         required: ['content'],
         properties: {
+          checked: {
+            type: 'boolean',
+            description:
+              'If present, this item is a checklist item. true = checked, false = unchecked. If absent, this is a normal list item.',
+          },
           content: {
             type: 'union',
             refs: [
@@ -1338,6 +1348,11 @@ export const schemaDict = {
         type: 'object',
         required: ['content'],
         properties: {
+          checked: {
+            type: 'boolean',
+            description:
+              'If present, this item is a checklist item. true = checked, false = unchecked. If absent, this is a normal list item.',
+          },
           content: {
             type: 'union',
             refs: [
@@ -2152,7 +2167,7 @@ export const schemaDict = {
             type: 'array',
             items: {
               type: 'ref',
-              ref: 'lex:pub.leaflet.richtext.facet',
+              ref: 'lex:pub.leaflet.richtext.facet#main',
             },
           },
         },
