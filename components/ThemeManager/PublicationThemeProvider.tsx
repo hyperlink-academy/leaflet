@@ -90,7 +90,7 @@ export function PublicationBackgroundProvider(props: {
     (props.localBgImageRepeat !== undefined
       ? props.localBgImageRepeat
       : props.theme?.backgroundImage?.width) || 500;
-  console.log(backgroundImage);
+
   return (
     <div
       className="PubBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
