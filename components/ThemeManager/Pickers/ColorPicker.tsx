@@ -43,6 +43,7 @@ export const ColorPicker = (props: {
       <div className="flex flex-col w-full gap-2">
         <div className="colorPickerLabel flex gap-2 items-center ">
           <button
+            type="button"
             disabled={props.disabled}
             className="flex gap-2 items-center disabled:text-tertiary"
             onClick={() => {

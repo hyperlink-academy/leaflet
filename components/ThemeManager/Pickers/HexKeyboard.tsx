@@ -114,9 +114,9 @@ export const HexKeyboard = (props: {
         }
       }}
       trigger={
-        <button className="w-[72px] text-left bg-transparent outline-hidden truncate">
+        <div className="w-[72px] text-left bg-transparent outline-hidden truncate">
           {hexString}
-        </button>
+        </div>
       }
     >
       <div className="flex flex-col gap-2">

@@ -173,7 +173,7 @@ export function PubThemePickerPanel(props: { state: PubThemeEditorState }) {
         <div
           className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
         >
-          <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
+          <div className="bgPickerBody w-full flex flex-col gap-2 p-2  border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
             <PubPageWidthSetter
               pageWidth={pageWidth}
               setPageWidth={setPageWidth}
@@ -291,17 +291,11 @@ export const PubThemeSetter = (props: {
         className="min-h-0!"
       >
         <div className="min-h-0 flex-1 flex flex-col pb-0.5">
-          <form
-            className="flex-shrink-0"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              await submitTheme(props.setLoading);
-            }}
-          >
-            <button onClick={props.backToMenu}>
+          <div className="flex-shrink-0">
+            <button type="button" onClick={props.backToMenu}>
               <GoToArrow />
             </button>
-          </form>
+          </div>
 
           <div className="themeSetterContent flex flex-col w-full overflow-y-scroll min-h-0 -mb-2 pt-2 ">
             <PubThemePickerPanel state={state} />
@@ -310,18 +304,31 @@ export const PubThemeSetter = (props: {
                 <div className="text-sm">Preview</div>
                 <Separator classname="h-4!" />{" "}
                 <button
+                  type="button"
                   className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
                   onClick={() => setSample("pub")}
                 >
                   Pub
                 </button>
                 <button
+                  type="button"
                   className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
                   onClick={() => setSample("post")}
                 >
                   Post
                 </button>
               </div>
+            </div>
+            <div className="pt-2">
+              <ButtonPrimary
+                fullWidth
+                disabled={props.loading}
+                onClick={async () => {
+                  await submitTheme(props.setLoading);
+                }}
+              >
+                {props.loading ? "Saving..." : "Save Theme"}
+              </ButtonPrimary>
             </div>
           </div>
         </div>

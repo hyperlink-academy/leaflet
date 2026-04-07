@@ -71,39 +71,52 @@ export function ThemeSettingsContent() {
               }
               asChild
             >
-              <form
-                className="flex flex-col overflow-y-auto max-h-(--radix-popover-content-available-height)"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  let result = await submitTheme(setLoading);
-                  if (result?.success) {
-                    toaster({ content: "Theme updated!", type: "success" });
-                  }
-                }}
+              <BaseThemeProvider
+                local
+                {...localPubTheme}
+                headingFontId={headingFont}
+                bodyFontId={bodyFont}
+                hasBackgroundImage={!!image}
+                pageWidth={pageWidth}
               >
-                {/* Toggle + Save Header */}
-                <div className="flex items-center justify-between px-3 pt-3 pb-2">
-                  <div className="font-bold text-[#272727]">Preview Mode</div>
-                  <ToggleGroup
-                    value={previewMode}
-                    optionClassName="text-base!"
-                    onChange={setPreviewMode}
-                    options={[
-                      { value: "post", label: "Post" },
-                      { value: "pub", label: "Pub" },
-                    ]}
-                  />
-                </div>
+                <div className="flex flex-col overflow-y-auto max-h-(--radix-popover-content-available-height) py-3">
+                  <div className="p-3 pt-0 ">
+                    <ButtonPrimary
+                      fullWidth
+                      type="button"
+                      disabled={loading}
+                      onClick={async () => {
+                        let result = await submitTheme(setLoading);
+                        if (result?.success) {
+                          toaster({
+                            content: "Theme updated!",
+                            type: "success",
+                          });
+                        }
+                      }}
+                    >
+                      {loading ? <DotLoader /> : "Update"}
+                    </ButtonPrimary>
+                  </div>
 
-                <div className="px-3 pb-3 gap-2 flex flex-col">
-                  <PubThemePickerPanel state={state} />
+                  {/* Toggle + Save Header */}
+                  <div className="flex items-center justify-between px-3">
+                    <div className="font-bold text-[#595959]">Preview Mode</div>
+                    <ToggleGroup
+                      value={previewMode}
+                      optionClassName="text-base!"
+                      onChange={setPreviewMode}
+                      options={[
+                        { value: "post", label: "Post" },
+                        { value: "pub", label: "Pub" },
+                      ]}
+                    />
+                  </div>
+                  <div className="p-3 gap-2 flex flex-col">
+                    <PubThemePickerPanel state={state} />
+                  </div>
                 </div>
-                <div className="p-3 pt-0!">
-                  <ButtonPrimary fullWidth type="submit" disabled={loading}>
-                    {loading ? <DotLoader /> : "Update"}
-                  </ButtonPrimary>
-                </div>
-              </form>
+              </BaseThemeProvider>
             </Popover>
           </div>
 
@@ -114,7 +127,7 @@ export function ThemeSettingsContent() {
             localBgImage={pubBGImage}
             localBgImageRepeat={leafletBGRepeat}
           >
-            <div className="mx-auto h-full w-fit">
+            <div className="mx-auto h-full w-fit pointer-events-none">
               {previewMode === "pub" ? (
                 <PubPreview
                   showPageBackground={showPageBackground}
