@@ -2,7 +2,7 @@
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { permission_token_on_homepage } from "drizzle/schema";
-import postgres from "postgres";
+
 import { v7 } from "uuid";
 import { sql, eq, inArray, and } from "drizzle-orm";
 import { cookies } from "next/headers";

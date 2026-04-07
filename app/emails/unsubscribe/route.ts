@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { email_subscriptions_to_entity } from "drizzle/schema";
-import postgres from "postgres";
+
 import { eq } from "drizzle-orm";
 import { pool } from "supabase/pool";
 

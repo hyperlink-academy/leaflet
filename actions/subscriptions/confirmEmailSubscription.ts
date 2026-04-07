@@ -8,7 +8,7 @@ import {
   facts,
   permission_tokens,
 } from "drizzle/schema";
-import postgres from "postgres";
+
 import type { Fact } from "src/replicache";
 import { Database } from "supabase/database.types";
 import { pool } from "supabase/pool";

@@ -362,11 +362,15 @@ pre.shiki {
 }
 
 .selection-highlight {
-  background-color: Highlight;
+  background-color: transparent;
   @apply py-[1.5px];
 }
 
-.ProseMirror:focus-within .selection-highlight {
+.block-focused .selection-highlight {
+  background-color: Highlight;
+}
+
+.block-focused:focus-within .selection-highlight {
   background-color: transparent;
 }
 
@@ -392,7 +396,7 @@ pre.shiki {
   white-space: normal;
 }
 
-.multiselected:focus-within .selection-highlight {
+.multiselected .block-focused:focus-within .selection-highlight {
   background-color: transparent;
 }
 
@@ -611,7 +615,9 @@ pre.shiki {
   max-height: calc(4.5em + 8px);
   opacity: calc(var(--bg-page-alpha) * 0.7);
 }
-.footnote-side-item:not(:hover):not(:focus-within):not(.footnote-side-focused) .footnote-item > div:last-of-type {
+.footnote-side-item:not(:hover):not(:focus-within):not(.footnote-side-focused)
+  .footnote-item
+  > div:last-of-type {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
