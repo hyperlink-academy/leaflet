@@ -20,3 +20,11 @@ export const EmailSubscribeSuccess = (props: {
     </div>
   );
 };
+
+export const EmailLogInSuccess = (props: {}) => {
+  return (
+    <div className="flex flex-col text-center justify-center p-4 text-secondary max-w-md">
+      <h2 className="text-primary pb-1">Welcome!</h2>
+    </div>
+  );
+};

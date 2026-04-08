@@ -5,30 +5,33 @@ import { ButtonPrimary } from "components/Buttons";
 import { Input } from "components/Input";
 import { Modal } from "components/Modal";
 import { useState } from "react";
-import { HandleInputandOAuth, UniversalHandleInfo } from "./HandleSubscribe";
 import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { useToaster } from "components/Toast";
 
-export const EmailSubscribe = (props: {
-  link?: boolean;
+export const EmailInput = (props: {
+  action: "link" | "subscribe" | "login";
   autoFocus?: boolean;
-  user: {
+  user?: {
     loggedIn: boolean;
     email: string | undefined;
     handle: string | undefined;
   };
 }) => {
   let [value, setValue] = useState(
-    props.user.loggedIn && props.user.email ? props.user.email : "",
+    props.user?.loggedIn && props.user?.email ? props.user?.email : "",
   );
   let [state, setState] = useState<"confirm" | "success">(
-    props.user.loggedIn && props.user.email ? "success" : "confirm",
+    props.user?.loggedIn && props.user?.email ? "success" : "confirm",
   );
+  let toaster = useToaster();
+
   return (
     <div className="relative input-with-border flex gap-2 w-full items-center mx-auto">
       <Input
         autoFocus={props.autoFocus}
         className={`appearance-none! outline-none! w-full pr-22 `}
-        disabled={props.user.loggedIn}
+        disabled={props.user?.loggedIn}
         placeholder="email@example.com"
         size={0}
         value={value}
@@ -37,26 +40,42 @@ export const EmailSubscribe = (props: {
       <Modal
         asChild
         trigger={
-          <div className="absolute top-0 bottom-0 right-[4px] flex items-center">
-            <ButtonPrimary
-              compact
-              className="leading-tight! outline-none! text-sm!"
-            >
-              {props.link ? "Link" : "Subscribe"}
-            </ButtonPrimary>
+          <div className="absolute top-0 bottom-0 right-[4px] flex items-center text-accent-contrast">
+            {props.action === "login" ? (
+              <GoToArrow />
+            ) : (
+              <ButtonPrimary
+                compact
+                className="leading-tight! outline-none! text-sm!"
+              >
+                {props.action === "link" ? "Link" : "Subscribe"}
+              </ButtonPrimary>
+            )}
           </div>
         }
       >
         {state === "success" ? (
           <EmailSubscribeSuccess
-            email={props.user.email}
-            handle={props.user.handle}
+            email={props.user?.email}
+            handle={props.user?.handle}
           />
         ) : (
-          <EmailSubscribeConfirm
-            emailInputValue={value}
+          <EmailConfirm
+            emailValue={value}
             onSubmit={() => {
-              setState("success");
+              props.action === "subscribe"
+                ? setState("success")
+                : props.action === "link"
+                  ? toaster({
+                      content: (
+                        <div className="font-bold">Linked your email!</div>
+                      ),
+                      type: "success",
+                    })
+                  : toaster({
+                      content: <div className="font-bold">Welcome back!</div>,
+                      type: "success",
+                    });
             }}
           />
         )}
@@ -65,8 +84,8 @@ export const EmailSubscribe = (props: {
   );
 };
 
-const EmailSubscribeConfirm = (props: {
-  emailInputValue: string;
+export const EmailConfirm = (props: {
+  emailValue: string;
   onSubmit: () => void;
 }) => {
   let inputClassName = "input-with-border text-2xl w-8 h-12 text-center";
@@ -74,13 +93,12 @@ const EmailSubscribeConfirm = (props: {
     <div className="flex flex-col text-center max-w-sm pb-2">
       <h3>Confirm your email</h3>
       Enter the confirmation code sent to <br />
-      <div className="italic min-w-0 truncate">{props.emailInputValue}</div>
+      <div className="italic min-w-0 truncate">{props.emailValue}</div>
       <OneTimePasswordField.Root
         autoSubmit
         validationType="alphanumeric"
         onAutoSubmit={() => {
           props.onSubmit();
-          console.log("hello?");
         }}
       >
         <div className="flex gap-1 pt-4 w-full justify-center">

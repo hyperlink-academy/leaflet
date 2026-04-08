@@ -6,7 +6,7 @@ export const dummy = {
     loggedIn: true,
     email: "thisiscelinepark@gmail.com",
     handle: "cozylittle.house",
-    subscribed: true,
+    subscribed: false,
   },
 };
 

@@ -1,5 +1,5 @@
 import { SubscribeWithHandle } from "./HandleSubscribe";
-import { EmailSubscribe } from "./EmailSubscribe";
+import { EmailInput } from "./EmailSubscribe";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { PostPubInfo } from "app/lish/[did]/[publication]/[rkey]/PostPubInfo";
@@ -48,7 +48,13 @@ export const SubscribeInput = (props: {
     return <ManageSubscription {...props} />;
   }
   if (props.newsletterMode) {
-    return <EmailSubscribe user={props.user} autoFocus={props.autoFocus} />;
+    return (
+      <EmailInput
+        action="subscribe"
+        user={props.user}
+        autoFocus={props.autoFocus}
+      />
+    );
   } else
     return (
       <SubscribeWithHandle user={props.user} autoFocus={props.autoFocus} />

@@ -3,7 +3,7 @@ import { CheckTiny } from "components/Icons/CheckTiny";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { Modal } from "components/Modal";
 import { LinkHandle } from "./HandleSubscribe";
-import { EmailSubscribe } from "./EmailSubscribe";
+import { EmailInput } from "./EmailSubscribe";
 
 export const ManageSubscription = (props: {
   newsletterMode: boolean;
@@ -43,7 +43,10 @@ export const ManageSubscription = (props: {
         {props.user.handle && (
           <div className={prefClassName}>
             <div className="flex flex-col leading-snug">
-              Linked Handle {props.user.handle}
+              Linked Handle
+              <p className="text-tertiary font-normal italic">
+                {props.user.handle}
+              </p>
             </div>
           </div>
         )}
@@ -65,7 +68,7 @@ export const ManageSubscription = (props: {
                 to get updates right to your inbox!
               </div>
             </div>
-            <EmailSubscribe link {...props} />
+            <EmailInput action="link" {...props} />
           </div>
         ) : null}
         {!props.user.handle ? (

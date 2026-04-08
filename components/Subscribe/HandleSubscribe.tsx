@@ -14,6 +14,7 @@ import {
 } from "./Logos";
 
 import { Separator } from "components/Layout";
+import { GoToArrow } from "components/Icons/GoToArrow";
 
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
@@ -39,7 +40,7 @@ export const SubscribeWithHandle = (props: {
       <div className="max-w-sm mx-auto w-full ">
         <HandleInput autoFocus={props.autoFocus} />
         <div className="flex gap-2 justify-center items-center mx-auto pt-0.5 ">
-          <UniversalHandleInfo />
+          <AtmosphericHandleInfo />
           <Separator classname="h-3! border-accent-contrast!" />
           <div className="text-sm text-accent-contrast font-bold">Create</div>
         </div>
@@ -61,36 +62,50 @@ export const LinkHandle = (props: { compact?: boolean }) => {
         <div className="text-tertiary">
           to comment, recommend, and see what your friends are reading
         </div>
-        <UniversalHandleInfo />
+        <AtmosphericHandleInfo />
       </div>
       <HandleInputandOAuth link compact />
     </div>
   );
 };
 
-export const HandleInput = (props: { autoFocus?: boolean; link?: boolean }) => {
+export const HandleInput = (props: {
+  autoFocus?: boolean;
+  action?: "subscribe" | "link" | "login";
+  className?: string;
+}) => {
   let [handleValue, setHandleValue] = useState("");
   return (
-    <div className="handleInput input-with-border relative pl-0! py-0! flex gap-0 w-full">
-      <div className="border-r border-border text-tertiary text-center w-8 shrink-0 mr-2">
+    <div
+      className={`handleInput input-with-border relative pl-0! py-0! flex gap-0 w-full ${props.className}`}
+    >
+      <div className="text-tertiary text-center w-8 shrink-0 mr-2 flex justify-center h-full items-center">
         @
       </div>
       <Input
         autoFocus={props.autoFocus}
         className={`appearance-none! outline-none! w-full py-0.5 pr-22`}
-        placeholder="universal.handle"
+        placeholder="atmosphere.handle"
         size={0}
         value={handleValue}
         onChange={(e) => setHandleValue(e.target.value)}
       />
 
       <div className="absolute top-0 bottom-0 right-[4px] flex items-center">
-        <ButtonPrimary
-          compact
-          className="leading-tight! outline-none! text-sm!"
-        >
-          {props.link ? "Link" : "Subscribe"}
-        </ButtonPrimary>
+        {props.action === "login" ? (
+          <GoToArrow />
+        ) : (
+          <ButtonPrimary
+            compact
+            className="leading-tight! outline-none! text-sm!"
+          >
+            {props.action === "link"
+              ? "Link"
+              : props.action === "subscribe"
+                ? "Subscribe"
+                : null}
+          </ButtonPrimary>
+        )}
       </div>
     </div>
   );
@@ -102,7 +117,7 @@ export const HandleInputandOAuth = (props: {
 }) => {
   return (
     <div className="handleInputAndOAuth flex flex-col">
-      <HandleInput link={props.link} />
+      <HandleInput action="link" />
       <div
         className={`${props.compact ? "mt-1 mb-2 text-xs" : "text-sm mt-2 mb-3"} w-full flex gap-2 items-center`}
       >
@@ -143,7 +158,7 @@ export const AtSubscribeSuccess = (props: {}) => {
   );
 };
 
-export const UniversalHandleInfo = (props: { trigger?: React.ReactNode }) => {
+export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
   return (
     <Popover
       className="z-100! max-w-sm flex flex-col gap-2"
