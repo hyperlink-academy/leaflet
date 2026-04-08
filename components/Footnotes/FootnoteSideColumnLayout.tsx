@@ -20,7 +20,6 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
   let containerRef = useRef<HTMLDivElement>(null);
   let innerRef = useRef<HTMLDivElement>(null);
   let [positions, setPositions] = useState<(T & { top: number })[]>([]);
-  let [scrollOffset, setScrollOffset] = useState(0);
 
   let calculatePositions = useCallback(() => {
     let container = containerRef.current;
@@ -36,7 +35,9 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
 
     let scrollTop = scrollWrapper.scrollTop;
     let scrollWrapperRect = scrollWrapper.getBoundingClientRect();
-    setScrollOffset(scrollTop);
+
+    // Sync scroll transform directly on the DOM (no React re-render)
+    inner.style.transform = `translateY(-${scrollTop}px)`;
 
     let measurements: (T & { anchorTop: number; height: number })[] = [];
 
@@ -79,24 +80,60 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
       ?.querySelector(".pageScrollWrapper") as HTMLElement | null;
     if (!scrollWrapper) return;
 
+    // On scroll, update the transform directly without React re-render
     let onScroll = () => {
-      setScrollOffset(scrollWrapper!.scrollTop);
+      let inner = innerRef.current;
+      if (inner) {
+        inner.style.transform = `translateY(-${scrollWrapper!.scrollTop}px)`;
+      }
     };
 
-    scrollWrapper.addEventListener("scroll", onScroll);
+    scrollWrapper.addEventListener("scroll", onScroll, { passive: true });
+
+    // Forward wheel events from the side column to the scroll wrapper
+    let container = containerRef.current!;
+    let onWheel = (e: WheelEvent) => {
+      scrollWrapper!.scrollTop += e.deltaY;
+    };
+    container.addEventListener("wheel", onWheel, { passive: true });
 
     let resizeObserver = new ResizeObserver(calculatePositions);
     resizeObserver.observe(scrollWrapper);
 
-    let mutationObserver = new MutationObserver(calculatePositions);
+    // Observe all side items so positions recalculate when their heights change
+    let observeSideItems = () => {
+      let inner = innerRef.current;
+      if (!inner) return;
+      for (let el of inner.querySelectorAll("[data-footnote-side-id]")) {
+        resizeObserver.observe(el);
+      }
+    };
+    observeSideItems();
+
+    let mutationObserver = new MutationObserver(() => {
+      calculatePositions();
+      // Re-observe in case new items were added
+      observeSideItems();
+    });
     mutationObserver.observe(scrollWrapper, {
       childList: true,
       subtree: true,
       characterData: true,
     });
 
+    // Also observe the inner container so we recalculate when side items
+    // are added/removed (they're siblings of scrollWrapper, not children)
+    let innerEl = innerRef.current;
+    if (innerEl) {
+      mutationObserver.observe(innerEl, {
+        childList: true,
+        subtree: true,
+      });
+    }
+
     return () => {
       scrollWrapper!.removeEventListener("scroll", onScroll);
+      container.removeEventListener("wheel", onWheel);
       resizeObserver.disconnect();
       mutationObserver.disconnect();
     };
@@ -107,7 +144,7 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
   return (
     <div
       ref={containerRef}
-      className={`footnote-side-column hidden lg:block absolute top-0 w-[200px] pointer-events-none ${
+      className={`footnote-side-column hidden lg:block absolute top-0 w-[200px] ${
         props.fullPageScroll
           ? "left-[calc(50%+var(--page-width-units)/2+12px)]"
           : "left-full ml-3"
@@ -116,11 +153,10 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
     >
       <div
         ref={innerRef}
-        className="relative pointer-events-auto"
-        style={{ transform: `translateY(-${scrollOffset}px)` }}
+        className="relative"
       >
         {positions.map((item) => (
-          <SideItem key={item.id} id={item.id} top={item.top} onResize={calculatePositions}>
+          <SideItem key={item.id} id={item.id} top={item.top}>
             {props.renderItem(item)}
           </SideItem>
         ))}
@@ -133,7 +169,6 @@ function SideItem(props: {
   children: ReactNode;
   id: string;
   top: number;
-  onResize: () => void;
 }) {
   let ref = useRef<HTMLDivElement>(null);
   let [overflows, setOverflows] = useState(false);
@@ -150,20 +185,13 @@ function SideItem(props: {
     let check = () => setOverflows(el!.scrollHeight > el!.clientHeight + 1);
     check();
 
-    let ro = new ResizeObserver(() => {
-      check();
-      props.onResize();
-    });
-    ro.observe(el);
-
     let mo = new MutationObserver(check);
     mo.observe(el, { childList: true, subtree: true, characterData: true });
 
     return () => {
-      ro.disconnect();
       mo.disconnect();
     };
-  }, [props.onResize]);
+  }, []);
 
   return (
     <div
