@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
@@ -76,6 +76,55 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         `/api/atproto_images?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]}`,
       );
   }, [pubData, record]);
+
+  let hasUnsavedChanges = useMemo(() => {
+    if (!record) return false;
+    if (nameValue !== (record.name || "")) return true;
+    if (descriptionValue !== (record.description || "")) return true;
+    if (iconFile !== null) return true;
+
+    let savedShowInDiscover =
+      record.preferences?.showInDiscover === undefined
+        ? true
+        : record.preferences.showInDiscover;
+    if (showInDiscover !== savedShowInDiscover) return true;
+
+    let savedShowComments =
+      record.preferences?.showComments === undefined
+        ? true
+        : record.preferences.showComments;
+    if (showComments !== savedShowComments) return true;
+
+    let savedShowMentions =
+      record.preferences?.showMentions === undefined
+        ? true
+        : record.preferences.showMentions;
+    if (showMentions !== savedShowMentions) return true;
+
+    let savedShowRecommends =
+      record.preferences?.showRecommends === undefined
+        ? true
+        : record.preferences.showRecommends;
+    if (showRecommends !== savedShowRecommends) return true;
+
+    let savedShowPrevNext =
+      record.preferences?.showPrevNext === undefined
+        ? true
+        : record.preferences.showPrevNext;
+    if (showPrevNext !== savedShowPrevNext) return true;
+
+    return false;
+  }, [
+    record,
+    nameValue,
+    descriptionValue,
+    iconFile,
+    showInDiscover,
+    showComments,
+    showMentions,
+    showRecommends,
+    showPrevNext,
+  ]);
 
   return (
     <form
@@ -153,7 +202,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         </DashboardContainer>
         {cardBorderHidden && <div className="spacer h-4" />}
 
-        <SettingsFooter loading={loading} />
+        {hasUnsavedChanges && <SettingsFooter loading={loading} />}
       </div>
     </form>
   );
