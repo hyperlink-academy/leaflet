@@ -34,7 +34,7 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
     if (!scrollWrapper) return;
 
     let scrollTop = scrollWrapper.scrollTop;
-    let scrollWrapperRect = scrollWrapper.getBoundingClientRect();
+    let containerRect = container.getBoundingClientRect();
 
     // Sync scroll transform directly on the DOM (no React re-render)
     inner.style.transform = `translateY(-${scrollTop}px)`;
@@ -48,7 +48,9 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
       if (!supEl) continue;
 
       let supRect = supEl.getBoundingClientRect();
-      let anchorTop = supRect.top - scrollWrapperRect.top + scrollTop;
+      // Position relative to the side column container (which is absolute top-0 in pageWrapper),
+      // offset by the item's padding so the text visually aligns with the anchor
+      let anchorTop = supRect.top - containerRect.top + scrollTop - 4;
 
       let itemEl = inner.querySelector(
         `[data-footnote-side-id="${item.id}"]`,
@@ -144,7 +146,7 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
   return (
     <div
       ref={containerRef}
-      className={`footnote-side-column hidden lg:block absolute top-0 w-[200px] ${
+      className={`footnote-side-column hidden lg:block absolute top-0 w-[250px] ${
         props.fullPageScroll
           ? "left-[calc(50%+var(--page-width-units)/2+12px)]"
           : "left-full ml-3"
