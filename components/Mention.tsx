@@ -1025,7 +1025,6 @@ function useMentionSuggestions(query: string | null, open: boolean) {
       setSuggestionIndex(Math.max(0, suggestions.length - 1));
     }
   }, [suggestionIndex, suggestions.length]);
-  console.log(scope);
 
   return {
     suggestions,

@@ -13,7 +13,6 @@ export function useIframeChannel(options: PartsPageHandlers) {
 
   let cleanup = useCallback(() => {
     if (sessionRef.current) {
-      console.log("[parts.page] disposing RPC session");
       sessionRef.current[Symbol.dispose]();
       sessionRef.current = null;
     }
@@ -28,35 +27,18 @@ export function useIframeChannel(options: PartsPageHandlers) {
 
       cleanup();
 
-      let src = iframe.src;
-      console.log("[parts.page] connect request from", src);
-
       let { port1, port2 } = new MessageChannel();
 
       let host = new PartsPageHost({
-        onOpen: (url) => {
-          console.log("[parts.page] open command from", src, url);
-          handlersRef.current.onOpen(url);
-        },
-        onReplaceWith: (block) => {
-          console.log("[parts.page] replaceWith command from", src, block);
-          handlersRef.current.onReplaceWith(block);
-        },
-        onAddBelow: (block) => {
-          console.log("[parts.page] addBelow command from", src, block);
-          handlersRef.current.onAddBelow(block);
-        },
+        onOpen: (url) => handlersRef.current.onOpen(url),
+        onReplaceWith: (block) => handlersRef.current.onReplaceWith(block),
+        onAddBelow: (block) => handlersRef.current.onAddBelow(block),
       });
 
-      console.log("[parts.page] creating RPC session for", src);
       try {
         sessionRef.current = newMessagePortRpcSession(port1, host);
-        console.log("[parts.page] RPC session created", {
-          src,
-          session: sessionRef.current,
-        });
       } catch (e) {
-        console.error("[parts.page] RPC session creation failed", src, e);
+        console.error("[parts.page] RPC session creation failed", e);
         throw e;
       }
 

@@ -515,6 +515,8 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
 
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
+  let blockPropsRef = useRef(blockProps);
+  blockPropsRef.current = blockProps;
 
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionCoords, setMentionCoords] = useState<{
@@ -581,6 +583,7 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
   const handleMentionEmbed = useCallback(
     (mention: Mention & { type: "service_result" }) => {
       if (!rep || !mention.embed) return;
+      let props = blockPropsRef.current;
 
       const editorState =
         useEditorStates.getState().editorStates[entityID]?.editor;
@@ -591,7 +594,7 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
       let targetEntityID: string;
       if (blockIsEmpty) {
         // Replace the current block
-        targetEntityID = blockProps.entityID;
+        targetEntityID = props.entityID;
         rep.mutate.assertFact({
           entity: targetEntityID,
           attribute: "block/type",
@@ -609,10 +612,10 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
           factID: v7(),
           type: "embed",
           newEntityID: targetEntityID,
-          parent: blockProps.parent,
+          parent: props.parent,
           position: generateKeyBetween(
-            blockProps.position,
-            blockProps.nextPosition,
+            props.position,
+            props.nextPosition,
           ),
         });
         // Remove the @ from the current block's editor
@@ -658,7 +661,7 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
       }
       rep.mutate.assertFact(facts);
     },
-    [rep, entityID, blockProps, entity_set.set, mentionInsertPos],
+    [rep, entityID, entity_set.set, mentionInsertPos],
   );
 
   const handleMentionOpenChange = useCallback((open: boolean) => {
