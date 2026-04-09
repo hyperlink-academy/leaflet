@@ -93,7 +93,7 @@ export function PublicationBackgroundProvider(props: {
 
   return (
     <div
-      className="PubBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
+      className={`PubBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch ${props.className}`}
       style={{
         backgroundImage: backgroundImage
           ? `url(${backgroundImage})`

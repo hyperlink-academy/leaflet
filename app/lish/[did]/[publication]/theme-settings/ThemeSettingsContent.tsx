@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   BaseThemeProvider,
   CardBorderHiddenContext,
 } from "components/ThemeManager/ThemeProvider";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { ToggleGroup } from "components/ToggleGroup";
 import { PaintSmall } from "components/Icons/PaintSmall";
@@ -22,10 +23,12 @@ import {
   useNormalizedPublicationRecord,
 } from "../dashboard/PublicationSWRProvider";
 import { Separator } from "components/Layout";
+import { GoToArrow } from "components/Icons/GoToArrow";
 
 export function ThemeSettingsContent() {
   let toolbarRef = useRef<HTMLDivElement>(null);
   let [previewMode, setPreviewMode] = useState<"post" | "pub">("post");
+  let params = useParams<{ did: string; publication: string }>();
   let { data } = usePublicationData();
   let { publication } = data || {};
   let record = useNormalizedPublicationRecord();
@@ -39,7 +42,18 @@ export function ThemeSettingsContent() {
     pubBGImage,
     leafletBGRepeat,
     showPageBackground,
+    changes,
   } = state;
+  let router = useRouter();
+  let [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  let settingsHref = `/lish/${params.did}/${params.publication}/dashboard?tab=Settings`;
+
+  let hasUnsavedChanges =
+    changes ||
+    headingFont !== record?.theme?.headingFont ||
+    bodyFont !== record?.theme?.bodyFont ||
+    pageWidth !== (record?.theme?.pageWidth || 624) ||
+    showPageBackground !== !!record?.theme?.showPageBackground;
 
   return (
     <CardBorderHiddenContext.Provider value={!showPageBackground}>
@@ -51,27 +65,74 @@ export function ThemeSettingsContent() {
         hasBackgroundImage={!!image}
         pageWidth={pageWidth}
       >
-        <div className="w-full h-screen flex relative overflow-hidden">
+        <div className="w-full h-screen flex flex-col overflow-hidden">
           {/* Theme Setter Panel */}
           <div
             ref={toolbarRef}
-            className="absolute sm:top-6 sm:left-6 top-4 right-4 z-20 flex gap-1 bg-accent-1 w-fit p-1 pl-2 rounded-md items-center"
+            className=" bg-accent-1 items-center -mb-2 pb-[10px] pt-2 "
           >
-            <PubThemePopover state={state} toolbarRef={toolbarRef} />
-            <Separator classname="h-8! ml-1" />
-            <ToggleGroup
-              value={previewMode}
-              optionClassName="text-base! py-1! px-2!"
-              onChange={setPreviewMode}
-              options={[
-                { value: "post", label: "Post" },
-                { value: "pub", label: "Pub" },
-              ]}
-            />
+            <div className=" sm:w-[var(--page-width-units)] mx-auto flex justify-between items-center px-3 sm:px-4 ">
+              <Popover
+                align="start"
+                side="bottom"
+                open={showLeaveWarning}
+                onOpenChange={setShowLeaveWarning}
+                className="w-76 flex flex-col p-3"
+                trigger={
+                  <button
+                    type="button"
+                    className="cursor-pointer"
+                    onClick={() => {
+                      if (hasUnsavedChanges) {
+                        setShowLeaveWarning(true);
+                      } else {
+                        router.push(settingsHref);
+                      }
+                    }}
+                  >
+                    <GoToArrow className="rotate-180 text-accent-2" />
+                  </button>
+                }
+              >
+                <h4 className=" text-primary">Discard unsaved changes?</h4>
+                <p className="text-sm texttext-tertiary">
+                  You have unsaved changes to your theme. Leaving the page will
+                  lose your edits!
+                </p>
+                <div className="flex gap-4 w-full pt-3">
+                  <ButtonPrimary
+                    className="shrink-0"
+                    onClick={() => router.push(settingsHref)}
+                  >
+                    Discard and Leave
+                  </ButtonPrimary>
+                  <button
+                    className="font-bold text-accent-contrast grow"
+                    onClick={() => setShowLeaveWarning(false)}
+                  >
+                    Nevermind
+                  </button>
+                </div>
+              </Popover>
+              <div className="flex gap-1 items-center ">
+                <ToggleGroup
+                  value={previewMode}
+                  optionClassName="text-base! py-1! px-2!"
+                  onChange={setPreviewMode}
+                  options={[
+                    { value: "post", label: "Post" },
+                    { value: "pub", label: "Pub" },
+                  ]}
+                />
+                <Separator classname="h-8! mr-1" />
+                <PubThemePopover state={state} toolbarRef={toolbarRef} />
+              </div>
+            </div>
           </div>
 
           {/* Full-page Preview */}
           <PublicationBackgroundProvider
+            className="rounded-t-lg"
             theme={record?.theme}
             pub_creator={publication?.identity_did || ""}
             localBgImage={pubBGImage}
@@ -162,13 +223,13 @@ const PubThemePopover = ({
                 let result = await submitTheme(setLoading);
                 if (result?.success) {
                   toaster({
-                    content: "Theme updated!",
+                    content: "Theme saved!",
                     type: "success",
                   });
                 }
               }}
             >
-              {loading ? <DotLoader /> : "Update"}
+              {loading ? <DotLoader /> : "Save Changes"}
             </ButtonPrimary>
           </div>
 

@@ -46,9 +46,7 @@ export default async function ThemeSettingsPage(props: {
         publication_rkey={uri.rkey}
         publication_data={publication_data}
       >
-        <PublicationThemeProviderDashboard>
-          <ThemeSettingsContent />
-        </PublicationThemeProviderDashboard>
+        <ThemeSettingsContent />
       </PublicationSWRDataProvider>
     );
   } catch (e) {
