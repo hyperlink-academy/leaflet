@@ -2,6 +2,10 @@
 
 import React, { useMemo } from "react";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
+import {
+  useColorAttribute,
+  colorToString,
+} from "components/ThemeManager/useColorAttribute";
 import { PageWrapper } from "./Page";
 
 export function IframePageView(props: {
@@ -15,11 +19,21 @@ export function IframePageView(props: {
     onAddBelow: () => {},
   });
 
+  let bgPage = useColorAttribute(null, "theme/page-background");
+  let primary = useColorAttribute(null, "theme/primary");
   let iframeSrc = useMemo(() => {
     let src = new URL(props.url);
-    src.searchParams.set("parts.page.mode", "edit");
+    src.searchParams.set("parts.page.embed.ctx.mode", "edit");
+    src.searchParams.set(
+      "parts.page.embed.ctx.bgColor",
+      `rgb(${colorToString(bgPage, "rgb")})`,
+    );
+    src.searchParams.set(
+      "parts.page.embed.ctx.primaryColor",
+      `rgb(${colorToString(primary, "rgb")})`,
+    );
     return src.toString();
-  }, [props.url]);
+  }, [props.url, bgPage, primary]);
 
   return (
     <PageWrapper

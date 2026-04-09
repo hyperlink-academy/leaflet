@@ -37,6 +37,9 @@ import { blockTextSize } from "src/utils/blockTextSize";
 import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
+import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
+import { colorToString } from "components/ThemeManager/useColorAttribute";
+import { useDocument } from "contexts/DocumentContext";
 import { openPage as openPageAction } from "./postPageState";
 
 export function PostContent({
@@ -457,8 +460,19 @@ function PublishedIframeBlock(props: {
     onAddBelow: () => {},
   });
 
+  let { theme } = useDocument();
+  let pubTheme = usePubTheme(theme);
   let iframeSrc = new URL(props.url);
-  iframeSrc.searchParams.set("parts.page.mode", "view");
+  iframeSrc.searchParams.set("parts.page.embed.ctx.mode", "view");
+  iframeSrc.searchParams.set(
+    "parts.page.embed.ctx.bgColor",
+    `rgb(${colorToString(pubTheme.bgPage, "rgb")})`,
+  );
+  iframeSrc.searchParams.set(
+    "parts.page.embed.ctx.primaryColor",
+    `rgb(${colorToString(pubTheme.primary, "rgb")})`,
+  );
+
 
   return (
     <iframe

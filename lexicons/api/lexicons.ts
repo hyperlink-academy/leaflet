@@ -1014,6 +1014,22 @@ export const schemaDict = {
       },
     },
   },
+  PartsPageEmbedCtx: {
+    lexicon: 1,
+    id: 'parts.page.embed.ctx',
+    defs: {
+      mode: {
+        type: 'string',
+        knownValues: ['edit', 'view'],
+      },
+      bgColor: {
+        type: 'string',
+      },
+      primaryColor: {
+        type: 'string',
+      },
+    },
+  },
   PartsPageMentionConfig: {
     lexicon: 1,
     id: 'parts.page.mention.config',
@@ -2792,6 +2808,7 @@ export const ids = {
   ComAtprotoRepoPutRecord: 'com.atproto.repo.putRecord',
   ComAtprotoRepoStrongRef: 'com.atproto.repo.strongRef',
   ComAtprotoRepoUploadBlob: 'com.atproto.repo.uploadBlob',
+  PartsPageEmbedCtx: 'parts.page.embed.ctx',
   PartsPageMentionConfig: 'parts.page.mention.config',
   PartsPageMentionSearch: 'parts.page.mention.search',
   PartsPageMentionService: 'parts.page.mention.service',

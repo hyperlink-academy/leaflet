@@ -1,0 +1,19 @@
+{
+  "lexicon": 1,
+  "id": "parts.page.embed.ctx",
+  "defs": {
+    "mode": {
+      "type": "string",
+      "knownValues": [
+        "edit",
+        "view"
+      ]
+    },
+    "bgColor": {
+      "type": "string"
+    },
+    "primaryColor": {
+      "type": "string"
+    }
+  }
+}

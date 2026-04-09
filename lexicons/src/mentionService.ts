@@ -1,5 +1,20 @@
 import { LexiconDoc } from "@atproto/lexicon";
 
+export const PagePartsEmbedContext: LexiconDoc = {
+  lexicon: 1,
+  id: "parts.page.embed.ctx",
+  defs: {
+    mode: {
+      type: "string",
+      knownValues: ["edit", "view"],
+    },
+    bgColor: {
+      type: "string",
+    },
+    primaryColor: { type: "string" },
+  },
+};
+
 export const PagePartsMentionService: LexiconDoc = {
   lexicon: 1,
   id: "parts.page.mention.service",
