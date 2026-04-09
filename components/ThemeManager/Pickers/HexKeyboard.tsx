@@ -4,6 +4,9 @@ import { useState, useCallback, useRef } from "react";
 import { Color, parseColor } from "react-aria-components";
 import { Popover } from "components/Popover";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import { useSmoker } from "components/Toast";
+import { CopyTiny } from "components/Icons/CopyTiny";
+import { PasteTiny } from "components/Icons/PasteTiny";
 
 const HEX_ROWS = [
   ["1", "2", "3", "A", "B", "C"],
@@ -29,7 +32,7 @@ const HexKey = (props: {
         h-10 w-10 rounded-md
          font-bold
         flex items-center justify-center
-        border border-[#CCCCCC]] text-[#969696]
+        border border-[#CCCCCC] text-[#969696]
         disabled:bg-[#DBDBDB] disabled:border-[#DBDBDB] disabled:text-[#CCCCCC] disabled:cursor-not-allowed
         ${props.className ?? ""}
       `}
@@ -49,6 +52,8 @@ export const HexKeyboard = (props: {
 
   let [draft, setDraft] = useState(hexString);
   let committed = useRef(false);
+  let copyButtonRef = useRef<HTMLButtonElement>(null);
+  let smoker = useSmoker();
 
   let syncDraftToValue = useCallback(() => {
     let hex = props.value
@@ -102,6 +107,34 @@ export const HexKeyboard = (props: {
   let isSubmittable =
     /^#[0-9A-Fa-f]{3}$/.test(draft) || /^#[0-9A-Fa-f]{6}$/.test(draft);
 
+  let handleCopy = () => {
+    navigator.clipboard.writeText(draft);
+    let rect = copyButtonRef.current?.getBoundingClientRect();
+    console.log(draft);
+    smoker({
+      position: {
+        x: rect ? rect.left + rect.width / 2 : 0,
+        y: rect ? rect.top - 8 : 0,
+      },
+      text: "Copied!",
+    });
+  };
+
+  let handlePaste = async () => {
+    try {
+      let text = await navigator.clipboard.readText();
+      let cleaned = text.trim();
+      if (!cleaned.startsWith("#")) cleaned = "#" + cleaned;
+      cleaned = cleaned.toUpperCase();
+      if (/^#[0-9A-Fa-f]{0,6}$/.test(cleaned)) {
+        setDraft(cleaned);
+        committed.current = false;
+      }
+    } catch {
+      // Clipboard read failed, do nothing
+    }
+  };
+
   return (
     <Popover
       align="center"
@@ -131,6 +164,28 @@ export const HexKeyboard = (props: {
         >
           <span className="select-all">{draft}</span>
         </div>
+
+        {/* Copy / Paste buttons */}
+        <div className="grid grid-cols-2 gap-1">
+          <button
+            ref={copyButtonRef}
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={handleCopy}
+            className="h-8 gap-2 rounded-md border border-[#CCCCCC] text-sm text-[#969696] font-bold flex items-center justify-center"
+          >
+            <CopyTiny /> Copy
+          </button>
+          <button
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={handlePaste}
+            className="h-8 gap-2 rounded-md border border-[#CCCCCC] text-sm text-[#969696] font-bold flex items-center justify-center"
+          >
+            <PasteTiny />
+            Paste
+          </button>
+        </div>
+
+        <hr className="border-[#CCCCCC]" />
 
         {/* Hex keyboard grid — 6 columns */}
         <div className="grid grid-cols-6 gap-1">
