@@ -24,6 +24,7 @@ import {
 } from "../dashboard/PublicationSWRProvider";
 import { Separator } from "components/Layout";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import Link from "next/link";
 
 export function ThemeSettingsContent() {
   let toolbarRef = useRef<HTMLDivElement>(null);
@@ -44,8 +45,7 @@ export function ThemeSettingsContent() {
     showPageBackground,
     changes,
   } = state;
-  let router = useRouter();
-  let [showLeaveWarning, setShowLeaveWarning] = useState(false);
+
   let settingsHref = `/lish/${params.did}/${params.publication}/dashboard?tab=Settings`;
 
   let hasUnsavedChanges =
@@ -72,48 +72,15 @@ export function ThemeSettingsContent() {
             className=" bg-accent-1 items-center -mb-2 pb-[10px] pt-2 "
           >
             <div className=" sm:w-[var(--page-width-units)] mx-auto flex justify-between items-center px-3 sm:px-4 ">
-              <Popover
-                align="start"
-                side="bottom"
-                open={showLeaveWarning}
-                onOpenChange={setShowLeaveWarning}
-                className="w-76 flex flex-col p-3"
-                trigger={
-                  <button
-                    type="button"
-                    className="cursor-pointer"
-                    onClick={() => {
-                      if (hasUnsavedChanges) {
-                        setShowLeaveWarning(true);
-                      } else {
-                        router.push(settingsHref);
-                      }
-                    }}
-                  >
-                    <GoToArrow className="rotate-180 text-accent-2" />
-                  </button>
-                }
-              >
-                <h4 className=" text-primary">Discard unsaved changes?</h4>
-                <p className="text-sm texttext-tertiary">
-                  You have unsaved changes to your theme. Leaving the page will
-                  lose your edits!
-                </p>
-                <div className="flex gap-4 w-full pt-3">
-                  <ButtonPrimary
-                    className="shrink-0"
-                    onClick={() => router.push(settingsHref)}
-                  >
-                    Discard and Leave
-                  </ButtonPrimary>
-                  <button
-                    className="font-bold text-accent-contrast grow"
-                    onClick={() => setShowLeaveWarning(false)}
-                  >
-                    Nevermind
-                  </button>
-                </div>
-              </Popover>
+              <BackToPubButton
+                hasUnsavedChanges={hasUnsavedChanges}
+                settingsHref={settingsHref}
+                localPubTheme={localPubTheme}
+                headingFont={headingFont}
+                bodyFont={bodyFont}
+                image={image}
+                pageWidth={pageWidth}
+              />
               <div className="flex gap-1 items-center ">
                 <ToggleGroup
                   value={previewMode}
@@ -158,6 +125,71 @@ export function ThemeSettingsContent() {
   );
 }
 
+const BackToPubButton = (props: {
+  hasUnsavedChanges: boolean;
+  settingsHref: string;
+  localPubTheme: ReturnType<typeof usePubThemeEditorState>["localPubTheme"];
+  headingFont: ReturnType<typeof usePubThemeEditorState>["headingFont"];
+  bodyFont: ReturnType<typeof usePubThemeEditorState>["bodyFont"];
+  image: ReturnType<typeof usePubThemeEditorState>["image"];
+  pageWidth: ReturnType<typeof usePubThemeEditorState>["pageWidth"];
+}) => {
+  let router = useRouter();
+  let [open, setOpen] = useState(false);
+  if (props.hasUnsavedChanges)
+    return (
+      <Popover
+        open={open}
+        onOpenChange={setOpen}
+        align="start"
+        side="bottom"
+        className="w-76 !p-0"
+        trigger={
+          <div className="flex gap-2 items-center font-bold text-accent-2">
+            <GoToArrow className="rotate-180 text-accent-2" />
+            Back <span className="sm:block hidden">To Settings</span>
+          </div>
+        }
+      >
+        <BaseThemeProvider
+          local
+          {...props.localPubTheme}
+          headingFontId={props.headingFont}
+          bodyFontId={props.bodyFont}
+          hasBackgroundImage={!!props.image}
+          pageWidth={props.pageWidth}
+        >
+          <div className="flex flex-col p-3">
+            <h4 className="text-primary">Discard unsaved changes?</h4>
+            <p className="text-sm text-tertiary">
+              You have unsaved changes to your theme. Leaving the page will lose
+              your edits!
+            </p>
+            <div className="flex gap-4 w-full pt-3">
+              <ButtonPrimary
+                className="shrink-0"
+                onClick={() => router.push(props.settingsHref)}
+              >
+                Discard and Leave
+              </ButtonPrimary>
+
+              <button onClick={() => setOpen(false)}>Nevermind</button>
+            </div>
+          </div>
+        </BaseThemeProvider>
+      </Popover>
+    );
+  else
+    return (
+      <Link className="no-underline!" href={props.settingsHref}>
+        <div className="flex gap-2 text-accent-2 items-center font-bold">
+          <GoToArrow className="rotate-180 text-accent-2" />
+          Back <span className="sm:block hidden">To Settings</span>
+        </div>
+      </Link>
+    );
+};
+
 const PubThemePopover = ({
   state,
   toolbarRef,
@@ -183,15 +215,6 @@ const PubThemePopover = ({
       side="bottom"
       arrowFill="white"
       border="#CCCCCC"
-      onInteractOutside={(e) => {
-        if (
-          toolbarRef.current &&
-          e.target instanceof Node &&
-          toolbarRef.current.contains(e.target)
-        ) {
-          e.preventDefault();
-        }
-      }}
       className="sm:w-sm w-[1000px] rounded-lg! !p-0 bg-white! border-[#CCCCCC]!"
       trigger={
         <button
