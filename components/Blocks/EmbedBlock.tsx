@@ -113,6 +113,22 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         .openPage(props.parent, { type: "iframe", url: openUrl });
       scrollIntoView(`iframe-page-${openUrl}`, "pages", 0.8);
     },
+    onReplaceWith: (block) => {
+      assertBlockData(props.entityID, block);
+    },
+    onAddBelow: async (block) => {
+      if (!rep) return;
+      let newEntityID = v7();
+      await rep.mutate.addBlock({
+        permission_set: entity_set.set,
+        factID: v7(),
+        parent: props.parent,
+        type: block.type === "text" ? "text" : "card",
+        position: generateKeyBetween(props.position, props.nextPosition),
+        newEntityID,
+      });
+      await assertBlockData(newEntityID, block);
+    },
   });
 
   useEffect(() => {
