@@ -164,6 +164,11 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         />
 
         {cardBorderHidden && <hr className="border-border-light my-2" />}
+        <DashboardContainer>
+          <ThemeSettings />
+        </DashboardContainer>
+
+        {cardBorderHidden && <hr className="border-border-light my-2" />}
 
         {/* ── Post Settings ── */}
         <PostSettings
@@ -178,12 +183,6 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           showInDiscover={showInDiscover}
           setShowInDiscover={setShowInDiscover}
         />
-
-        {cardBorderHidden && <hr className="border-border-light my-2" />}
-
-        <DashboardContainer>
-          <ThemeSettings />
-        </DashboardContainer>
 
         {cardBorderHidden && <hr className="border-border-light my-2" />}
 

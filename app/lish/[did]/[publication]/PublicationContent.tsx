@@ -20,12 +20,19 @@ import {
   PublicationPostItem,
 } from "./PublicationPageContent";
 
+type FakePost = {
+  title: string;
+  description: string;
+  date: React.ReactNode;
+};
+
 export const PublicationContent = ({
   record,
   publication,
   did,
   profile,
   showPageBackground,
+  fakePosts,
 }: {
   record: ReturnType<typeof normalizePublicationRecord>;
   publication: {
@@ -47,6 +54,7 @@ export const PublicationContent = ({
   did: string;
   profile: { did: string; displayName?: string; handle: string } | undefined;
   showPageBackground: boolean | undefined;
+  fakePosts?: FakePost[];
 }) => {
   return (
     <>
@@ -85,82 +93,92 @@ export const PublicationContent = ({
           }
         />
         <div className="publicationPostList w-full flex flex-col gap-4">
-          {publication.documents_in_publications
-            .filter((d) => !!d?.documents)
-            .sort((a, b) => {
-              const aRecord = normalizeDocumentRecord(a.documents?.data);
-              const bRecord = normalizeDocumentRecord(b.documents?.data);
-              const aDate = aRecord?.publishedAt
-                ? new Date(aRecord.publishedAt)
-                : new Date(0);
-              const bDate = bRecord?.publishedAt
-                ? new Date(bRecord.publishedAt)
-                : new Date(0);
-              return bDate.getTime() - aDate.getTime(); // Sort by most recent first
-            })
-            .map((doc) => {
-              if (!doc.documents) return null;
-              const doc_record = normalizeDocumentRecord(doc.documents.data);
-              if (!doc_record) return null;
-              let uri = new AtUri(doc.documents.uri);
-              let quotes =
-                doc.documents.document_mentions_in_bsky[0].count || 0;
-              let comments =
-                record?.preferences?.showComments === false
-                  ? 0
-                  : doc.documents.comments_on_documents[0].count || 0;
-              let recommends =
-                doc.documents.recommends_on_documents?.[0]?.count || 0;
-              let tags = doc_record.tags || [];
+          {fakePosts &&
+            fakePosts.map((post, i) => (
+              <PublicationPostItem
+                key={i}
+                title={post.title}
+                description={post.description}
+                date={post.date}
+              />
+            ))}
+          {!fakePosts &&
+            publication.documents_in_publications
+              .filter((d) => !!d?.documents)
+              .sort((a, b) => {
+                const aRecord = normalizeDocumentRecord(a.documents?.data);
+                const bRecord = normalizeDocumentRecord(b.documents?.data);
+                const aDate = aRecord?.publishedAt
+                  ? new Date(aRecord.publishedAt)
+                  : new Date(0);
+                const bDate = bRecord?.publishedAt
+                  ? new Date(bRecord.publishedAt)
+                  : new Date(0);
+                return bDate.getTime() - aDate.getTime(); // Sort by most recent first
+              })
+              .map((doc) => {
+                if (!doc.documents) return null;
+                const doc_record = normalizeDocumentRecord(doc.documents.data);
+                if (!doc_record) return null;
+                let uri = new AtUri(doc.documents.uri);
+                let quotes =
+                  doc.documents.document_mentions_in_bsky[0].count || 0;
+                let comments =
+                  record?.preferences?.showComments === false
+                    ? 0
+                    : doc.documents.comments_on_documents[0].count || 0;
+                let recommends =
+                  doc.documents.recommends_on_documents?.[0]?.count || 0;
+                let tags = doc_record.tags || [];
 
-              const docUrl = getDocumentURL(
-                doc_record,
-                doc.documents.uri,
-                publication,
-              );
-              return (
-                <React.Fragment key={doc.documents?.uri}>
-                  <PublicationPostItem
-                    href={docUrl}
-                    title={doc_record.title}
-                    description={
-                      doc_record.description || getFirstParagraph(doc_record)
-                    }
-                    date={
-                      doc_record.publishedAt ? (
-                        <LocalizedDate
-                          dateString={doc_record.publishedAt}
-                          options={{
-                            year: "numeric",
-                            month: "long",
-                            day: "2-digit",
-                          }}
+                const docUrl = getDocumentURL(
+                  doc_record,
+                  doc.documents.uri,
+                  publication,
+                );
+                return (
+                  <React.Fragment key={doc.documents?.uri}>
+                    <PublicationPostItem
+                      href={docUrl}
+                      title={doc_record.title}
+                      description={
+                        doc_record.description || getFirstParagraph(doc_record)
+                      }
+                      date={
+                        doc_record.publishedAt ? (
+                          <LocalizedDate
+                            dateString={doc_record.publishedAt}
+                            options={{
+                              year: "numeric",
+                              month: "long",
+                              day: "2-digit",
+                            }}
+                          />
+                        ) : undefined
+                      }
+                      interactions={
+                        <InteractionPreview
+                          quotesCount={quotes}
+                          commentsCount={comments}
+                          recommendsCount={recommends}
+                          documentUri={doc.documents.uri}
+                          tags={tags}
+                          postUrl={docUrl}
+                          showComments={
+                            record?.preferences?.showComments !== false
+                          }
+                          showMentions={
+                            record?.preferences?.showMentions !== false
+                          }
+                          showRecommends={
+                            record?.preferences?.showRecommends !== false
+                          }
                         />
-                      ) : undefined
-                    }
-                    interactions={
-                      <InteractionPreview
-                        quotesCount={quotes}
-                        commentsCount={comments}
-                        recommendsCount={recommends}
-                        documentUri={doc.documents.uri}
-                        tags={tags}
-                        postUrl={docUrl}
-                        showComments={
-                          record?.preferences?.showComments !== false
-                        }
-                        showMentions={
-                          record?.preferences?.showMentions !== false
-                        }
-                        showRecommends={
-                          record?.preferences?.showRecommends !== false
-                        }
-                      />
-                    }
-                  />
-                </React.Fragment>
-              );
-            })}
+                      }
+                    />
+                  </React.Fragment>
+                );
+              })}
         </div>
       </PublicationHomeLayout>
     </>

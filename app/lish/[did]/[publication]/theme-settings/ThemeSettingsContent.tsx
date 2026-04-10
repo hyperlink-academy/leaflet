@@ -173,7 +173,12 @@ const BackToPubButton = (props: {
                 Discard and Leave
               </ButtonPrimary>
 
-              <button onClick={() => setOpen(false)}>Nevermind</button>
+              <button
+                className="text-accent-contrast font-bold"
+                onClick={() => setOpen(false)}
+              >
+                Nevermind
+              </button>
             </div>
           </div>
         </BaseThemeProvider>
