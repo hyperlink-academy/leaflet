@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
 import { cache } from "react";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
+import { AtUri } from "@atproto/syntax";
+import { TID } from "@atproto/common";
 export const getIdentityData = cache(uncachedGetIdentityData);
 export async function uncachedGetIdentityData() {
   let cookieStore = await cookies();
@@ -20,7 +22,7 @@ export async function uncachedGetIdentityData() {
             bsky_profiles(*),
             notifications(count),
             publication_subscriptions(*),
-            custom_domains!custom_domains_identity_id_fkey(publication_domains(*), *),
+            custom_domains!custom_domains_identity_id_fkey(publication_domains(*, publications(name)), custom_domain_routes(*), *),
             home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*,
                               entity_sets(entities(facts(*)))
             )),
@@ -75,8 +77,11 @@ export async function uncachedGetIdentityData() {
       .from("publications")
       .select("*")
       .eq("identity_did", auth_res.data.identities.atp_did);
-    // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
-    const publications = deduplicateByUri(rawPublications || []);
+    // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces,
+    // then filter to only publications created by Leaflet
+    const publications = deduplicateByUri(rawPublications || []).filter(
+      isLeafletPublication,
+    );
     return {
       ...auth_res.data.identities,
       publications,
@@ -91,4 +96,27 @@ export async function uncachedGetIdentityData() {
     entitlements,
     subscription,
   };
+}
+
+function isLeafletPublication(p: { uri: string; record: unknown }): boolean {
+  try {
+    const rkey = new AtUri(p.uri).rkey;
+    if (!TID.is(rkey)) return false;
+  } catch {
+    return false;
+  }
+
+  const record = p.record as Record<string, any> | null;
+  if (!record) return true;
+
+  if (record.preferences?.greengale) return false;
+
+  if (
+    record.theme &&
+    record.theme.$type &&
+    record.theme.$type !== "pub.leaflet.publication#theme"
+  )
+    return false;
+
+  return true;
 }

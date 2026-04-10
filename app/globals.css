@@ -96,6 +96,8 @@
     --accent-2: 255, 255, 255;
     --accent-contrast: 0, 0, 225;
     --accent-1-is-contrast: "true";
+    --accent-contrast-similar-to-text: 0;
+    --link-underline: none;
     --accent-light: color-mix(
       in oklab,
       rgb(var(--accent-contrast)),
@@ -189,8 +191,11 @@
   a {
     @apply text-accent-contrast;
     @apply hover:cursor-pointer;
-    @apply no-underline;
     @apply hover:underline;
+  }
+
+  .postPageContent a {
+    text-decoration-line: var(--link-underline, none);
   }
 
   p {
@@ -215,20 +220,35 @@
   .pageScrollWrapper h2,
   .pageScrollWrapper h3,
   .pageScrollWrapper h4 {
-    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
+    font-family: var(
+      --theme-heading-font,
+      var(--theme-font, var(--font-quattro))
+    );
   }
 
   /* Scale heading sizes relative to the custom base font size */
-  .pageScrollWrapper h1 { font-size: 2em; }
-  .pageScrollWrapper h2 { font-size: 1.625em; }
-  .pageScrollWrapper h3 { font-size: 1.125em; }
-  .pageScrollWrapper h4 { font-size: 1em; }
+  .pageScrollWrapper h1 {
+    font-size: 2em;
+  }
+  .pageScrollWrapper h2 {
+    font-size: 1.625em;
+  }
+  .pageScrollWrapper h3 {
+    font-size: 1.125em;
+  }
+  .pageScrollWrapper h4 {
+    font-size: 1em;
+  }
 
   /* Scale text size classes relative to the custom base font size.
      Tailwind's text-sm/text-base/text-lg compile to fixed rem values
      which ignore the custom base size set on .pageScrollWrapper. */
-  .pageScrollWrapper .textSizeSmall { font-size: 0.875em; }
-  .pageScrollWrapper .textSizeLarge { font-size: 1.125em; }
+  .pageScrollWrapper .textSizeSmall {
+    font-size: 0.875em;
+  }
+  .pageScrollWrapper .textSizeLarge {
+    font-size: 1.125em;
+  }
 
   .pageScrollWrapper pre {
     font-family: var(--theme-font, var(--font-quattro));
@@ -243,7 +263,10 @@
   .pubWrapper h2,
   .pubWrapper h3,
   .pubWrapper h4 {
-    font-family: var(--theme-heading-font, var(--theme-font, var(--font-quattro)));
+    font-family: var(
+      --theme-heading-font,
+      var(--theme-font, var(--font-quattro))
+    );
   }
   /*END FONT STYLING*/
 
@@ -338,12 +361,16 @@ pre.shiki {
   @apply box-decoration-clone;
 }
 
-.selected .selection-highlight {
-  background-color: Highlight;
+.selection-highlight {
+  background-color: transparent;
   @apply py-[1.5px];
 }
 
-.ProseMirror:focus-within .selection-highlight {
+.block-focused .selection-highlight {
+  background-color: Highlight;
+}
+
+.block-focused:focus-within .selection-highlight {
   background-color: transparent;
 }
 
@@ -369,7 +396,7 @@ pre.shiki {
   white-space: normal;
 }
 
-.multiselected:focus-within .selection-highlight {
+.multiselected .block-focused:focus-within .selection-highlight {
   background-color: transparent;
 }
 
@@ -569,16 +596,33 @@ pre.shiki {
 }
 
 .footnote-side-item {
-  max-height: 4.5em;
   overflow: hidden;
-  transition: max-height 200ms ease, mask-image 200ms ease;
+  transition:
+    max-height 200ms ease,
+    opacity 200ms ease;
+  background: rgba(var(--bg-page), var(--bg-page-alpha));
+  border-radius: 4px;
+  padding: 4px 6px;
 }
-.footnote-side-item.has-overflow {
-  mask-image: linear-gradient(to bottom, white 50%, transparent 100%);
+.footnote-side-item:not(:hover):not(:focus-within):not(.footnote-side-focused) {
+  max-height: calc(4.5em + 8px);
+  opacity: calc(var(--bg-page-alpha) * 0.7);
+}
+.footnote-side-item:not(:hover):not(:focus-within):not(.footnote-side-focused)
+  .footnote-item
+  > div:last-of-type {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .footnote-side-item:hover,
 .footnote-side-item:focus-within,
 .footnote-side-item.footnote-side-focused {
-  max-height: 40em;
-  mask-image: none;
+  max-height: none;
+  overflow: visible;
+  opacity: var(--bg-page-alpha);
+  z-index: 1;
+  background: rgba(var(--bg-page), 1);
 }

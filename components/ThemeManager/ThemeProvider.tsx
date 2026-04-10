@@ -28,8 +28,14 @@ import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
-import { getColorDifference } from "./themeUtils";
-import { getFontConfig, getGoogleFontsUrl, getFontFamilyValue, getFontBaseSize, defaultFontId } from "src/fonts";
+import { compareColors } from "./themeUtils";
+import {
+  getFontConfig,
+  getGoogleFontsUrl,
+  getFontFamilyValue,
+  getFontBaseSize,
+  defaultFontId,
+} from "src/fonts";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
@@ -89,8 +95,12 @@ export function LeafletThemeProvider(props: {
 
   let pageWidth = useEntity(props.entityID, "theme/page-width");
   // Use initial font IDs as fallback until Replicache syncs
-  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value ?? props.initialHeadingFontId;
-  let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value ?? props.initialBodyFontId;
+  let headingFontId =
+    useEntity(props.entityID, "theme/heading-font")?.data.value ??
+    props.initialHeadingFontId;
+  let bodyFontId =
+    useEntity(props.entityID, "theme/body-font")?.data.value ??
+    props.initialBodyFontId;
 
   return (
     <CardBorderHiddenContext.Provider value={!!cardBorderHiddenValue}>
@@ -160,30 +170,30 @@ export const BaseThemeProvider = ({
     !showPageBackground && !hasBackgroundImage ? bgLeaflet : bgPageProp;
 
   let accentContrast;
+  let bgRef = colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb");
+  let primaryStr = colorToString(primary, "rgb");
+
   let sortedAccents = [accent1, accent2].sort((a, b) => {
     // sort accents by contrast against the background
     return (
-      getColorDifference(
-        colorToString(b, "rgb"),
-        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-      ) -
-      getColorDifference(
-        colorToString(a, "rgb"),
-        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-      )
+      compareColors(colorToString(b, "rgb"), bgRef).distance -
+      compareColors(colorToString(a, "rgb"), bgRef).distance
     );
   });
+
+  let bestVsText = compareColors(
+    colorToString(sortedAccents[0], "rgb"),
+    primaryStr,
+  );
+  let altVsBg = compareColors(colorToString(sortedAccents[1], "rgb"), bgRef);
+
   if (
     // if the contrast-y accent is too similar to text color
-    getColorDifference(
-      colorToString(sortedAccents[0], "rgb"),
-      colorToString(primary, "rgb"),
-    ) < 0.15 &&
+    // (close in distance AND not distinguishable by hue/chroma)
+    bestVsText.distance < 0.15 &&
+    bestVsText.chromaDiff < 0.05 &&
     // and if the other accent is different enough from the background
-    getColorDifference(
-      colorToString(sortedAccents[1], "rgb"),
-      colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-    ) > 0.31
+    altVsBg.distance > 0.31
   ) {
     //then choose the less contrast-y accent
     accentContrast = sortedAccents[1];
@@ -191,6 +201,19 @@ export const BaseThemeProvider = ({
     // otherwise, choose the more contrast-y option
     accentContrast = sortedAccents[0];
   }
+
+  // Check if the accent contrast color is visually similar to the text color.
+  // We check both overall OKLab distance AND chroma (hue/saturation) difference
+  // because dark colors are compressed in OKLab lightness — a dark blue accent
+  // vs black text can have a small OKLab distance yet be clearly distinguishable
+  // by hue. If the chroma difference is significant, the colors are visually
+  // distinct and don't need an underline to tell them apart.
+  let accentVsText = compareColors(
+    colorToString(accentContrast, "rgb"),
+    primaryStr,
+  );
+  let accentContrastSimilarToText =
+    accentVsText.distance < 0.45 && accentVsText.chromaDiff < 0.05;
 
   // Get font configs for CSS variables.
   // When using the default font (Quattro), use var(--font-quattro) which is
@@ -203,12 +226,18 @@ export const BaseThemeProvider = ({
   const headingFontConfig = getFontConfig(headingFontId);
   const bodyFontConfig = getFontConfig(bodyFontId);
   const headingFontValue = isDefaultHeading
-    ? (isDefaultBody ? undefined : "var(--font-quattro)")
+    ? isDefaultBody
+      ? undefined
+      : "var(--font-quattro)"
     : getFontFamilyValue(headingFontConfig);
   const bodyFontValue = isDefaultBody
-    ? (isDefaultHeading ? undefined : "var(--font-quattro)")
+    ? isDefaultHeading
+      ? undefined
+      : "var(--font-quattro)"
     : getFontFamilyValue(bodyFontConfig);
-  const bodyFontBaseSize = isDefaultBody ? undefined : getFontBaseSize(bodyFontConfig);
+  const bodyFontBaseSize = isDefaultBody
+    ? undefined
+    : getFontBaseSize(bodyFontConfig);
   const headingGoogleFontsUrl = getGoogleFontsUrl(headingFontConfig);
   const bodyGoogleFontsUrl = getGoogleFontsUrl(bodyFontConfig);
 
@@ -222,7 +251,9 @@ export const BaseThemeProvider = ({
       if (existingLink) return;
 
       // Add preconnect hints if not present
-      if (!document.querySelector('link[href="https://fonts.googleapis.com"]')) {
+      if (
+        !document.querySelector('link[href="https://fonts.googleapis.com"]')
+      ) {
         const preconnect1 = document.createElement("link");
         preconnect1.rel = "preconnect";
         preconnect1.href = "https://fonts.googleapis.com";
@@ -249,7 +280,12 @@ export const BaseThemeProvider = ({
 
     loadGoogleFont(headingGoogleFontsUrl, headingFontConfig.fontFamily);
     loadGoogleFont(bodyGoogleFontsUrl, bodyFontConfig.fontFamily);
-  }, [headingGoogleFontsUrl, bodyGoogleFontsUrl, headingFontConfig.fontFamily, bodyFontConfig.fontFamily]);
+  }, [
+    headingGoogleFontsUrl,
+    bodyGoogleFontsUrl,
+    headingFontConfig.fontFamily,
+    bodyFontConfig.fontFamily,
+  ]);
 
   useEffect(() => {
     if (local) return;
@@ -293,13 +329,20 @@ export const BaseThemeProvider = ({
       "--accent-1-is-contrast",
       accentContrast === accent1 ? "1" : "0",
     );
+    el?.style.setProperty(
+      "--accent-contrast-similar-to-text",
+      accentContrastSimilarToText ? "1" : "0",
+    );
+    el?.style.setProperty(
+      "--link-underline",
+      accentContrastSimilarToText ? "underline" : "none",
+    );
 
     // Set page width CSS variable
     el?.style.setProperty(
       "--page-width-setting",
       (pageWidth || 624).toString(),
     );
-
   }, [
     local,
     bgLeaflet,
@@ -311,6 +354,7 @@ export const BaseThemeProvider = ({
     accent1,
     accent2,
     accentContrast,
+    accentContrastSimilarToText,
     pageWidth,
   ]);
   return (
@@ -326,6 +370,12 @@ export const BaseThemeProvider = ({
           "--accent-2": colorToString(accent2, "rgb"),
           "--accent-contrast": colorToString(accentContrast, "rgb"),
           "--accent-1-is-contrast": accentContrast === accent1 ? 1 : 0,
+          "--accent-contrast-similar-to-text": accentContrastSimilarToText
+            ? 1
+            : 0,
+          "--link-underline": accentContrastSimilarToText
+            ? "underline"
+            : "none",
           "--highlight-1": highlight1
             ? `rgb(${colorToString(parseColor(`hsba(${highlight1})`), "rgb")})`
             : "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
@@ -336,7 +386,9 @@ export const BaseThemeProvider = ({
           "--page-width-units": `min(${pageWidth || 624}px, calc(100vw - 12px))`,
           "--theme-heading-font": headingFontValue,
           "--theme-font": bodyFontValue,
-          "--theme-font-base-size": bodyFontBaseSize ? `${bodyFontBaseSize}px` : undefined,
+          "--theme-font-base-size": bodyFontBaseSize
+            ? `${bodyFontBaseSize}px`
+            : undefined,
         } as CSSProperties
       }
     >
@@ -372,15 +424,10 @@ export function CardThemeProvider(props: {
   let accentContrast =
     bgPage && accent1 && accent2
       ? [accent1, accent2].sort((a, b) => {
+          let bgStr = colorToString(bgPage, "rgb");
           return (
-            getColorDifference(
-              colorToString(b, "rgb"),
-              colorToString(bgPage, "rgb"),
-            ) -
-            getColorDifference(
-              colorToString(a, "rgb"),
-              colorToString(bgPage, "rgb"),
-            )
+            compareColors(colorToString(b, "rgb"), bgStr).distance -
+            compareColors(colorToString(a, "rgb"), bgStr).distance
           );
         })[0]
       : null;

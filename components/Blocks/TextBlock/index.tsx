@@ -173,7 +173,9 @@ export function RenderedTextBlock(props: {
     <div
       style={{
         wordBreak: "break-word",
-        ...(props.type === "heading" ? { fontSize: headingFontSize[headingLevel?.data.value || 1] } : {}),
+        ...(props.type === "heading"
+          ? { fontSize: headingFontSize[headingLevel?.data.value || 1] }
+          : {}),
       }}
       onClick={(e) => {
         let target = e.target as HTMLElement;
@@ -294,13 +296,19 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           // forces break if a single text string (e.g. a url) spans more than a full line
           style={{
             wordBreak: "break-word",
-            fontFamily: props.type === "heading" ? "var(--theme-heading-font)" : "var(--theme-font)",
-            ...(props.type === "heading" ? { fontSize: headingFontSize[headingLevel?.data.value || 1] } : {}),
+            fontFamily:
+              props.type === "heading"
+                ? "var(--theme-heading-font)"
+                : "var(--theme-font)",
+            ...(props.type === "heading"
+              ? { fontSize: headingFontSize[headingLevel?.data.value || 1] }
+              : {}),
           }}
           className={`
             ${alignmentClass}
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-hidden
+          ${focused ? "block-focused" : ""}
 
           ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
           ${props.className}`}
@@ -321,7 +329,11 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         props.nextBlock === null ? (
           // if this is the only block on the page and is empty or is a canvas, show placeholder
           <div
-            style={props.type === "heading" ? { fontSize: headingFontSize[headingLevel?.data.value || 1] } : undefined}
+            style={
+              props.type === "heading"
+                ? { fontSize: headingFontSize[headingLevel?.data.value || 1] }
+                : undefined
+            }
             className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
               ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
               `}

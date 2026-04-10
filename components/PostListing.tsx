@@ -195,7 +195,7 @@ const PubInfo = (props: {
       <div className="flex justify-between gap-4 w-full ">
         <Link
           href={props.href}
-          className="text-accent-contrast font-bold no-underline text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
+          className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
         >
           <PubIcon tiny record={props.pubRecord} uri={props.uri} />
           <div className="w-max min-w-0">{props.pubRecord.name}</div>

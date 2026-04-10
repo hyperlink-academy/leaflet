@@ -199,6 +199,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
           src={iframeSrc}
           allow="fullscreen"
           loading="lazy"
+          referrerPolicy="no-referrer"
         ></iframe>
       </BlockLayout>
 

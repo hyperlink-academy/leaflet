@@ -5,7 +5,7 @@ import { createServerClient } from "@supabase/ssr";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { email_subscriptions_to_entity, entities } from "drizzle/schema";
-import postgres from "postgres";
+
 import type { PermissionToken } from "src/replicache";
 import { Database } from "supabase/database.types";
 import { pool } from "supabase/pool";

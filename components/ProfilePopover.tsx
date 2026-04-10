@@ -58,7 +58,7 @@ export const ProfilePopover = (props: {
     >
       {isLoading ? (
         <div className="text-secondary p-4">Loading...</div>
-      ) : data ? (
+      ) : data?.profile ? (
         <div>
           <ProfileHeader
             profile={data.profile}

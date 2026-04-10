@@ -65,7 +65,7 @@ export const PublishButton = (props: { entityID: string }) => {
 
 const UpdateButton = () => {
   let [isLoading, setIsLoading] = useState(false);
-  let { data: pub, mutate } = useLeafletPublicationData();
+  let { data: pub, mutate, normalizedDocument } = useLeafletPublicationData();
   let { permission_token, rootEntity, rep } = useReplicache();
   let { identity } = useIdentityData();
   let toaster = useToaster();
@@ -88,8 +88,11 @@ const UpdateButton = () => {
       : pub?.description || "";
 
   // Get tags from Replicache state (same as draft editor)
+  // Fall back to normalized document tags if Replicache hasn't pulled yet
   let tags = useSubscribe(rep, (tx) => tx.get<string[]>("publication_tags"));
-  const currentTags = Array.isArray(tags) ? tags : [];
+  const currentTags = Array.isArray(tags)
+    ? tags
+    : normalizedDocument?.tags ?? [];
 
   // Get cover image from Replicache state
   let coverImage = useSubscribe(rep, (tx) =>
@@ -185,7 +188,7 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
       onOpenChange={(o) => setOpen(o)}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="sm:max-w-sm w-[1000px]"
+      className="sm:max-w-sm w-[1000px] p-0!"
       trigger={
         <ActionButton
           primary
@@ -195,7 +198,7 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
       }
     >
       {!identity || !identity.atp_did ? (
-        <div className="-mx-2 -my-1">
+        <div className="p-1">
           <div
             className={`bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm`}
           >
@@ -219,7 +222,7 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col">
+        <div className="publishToPubForm p-3 flex flex-col overflow-scroll max-h-full min-h-0">
           <PostDetailsForm
             title={title}
             description={description}
@@ -310,7 +313,7 @@ const PostDetailsForm = (props: {
   setDescription: (d: string) => void;
 }) => {
   return (
-    <div className=" flex flex-col gap-1">
+    <div className="postDetailsContent flex flex-col gap-1 ">
       <div className="text-sm text-tertiary">Post Details</div>
       <div className="flex flex-col gap-2">
         <InputWithLabel label="Title" value={props.title} disabled />

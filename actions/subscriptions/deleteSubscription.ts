@@ -2,7 +2,7 @@
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { email_subscriptions_to_entity, facts } from "drizzle/schema";
-import postgres from "postgres";
+
 import { eq, and, sql } from "drizzle-orm";
 import type { Fact } from "src/replicache";
 import { v7 } from "uuid";

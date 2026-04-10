@@ -69,7 +69,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
                   ? `${getBasePublicationURL(pub.publications)}/dashboard`
                   : getPublicationURL(pub.publications)
               }
-              className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
+              className="leafletMetadata text-accent-contrast font-bold no-underline!"
             >
               {pub.publications?.name}
             </Link>
@@ -95,7 +95,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
       postDescription={
         <TextField
           placeholder="add an optional description..."
-          className="pt-1 italic text-secondary outline-hidden bg-transparent"
+          className=""
           value={description}
           onChange={async (newDescription) => {
             await rep?.mutate.updatePublicationDraft({

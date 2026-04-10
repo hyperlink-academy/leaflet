@@ -28,6 +28,7 @@ export function BlueskyRichText({
           href={segment.link.uri}
           className="text-accent-contrast hover:underline"
           target="_blank"
+          rel="noopener noreferrer"
         >
           {segment.text}
         </a>,
@@ -42,6 +43,7 @@ export function BlueskyRichText({
           href={`https://bsky.app/profile/${segment.mention.did}`}
           className="text-accent-contrast hover:underline"
           target="_blank"
+          rel="noopener noreferrer"
         >
           {segment.text}
         </a>,
@@ -56,6 +58,7 @@ export function BlueskyRichText({
           href={`https://bsky.app/tag/${segment.tag.tag}`}
           className="text-accent-contrast hover:underline"
           target="_blank"
+          rel="noopener noreferrer"
         >
           {segment.text}
         </a>,

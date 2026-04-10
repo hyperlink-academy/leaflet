@@ -23,6 +23,10 @@
         "aspectRatio": {
           "type": "ref",
           "ref": "#aspectRatio"
+        },
+        "fullBleed": {
+          "type": "boolean",
+          "description": "Whether the image should extend to the full width of the container, ignoring padding."
         }
       }
     },

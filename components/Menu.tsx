@@ -74,6 +74,42 @@ export const Menu = (props: {
   );
 };
 
+export const RadioMenuGroup = (props: {
+  value: string;
+  onValueChange?: (value: string) => void;
+  children: React.ReactNode;
+}) => {
+  return (
+    <DropdownMenu.RadioGroup
+      value={props.value}
+      onValueChange={props.onValueChange}
+    >
+      {props.children}
+    </DropdownMenu.RadioGroup>
+  );
+};
+
+export const RadioMenuItem = (props: {
+  value: string;
+  children?: React.ReactNode;
+  className?: string;
+  onSelect?: (e: Event) => void;
+  selected?: boolean;
+}) => {
+  return (
+    <DropdownMenu.RadioItem
+      value={props.value}
+      onSelect={props.onSelect}
+      className={` menuItem
+      ${props.selected && "bg-accent-1! text-accent-2!"}
+        ${props.className}
+        `}
+    >
+      {props.children}
+    </DropdownMenu.RadioItem>
+  );
+};
+
 export const MenuItem = (props: {
   children?: React.ReactNode;
   className?: string;

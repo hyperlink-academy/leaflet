@@ -3,10 +3,10 @@ import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksOrderedList,
-  PubLeafletBlocksPoll,
   PubLeafletBlocksUnorderedList,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
+  PubLeafletBlocksPoll,
 } from "lexicons/api";
 import { type $Typed } from "lexicons/api/util";
 import { QuoteHandler } from "./QuoteHandler";
@@ -46,7 +46,10 @@ export async function DocumentPageRenderer({
 
   let [document, profile] = await Promise.all([
     getPostPageData(did, rkey),
-    agent.getProfile({ actor: did }),
+    agent.getProfile({ actor: did }).then(
+      (res) => res.data,
+      () => undefined,
+    ),
   ]);
 
   const record = document?.normalizedDocument;
@@ -85,7 +88,10 @@ export async function DocumentPageRenderer({
     bskyPostBatches.map((batch) =>
       agent.getPosts(
         {
-          uris: batch.map((p) => p.block.postRef.uri),
+          uris: batch.map((p) => {
+            let block = p?.block as unknown as PubLeafletBlocksBskyPost.Main;
+            return block.postRef.uri;
+          }),
         },
         { headers: {} },
       ),
@@ -146,7 +152,7 @@ export async function DocumentPageRenderer({
                   pubRecord?.preferences,
                 )}
                 pubRecord={pubRecord}
-                profile={JSON.parse(JSON.stringify(profile.data))}
+                profile={profile ? JSON.parse(JSON.stringify(profile)) : undefined}
                 document={document}
                 bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                 did={did}
@@ -201,15 +207,13 @@ function extractFromListItems<T extends { $type: string }>(
     if (item.children) {
       extractFromListItems(item.children, type, results);
     }
-    let orderedChildren = (
-      item as PubLeafletBlocksUnorderedList.ListItem
-    ).orderedListChildren;
+    let orderedChildren = (item as PubLeafletBlocksUnorderedList.ListItem)
+      .orderedListChildren;
     if (orderedChildren) {
       extractFromListItems(orderedChildren.children, type, results);
     }
-    let unorderedChildren = (
-      item as PubLeafletBlocksOrderedList.ListItem
-    ).unorderedListChildren;
+    let unorderedChildren = (item as PubLeafletBlocksOrderedList.ListItem)
+      .unorderedListChildren;
     if (unorderedChildren) {
       extractFromListItems(unorderedChildren.children, type, results);
     }

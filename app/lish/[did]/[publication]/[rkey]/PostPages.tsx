@@ -51,7 +51,7 @@ export {
 export type SharedPageProps = {
   document: PostPageData;
   did: string;
-  profile: ProfileViewDetailed;
+  profile?: ProfileViewDetailed;
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
@@ -112,7 +112,7 @@ export function PostPages({
 }: {
   document_uri: string;
   document: PostPageData;
-  profile: ProfileViewDetailed;
+  profile?: ProfileViewDetailed;
   pubRecord?: NormalizedPublication | null;
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;

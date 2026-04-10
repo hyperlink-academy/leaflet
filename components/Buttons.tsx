@@ -37,7 +37,7 @@ export const ButtonPrimary = forwardRef<
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
         bg-accent-1 disabled:bg-border-light
-        border border-accent-1 rounded-md disabled:border-border-light
+        border border-accent-1 rounded-md disabled:border-border-light disabled:outline-none! disabled:cursor-not-allowed!
         outline-2 outline-transparent outline-offset-1 focus:outline-accent-1 hover:outline-accent-1
         text-base font-bold text-accent-2 disabled:text-border disabled:hover:text-border
         flex gap-2 items-center justify-center shrink-0
@@ -77,7 +77,7 @@ export const ButtonSecondary = forwardRef<
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
         bg-bg-page disabled:bg-border-light
         border border-accent-contrast rounded-md
-        outline-2 outline-transparent focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1
+        outline-2 outline-transparent focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1 disabled:outline-none! disabled:cursor-not-allowed!
         text-base font-bold text-accent-contrast disabled:text-border disabled:hover:text-border
         flex gap-2 items-center justify-center shrink-0
         ${props.className}
@@ -116,7 +116,7 @@ export const ButtonTertiary = forwardRef<
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
          bg-transparent hover:bg-[var(--accent-light)]
          border border-transparent rounded-md hover:border-[var(--accent-light)]
-         outline-2 outline-transparent focus:outline-[var(--accent-light)] hover:outline-[var(--accent-light)] outline-offset-1
+         outline-2 outline-transparent focus:outline-[var(--accent-light)] hover:outline-[var(--accent-light)] outline-offset-1  disabled:outline-none! disabled:cursor-not-allowed!
          text-base font-bold text-accent-contrast disabled:text-border
          flex gap-2 items-center justify-center shrink-0
          ${props.className}

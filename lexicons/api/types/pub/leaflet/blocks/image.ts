@@ -20,6 +20,8 @@ export interface Main {
   /** Alt text description of the image, for accessibility. */
   alt?: string
   aspectRatio: AspectRatio
+  /** Whether the image should extend to the full width of the container, ignoring padding. */
+  fullBleed?: boolean
 }
 
 const hashMain = 'main'

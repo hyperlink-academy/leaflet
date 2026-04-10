@@ -202,7 +202,7 @@ const CanvasMetadata = (props: {
   pageId: string | undefined;
   isSubpage: boolean | undefined;
   data: PostPageData;
-  profile: ProfileViewDetailed;
+  profile?: ProfileViewDetailed;
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;

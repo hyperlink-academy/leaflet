@@ -57,7 +57,7 @@ export const LeafletListItem = (props: {
         >
           <SpeedyLink
             href={`/${tokenId}`}
-            className={`absolute w-full h-full top-0 left-0 no-underline hover:no-underline! text-primary`}
+            className={`absolute w-full h-full top-0 left-0 no-underline! hover:no-underline! text-primary`}
           />
           {props.showPreview && <LeafletListPreview isVisible={isOnScreen} />}
           <LeafletInfo

@@ -73,6 +73,7 @@ export const ExternalLinkBlock = (
       <a
         href={url?.data.value}
         target="_blank"
+        referrerPolicy="no-referrer"
         className="flex w-full h-full text-primary hover:no-underline no-underline"
       >
         <div className="pt-2 pb-2 px-3 grow min-w-0">

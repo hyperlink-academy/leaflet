@@ -23,10 +23,10 @@ export const Modal = ({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Trigger asChild={asChild}>{trigger}</Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed z-[100] inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-60" />
+        <Dialog.Overlay className="fixed z-50 inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-60" />
         <Dialog.Content
           className={`
-          z-[100] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+          z-50 fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           overflow-y-scroll no-scrollbar w-max max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] p-3 flex flex-col
 
           `}
@@ -37,12 +37,12 @@ export const Modal = ({
           <div
             className={`
             opaque-container p-3
-            flex flex-col gap-1 rounded-lg!
+            flex flex-col rounded-lg!
             ${className}`}
           >
             {title ? (
               <Dialog.Title>
-                <h3>{title}</h3>
+                <h3 className="pb-1">{title}</h3>
               </Dialog.Title>
             ) : (
               <Dialog.Title />

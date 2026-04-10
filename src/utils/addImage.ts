@@ -16,13 +16,31 @@ export async function addImage(
 ) {
   let client = supabaseBrowserClient();
   let cache = await caches.open("minilink-user-assets");
-  let fileID = v7();
+  let isAnimated = isAnimatedFormat(file.type);
+  let fileID = v7() + (isAnimated ? "." + file.name.split(".").pop() : "");
   let url = client.storage.from("minilink-user-assets").getPublicUrl(fileID)
     .data.publicUrl;
-  // Re-encode through canvas to bake EXIF orientation into pixel data.
-  // iPhone photos have EXIF rotation metadata that browsers respect, but
-  // Supabase's image transformation pipeline strips without applying.
-  let { blob: uploadBlob, width, height } = await normalizeOrientation(file);
+
+  let uploadBlob: Blob;
+  let width: number;
+  let height: number;
+  if (isAnimated) {
+    // Skip re-encoding for animated formats (GIF, APNG, animated WebP)
+    // to preserve animation frames
+    uploadBlob = file;
+    let bitmap = await createImageBitmap(file);
+    width = bitmap.width;
+    height = bitmap.height;
+    bitmap.close();
+  } else {
+    // Re-encode through canvas to bake EXIF orientation into pixel data.
+    // iPhone photos have EXIF rotation metadata that browsers respect, but
+    // Supabase's image transformation pipeline strips without applying.
+    let normalized = await normalizeOrientation(file);
+    uploadBlob = normalized.blob;
+    width = normalized.width;
+    height = normalized.height;
+  }
 
   await cache.put(
     new URL(url + "?local"),
@@ -97,6 +115,10 @@ async function getThumbHash(file: File) {
     rgbaToThumbHash(imageData.width, imageData.height, imageData.data),
   );
   return thumbHash;
+}
+
+function isAnimatedFormat(mimeType: string): boolean {
+  return mimeType === "image/gif" || mimeType === "image/apng";
 }
 
 async function normalizeOrientation(

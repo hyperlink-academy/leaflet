@@ -17,7 +17,7 @@ import { ProfilePopover } from "components/ProfilePopover";
 
 export function PostHeader(props: {
   data: PostPageData;
-  profile: ProfileViewDetailed;
+  profile?: ProfileViewDetailed;
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
@@ -48,7 +48,7 @@ export function PostHeader(props: {
         <>
           {pub && (
             <SpeedyLink
-              className="font-bold hover:no-underline text-accent-contrast"
+              className="font-bold no-underline! text-accent-contrast"
               href={document && getPublicationURL(pub)}
             >
               {pub?.name}
@@ -129,7 +129,7 @@ export const PostHeaderLayout = (props: {
         </h2>
       )}
       {props.postDescription ? (
-        <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
+        <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-2">
           {props.postDescription}
         </div>
       ) : null}

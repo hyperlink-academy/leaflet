@@ -42,6 +42,9 @@ import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { Mention, MentionAutocomplete } from "components/Mention";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
+import { useIdentityData } from "components/IdentityProvider";
+import { useRecordFromDid } from "src/utils/useRecordFromDid";
+import { Avatar } from "components/Avatar";
 
 const addMentionToEditor = (
   mention: Mention,
@@ -98,6 +101,8 @@ export function CommentBox(props: {
   let [loading, setLoading] = useState(false);
   let view = useRef<null | EditorView>(null);
   let toaster = useToaster();
+  let { identity } = useIdentityData();
+  let { data: record } = useRecordFromDid(identity?.atp_did);
 
   // Mention autocomplete state
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -452,9 +457,18 @@ export function CommentBox(props: {
             view={view}
           />
         </div>
-        <ButtonPrimary compact onClick={() => handleSubmitRef.current()}>
-          {loading ? <DotLoader /> : <ShareSmall />}
-        </ButtonPrimary>
+        <div className="flex items-center gap-2">
+          {record && (
+            <Avatar
+              src={record.avatar}
+              displayName={record.displayName || record.handle}
+              size="small"
+            />
+          )}
+          <ButtonPrimary compact onClick={() => handleSubmitRef.current()}>
+            {loading ? <DotLoader /> : <ShareSmall />}
+          </ButtonPrimary>
+        </div>
       </div>
     </div>
   );

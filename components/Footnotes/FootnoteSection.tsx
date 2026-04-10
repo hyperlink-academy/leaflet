@@ -13,7 +13,7 @@ export function FootnoteSection(props: { hiddenOnDesktop?: boolean }) {
   if (footnotes.length === 0) return null;
 
   return (
-    <FootnoteSectionLayout className={props.hiddenOnDesktop ? "lg:hidden" : ""}>
+    <FootnoteSectionLayout className={props.hiddenOnDesktop ? "xl:hidden" : ""}>
       {footnotes.map((fn) => (
         <FootnoteEditor
           key={fn.footnoteEntityID}

@@ -43,7 +43,6 @@ export const ProfileHeader = (props: {
     </div>
   );
 
-
   return (
     <div
       className={`profileHeader flex flex-col relative `}
@@ -67,7 +66,10 @@ export const ProfileHeader = (props: {
             did={props.profile.did}
           />
 
-          <pre className="profileDescription pt-1 px-3 sm:px-4 whitespace-pre-wrap">
+          <pre
+            className="profileDescription pt-1 px-3 sm:px-4 whitespace-pre-wrap"
+            style={{ fontFamily: "inherit" }}
+          >
             {profileRecord.description
               ? parseDescription(profileRecord.description)
               : null}

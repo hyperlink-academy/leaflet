@@ -262,10 +262,10 @@ const SubscribeSuccessModal = ({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild></Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed z-[100] inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-10 blur-xs" />
+        <Dialog.Overlay className="fixed z-50 inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-10 blur-xs" />
         <Dialog.Content
           className={`
-      z-[100] opaque-container
+      z-50 opaque-container
       fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
       w-96 px-3 py-4
       max-w-(--radix-popover-content-available-width)
