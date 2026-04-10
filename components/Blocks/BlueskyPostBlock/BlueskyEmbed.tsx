@@ -15,6 +15,7 @@ import {
   OpenPage,
   openPage,
 } from "app/lish/[did]/[publication]/[rkey]/PostPages";
+import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
 
 export const BlueskyEmbed = (props: {
   embed: Exclude<AppBskyFeedDefs.PostView["embed"], undefined>;
@@ -131,22 +132,13 @@ export const BlueskyEmbed = (props: {
         ? videoEmbed.aspectRatio.width / videoEmbed.aspectRatio.height
         : 16 / 9;
       return (
-        <div
-          className={`videoEmbed rounded-md overflow-hidden relative w-full ${props.className}`}
-          style={{ aspectRatio: String(videoAspectRatio) }}
-        >
-          <img
-            src={videoEmbed.thumbnail}
-            alt={
-              "Thumbnail from embedded video. Go to Bluesky to see the full post."
-            }
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="overlay absolute inset-0 bg-primary opacity-65" />
-          <div className="absolute w-max top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-border-light rounded-md">
-            <SeePostOnBluesky postUrl={props.postUrl} />
-          </div>
-        </div>
+        <BlueskyVideoPlayer
+          playlist={videoEmbed.playlist}
+          thumbnail={videoEmbed.thumbnail}
+          alt={videoEmbed.alt}
+          aspectRatio={videoAspectRatio}
+          className={props.className}
+        />
       );
     case AppBskyEmbedRecord.isView(props.embed):
       let recordEmbed = props.embed;
