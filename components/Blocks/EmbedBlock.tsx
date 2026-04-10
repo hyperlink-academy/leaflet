@@ -113,22 +113,6 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         .openPage(props.parent, { type: "iframe", url: openUrl });
       scrollIntoView(`iframe-page-${openUrl}`, "pages", 0.8);
     },
-    onReplaceWith: (block) => {
-      assertBlockData(props.entityID, block);
-    },
-    onAddBelow: async (block) => {
-      if (!rep) return;
-      let newEntityID = v7();
-      await rep.mutate.addBlock({
-        permission_set: entity_set.set,
-        factID: v7(),
-        parent: props.parent,
-        type: block.type === "text" ? "text" : "card",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID,
-      });
-      await assertBlockData(newEntityID, block);
-    },
   });
 
   useEffect(() => {
@@ -139,6 +123,24 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     } else input?.blur();
   }, [isSelected, props.entityID, props.preview]);
 
+  let bgPage = useColorAttribute(null, "theme/page-background");
+  let primary = useColorAttribute(null, "theme/primary");
+  let iframeSrc = useMemo(() => {
+    if (!url) return undefined;
+    let src = new URL(url.data.value);
+    src.searchParams.set("parts.page.embed.ctx.mode", "edit");
+    src.searchParams.set(
+      "parts.page.embed.ctx.bgColor",
+      `rgb(${colorToString(bgPage, "rgb")})`,
+    );
+    src.searchParams.set(
+      "parts.page.embed.ctx.primaryColor",
+      `rgb(${colorToString(primary, "rgb")})`,
+    );
+    return src.toString();
+  }, [url, bgPage, primary]);
+
+  if (props.preview) return null;
   if (!url) {
     if (!permissions.write) return null;
     return (
@@ -161,24 +163,6 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
       </label>
     );
   }
-  let bgPage = useColorAttribute(null, "theme/page-background");
-  let primary = useColorAttribute(null, "theme/primary");
-  let iframeSrc = useMemo(() => {
-    if (!url) return undefined;
-    let src = new URL(url.data.value);
-    src.searchParams.set("parts.page.embed.ctx.mode", "edit");
-    src.searchParams.set(
-      "parts.page.embed.ctx.bgColor",
-      `rgb(${colorToString(bgPage, "rgb")})`,
-    );
-    src.searchParams.set(
-      "parts.page.embed.ctx.primaryColor",
-      `rgb(${colorToString(primary, "rgb")})`,
-    );
-    return src.toString();
-  }, [url, bgPage, primary]);
-
-  if (props.preview) return null;
 
   return (
     <div
