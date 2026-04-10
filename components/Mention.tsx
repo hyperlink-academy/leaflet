@@ -873,20 +873,24 @@ function useMentionServices(enabled: boolean): Array<Mention> {
     async () => {
       try {
         const result = await callRPC(`get_user_mention_services`, {});
-        return result.result.services.map(
-          (s: {
-            uri: string;
-            name: string;
-            description?: string;
-            canBeScopedToDid?: boolean;
-          }) => ({
-            type: "service" as const,
-            serviceUri: s.uri,
-            name: s.name,
-            description: s.description,
-            canBeScopedToDid: s.canBeScopedToDid,
-          }),
-        );
+        return result.result.services
+          .map(
+            (s: {
+              uri: string;
+              name: string;
+              description?: string;
+              canBeScopedToDid?: boolean;
+            }) => ({
+              type: "service" as const,
+              serviceUri: s.uri,
+              name: s.name,
+              description: s.description,
+              canBeScopedToDid: s.canBeScopedToDid,
+            }),
+          )
+          .sort((a: { name: string }, b: { name: string }) =>
+            a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+          );
       } catch {
         return EMPTY_SERVICES;
       }
