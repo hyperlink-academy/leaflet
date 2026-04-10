@@ -712,12 +712,19 @@ async function processBlocksToPages(
     if (b.type === "embed") {
       let [url] = scan.eav(b.value, "embed/url");
       let [height] = scan.eav(b.value, "embed/height");
+      let [aspectRatio] = scan.eav(b.value, "embed/aspect-ratio");
       if (!url) return;
       let block: $Typed<PubLeafletBlocksIframe.Main> = {
         $type: "pub.leaflet.blocks.iframe",
         url: url.data.value,
         height: Math.floor(height?.data.value || 600),
       };
+      if (aspectRatio) {
+        let [w, h] = aspectRatio.data.value.split("/").map(Number);
+        if (w && h) {
+          block.aspectRatio = { width: w, height: h };
+        }
+      }
       return block;
     }
     if (b.type == "image") {
@@ -950,6 +957,9 @@ function YJSFragmentToFacets(
           {
             $type: "pub.leaflet.richtext.facet#atMention",
             atURI: node.getAttribute("atURI"),
+            ...(node.getAttribute("href")
+              ? { href: node.getAttribute("href") }
+              : {}),
           },
         ],
       };

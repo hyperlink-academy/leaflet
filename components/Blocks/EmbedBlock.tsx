@@ -1,6 +1,6 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { BlockProps, BlockLayout } from "./Block";
@@ -19,9 +19,18 @@ import {
   LinkPreviewBody,
   LinkPreviewMetadataResult,
 } from "app/api/link_previews/route";
+import { getAspectRatio } from "src/utils/aspectRatio";
+import { useIframeChannel } from "src/hooks/useIframeChannel";
+import { scrollIntoView } from "src/utils/scrollIntoView";
+import { EmbedBlockData } from "src/partsPageChannel";
+import {
+  useColorAttribute,
+  colorToString,
+} from "components/ThemeManager/useColorAttribute";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
-  let { permissions } = useEntitySetContext();
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
   let { rep } = useReplicache();
   let url = useEntity(props.entityID, "embed/url");
   let isCanvasBlock = props.pageType === "canvas";
@@ -31,6 +40,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   );
 
   let height = useEntity(props.entityID, "embed/height")?.data.value || 360;
+  let aspectRatio = useEntity(props.entityID, "embed/aspect-ratio")?.data.value;
 
   let heightOnDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
@@ -47,6 +57,79 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   );
 
   let heightHandle = useDrag({ onDragEnd: heightOnDragEnd });
+
+  let assertBlockData = useCallback(
+    async (entityID: string, block: EmbedBlockData) => {
+      if (!rep) return;
+      if (block.type === "text") {
+        await rep.mutate.assertFact([
+          {
+            entity: entityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "text" },
+          },
+          {
+            entity: entityID,
+            attribute: "block/text",
+            data: { type: "text", value: block.content },
+          },
+        ]);
+      } else {
+        let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
+          {
+            entity: entityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "embed" },
+          },
+          {
+            entity: entityID,
+            attribute: "embed/url",
+            data: { type: "string", value: block.url },
+          },
+        ];
+        if (block.aspectRatio) {
+          facts.push({
+            entity: entityID,
+            attribute: "embed/aspect-ratio",
+            data: { type: "string", value: block.aspectRatio },
+          });
+        } else if (block.height) {
+          facts.push({
+            entity: entityID,
+            attribute: "embed/height",
+            data: { type: "number", value: block.height },
+          });
+        }
+        await rep.mutate.assertFact(facts);
+      }
+    },
+    [rep],
+  );
+
+  let { iframeRef } = useIframeChannel({
+    onOpen: (openUrl) => {
+      useUIState
+        .getState()
+        .openPage(props.parent, { type: "iframe", url: openUrl });
+      scrollIntoView(`iframe-page-${openUrl}`, "pages", 0.8);
+    },
+    onReplaceWith: (block) => {
+      assertBlockData(props.entityID, block);
+    },
+    onAddBelow: async (block) => {
+      if (!rep) return;
+      let newEntityID = v7();
+      await rep.mutate.addBlock({
+        permission_set: entity_set.set,
+        factID: v7(),
+        parent: props.parent,
+        type: block.type === "text" ? "text" : "card",
+        position: generateKeyBetween(props.position, props.nextPosition),
+        newEntityID,
+      });
+      await assertBlockData(newEntityID, block);
+    },
+  });
 
   useEffect(() => {
     if (props.preview) return;
@@ -78,36 +161,49 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
       </label>
     );
   }
+  let bgPage = useColorAttribute(null, "theme/page-background");
+  let primary = useColorAttribute(null, "theme/primary");
+  let iframeSrc = useMemo(() => {
+    if (!url) return undefined;
+    let src = new URL(url.data.value);
+    src.searchParams.set("parts.page.embed.ctx.mode", "edit");
+    src.searchParams.set(
+      "parts.page.embed.ctx.bgColor",
+      `rgb(${colorToString(bgPage, "rgb")})`,
+    );
+    src.searchParams.set(
+      "parts.page.embed.ctx.primaryColor",
+      `rgb(${colorToString(primary, "rgb")})`,
+    );
+    return src.toString();
+  }, [url, bgPage, primary]);
+
   if (props.preview) return null;
 
   return (
     <div
-      className={`w-full ${heightHandle.dragDelta ? "pointer-events-none" : ""}`}
+      className={`w-full ${!aspectRatio && heightHandle.dragDelta ? "pointer-events-none" : ""}`}
     >
       <BlockLayout
         isSelected={!!isSelected}
         className="flex flex-col relative w-full overflow-hidden group/embedBlock p-0!"
       >
         <iframe
-          width="100%"
-          height={height + (heightHandle.dragDelta?.y || 0)}
-          src={url?.data.value}
+          ref={iframeRef}
+          className={aspectRatio ? "w-full h-auto" : "w-full"}
+          style={
+            aspectRatio
+              ? { aspectRatio }
+              : { height: height + (heightHandle.dragDelta?.y || 0) }
+          }
+          src={iframeSrc}
           allow="fullscreen"
           loading="lazy"
           referrerPolicy="no-referrer"
         ></iframe>
       </BlockLayout>
-      {/* <div className="w-full overflow-x-hidden truncate text-xs italic text-accent-contrast">
-        <a
-          href={url?.data.value}
-          target="_blank"
-          className={`py-0.5 min-w-0 w-full whitespace-nowrap`}
-        >
-          {url?.data.value}
-        </a>
-      </div> */}
 
-      {!props.preview && permissions.write && (
+      {!props.preview && permissions.write && !aspectRatio && (
         <>
           <div
             data-draggable
@@ -166,6 +262,7 @@ const BlockLinkInput = (props: BlockProps) => {
 
       let embedUrl = link;
       let embedHeight = 360;
+      let embedAspectRatio: string | null = null;
 
       if (res.status === 200) {
         let data = await (res.json() as LinkPreviewMetadataResult);
@@ -173,10 +270,11 @@ const BlockLinkInput = (props: BlockProps) => {
           let embed = data.data.links.player[0];
           embedUrl = embed.href;
           embedHeight = embed.media?.height || 300;
+          embedAspectRatio = getAspectRatio(embed.media);
         }
       }
 
-      await rep.mutate.assertFact([
+      let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
         {
           entity: entity,
           attribute: "embed/url",
@@ -185,15 +283,27 @@ const BlockLinkInput = (props: BlockProps) => {
             value: embedUrl,
           },
         },
-        {
+      ];
+      if (embedAspectRatio) {
+        facts.push({
+          entity: entity,
+          attribute: "embed/aspect-ratio",
+          data: {
+            type: "string",
+            value: embedAspectRatio,
+          },
+        });
+      } else {
+        facts.push({
           entity: entity,
           attribute: "embed/height",
           data: {
             type: "number",
             value: embedHeight,
           },
-        },
-      ]);
+        });
+      }
+      await rep.mutate.assertFact(facts);
     } catch {
       // On any error, fallback to using the URL directly
       await rep.mutate.assertFact([

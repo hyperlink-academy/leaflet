@@ -7,6 +7,7 @@ import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import { AtpAgent } from "@atproto/api";
 import { v7 } from "uuid";
+import { getAspectRatio } from "src/utils/aspectRatio";
 
 export async function addLinkBlock(
   url: string,
@@ -60,7 +61,7 @@ export async function addLinkBlock(
 
   if (data.data.links?.player?.[0]) {
     let embed = data.data.links?.player?.[0];
-    await rep.mutate.assertFact([
+    let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
       {
         entity: entityID,
         attribute: "block/type",
@@ -74,15 +75,28 @@ export async function addLinkBlock(
           value: embed.href,
         },
       },
-      {
+    ];
+    let aspectRatio = getAspectRatio(embed.media);
+    if (aspectRatio) {
+      facts.push({
+        entity: entityID,
+        attribute: "embed/aspect-ratio",
+        data: {
+          type: "string",
+          value: aspectRatio,
+        },
+      });
+    } else {
+      facts.push({
         entity: entityID,
         attribute: "embed/height",
         data: {
           type: "number",
           value: embed.media?.height || 300,
         },
-      },
-    ]);
+      });
+    }
+    await rep.mutate.assertFact(facts);
     return;
   }
   await rep?.mutate.assertFact([

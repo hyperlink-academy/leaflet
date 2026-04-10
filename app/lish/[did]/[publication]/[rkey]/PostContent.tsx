@@ -36,6 +36,11 @@ import { ButtonPrimary } from "components/Buttons";
 import { blockTextSize } from "src/utils/blockTextSize";
 import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
+import { useIframeChannel } from "src/hooks/useIframeChannel";
+import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
+import { colorToString } from "components/ThemeManager/useColorAttribute";
+import { useDocument } from "contexts/DocumentContext";
+import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 
@@ -202,13 +207,10 @@ export let Block = ({
     }
     case PubLeafletBlocksIframe.isMain(b.block): {
       return (
-        <iframe
-          className={`flex flex-col relative w-full overflow-hidden group/embedBlock block-border my-2`}
-          width="100%"
+        <PublishedIframeBlock
+          url={b.block.url}
           height={b.block.height}
-          src={b.block.url}
-          allow="fullscreen"
-          loading="lazy"
+          pageId={pageId}
         />
       );
     }
@@ -486,6 +488,49 @@ export let Block = ({
       return null;
   }
 };
+
+function PublishedIframeBlock(props: {
+  url: string;
+  height?: number;
+  pageId?: string;
+}) {
+  let parentPage = props.pageId
+    ? { type: "doc" as const, id: props.pageId }
+    : undefined;
+  let { iframeRef } = useIframeChannel({
+    onOpen: (url) => {
+      openPageAction(parentPage, { type: "iframe", url });
+    },
+    onReplaceWith: () => {},
+    onAddBelow: () => {},
+  });
+
+  let { theme } = useDocument();
+  let pubTheme = usePubTheme(theme);
+  let iframeSrc = new URL(props.url);
+  iframeSrc.searchParams.set("parts.page.embed.ctx.mode", "view");
+  iframeSrc.searchParams.set(
+    "parts.page.embed.ctx.bgColor",
+    `rgb(${colorToString(pubTheme.bgPage, "rgb")})`,
+  );
+  iframeSrc.searchParams.set(
+    "parts.page.embed.ctx.primaryColor",
+    `rgb(${colorToString(pubTheme.primary, "rgb")})`,
+  );
+
+
+  return (
+    <iframe
+      ref={iframeRef}
+      className="flex flex-col relative w-full overflow-hidden group/embedBlock block-border my-2"
+      width="100%"
+      height={props.height}
+      src={iframeSrc.toString()}
+      allow="fullscreen"
+      loading="lazy"
+    />
+  );
+}
 
 function ListItem(props: {
   index: number[];

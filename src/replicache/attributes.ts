@@ -156,6 +156,10 @@ const EmbedBlockAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "embed/aspect-ratio": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 const BlueskyPostBlockAttributes = {
