@@ -38,7 +38,6 @@ import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
-import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { useDocument } from "contexts/DocumentContext";
 import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
@@ -511,11 +510,11 @@ function PublishedIframeBlock(props: {
   iframeSrc.searchParams.set("parts.page.embed.ctx.mode", "view");
   iframeSrc.searchParams.set(
     "parts.page.embed.ctx.bgColor",
-    `rgb(${colorToString(pubTheme.bgPage, "rgb")})`,
+    pubTheme.bgPage.toString("hex"),
   );
   iframeSrc.searchParams.set(
     "parts.page.embed.ctx.primaryColor",
-    `rgb(${colorToString(pubTheme.primary, "rgb")})`,
+    pubTheme.primary.toString("hex"),
   );
 
 

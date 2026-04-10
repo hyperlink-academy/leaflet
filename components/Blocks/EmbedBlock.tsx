@@ -23,10 +23,7 @@ import { getAspectRatio } from "src/utils/aspectRatio";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { EmbedBlockData } from "src/partsPageChannel";
-import {
-  useColorAttribute,
-  colorToString,
-} from "components/ThemeManager/useColorAttribute";
+import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let entity_set = useEntitySetContext();
@@ -147,11 +144,11 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     src.searchParams.set("parts.page.embed.ctx.mode", "edit");
     src.searchParams.set(
       "parts.page.embed.ctx.bgColor",
-      `rgb(${colorToString(bgPage, "rgb")})`,
+      bgPage.toString("hex"),
     );
     src.searchParams.set(
       "parts.page.embed.ctx.primaryColor",
-      `rgb(${colorToString(primary, "rgb")})`,
+      primary.toString("hex"),
     );
     return src.toString();
   }, [url, bgPage, primary]);

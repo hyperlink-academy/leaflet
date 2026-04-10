@@ -2,10 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
-import {
-  useColorAttribute,
-  colorToString,
-} from "components/ThemeManager/useColorAttribute";
+import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { PageWrapper } from "./Page";
 
 export function IframePageView(props: {
@@ -26,11 +23,11 @@ export function IframePageView(props: {
     src.searchParams.set("parts.page.embed.ctx.mode", "edit");
     src.searchParams.set(
       "parts.page.embed.ctx.bgColor",
-      `rgb(${colorToString(bgPage, "rgb")})`,
+      bgPage.toString("hex"),
     );
     src.searchParams.set(
       "parts.page.embed.ctx.primaryColor",
-      `rgb(${colorToString(primary, "rgb")})`,
+      primary.toString("hex"),
     );
     return src.toString();
   }, [props.url, bgPage, primary]);
