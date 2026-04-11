@@ -209,6 +209,7 @@ export let Block = ({
         <PublishedIframeBlock
           url={b.block.url}
           height={b.block.height}
+          aspectRatio={b.block.aspectRatio}
           pageId={pageId}
         />
       );
@@ -491,6 +492,7 @@ export let Block = ({
 function PublishedIframeBlock(props: {
   url: string;
   height?: number;
+  aspectRatio?: PubLeafletBlocksIframe.AspectRatio;
   pageId?: string;
 }) {
   let parentPage = props.pageId
@@ -518,12 +520,15 @@ function PublishedIframeBlock(props: {
   );
 
 
+  let aspectRatio = props.aspectRatio
+    ? `${props.aspectRatio.width}/${props.aspectRatio.height}`
+    : undefined;
+
   return (
     <iframe
       ref={iframeRef}
-      className="flex flex-col relative w-full overflow-hidden group/embedBlock block-border my-2"
-      width="100%"
-      height={props.height}
+      className={`relative w-full overflow-hidden group/embedBlock block-border my-2 ${aspectRatio ? "h-auto" : ""}`}
+      style={aspectRatio ? { aspectRatio } : { height: props.height }}
       src={iframeSrc.toString()}
       allow="fullscreen"
       loading="lazy"
