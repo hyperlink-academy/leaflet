@@ -15,12 +15,16 @@ export const Combobox = ({
   showSearch,
   trigger,
   triggerClassName,
+  className,
   sideOffset,
   open: openProp,
+  zIndex,
 }: {
   children: React.ReactNode;
   trigger?: React.ReactNode;
   triggerClassName?: string;
+  className?: string;
+  width?: string;
   results: string[];
   onSelect?: () => void;
   onOpenChange?: (open: boolean) => void;
@@ -31,6 +35,7 @@ export const Combobox = ({
   showSearch?: boolean;
   sideOffset?: number;
   open?: boolean;
+  zIndex?: number;
 }) => {
   let ref = useRef<HTMLDivElement>(null);
   let [internalOpen, setInternalOpen] = useState(false);
@@ -106,10 +111,12 @@ export const Combobox = ({
           collisionPadding={16}
           ref={ref}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          style={zIndex !== undefined ? { zIndex } : undefined}
           className={`
             commandMenuContent group/cmd-menu
             z-20 w-[264px]
             flex data-[side=top]:items-end items-start
+            ${className}
             `}
         >
           <NestedCardThemeProvider>
