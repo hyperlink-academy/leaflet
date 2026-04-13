@@ -52,9 +52,9 @@ export function PubPreview(props: {
     ? undefined
     : [
         {
-          title: "Hello!",
+          title: "Your Personal Antheme",
           description:
-            "So excited to have you! This is how your posts will appear in your publication",
+            "Welcome to the Publication Theme Setter. This is how posts will appear in your publication",
           date: (
             <LocalizedDate
               dateString={today.toISOString()}
@@ -63,9 +63,9 @@ export function PubPreview(props: {
           ),
         },
         {
-          title: "Welcome to your Leaflet Publication",
+          title: "The Theme of the Crop",
           description:
-            "Leaflet is an open platform for writing and reading long form posts. Everything you write here, and everyone that follows you is data that belongs to YOU.",
+            "This is the place to make your publication look and feel like home. It looks great!",
           date: (
             <LocalizedDate
               dateString={yesterday.toISOString()}
@@ -74,9 +74,9 @@ export function PubPreview(props: {
           ),
         },
         {
-          title: "I can't wait to see what you do here :)",
+          title: "Reams and Reams of Colorful Themes!",
           description:
-            "There's so much cool stuff happening here, including this publication!",
+            "So happy to have you. There's so much cool stuff happening here, including this publication :)",
           date: (
             <LocalizedDate
               dateString={dayBefore.toISOString()}

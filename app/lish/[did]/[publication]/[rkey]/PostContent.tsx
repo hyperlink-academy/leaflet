@@ -65,7 +65,7 @@ export function PostContent({
   return (
     <div
       //The postContent class is important for QuoteHandler
-      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-4 ${className}`}
+      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-0 ${className}`}
     >
       {blocks.map((b, index) => {
         return (
@@ -158,10 +158,12 @@ export let Block = ({
   )
     alignment = "text-center justify-center";
 
+  let isHeading = PubLeafletBlocksHeader.isMain(b.block);
+
   let className = `
     postBlockWrapper
     min-h-7
-    mt-1 mb-2
+    ${isFirst ? "mt-0" : "mt-1"} ${isLast ? "mb-3 sm:mb-4" : isHeading ? "mb-0!" : "mb-2"}
     ${isList && "isListItem mb-0! "}
     ${alignment}
     `;
@@ -388,7 +390,7 @@ export let Block = ({
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={`blockquote py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2! pt-3!" : "mt-1!"}`}
+          className={`blockquote py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
           {...blockProps}
         >
           <TextBlock

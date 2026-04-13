@@ -87,7 +87,9 @@ function PublishedPostItem(props: {
           <div className="flex justify-between gap-2">
             <a className="hover:no-underline!" target="_blank" href={docUrl}>
               <h3 className="text-primary grow leading-snug">
-                {doc.record.title}
+                {doc.record.title === "" || doc.record.title === undefined
+                  ? "Untitled"
+                  : doc.record.title}
               </h3>
             </a>
             <div className="flex justify-start align-top flex-row gap-1">

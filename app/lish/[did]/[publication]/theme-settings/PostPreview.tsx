@@ -15,61 +15,15 @@ import {
   usePublicationData,
   useNormalizedPublicationRecord,
 } from "../dashboard/PublicationSWRProvider";
+import { fakeBlocks, fakePage } from "./postPreviewFakeBlocks";
 
 const FAKE_DID = "did:plc:fake-preview-user";
 const FAKE_DOC_URI =
   "at://did:plc:fake-preview-user/site.standard.document/preview";
 
-const fakeBlocks: PubLeafletPagesLinearDocument.Block[] = [
-  {
-    $type: "pub.leaflet.pages.linearDocument#block",
-    block: {
-      $type: "pub.leaflet.blocks.header",
-      level: 2,
-      plaintext: "A Heading",
-    },
-  },
-  {
-    $type: "pub.leaflet.pages.linearDocument#block",
-    block: {
-      $type: "pub.leaflet.blocks.text",
-      plaintext:
-        "This is a preview of what your posts will look like with the current theme settings. You can adjust colors, fonts, and layout options to match your style.",
-    },
-  },
-  {
-    $type: "pub.leaflet.pages.linearDocument#block",
-    block: {
-      $type: "pub.leaflet.blocks.text",
-      plaintext:
-        "Try changing the heading font, body font, accent color, and background to see how they affect the look and feel of your publication.",
-    },
-  },
-  {
-    $type: "pub.leaflet.pages.linearDocument#block",
-    block: {
-      $type: "pub.leaflet.blocks.horizontalRule",
-    },
-  },
-  {
-    $type: "pub.leaflet.pages.linearDocument#block",
-    block: {
-      $type: "pub.leaflet.blocks.text",
-      plaintext:
-        "Your readers will see posts rendered just like this. Make sure you're happy with the typography and spacing before publishing!",
-    },
-  },
-];
-
-const fakePage: PubLeafletPagesLinearDocument.Main = {
-  $type: "pub.leaflet.pages.linearDocument",
-  id: "preview-page",
-  blocks: fakeBlocks,
-};
-
 const fakeNormalizedDocument = {
   $type: "site.standard.document" as const,
-  title: "Preview Post Title",
+  title: "Building your Dream Theme!",
   description: "A short description of this preview post.",
   publishedAt: new Date().toISOString(),
   site: "at://did:plc:fake-preview-user/site.standard.publication/preview",

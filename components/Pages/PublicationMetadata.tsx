@@ -81,7 +81,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
       }
       postTitle={
         <TextField
-          className="leading-tight pt-0.5 text-xl font-bold outline-hidden bg-transparent"
+          className="leading-tight pt-0.5 text-2xl font-bold outline-hidden bg-transparent"
           value={title}
           onChange={async (newTitle) => {
             await rep?.mutate.updatePublicationDraft({

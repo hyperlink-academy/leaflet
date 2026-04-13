@@ -69,7 +69,7 @@ export function ThemeSettingsContent() {
           {/* Theme Setter Panel */}
           <div
             ref={toolbarRef}
-            className=" bg-accent-1 items-center -mb-2 pb-[10px] pt-2 "
+            className="themeSetterControls bg-accent-1 items-center -mb-2 pb-[10px] pt-2 "
           >
             <div className=" sm:w-[var(--page-width-units)] mx-auto flex justify-between items-center px-3 sm:px-4 ">
               <BackToPubButton
@@ -99,13 +99,19 @@ export function ThemeSettingsContent() {
 
           {/* Full-page Preview */}
           <PublicationBackgroundProvider
-            className="rounded-t-lg"
+            className="rounded-t-lg grow! min-h-0 overflow-y-auto"
             theme={record?.theme}
             pub_creator={publication?.identity_did || ""}
             localBgImage={pubBGImage}
             localBgImageRepeat={leafletBGRepeat}
           >
-            <div className="mx-auto h-full w-fit pointer-events-none">
+            <div
+              className="mx-auto h-full w-fit"
+              onClickCapture={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               {previewMode === "pub" ? (
                 <PubPreview
                   showPageBackground={showPageBackground}
