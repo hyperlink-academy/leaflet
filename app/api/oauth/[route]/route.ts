@@ -32,6 +32,7 @@ export async function GET(
     case "login": {
       const searchParams = req.nextUrl.searchParams;
       const handle = searchParams.get("handle") as string;
+      const signup = searchParams.get("signup") === "true";
       // Put originating page here!
       let redirect = searchParams.get("redirect_url");
       if (redirect) redirect = decodeURIComponent(redirect);
@@ -46,6 +47,7 @@ export async function GET(
           "atproto transition:email include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts include:app.bsky.authViewAll?aud=did:web:api.bsky.app%23bsky_appview blob:*/*",
         signal: ac.signal,
         state: JSON.stringify(state),
+        ...(signup ? { prompt: "create" } : {}),
       });
 
       return NextResponse.redirect(url);

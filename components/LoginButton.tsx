@@ -181,9 +181,13 @@ export function LoginActionButton() {
               <div className="text-secondary pb-3">
                 Create an Atmosphere account on Bluesky to get started!
               </div>
-              <ButtonPrimary className="mx-auto mb-1">
-                <BlueskyTiny /> Sign up via Bluesky
-              </ButtonPrimary>
+              <form action="/api/oauth/login" method="GET">
+                <input type="hidden" name="redirect_url" value="/" />
+                <input type="hidden" name="signup" value="true" />
+                <ButtonPrimary className="mx-auto mb-1">
+                  <BlueskyTiny /> Sign up via Bluesky
+                </ButtonPrimary>
+              </form>
               <AtmosphericHandleInfo />
             </div>
           )}
