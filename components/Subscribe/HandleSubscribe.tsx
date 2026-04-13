@@ -84,7 +84,7 @@ export const HandleInput = (props: {
       </div>
       <Input
         autoFocus={props.autoFocus}
-        className={`appearance-none! grow outline-none!  ${props.large ? "py-2!" : "py-0.5 "} `}
+        className={`appearance-none! grow outline-none!  ${props.large ? "py-1!" : "py-0.5 "} `}
         placeholder="atmosphere.handle"
         size={0}
         value={handleValue}
@@ -172,7 +172,7 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
       </div>
 
       <ButtonPrimary fullWidth className="mx-auto mb-3 mt-1">
-        Sign up through Bluesky!
+        Sign up via Bluesky!
       </ButtonPrimary>
     </Popover>
   );

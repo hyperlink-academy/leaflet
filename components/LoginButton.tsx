@@ -19,6 +19,7 @@ import { useToaster } from "./Toast";
 import { InfoSmall } from "./Icons/InfoSmall";
 import { HelpSmall } from "./Icons/HelpSmall";
 import { HelpTiny } from "./Icons/HelpTiny";
+import { BlueskyTiny } from "./Icons/BlueskyTiny";
 
 export function LoginButton() {
   let identityData = useIdentityData();
@@ -63,69 +64,90 @@ export function LoginActionButton() {
           { value: "log in", label: "Log In" },
           { value: "sign up", label: "Sign Up" },
         ]}
+        fullWidth
       />
-      {state === "log in" ? (
-        <>
-          <div className="flex justify-between">
-            <h4>Log into the Atmosphere</h4>
-            <AtmosphericHandleInfo trigger={<HelpTiny />} />
-          </div>
-          <HandleInput
-            large
-            action={<GoToArrow className="text-accent-contrast" />}
-          />
-          <hr className="border-border-light" />
-          <button
-            className="text-sm text-accent-contrast"
-            onClick={() => {
-              setState("email log in");
-            }}
-          >
-            or log in with email
-          </button>
-        </>
-      ) : state === "email log in" ? (
-        <>
-          <h4>Log in with Email</h4>
-
-          <EmailInput
-            large
-            value={loginEmail}
-            onChange={setLoginEmail}
-            action={
-              <Modal
+      <div className="accent-container flex flex-col gap-1 p-3 pt-4">
+        {state === "log in" ? (
+          <>
+            <div className="flex flex-col  mx-auto leading-snug pb-0.5">
+              <h3>Log into the Atmosphere</h3>
+              <AtmosphericHandleInfo
                 trigger={
-                  <GoToArrow
-                    className="h-fit
-                "
-                  />
+                  <div className="text-sm text-accent-contrast">
+                    What's that?
+                  </div>
                 }
-              >
-                <EmailConfirm
-                  emailValue={loginEmail}
-                  onSubmit={() => {
-                    toaster({
-                      content: <div className="font-bold">Welcome back!</div>,
-                      type: "success",
-                    });
-                  }}
-                />
-              </Modal>
-            }
-          />
-          <hr className="border-border-light" />
-          <button
-            className="text-accent-contrast text-sm"
-            onClick={() => {
-              setState("log in");
-            }}
-          >
-            or log in with the Atmosphere
-          </button>
-        </>
-      ) : (
-        <>heckin make a bluesky account yo</>
-      )}
+              />
+            </div>
+            <HandleInput
+              large
+              action={<GoToArrow className="text-accent-contrast" />}
+            />
+            <hr className="border-border-light mt-2 mb-1" />
+            <button
+              className="text-sm text-accent-contrast"
+              onClick={() => {
+                setState("email log in");
+              }}
+            >
+              or log in with email
+            </button>
+          </>
+        ) : state === "email log in" ? (
+          <>
+            <h3 className="text-center">Log in with Email</h3>
+
+            <EmailInput
+              large
+              value={loginEmail}
+              onChange={setLoginEmail}
+              action={
+                <Modal
+                  trigger={
+                    <GoToArrow
+                      className="h-fit
+                "
+                    />
+                  }
+                >
+                  <EmailConfirm
+                    emailValue={loginEmail}
+                    onSubmit={() => {
+                      toaster({
+                        content: <div className="font-bold">Welcome back!</div>,
+                        type: "success",
+                      });
+                    }}
+                  />
+                </Modal>
+              }
+            />
+            <hr className="border-border-light my-2" />
+            <button
+              className="text-accent-contrast text-sm"
+              onClick={() => {
+                setState("log in");
+              }}
+            >
+              or log in with the Atmosphere
+            </button>
+          </>
+        ) : (
+          <div className="text-center text-sm">
+            <h3 className="pb-1">
+              Leaflet is part of <br />
+              the Atmosphere.
+            </h3>
+            <div className="text-secondary pb-2">
+              Create an Atmosphere account on Bluesky to get started!
+            </div>
+            <ButtonPrimary className="mx-auto mb-1">
+              <BlueskyTiny /> Sign up via Bluesky
+            </ButtonPrimary>
+            <AtmosphericHandleInfo />
+          </div>
+        )}
+      </div>
       {/*<LoginForm text="Save your Leaflets and access them on multiple devices!" />*/}
     </Popover>
   );
