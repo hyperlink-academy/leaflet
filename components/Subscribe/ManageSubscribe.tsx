@@ -1,9 +1,12 @@
-import { ButtonSecondary } from "components/Buttons";
+"use client";
+import { useState } from "react";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { Modal } from "components/Modal";
+import { useToaster } from "components/Toast";
 import { LinkHandle } from "./HandleSubscribe";
-import { EmailInput } from "./EmailSubscribe";
+import { EmailInput, EmailConfirm } from "./EmailSubscribe";
 
 export const ManageSubscription = (props: {
   newsletterMode: boolean;
@@ -14,6 +17,8 @@ export const ManageSubscription = (props: {
     subscribed: boolean;
   };
 }) => {
+  let [email, setEmail] = useState(props.user?.email ?? "");
+  let toaster = useToaster();
   let prefClassName =
     "flex gap-2 justify-between font-bold text-secondary items-center";
   return (
@@ -68,7 +73,33 @@ export const ManageSubscription = (props: {
                 to get updates right to your inbox!
               </div>
             </div>
-            <EmailInput action="link" {...props} />
+            <EmailInput
+              value={email}
+              onChange={setEmail}
+              disabled={props.user?.loggedIn}
+              action={
+                <Modal
+                  trigger={
+                    <ButtonPrimary
+                      compact
+                      className="leading-tight! outline-none! text-sm!"
+                    >
+                      link
+                    </ButtonPrimary>
+                  }
+                >
+                  <EmailConfirm
+                    emailValue={email}
+                    onSubmit={() => {
+                      toaster({
+                        content: <div className="font-bold">Email Linked!</div>,
+                        type: "success",
+                      });
+                    }}
+                  />
+                </Modal>
+              }
+            />
           </div>
         ) : null}
         {!props.user.handle ? (

@@ -1,85 +1,32 @@
 "use client";
 import * as OneTimePasswordField from "@radix-ui/react-one-time-password-field";
 import { ButtonPrimary } from "components/Buttons";
-
 import { Input } from "components/Input";
-import { Modal } from "components/Modal";
-import { useState } from "react";
-import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
-import { GoToArrow } from "components/Icons/GoToArrow";
-import { useToaster } from "components/Toast";
 
 export const EmailInput = (props: {
-  action: "link" | "subscribe" | "login";
+  action: React.ReactNode;
   autoFocus?: boolean;
-  user?: {
-    loggedIn: boolean;
-    email: string | undefined;
-    handle: string | undefined;
-  };
+  large?: boolean;
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
 }) => {
-  let [value, setValue] = useState(
-    props.user?.loggedIn && props.user?.email ? props.user?.email : "",
-  );
-  let [state, setState] = useState<"confirm" | "success">(
-    props.user?.loggedIn && props.user?.email ? "success" : "confirm",
-  );
-  let toaster = useToaster();
-
   return (
-    <div className="relative input-with-border flex gap-2 w-full items-center mx-auto">
+    <div
+      className={` input-with-border flex gap-2 w-full items-center mx-auto py-0! ${props.large && "px-2!"}`}
+    >
       <Input
         autoFocus={props.autoFocus}
-        className={`appearance-none! outline-none! w-full pr-22 `}
-        disabled={props.user?.loggedIn}
+        className={`appearance-none! outline-none! grow ${props.large ? "py-2!" : "py-0.5 "}`}
+        disabled={props.disabled}
         placeholder="email@example.com"
         size={0}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value)}
       />
-      <Modal
-        asChild
-        trigger={
-          <div className="absolute top-0 bottom-0 right-[4px] flex items-center text-accent-contrast">
-            {props.action === "login" ? (
-              <GoToArrow />
-            ) : (
-              <ButtonPrimary
-                compact
-                className="leading-tight! outline-none! text-sm!"
-              >
-                {props.action === "link" ? "Link" : "Subscribe"}
-              </ButtonPrimary>
-            )}
-          </div>
-        }
-      >
-        {state === "success" ? (
-          <EmailSubscribeSuccess
-            email={props.user?.email}
-            handle={props.user?.handle}
-          />
-        ) : (
-          <EmailConfirm
-            emailValue={value}
-            onSubmit={() => {
-              props.action === "subscribe"
-                ? setState("success")
-                : props.action === "link"
-                  ? toaster({
-                      content: (
-                        <div className="font-bold">Linked your email!</div>
-                      ),
-                      type: "success",
-                    })
-                  : toaster({
-                      content: <div className="font-bold">Welcome back!</div>,
-                      type: "success",
-                    });
-            }}
-          />
-        )}
-      </Modal>
+      <div className={` text-accent-contrast flex items-center shrink-0 `}>
+        {props.action}
+      </div>
     </div>
   );
 };

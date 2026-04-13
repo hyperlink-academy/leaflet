@@ -14,7 +14,6 @@ import {
 } from "./Logos";
 
 import { Separator } from "components/Layout";
-import { GoToArrow } from "components/Icons/GoToArrow";
 
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
@@ -71,42 +70,28 @@ export const LinkHandle = (props: { compact?: boolean }) => {
 
 export const HandleInput = (props: {
   autoFocus?: boolean;
-  action?: "subscribe" | "link" | "login";
+  action?: React.ReactNode;
   className?: string;
+  large?: boolean;
 }) => {
   let [handleValue, setHandleValue] = useState("");
   return (
     <div
-      className={`handleInput input-with-border relative pl-0! py-0! flex gap-0 w-full ${props.className}`}
+      className={`handleInput input-with-border relative py-0! flex items-center gap-1 w-full ${props.large && "px-2!"} ${props.className} `}
     >
-      <div className="text-tertiary text-center w-8 shrink-0 mr-2 flex justify-center h-full items-center">
+      <div className="text-tertiary text-center shrink-0  flex justify-end h-full items-center">
         @
       </div>
       <Input
         autoFocus={props.autoFocus}
-        className={`appearance-none! outline-none! w-full py-0.5 pr-22`}
+        className={`appearance-none! grow outline-none!  ${props.large ? "py-2!" : "py-0.5 "} `}
         placeholder="atmosphere.handle"
         size={0}
         value={handleValue}
         onChange={(e) => setHandleValue(e.target.value)}
       />
 
-      <div className="absolute top-0 bottom-0 right-[4px] flex items-center">
-        {props.action === "login" ? (
-          <GoToArrow />
-        ) : (
-          <ButtonPrimary
-            compact
-            className="leading-tight! outline-none! text-sm!"
-          >
-            {props.action === "link"
-              ? "Link"
-              : props.action === "subscribe"
-                ? "Subscribe"
-                : null}
-          </ButtonPrimary>
-        )}
-      </div>
+      {props.action}
     </div>
   );
 };
@@ -167,31 +152,27 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
           props.trigger
         ) : (
           <div className="text-accent-contrast text-sm">
-            What's a universal handle?
+            What's the Atmosphere
           </div>
         )
       }
     >
       <div className="font-bold text-secondary">
-        Your universal handle is the username you use to sign into enabled apps
-        like...{" "}
+        The Atmosphere is a family of apps that you can access with a single
+        account
       </div>
-      <div className="opaque-container px-4 pt-2 pb-2 flex gap-2 w-full justify-between">
+
+      <div className=" text-secondary">Apps like...</div>
+      <div className="opaque-container px-4 pt-3 pb-2 flex gap-3 w-full justify-between">
         <AtApp logo={<LogoLeaflet />} name="Leaflet" />
         <AtApp logo={<LogoBluesky />} name="Bluesky" />
         <AtApp logo={<LogoBlacksky />} name="Blacksky" />
         <AtApp logo={<LogoEurosky />} name="Eurosky" />
         <AtApp logo={<LogoTangled />} name="Tangled" />
       </div>
-      <div className="text-secondary flex flex-col gap-1">
-        <div>A handle can log into ANY enabled app.</div>
-        <div>
-          ie, you can log into <strong>Leaflet</strong> with the handle you made
-          for <strong>Bluesky</strong>!
-        </div>
-      </div>
+
       <ButtonPrimary fullWidth className="mx-auto mb-3 mt-1">
-        Create a handle on Bluesky!
+        Sign up through Bluesky!
       </ButtonPrimary>
     </Popover>
   );

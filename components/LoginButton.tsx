@@ -6,11 +6,19 @@ import { ButtonPrimary } from "./Buttons";
 import { ActionButton } from "./ActionBar/ActionButton";
 import { AccountSmall } from "./Icons/AccountSmall";
 import { useIsMobile } from "src/hooks/isMobile";
-import { HandleInput } from "./Subscribe/HandleSubscribe";
-import { EmailInput } from "./Subscribe/EmailSubscribe";
+import {
+  AtmosphericHandleInfo,
+  HandleInput,
+} from "./Subscribe/HandleSubscribe";
+import { EmailInput, EmailConfirm } from "./Subscribe/EmailSubscribe";
 import { useState } from "react";
 import { GoToArrow } from "./Icons/GoToArrow";
 import { ToggleGroup } from "./ToggleGroup";
+import { Modal } from "./Modal";
+import { useToaster } from "./Toast";
+import { InfoSmall } from "./Icons/InfoSmall";
+import { HelpSmall } from "./Icons/HelpSmall";
+import { HelpTiny } from "./Icons/HelpTiny";
 
 export function LoginButton() {
   let identityData = useIdentityData();
@@ -36,12 +44,14 @@ export function LoginActionButton() {
   let [state, setState] = useState<"log in" | "sign up" | "email log in">(
     "log in",
   );
+  let [loginEmail, setLoginEmail] = useState("");
+  let toaster = useToaster();
   return (
     <Popover
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-2 py-3! w-xs"
       trigger={
         <ActionButton secondary icon={<AccountSmall />} label="Sign In" />
       }
@@ -56,27 +66,61 @@ export function LoginActionButton() {
       />
       {state === "log in" ? (
         <>
-          <h3>Atmospheric handle</h3>
-          <HandleInput className="h-10!" action="login" />
+          <div className="flex justify-between">
+            <h4>Log into the Atmosphere</h4>
+            <AtmosphericHandleInfo trigger={<HelpTiny />} />
+          </div>
+          <HandleInput
+            large
+            action={<GoToArrow className="text-accent-contrast" />}
+          />
           <hr className="border-border-light" />
           <button
+            className="text-sm text-accent-contrast"
             onClick={() => {
               setState("email log in");
             }}
           >
-            log in with email
+            or log in with email
           </button>
         </>
       ) : state === "email log in" ? (
         <>
-          <EmailInput action="login" />
+          <h4>Log in with Email</h4>
+
+          <EmailInput
+            large
+            value={loginEmail}
+            onChange={setLoginEmail}
+            action={
+              <Modal
+                trigger={
+                  <GoToArrow
+                    className="h-fit
+                "
+                  />
+                }
+              >
+                <EmailConfirm
+                  emailValue={loginEmail}
+                  onSubmit={() => {
+                    toaster({
+                      content: <div className="font-bold">Welcome back!</div>,
+                      type: "success",
+                    });
+                  }}
+                />
+              </Modal>
+            }
+          />
           <hr className="border-border-light" />
           <button
+            className="text-accent-contrast text-sm"
             onClick={() => {
               setState("log in");
             }}
           >
-            log in with atmosphere
+            or log in with the Atmosphere
           </button>
         </>
       ) : (

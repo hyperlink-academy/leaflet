@@ -1,5 +1,8 @@
+"use client";
+import { useState } from "react";
 import { SubscribeWithHandle } from "./HandleSubscribe";
-import { EmailInput } from "./EmailSubscribe";
+import { EmailInput, EmailConfirm } from "./EmailSubscribe";
+import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { PostPubInfo } from "app/lish/[did]/[publication]/[rkey]/PostPubInfo";
@@ -44,15 +47,42 @@ export const SubscribeInput = (props: {
     subscribed: boolean;
   };
 }) => {
+  let [email, setEmail] = useState(props.user?.email ?? "");
+  let [confirmState, setConfirmState] = useState<"confirm" | "success">(
+    "confirm",
+  );
+
   if (props.user.subscribed) {
     return <ManageSubscription {...props} />;
   }
   if (props.newsletterMode) {
     return (
       <EmailInput
-        action="subscribe"
-        user={props.user}
+        value={email}
+        onChange={setEmail}
+        disabled={props.user?.loggedIn}
         autoFocus={props.autoFocus}
+        action={
+          <Modal
+            trigger={
+              <ButtonPrimary compact className="leading-tight! outline-none! text-sm!">
+                subscribe
+              </ButtonPrimary>
+            }
+          >
+            {confirmState === "success" ? (
+              <EmailSubscribeSuccess
+                email={props.user?.email}
+                handle={props.user?.handle}
+              />
+            ) : (
+              <EmailConfirm
+                emailValue={email}
+                onSubmit={() => setConfirmState("success")}
+              />
+            )}
+          </Modal>
+        }
       />
     );
   } else
