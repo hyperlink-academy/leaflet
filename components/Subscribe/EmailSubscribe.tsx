@@ -33,19 +33,19 @@ export const EmailInput = (props: {
 
 export const EmailConfirm = (props: {
   emailValue: string;
-  onSubmit: () => void;
+  onSubmit: (code: string) => void;
 }) => {
   let inputClassName = "input-with-border text-2xl w-8 h-12 text-center";
   return (
-    <div className="flex flex-col text-center max-w-sm pb-2">
+    <div className="flex flex-col text-center max-w-sm pb-2 text-secondary leading-snug">
       <h3>Confirm your email</h3>
-      Enter the confirmation code sent to <br />
+      Enter the code sent to <br />
       <div className="italic min-w-0 truncate">{props.emailValue}</div>
       <OneTimePasswordField.Root
         autoSubmit
         validationType="alphanumeric"
-        onAutoSubmit={() => {
-          props.onSubmit();
+        onAutoSubmit={(value) => {
+          props.onSubmit(value);
         }}
       >
         <div className="flex gap-1 pt-4 w-full justify-center">

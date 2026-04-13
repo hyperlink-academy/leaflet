@@ -17,6 +17,7 @@ export const HandleInput = (props: {
   action?: React.ReactNode;
   className?: string;
   large?: boolean;
+  onSubmit?: (handle: string) => void;
 }) => {
   let [handleValue, setHandleValue] = useState("");
   let [suggestions, setSuggestions] = useState<ActorSuggestion[]>([]);
@@ -53,19 +54,26 @@ export const HandleInput = (props: {
     setHandleValue(selected);
     setDropdownOpen(false);
     setSuggestions([]);
+    props.onSubmit?.(selected);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!dropdownOpen) return;
     if (e.key === "ArrowDown") {
+      if (!dropdownOpen) return;
       e.preventDefault();
       setSelectedIndex((i) => Math.min(i + 1, suggestions.length - 1));
     } else if (e.key === "ArrowUp") {
+      if (!dropdownOpen) return;
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && suggestions[selectedIndex]) {
-      e.preventDefault();
-      handleSelect(suggestions[selectedIndex].handle);
+    } else if (e.key === "Enter") {
+      if (dropdownOpen && suggestions[selectedIndex]) {
+        e.preventDefault();
+        handleSelect(suggestions[selectedIndex].handle);
+      } else if (!dropdownOpen && handleValue) {
+        e.preventDefault();
+        props.onSubmit?.(handleValue);
+      }
     } else if (e.key === "Escape") {
       setDropdownOpen(false);
     }
@@ -90,7 +98,17 @@ export const HandleInput = (props: {
             onKeyDown={handleKeyDown}
             autoComplete="off"
           />
-          {props.action}
+          {props.onSubmit ? (
+            <button
+              type="button"
+              onClick={() => props.onSubmit!(handleValue)}
+              disabled={!handleValue}
+            >
+              {props.action}
+            </button>
+          ) : (
+            props.action
+          )}
         </div>
       </RadixPopover.Anchor>
       <RadixPopover.Portal>
