@@ -4,6 +4,8 @@ import { Input } from "components/Input";
 import { Combobox, ComboboxResult } from "components/Combobox";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import { DotLoader } from "components/utils/DotLoader";
+import { theme } from "tailwind.config";
 
 type ActorSuggestion = {
   handle: string;
@@ -17,6 +19,7 @@ export const HandleInput = (props: {
   action?: React.ReactNode;
   className?: string;
   large?: boolean;
+  loading?: boolean;
   onSubmit?: (handle: string) => void;
 }) => {
   let [handleValue, setHandleValue] = useState("");
@@ -63,7 +66,7 @@ export const HandleInput = (props: {
 
   return (
     <Combobox
-      open={dropdownOpen}
+      open={dropdownOpen && !props.loading}
       onOpenChange={(open) => {
         if (!open) {
           setDropdownOpen(false);
@@ -80,6 +83,17 @@ export const HandleInput = (props: {
       trigger={
         <div
           className={`handleInput input-with-border relative py-0! flex items-center gap-1 w-full ${props.large && "px-2!"} ${props.className}`}
+          style={
+            props.loading
+              ? {
+                  backgroundColor: theme.colors["border-light"],
+                  color: theme.colors.tertiary,
+                }
+              : {
+                  backgroundColor: theme.colors["bg-page"],
+                  color: theme.colors.primary,
+                }
+          }
         >
           <div className="text-tertiary text-center shrink-0 flex justify-end h-full items-center">
             @
@@ -94,8 +108,11 @@ export const HandleInput = (props: {
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             autoComplete="off"
+            disabled={props.loading}
           />
-          {props.onSubmit ? (
+          {props.loading ? (
+            <DotLoader />
+          ) : props.onSubmit ? (
             <button
               type="button"
               onClick={(e) => {

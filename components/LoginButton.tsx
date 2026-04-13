@@ -47,18 +47,23 @@ export function LoginActionButton() {
   >("log in");
   let [loginEmail, setLoginEmail] = useState("");
   let [tokenId, setTokenId] = useState<string | null>(null);
+  let [loading, setLoading] = useState(false);
   let toaster = useToaster();
 
   const handleEmailSubmit = async () => {
+    setLoading(true);
     const id = await requestAuthEmailToken(loginEmail);
+    setLoading(false);
     setTokenId(id);
     setState("email confirm");
   };
 
   const handleCodeSubmit = async (code: string) => {
     if (!tokenId) return;
+    setLoading(true);
     const confirmedToken = await confirmEmailAuthToken(tokenId, code);
     if (!confirmedToken) {
+      setLoading(false);
       toaster({
         content: <div className="font-bold">Incorrect code!</div>,
         type: "error",
@@ -67,10 +72,6 @@ export function LoginActionButton() {
       const localLeaflets = getHomeDocs();
       await loginWithEmailToken(localLeaflets.filter((l) => !l.hidden));
       mutate("identity");
-      toaster({
-        content: <div className="font-bold">Welcome back!</div>,
-        type: "success",
-      });
     }
   };
   return (
@@ -85,95 +86,108 @@ export function LoginActionButton() {
       }
     >
       <div className="flex flex-col gap-2 w-xs">
-      <ToggleGroup
-        value={
-          state === "email log in" || state === "email confirm"
-            ? "log in"
-            : state
-        }
-        onChange={setState}
-        options={[
-          { value: "log in", label: "Log In" },
-          { value: "sign up", label: "Sign Up" },
-        ]}
-        fullWidth
-      />
-      <div className="accent-container flex flex-col gap-1 p-3 pt-4">
-        {state === "log in" ? (
-          <>
-            <div className="flex flex-col gap-1 text-center mx-auto leading-tight pb-2">
-              <h3>
-                Log in with <br />
-                Atmosphere account
-              </h3>
-              <AtmosphericHandleInfo
-                trigger={
-                  <div className="text-sm text-accent-contrast">
-                    What's that?
-                  </div>
+        <ToggleGroup
+          value={
+            state === "email log in" || state === "email confirm"
+              ? "log in"
+              : state
+          }
+          onChange={setState}
+          options={[
+            { value: "log in", label: "Log In" },
+            { value: "sign up", label: "Sign Up" },
+          ]}
+          fullWidth
+        />
+        <div className="accent-container flex flex-col gap-1 p-3 pt-4">
+          {state === "log in" ? (
+            <>
+              <div className="flex flex-col gap-1 text-center mx-auto leading-tight pb-2">
+                <h3>
+                  Log in with <br />
+                  Atmosphere account
+                </h3>
+                <AtmosphericHandleInfo
+                  trigger={
+                    <div className="text-sm text-accent-contrast">
+                      What's that?
+                    </div>
+                  }
+                />
+              </div>
+              <HandleInput
+                large
+                action={<GoToArrow className="text-accent-contrast" />}
+                loading={loading}
+                onSubmit={(handle) => {
+                  setLoading(true);
+                  window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=/`;
+                }}
+              />
+              <hr className="border-border-light mt-2 mb-1" />
+              <button
+                className="text-sm text-accent-contrast"
+                onClick={() => {
+                  setState("email log in");
+                }}
+              >
+                or log in with email
+              </button>
+            </>
+          ) : state === "email log in" ? (
+            <form
+              className="flex flex-col gap-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleEmailSubmit();
+              }}
+            >
+              <h3 className="text-center">Log in with Email</h3>
+
+              <EmailInput
+                large
+                value={loginEmail}
+                onChange={setLoginEmail}
+                loading={loading}
+                action={
+                  <button type="submit">
+                    <GoToArrow className="h-fit" />
+                  </button>
                 }
               />
-            </div>
-            <HandleInput
-              large
-              action={<GoToArrow className="text-accent-contrast" />}
-              onSubmit={(handle) => {
-                window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=/`;
-              }}
+              <hr className="border-border-light my-2" />
+              <button
+                type="button"
+                className="text-accent-contrast text-sm"
+                onClick={() => {
+                  setState("log in");
+                }}
+              >
+                or log in with Atmosphere account
+              </button>
+            </form>
+          ) : state === "email confirm" ? (
+            <EmailConfirm
+              emailValue={loginEmail}
+              loading={loading}
+              onSubmit={handleCodeSubmit}
             />
-            <hr className="border-border-light mt-2 mb-1" />
-            <button
-              className="text-sm text-accent-contrast"
-              onClick={() => {
-                setState("email log in");
-              }}
-            >
-              or log in with email
-            </button>
-          </>
-        ) : state === "email log in" ? (
-          <form className="flex flex-col gap-1" onSubmit={(e) => { e.preventDefault(); handleEmailSubmit(); }}>
-            <h3 className="text-center">Log in with Email</h3>
-
-            <EmailInput
-              large
-              value={loginEmail}
-              onChange={setLoginEmail}
-              action={
-                <button type="submit">
-                  <GoToArrow className="h-fit" />
-                </button>
-              }
-            />
-            <hr className="border-border-light my-2" />
-            <button
-              type="button"
-              className="text-accent-contrast text-sm"
-              onClick={() => {
-                setState("log in");
-              }}
-            >
-              or log in with Atmosphere account
-            </button>
-          </form>
-        ) : state === "email confirm" ? (
-          <EmailConfirm emailValue={loginEmail} onSubmit={handleCodeSubmit} />
-        ) : (
-          <div className="text-center text-sm">
-            <h3 className="pb-1">
-              Leaflet is part of <br />
-              the Atmosphere.
-            </h3>
-            <div className="text-secondary pb-3">
-              Create an Atmosphere account on Bluesky to get started!
+          ) : (
+            <div className="text-center text-sm">
+              <h3 className="pb-1">
+                Leaflet is part of <br />
+                the Atmosphere.
+              </h3>
+              <div className="text-secondary pb-3">
+                Create an Atmosphere account on Bluesky to get started!
+              </div>
+              <ButtonPrimary className="mx-auto mb-1">
+                <BlueskyTiny /> Sign up via Bluesky
+              </ButtonPrimary>
+              <AtmosphericHandleInfo />
             </div>
-            <ButtonPrimary className="mx-auto mb-1">
-              <BlueskyTiny /> Sign up via Bluesky
-            </ButtonPrimary>
-            <AtmosphericHandleInfo />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
       </div>
     </Modal>
   );
