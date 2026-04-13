@@ -1,10 +1,9 @@
 "use client";
 import { ButtonPrimary } from "components/Buttons";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { Input } from "components/Input";
 import { Popover } from "components/Popover";
 import Link from "next/link";
-import { useState } from "react";
+import { HandleInput } from "./HandleInput";
 import {
   LogoBlacksky,
   LogoBluesky,
@@ -68,33 +67,6 @@ export const LinkHandle = (props: { compact?: boolean }) => {
   );
 };
 
-export const HandleInput = (props: {
-  autoFocus?: boolean;
-  action?: React.ReactNode;
-  className?: string;
-  large?: boolean;
-}) => {
-  let [handleValue, setHandleValue] = useState("");
-  return (
-    <div
-      className={`handleInput input-with-border relative py-0! flex items-center gap-1 w-full ${props.large && "px-2!"} ${props.className} `}
-    >
-      <div className="text-tertiary text-center shrink-0  flex justify-end h-full items-center">
-        @
-      </div>
-      <Input
-        autoFocus={props.autoFocus}
-        className={`appearance-none! grow outline-none!  ${props.large ? "py-1!" : "py-0.5 "} `}
-        placeholder="atmosphere.handle"
-        size={0}
-        value={handleValue}
-        onChange={(e) => setHandleValue(e.target.value)}
-      />
-
-      {props.action}
-    </div>
-  );
-};
 
 export const HandleInputandOAuth = (props: {
   link?: boolean;
