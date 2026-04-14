@@ -8,6 +8,7 @@ import { AtUri } from "@atproto/syntax";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import PublicationDashboard from "./PublicationDashboard";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { LoginModal } from "components/LoginButton";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -37,7 +38,16 @@ export default async function Publication(props: {
   if (!identity || !identity.atp_did)
     return (
       <NotFoundLayout>
-        <p>Looks like you&apos;re not logged in.</p>
+        <p>
+          Looks like you&apos;re not logged in.{" "}
+          <LoginModal
+            redirectRoute={`/lish/${params.did}/${params.publication}/dashboard`}
+            trigger={
+              <div className="text-accent-contrast font-bold">Log in here</div>
+            }
+          />
+          !
+        </p>
         <p>
           If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
