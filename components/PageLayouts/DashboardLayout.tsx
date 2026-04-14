@@ -217,7 +217,7 @@ export function DashboardLayout<
                         })}
                       </div>
                     )}
-                    {props.publication && (
+                    {props.publication && controls && (
                       <button
                         className={`sm:hidden block text-tertiary`}
                         onClick={() => {

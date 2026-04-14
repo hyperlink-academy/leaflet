@@ -42,6 +42,7 @@ export function usePubThemeEditorState() {
     theme: localPubTheme,
     setTheme,
     changes,
+    resetChanges,
   } = useLocalPubTheme(record?.theme, showPageBackground);
   let [image, setImage] = useState<ImageState | null>(
     PubLeafletThemeBackgroundImage.isMain(record?.theme?.backgroundImage)
@@ -115,6 +116,7 @@ export function usePubThemeEditorState() {
         };
       return pub;
     }, false);
+    resetChanges();
     setLoading(false);
     return result;
   };
@@ -130,6 +132,7 @@ export function usePubThemeEditorState() {
     localPubTheme,
     setTheme,
     changes,
+    resetChanges,
     image,
     setImage,
     pageWidth,

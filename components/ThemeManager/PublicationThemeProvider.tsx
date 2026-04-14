@@ -199,6 +199,7 @@ export const useLocalPubTheme = (
   return {
     theme: mergedTheme,
     setTheme,
+    resetChanges: () => setTheme({}),
     changes: Object.keys(localOverrides).length > 0,
   };
 };
