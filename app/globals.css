@@ -565,6 +565,7 @@ pre.shiki {
   cursor: pointer;
   color: rgb(var(--color-tertiary));
   opacity: 0.7;
+  position: relative;
 }
 .footnote-ref::after {
   content: counter(footnote);
@@ -579,6 +580,29 @@ pre.shiki {
 }
 .footnote-ref ~ img.ProseMirror-separator {
   display: none;
+}
+
+/*
+ * Expand the tap target around footnote anchors on touch devices so a small
+ * superscript is easy to hit. Uses an absolutely-positioned pseudo-element so
+ * it does not affect the anchor's layout box, its getBoundingClientRect (used
+ * by the footnote side column to align panels to their anchors), or the
+ * surrounding text flow. Since the pseudo-element is not part of the inline
+ * flow and has no text content, it does not interfere with text selection.
+ */
+.footnote-ref-tap {
+  position: relative;
+}
+@media (hover: none) and (pointer: coarse) {
+  .footnote-ref::before,
+  .footnote-ref-tap::before {
+    content: "";
+    position: absolute;
+    top: -12px;
+    bottom: -8px;
+    left: -4px;
+    right: -4px;
+  }
 }
 
 .footnote-side-enter {

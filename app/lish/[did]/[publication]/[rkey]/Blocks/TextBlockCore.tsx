@@ -56,7 +56,7 @@ export function TextBlockCore(props: TextBlockCoreProps) {
         );
       } else {
         children.push(
-          <sup key={counter} className="text-accent-contrast cursor-pointer text-[0.75em]" id={`fnref-${isFootnote.footnoteId}`}>
+          <sup key={counter} className="footnote-ref-tap text-accent-contrast cursor-pointer text-[0.75em]" id={`fnref-${isFootnote.footnoteId}`}>
             <a href={`#fn-${isFootnote.footnoteId}`} className="no-underline hover:underline">{fnIndex}</a>
           </sup>,
         );
