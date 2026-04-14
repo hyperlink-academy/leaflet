@@ -8,8 +8,10 @@ import {
 } from "./NavigationButtons";
 import { PublicationButtons } from "./Publications";
 import { Sidebar } from "./Sidebar";
-import { LoginActionButton, LoginButton } from "components/LoginButton";
+import { LoginModal } from "components/LoginButton";
 import { ProfileButton } from "./ProfileButton";
+import { ActionButton } from "./ActionButton";
+import { AccountSmall } from "components/Icons/AccountSmall";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;
@@ -35,7 +37,16 @@ export const DesktopNavigation = (props: {
             />
           </>
         ) : (
-          <LoginActionButton />
+          <LoginModal
+            asChild
+            trigger={
+              <ActionButton
+                secondary
+                icon={<AccountSmall />}
+                label="Log In/Sign Up"
+              />
+            }
+          />
         )}
       </Sidebar>
 

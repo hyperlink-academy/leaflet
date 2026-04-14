@@ -13,12 +13,12 @@ import { ButtonPrimary } from "components/Buttons";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import { AppBskyActorProfile, AtUri } from "@atproto/api";
-import { BlueskyLogin } from "app/login/LoginForm";
 import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
 import { timeAgo } from "src/utils/timeAgo";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { ProfilePopover } from "components/ProfilePopover";
+import { LoginModal } from "components/LoginButton";
 
 export type Comment = {
   record: Json;
@@ -61,9 +61,16 @@ export function CommentsDrawerContent(props: {
           {identity?.atp_did ? (
             <CommentBox doc_uri={props.document_uri} pageId={props.pageId} />
           ) : (
-            <div className="w-full accent-container text-tertiary text-center italic p-3 flex flex-col gap-2">
-              Connect a Bluesky account to comment
-              <BlueskyLogin redirectRoute={redirectRoute} />
+            <div className="w-full accent-container text-tertiary text-center italic p-3 gap-2">
+              <span className="text-accent-contrast font-bold">
+                <LoginModal
+                  noEmailLogin
+                  trigger={identity ? "Link" : "Log in"}
+                  redirectRoute={redirectRoute}
+                />
+              </span>{" "}
+              {identity ? " " : "with "}
+              an Atmosphere account to comment
             </div>
           )}
           <hr className="border-border-light" />

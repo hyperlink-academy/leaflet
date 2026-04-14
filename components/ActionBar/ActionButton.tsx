@@ -57,10 +57,10 @@ export const ActionButton = forwardRef<
       className={`
       actionButton relative font-bold
       rounded-md border
-      flex gap-2 items-center justify-start
+      flex gap-2 items-start justify-start
       sm:w-full sm:max-w-full p-1
       w-max
-      ${smallOnMobile && "sm:text-base text-sm py-0! sm:py-1! sm:h-fit h-6"}
+      ${smallOnMobile && "sm:text-base text-sm py-0! sm:py-1! sm:h-fit h-6 items-center!"}
       ${
         primary
           ? "bg-accent-1 border-accent-1 text-accent-2 transparent-outline sm:hover:outline-accent-contrast focus:outline-accent-1 outline-offset-1 "

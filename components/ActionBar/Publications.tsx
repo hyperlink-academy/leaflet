@@ -15,11 +15,12 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { Popover } from "components/Popover";
 import { BlueskyLogin } from "app/login/LoginForm";
-import { ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { type navPages } from "./NavigationButtons";
+import { LoginModal } from "components/LoginButton";
 
 export const PublicationButtons = (props: {
   currentPage: navPages;
@@ -67,15 +68,15 @@ export const PublicationButtons = (props: {
       )}
 
       {identity.publications?.map((d) => {
-          return (
-            <PublicationOption
-              {...d}
-              key={d.uri}
-              record={d.record}
-              current={d.uri === props.currentPubUri}
-            />
-          );
-        })}
+        return (
+          <PublicationOption
+            {...d}
+            key={d.uri}
+            record={d.record}
+            current={d.uri === props.currentPubUri}
+          />
+        );
+      })}
       <Link
         href={"/lish/createPub"}
         className={`pubListCreateNew group/new-pub text-tertiary hover:text-accent-contrast flex gap-2 items-center p-1 no-underline! ${props.optionClassName}`}
@@ -135,7 +136,7 @@ const PubListEmpty = () => {
       <Popover
         side="right"
         align="start"
-        className="p-1! max-w-56"
+        className="p-1! max-w-full sm:max-w-xs w-[1000px] "
         asChild
         trigger={
           <ActionButton
@@ -156,21 +157,20 @@ export const PubListEmptyContent = (props: { compact?: boolean }) => {
 
   return (
     <div
-      className={`bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm`}
+      className={`accent-container w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4`}
     >
       <div className="mx-auto pt-2 scale-90">
         <PubListEmptyIllo />
       </div>
-      <div className="pt-1 font-bold">Publish on AT Proto</div>
+      <div className="pt-1 font-bold">Publish on the Atmosphere</div>
       {identity && identity.atp_did ? (
         //  has ATProto account and no pubs
         <>
-          <div className="pb-2 text-secondary text-xs">
-            Start a new publication <br />
-            on AT Proto
+          <div className="pb-3 text-secondary text-sm">
+            Start a new publication, newsletter, or blog on the Atmosphere!
           </div>
           <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
-            <ButtonSecondary className="text-sm mx-auto" compact>
+            <ButtonSecondary className=" mx-auto " compact>
               Start a Publication!
             </ButtonSecondary>
           </SpeedyLink>
@@ -178,11 +178,19 @@ export const PubListEmptyContent = (props: { compact?: boolean }) => {
       ) : (
         // no ATProto account and no pubs
         <>
-          <div className="pb-2 text-secondary text-xs">
-            Link a Bluesky account to start <br /> a new publication on AT Proto
+          <div className="pb-3 text-secondary text-sm">
+            Start a new publication, newsletter, or blog on the Atmosphere!
           </div>
 
-          <BlueskyLogin compact />
+          <LoginModal
+            noEmailLogin
+            asChild
+            trigger={
+              <ButtonPrimary compact className="mx-auto">
+                {identity ? "Link to" : "Log in with"} Atmosphere
+              </ButtonPrimary>
+            }
+          />
         </>
       )}
     </div>

@@ -21,10 +21,13 @@ import {
 import { DotLoader } from "components/utils/DotLoader";
 import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";
-import LoginForm from "app/login/LoginForm";
+
 import { RSSSmall } from "components/Icons/RSSSmall";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { RSSTiny } from "components/Icons/RSSTiny";
+import { LoginModal } from "components/LoginButton";
+import { Avatar } from "components/Avatar";
+import { useRecordFromDid } from "src/utils/useRecordFromDid";
 
 export const SubscribeWithBluesky = (props: {
   compact?: boolean;
@@ -188,52 +191,39 @@ let BlueskySubscribeButton = (props: {
     props.setLocalSubscribeState();
   }, null);
 
-  let [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  let { data: profile } = useRecordFromDid(identity?.atp_did);
 
   if (!identity?.atp_did) {
     return (
-      <Popover
-        asChild
-        className="max-w-xs"
-        trigger={
-          <ButtonPrimary
-            compact={props.compact}
-            className={`place-self-center ${props.compact && "text-sm"}`}
-          >
-            <BlueskyTiny /> Subscribe with Bluesky
-          </ButtonPrimary>
-        }
-      >
-        {isClient && (
-          <LoginForm
-            text="Log in to subscribe to this publication!"
-            noEmail
-            redirectRoute={window?.location.href + "?refreshAuth"}
-            action={{ action: "subscribe", publication: props.pub_uri }}
-          />
-        )}
-      </Popover>
+      <LoginModal
+        trigger={<ButtonPrimary>Log in to Subscribe!</ButtonPrimary>}
+        noEmailLogin
+      />
     );
   }
-
   return (
     <div className="flex flex-col gap-2 place-self-center">
       <form
         action={subscribe}
         className="place-self-center flex flex-row gap-1"
       >
-        <ButtonPrimary
-          compact={props.compact}
-          className={props.compact ? "text-sm" : ""}
-        >
+        <ButtonPrimary type="button" className="mx-auto max-w-full">
           {subscribePending ? (
             <DotLoader />
           ) : (
             <>
-              <BlueskyTiny /> Subscribe with Bluesky
+              <span className="shrink-0">Subscribe as</span>
+              <span className="flex gap-1 items-center max-w-full grow min-w-0">
+                <Avatar
+                  src={profile?.avatar}
+                  displayName={profile?.displayName}
+                  size="small"
+                />
+
+                <div className="grow truncate">
+                  {profile?.displayName ? profile.displayName : profile?.handle}
+                </div>
+              </span>
             </>
           )}
         </ButtonPrimary>

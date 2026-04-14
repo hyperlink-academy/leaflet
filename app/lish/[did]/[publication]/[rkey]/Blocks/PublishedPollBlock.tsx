@@ -12,11 +12,11 @@ import { AtpAgent } from "@atproto/api";
 import { voteOnPublishedPoll } from "../voteOnPublishedPoll";
 import { PollData } from "../fetchPollData";
 import { Popover } from "components/Popover";
-import LoginForm from "app/login/LoginForm";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { getVoterIdentities, VoterIdentity } from "../getVoterIdentities";
 import { Json } from "supabase/database.types";
 import { InfoSmall } from "components/Icons/InfoSmall";
+import { LoginModal } from "components/LoginButton";
 
 // Helper function to extract the first option from a vote record
 const getVoteOption = (voteRecord: any): string | null => {
@@ -149,22 +149,15 @@ export const PublishedPollBlock = (props: {
                   {isVoting ? "Voting..." : "Vote!"}
                 </ButtonPrimary>
               ) : (
-                <Popover
+                <LoginModal
                   asChild
+                  noEmailLogin
                   trigger={
                     <ButtonPrimary className="place-self-center">
                       <BlueskyTiny /> Login to vote
                     </ButtonPrimary>
                   }
-                >
-                  {isClient && (
-                    <LoginForm
-                      text="Log in to vote on this poll!"
-                      noEmail
-                      redirectRoute={window?.location.href + "?refreshAuth"}
-                    />
-                  )}
-                </Popover>
+                />
               )}
             </div>
           </div>

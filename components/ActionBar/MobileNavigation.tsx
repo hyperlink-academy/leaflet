@@ -7,8 +7,10 @@ import {
   WriterButton,
 } from "./NavigationButtons";
 import { PublicationNavigation } from "./PublicationNavigation";
-import { LoginActionButton } from "components/LoginButton";
+import { LoginModal } from "components/LoginButton";
 import { ProfileButton } from "./ProfileButton";
+import { ActionButton } from "./ActionButton";
+import { AccountSmall } from "components/Icons/AccountSmall";
 
 export const MobileNavigation = (props: {
   currentPage: navPages;
@@ -56,7 +58,16 @@ export const MobileNavigation = (props: {
           <ProfileButton />
         </div>
       ) : (
-        <LoginActionButton />
+        <LoginModal
+          asChild
+          trigger={
+            <ActionButton
+              secondary
+              icon={<AccountSmall />}
+              label="Log In/Sign Up"
+            />
+          }
+        />
       )}
     </div>
   );

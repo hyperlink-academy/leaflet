@@ -2,20 +2,15 @@ import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { CreatePubForm } from "./CreatePubForm";
 import { getIdentityData } from "actions/getIdentityData";
 import LoginForm from "app/login/LoginForm";
+import { LoginContent } from "components/LoginButton";
 
 export default async function CreatePub() {
   let identity = await getIdentityData();
   if (!identity)
     return (
       <div className="createPubPage relative w-full h-full flex items-stretch bg-bg-leaflet p-4">
-        <div className="createPubContent h-full flex items-center max-w-sm w-full mx-auto">
-          <div className="frosted-container w-full p-3 justify-items-center text-center">
-            <LoginForm
-              text="Log in to create a publication!"
-              noEmail
-              redirectRoute={"/lish/createPub"}
-            />
-          </div>
+        <div className="createPubContent h-full flex items-center w-fit mx-auto">
+          <LoginContent pageView noEmailLogin />
         </div>
       </div>
     );
