@@ -586,19 +586,12 @@ pre.shiki {
   display: none;
 }
 
-/* Absolutely-positioned so the anchor's getBoundingClientRect stays unchanged —
-   FootnoteSideColumnLayout uses it to align footnote panels to their anchors. */
-@media (hover: none) and (pointer: coarse) {
+/* Enlarge the tap target on mobile. Vertical padding on inline elements
+   doesn't change line-height, so text flow is preserved. */
+@media (max-width: 1279px) {
   .footnote-ref {
-    position: relative;
-  }
-  .footnote-ref::before {
-    content: "";
-    position: absolute;
-    top: -8px;
-    bottom: -8px;
-    left: -4px;
-    right: -4px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
 }
 
