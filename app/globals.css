@@ -584,11 +584,9 @@ pre.shiki {
 /* Absolutely-positioned so the anchor's getBoundingClientRect stays unchanged —
    FootnoteSideColumnLayout uses it to align footnote panels to their anchors. */
 @media (hover: none) and (pointer: coarse) {
-  .footnote-ref,
   .footnote-ref-tap {
     position: relative;
   }
-  .footnote-ref::before,
   .footnote-ref-tap::before {
     content: "";
     position: absolute;

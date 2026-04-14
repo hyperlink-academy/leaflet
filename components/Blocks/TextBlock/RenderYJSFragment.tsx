@@ -100,7 +100,7 @@ export function RenderYJSFragment({
                   return (
                     <span
                       key={index}
-                      className="footnote-ref"
+                      className="footnote-ref footnote-ref-tap"
                       data-footnote-id={id}
                     />
                   );
