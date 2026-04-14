@@ -561,33 +561,38 @@ pre.shiki {
   counter-reset: footnote;
 }
 .footnote-ref {
-  counter-increment: footnote;
   cursor: pointer;
+}
+/* Editor spans carry data-footnote-id and render their number via a CSS
+   counter; published anchors already include the index as text content, so
+   the counter-driven styling is scoped to the editor only. */
+.footnote-ref[data-footnote-id] {
+  counter-increment: footnote;
   color: rgb(var(--color-tertiary));
   opacity: 0.7;
 }
-.footnote-ref::after {
+.footnote-ref[data-footnote-id]::after {
   content: counter(footnote);
   vertical-align: super;
   padding-left: 2px;
   font-size: 75%;
   line-height: 0rem;
 }
-.footnote-ref ~ br.ProseMirror-trailingBreak {
+.footnote-ref[data-footnote-id] ~ br.ProseMirror-trailingBreak {
   display: inline;
   width: 4px;
 }
-.footnote-ref ~ img.ProseMirror-separator {
+.footnote-ref[data-footnote-id] ~ img.ProseMirror-separator {
   display: none;
 }
 
 /* Absolutely-positioned so the anchor's getBoundingClientRect stays unchanged —
    FootnoteSideColumnLayout uses it to align footnote panels to their anchors. */
 @media (hover: none) and (pointer: coarse) {
-  .footnote-ref-tap {
+  .footnote-ref {
     position: relative;
   }
-  .footnote-ref-tap::before {
+  .footnote-ref::before {
     content: "";
     position: absolute;
     top: -8px;

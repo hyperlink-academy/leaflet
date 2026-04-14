@@ -38,7 +38,7 @@ export function PublishedFootnoteRefRenderer(props: {
   return (
     <sup
       ref={ref}
-      className="footnote-ref-tap text-accent-contrast cursor-pointer"
+      className="footnote-ref text-accent-contrast cursor-pointer"
       id={`fnref-${props.footnoteId}`}
       onClick={(e) => {
         e.preventDefault();

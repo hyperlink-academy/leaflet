@@ -225,7 +225,7 @@ let baseSchema = {
         return [
           "span",
           {
-            class: "footnote-ref footnote-ref-tap",
+            class: "footnote-ref",
             "data-footnote-id": node.attrs.footnoteEntityID,
           },
         ];
