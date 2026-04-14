@@ -43,7 +43,6 @@ export const PubDomainSettings = () => {
 
   return (
     <>
-      <h3 className="font-bold text-primary">Domains</h3>
       <div className="flex flex-col gap-1">
         <h4>This Publication&apos;s Domains</h4>
         <div className="text-xs text-tertiary -mb-1">DEFAULT</div>

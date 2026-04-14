@@ -17,8 +17,7 @@ export function PostSettings(props: {
   let cardBorderHidden = useCardBorderHidden();
   return (
     <>
-      <DashboardContainer>
-        <h3>Discovery</h3>
+      <DashboardContainer section="Discovery">
         <Toggle
           toggle={props.showInDiscover}
           onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
@@ -35,10 +34,8 @@ export function PostSettings(props: {
           </div>
         </Toggle>
       </DashboardContainer>
-      {cardBorderHidden && <hr className="border-border-light my-2" />}
 
-      <DashboardContainer>
-        <h3>Post Layout</h3>
+      <DashboardContainer section="Post Layout">
         <Toggle
           toggle={props.showPrevNext}
           onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
@@ -48,9 +45,8 @@ export function PostSettings(props: {
           </div>
         </Toggle>
       </DashboardContainer>
-      {cardBorderHidden && <hr className="border-border-light my-2" />}
-      <DashboardContainer>
-        <h3>Post Interactions</h3>
+
+      <DashboardContainer section="Post Interactions">
         <div className="flex flex-col gap-2">
           <Toggle
             toggle={props.showComments}

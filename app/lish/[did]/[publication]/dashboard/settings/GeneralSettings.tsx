@@ -16,8 +16,7 @@ export function GeneralSettings(props: {
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <DashboardContainer>
-      <h3 className="font-bold text-primary">General Settings</h3>
+    <DashboardContainer section="General Settings">
 
       <div className="flex flex-col gap-2 pb-2">
         <p className=" text-secondary  font-bold">

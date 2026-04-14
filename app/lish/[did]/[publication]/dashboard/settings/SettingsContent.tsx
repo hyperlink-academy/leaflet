@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { mutate } from "swr";
@@ -18,6 +18,8 @@ import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { ManageProSubscription } from "./ManageProSubscription";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
+import { Modal } from "components/Modal";
+import { Input } from "components/Input";
 
 type SettingsView = "all" | "theme";
 
@@ -163,12 +165,9 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           setIconFile={setIconFile}
         />
 
-        {cardBorderHidden && <hr className="border-border-light my-2" />}
-        <DashboardContainer>
+        <DashboardContainer section="Theme and Layout">
           <ThemeSettings />
         </DashboardContainer>
-
-        {cardBorderHidden && <hr className="border-border-light my-2" />}
 
         {/* ── Post Settings ── */}
         <PostSettings
@@ -184,22 +183,27 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           setShowInDiscover={setShowInDiscover}
         />
 
-        {cardBorderHidden && <hr className="border-border-light my-2" />}
-
-        <DashboardContainer>
-          <PubDomainSettings />
+        <DashboardContainer section="Domains">
+          <div className="text-secondary">
+            <PubDomainSettings />
+          </div>
         </DashboardContainer>
-        {cardBorderHidden && <hr className="border-border-light my-2" />}
 
-        <DashboardContainer className="bg-[rgb(var(--accent-light))]">
-          <h3>Leaflet Pro</h3>
+        <DashboardContainer section="Leaflet Pro" className="pb-4">
           {canSeePro && !isPro ? (
             <UpgradeToProButton />
           ) : (
             <ManageProSubscription compact />
           )}
         </DashboardContainer>
-        {cardBorderHidden && <div className="spacer h-4" />}
+        <div className="flex flex-col gap-1">
+          <hr className="border-border border-2" />
+          <hr className="border-border border-2" />
+        </div>
+
+        <DashboardContainer section="DANGER!" className="pb-4">
+          <DeletePublication />
+        </DashboardContainer>
 
         {hasUnsavedChanges && <SettingsFooter loading={loading} />}
       </div>
@@ -254,13 +258,66 @@ function SettingsFooter(props: { loading: boolean }) {
 export const DashboardContainer = (props: {
   children: React.ReactNode;
   className?: string;
+  section?: string;
 }) => {
   let cardBorderHidden = useCardBorderHidden();
   return (
     <div
-      className={`flex flex-col rounded-lg! gap-2 ${!cardBorderHidden ? "container p-3 sm:px-4" : "bg-transparent"}`}
+      className={`container flex flex-col rounded-lg! gap-2 p-3 sm:px-4 ${!cardBorderHidden ? "" : "bg-trasparent!"} ${props.className}`}
     >
+      {props.section && (
+        <>
+          <h3 className="font-bold text-primary">{props.section}</h3>
+          <hr className="-mt-1 mb-2 border-border-light" />
+        </>
+      )}
       {props.children}
     </div>
+  );
+};
+
+const DeletePublication = () => {
+  let [value, setValue] = useState("");
+  let record = useNormalizedPublicationRecord();
+  let { data: pub } = usePublicationData();
+  let postCount = pub?.documents?.length;
+  let subCount = pub?.publication?.publication_subscriptions?.length;
+  return (
+    <Modal
+      asChild
+      className="text-center"
+      trigger={<ButtonPrimary>Delete Publication</ButtonPrimary>}
+      title="Are you sure?"
+    >
+      <div className="text-secondary flex flex-col">
+        <div className="pb-2">
+          You will permanently lose <br />
+          {postCount !== 0
+            ? `${pub?.documents?.length} post${postCount !== 1 && "s"}`
+            : null}
+          <br />
+          {subCount !== 0
+            ? `${pub?.documents?.length} subscriber${subCount !== 1 && "s"}`
+            : null}
+        </div>
+        <div className="font-bold pb-1">
+          Enter the name of this publication to confirm
+        </div>
+
+        <Input
+          className="input-with-border w-full mb-3 text-primary max-w-prose"
+          placeholder={record?.name ? record.name : "Publication Name"}
+          type={`text`}
+          value={value}
+          onChange={(e) => setValue(e.currentTarget.value)}
+        />
+        <ButtonPrimary
+          className="mx-auto mb-1"
+          disabled={record?.name !== value}
+        >
+          Delete Publication
+        </ButtonPrimary>
+      </div>
+    </Modal>
   );
 };

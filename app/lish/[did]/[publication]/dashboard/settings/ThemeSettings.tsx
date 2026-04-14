@@ -10,7 +10,6 @@ export function ThemeSettings() {
 
   return (
     <>
-      <h3 className="font-bold text-primary">Theme and Layout</h3>
       <SpeedyLink
         className="text-left flex gap-2 items-center text-accent-contrast font-bold no-underline! w-fit"
         href={href}
