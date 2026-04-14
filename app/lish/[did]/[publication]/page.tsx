@@ -28,6 +28,7 @@ import {
   SubscribeInput,
 } from "components/Subscribe/SubscribeButton";
 import { dummy } from "./[rkey]/PostPubInfo";
+import { SubscribeWithBluesky } from "app/lish/Subscribe";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -109,14 +110,14 @@ export default async function Publication(props: {
                   />
                 )}
                 <div className="sm:pt-4 pt-4 max-w-sm mx-auto w-full">
-                  <SubscribeInput {...dummy} />
+                  {/*<SubscribeInput {...dummy} />*/}
 
-                  {/*<SubscribeWithBluesky
+                  <SubscribeWithBluesky
                     base_url={getPublicationURL(publication)}
                     pubName={publication.name}
                     pub_uri={publication.uri}
                     subscribers={publication.publication_subscriptions}
-                  />*/}
+                  />
                 </div>
               </div>
               <div className="publicationPostList w-full flex flex-col gap-4">

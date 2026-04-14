@@ -196,7 +196,7 @@ let BlueskySubscribeButton = (props: {
   if (!identity?.atp_did) {
     return (
       <LoginModal
-        trigger={<ButtonPrimary>Log in to Subscribe!</ButtonPrimary>}
+        trigger={<ButtonPrimary>Subscribe!</ButtonPrimary>}
         noEmailLogin
       />
     );

@@ -66,14 +66,14 @@ export const PubListing = (props: PublicationSubscription) => {
             </p>
           </div>
           <div className="mt-3 mx-auto">
-            <SubscribeButton autoFocus {...dummy} />
-            {/*<SubscribeWithBluesky
+            {/*<SubscribeButton autoFocus {...dummy} />*/}
+            <SubscribeWithBluesky
               compact
               pub_uri={props.uri}
               pubName={props.record.name}
               subscribers={props.publication_subscriptions || []}
               base_url={getPublicationURL({ ...props })}
-            />*/}
+            />
           </div>
         </div>
       </div>
