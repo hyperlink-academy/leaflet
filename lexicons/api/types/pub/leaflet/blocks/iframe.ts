@@ -18,6 +18,7 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.iframe'
   url: string
   height?: number
+  aspectRatio?: AspectRatio
 }
 
 const hashMain = 'main'
@@ -28,4 +29,20 @@ export function isMain<V>(v: V) {
 
 export function validateMain<V>(v: V) {
   return validate<Main & V>(v, id, hashMain)
+}
+
+export interface AspectRatio {
+  $type?: 'pub.leaflet.blocks.iframe#aspectRatio'
+  width: number
+  height: number
+}
+
+const hashAspectRatio = 'aspectRatio'
+
+export function isAspectRatio<V>(v: V) {
+  return is$typed(v, id, hashAspectRatio)
+}
+
+export function validateAspectRatio<V>(v: V) {
+  return validate<AspectRatio & V>(v, id, hashAspectRatio)
 }

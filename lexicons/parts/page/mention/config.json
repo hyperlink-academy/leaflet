@@ -1,0 +1,28 @@
+{
+  "lexicon": 1,
+  "id": "parts.page.mention.config",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "literal:self",
+      "description": "User's configured mention services. Singleton record per user.",
+      "record": {
+        "type": "object",
+        "required": [
+          "services"
+        ],
+        "properties": {
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "at-uri"
+            },
+            "maxLength": 50,
+            "description": "AT URIs of parts.page.mention.service records the user has enabled"
+          }
+        }
+      }
+    }
+  }
+}

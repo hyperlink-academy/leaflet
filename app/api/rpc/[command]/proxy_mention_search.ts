@@ -1,0 +1,99 @@
+import { z } from "zod";
+import { makeRoute } from "../lib";
+import type { Env } from "./route";
+import { getIdentityData } from "actions/getIdentityData";
+import { restoreOAuthSession } from "src/atproto-oauth";
+import { AtpBaseClient } from "lexicons/api";
+import type * as SearchService from "lexicons/api/types/parts/page/mention/search";
+import type * as MentionService from "lexicons/api/types/parts/page/mention/service";
+
+// Naive in-memory cache for mention service records (keyed by URI)
+const serviceCache = new Map<
+  string,
+  { record: MentionService.Record; expiresAt: number }
+>();
+const SERVICE_CACHE_TTL = 60_000; // 1 minute
+
+export type ProxyMentionSearchReturnType = Awaited<
+  ReturnType<(typeof proxy_mention_search)["handler"]>
+>;
+
+export const proxy_mention_search = makeRoute({
+  route: "proxy_mention_search",
+  input: z.object({
+    service_uri: z.string(),
+    search: z.string(),
+    scope: z.string().optional(),
+  }),
+  handler: async (
+    { service_uri, search, scope },
+    { supabase }: Pick<Env, "supabase">,
+  ) => {
+    try {
+      const identity = await getIdentityData();
+      if (!identity?.atp_did) throw new Error("Not authenticated");
+
+      let record: MentionService.Record;
+      const cached = serviceCache.get(service_uri);
+      if (cached && Date.now() < cached.expiresAt) {
+        record = cached.record;
+      } else {
+        const { data: service } = await supabase
+          .from("mention_services")
+          .select("record")
+          .eq("uri", service_uri)
+          .single();
+        if (!service) throw new Error("Mention service not found");
+        record = service.record as MentionService.Record;
+        serviceCache.set(service_uri, {
+          record,
+          expiresAt: Date.now() + SERVICE_CACHE_TTL,
+        });
+      }
+
+      const did = record.did;
+      if (!did) throw new Error("Service has no DID");
+
+      const sessionResult = await restoreOAuthSession(identity.atp_did);
+      if (!sessionResult.ok) throw new Error("OAuth session expired");
+
+      const session = sessionResult.value;
+      const agent = new AtpBaseClient(session.fetchHandler.bind(session));
+      agent.setHeader("atproto-proxy", `${did}#mention_search`);
+      console.log(did);
+
+      const response = await agent.call("parts.page.mention.search", {
+        service: service_uri,
+        search,
+        ...(scope ? { scope } : {}),
+      });
+
+      const data = response.data as SearchService.OutputSchema | undefined;
+      const results: SearchService.Result[] = Array.isArray(data?.results)
+        ? data.results
+        : [];
+
+      return {
+        result: {
+          results: results.slice(0, 50).map((r) => ({
+            uri: r.uri,
+            name: r.name,
+            description: r.description,
+            labels: r.labels,
+            href: r.href,
+            icon: r.icon,
+            embed: r.embed,
+            subscope: r.subscope,
+          })),
+        },
+      };
+    } catch (error) {
+      console.error("proxy_mention_search failed", {
+        service_uri,
+        search,
+        error,
+      });
+      throw error;
+    }
+  },
+});
