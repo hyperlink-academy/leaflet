@@ -106,7 +106,7 @@ export const LoginContent = (props: {
               <AtmosphericHandleInfo
                 trigger={
                   <div className="text-sm text-accent-contrast">
-                    What's that?
+                    What's the Atmosphere?
                   </div>
                 }
               />

@@ -4,13 +4,28 @@ import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import Link from "next/link";
 import { HandleInput } from "./HandleInput";
-import {
-  LogoBlacksky,
-  LogoBluesky,
-  LogoEurosky,
-  LogoLeaflet,
-  LogoTangled,
-} from "./Logos";
+const logos = {
+  Anisota: "/logos/anisota.svg",
+  Blacksky: "/logos/blacksky.svg",
+  Blento: "/logos/blento.svg",
+  Bluesky: "/logos/bluesky.svg",
+  Cartridge: "/logos/cartridge.svg",
+  Eurosky: "/logos/eurosky.svg",
+  Graze: "/logos/graze.svg",
+  Leaflet: "/logos/leaflet.svg",
+  Margin: "/logos/margin.svg",
+  Offprint: "/logos/offprint.svg",
+  Pckt: "/logos/pckt.svg",
+  pdsls: "/logos/pdsls.svg",
+  "plyr.fm": "/logos/plyr.fm.svg",
+  Popfeed: "/logos/popfeed.svg",
+  Roomy: "/logos/roomy.svg",
+  Semble: "/logos/semble.svg",
+  Sill: "/logos/sill.svg",
+  Spark: "/logos/spark.svg",
+  Surf: "/logos/surf.svg",
+  Tangled: "/logos/tangled.svg",
+};
 
 import { Separator } from "components/Layout";
 
@@ -67,7 +82,6 @@ export const LinkHandle = (props: { compact?: boolean }) => {
   );
 };
 
-
 export const HandleInputandOAuth = (props: {
   link?: boolean;
   compact?: boolean;
@@ -118,7 +132,7 @@ export const AtSubscribeSuccess = (props: {}) => {
 export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
   return (
     <Popover
-      className="z-100! max-w-sm flex flex-col gap-2"
+      className="z-100! max-w-sm flex flex-col"
       trigger={
         props.trigger ? (
           props.trigger
@@ -129,31 +143,48 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
         )
       }
     >
-      <div className="font-bold text-secondary">
-        The Atmosphere is a family of apps that you can access with a single
-        account
+      <div className="font-bold text-secondary pb-1">
+        The Atmosphere is a growing ecosystem of social apps, like Leaflet and
+        Bluesky.
+        <br />
+      </div>
+      <div className="pb-3  font-bold text-secondary">
+        One account gets you into <em>all</em> of them.
       </div>
 
-      <div className=" text-secondary">Apps like...</div>
-      <div className="opaque-container px-4 pt-3 pb-2 flex gap-3 w-full justify-between">
-        <AtApp logo={<LogoLeaflet />} name="Leaflet" />
-        <AtApp logo={<LogoBluesky />} name="Bluesky" />
-        <AtApp logo={<LogoBlacksky />} name="Blacksky" />
-        <AtApp logo={<LogoEurosky />} name="Eurosky" />
-        <AtApp logo={<LogoTangled />} name="Tangled" />
+      <div className=" text-sm text-tertiary uppercase">
+        Apps on the Atmosphere!
+      </div>
+      <div className="opaque-container pt-3 pb-2 overflow-hidden">
+        <div className="logo-scroll-track flex w-max">
+          {(
+            [
+              "Leaflet", "Bluesky", "Blacksky", "Eurosky", "Tangled",
+              "Semble", "Surf", "Spark", "Pckt", "pdsls", "plyr.fm",
+              "Popfeed", "Roomy", "Sill", "Offprint", "Margin",
+              "Anisota", "Blento", "Cartridge", "Graze",
+              "Leaflet", "Bluesky", "Blacksky", "Eurosky", "Tangled",
+              "Semble", "Surf", "Spark", "Pckt", "pdsls", "plyr.fm",
+              "Popfeed", "Roomy", "Sill", "Offprint", "Margin",
+              "Anisota", "Blento", "Cartridge", "Graze",
+            ] as (keyof typeof logos)[]
+          ).map((name, i) => (
+            <AtApp key={i} logo={logos[name]} name={name} />
+          ))}
+        </div>
       </div>
 
-      <ButtonPrimary fullWidth className="mx-auto mb-3 mt-1">
+      <ButtonPrimary fullWidth className=" mt-3 mx-auto mb-3 mt-1">
         Sign up via Bluesky!
       </ButtonPrimary>
     </Popover>
   );
 };
 
-const AtApp = (props: { logo: React.ReactNode; name: string }) => {
+const AtApp = (props: { logo: string; name: string }) => {
   return (
-    <div className="basis-1/5 flex flex-col gap-2 justify-center text-tertiary font-bold text-sm text-center">
-      <div className="mx-auto">{props.logo}</div>
+    <div className="w-20 flex-shrink-0 flex flex-col gap-2 justify-center text-tertiary font-bold text-sm text-center">
+      <img src={props.logo} alt={props.name} className="w-12 h-12 mx-auto" />
       {props.name}
     </div>
   );
