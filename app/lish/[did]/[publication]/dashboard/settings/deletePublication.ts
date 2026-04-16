@@ -2,10 +2,7 @@
 
 import { AtpBaseClient } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
-import {
-  restoreOAuthSession,
-  OAuthSessionError,
-} from "src/atproto-oauth";
+import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -43,13 +40,9 @@ export async function deletePublication(
   );
 
   // Collect these BEFORE deleting the publication row — cascading deletes would remove the join rows.
-  let [legacyDocs, siteDocs, drafts] = await Promise.all([
+  let [docs, drafts] = await Promise.all([
     supabaseServerClient
       .from("documents_in_publications")
-      .select("document")
-      .eq("publication", publication_uri),
-    supabaseServerClient
-      .from("site_standard_documents_in_publications")
       .select("document")
       .eq("publication", publication_uri),
     supabaseServerClient
@@ -58,10 +51,7 @@ export async function deletePublication(
       .eq("publication", publication_uri),
   ]);
   let documentUris = Array.from(
-    new Set([
-      ...(legacyDocs.data ?? []).map((r) => r.document),
-      ...(siteDocs.data ?? []).map((r) => r.document),
-    ]),
+    new Set([...(docs.data ?? []).map((r) => r.document)]),
   );
   let draftTokenIds = (drafts.data ?? []).map((r) => r.leaflet);
 
@@ -119,27 +109,12 @@ export async function deletePublication(
 
   // Delete document rows before publication rows — publication cascade would leave orphaned docs.
   if (documentUris.length > 0) {
-    await Promise.all([
-      supabaseServerClient
-        .from("documents")
-        .delete()
-        .in("uri", documentUris),
-      supabaseServerClient
-        .from("site_standard_documents")
-        .delete()
-        .in("uri", documentUris),
-    ]);
+    supabaseServerClient.from("documents").delete().in("uri", documentUris);
   }
-  await Promise.all([
-    supabaseServerClient
-      .from("publications")
-      .delete()
-      .eq("uri", publication_uri),
-    supabaseServerClient
-      .from("site_standard_publications")
-      .delete()
-      .eq("uri", publication_uri),
-  ]);
+  await supabaseServerClient
+    .from("publications")
+    .delete()
+    .eq("uri", publication_uri);
 
   revalidatePath("/lish/[did]/[publication]", "layout");
   return { success: true };

@@ -21,7 +21,7 @@ import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
 import { deletePublication } from "./deletePublication";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   isOAuthSessionError,
   OAuthErrorMessage,
@@ -286,16 +286,15 @@ let pluralize = (n: number, word: string) =>
   `${n} ${word}${n === 1 ? "" : "s"}`;
 
 const DeletePublication = () => {
-  let [open, setOpen] = useState(false);
   let [value, setValue] = useState("");
   let [deleting, setDeleting] = useState(false);
-  let [deleted, setDeleted] = useState(false);
   let record = useNormalizedPublicationRecord();
   let { data: pub } = usePublicationData();
   let postCount = pub?.documents?.length ?? 0;
   let draftCount = pub?.drafts?.length ?? 0;
   let subCount = pub?.publication?.publication_subscriptions?.length ?? 0;
   let toaster = useToaster();
+  let router = useRouter();
   let pubUri = pub?.publication?.uri;
 
   let onDelete = async () => {
@@ -308,90 +307,68 @@ const DeletePublication = () => {
         type: "error",
         content: isOAuthSessionError(result.error) ? (
           <OAuthErrorMessage error={result.error} />
+        ) : typeof result.error === "string" ? (
+          result.error
         ) : (
-          typeof result.error === "string"
-            ? result.error
-            : "Failed to delete publication"
+          "Failed to delete publication"
         ),
       });
       return;
     }
-    setDeleting(false);
-    setDeleted(true);
+    toaster({
+      type: "success",
+      content: `${record?.name ?? "Publication"} deleted`,
+    });
+    router.push("/home");
   };
 
   return (
     <Modal
       asChild
       className="text-center"
-      open={open}
-      onOpenChange={(next) => {
-        // Once deleted, the underlying page is stale — keep the modal open
-        // so the only way out is the "back to home" link.
-        if (deleted && !next) return;
-        setOpen(next);
-        if (!next) {
-          setValue("");
-        }
-      }}
       trigger={<ButtonPrimary>Delete Publication</ButtonPrimary>}
-      title={deleted ? "Publication deleted" : "Are you sure?"}
+      title="Are you sure?"
     >
-      {deleted ? (
-        <div className="text-secondary flex flex-col gap-3 max-w-prose">
-          <div>
-            <span className="font-bold text-primary">{record?.name}</span> and
-            all its posts, drafts, and associated records have been deleted.
-          </div>
-          <Link
-            href="/home"
-            className="text-accent-contrast underline font-bold mx-auto"
-          >
-            Back to home →
-          </Link>
-        </div>
-      ) : (
-        <div className="text-secondary flex flex-col max-w-prose">
-          <div className="pb-3 text-left">
-            This will permanently delete:
-            <ul className="list-disc pl-5 pt-1">
-              <li>This publication and its settings</li>
-              <li>
-                {pluralize(postCount, "published post")}
-                {postCount > 0 ? " (removed from your PDS)" : ""}
-              </li>
-              <li>{pluralize(draftCount, "draft")}</li>
-              <li>All associated records on your PDS</li>
-            </ul>
-            {subCount > 0 && (
-              <div className="pt-2">
-                {pluralize(subCount, "subscriber")} will lose access.
-              </div>
-            )}
-            <div className="pt-2 font-bold text-primary">
-              This cannot be undone.
+      <div className="text-secondary flex flex-col max-w-prose">
+        <div className="pb-3 text-left">
+          This will permanently delete:
+          <ul className="list-disc pl-5 pt-1">
+            <li>This publication and its settings</li>
+            <li>
+              {pluralize(postCount, "published post")}
+              {postCount > 0 ? " (removed from your PDS)" : ""}
+            </li>
+            <li>{pluralize(draftCount, "draft")}</li>
+            <li>All associated records on your PDS</li>
+          </ul>
+          {subCount > 0 && (
+            <div className="pt-2">
+              {pluralize(subCount, "subscriber")} will lose access.
             </div>
+          )}
+          <div className="pt-2 font-bold text-primary">
+            This cannot be undone.
           </div>
-          <div className="font-bold pb-1">
-            Enter the name of this publication to confirm
-          </div>
-
-          <Input
-            className="input-with-border w-full mb-3 text-primary max-w-prose"
-            placeholder={record?.name ? record.name : "Publication Name"}
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.currentTarget.value)}
-          />
-          <ButtonPrimary
-            className="mx-auto mb-1"
-            disabled={record?.name !== value || deleting || !pubUri}
-            onClick={onDelete}
-          >
-            {deleting ? <DotLoader /> : "Delete Publication"}
-          </ButtonPrimary>
         </div>
-      )}
+        <div className="font-bold pb-1">
+          Enter the name of this publication to confirm
+        </div>
+
+        <Input
+          className="input-with-border w-full mb-3 text-primary max-w-prose"
+          placeholder={record?.name ? record.name : "Publication Name"}
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.currentTarget.value)}
+        />
+        <ButtonPrimary
+          className="mx-auto mb-1"
+          disabled={record?.name !== value || deleting || !pubUri}
+          onClick={onDelete}
+        >
+          {deleting ? <DotLoader /> : "Delete Publication"}
+        </ButtonPrimary>
+      </div>
     </Modal>
   );
 };
