@@ -28,11 +28,18 @@ export const LoginModal = (props: {
   asChild?: boolean;
   redirectRoute?: string;
 }) => {
+  let [open, setOpen] = useState(false);
   return (
-    <Modal asChild={props.asChild} trigger={props.trigger}>
+    <Modal
+      asChild={props.asChild}
+      trigger={props.trigger}
+      open={open}
+      onOpenChange={setOpen}
+    >
       <LoginContent
         noEmailLogin={props.noEmailLogin}
         redirectRoute={props.redirectRoute}
+        open={open}
       />
     </Modal>
   );
@@ -42,6 +49,7 @@ export const LoginContent = (props: {
   pageView?: boolean;
   noEmailLogin?: boolean;
   redirectRoute?: string;
+  open?: boolean;
 }) => {
   let identityData = useIdentityData();
   if (identityData.identity) return null;
@@ -113,6 +121,7 @@ export const LoginContent = (props: {
             </div>
             <HandleInput
               large
+              autoFocus={props.open !== false}
               action={<GoToArrow className="text-accent-contrast" />}
               loading={loading}
               onSubmit={(handle) => {
@@ -147,6 +156,7 @@ export const LoginContent = (props: {
 
             <EmailInput
               large
+              autoFocus={props.open !== false}
               value={loginEmail}
               onChange={setLoginEmail}
               loading={loading}
@@ -169,6 +179,7 @@ export const LoginContent = (props: {
           </form>
         ) : state === "email confirm" ? (
           <EmailConfirm
+            autoFocus={props.open !== false}
             emailValue={loginEmail}
             loading={loading}
             onSubmit={handleCodeSubmit}

@@ -47,6 +47,7 @@ export const EmailInput = (props: {
 
 export const EmailConfirm = (props: {
   emailValue: string;
+  autoFocus?: boolean;
   loading?: boolean;
   onSubmit: (code: string) => void;
 }) => {
@@ -58,6 +59,7 @@ export const EmailConfirm = (props: {
       <div className="italic min-w-0 truncate">{props.emailValue}</div>
       <OneTimePasswordField.Root
         autoSubmit
+        autoFocus={props.autoFocus}
         validationType="alphanumeric"
         onAutoSubmit={(value) => {
           props.onSubmit(value);

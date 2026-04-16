@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { DotLoader } from "components/utils/DotLoader";
 import { theme } from "tailwind.config";
+import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 
 type ActorSuggestion = {
   handle: string;
@@ -82,7 +83,7 @@ export const HandleInput = (props: {
       className="w-(--radix-popover-trigger-width)!"
       trigger={
         <div
-          className={`handleInput input-with-border relative py-0! flex items-center gap-1 w-full ${props.large && "px-2!"} ${props.className}`}
+          className={`handleInput input-with-border relative py-0! flex items-center gap-2 w-full ${props.large && "px-2!"} ${props.className}`}
           style={
             props.loading
               ? {
@@ -96,7 +97,7 @@ export const HandleInput = (props: {
           }
         >
           <div className="text-tertiary text-center shrink-0 flex justify-end h-full items-center">
-            @
+            <AtmosphereAccount />
           </div>
           <Input
             autoFocus={props.autoFocus}
