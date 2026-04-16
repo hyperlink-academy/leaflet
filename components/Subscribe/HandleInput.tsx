@@ -2,7 +2,7 @@
 import { Agent } from "@atproto/api";
 import { Input } from "components/Input";
 import { Combobox, ComboboxResult } from "components/Combobox";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { DotLoader } from "components/utils/DotLoader";
 import { theme } from "tailwind.config";
@@ -27,6 +27,7 @@ export const HandleInput = (props: {
   let [suggestions, setSuggestions] = useState<ActorSuggestion[]>([]);
   let [dropdownOpen, setDropdownOpen] = useState(false);
   let [highlighted, setHighlighted] = useState<string | undefined>(undefined);
+  let requestIdRef = useRef(0);
 
   useDebouncedEffect(
     async () => {
@@ -35,11 +36,13 @@ export const HandleInput = (props: {
         setDropdownOpen(false);
         return;
       }
+      const requestId = ++requestIdRef.current;
       const agent = new Agent("https://public.api.bsky.app");
       const result = await agent.searchActorsTypeahead({
         q: handleValue,
         limit: 8,
       });
+      if (requestId !== requestIdRef.current) return;
       const actors = result.data.actors.map((actor) => ({
         handle: actor.handle,
         did: actor.did,

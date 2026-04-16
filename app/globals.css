@@ -621,7 +621,6 @@ pre.shiki {
   overflow: hidden;
   transition:
     max-height 200ms ease,
-    max-image 200ms ease,
     opacity 200ms ease;
   background: rgba(var(--bg-page), var(--bg-page-alpha));
   border-radius: 4px;

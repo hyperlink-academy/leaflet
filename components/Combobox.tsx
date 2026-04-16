@@ -24,7 +24,6 @@ export const Combobox = ({
   trigger?: React.ReactNode;
   triggerClassName?: string;
   className?: string;
-  width?: string;
   results: string[];
   onSelect?: () => void;
   onOpenChange?: (open: boolean) => void;

@@ -40,6 +40,7 @@ export const LoginModal = (props: {
         noEmailLogin={props.noEmailLogin}
         redirectRoute={props.redirectRoute}
         open={open}
+        onSuccess={() => setOpen(false)}
       />
     </Modal>
   );
@@ -50,9 +51,9 @@ export const LoginContent = (props: {
   noEmailLogin?: boolean;
   redirectRoute?: string;
   open?: boolean;
+  onSuccess?: () => void;
 }) => {
   let identityData = useIdentityData();
-  if (identityData.identity) return null;
   let [state, setState] = useState<
     "log in" | "sign up" | "email log in" | "email confirm"
   >("log in");
@@ -61,12 +62,24 @@ export const LoginContent = (props: {
   let [loading, setLoading] = useState(false);
   let toaster = useToaster();
 
+  if (identityData.identity) return null;
+
   const handleEmailSubmit = async () => {
     setLoading(true);
-    const id = await requestAuthEmailToken(loginEmail);
-    setLoading(false);
-    setTokenId(id);
-    setState("email confirm");
+    try {
+      const id = await requestAuthEmailToken(loginEmail);
+      setTokenId(id);
+      setState("email confirm");
+    } catch (e) {
+      toaster({
+        content: (
+          <div className="font-bold">Could not send email — please try again</div>
+        ),
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCodeSubmit = async (code: string) => {
@@ -79,11 +92,17 @@ export const LoginContent = (props: {
         content: <div className="font-bold">Incorrect code!</div>,
         type: "error",
       });
-    } else {
-      const localLeaflets = getHomeDocs();
-      await loginWithEmailToken(localLeaflets.filter((l) => !l.hidden));
-      mutate("identity");
+      return;
     }
+    const localLeaflets = getHomeDocs();
+    await loginWithEmailToken(localLeaflets.filter((l) => !l.hidden));
+    mutate("identity");
+    toaster({
+      content: <div className="font-bold">Logged in! Welcome!</div>,
+      type: "success",
+    });
+    setLoading(false);
+    props.onSuccess?.();
   };
 
   return (
