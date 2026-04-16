@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { EmptyState } from "components/EmptyState";
 import type { Cursor, Post } from "./getReaderFeed";
 import useSWRInfinite from "swr/infinite";
 import { getNewFeed } from "./getNewFeed";
@@ -65,11 +66,7 @@ export const NewContent = (props: {
   const allPosts = data ? data.flatMap((page) => page.posts) : [];
 
   if (allPosts.length === 0) {
-    return (
-      <div className="flex flex-col gap-2 frosted-container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
-        No posts yet. Check back soon!
-      </div>
-    );
+    return <EmptyState title="No posts yet. Check back soon!" />;
   }
 
   return (

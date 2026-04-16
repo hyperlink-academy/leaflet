@@ -1,14 +1,21 @@
-export function ThemeSettings(props: { onOpenTheme: () => void }) {
+"use client";
+
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { SpeedyLink } from "components/SpeedyLink";
+import { useParams } from "next/navigation";
+
+export function ThemeSettings() {
+  let params = useParams<{ did: string; publication: string }>();
+  let href = `/lish/${params.did}/${params.publication}/theme-settings`;
+
   return (
-    <section className="flex flex-col gap-3">
-      <h3 className="font-bold text-primary">Theme and Layout</h3>
-      <button
-        type="button"
-        className="text-left text-sm text-accent-contrast font-bold hover:underline w-fit"
-        onClick={props.onOpenTheme}
+    <>
+      <SpeedyLink
+        className="text-left flex gap-2 items-center text-accent-contrast font-bold no-underline! w-fit"
+        href={href}
       >
-        Customize Theme &rarr;
-      </button>
-    </section>
+        Customize Theme <GoToArrow />
+      </SpeedyLink>
+    </>
   );
 }

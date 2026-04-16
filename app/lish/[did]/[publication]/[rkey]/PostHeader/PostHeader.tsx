@@ -124,9 +124,9 @@ export const PostHeaderLayout = (props: {
         {props.pubLink}
       </div>
       {props.postTitle && (
-        <h2 className="postTitle text-xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent">
+        <h1 className="postTitle text-2xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent">
           {props.postTitle}
-        </h2>
+        </h1>
       )}
       {props.postDescription ? (
         <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-2">

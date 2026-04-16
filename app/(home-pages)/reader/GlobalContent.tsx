@@ -2,6 +2,7 @@
 import { use } from "react";
 import useSWR from "swr";
 import { callRPC } from "app/api/rpc/client";
+import { EmptyState } from "components/EmptyState";
 import { PostListing } from "components/PostListing";
 import type { Post } from "./getReaderFeed";
 import {
@@ -33,11 +34,7 @@ export const GlobalContent = (props: {
   let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
 
   if (posts.length === 0) {
-    return (
-      <div className="flex flex-col gap-2 frosted-container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
-        Nothing trending right now. Check back soon!
-      </div>
-    );
+    return <EmptyState title="Nothing trending right now. Check back soon!" />;
   }
 
   return (

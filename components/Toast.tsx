@@ -105,7 +105,7 @@ const Toast = (props: {
         className={`toastAnimationWrapper fixed top-0 bottom-0 right-0 left-0 z-50 h-fit`}
       >
         <div
-          className={`toast absolute right-2 w-max  shadow-md px-3 py-1 flex flex-row gap-2 rounded-full border text-center ${
+          className={`toast absolute right-2 w-max  shadow-md px-3 py-1 flex flex-row gap-2 rounded-full border text-center font-bold ${
             props.toast?.type === "error"
               ? "border-white bg-[#dc143c] text-white border font-bold"
               : props.toast?.type === "success"

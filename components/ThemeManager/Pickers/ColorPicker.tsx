@@ -15,6 +15,9 @@ import {
 import { pickers } from "../ThemeSetter";
 import { Separator } from "components/Layout";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
+import { useIsMobile } from "src/hooks/isMobile";
+import { HexKeyboard } from "./HexKeyboard";
+import { NumPad } from "./NumPad";
 
 export let thumbStyle =
   "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C,inset_0_0_0_1px_#8C8C8C]";
@@ -33,11 +36,14 @@ export const ColorPicker = (props: {
   disabled?: boolean;
   children?: React.ReactNode;
 }) => {
+  let isMobile = useIsMobile();
+
   return (
     <SpectrumColorPicker value={props.value} onChange={props.setValue}>
       <div className="flex flex-col w-full gap-2">
         <div className="colorPickerLabel flex gap-2 items-center ">
           <button
+            type="button"
             disabled={props.disabled}
             className="flex gap-2 items-center disabled:text-tertiary"
             onClick={() => {
@@ -63,6 +69,8 @@ export const ColorPicker = (props: {
               <div>default</div>
             ) : props.disabled ? (
               <div className="text-tertiary italic">hidden</div>
+            ) : isMobile ? (
+              <HexKeyboard value={props.value} setValue={props.setValue} />
             ) : (
               <ColorField className="w-fit gap-1">
                 <Input
@@ -88,27 +96,31 @@ export const ColorPicker = (props: {
             {props.alpha && !props.disabled && (
               <>
                 <Separator classname="my-1" />
-                <ColorField
-                  className={`w-[48px] pl-[6px] ${props.disabled ? "opacity-50" : ""}`}
-                  channel="alpha"
-                >
-                  <Input
-                    disabled={props.disabled}
-                    onMouseDown={onMouseDown}
-                    onFocus={(e) => {
-                      e.currentTarget.setSelectionRange(
-                        0,
-                        e.currentTarget.value.length - 1,
-                      );
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.currentTarget.blur();
-                      } else return;
-                    }}
-                    className="w-[72px] bg-transparent outline-hidden "
-                  />
-                </ColorField>
+                {isMobile ? (
+                  <NumPad value={props.value} setValue={props.setValue} />
+                ) : (
+                  <ColorField
+                    className={`w-[48px] pl-[6px] ${props.disabled ? "opacity-50" : ""}`}
+                    channel="alpha"
+                  >
+                    <Input
+                      disabled={props.disabled}
+                      onMouseDown={onMouseDown}
+                      onFocus={(e) => {
+                        e.currentTarget.setSelectionRange(
+                          0,
+                          e.currentTarget.value.length - 1,
+                        );
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.currentTarget.blur();
+                        } else return;
+                      }}
+                      className="w-[72px] bg-transparent outline-hidden "
+                    />
+                  </ColorField>
+                )}
               </>
             )}
           </div>

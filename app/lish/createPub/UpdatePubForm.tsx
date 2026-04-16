@@ -10,7 +10,6 @@ import {
 import { mutate } from "swr";
 import { AddTiny } from "components/Icons/AddTiny";
 import { useToaster } from "components/Toast";
-import { PubSettingsHeader } from "../[did]/[publication]/dashboard/settings/PublicationSettings";
 import { Toggle } from "components/Toggle";
 
 export const EditPubForm = (props: {
@@ -85,13 +84,7 @@ export const EditPubForm = (props: {
         mutate("publication-data");
       }}
     >
-      <PubSettingsHeader
-        loading={props.loading}
-        setLoadingAction={props.setLoadingAction}
-        backToMenuAction={props.backToMenuAction}
-      >
-        General Settings
-      </PubSettingsHeader>
+
       <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2 overflow-y-auto min-h-0">
         <div className="flex items-center justify-between gap-2 mt-2 ">
           <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">

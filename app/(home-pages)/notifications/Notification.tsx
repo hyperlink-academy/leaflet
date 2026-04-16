@@ -23,14 +23,9 @@ export const Notification = (props: {
     <div
       className={`relative flex flex-col w-full pb-3 sm:pb-4 pt-2 ${
         cardBorderHidden
-          ? " first:pt-0! "
-          : " block-border border-border! hover:outline-border sm:px-4 px-3 pl-2 sm:pl-3 "
+          ? "first:pt-0! "
+          : "container rounded-lg! block-border hover:outline-border! border-border! sm:px-4 px-3 pl-2 sm:pl-3 "
       }`}
-      style={{
-        backgroundColor: cardBorderHidden
-          ? "transparent"
-          : "rgba(var(--bg-page), var(--bg-page-alpha))",
-      }}
     >
       <a
         href={props.href}
@@ -102,7 +97,7 @@ export const CommentInNotification = (props: {
     <div className=" flex gap-2 text-sm w-full ">
       <Avatar src={props.avatar} displayName={props.displayName} />
       <pre
-        style={{ wordBreak: "break-word" }}
+        style={{ wordBreak: "break-word", fontFamily: "inherit" }}
         className={`whitespace-pre-wrap text-secondary line-clamp-3 sm:line-clamp-6 ${props.className}`}
       >
         <BaseTextBlock

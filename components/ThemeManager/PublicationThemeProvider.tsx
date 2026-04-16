@@ -69,16 +69,31 @@ export function PublicationBackgroundProvider(props: {
   pub_creator: string;
   className?: string;
   children: React.ReactNode;
+  localBgImage?: string | null;
+  localBgImageRepeat?: number | null;
 }) {
-  let backgroundImage = props.theme?.backgroundImage?.image?.ref
-    ? blobRefToSrc(props.theme?.backgroundImage?.image?.ref, props.pub_creator)
-    : null;
+  let backgroundImage =
+    props.localBgImage !== undefined
+      ? props.localBgImage
+      : props.theme?.backgroundImage?.image?.ref
+        ? blobRefToSrc(
+            props.theme?.backgroundImage?.image?.ref,
+            props.pub_creator,
+          )
+        : null;
 
-  let backgroundImageRepeat = props.theme?.backgroundImage?.repeat;
-  let backgroundImageSize = props.theme?.backgroundImage?.width || 500;
+  let backgroundImageRepeat =
+    props.localBgImageRepeat !== undefined
+      ? !!props.localBgImageRepeat
+      : props.theme?.backgroundImage?.repeat;
+  let backgroundImageSize =
+    (props.localBgImageRepeat !== undefined
+      ? props.localBgImageRepeat
+      : props.theme?.backgroundImage?.width) || 500;
+
   return (
     <div
-      className="PubBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
+      className={`PubBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch ${props.className}`}
       style={{
         backgroundImage: backgroundImage
           ? `url(${backgroundImage})`
@@ -184,6 +199,7 @@ export const useLocalPubTheme = (
   return {
     theme: mergedTheme,
     setTheme,
+    resetChanges: () => setTheme({}),
     changes: Object.keys(localOverrides).length > 0,
   };
 };

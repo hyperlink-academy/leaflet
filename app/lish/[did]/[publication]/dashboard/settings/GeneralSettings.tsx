@@ -1,6 +1,8 @@
 import { useRef } from "react";
 import { Input } from "components/Input";
 import { AddTiny } from "components/Icons/AddTiny";
+import { DashboardContainer } from "./SettingsContent";
+import { EditTiny } from "components/Icons/EditTiny";
 
 export function GeneralSettings(props: {
   nameValue: string;
@@ -14,26 +16,35 @@ export function GeneralSettings(props: {
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <section className="flex flex-col gap-3">
-      <h3 className="font-bold text-primary">General Settings</h3>
+    <DashboardContainer section="General Settings">
 
-      <div className="flex items-center justify-between gap-2">
-        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
+      <div className="flex flex-col gap-2 pb-2">
+        <p className=" text-secondary  font-bold">
           Logo <span className="font-normal">(optional)</span>
         </p>
-        <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer  ${props.iconPreview ? "border border-border-light hover:outline-border" : "border border-dotted border-accent-contrast hover:outline-accent-contrast"} selected-outline`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {props.iconPreview ? (
-            <img
-              src={props.iconPreview}
-              alt="Logo preview"
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <AddTiny className="text-accent-1" />
+        <div className="relative w-fit">
+          {props.iconPreview && (
+            <div
+              className="absolute top-0 -right-1 rounded-full bg-accent-1 text-accent-2 p-1 cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <EditTiny />
+            </div>
           )}
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center cursor-pointer  ${props.iconPreview ? "border border-border-light hover:outline-border" : "border border-dotted border-accent-contrast hover:outline-accent-contrast"} selected-outline`}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {props.iconPreview ? (
+              <img
+                src={props.iconPreview}
+                alt="Logo preview"
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <AddTiny className="text-accent-1" />
+            )}
+          </div>
         </div>
         <input
           type="file"
@@ -55,11 +66,9 @@ export function GeneralSettings(props: {
       </div>
 
       <label>
-        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
-          Publication Name
-        </p>
+        <p className="text-secondary pt-3 font-bold">Publication Name</p>
         <Input
-          className="input-with-border w-full text-primary"
+          className="input-with-border w-full text-primary max-w-prose"
           type="text"
           id="pubName"
           value={props.nameValue}
@@ -68,18 +77,18 @@ export function GeneralSettings(props: {
       </label>
 
       <label>
-        <p className="text-tertiary italic text-sm font-bold pl-0.5 pb-0.5">
+        <p className="text-secondary pt-3 font-bold">
           Description <span className="font-normal">(optional)</span>
         </p>
         <Input
           textarea
-          className="input-with-border w-full text-primary"
+          className="input-with-border w-full text-primary max-w-prose"
           rows={3}
           id="pubDescription"
           value={props.descriptionValue}
           onChange={(e) => props.setDescriptionValue(e.currentTarget.value)}
         />
       </label>
-    </section>
+    </DashboardContainer>
   );
 }

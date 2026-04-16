@@ -1,8 +1,12 @@
 "use client";
+
 import { useState } from "react";
 import { mutate } from "swr";
-import { useDomainStatus } from "./useDomainStatus";
-import { getDomainAssignment, describeAssignment } from "./domainAssignment";
+import { useDomainStatus } from "components/Domains/useDomainStatus";
+import {
+  getDomainAssignment,
+  describeAssignment,
+} from "components/Domains/domainAssignment";
 import {
   useIdentityData,
   mutateIdentityData,
@@ -11,27 +15,20 @@ import { ButtonPrimary } from "components/Buttons";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "../PublicationSWRProvider";
 import { updatePublicationBasePath } from "app/lish/createPub/updatePublication";
 import {
   assignDomainToPublication,
   removeDomainAssignment,
 } from "actions/domains";
-
-import { AddDomainForm } from "./AddDomainForm";
-import { DomainSettingsView } from "./DomainSettingsView";
 import { PinTiny } from "components/Icons/PinTiny";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
-import { AddTiny } from "components/Icons/AddTiny";
 import { UnlinkTiny } from "components/Icons/UnlinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
-import type { CustomDomain } from "./DomainList";
+import type { CustomDomain } from "components/Domains/DomainList";
 
-export function PublicationDomains(props: {
-  backToMenu: () => void;
-  publication_uri: string;
-}) {
+export const PubDomainSettings = () => {
   let { data, mutate: mutatePubData } = usePublicationData();
   let { publication: pubData } = data || {};
   let record = useNormalizedPublicationRecord();
@@ -42,24 +39,24 @@ export function PublicationDomains(props: {
   let pubDomains = pubData?.publication_domains || [];
   let pubDomainNames = new Set(pubDomains.map((d) => d.domain));
 
+  if (!pubData) return null;
+
   return (
-    <div>
-      <h4>Domains</h4>
-      <div className="flex flex-col gap-1 py-1">
-        <h4 className="">This Publication's Domains</h4>
-        <div className="text-xs text-tertiary -mb-1 ">DEFAULT</div>
+    <>
+      <div className="flex flex-col gap-1">
+        <h4>This Publication&apos;s Domains</h4>
+        <div className="text-xs text-tertiary -mb-1">DEFAULT</div>
         {pubDomains
           .filter((d) => d.domain === basePath)
           .map((d) => (
             <PubDomainRow
               key={d.domain}
               domain={d.domain}
-              publication_uri={props.publication_uri}
+              publication_uri={pubData.uri}
               basePath={basePath}
               mutatePubData={mutatePubData}
               mutateIdentity={mutateIdentity}
               toaster={toaster}
-              onSettings={() => {}}
             />
           ))}
         {pubDomains.filter((d) => d.domain !== basePath).length !== 0 && (
@@ -71,19 +68,18 @@ export function PublicationDomains(props: {
                 <PubDomainRow
                   key={d.domain}
                   domain={d.domain}
-                  publication_uri={props.publication_uri}
+                  publication_uri={pubData.uri}
                   basePath={basePath}
                   mutatePubData={mutatePubData}
                   mutateIdentity={mutateIdentity}
                   toaster={toaster}
-                  onSettings={() => {}}
                 />
               ))}
           </>
         )}
 
         <hr className="my-2 border-border-light" />
-        <h4 className="">Available Domains</h4>
+        <h4>Available Domains</h4>
         {(() => {
           let availableDomains = (identity?.custom_domains || [])
             .filter((d) => !pubDomainNames.has(d.domain))
@@ -98,13 +94,12 @@ export function PublicationDomains(props: {
                 <UnassignedDomainRow
                   key={d.domain}
                   domainData={d}
-                  publication_uri={props.publication_uri}
+                  publication_uri={pubData.uri}
                   mutatePubData={mutatePubData}
                   onAssigned={() => {
                     mutateIdentity();
                     mutate("publication-data");
                   }}
-                  onSettings={() => {}}
                 />
               ))}
               <div className="text-sm text-tertiary pt-0.5">
@@ -120,9 +115,9 @@ export function PublicationDomains(props: {
           );
         })()}
       </div>
-    </div>
+    </>
   );
-}
+};
 
 function PubDomainRow(props: {
   domain: string;
@@ -131,7 +126,6 @@ function PubDomainRow(props: {
   mutatePubData: ReturnType<typeof usePublicationData>["mutate"];
   mutateIdentity: ReturnType<typeof useIdentityData>["mutate"];
   toaster: ReturnType<typeof useToaster>;
-  onSettings: () => void;
 }) {
   let { pending } = useDomainStatus(props.domain);
   let [loading, setLoading] = useState(false);
@@ -139,26 +133,16 @@ function PubDomainRow(props: {
   let toaster = props.toaster;
 
   return (
-    <div className="text-sm text-secondary relative w-full flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light">
-      <button
-        type="button"
-        className="pr-8 truncate text-left"
-        onMouseDown={() => props.onSettings()}
-      >
-        {props.domain}
-      </button>
+    <div className=" opaque-container text-secondary relative w-full flex items-center justify-between px-[6px] py-1 border rounded-md border-border-light">
+      <span className="pr-8 truncate text-left">{props.domain}</span>
       <div className="flex justify-end items-center">
         {pending ? (
-          <button
-            className="group/pending px-1 py-0.5 flex gap-1 items-center rounded-full hover:bg-accent-1 hover:text-accent-2 hover:outline-accent-1 border-transparent outline-solid outline-transparent selected-outline"
-            onClick={() => props.onSettings()}
-            type="button"
-          >
-            <p className="group-hover/pending:block hidden w-max pl-1 font-bold">
+          <div className="px-1 py-0.5 flex gap-1 items-center">
+            <p className="w-max pl-1 font-bold text-sm text-tertiary">
               pending
             </p>
-            <LoadingTiny className="animate-spin text-accent-contrast group-hover/pending:text-accent-2" />
-          </button>
+            <LoadingTiny className="animate-spin text-accent-contrast" />
+          </div>
         ) : (
           <>
             {props.basePath !== props.domain && (
@@ -170,7 +154,6 @@ function PubDomainRow(props: {
                     className="text-tertiary hover:text-accent-contrast shrink-0"
                     onClick={async () => {
                       setUnlinking(true);
-                      // Optimistically remove domain from publication data
                       props.mutatePubData(
                         (current) => {
                           if (!current) return current;
@@ -188,7 +171,6 @@ function PubDomainRow(props: {
                         },
                         { revalidate: false },
                       );
-                      // Optimistically remove publication assignment from identity data
                       mutateIdentityData(props.mutateIdentity, (draft) => {
                         let domain = draft.custom_domains.find(
                           (d) => d.domain === props.domain,
@@ -223,8 +205,6 @@ function PubDomainRow(props: {
                   disabled={loading}
                   onClick={async () => {
                     setLoading(true);
-                    // Optimistically update the record's url so the UI
-                    // immediately reflects the new default domain
                     props.mutatePubData(
                       (current) => {
                         if (!current) return current;
@@ -264,7 +244,7 @@ function PubDomainRow(props: {
                   {loading ? (
                     <DotLoader className="h-[18px]! text-xs" />
                   ) : (
-                    <PinTiny className="text-tertiary hover:text-accent-contrast group-hover/domain:text-accent-2 shrink-0" />
+                    <PinTiny className="text-tertiary hover:text-accent-contrast shrink-0" />
                   )}
                 </button>
               </div>
@@ -281,7 +261,6 @@ function UnassignedDomainRow(props: {
   publication_uri: string;
   mutatePubData: ReturnType<typeof usePublicationData>["mutate"];
   onAssigned: () => void;
-  onSettings: () => void;
 }) {
   let { pending } = useDomainStatus(props.domainData.domain);
   let { mutate: mutateIdentity } = useIdentityData();
@@ -291,69 +270,67 @@ function UnassignedDomainRow(props: {
 
   async function doAssign() {
     setLoading(true);
-    mutateIdentityData(mutateIdentity, (draft) => {
-      let domain = draft.custom_domains.find(
-        (d) => d.domain === props.domainData.domain,
-      );
-      if (domain) {
-        domain.custom_domain_routes = [];
-        let pub = draft.publications?.find(
-          (p) => p.uri === props.publication_uri,
+    try {
+      mutateIdentityData(mutateIdentity, (draft) => {
+        let domain = draft.custom_domains.find(
+          (d) => d.domain === props.domainData.domain,
         );
-        domain.publication_domains = [
-          {
-            publication: props.publication_uri,
-            domain: props.domainData.domain,
-            identity: "",
-            created_at: new Date().toISOString(),
-            publications: pub ? { name: pub.name } : null,
-          },
-        ];
-      }
-    });
-    props.mutatePubData(
-      (current) => {
-        if (!current) return current;
-        let pub = current.publication;
-        if (!pub) return current;
-        return {
-          ...current,
-          publication: {
-            ...pub,
-            publication_domains: [
-              ...(pub.publication_domains || []),
-              {
-                publication: props.publication_uri,
-                domain: props.domainData.domain,
-                created_at: new Date().toISOString(),
-                identity: "",
-              },
-            ],
-          },
-        };
-      },
-      { revalidate: false },
-    );
-    setConfirming(false);
-    props.onAssigned();
-    await assignDomainToPublication({
-      domain: props.domainData.domain,
-      publication_uri: props.publication_uri,
-    });
+        if (domain) {
+          domain.custom_domain_routes = [];
+          let pub = draft.publications?.find(
+            (p) => p.uri === props.publication_uri,
+          );
+          domain.publication_domains = [
+            {
+              publication: props.publication_uri,
+              domain: props.domainData.domain,
+              identity: "",
+              created_at: new Date().toISOString(),
+              publications: pub ? { name: pub.name } : null,
+            },
+          ];
+        }
+      });
+      props.mutatePubData(
+        (current) => {
+          if (!current) return current;
+          let pub = current.publication;
+          if (!pub) return current;
+          return {
+            ...current,
+            publication: {
+              ...pub,
+              publication_domains: [
+                ...(pub.publication_domains || []),
+                {
+                  publication: props.publication_uri,
+                  domain: props.domainData.domain,
+                  created_at: new Date().toISOString(),
+                  identity: "",
+                },
+              ],
+            },
+          };
+        },
+        { revalidate: false },
+      );
+      setConfirming(false);
+      props.onAssigned();
+      await assignDomainToPublication({
+        domain: props.domainData.domain,
+        publication_uri: props.publication_uri,
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="text-sm text-tertiary w-full flex flex-col gap-1 px-[6px] py-1 border rounded-md border-border-light border-dashed">
+    <div className="opaque-container text-tertiary w-full flex flex-col gap-1 px-[6px] py-1 border rounded-md border-border-light border-dashed">
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          className="truncate text-left"
-          onMouseDown={() => props.onSettings()}
-        >
-          {props.domainData.domain}
-        </button>
+        <span className="truncate text-left">{props.domainData.domain}</span>
         {pending ? (
-          <div className="text-tertiary animate-pulse  text-xs">unverfied</div>
+          <div className="text-tertiary animate-pulse text-sm">unverified</div>
         ) : confirming ? null : (
           <button
             className="text-accent-contrast text-xs font-bold"

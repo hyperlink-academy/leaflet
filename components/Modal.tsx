@@ -41,7 +41,9 @@ export const Modal = ({
             ${className}`}
           >
             {title ? (
-              <Dialog.Title className="text-lg mb-1">{title}</Dialog.Title>
+              <Dialog.Title asChild>
+                <h3 className="pb-1">{title}</h3>
+              </Dialog.Title>
             ) : (
               <Dialog.Title />
             )}

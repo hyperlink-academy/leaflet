@@ -38,8 +38,6 @@ export function LinearDocumentPage({
     did,
     profile,
     preferences,
-    pubRecord,
-    theme,
     prerenderedCodeBlocks,
     bskyPostData,
     pollData,

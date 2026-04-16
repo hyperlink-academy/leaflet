@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "components/EmptyState";
 import { PostListing } from "components/PostListing";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 import type { Cursor } from "./getProfilePosts";
@@ -64,7 +65,7 @@ export const ProfilePostsContent = (props: {
   const allPosts = data ? data.flatMap((page) => page.posts) : [];
 
   if (allPosts.length === 0 && !isValidating) {
-    return <div className="text-tertiary text-center py-4">No posts yet</div>;
+    return <EmptyState title="No posts yet" />;
   }
 
   return (

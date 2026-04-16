@@ -16,18 +16,21 @@ export const Popover = (props: {
   border?: string;
   className?: string;
   open?: boolean;
+  defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   onOpenAutoFocus?: (e: Event) => void;
   asChild?: boolean;
   arrowFill?: string;
   noArrow?: boolean;
+  onInteractOutside?: (e: Event) => void;
 }) => {
-  let [open, setOpen] = useState(props.open || false);
+  let [open, setOpen] = useState(props.open || props.defaultOpen || false);
   useEffect(() => {
     if (props.open !== undefined) setOpen(props.open);
   }, [props.open]);
   return (
     <RadixPopover.Root
+      defaultOpen={props.defaultOpen}
       open={props.open}
       onOpenChange={(o) => {
         setOpen(o);
@@ -44,7 +47,7 @@ export const Popover = (props: {
               className={`
               z-20 relative bg-bg-page
               text-primary
-              flex flex-col overflow-hidden
+              flex flex-col
               px-3 py-2
               max-w-(--radix-popover-content-available-width)
               max-h-(--radix-popover-content-available-height)
@@ -56,6 +59,7 @@ export const Popover = (props: {
               sideOffset={props.sideOffset ? props.sideOffset : 4}
               collisionPadding={16}
               onOpenAutoFocus={props.onOpenAutoFocus}
+              onInteractOutside={props.onInteractOutside}
             >
               {props.children}
               {!props.noArrow && (

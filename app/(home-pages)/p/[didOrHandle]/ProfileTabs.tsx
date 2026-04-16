@@ -41,7 +41,9 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
   const bgColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
 
   return (
-    <div className="flex flex-col w-full sticky top-3 sm:top-4 z-20 pt-6">
+    <div
+      className={`flex flex-col w-full sticky z-20 ${cardBorderHidden ? "top-3 sm:top-0" : "top-3"} `}
+    >
       <div
         style={
           scrollPosWithinTabContent < 20
@@ -62,7 +64,7 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
             scrollPosWithinTabContent < 20
               ? {
                   backgroundColor: !cardBorderHidden
-                    ? `rgba(${bgColor}, ${scrollPosWithinTabContent / 60 + 0.75})`
+                    ? `rgba(${bgColor}, ${scrollPosWithinTabContent / 60})`
                     : `rgba(${bgColor}, ${scrollPosWithinTabContent / 20})`,
                   paddingLeft: !cardBorderHidden
                     ? "4px"
@@ -110,7 +112,7 @@ const TabLink = (props: { href: string; name: string; selected: boolean }) => {
       className={`pubTabs px-1 py-0 flex gap-1 items-center rounded-md hover:cursor-pointer hover:no-underline! ${
         props.selected
           ? "text-accent-2 bg-accent-1 font-bold -mb-px"
-          : "text-tertiary"
+          : "text-secondary"
       }`}
     >
       {props.name}

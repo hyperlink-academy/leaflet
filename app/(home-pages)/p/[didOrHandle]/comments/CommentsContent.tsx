@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "components/EmptyState";
 import { useEffect, useRef, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
 import { AppBskyActorProfile, AtUri } from "@atproto/api";
@@ -79,9 +80,7 @@ export const ProfileCommentsContent = (props: {
   const allComments = data ? data.flatMap((page) => page.comments) : [];
 
   if (allComments.length === 0 && !isValidating) {
-    return (
-      <div className="text-tertiary text-center py-4">No comments yet</div>
-    );
+    return <EmptyState title="No comments yet" className="py-4" />;
   }
 
   return (
@@ -206,7 +205,7 @@ const CommentItem = ({ comment }: { comment: ProfileComment }) => {
             </div>
           )}
           <pre
-            style={{ wordBreak: "break-word" }}
+            style={{ wordBreak: "break-word", fontFamily: "inherit" }}
             className="whitespace-pre-wrap text-secondary"
           >
             <BaseTextBlock

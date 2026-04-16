@@ -1,4 +1,5 @@
 import { Toggle } from "components/Toggle";
+import { DashboardContainer } from "./SettingsContent";
 
 export function PostSettings(props: {
   showComments: boolean;
@@ -14,14 +15,13 @@ export function PostSettings(props: {
 }) {
   return (
     <>
-      <div className="flex flex-col gap-3">
-        <h3 className="mb-0">Discovery</h3>
+      <DashboardContainer section="Discovery">
         <Toggle
           toggle={props.showInDiscover}
           onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
         >
           <div className="flex flex-col justify-start">
-            <div className="font-bold">Make Public</div>
+            <div className="font-bold text-secondary">Make Public</div>
             <div className="text-tertiary text-sm leading-tight">
               Your posts will appear in{" "}
               <a href="/reader" target="_blank">
@@ -31,52 +31,53 @@ export function PostSettings(props: {
             </div>
           </div>
         </Toggle>
-      </div>
-      <hr className="border-border-light" />
+      </DashboardContainer>
 
-      <h3 className="mb-0">Post Layout</h3>
-      <Toggle
-        toggle={props.showPrevNext}
-        onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
-      >
-        <div className="font-bold">Show Prev/Next Buttons on Post</div>
-      </Toggle>
-
-      <hr className="border-border-light" />
-
-      <h3 className="mb-0">Post Interactions</h3>
-      <div className="flex flex-col gap-2">
+      <DashboardContainer section="Post Layout">
         <Toggle
-          toggle={props.showComments}
-          onToggle={() => props.setShowComments(!props.showComments)}
+          toggle={props.showPrevNext}
+          onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
         >
-          <div className="font-bold">Show Comments</div>
-        </Toggle>
-
-        <Toggle
-          toggle={props.showMentions}
-          onToggle={() => props.setShowMentions(!props.showMentions)}
-        >
-          <div className="flex flex-col justify-start">
-            <div className="font-bold">Show Mentions</div>
-            <div className="text-tertiary text-sm leading-tight">
-              Display a list of Bluesky mentions about your post
-            </div>
+          <div className="font-bold text-secondary">
+            Show Prev/Next Buttons on Post
           </div>
         </Toggle>
+      </DashboardContainer>
 
-        <Toggle
-          toggle={props.showRecommends}
-          onToggle={() => props.setShowRecommends(!props.showRecommends)}
-        >
-          <div className="flex flex-col justify-start">
-            <div className="font-bold">Show Recommends</div>
-            <div className="text-tertiary text-sm leading-tight">
-              Allow readers to recommend/like your post
+      <DashboardContainer section="Post Interactions">
+        <div className="flex flex-col gap-2">
+          <Toggle
+            toggle={props.showComments}
+            onToggle={() => props.setShowComments(!props.showComments)}
+          >
+            <div className="font-bold text-secondary">Show Comments</div>
+          </Toggle>
+
+          <Toggle
+            toggle={props.showMentions}
+            onToggle={() => props.setShowMentions(!props.showMentions)}
+          >
+            <div className="flex flex-col justify-start">
+              <div className="font-bold text-secondary">Show Mentions</div>
+              <div className="text-tertiary text-sm leading-tight">
+                Display a list of Bluesky mentions about your post
+              </div>
             </div>
-          </div>
-        </Toggle>
-      </div>
+          </Toggle>
+
+          <Toggle
+            toggle={props.showRecommends}
+            onToggle={() => props.setShowRecommends(!props.showRecommends)}
+          >
+            <div className="flex flex-col justify-start">
+              <div className="font-bold text-secondary">Show Recommends</div>
+              <div className="text-tertiary text-sm leading-tight">
+                Allow readers to recommend/like your post
+              </div>
+            </div>
+          </Toggle>
+        </div>
+      </DashboardContainer>
     </>
   );
 }
