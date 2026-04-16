@@ -40,10 +40,10 @@ export const PubPageWidthSetter = (props: {
   let open = props.openPicker == props.thisPicker;
 
   return (
-    <div className="pageWidthSetter flex flex-col gap-2 px-2 py-[6px] border border-[#CCCCCC] rounded-md bg-white">
+    <div className="pageWidthSetter flex flex-col gap-2">
       <button
         type="button"
-        className="font-bold text-[#000000] shrink-0 grow-0 w-full flex gap-2 text-left items-center"
+        className="font-bold text-[#595959] shrink-0 grow-0 w-full flex gap-2 text-left items-center"
         onClick={() => {
           if (!open) {
             props.setOpenPicker(props.thisPicker);

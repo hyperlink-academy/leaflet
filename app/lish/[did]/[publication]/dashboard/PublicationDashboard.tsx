@@ -14,6 +14,8 @@ import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationAnalytics } from "./PublicationAnalytics";
 import { useCanSeePro } from "src/hooks/useEntitlement";
+import { SettingsContent } from "./settings/SettingsContent";
+import { SettingsTiny } from "components/Icons/SettingsTiny";
 
 export default function PublicationDashboard({
   publication,
@@ -67,7 +69,7 @@ export default function PublicationDashboard({
           ),
           controls: null,
         },
-        Subscribers: {
+        Subs: {
           content: (
             <PublicationSubscribers
               showPageBackground={!!record.theme?.showPageBackground}
@@ -87,6 +89,15 @@ export default function PublicationDashboard({
               },
             }
           : {}),
+        Settings: {
+          icon: <SettingsTiny />,
+          content: (
+            <SettingsContent
+              showPageBackground={!!record.theme?.showPageBackground}
+            />
+          ),
+          controls: null,
+        },
       }}
       actions={<Actions publication={publication.uri} />}
       currentPage="pub"

@@ -9,7 +9,7 @@ import { mutate } from "swr";
 import { SpeedyLink } from "components/SpeedyLink";
 import { Popover } from "components/Popover";
 import { Modal } from "components/Modal";
-import { InlineUpgrade } from "app/lish/[did]/[publication]/UpgradeModal";
+import { InlineUpgradeToPro } from "app/lish/[did]/[publication]/UpgradeModal";
 import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ManageProSubscription";
 import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
@@ -98,7 +98,9 @@ export const ProfileButton = () => {
             {" "}
             <hr className="border-border-light border-dashed" />
             <div className="py-2">
-              <InlineUpgrade />
+              <div className="p-2 accent-container">
+                <InlineUpgradeToPro compact />
+              </div>
             </div>
           </>
         )}

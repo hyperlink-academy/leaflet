@@ -2,6 +2,7 @@
 import useSWR from "swr";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { BskyPostContent } from "app/lish/[did]/[publication]/[rkey]/BskyPostContent";
+import { EmptyState } from "components/EmptyState";
 import { DotLoader } from "components/utils/DotLoader";
 
 async function fetchBskyPosts(uris: string[]): Promise<PostView[]> {
@@ -17,9 +18,10 @@ export function ReaderMentionsContent(props: {
   quotesAndMentions: { uri: string; link?: string }[];
 }) {
   const uris = props.quotesAndMentions.map((q) => q.uri);
-  const key = uris.length > 0
-    ? `/api/bsky/hydrate?${new URLSearchParams({ uris: JSON.stringify(uris) }).toString()}`
-    : null;
+  const key =
+    uris.length > 0
+      ? `/api/bsky/hydrate?${new URLSearchParams({ uris: JSON.stringify(uris) }).toString()}`
+      : null;
 
   const { data: bskyPosts, isLoading } = useSWR(key, () =>
     fetchBskyPosts(uris),
@@ -27,9 +29,11 @@ export function ReaderMentionsContent(props: {
 
   if (props.quotesAndMentions.length === 0) {
     return (
-      <div className="opaque-container flex flex-col gap-0.5 p-[6px] text-tertiary italic text-sm text-center">
-        <div className="font-bold">no mentions yet!</div>
-      </div>
+      <EmptyState
+        title="No mentions yet!"
+        container="opaque"
+        className="gap-0.5 p-[6px]!"
+      />
     );
   }
 

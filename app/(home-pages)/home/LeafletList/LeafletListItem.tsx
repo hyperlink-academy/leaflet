@@ -48,7 +48,7 @@ export const LeafletListItem = (props: {
           ref={previewRef}
           className={`relative flex gap-3 w-full
             ${props.isHidden ? "hidden" : "flex"}
-            ${cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border relative"}`}
+            ${cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border! relative"}`}
           style={{
             backgroundColor: cardBorderHidden
               ? "transparent"
@@ -84,7 +84,7 @@ export const LeafletListItem = (props: {
       className={`
           relative
         flex flex-col gap-1 p-1 h-52 w-full
-       block-border border-border! hover:outline-border
+       block-border border-border! hover:outline-border!
        ${props.isHidden ? "hidden" : "flex"}
         `}
       style={{
@@ -109,14 +109,5 @@ export const LeafletListItem = (props: {
         loggedIn={props.loggedIn}
       />
     </div>
-  );
-};
-
-const LeafletLink = (props: { id: string; className: string }) => {
-  return (
-    <SpeedyLink
-      href={`/${props.id}`}
-      className={`no-underline hover:no-underline! text-primary ${props.className}`}
-    />
   );
 };

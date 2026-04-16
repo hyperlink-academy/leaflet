@@ -3,6 +3,7 @@ import { Modal } from "components/Modal";
 import { useState } from "react";
 import { createCheckoutSession } from "actions/createCheckoutSession";
 import { DotLoader } from "components/utils/DotLoader";
+import { ToggleGroup } from "components/ToggleGroup";
 
 export const UpgradeContent = () => {
   let [cadence, setCadence] = useState<"year" | "month">("year");
@@ -37,20 +38,15 @@ export const UpgradeContent = () => {
         </div>
         <div className="sm:w-64  w-full accent-container flex justify-center items-center">
           <div className="flex flex-col justify-center text-center py-6">
-            <div className="flex gap-2 mb-3 p-1 bg-accent-contrast rounded-lg text-sm">
-              <button
-                className={`px-1 rounded-md ${cadence === "year" ? "bg-bg-page font-bold text-accent-contrast" : "bg-transparent text-bg-page"}`}
-                onClick={() => setCadence("year")}
-              >
-                Yearly
-              </button>
-              <button
-                className={`px-1 rounded-md ${cadence === "month" ? "bg-bg-page font-bold text-accent-contrast" : "bg-transparent text-bg-page"}`}
-                onClick={() => setCadence("month")}
-              >
-                Monthly
-              </button>
-            </div>
+            <ToggleGroup
+              className="mb-3"
+              value={cadence}
+              onChange={setCadence}
+              options={[
+                { value: "year", label: "Yearly" },
+                { value: "month", label: "Monthly" },
+              ]}
+            />
             <div className="flex gap-1 items-baseline justify-center">
               <div className="text-2xl font-bold leading-tight">
                 {cadence === "year" ? "$120" : "$12"}
@@ -90,20 +86,36 @@ export const UpgradeModal = (props: {
   );
 };
 
-export const InlineUpgrade = () => {
+export const InlineUpgradeToPro = (props: { compact?: boolean }) => {
   return (
-    <div className="text-center p-2 accent-container text-secondary">
-      <UpgradeModal
-        asChild
-        trigger={
-          <ButtonPrimary compact fullWidth className="text-sm">
-            Upgrade to Leaflet Pro!
-          </ButtonPrimary>
-        }
-      />
-      <div className="text-sm leading-snug text-tertiary pt-1">
+    <div className="text-center  text-secondary">
+      <UpgradeToProButton fullWidth compact={props.compact} />
+      <div
+        className={`${props.compact ? `text-sm` : "text-base"} leading-snug text-tertiary pt-2`}
+      >
         Analytics for all your pubs! <br /> Emails and membership coming soon.
       </div>
     </div>
+  );
+};
+
+export const UpgradeToProButton = (props: {
+  fullWidth?: boolean;
+  compact?: boolean;
+}) => {
+  return (
+    <UpgradeModal
+      asChild
+      trigger={
+        <ButtonPrimary
+          type="button"
+          compact={props.compact}
+          fullWidth={props.fullWidth}
+          className={props.compact ? `text-sm` : "text-base"}
+        >
+          Upgrade to Leaflet Pro!
+        </ButtonPrimary>
+      }
+    />
   );
 };

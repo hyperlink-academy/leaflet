@@ -132,6 +132,7 @@ export function DashboardLayout<
     [name: string]: {
       content: React.ReactNode;
       controls: React.ReactNode;
+      icon?: React.ReactNode;
     };
   },
 >(props: {
@@ -186,7 +187,7 @@ export function DashboardLayout<
           </div>
         </MediaContents>
         <div
-          className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-3 px-3 sm:pt-8 sm:pb-3 sm:pl-6 sm:pr-4 `}
+          className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-3 px-3 sm:pt-8 sm:pb-6 sm:pl-8 sm:pr-4 `}
           ref={ref}
           id="home-content"
         >
@@ -206,6 +207,7 @@ export function DashboardLayout<
                             <Tab
                               key={t}
                               name={t}
+                              icon={props.tabs[t].icon}
                               selected={t === tab}
                               onSelect={() => setTabWithUrl(t)}
                               onMouseEnter={() => props.onTabHover?.(t)}
@@ -215,7 +217,7 @@ export function DashboardLayout<
                         })}
                       </div>
                     )}
-                    {props.publication && (
+                    {props.publication && controls && (
                       <button
                         className={`sm:hidden block text-tertiary`}
                         onClick={() => {

@@ -45,7 +45,7 @@ export const ProfileHeader = (props: {
 
   return (
     <div
-      className={`profileHeader flex flex-col relative `}
+      className={`profileHeader flex flex-col relative pb-6`}
       id="profile-header"
     >
       {!props.popover && <ProfileLinks handle={props.profile.handle || ""} />}

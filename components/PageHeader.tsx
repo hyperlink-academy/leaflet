@@ -21,9 +21,7 @@ export const Header = (props: { children: React.ReactNode }) => {
     }
   }, []);
 
-  let headerBGColor = !cardBorderHidden
-    ? "var(--bg-leaflet)"
-    : "var(--bg-page)";
+  let headerBGColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
 
   return (
     <div

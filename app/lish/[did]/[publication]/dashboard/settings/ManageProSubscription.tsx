@@ -7,7 +7,7 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { PRODUCT_DEFINITION } from "stripe/products";
 
-export const ManageProSubscription = (props: {}) => {
+export const ManageProSubscription = (props: { compact?: boolean }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { identity } = useIdentityData();
@@ -29,27 +29,49 @@ export const ManageProSubscription = (props: {}) => {
       setLoading(false);
     }
   }
-
-  return (
-    <div>
-      <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1 flex-shrink-0">
-        Manage Subscription
-      </div>
-      <div className="text-secondary text-center flex flex-col justify-center gap-2 py-2">
-        <div>
-          You have a <br />
-          {PRODUCT_DEFINITION.name} subscription
-          <div className="text-lg font-bold text-primary">
-            {PRODUCT_DEFINITION.name}
-          </div>
+  if (props.compact) {
+    return (
+      <div className="text-secondary font-bold flex flex-col gap-1 justify-end">
+        <ButtonPrimary
+          className=""
+          compact
+          onClick={handleManageBilling}
+          disabled={loading}
+        >
+          {loading ? <DotLoader /> : "Manage Billing"}
+        </ButtonPrimary>
+        <div className="text-tertiary text-sm font-normal">
           {subscription?.status === "canceled"
             ? "Your subscription has ended"
             : subscription?.status === "canceling"
               ? `Access until ${renewalDate}`
-              : `Renews on ${renewalDate}`}
+              : `Renews ${renewalDate}`}
+        </div>
+
+        {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div className="text-secondary text-center flex flex-col leading-snug justify-center gap-2 py-2">
+        <div>
+          You are subscribed to
+          <br />
+          <div className="text-xl font-bold text-primary pb-1">
+            {PRODUCT_DEFINITION.name}
+          </div>
+          <div className="text-tertiary italic text-sm">
+            {subscription?.status === "canceled"
+              ? "Your subscription has ended"
+              : subscription?.status === "canceling"
+                ? `Access until ${renewalDate}`
+                : `Renews ${renewalDate}`}
+          </div>
         </div>
         <ButtonPrimary
           className="mx-auto"
+          type="button"
           compact
           onClick={handleManageBilling}
           disabled={loading}

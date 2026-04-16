@@ -1,7 +1,6 @@
 "use client";
 
 import { NewDraftActionButton } from "./NewDraftButton";
-import { PublicationSettingsButton } from "./settings/PublicationSettings";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { Menu, MenuItem } from "components/Menu";
@@ -22,7 +21,6 @@ export const Actions = (props: { publication: string }) => {
     <>
       <NewDraftActionButton publication={props.publication} />
       <PublicationShareButton />
-      <PublicationSettingsButton publication={props.publication} />
     </>
   );
 };

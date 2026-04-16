@@ -57,7 +57,7 @@ export default function ReaderLayout({
                     className={`pubTabs px-1 py-0 flex gap-1 items-center rounded-md hover:cursor-pointer ${
                       isActive(tab.href)
                         ? "text-accent-2 bg-accent-1 font-bold -mb-px"
-                        : "text-tertiary"
+                        : "text-secondary"
                     }`}
                   >
                     {tab.name}

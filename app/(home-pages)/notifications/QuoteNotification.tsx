@@ -27,12 +27,9 @@ export const QuoteNotification = (props: HydratedQuoteNotification) => {
       content={
         <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
           <div className="flex gap-2 text-sm w-full">
-            <Avatar
-              src={author.avatar}
-              displayName={displayName}
-            />
+            <Avatar src={author.avatar} displayName={displayName} />
             <pre
-              style={{ wordBreak: "break-word" }}
+              style={{ wordBreak: "break-word", fontFamily: "inherit" }}
               className="whitespace-pre-wrap text-secondary line-clamp-3 sm:line-clamp-6"
             >
               {postText}

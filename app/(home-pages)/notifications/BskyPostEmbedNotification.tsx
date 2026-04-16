@@ -28,7 +28,7 @@ export const BskyPostEmbedNotification = (
         <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
           {props.bskyPostText && (
             <pre
-              style={{ wordBreak: "break-word" }}
+              style={{ wordBreak: "break-word", fontFamily: "inherit" }}
               className="whitespace-pre-wrap text-secondary line-clamp-3 text-sm"
             >
               {props.bskyPostText}

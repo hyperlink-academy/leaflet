@@ -103,7 +103,7 @@ export const BackgroundPicker = (props: {
           alpha={props.hasPageBackground ? true : false}
         />
       )}
-      <hr className="border-border-light" />
+      <hr className="border-[#CCCCCC] my-0.5" />
       <div className="flex gap-2 items-center">
         <Toggle
           toggle={props.hasPageBackground}
@@ -145,6 +145,7 @@ const BackgroundImagePicker = (props: {
     <>
       <div className="bgPickerColorLabel flex gap-2 items-center">
         <button
+          type="button"
           disabled={props.disabled}
           onClick={() => {
             if (props.openPicker === props.thisPicker) {
@@ -170,7 +171,7 @@ const BackgroundImagePicker = (props: {
           <div className="italic text-[#8C8C8C]">image</div>
         </button>
         <div className="flex gap-1 text-[#8C8C8C]">
-          <button onClick={() => props.setBgImage(null)}>
+          <button type="button" onClick={() => props.setBgImage(null)}>
             <DeleteSmall />
           </button>
           <label className="hover:cursor-pointer ">

@@ -10,7 +10,6 @@ import {
 import { mutate } from "swr";
 import { AddTiny } from "components/Icons/AddTiny";
 import { useToaster } from "components/Toast";
-import { PubSettingsHeader } from "../[did]/[publication]/dashboard/settings/PublicationSettings";
 import { Toggle } from "components/Toggle";
 
 export const EditPubForm = (props: {
@@ -85,13 +84,7 @@ export const EditPubForm = (props: {
         mutate("publication-data");
       }}
     >
-      <PubSettingsHeader
-        loading={props.loading}
-        setLoadingAction={props.setLoadingAction}
-        backToMenuAction={props.backToMenuAction}
-      >
-        General Settings
-      </PubSettingsHeader>
+
       <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2 overflow-y-auto min-h-0">
         <div className="flex items-center justify-between gap-2 mt-2 ">
           <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
@@ -165,13 +158,13 @@ export const EditPubForm = (props: {
           onToggle={() => setShowInDiscover(!showInDiscover)}
         >
           <div className=" pt-0.5 flex flex-col  text-sm text-tertiary ">
-            <p className="font-bold italic">Show In Discover</p>
-            <p className="text-xs text-tertiary font-normal">
+            <p className="font-bold italic">Make Public</p>
+            <p className="text-sm text-tertiary font-normal">
               Your posts will appear in{" "}
               <a href="/reader" target="_blank">
                 Leaflet Reader
-              </a>
-              . You can change this at any time!
+              </a>{" "}
+              and show up in search and tags. You can change this at any time!
             </p>
           </div>
         </Toggle>
@@ -179,4 +172,3 @@ export const EditPubForm = (props: {
     </form>
   );
 };
-

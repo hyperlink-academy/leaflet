@@ -4,35 +4,33 @@ import {
 } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useState } from "react";
 import { pickers, SectionArrow } from "./ThemeSetter";
-import { Color } from "react-aria-components";
 import { PubLeafletThemeBackgroundImage } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
-import { BaseThemeProvider } from "./ThemeProvider";
+import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
 import { PagePickers } from "./PubPickers/PubTextPickers";
 import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
-import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/settings/PublicationSettings";
+
 import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { PubPageWidthSetter } from "./PubPickers/PubPageWidthSetter";
 import { FontPicker } from "./Pickers/TextPickers";
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { ButtonPrimary } from "components/Buttons";
+import { PresetThemePicker } from "./PubPickers/PubPresetPicker";
 
 export type ImageState = {
   src: string;
   file?: File;
   repeat: number | null;
 };
-export const PubThemeSetter = (props: {
-  backToMenu: () => void;
-  loading: boolean;
-  setLoading: (l: boolean) => void;
-}) => {
-  let [sample, setSample] = useState<"pub" | "post">("pub");
+
+export function usePubThemeEditorState() {
   let [openPicker, setOpenPicker] = useState<pickers>("null");
   let { data, mutate } = usePublicationData();
   let { publication: pub } = data || {};
@@ -44,6 +42,7 @@ export const PubThemeSetter = (props: {
     theme: localPubTheme,
     setTheme,
     changes,
+    resetChanges,
   } = useLocalPubTheme(record?.theme, showPageBackground);
   let [image, setImage] = useState<ImageState | null>(
     PubLeafletThemeBackgroundImage.isMain(record?.theme?.backgroundImage)
@@ -61,345 +60,283 @@ export const PubThemeSetter = (props: {
   let [pageWidth, setPageWidth] = useState<number>(
     record?.theme?.pageWidth || 624,
   );
-  let [headingFont, setHeadingFont] = useState<string | undefined>(record?.theme?.headingFont);
-  let [bodyFont, setBodyFont] = useState<string | undefined>(record?.theme?.bodyFont);
+  let [headingFont, setHeadingFont] = useState<string | undefined>(
+    record?.theme?.headingFont,
+  );
+  let [bodyFont, setBodyFont] = useState<string | undefined>(
+    record?.theme?.bodyFont,
+  );
   let pubBGImage = image?.src || null;
   let leafletBGRepeat = image?.repeat || null;
   let toaster = useToaster();
 
+  let submitTheme = async (setLoading: (l: boolean) => void) => {
+    if (!pub) return;
+    setLoading(true);
+    let result = await updatePublicationTheme({
+      uri: pub.uri,
+      theme: {
+        pageBackground: ColorToRGBA(localPubTheme.bgPage),
+        showPageBackground: showPageBackground,
+        backgroundColor: image
+          ? ColorToRGBA(localPubTheme.bgLeaflet)
+          : ColorToRGB(localPubTheme.bgLeaflet),
+        backgroundRepeat: image?.repeat,
+        backgroundImage: image ? image.file : null,
+        pageWidth: pageWidth,
+        primary: ColorToRGB(localPubTheme.primary),
+        accentBackground: ColorToRGB(localPubTheme.accent1),
+        accentText: ColorToRGB(localPubTheme.accent2),
+        headingFont: headingFont,
+        bodyFont: bodyFont,
+      },
+    });
+
+    if (!result.success) {
+      setLoading(false);
+      if (result.error && isOAuthSessionError(result.error)) {
+        toaster({
+          content: <OAuthErrorMessage error={result.error} />,
+          type: "error",
+        });
+      } else {
+        toaster({
+          content: "Failed to update theme",
+          type: "error",
+        });
+      }
+      return result;
+    }
+
+    mutate((pub) => {
+      if (result.publication && pub?.publication)
+        return {
+          ...pub,
+          publication: { ...pub.publication, ...result.publication },
+        };
+      return pub;
+    }, false);
+    resetChanges();
+    setLoading(false);
+    return result;
+  };
+
+  return {
+    openPicker,
+    setOpenPicker,
+    pub,
+    record,
+    mutate,
+    showPageBackground,
+    setShowPageBackground,
+    localPubTheme,
+    setTheme,
+    changes,
+    resetChanges,
+    image,
+    setImage,
+    pageWidth,
+    setPageWidth,
+    headingFont,
+    setHeadingFont,
+    bodyFont,
+    setBodyFont,
+    pubBGImage,
+    leafletBGRepeat,
+    toaster,
+    submitTheme,
+  };
+}
+
+export type PubThemeEditorState = ReturnType<typeof usePubThemeEditorState>;
+
+export function PubThemePickerPanel(props: { state: PubThemeEditorState }) {
+  let {
+    openPicker,
+    setOpenPicker,
+    showPageBackground,
+    setShowPageBackground,
+    localPubTheme,
+    setTheme,
+    image,
+    setImage,
+    pageWidth,
+    setPageWidth,
+    headingFont,
+    setHeadingFont,
+    bodyFont,
+    setBodyFont,
+    pubBGImage,
+    leafletBGRepeat,
+  } = props.state;
+
   return (
-    <BaseThemeProvider
-      local
-      {...localPubTheme}
-      headingFontId={headingFont}
-      bodyFontId={bodyFont}
-      hasBackgroundImage={!!image}
-      className="min-h-0!"
-    >
-      <div className="min-h-0 flex-1 flex flex-col pb-0.5">
-        <form
-          className="flex-shrink-0"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!pub) return;
-            props.setLoading(true);
-            let result = await updatePublicationTheme({
-              uri: pub.uri,
-              theme: {
-                pageBackground: ColorToRGBA(localPubTheme.bgPage),
-                showPageBackground: showPageBackground,
-                backgroundColor: image
-                  ? ColorToRGBA(localPubTheme.bgLeaflet)
-                  : ColorToRGB(localPubTheme.bgLeaflet),
-                backgroundRepeat: image?.repeat,
-                backgroundImage: image ? image.file : null,
-                pageWidth: pageWidth,
-                primary: ColorToRGB(localPubTheme.primary),
-                accentBackground: ColorToRGB(localPubTheme.accent1),
-                accentText: ColorToRGB(localPubTheme.accent2),
-                headingFont: headingFont,
-                bodyFont: bodyFont,
-              },
-            });
-
-            if (!result.success) {
-              props.setLoading(false);
-              if (result.error && isOAuthSessionError(result.error)) {
-                toaster({
-                  content: <OAuthErrorMessage error={result.error} />,
-                  type: "error",
-                });
-              } else {
-                toaster({
-                  content: "Failed to update theme",
-                  type: "error",
-                });
-              }
-              return;
-            }
-
-            mutate((pub) => {
-              if (result.publication && pub?.publication)
-                return {
-                  ...pub,
-                  publication: { ...pub.publication, ...result.publication },
-                };
-              return pub;
-            }, false);
-            props.setLoading(false);
-          }}
+    <div className="themeSetterContent flex flex-col w-full">
+      <div className="themeBGLeaflet flex flex-col">
+        <div
+          className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
         >
-          <PubSettingsHeader
-            loading={props.loading}
-            setLoadingAction={props.setLoading}
-            backToMenuAction={props.backToMenu}
-          >
-            Theme and Layout
-          </PubSettingsHeader>
-        </form>
-
-        <div className="themeSetterContent flex flex-col w-full overflow-y-scroll min-h-0 -mb-2 pt-2 ">
-          <PubPageWidthSetter
-            pageWidth={pageWidth}
-            setPageWidth={setPageWidth}
-            thisPicker="page-width"
-            openPicker={openPicker}
-            setOpenPicker={setOpenPicker}
-          />
-          <div className="themeBGLeaflet flex flex-col">
-            <div
-              className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
-            >
-              <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
-                <BackgroundPicker
-                  bgImage={image}
-                  setBgImage={setImage}
-                  backgroundColor={localPubTheme.bgLeaflet}
-                  pageBackground={localPubTheme.bgPage}
-                  setPageBackground={(color) => {
-                    setTheme((t) => ({ ...t, bgPage: color }));
-                  }}
-                  setBackgroundColor={(color) => {
-                    setTheme((t) => ({ ...t, bgLeaflet: color }));
-                  }}
-                  openPicker={openPicker}
-                  setOpenPicker={setOpenPicker}
-                  hasPageBackground={!!showPageBackground}
-                  setHasPageBackground={setShowPageBackground}
-                />
-              </div>
-
-              <SectionArrow
-                fill="white"
-                stroke="#CCCCCC"
-                className="ml-2 -mt-[1px]"
-              />
-            </div>
-          </div>
-
-          <div
-            style={{
-              backgroundImage: pubBGImage ? `url(${pubBGImage})` : undefined,
-              backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: !leafletBGRepeat
-                ? "cover"
-                : `calc(${leafletBGRepeat}px / 2 )`,
-            }}
-            className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
-          >
-            <div className={`flex flex-col  gap-3 z-10`}>
-              <PagePickers
-                pageBackground={localPubTheme.bgPage}
-                primary={localPubTheme.primary}
-                setPageBackground={(color) => {
-                  setTheme((t) => ({ ...t, bgPage: color }));
-                }}
-                setPrimary={(color) => {
-                  setTheme((t) => ({ ...t, primary: color }));
-                }}
-                openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
-                hasPageBackground={showPageBackground}
-              />
-              <div className="bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))] flex flex-col gap-1">
-                <FontPicker
-                  label="Heading"
-                  value={headingFont}
-                  onChange={setHeadingFont}
-                />
-                <FontPicker
-                  label="Body"
-                  value={bodyFont}
-                  onChange={setBodyFont}
-                />
-              </div>
-              <PubAccentPickers
-                accent1={localPubTheme.accent1}
-                setAccent1={(color) => {
-                  setTheme((t) => ({ ...t, accent1: color }));
-                }}
-                accent2={localPubTheme.accent2}
-                setAccent2={(color) => {
-                  setTheme((t) => ({ ...t, accent2: color }));
-                }}
-                openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col mt-4 ">
-            <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
-              <div className="text-sm">Preview</div>
-              <Separator classname="h-4!" />{" "}
-              <button
-                className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
-                onClick={() => setSample("pub")}
-              >
-                Pub
-              </button>
-              <button
-                className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
-                onClick={() => setSample("post")}
-              >
-                Post
-              </button>
-            </div>
-            {sample === "pub" ? (
-              <SamplePub
-                pubBGImage={pubBGImage}
-                pubBGRepeat={leafletBGRepeat}
-                showPageBackground={showPageBackground}
-              />
-            ) : (
-              <SamplePost
-                pubBGImage={pubBGImage}
-                pubBGRepeat={leafletBGRepeat}
-                showPageBackground={showPageBackground}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    </BaseThemeProvider>
-  );
-};
-
-const SamplePub = (props: {
-  pubBGImage: string | null;
-  pubBGRepeat: number | null;
-  showPageBackground: boolean;
-}) => {
-  let { data } = usePublicationData();
-  let { publication } = data || {};
-  let record = useNormalizedPublicationRecord();
-
-  return (
-    <div
-      style={{
-        backgroundImage: props.pubBGImage
-          ? `url(${props.pubBGImage})`
-          : undefined,
-        backgroundRepeat: props.pubBGRepeat ? "repeat" : "no-repeat",
-        backgroundPosition: "center",
-        backgroundSize: !props.pubBGRepeat
-          ? "cover"
-          : `calc(${props.pubBGRepeat}px / 2 )`,
-      }}
-      className={`bg-bg-leaflet p-3 pb-0 flex flex-col gap-3 rounded-t-md  border border-border border-b-0 h-[148px] overflow-hidden `}
-    >
-      <div
-        className="pubWrapper sampleContent rounded-t-md border-border pb-4 px-[10px] flex flex-col gap-[14px] w-[250px] mx-auto"
-        style={{
-          background: props.showPageBackground
-            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-            : undefined,
-        }}
-      >
-        <div className="flex flex-col justify-center text-center pt-2">
-          {record?.icon && publication?.uri && (
-            <div
-              style={{
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
-                backgroundSize: "cover",
-                backgroundImage: `url(/api/atproto_images?did=${new AtUri(publication.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
-              }}
-              className="w-4 h-4 rounded-full place-self-center"
+          <PresetThemePicker state={props.state} />
+          <div className="bgPickerBody w-full flex flex-col gap-2 p-2  border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
+            <PubPageWidthSetter
+              pageWidth={pageWidth}
+              setPageWidth={setPageWidth}
+              thisPicker="page-width"
+              openPicker={openPicker}
+              setOpenPicker={setOpenPicker}
             />
-          )}
+            <hr className="border-[#CCCCCC] my-0.5" />
+            <BackgroundPicker
+              bgImage={image}
+              setBgImage={setImage}
+              backgroundColor={localPubTheme.bgLeaflet}
+              pageBackground={localPubTheme.bgPage}
+              setPageBackground={(color) => {
+                setTheme((t) => ({ ...t, bgPage: color }));
+              }}
+              setBackgroundColor={(color) => {
+                setTheme((t) => ({ ...t, bgLeaflet: color }));
+              }}
+              openPicker={openPicker}
+              setOpenPicker={setOpenPicker}
+              hasPageBackground={!!showPageBackground}
+              setHasPageBackground={setShowPageBackground}
+            />
+          </div>
 
-          <div className="text-[11px] font-bold pt-[5px] text-accent-contrast" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
-            {record?.name}
-          </div>
-          <div className="text-[7px] font-normal text-tertiary">
-            {record?.description}
-          </div>
-          <div className=" flex gap-1 items-center mt-[6px] bg-accent-1 text-accent-2 py-px px-[4px] text-[7px] w-fit font-bold rounded-[2px] mx-auto">
-            <div className="h-[7px] w-[7px] rounded-full bg-accent-2" />
-            Subscribe with Bluesky
-          </div>
+          <SectionArrow
+            fill="white"
+            stroke="#CCCCCC"
+            className="ml-2 -mt-[1px]"
+          />
         </div>
+      </div>
 
-        <div className="flex flex-col text-[8px]  rounded-md ">
-          <div className="font-bold" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>A Sample Post</div>
-          <div className="text-secondary italic text-[6px]">
-            This is a sample description about the sample post
+      <div
+        style={{
+          backgroundImage: pubBGImage ? `url(${pubBGImage})` : undefined,
+          backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: !leafletBGRepeat
+            ? "cover"
+            : `calc(${leafletBGRepeat}px / 2 )`,
+        }}
+        className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
+      >
+        <div className={`flex flex-col  gap-3 z-10`}>
+          <PagePickers
+            pageBackground={localPubTheme.bgPage}
+            primary={localPubTheme.primary}
+            setPageBackground={(color) => {
+              setTheme((t) => ({ ...t, bgPage: color }));
+            }}
+            setPrimary={(color) => {
+              setTheme((t) => ({ ...t, primary: color }));
+            }}
+            openPicker={openPicker}
+            setOpenPicker={(pickers) => setOpenPicker(pickers)}
+            hasPageBackground={showPageBackground}
+          />
+          <div className="bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))] flex flex-col gap-1">
+            <FontPicker
+              label="Heading"
+              value={headingFont}
+              onChange={setHeadingFont}
+            />
+            <FontPicker label="Body" value={bodyFont} onChange={setBodyFont} />
           </div>
-          <div className="text-tertiary  text-[5px] pt-[2px]">Jan 1, 20XX </div>
+          <PubAccentPickers
+            accent1={localPubTheme.accent1}
+            setAccent1={(color) => {
+              setTheme((t) => ({ ...t, accent1: color }));
+            }}
+            accent2={localPubTheme.accent2}
+            setAccent2={(color) => {
+              setTheme((t) => ({ ...t, accent2: color }));
+            }}
+            openPicker={openPicker}
+            setOpenPicker={(pickers) => setOpenPicker(pickers)}
+          />
         </div>
       </div>
     </div>
   );
-};
+}
 
-const SamplePost = (props: {
-  pubBGImage: string | null;
-  pubBGRepeat: number | null;
-  showPageBackground: boolean;
+export const PubThemeSetter = (props: {
+  backToMenu: () => void;
+  loading: boolean;
+  setLoading: (l: boolean) => void;
 }) => {
-  let { data } = usePublicationData();
-  let { publication } = data || {};
-  let record = useNormalizedPublicationRecord();
+  let [sample, setSample] = useState<"pub" | "post">("pub");
+  let state = usePubThemeEditorState();
+  let {
+    localPubTheme,
+    headingFont,
+    bodyFont,
+    image,
+    pageWidth,
+    pubBGImage,
+    leafletBGRepeat,
+    pub,
+    record,
+    showPageBackground,
+    submitTheme,
+  } = state;
+
   return (
-    <div
-      style={{
-        backgroundImage: props.pubBGImage
-          ? `url(${props.pubBGImage})`
-          : undefined,
-        backgroundRepeat: props.pubBGRepeat ? "repeat" : "no-repeat",
-        backgroundPosition: "center",
-        backgroundSize: !props.pubBGRepeat
-          ? "cover"
-          : `calc(${props.pubBGRepeat}px / 2 )`,
-      }}
-      className={`bg-bg-leaflet p-3 max-w-full flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-0 h-[148px] overflow-hidden`}
-    >
-      <div
-        className="pubWrapper sampleContent rounded-t-md border-border pb-0 px-[6px] flex flex-col w-[250px] mx-auto"
-        style={{
-          background: props.showPageBackground
-            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-            : undefined,
-        }}
+    <CardBorderHiddenContext.Provider value={!showPageBackground}>
+      <BaseThemeProvider
+        local
+        {...localPubTheme}
+        headingFontId={headingFont}
+        bodyFontId={bodyFont}
+        hasBackgroundImage={!!image}
+        className="min-h-0!"
       >
-        <div className="flex flex-col ">
-          <div className="text-[6px] font-bold pt-[6px] text-accent-contrast" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
-            {record?.name}
-          </div>
-          <div className="text-[11px] font-bold text-primary" style={{ fontFamily: "var(--theme-heading-font, var(--theme-font, var(--font-quattro)))" }}>
-            A Sample Post
-          </div>
-          <div className="text-[7px] font-normal text-secondary italic">
-            A short sample description about the sample post
-          </div>
-          <div className="text-tertiary  text-[5px] pt-[2px]">Jan 1, 20XX </div>
-        </div>
-        <div className="text-[6px] pt-[8px] flex flex-col gap-[6px]">
-          <div>
-            Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque
-            faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi
-            pretium tellus duis convallis. Tempus leo eu aenean sed diam urna
-            tempor.
+        <div className="min-h-0 flex-1 flex flex-col pb-0.5">
+          <div className="flex-shrink-0">
+            <button type="button" onClick={props.backToMenu}>
+              <GoToArrow />
+            </button>
           </div>
 
-          <div>
-            Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis
-            massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit
-            semper vel class aptent taciti sociosqu. Ad litora torquent per
-            conubia nostra inceptos himenaeos.
-          </div>
-          <div>
-            Sed et nisi semper, egestas purus a, egestas nulla. Nulla ultricies,
-            purus non dapibus tincidunt, nunc sem rhoncus sem, vel malesuada
-            tellus enim sit amet magna. Donec ac justo a ipsum fermentum
-            vulputate. Etiam sit amet viverra leo. Aenean accumsan consectetur
-            velit. Vivamus at justo a nisl imperdiet dictum. Donec scelerisque
-            ex eget turpis scelerisque tincidunt. Proin non convallis nibh, eget
-            aliquet ex. Curabitur ornare a ipsum in ultrices.
+          <div className="themeSetterContent flex flex-col w-full overflow-y-scroll min-h-0 -mb-2 pt-2 ">
+            <PubThemePickerPanel state={state} />
+            <div className="flex flex-col mt-4 ">
+              <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
+                <div className="text-sm">Preview</div>
+                <Separator classname="h-4!" />{" "}
+                <button
+                  type="button"
+                  className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
+                  onClick={() => setSample("pub")}
+                >
+                  Pub
+                </button>
+                <button
+                  type="button"
+                  className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
+                  onClick={() => setSample("post")}
+                >
+                  Post
+                </button>
+              </div>
+            </div>
+            <div className="pt-2">
+              <ButtonPrimary
+                fullWidth
+                disabled={props.loading}
+                onClick={async () => {
+                  await submitTheme(props.setLoading);
+                }}
+              >
+                {props.loading ? "Saving..." : "Save Theme"}
+              </ButtonPrimary>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </BaseThemeProvider>
+    </CardBorderHiddenContext.Provider>
   );
 };
