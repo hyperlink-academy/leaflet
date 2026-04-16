@@ -44,7 +44,7 @@ export function PublicationDomains(props: {
 
   return (
     <div>
-      Domains
+      <h4>Domains</h4>
       <div className="flex flex-col gap-1 py-1">
         <h4 className="">This Publication's Domains</h4>
         <div className="text-xs text-tertiary -mb-1 ">DEFAULT</div>

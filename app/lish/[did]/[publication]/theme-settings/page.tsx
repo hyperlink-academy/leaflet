@@ -2,7 +2,6 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { getIdentityData } from "actions/getIdentityData";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "../dashboard/PublicationSWRProvider";
-import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { AtUri } from "@atproto/syntax";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
@@ -39,19 +38,15 @@ export default async function ThemeSettingsPage(props: {
     return <ThemeNotFound />;
   let uri = new AtUri(publication.uri);
 
-  try {
-    return (
-      <PublicationSWRDataProvider
-        publication_did={did}
-        publication_rkey={uri.rkey}
-        publication_data={publication_data}
-      >
-        <ThemeSettingsContent />
-      </PublicationSWRDataProvider>
-    );
-  } catch (e) {
-    return <pre>{JSON.stringify(e, undefined, 2)}</pre>;
-  }
+  return (
+    <PublicationSWRDataProvider
+      publication_did={did}
+      publication_rkey={uri.rkey}
+      publication_data={publication_data}
+    >
+      <ThemeSettingsContent />
+    </PublicationSWRDataProvider>
+  );
 }
 
 const ThemeNotFound = () => {

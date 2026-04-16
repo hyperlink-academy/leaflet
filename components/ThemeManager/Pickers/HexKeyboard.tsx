@@ -110,7 +110,6 @@ export const HexKeyboard = (props: {
   let handleCopy = () => {
     navigator.clipboard.writeText(draft);
     let rect = copyButtonRef.current?.getBoundingClientRect();
-    console.log(draft);
     smoker({
       position: {
         x: rect ? rect.left + rect.width / 2 : 0,
@@ -159,7 +158,7 @@ export const HexKeyboard = (props: {
             flex items-center
             rounded-md border px-2 py-1 text-sm font-mono
              text-[#595959]!
-            ${isValidPartialHex ? "border-[#CCCCCC]}" : "border-red-400"}
+            ${isValidPartialHex ? "border-[#CCCCCC]" : "border-red-400"}
           `}
         >
           <span className="select-all">{draft}</span>

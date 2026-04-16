@@ -15,6 +15,7 @@ export const Tab = (props: {
       onClick={() => props.onSelect()}
       onMouseEnter={props.onMouseEnter}
       onPointerDown={props.onPointerDown}
+      aria-label={props.icon ? props.name : undefined}
     >
       {props.icon ? props.icon : props.name}
       {props.href && <ExternalLinkTiny />}

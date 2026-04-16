@@ -270,55 +270,59 @@ function UnassignedDomainRow(props: {
 
   async function doAssign() {
     setLoading(true);
-    mutateIdentityData(mutateIdentity, (draft) => {
-      let domain = draft.custom_domains.find(
-        (d) => d.domain === props.domainData.domain,
-      );
-      if (domain) {
-        domain.custom_domain_routes = [];
-        let pub = draft.publications?.find(
-          (p) => p.uri === props.publication_uri,
+    try {
+      mutateIdentityData(mutateIdentity, (draft) => {
+        let domain = draft.custom_domains.find(
+          (d) => d.domain === props.domainData.domain,
         );
-        domain.publication_domains = [
-          {
-            publication: props.publication_uri,
-            domain: props.domainData.domain,
-            identity: "",
-            created_at: new Date().toISOString(),
-            publications: pub ? { name: pub.name } : null,
-          },
-        ];
-      }
-    });
-    props.mutatePubData(
-      (current) => {
-        if (!current) return current;
-        let pub = current.publication;
-        if (!pub) return current;
-        return {
-          ...current,
-          publication: {
-            ...pub,
-            publication_domains: [
-              ...(pub.publication_domains || []),
-              {
-                publication: props.publication_uri,
-                domain: props.domainData.domain,
-                created_at: new Date().toISOString(),
-                identity: "",
-              },
-            ],
-          },
-        };
-      },
-      { revalidate: false },
-    );
-    setConfirming(false);
-    props.onAssigned();
-    await assignDomainToPublication({
-      domain: props.domainData.domain,
-      publication_uri: props.publication_uri,
-    });
+        if (domain) {
+          domain.custom_domain_routes = [];
+          let pub = draft.publications?.find(
+            (p) => p.uri === props.publication_uri,
+          );
+          domain.publication_domains = [
+            {
+              publication: props.publication_uri,
+              domain: props.domainData.domain,
+              identity: "",
+              created_at: new Date().toISOString(),
+              publications: pub ? { name: pub.name } : null,
+            },
+          ];
+        }
+      });
+      props.mutatePubData(
+        (current) => {
+          if (!current) return current;
+          let pub = current.publication;
+          if (!pub) return current;
+          return {
+            ...current,
+            publication: {
+              ...pub,
+              publication_domains: [
+                ...(pub.publication_domains || []),
+                {
+                  publication: props.publication_uri,
+                  domain: props.domainData.domain,
+                  created_at: new Date().toISOString(),
+                  identity: "",
+                },
+              ],
+            },
+          };
+        },
+        { revalidate: false },
+      );
+      setConfirming(false);
+      props.onAssigned();
+      await assignDomainToPublication({
+        domain: props.domainData.domain,
+        publication_uri: props.publication_uri,
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

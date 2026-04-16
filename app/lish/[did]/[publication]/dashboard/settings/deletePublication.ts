@@ -109,7 +109,10 @@ export async function deletePublication(
 
   // Delete document rows before publication rows — publication cascade would leave orphaned docs.
   if (documentUris.length > 0) {
-    supabaseServerClient.from("documents").delete().in("uri", documentUris);
+    await supabaseServerClient
+      .from("documents")
+      .delete()
+      .in("uri", documentUris);
   }
   await supabaseServerClient
     .from("publications")

@@ -34,7 +34,6 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
   let { publication: pubData } = data || {};
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
-  let cardBorderHidden = useCardBorderHidden();
   let record = useNormalizedPublicationRecord();
   let [loading, setLoading] = useState(false);
   let toast = useToaster();
@@ -269,7 +268,7 @@ export const DashboardContainer = (props: {
   let cardBorderHidden = useCardBorderHidden();
   return (
     <div
-      className={`container flex flex-col rounded-lg! gap-2 p-3 sm:px-4 ${!cardBorderHidden ? "" : "bg-trasparent!"} ${props.className}`}
+      className={`container flex flex-col rounded-lg! gap-2 p-3 sm:px-4 ${!cardBorderHidden ? "" : "bg-transparent!"} ${props.className}`}
     >
       {props.section && (
         <>

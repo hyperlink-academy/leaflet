@@ -1,6 +1,5 @@
 import { Toggle } from "components/Toggle";
 import { DashboardContainer } from "./SettingsContent";
-import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export function PostSettings(props: {
   showComments: boolean;
@@ -14,7 +13,6 @@ export function PostSettings(props: {
   showInDiscover: boolean;
   setShowInDiscover: (v: boolean) => void;
 }) {
-  let cardBorderHidden = useCardBorderHidden();
   return (
     <>
       <DashboardContainer section="Discovery">

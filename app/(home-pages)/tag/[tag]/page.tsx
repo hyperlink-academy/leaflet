@@ -1,8 +1,6 @@
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-import { Tag } from "components/Tags";
 import { PostListing } from "components/PostListing";
 import { getDocumentsByTag } from "./getDocumentsByTag";
-import { TagTiny } from "components/Icons/TagTiny";
 import { Metadata } from "next";
 
 export async function generateMetadata(props: {
@@ -46,7 +44,7 @@ const TagContent = (props: {
 
       <div className="pt-4 flex flex-col gap-4">
         {props.posts.length === 0 ? (
-          <EmptyState tag={props.tag} />
+          <NoPostsForTag tag={props.tag} />
         ) : (
           <>
             <div className="text-tertiary text-sm px-3">
@@ -62,7 +60,7 @@ const TagContent = (props: {
   );
 };
 
-const EmptyState = (props: { tag: string }) => {
+const NoPostsForTag = (props: { tag: string }) => {
   return (
     <div className="flex flex-col gap-2 items-center justify-center p-8 text-center">
       <div className="text-tertiary">
