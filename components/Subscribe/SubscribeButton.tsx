@@ -65,8 +65,11 @@ export const SubscribeInput = (props: {
         action={
           <Modal
             trigger={
-              <ButtonPrimary compact className="leading-tight! outline-none! text-sm!">
-                subscribe
+              <ButtonPrimary
+                compact
+                className="leading-tight! outline-none! text-sm!"
+              >
+                Subscribe
               </ButtonPrimary>
             }
           >

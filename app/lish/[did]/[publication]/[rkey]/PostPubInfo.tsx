@@ -1,11 +1,11 @@
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 
 export const dummy = {
-  newsletterMode: true,
+  newsletterMode: false,
   user: {
-    loggedIn: true,
+    loggedIn: false,
     email: "example@example.com",
-    handle: "example.handle",
+    handle: undefined,
     subscribed: false,
   },
 };

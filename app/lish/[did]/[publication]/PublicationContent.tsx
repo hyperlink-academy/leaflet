@@ -16,6 +16,8 @@ import {
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
+import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import { dummy } from "./[rkey]/PostPubInfo";
 
 type FakePost = {
   title: string;
@@ -81,12 +83,13 @@ export const PublicationContent = ({
             ) : undefined
           }
           subscribeButton={
-            <SubscribeWithBluesky
-              base_url={getPublicationURL(publication)}
-              pubName={publication.name}
-              pub_uri={publication.uri}
-              subscribers={publication.publication_subscriptions}
-            />
+            <SubscribeInput {...dummy}/>
+            // <SubscribeWithBluesky
+            //   base_url={getPublicationURL(publication)}
+            //   pubName={publication.name}
+            //   pub_uri={publication.uri}
+            //   subscribers={publication.publication_subscriptions}
+            // />
           }
         />
         <div className="publicationPostList w-full flex flex-col gap-4">

@@ -93,7 +93,7 @@ export function LinearDocumentPage({
           footnoteIndexMap={footnoteIndexMap}
         />
         <PublishedFootnoteSection footnotes={footnotes} />
-        <PostSubscribe />
+        {/*<PostSubscribe />*/}
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}
         />
@@ -109,7 +109,8 @@ export function LinearDocumentPage({
           recommendsCount={document.recommendsCount}
         />
         <div className={`spacer h-4 w-full`} />
-        {/*<PostPubInfo {...dummy} />*/}
+        <PostPubInfo {...dummy} />
+        
 
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>

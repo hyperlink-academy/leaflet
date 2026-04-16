@@ -1,6 +1,5 @@
 "use client";
 import { ButtonPrimary } from "components/Buttons";
-import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import Link from "next/link";
 import { HandleInput } from "./HandleInput";
@@ -51,11 +50,14 @@ export const SubscribeWithHandle = (props: {
   } else
     return (
       <div className="max-w-sm mx-auto w-full ">
-        <HandleInput autoFocus={props.autoFocus} />
-        <div className="flex gap-2 justify-center items-center mx-auto pt-0.5 ">
+        <HandleInput
+          autoFocus={props.autoFocus}
+          action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+            Subscribe
+          </div>
+        />
+        <div className=" pt-1 ">
           <AtmosphericHandleInfo />
-          <Separator classname="h-3! border-accent-contrast!" />
-          <div className="text-sm text-accent-contrast font-bold">Create</div>
         </div>
       </div>
     );
@@ -77,34 +79,15 @@ export const LinkHandle = (props: { compact?: boolean }) => {
         </div>
         <AtmosphericHandleInfo />
       </div>
-      <HandleInputandOAuth link compact />
-    </div>
-  );
-};
-
-export const HandleInputandOAuth = (props: {
-  link?: boolean;
-  compact?: boolean;
-}) => {
-  return (
-    <div className="handleInputAndOAuth flex flex-col">
-      <HandleInput action="link" />
-      <div
-        className={`${props.compact ? "mt-1 mb-2 text-xs" : "text-sm mt-2 mb-3"} w-full flex gap-2 items-center`}
-      >
-        <hr className="grow border-border-light" />
-        <div className="shrink-0 text-tertiary">
-          or {props.link ? "link with" : "sign in via"}
-        </div>
-        <hr className="grow border-border-light" />
+      <div className="text-base">
+        <HandleInput
+          action={
+            <div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+              Link
+            </div>
+          }
+        />
       </div>
-      <ButtonPrimary
-        compact={props.compact}
-        className={`${props.compact && "text-sm"} `}
-        fullWidth
-      >
-        <BlueskyTiny /> Bluesky
-      </ButtonPrimary>
     </div>
   );
 };
@@ -138,7 +121,7 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
           props.trigger
         ) : (
           <div className="text-accent-contrast text-sm">
-            What's the Atmosphere
+            What's the Atmosphere?
           </div>
         )
       }
@@ -159,14 +142,46 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
         <div className="logo-scroll-track flex w-max">
           {(
             [
-              "Leaflet", "Bluesky", "Blacksky", "Eurosky", "Tangled",
-              "Semble", "Surf", "Spark", "Pckt", "pdsls", "plyr.fm",
-              "Popfeed", "Roomy", "Sill", "Offprint", "Margin",
-              "Anisota", "Blento", "Cartridge", "Graze",
-              "Leaflet", "Bluesky", "Blacksky", "Eurosky", "Tangled",
-              "Semble", "Surf", "Spark", "Pckt", "pdsls", "plyr.fm",
-              "Popfeed", "Roomy", "Sill", "Offprint", "Margin",
-              "Anisota", "Blento", "Cartridge", "Graze",
+              "Leaflet",
+              "Bluesky",
+              "Blacksky",
+              "Eurosky",
+              "Tangled",
+              "Semble",
+              "Surf",
+              "Spark",
+              "Pckt",
+              "pdsls",
+              "plyr.fm",
+              "Popfeed",
+              "Roomy",
+              "Sill",
+              "Offprint",
+              "Margin",
+              "Anisota",
+              "Blento",
+              "Cartridge",
+              "Graze",
+              "Leaflet",
+              "Bluesky",
+              "Blacksky",
+              "Eurosky",
+              "Tangled",
+              "Semble",
+              "Surf",
+              "Spark",
+              "Pckt",
+              "pdsls",
+              "plyr.fm",
+              "Popfeed",
+              "Roomy",
+              "Sill",
+              "Offprint",
+              "Margin",
+              "Anisota",
+              "Blento",
+              "Cartridge",
+              "Graze",
             ] as (keyof typeof logos)[]
           ).map((name, i) => (
             <AtApp key={i} logo={logos[name]} name={name} />
@@ -174,7 +189,7 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
         </div>
       </div>
 
-      <ButtonPrimary fullWidth className=" mt-3 mx-auto mb-3 mt-1">
+      <ButtonPrimary fullWidth className=" mt-3 mx-auto mb-3">
         Sign up via Bluesky!
       </ButtonPrimary>
     </Popover>
