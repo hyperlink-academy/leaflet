@@ -6,7 +6,7 @@ import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Menu";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import useSWR from "swr";
-import LoginForm from "app/login/LoginForm";
+
 import { CustomDomainMenu } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
 import {
@@ -14,11 +14,15 @@ import {
   useLeafletPublicationData,
 } from "components/PageSWRDataProvider";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { getPublicationURL, getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getPublicationURL,
+  getDocumentURL,
+} from "app/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import { useIsMobile } from "src/hooks/isMobile";
+import { LoginModal } from "components/LoginButton";
 
-export type ShareMenuStates = "default" | "login" | "domain";
+export type ShareMenuStates = "default" | "domain";
 
 export let useReadOnlyShareLink = () => {
   let { permission_token, rootEntity } = useReplicache();
@@ -64,11 +68,7 @@ export function ShareOptions() {
         />
       }
     >
-      {menuState === "login" ? (
-        <div className="px-3 py-1">
-          <LoginForm text="Save your Leaflets and access them on multiple devices!" />
-        </div>
-      ) : menuState === "domain" ? (
+      {menuState === "domain" ? (
         <CustomDomainMenu setShareMenuState={setMenuState} />
       ) : (
         <ShareMenu
@@ -216,15 +216,10 @@ const DomainMenuItem = (props: {
 
   if (identity === null)
     return (
-      <div className="text-tertiary font-normal text-sm px-3 py-1">
-        <button
-          className="text-accent-contrast hover:font-bold"
-          onClick={() => {
-            props.setMenuState("login");
-          }}
-        >
-          Log In
-        </button>{" "}
+      <div className="text-tertiary font-normal text-sm px-2 py-1">
+        <LoginModal
+          trigger={<div className="text-accent-contrast font-bold">Log in</div>}
+        />{" "}
         to publish on a custom domain!
       </div>
     );

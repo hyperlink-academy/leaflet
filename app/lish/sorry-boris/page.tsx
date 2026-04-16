@@ -1,14 +1,20 @@
 import { getIdentityData } from "actions/getIdentityData";
-import { BlueskyLogin } from "app/login/LoginForm";
 import { codeToHtml } from "shiki";
 import { FixFeedsButton } from "./fixFeedsButton";
+import { LoginModal } from "components/LoginButton";
+import { ButtonPrimary } from "components/Buttons";
 
 export default async function Page() {
   let identity = await getIdentityData();
   if (!identity) {
     return (
       <Layout>
-        <BlueskyLogin redirectRoute="/lish/sorry-boris" />
+        <LoginModal
+          noEmailLogin
+          redirectRoute="/lish/sorry-boris"
+          asChild
+          trigger={<ButtonPrimary>Sorry Boris!</ButtonPrimary>}
+        />
       </Layout>
     );
   }

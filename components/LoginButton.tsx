@@ -1,43 +1,232 @@
 "use client";
 import { useIdentityData } from "./IdentityProvider";
 import { Popover } from "./Popover";
-import LoginForm from "app/login/LoginForm";
+import { Modal } from "./Modal";
+
 import { ButtonPrimary } from "./Buttons";
 import { ActionButton } from "./ActionBar/ActionButton";
 import { AccountSmall } from "./Icons/AccountSmall";
-import { useIsMobile } from "src/hooks/isMobile";
+import { AtmosphericHandleInfo } from "./Subscribe/HandleSubscribe";
+import { HandleInput } from "./Subscribe/HandleInput";
+import { EmailInput, EmailConfirm } from "./Subscribe/EmailSubscribe";
+import { useState } from "react";
+import { GoToArrow } from "./Icons/GoToArrow";
+import { ToggleGroup } from "./ToggleGroup";
+import { useToaster } from "./Toast";
+import { BlueskyTiny } from "./Icons/BlueskyTiny";
+import {
+  requestAuthEmailToken,
+  confirmEmailAuthToken,
+} from "actions/emailAuth";
+import { loginWithEmailToken } from "actions/login";
+import { getHomeDocs } from "app/(home-pages)/home/storage";
+import { mutate } from "swr";
 
-export function LoginButton() {
-  let identityData = useIdentityData();
-  if (identityData.identity) return null;
+export const LoginModal = (props: {
+  noEmailLogin?: boolean;
+  trigger: React.ReactNode;
+  asChild?: boolean;
+  redirectRoute?: string;
+}) => {
+  let [open, setOpen] = useState(false);
   return (
-    <Popover
-      asChild
-      trigger={
-        <ButtonPrimary className="place-self-start text-sm">
-          Log In!
-        </ButtonPrimary>
-      }
+    <Modal
+      asChild={props.asChild}
+      trigger={props.trigger}
+      open={open}
+      onOpenChange={setOpen}
     >
-      <LoginForm text="Save your Leaflets and access them on multiple devices!" />
-    </Popover>
+      <LoginContent
+        noEmailLogin={props.noEmailLogin}
+        redirectRoute={props.redirectRoute}
+        open={open}
+        onSuccess={() => setOpen(false)}
+      />
+    </Modal>
   );
-}
+};
 
-export function LoginActionButton() {
+export const LoginContent = (props: {
+  pageView?: boolean;
+  noEmailLogin?: boolean;
+  redirectRoute?: string;
+  open?: boolean;
+  onSuccess?: () => void;
+}) => {
   let identityData = useIdentityData();
+  let [state, setState] = useState<
+    "log in" | "sign up" | "email log in" | "email confirm"
+  >("log in");
+  let [loginEmail, setLoginEmail] = useState("");
+  let [tokenId, setTokenId] = useState<string | null>(null);
+  let [loading, setLoading] = useState(false);
+  let toaster = useToaster();
+
   if (identityData.identity) return null;
-  let isMobile = useIsMobile();
+
+  const handleEmailSubmit = async () => {
+    setLoading(true);
+    try {
+      const id = await requestAuthEmailToken(loginEmail);
+      setTokenId(id);
+      setState("email confirm");
+    } catch (e) {
+      toaster({
+        content: (
+          <div className="font-bold">Could not send email — please try again</div>
+        ),
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCodeSubmit = async (code: string) => {
+    if (!tokenId) return;
+    setLoading(true);
+    const confirmedToken = await confirmEmailAuthToken(tokenId, code);
+    if (!confirmedToken) {
+      setLoading(false);
+      toaster({
+        content: <div className="font-bold">Incorrect code!</div>,
+        type: "error",
+      });
+      return;
+    }
+    const localLeaflets = getHomeDocs();
+    await loginWithEmailToken(localLeaflets.filter((l) => !l.hidden));
+    mutate("identity");
+    toaster({
+      content: <div className="font-bold">Logged in! Welcome!</div>,
+      type: "success",
+    });
+    setLoading(false);
+    props.onSuccess?.();
+  };
+
   return (
-    <Popover
-      asChild
-      side={isMobile ? "top" : "right"}
-      align={isMobile ? "center" : "start"}
-      trigger={
-        <ActionButton secondary icon={<AccountSmall />} label="Sign In" />
-      }
-    >
-      <LoginForm text="Save your Leaflets and access them on multiple devices!" />
-    </Popover>
+    <div className="flex flex-col gap-2 w-xs">
+      <ToggleGroup
+        value={
+          state === "email log in" || state === "email confirm"
+            ? "log in"
+            : state
+        }
+        onChange={setState}
+        options={[
+          { value: "log in", label: "Log In" },
+          { value: "sign up", label: "Sign Up" },
+        ]}
+        fullWidth
+      />
+      <div
+        className={`accent-container flex flex-col gap-1 ${props.pageView ? " p-4 py-5" : "px-3 py-4  "}`}
+      >
+        {state === "log in" ? (
+          <>
+            <div className="flex flex-col gap-1 text-center mx-auto leading-tight pb-2">
+              <h3>
+                Log in with <br />
+                Atmosphere account
+              </h3>
+              <AtmosphericHandleInfo
+                trigger={
+                  <div className="text-sm text-accent-contrast">
+                    What's the Atmosphere?
+                  </div>
+                }
+              />
+            </div>
+            <HandleInput
+              large
+              autoFocus={props.open !== false}
+              action={<GoToArrow className="text-accent-contrast" />}
+              loading={loading}
+              onSubmit={(handle) => {
+                setLoading(true);
+                const redirectUrl = props.redirectRoute || "/";
+                window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}`;
+              }}
+            />
+            {props.noEmailLogin ? null : (
+              <>
+                <hr className="border-border-light mt-2 mb-1" />
+                <button
+                  className="text-sm text-accent-contrast"
+                  onClick={() => {
+                    setState("email log in");
+                  }}
+                >
+                  or log in with email
+                </button>
+              </>
+            )}
+          </>
+        ) : state === "email log in" ? (
+          <form
+            className="flex flex-col gap-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleEmailSubmit();
+            }}
+          >
+            <h3 className="text-center">Log in with Email</h3>
+
+            <EmailInput
+              large
+              autoFocus={props.open !== false}
+              value={loginEmail}
+              onChange={setLoginEmail}
+              loading={loading}
+              action={
+                <button type="submit">
+                  <GoToArrow className="h-fit" />
+                </button>
+              }
+            />
+            <hr className="border-border-light my-2" />
+            <button
+              type="button"
+              className="text-accent-contrast text-sm"
+              onClick={() => {
+                setState("log in");
+              }}
+            >
+              or log in with Atmosphere account
+            </button>
+          </form>
+        ) : state === "email confirm" ? (
+          <EmailConfirm
+            autoFocus={props.open !== false}
+            emailValue={loginEmail}
+            loading={loading}
+            onSubmit={handleCodeSubmit}
+          />
+        ) : (
+          <div className="text-center text-sm">
+            <h3 className="pb-1">
+              Leaflet is part of <br />
+              the Atmosphere.
+            </h3>
+            <div className="text-secondary pb-3">
+              Create an Atmosphere account on Bluesky to get started!
+            </div>
+            <form action="/api/oauth/login" method="GET">
+              <input
+                type="hidden"
+                name="redirect_url"
+                value={props.redirectRoute || "/"}
+              />
+              <input type="hidden" name="signup" value="true" />
+              <ButtonPrimary className="mx-auto mb-1">
+                <BlueskyTiny /> Sign up via Bluesky
+              </ButtonPrimary>
+            </form>
+            <AtmosphericHandleInfo />
+          </div>
+        )}
+      </div>
+    </div>
   );
-}
+};

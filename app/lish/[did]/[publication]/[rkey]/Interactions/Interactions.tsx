@@ -15,7 +15,7 @@ import { PubLeafletComment } from "lexicons/api";
 import { type CommentOnDocument } from "contexts/DocumentContext";
 import { prefetchQuotesData } from "./Quotes";
 import { useIdentityData } from "components/IdentityProvider";
-import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
+import { ManageSubscription } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { RecommendButton } from "components/RecommendButton";

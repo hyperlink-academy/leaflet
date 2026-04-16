@@ -1,11 +1,6 @@
 "use client";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { useLeafletContent } from "contexts/LeafletContentContext";
-import { PostPageData } from "./getPostPageData";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { SubscribeWithBluesky } from "app/lish/Subscribe";
-import { EditTiny } from "components/Icons/EditTiny";
 import {
   ExpandedInteractions,
   getCommentCount,
@@ -22,6 +17,7 @@ import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { PostPrevNextButtons } from "./PostPrevNextButtons";
 import { PostSubscribe } from "./PostSubscribe";
+
 import {
   collectFootnotesFromBlocks,
   buildFootnoteIndexMap,
@@ -29,6 +25,7 @@ import {
 } from "./Footnotes/PublishedFootnotes";
 import { PublishedFootnoteSideColumn } from "./Footnotes/PublishedFootnoteSideColumn";
 import { PublishedFootnotePopover } from "./Footnotes/PublishedFootnotePopover";
+import { dummy, PostPubInfo } from "./PostPubInfo";
 
 export function LinearDocumentPage({
   blocks,
@@ -111,6 +108,9 @@ export function LinearDocumentPage({
           quotesCount={getQuoteCount(document.quotesAndMentions, pageId) || 0}
           recommendsCount={document.recommendsCount}
         />
+        <div className={`spacer h-4 w-full`} />
+        {/*<PostPubInfo {...dummy} />*/}
+
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>
       <PublishedFootnotePopover footnotes={footnotes} />

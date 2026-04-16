@@ -36,11 +36,11 @@ import {
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
-import { BlueskyLogin } from "app/login/LoginForm";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
 import { AddTiny } from "components/Icons/AddTiny";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { useLocalPublishedAt } from "components/Pages/Backdater";
+import { LoginModal } from "components/LoginButton";
 
 export const PublishButton = (props: { entityID: string }) => {
   let { data: pub } = useLeafletPublicationData();
@@ -188,7 +188,7 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
       onOpenChange={(o) => setOpen(o)}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="sm:max-w-sm w-[1000px] p-0!"
+      className="sm:max-w-xs w-[1000px] p-0!"
       trigger={
         <ActionButton
           primary
@@ -200,22 +200,26 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
       {!identity || !identity.atp_did ? (
         <div className="p-1">
           <div
-            className={`bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm`}
+            className={`bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 `}
           >
             <div className="mx-auto pt-2 scale-90">
               <PubListEmptyIllo />
             </div>
-            <div className="pt-1 font-bold">Publish on AT Proto</div>
+            <div className="pt-1 font-bold">Publish to Atmosphere</div>
             {
               <>
-                <div className="pb-2 text-secondary text-xs">
-                  Link a Bluesky account to start <br /> a publishing on AT
-                  Proto
+                <div className="pb-2 text-secondary text-sm">
+                  {!identity ? `Log in with` : "Link"} an Atmosphere account
+                  <br /> to start publishing!
                 </div>
 
-                <BlueskyLogin
-                  compact
-                  redirectRoute={`/${permission_token.id}?publish`}
+                <LoginModal
+                  noEmailLogin
+                  trigger={
+                    <ButtonPrimary compact className="mx-auto">
+                      {!identity ? `Log in` : "Link"}
+                    </ButtonPrimary>
+                  }
                 />
               </>
             }

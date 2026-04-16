@@ -62,7 +62,7 @@ export default async function ProfilePageLayout(props: {
     if (!resolved) {
       return (
         <NotFoundLayout>
-          <p className="font-bold">Sorry, can&apos;t resolve handle!</p>
+          <p className="font-bold">Sorry, we can&apos;t find that handle!</p>
           <p>
             This may be a glitch on our end. If the issue persists please{" "}
             <a href="mailto:contact@leaflet.pub">send us a note</a>.
