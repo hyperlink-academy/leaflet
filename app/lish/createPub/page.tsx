@@ -1,7 +1,6 @@
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { CreatePubForm } from "./CreatePubForm";
 import { getIdentityData } from "actions/getIdentityData";
-import LoginForm from "app/login/LoginForm";
 import { LoginContent } from "components/LoginButton";
 
 export default async function CreatePub() {
