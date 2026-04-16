@@ -95,7 +95,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
       postDescription={
         <TextField
           placeholder="add an optional description..."
-          className="pt-1 italic text-secondary outline-hidden bg-transparent"
+          className=""
           value={description}
           onChange={async (newDescription) => {
             await rep?.mutate.updatePublicationDraft({

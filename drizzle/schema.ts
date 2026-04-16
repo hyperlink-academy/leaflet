@@ -281,12 +281,14 @@ export const documents = pgTable("documents", {
 	bsky_like_count: integer("bsky_like_count").default(0).notNull(),
 	recommend_count: integer("recommend_count").default(0).notNull(),
 	indexed: boolean("indexed").default(false).notNull(),
+	identity_did: text("identity_did"),
 },
 (table) => {
 	return {
 		sort_date_idx: index("documents_sort_date_idx").on(table.uri, table.sort_date),
 		indexed_at_idx: index("documents_indexed_at_idx").on(table.indexed_at),
 		idx_documents_ranking: index("idx_documents_ranking").on(table.uri, table.sort_date, table.bsky_like_count, table.recommend_count),
+		identity_did_sort_idx: index("documents_identity_did_sort_idx").on(table.uri, table.sort_date, table.identity_did),
 	}
 });
 

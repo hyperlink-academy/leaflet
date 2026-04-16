@@ -107,6 +107,8 @@ export const PageWrapper = (props: {
   pageType: "canvas" | "doc";
   drawerOpen: boolean | undefined;
   fixedWidth?: boolean;
+  noBottomSpacer?: boolean;
+  overflow?: "scroll" | "hidden";
 }) => {
   const cardBorderHidden = useCardBorderHidden();
   let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
@@ -129,7 +131,7 @@ export const PageWrapper = (props: {
       pageScrollWrapper
       grow
       shrink-0 snap-center
-      overflow-y-scroll
+      ${props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
         `h-full border
@@ -154,7 +156,7 @@ export const PageWrapper = (props: {
         `}
         >
           {props.children}
-          {props.pageType === "doc" && <div className="h-4 sm:h-6 w-full" />}
+          {props.pageType === "doc" && !props.noBottomSpacer && <div className="h-4 sm:h-6 w-full" />}
         </div>
       </div>
       {props.pageOptions}

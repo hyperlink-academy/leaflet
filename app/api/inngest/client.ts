@@ -82,6 +82,13 @@ export type Events = {
       subscriptionId: string;
     };
   };
+  "stripe/invoice.payment.succeeded": {
+    data: {
+      invoiceId: string;
+      subscriptionId: string;
+      customerId: string;
+    };
+  };
   "stripe/invoice.payment.failed": {
     data: {
       invoiceId: string;

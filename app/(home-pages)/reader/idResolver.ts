@@ -3,7 +3,7 @@ import type { DidCache, CacheResult, DidDocument } from "@atproto/identity";
 import Client from "ioredis";
 // Create Redis client for DID caching
 let redisClient: Client | null = null;
-if (process.env.REDIS_URL) {
+if (process.env.REDIS_URL && process.env.NODE_ENV === "production") {
   redisClient = new Client(process.env.REDIS_URL);
 }
 

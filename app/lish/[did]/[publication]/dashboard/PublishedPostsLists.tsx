@@ -27,7 +27,6 @@ export function PublishedPostsList(props: {
   let { data } = usePublicationData();
   let { publication, documents } = data || {};
   const pubRecord = useNormalizedPublicationRecord();
-
   if (!publication) return null;
   if (!documents || documents.length === 0)
     return <EmptyState title="Nothing's been published yet..." />;

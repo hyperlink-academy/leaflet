@@ -12,6 +12,7 @@ import { PubLeafletRichTextFacet } from "./src/facet";
 import { PubLeafletComment } from "./src/comment";
 import { PubLeafletAuthFullPermissions } from "./src/authFullPermissions";
 import { PubLeafletContent } from "./src/content";
+import * as MentionServiceLexicons from "./src/mentionService";
 
 const outdir = path.join("lexicons", "pub", "leaflet");
 
@@ -36,9 +37,23 @@ const lexicons = [
 ];
 
 // Write each lexicon to a file
-lexicons.forEach((lexicon) => {
+const allLexicons = [
+  ...lexicons,
+  ...Object.values(MentionServiceLexicons),
+];
+allLexicons.forEach((lexicon) => {
   let id = lexicon.id.split(".");
-  let folder = path.join(outdir, ...id.slice(2, -1));
+  // Determine output base and path segments based on namespace
+  let baseDir: string;
+  let segments: string[];
+  if (id[0] === "parts" && id[1] === "page") {
+    baseDir = path.join("lexicons", "parts", "page");
+    segments = id.slice(2, -1);
+  } else {
+    baseDir = outdir;
+    segments = id.slice(2, -1);
+  }
+  let folder = path.join(baseDir, ...segments);
   if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
   const filename = path.join(folder, id[id.length - 1] + ".json");
   fs.writeFileSync(filename, JSON.stringify(lexicon, null, 2));

@@ -11,7 +11,7 @@ export function scrollIntoView(
   // pages from within other pages.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      scrollIntoViewIfNeeded(element, false, "smooth");
+      scrollIntoViewIfNeeded(element, false, "smooth", threshold);
     });
   });
 }

@@ -57,6 +57,29 @@ export async function POST(req: NextRequest) {
       break;
     }
 
+    case "invoice.payment_succeeded": {
+      const invoice = event.data.object;
+      const sub = invoice.parent?.subscription_details?.subscription;
+      const subId =
+        typeof sub === "string"
+          ? sub
+          : typeof sub === "object" && sub
+            ? sub.id
+            : "";
+      if (subId) {
+        await inngest.send({
+          name: "stripe/invoice.payment.succeeded",
+          data: {
+            invoiceId: invoice.id,
+            subscriptionId: subId,
+            customerId: invoice.customer as string,
+          },
+        });
+        await handleSubscriptionUpdated(subId);
+      }
+      break;
+    }
+
     case "invoice.payment_failed": {
       const invoice = event.data.object;
       const sub = invoice.parent?.subscription_details?.subscription;

@@ -3,6 +3,13 @@ import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 
 type SelectedBlock = Pick<Block, "value" | "parent">;
+
+export type EditorIframePage = { type: "iframe"; url: string };
+export type EditorOpenPage = string | EditorIframePage;
+
+export const getEditorPageKey = (page: EditorOpenPage): string =>
+  typeof page === "string" ? page : `iframe:${page.url}`;
+
 export const useUIState = create(
   combine(
     {
@@ -13,7 +20,7 @@ export const useUIState = create(
         | { entityType: "footnote"; entityID: string; parent: string }
         | null,
       foldedBlocks: [] as string[],
-      openPages: [] as string[],
+      openPages: [] as EditorOpenPage[],
       selectedBlocks: [] as SelectedBlock[],
       openPopover: null as string | null,
     },
@@ -30,9 +37,12 @@ export const useUIState = create(
           };
         });
       },
-      openPage: (parent: string, page: string) =>
+      openPage: (parent: EditorOpenPage, page: EditorOpenPage) =>
         set((state) => {
-          let parentPosition = state.openPages.findIndex((s) => s == parent);
+          let parentKey = getEditorPageKey(parent);
+          let parentPosition = state.openPages.findIndex(
+            (s) => getEditorPageKey(s) === parentKey,
+          );
           return {
             openPages:
               parentPosition === -1
@@ -40,10 +50,15 @@ export const useUIState = create(
                 : [...state.openPages.slice(0, parentPosition + 1), page],
           };
         }),
-      closePage: (pages: string | string[]) =>
-        set((s) => ({
-          openPages: s.openPages.filter((c) => ![pages].flat().includes(c)),
-        })),
+      closePage: (pages: EditorOpenPage | EditorOpenPage[]) =>
+        set((s) => {
+          let keys = [pages].flat().map(getEditorPageKey);
+          return {
+            openPages: s.openPages.filter(
+              (c) => !keys.includes(getEditorPageKey(c)),
+            ),
+          };
+        }),
       setFocusedBlock: (
         b:
           | { entityType: "page"; entityID: string }

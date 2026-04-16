@@ -627,6 +627,9 @@ pre.shiki {
 .footnote-side-item:hover,
 .footnote-side-item:focus-within,
 .footnote-side-item.footnote-side-focused {
-  max-height: 40em;
+  max-height: none;
+  overflow: visible;
   opacity: var(--bg-page-alpha);
+  z-index: 1;
+  background: rgba(var(--bg-page), 1);
 }

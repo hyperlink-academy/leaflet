@@ -19,7 +19,10 @@ const FacetItems: LexiconDoc["defs"] = {
     type: "object",
     description: "Facet feature for mentioning an AT URI.",
     required: ["atURI"],
-    properties: { atURI: { type: "string", format: "uri" } },
+    properties: {
+      atURI: { type: "string", format: "uri" },
+      href: { type: "string", format: "uri" },
+    },
   },
   code: {
     type: "object",

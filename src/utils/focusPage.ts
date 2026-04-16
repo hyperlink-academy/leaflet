@@ -21,17 +21,19 @@ export async function focusPage(
     },
   }));
 
-  setTimeout(async () => {
-    //scroll to page
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      scrollIntoViewIfNeeded(
+        document.getElementById(elementId.page(pageID).container),
+        false,
+        "smooth",
+        0.8,
+      );
+    });
+  });
 
-    scrollIntoViewIfNeeded(
-      document.getElementById(elementId.page(pageID).container),
-      false,
-      "smooth",
-    );
-
-    // if we asked that the function focus the first block, focus the first block
-    if (focusFirstBlock === "focusFirstBlock") {
+  if (focusFirstBlock === "focusFirstBlock") {
+    setTimeout(async () => {
       let firstBlock = await rep.query(async (tx) => {
         let type = await scanIndex(tx).eav(pageID, "page/type");
         let blocks = await scanIndex(tx).eav(
@@ -68,6 +70,6 @@ export async function focusPage(
           focusBlock(firstBlock, { type: "start" });
         }, 500);
       }
-    }
-  }, 50);
+    }, 50);
+  }
 }

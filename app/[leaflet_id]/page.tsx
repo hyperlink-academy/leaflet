@@ -55,6 +55,7 @@ export default async function LeafletPage(props: Props) {
     rootEntity,
   );
 
+  console.log(res);
   return (
     <>
       {/* Server-side font loading with preload and @font-face */}
