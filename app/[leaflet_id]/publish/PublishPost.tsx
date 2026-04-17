@@ -2,22 +2,19 @@
 import { publishToPublication } from "actions/publishToPublication";
 import { DotLoader } from "components/utils/DotLoader";
 import { useState, useRef } from "react";
-import { ButtonPrimary } from "components/Buttons";
-import { Radio } from "components/Checkbox";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { publishPostToBsky } from "./publishBskyPost";
+import { ShareOptions, type ShareState } from "./ShareOptions";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
-import {
-  BlueskyPostEditorProsemirror,
-  editorStateToFacetedText,
-} from "./BskyPostEditorProsemirror";
+import { editorStateToFacetedText } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
 import { TagSelector } from "../../../components/Tags";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
@@ -28,6 +25,12 @@ import { Popover } from "components/Popover";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { Separator } from "react-aria-components";
 import { setHours, setMinutes } from "date-fns";
+import {
+  ThemeBackgroundProvider,
+  ThemeProvider,
+} from "components/ThemeManager/ThemeProvider";
+import { useEntity } from "src/replicache";
+import { LeafletContent } from "app/(home-pages)/home/LeafletList/LeafletContent";
 
 type Props = {
   title: string;
@@ -68,8 +71,16 @@ const PublishPostForm = (
   } & Props,
 ) => {
   let editorStateRef = useRef<EditorState | null>(null);
+  let [state, setState] = useState<"post-details" | "share-options">(
+    "post-details",
+  );
   let [charCount, setCharCount] = useState(0);
-  let [shareOption, setShareOption] = useState<"bluesky" | "quiet">("bluesky");
+  let [shareState, setShareState] = useState<ShareState>({
+    bluesky: true,
+    postToReaders: true,
+    email: true,
+    quiet: false,
+  });
   let [isLoading, setIsLoading] = useState(false);
   let [oauthError, setOauthError] = useState<
     import("src/atproto-oauth").OAuthSessionError | null
@@ -82,6 +93,7 @@ const PublishPostForm = (
     tx.get<string[]>("publication_tags"),
   );
   let [localTags, setLocalTags] = useState<string[]>([]);
+  let [showTagSelector, setShowTagSelector] = useState(false);
 
   let [localPublishedAt, setLocalPublishedAt] = useState<Date | undefined>(
     undefined,
@@ -152,7 +164,7 @@ const PublishPostForm = (
     let [text, facets] = editorStateRef.current
       ? editorStateToFacetedText(editorStateRef.current)
       : [];
-    if (shareOption === "bluesky") {
+    if (shareState.bluesky) {
       let bskyResult = await publishPostToBsky({
         facets: facets || [],
         text: text || "",
@@ -181,66 +193,178 @@ const PublishPostForm = (
         }}
       >
         <div className="frosted-container flex flex-col gap-3 sm:p-3 p-4">
-          <PublishingTo
-            publication_uri={props.publication_uri}
-            record={props.record}
-          />
-          <hr className="border-border" />
-
-          <BackdateOptions
-            publishedAt={localPublishedAt}
-            setPublishedAt={setLocalPublishedAt}
-          />
-          <hr className="border-border " />
-
-          <div className="flex flex-col gap-2">
-            <h4>Tags</h4>
-            <TagSelector
-              selectedTags={currentTags}
-              setSelectedTags={handleTagsChange}
-            />
-          </div>
-          <hr className="border-border" />
-          <ShareOptions
-            setShareOption={setShareOption}
-            shareOption={shareOption}
-            charCount={charCount}
-            setCharCount={setCharCount}
-            editorStateRef={editorStateRef}
-            {...props}
-          />
-          <hr className="border-border mb-2" />
-
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between">
-              <Link
-                className="hover:no-underline! font-bold"
-                href={`/${params.leaflet_id}`}
-              >
-                Back
-              </Link>
-              <ButtonPrimary
-                type="submit"
-                className="place-self-end h-[30px]"
-                disabled={charCount > 300}
-              >
-                {isLoading ? (
-                  <DotLoader className="h-[23px]" />
-                ) : (
-                  "Publish this Post!"
-                )}
-              </ButtonPrimary>
-            </div>
-            {oauthError && (
-              <OAuthErrorMessage
-                error={oauthError}
-                className="text-right text-sm text-accent-contrast"
+          {state === "post-details" ? (
+            <>
+              <h2>Publish: Post Details</h2>
+              <PublishingTo
+                publication_uri={props.publication_uri}
+                record={props.record}
               />
-            )}
-          </div>
+              <hr className="border-border-light" />
+
+              <BackdateOptions
+                publishedAt={localPublishedAt}
+                setPublishedAt={setLocalPublishedAt}
+              />
+              <hr className="border-border-light" />
+
+              <div className="flex justify-between  gap-4">
+                <div className="text-tertiary">Tags</div>
+                <div className="grow ">
+                  {currentTags.length !== 0 || showTagSelector === true ? (
+                    <div className="sm:w-sm sm:justify-self-end">
+                      <TagSelector
+                        rightAlign
+                        selectedTags={currentTags}
+                        setSelectedTags={handleTagsChange}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="hover:underline font-bold text-secondary float-end"
+                      onClick={() => {
+                        setShowTagSelector(true);
+                      }}
+                    >
+                      No Tags
+                    </button>
+                  )}
+                </div>
+              </div>
+              <hr className="border-border-light" />
+              <div className="flex justify-between sm:flex-row flex-col gap-4">
+                <div className="text-tertiary shrink-0">Social Preview</div>
+                <div className="opaque-container !border-border overflow-hidden flex flex-col w-full sm:max-w-sm rounded-lg!">
+                  <SocialPreviewImage
+                    rootEntity={props.root_entity}
+                    did={props.profile.did}
+                    coverImageCid={replicacheCoverImage ?? null}
+                  />
+                  <hr className="border-border" />
+                  <div className="flex flex-col p-2 gap-0.5">
+                    <div className="font-bold line-clamp-1">
+                      {props.title || "Untitled"}
+                    </div>
+                    {props.description && (
+                      <div className="text-sm text-tertiary line-clamp-2">
+                        {props.description}
+                      </div>
+                    )}
+                    <hr className="border-border-light mt-1 mb-0.5" />
+                    <div className="text-xs text-tertiary">
+                      {(props.record?.url || "leaflet.pub").replace(
+                        /^https?:\/\//,
+                        "",
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <hr className="border-border mb-2" />
+
+              <div className="flex justify-between">
+                <Link
+                  className="hover:no-underline! font-bold"
+                  href={`/${params.leaflet_id}`}
+                >
+                  Back
+                </Link>
+                <ButtonSecondary
+                  type="button"
+                  className="place-self-end h-[30px]"
+                  onClick={() => setState("share-options")}
+                >
+                  Next: Share
+                </ButtonSecondary>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2>Publish: Share Options</h2>
+              <ShareOptions
+                shareState={shareState}
+                setShareState={setShareState}
+                charCount={charCount}
+                setCharCount={setCharCount}
+                editorStateRef={editorStateRef}
+                title={props.title}
+                profile={props.profile}
+                description={props.description}
+                record={props.record}
+              />
+              <hr className="border-border mb-2" />
+
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between">
+                  <button
+                    type="button"
+                    className="font-bold text-accent-contrast"
+                    onClick={() => setState("post-details")}
+                  >
+                    Back
+                  </button>
+                  <ButtonPrimary
+                    type="submit"
+                    className="place-self-end h-[30px]"
+                    disabled={charCount > 300}
+                  >
+                    {isLoading ? (
+                      <DotLoader className="h-[23px]" />
+                    ) : (
+                      "Publish this Post!"
+                    )}
+                  </ButtonPrimary>
+                </div>
+                {oauthError && (
+                  <OAuthErrorMessage
+                    error={oauthError}
+                    className="text-right text-sm text-accent-contrast"
+                  />
+                )}
+              </div>
+            </>
+          )}
         </div>
       </form>
     </div>
+  );
+};
+
+const SocialPreviewImage = (props: {
+  rootEntity: string;
+  did: string;
+  coverImageCid: string | null;
+}) => {
+  const firstPage = useEntity(props.rootEntity, "root/page")[0];
+  const page = firstPage?.data.value || props.rootEntity;
+
+  if (props.coverImageCid) {
+    return (
+      <img
+        src={`/api/atproto_images?did=${props.did}&cid=${props.coverImageCid}`}
+        className="w-full object-cover aspect-video"
+        alt=""
+      />
+    );
+  }
+
+  return (
+    <ThemeProvider local entityID={props.rootEntity} className="w-full!">
+      <ThemeBackgroundProvider entityID={props.rootEntity}>
+        <div
+          inert
+          className="w-full aspect-video overflow-hidden flex items-end pointer-events-none"
+        >
+          <div
+            className="leafletContentWrapper h-full w-[60%] pt-3
+            overflow-clip mx-auto"
+          >
+            <LeafletContent entityID={page} isOnScreen={true} />
+          </div>
+        </div>
+      </ThemeBackgroundProvider>
+    </ThemeProvider>
   );
 };
 
@@ -305,14 +429,16 @@ const BackdateOptions = (props: {
 
   return (
     <div className="flex justify-between gap-2">
-      <h4>Publish Date</h4>
+      <div className="text-tertiary">Publish Date</div>
       <Popover
         className="w-64 px-2!"
         trigger={
           props.publishedAt ? (
-            <div className="text-secondary">{formattedDate}</div>
+            <div className="text-secondary font-bold hover:underline">
+              {formattedDate}
+            </div>
           ) : (
-            <div className="text-tertiary italic">now</div>
+            <div className="text-secondary font-bold hover:underline">Now</div>
           )
         }
       >
@@ -332,108 +458,17 @@ const BackdateOptions = (props: {
   );
 };
 
-const ShareOptions = (props: {
-  shareOption: "quiet" | "bluesky";
-  setShareOption: (option: typeof props.shareOption) => void;
-  charCount: number;
-  setCharCount: (c: number) => void;
-  editorStateRef: React.MutableRefObject<EditorState | null>;
-  title: string;
-  profile: ProfileViewDetailed;
-  description: string;
-  record?: NormalizedPublication | null;
-}) => {
-  return (
-    <div className="flex flex-col gap-2">
-      <h4>Share and Notify</h4>
-      <Radio
-        checked={props.shareOption === "quiet"}
-        onChange={(e) => {
-          if (e.target === e.currentTarget) {
-            props.setShareOption("quiet");
-          }
-        }}
-        name="share-options"
-        id="share-quietly"
-        value="Share Quietly"
-      >
-        <div className="flex flex-col">
-          <div className="font-bold">Share Quietly</div>
-          <div className="text-sm text-tertiary font-normal">
-            No one will be notified about this post
-          </div>
-        </div>
-      </Radio>
-      <Radio
-        checked={props.shareOption === "bluesky"}
-        onChange={(e) => {
-          if (e.target === e.currentTarget) {
-            props.setShareOption("bluesky");
-          }
-        }}
-        name="share-options"
-        id="share-bsky"
-        value="Share on Bluesky"
-      >
-        <div className="flex flex-col">
-          <div className="font-bold">Share on Bluesky</div>
-          <div className="text-sm text-tertiary font-normal">
-            Pub subscribers will be updated via a custom Bluesky feed
-          </div>
-        </div>
-      </Radio>
-      <div
-        className={`w-full pl-5 pb-4 ${props.shareOption !== "bluesky" ? "opacity-50" : ""}`}
-      >
-        <div className="opaque-container py-2 px-3 text-sm rounded-lg!">
-          <div className="flex gap-2">
-            <img
-              className="rounded-full w-6 h-6 sm:w-[42px] sm:h-[42px] shrink-0"
-              src={props.profile.avatar}
-            />
-            <div className="flex flex-col w-full">
-              <div className="flex gap-2 ">
-                <p className="font-bold">{props.profile.displayName}</p>
-                <p className="text-tertiary">@{props.profile.handle}</p>
-              </div>
-              <div className="flex flex-col">
-                <BlueskyPostEditorProsemirror
-                  editorStateRef={props.editorStateRef}
-                  onCharCountChange={props.setCharCount}
-                />
-              </div>
-              <div className="opaque-container !border-border overflow-hidden flex flex-col mt-4 w-full">
-                <div className="flex flex-col p-2">
-                  <div className="font-bold">{props.title}</div>
-                  <div className="text-tertiary">{props.description}</div>
-                  <hr className="border-border mt-2 mb-1" />
-                  <p className="text-xs text-tertiary">
-                    {props.record?.url?.replace(/^https?:\/\//, "")}
-                  </p>
-                </div>
-              </div>
-              <div className="text-xs text-secondary italic place-self-end pt-2">
-                {props.charCount}/300
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const PublishingTo = (props: {
   publication_uri?: string;
   record?: NormalizedPublication | null;
 }) => {
   if (props.publication_uri && props.record) {
     return (
-      <div className="flex flex-col gap-1">
-        <h3>Publishing to</h3>
-        <div className="flex gap-2 items-center p-2 rounded-md bg-[var(--accent-light)]">
-          <PubIcon record={props.record} uri={props.publication_uri} />
+      <div className="flex  justify-between gap-4">
+        <div className="text-tertiary">Publishing to</div>
+        <div className="flex gap-2 items-center ">
           <div className="font-bold text-secondary">{props.record.name}</div>
+          <PubIcon record={props.record} uri={props.publication_uri} />
         </div>
       </div>
     );
