@@ -15,17 +15,14 @@ import { GeneralSettings } from "./GeneralSettings";
 import { PostSettings } from "./PostSettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import { ManageProSubscription } from "./ManageProSubscription";
+import { ManageProSubscription, NewsletterSettings } from "./ProSettings";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
 import { deletePublication } from "./deletePublication";
 import { useRouter } from "next/navigation";
-import {
-  isOAuthSessionError,
-  OAuthErrorMessage,
-} from "components/OAuthError";
+import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 
 type SettingsView = "all" | "theme";
 
@@ -193,14 +190,18 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
             <PubDomainSettings />
           </div>
         </DashboardContainer>
-
-        <DashboardContainer section="Leaflet Pro" className="pb-4">
-          {canSeePro && !isPro ? (
+        {canSeePro && isPro ? (
+          <DashboardContainer section="Leaflet Pro" className="pb-4">
             <UpgradeToProButton />
-          ) : (
-            <ManageProSubscription compact />
-          )}
-        </DashboardContainer>
+          </DashboardContainer>
+        ) : (
+          <>
+            <DashboardContainer section="Leaflet Pro" className="pb-4">
+              <ManageProSubscription compact />
+            </DashboardContainer>
+            <NewsletterSettings />
+          </>
+        )}
         <div className="flex flex-col gap-1">
           <hr className="border-border border-2" />
           <hr className="border-border border-2" />
@@ -297,7 +298,7 @@ const DeletePublication = () => {
   let pubUri = pub?.publication?.uri;
 
   let onDelete = async () => {
-    if (!pubUri || record?.name !== value || deleting) return;
+    if (!pubUri || record?.name?.toLowerCase() !== value.toLowerCase() || deleting) return;
     setDeleting(true);
     let result = await deletePublication(pubUri);
     if (!result.success) {
@@ -362,7 +363,7 @@ const DeletePublication = () => {
         />
         <ButtonPrimary
           className="mx-auto mb-1"
-          disabled={record?.name !== value || deleting || !pubUri}
+          disabled={record?.name?.toLowerCase() !== value.toLowerCase() || deleting || !pubUri}
           onClick={onDelete}
         >
           {deleting ? <DotLoader /> : "Delete Publication"}

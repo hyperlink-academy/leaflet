@@ -10,7 +10,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { Popover } from "components/Popover";
 import { Modal } from "components/Modal";
 import { InlineUpgradeToPro } from "app/lish/[did]/[publication]/UpgradeModal";
-import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ManageProSubscription";
+import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ProSettings";
 import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";

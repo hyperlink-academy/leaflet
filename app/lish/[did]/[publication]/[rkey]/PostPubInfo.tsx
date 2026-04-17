@@ -4,7 +4,7 @@ export const dummy = {
   newsletterMode: false,
   user: {
     loggedIn: false,
-    email: "example@example.com",
+    email: "thisiscelinepark@gmail.com",
     handle: undefined,
     subscribed: false,
   },

@@ -18,6 +18,7 @@ export const ManageSubscription = (props: {
   };
 }) => {
   let [email, setEmail] = useState(props.user?.email ?? "");
+  let [linkEmailOpen, setLinkEmailOpen] = useState(false);
   let toaster = useToaster();
   let prefClassName =
     "flex gap-2 justify-between font-bold text-secondary items-center";
@@ -79,6 +80,8 @@ export const ManageSubscription = (props: {
               disabled={props.user?.loggedIn}
               action={
                 <Modal
+                  open={linkEmailOpen}
+                  onOpenChange={setLinkEmailOpen}
                   trigger={
                     <ButtonPrimary
                       compact
@@ -90,6 +93,7 @@ export const ManageSubscription = (props: {
                 >
                   <EmailConfirm
                     emailValue={email}
+                    onBack={() => setLinkEmailOpen(false)}
                     onSubmit={() => {
                       toaster({
                         content: <div className="font-bold">Email Linked!</div>,

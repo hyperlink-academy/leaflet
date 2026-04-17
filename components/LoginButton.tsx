@@ -73,7 +73,9 @@ export const LoginContent = (props: {
     } catch (e) {
       toaster({
         content: (
-          <div className="font-bold">Could not send email — please try again</div>
+          <div className="font-bold">
+            Could not send email — please try again
+          </div>
         ),
         type: "error",
       });
@@ -202,6 +204,7 @@ export const LoginContent = (props: {
             emailValue={loginEmail}
             loading={loading}
             onSubmit={handleCodeSubmit}
+            onBack={() => setState("email log in")}
           />
         ) : (
           <div className="text-center text-sm">

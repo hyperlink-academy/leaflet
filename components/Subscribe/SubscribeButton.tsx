@@ -51,6 +51,7 @@ export const SubscribeInput = (props: {
   let [confirmState, setConfirmState] = useState<"confirm" | "success">(
     "confirm",
   );
+  let [confirmOpen, setConfirmOpen] = useState(false);
 
   if (props.user.subscribed) {
     return <ManageSubscription {...props} />;
@@ -64,6 +65,8 @@ export const SubscribeInput = (props: {
         autoFocus={props.autoFocus}
         action={
           <Modal
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
             trigger={
               <ButtonPrimary
                 compact
@@ -80,6 +83,7 @@ export const SubscribeInput = (props: {
               />
             ) : (
               <EmailConfirm
+                onBack={() => setConfirmOpen(false)}
                 emailValue={email}
                 onSubmit={() => setConfirmState("success")}
               />

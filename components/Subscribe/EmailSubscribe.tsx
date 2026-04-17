@@ -30,6 +30,7 @@ export const EmailInput = (props: {
       }
     >
       <Input
+        type="email"
         autoFocus={props.autoFocus}
         className={`appearance-none! outline-none! grow ${props.large ? "py-1!" : "py-0.5 "}`}
         disabled={props.disabled || props.loading}
@@ -50,6 +51,7 @@ export const EmailConfirm = (props: {
   autoFocus?: boolean;
   loading?: boolean;
   onSubmit: (code: string) => void;
+  onBack: () => void;
 }) => {
   let inputClassName = `input-with-border text-2xl w-8 h-12 text-center ${props.loading ? "bg-border-light! text-tertiary!" : ""}`;
   return (
@@ -75,6 +77,9 @@ export const EmailConfirm = (props: {
         </div>
         <OneTimePasswordField.HiddenInput />
       </OneTimePasswordField.Root>
+      <button className="text-sm text-accent-contrast mt-2">
+        Change Email
+      </button>
     </div>
   );
 };
