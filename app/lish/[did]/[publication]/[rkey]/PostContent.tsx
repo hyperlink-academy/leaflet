@@ -256,6 +256,7 @@ export let Block = ({
               key={i}
               className={className}
               pageId={pageId}
+              footnoteIndexMap={footnoteIndexMap}
             />
           ))}
         </ul>
@@ -277,6 +278,7 @@ export let Block = ({
               className={className}
               pageId={pageId}
               startIndex={block.startIndex || 1}
+              footnoteIndexMap={footnoteIndexMap}
             />
           ))}
         </ol>
@@ -547,6 +549,7 @@ function ListItem(props: {
   bskyPostData: AppBskyFeedDefs.PostView[];
   pollData: PollData[];
   pageId?: string;
+  footnoteIndexMap?: Map<string, number>;
 }) {
   let children = props.item.children?.length ? (
     <ul className="-ml-[7px] sm:ml-[7px]">
@@ -561,6 +564,7 @@ function ListItem(props: {
           key={index}
           className={props.className}
           pageId={props.pageId}
+          footnoteIndexMap={props.footnoteIndexMap}
         />
       ))}
     </ul>
@@ -579,6 +583,7 @@ function ListItem(props: {
           className={props.className}
           pageId={props.pageId}
           startIndex={props.item.orderedListChildren?.startIndex}
+          footnoteIndexMap={props.footnoteIndexMap}
         />
       ))}
     </ol>
@@ -606,6 +611,7 @@ function ListItem(props: {
           isList
           index={props.index}
           pageId={props.pageId}
+          footnoteIndexMap={props.footnoteIndexMap}
         />
         {children}
         {orderedChildren}
@@ -624,6 +630,7 @@ function OrderedListItem(props: {
   pollData: PollData[];
   pageId?: string;
   startIndex?: number;
+  footnoteIndexMap?: Map<string, number>;
 }) {
   const calculatedIndex =
     (props.startIndex || 1) + props.index[props.index.length - 1];
@@ -641,6 +648,7 @@ function OrderedListItem(props: {
           className={props.className}
           pageId={props.pageId}
           startIndex={props.startIndex}
+          footnoteIndexMap={props.footnoteIndexMap}
         />
       ))}
     </ol>
@@ -658,6 +666,7 @@ function OrderedListItem(props: {
           key={index}
           className={props.className}
           pageId={props.pageId}
+          footnoteIndexMap={props.footnoteIndexMap}
         />
       ))}
     </ul>
@@ -685,6 +694,7 @@ function OrderedListItem(props: {
           isList
           index={props.index}
           pageId={props.pageId}
+          footnoteIndexMap={props.footnoteIndexMap}
         />
         {children}
         {unorderedChildren}

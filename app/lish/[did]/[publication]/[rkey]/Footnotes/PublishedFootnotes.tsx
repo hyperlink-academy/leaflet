@@ -5,6 +5,8 @@ import {
   PubLeafletBlocksText,
   PubLeafletBlocksHeader,
   PubLeafletBlocksBlockquote,
+  PubLeafletBlocksOrderedList,
+  PubLeafletBlocksUnorderedList,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { TextBlockCore } from "../Blocks/TextBlockCore";
@@ -29,7 +31,6 @@ export function collectFootnotesFromBlocks(
 
   function scanFacets(facets?: PubLeafletRichtextFacet.Main[]) {
     if (!facets || !Array.isArray(facets)) return;
-    console.log(facets);
     for (let facet of facets) {
       for (let feature of facet.features) {
         if (PubLeafletRichtextFacet.isFootnote(feature)) {
@@ -47,17 +48,59 @@ export function collectFootnotesFromBlocks(
     }
   }
 
+  function scanBlockContent(
+    content:
+      | PubLeafletBlocksText.Main
+      | PubLeafletBlocksHeader.Main
+      | PubLeafletBlocksBlockquote.Main
+      | { $type?: string },
+  ) {
+    if (PubLeafletBlocksText.isMain(content)) {
+      scanFacets(content.facets);
+    } else if (PubLeafletBlocksHeader.isMain(content)) {
+      scanFacets(content.facets);
+    } else if (PubLeafletBlocksBlockquote.isMain(content)) {
+      scanFacets(content.facets);
+    }
+  }
+
+  function scanOrderedListItems(
+    items: PubLeafletBlocksOrderedList.ListItem[],
+  ) {
+    for (let item of items) {
+      scanBlockContent(item.content);
+      if (item.children?.length) {
+        scanOrderedListItems(item.children);
+      }
+      if (item.unorderedListChildren?.children?.length) {
+        scanUnorderedListItems(item.unorderedListChildren.children);
+      }
+    }
+  }
+
+  function scanUnorderedListItems(
+    items: PubLeafletBlocksUnorderedList.ListItem[],
+  ) {
+    for (let item of items) {
+      scanBlockContent(item.content);
+      if (item.children?.length) {
+        scanUnorderedListItems(item.children);
+      }
+      if (item.orderedListChildren?.children?.length) {
+        scanOrderedListItems(item.orderedListChildren.children);
+      }
+    }
+  }
+
   for (let b of blocks) {
     let block = b.block;
-    let facets: PubLeafletRichtextFacet.Main[] | undefined;
-    if (PubLeafletBlocksText.isMain(block)) {
-      facets = block.facets;
-    } else if (PubLeafletBlocksHeader.isMain(block)) {
-      facets = block.facets;
-    } else if (PubLeafletBlocksBlockquote.isMain(block)) {
-      facets = block.facets;
+    if (PubLeafletBlocksOrderedList.isMain(block)) {
+      scanOrderedListItems(block.children);
+    } else if (PubLeafletBlocksUnorderedList.isMain(block)) {
+      scanUnorderedListItems(block.children);
+    } else {
+      scanBlockContent(block);
     }
-    if (facets) scanFacets(facets);
   }
 
   return footnotes;
