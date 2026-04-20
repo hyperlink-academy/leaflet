@@ -59,7 +59,7 @@ export function TextBlockCore(props: TextBlockCoreProps) {
             footnoteId={isFootnote.footnoteId}
             index={fnIndex}
           >
-            <sup className="text-accent-contrast cursor-pointer ml-0.5">
+            <sup className="text-accent-contrast cursor-pointer -ml-0.5 -mr-1 -my-1 p-1">
               {fnIndex}
             </sup>
           </FootnoteRenderer>,
