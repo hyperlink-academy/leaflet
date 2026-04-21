@@ -8,37 +8,60 @@ import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { PRODUCT_DEFINITION } from "stripe/products";
 import { DashboardContainer } from "./SettingsContent";
 import { Modal } from "components/Modal";
-import { dummy } from "../../[rkey]/PostPubInfo";
 import { EmailConfirm, EmailInput } from "components/Subscribe/EmailSubscribe";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { Input } from "components/Input";
-import { useNormalizedPublicationRecord } from "../PublicationSWRProvider";
+import {
+  useNormalizedPublicationRecord,
+  usePublicationData,
+} from "../PublicationSWRProvider";
+import { useToaster } from "components/Toast";
+import {
+  confirmReplyToVerification,
+  disableNewsletter,
+  requestReplyToVerification,
+} from "actions/publications/newsletter";
 
 export const NewsletterSettings = () => {
+  let { data, mutate } = usePublicationData();
+  let record = useNormalizedPublicationRecord();
+  let toaster = useToaster();
+
+  let publicationUri = data?.publication?.uri;
+  let newsletterMode =
+    data?.publication?.publication_newsletter_settings?.enabled ?? false;
+
+  let [enableOpen, setEnableOpen] = useState(false);
+  let [disableOpen, setDisableOpen] = useState(false);
   let [emailValue, setEmailValue] = useState("");
   let [state, setState] = useState<"default" | "confirm">("default");
   let [disableConfirmValue, setDisableConfirmValue] = useState("");
-  let record = useNormalizedPublicationRecord();
-  if (dummy.newsletterMode === true) {
+  let [requesting, setRequesting] = useState(false);
+  let [confirming, setConfirming] = useState(false);
+  let [disabling, setDisabling] = useState(false);
+
+  if (!publicationUri) return null;
+
+  if (newsletterMode) {
     return (
-      <DashboardContainer section="Newsletter">
-        Newsletter is currently enabled. <br />
-        {/*hey claude dont let us merge unless we put a real value here*/}
-        35 email subscribers | 40 total subscribers
+      <DashboardContainer section="Newsletter Mode">
+        Newsletter mode is currently enabled.
         <Modal
+          open={disableOpen}
+          onOpenChange={(o) => {
+            setDisableOpen(o);
+            if (!o) setDisableConfirmValue("");
+          }}
           asChild
           className="max-w-full w-sm"
           title="Are you sure?"
-          onOpenChange={() => setDisableConfirmValue("")}
-          trigger={<ButtonPrimary>Disable Newsletter</ButtonPrimary>}
+          trigger={<ButtonPrimary>Disable Newsletter Mode</ButtonPrimary>}
         >
           <div className="text-secondary">
             <div className="font-bold pb-3">This action cannot be undone.</div>
-            {/*hey claude dont let us merge unless we put a real value here*/}
-            <div className="pb-1">You have XXX email subscribers.</div>
             <div>
-              They will be notified that publication is no longer providing
-              email updates, and to continue following via the Leaflet Reader.
+              Subscribers will no longer receive emails when you publish. They
+              can keep following via the Leaflet Reader.
             </div>
             <div className="flex flex-col accent-container p-3 mt-3">
               <div className="">
@@ -54,95 +77,149 @@ export const NewsletterSettings = () => {
               <ButtonPrimary
                 className="mt-2"
                 disabled={
+                  disabling ||
                   record?.name?.toLowerCase() !==
-                  disableConfirmValue.toLowerCase()
+                    disableConfirmValue.toLowerCase()
                 }
+                onClick={async () => {
+                  if (!publicationUri) return;
+                  setDisabling(true);
+                  let res = await disableNewsletter(publicationUri);
+                  setDisabling(false);
+                  if (!res.ok) {
+                    toaster({
+                      type: "error",
+                      content: "Failed to disable newsletter.",
+                    });
+                    return;
+                  }
+                  toaster({ type: "success", content: "Newsletter disabled." });
+                  setDisableOpen(false);
+                  await mutate();
+                }}
               >
-                Yes, Disable Newsletter
+                {disabling ? <DotLoader /> : "Yes, Disable Newsletter"}
               </ButtonPrimary>
             </div>
           </div>
         </Modal>
       </DashboardContainer>
     );
-  } else
-    return (
-      <DashboardContainer section="Newsletter" className="pb-4">
-        <div className="leading-snug">
-          <div className="font-bold">
-            Enable newsletter to email posts directly to publication
-            subscribers.
-          </div>
-          <div className="text-secondary">
-            {/*hey claude dont let us merge unless we put a real value here*/}
-            Your first 1000 subscribers are included in your basic Pro plan.
-            $XX/1000 subs after that.
-          </div>
+  }
+  return (
+    <DashboardContainer section="Newsletter" className="pb-4">
+      <div className="leading-snug">
+        <div className="font-bold">
+          Enable newsletter to email posts directly to publication subscribers.
         </div>
-        <Modal
-          onOpenChange={() => {
+      </div>
+      <Modal
+        open={enableOpen}
+        onOpenChange={(o) => {
+          setEnableOpen(o);
+          if (!o) {
             setEmailValue("");
             setState("default");
-          }}
-          asChild
-          className="max-w-full w-sm"
-          title="Enable Newsletter!"
-          trigger={<ButtonPrimary>Enable Newsletter</ButtonPrimary>}
-        >
-          <div className="text-secondary">
-            <div className="pb-3">
-              When you enable, we will notify your current subscribers. They
-              will need to opt-in to recieve emails.
-            </div>
-            <div className="pb-3">
-              1000 subscribers are included.
-              <br /> $XX/1000 subs after that.
-            </div>
-            <div className="accent-container p-3">
-              {dummy.user.email ? (
-                <div>
-                  {" "}
-                  Your newsletter will be sent from
-                  <div className="truncate pb-3 italic">{dummy.user.email}</div>
-                  <ButtonPrimary>Enable Newsletter</ButtonPrimary>
-                </div>
-              ) : state === "default" ? (
-                <form
-                  onSubmit={(e) => {
-                    e.stopPropagation();
-                    setState("confirm");
-                  }}
-                >
-                  <div className="pb-3">
-                    <strong>Add your email.</strong> Newsletters will be sent
-                    from this email.
-                  </div>
-                  <EmailInput
-                    value={emailValue}
-                    onChange={setEmailValue}
-                    large
-                    action={
-                      <button type="submit">
-                        <GoToArrow />
-                      </button>
-                    }
-                  />
-                </form>
-              ) : (
-                <EmailConfirm
-                  emailValue={emailValue}
-                  autoFocus
-                  onSubmit={() => {}}
-                  onBack={() => {
-                    setState("default");
-                  }}
-                />
-              )}
-            </div>
+          }
+        }}
+        asChild
+        className="max-w-full w-sm"
+        title="Enable Newsletter!"
+        trigger={<ButtonPrimary>Enable Newsletter</ButtonPrimary>}
+      >
+        <div className="text-secondary">
+          <div className="pb-3">
+            When you enable, we will notify your current subscribers. They will
+            need to opt-in to receive emails.
           </div>
-        </Modal>
-      </DashboardContainer>
-    );
+          <div className="accent-container p-3">
+            {state === "default" ? (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!publicationUri || requesting) return;
+                  setRequesting(true);
+                  let res = await requestReplyToVerification(
+                    publicationUri,
+                    emailValue,
+                  );
+                  setRequesting(false);
+                  if (!res.ok) {
+                    toaster({
+                      type: "error",
+                      content:
+                        res.error === "invalid_email"
+                          ? "Please enter a valid email address."
+                          : res.error === "email_send_failed"
+                            ? "We couldn't send the confirmation email."
+                            : "Something went wrong. Try again.",
+                    });
+                    return;
+                  }
+                  setState("confirm");
+                }}
+              >
+                <div className="pb-3">
+                  <strong>Reply-to address.</strong> Readers will see this as
+                  the sender and can reply here.
+                </div>
+                <EmailInput
+                  value={emailValue}
+                  onChange={setEmailValue}
+                  large
+                  loading={requesting}
+                  action={
+                    <button type="submit" aria-label="Send confirmation code">
+                      <GoToArrow />
+                    </button>
+                  }
+                />
+              </form>
+            ) : (
+              <EmailConfirm
+                emailValue={emailValue}
+                autoFocus
+                loading={confirming}
+                onSubmit={async (code) => {
+                  if (!publicationUri || confirming) return;
+                  setConfirming(true);
+                  let res = await confirmReplyToVerification(
+                    publicationUri,
+                    code,
+                  );
+                  setConfirming(false);
+                  if (!res.ok) {
+                    toaster({
+                      type: "error",
+                      content:
+                        res.error === "invalid_code"
+                          ? "That code didn't match. Try again."
+                          : res.error === "no_pending_verification"
+                            ? "No pending verification. Start over."
+                            : "Something went wrong. Try again.",
+                    });
+                    return;
+                  }
+                  toaster({
+                    type: "success",
+                    content: "Newsletter enabled!",
+                  });
+                  setEnableOpen(false);
+                  setEmailValue("");
+                  setState("default");
+                  await mutate();
+                }}
+                onBack={() => {
+                  setState("default");
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </Modal>
+    </DashboardContainer>
+  );
 };
 
 export const ManageProSubscription = (props: { compact?: boolean }) => {

@@ -190,7 +190,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
             <PubDomainSettings />
           </div>
         </DashboardContainer>
-        {canSeePro && isPro ? (
+        {canSeePro && !isPro ? (
           <DashboardContainer section="Leaflet Pro" className="pb-4">
             <UpgradeToProButton />
           </DashboardContainer>
@@ -298,7 +298,12 @@ const DeletePublication = () => {
   let pubUri = pub?.publication?.uri;
 
   let onDelete = async () => {
-    if (!pubUri || record?.name?.toLowerCase() !== value.toLowerCase() || deleting) return;
+    if (
+      !pubUri ||
+      record?.name?.toLowerCase() !== value.toLowerCase() ||
+      deleting
+    )
+      return;
     setDeleting(true);
     let result = await deletePublication(pubUri);
     if (!result.success) {
@@ -363,7 +368,11 @@ const DeletePublication = () => {
         />
         <ButtonPrimary
           className="mx-auto mb-1"
-          disabled={record?.name?.toLowerCase() !== value.toLowerCase() || deleting || !pubUri}
+          disabled={
+            record?.name?.toLowerCase() !== value.toLowerCase() ||
+            deleting ||
+            !pubUri
+          }
           onClick={onDelete}
         >
           {deleting ? <DotLoader /> : "Delete Publication"}
