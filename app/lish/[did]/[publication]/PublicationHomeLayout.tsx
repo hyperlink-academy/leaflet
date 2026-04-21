@@ -15,7 +15,7 @@ export function PublicationHomeLayout(props: {
     >
       <div
         ref={!props.showPageBackground ? null : ref}
-        className={`pubContent sm:max-w-(--page-width-units) w-full  mx-auto px-3 sm:px-4 py-5  ${props.showPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
+        className={`pubContent sm:max-w-(--page-width-units) sm:min-w-(--page-width-units) w-full  mx-auto px-3 sm:px-4 py-5  ${props.showPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
       >
         {props.children}
       </div>

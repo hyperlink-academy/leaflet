@@ -10,6 +10,7 @@ import { useSmoker } from "components/Toast";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
+import { focusBlock } from "src/utils/focusBlock";
 import { ButtonPrimary } from "components/Buttons";
 import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
 import { CheckTiny } from "components/Icons/CheckTiny";
@@ -116,6 +117,25 @@ const ButtonBlockSettings = (props: BlockProps) => {
         value: url,
       },
     });
+
+    let textEntity = v7();
+    await rep.mutate.addBlock({
+      permission_set: entity_set.set,
+      factID: v7(),
+      parent: props.parent,
+      type: "text",
+      position: generateKeyBetween(props.position, props.nextPosition),
+      newEntityID: textEntity,
+    });
+
+    focusBlock(
+      {
+        value: textEntity,
+        type: "text",
+        parent: props.parent,
+      },
+      { type: "start" },
+    );
   };
 
   return (

@@ -321,6 +321,25 @@ const BlockLinkInput = (props: BlockProps) => {
     } finally {
       setLoading(false);
     }
+
+    let textEntity = v7();
+    await rep.mutate.addBlock({
+      permission_set: entity_set.set,
+      factID: v7(),
+      parent: props.parent,
+      type: "text",
+      position: generateKeyBetween(props.position, props.nextPosition),
+      newEntityID: textEntity,
+    });
+
+    focusBlock(
+      {
+        value: textEntity,
+        type: "text",
+        parent: props.parent,
+      },
+      { type: "start" },
+    );
   };
   let smoker = useSmoker();
 
