@@ -4,28 +4,28 @@ import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import Link from "next/link";
 import { HandleInput } from "./HandleInput";
-const logos = {
-  Anisota: "/logos/anisota.svg",
-  Blacksky: "/logos/blacksky.svg",
-  Blento: "/logos/blento.svg",
-  Bluesky: "/logos/bluesky.svg",
-  Cartridge: "/logos/cartridge.svg",
-  Eurosky: "/logos/eurosky.svg",
-  Graze: "/logos/graze.svg",
-  Leaflet: "/logos/leaflet.svg",
-  Margin: "/logos/margin.svg",
-  Offprint: "/logos/offprint.svg",
-  Pckt: "/logos/pckt.svg",
-  pdsls: "/logos/pdsls.svg",
-  "plyr.fm": "/logos/plyr.fm.svg",
-  Popfeed: "/logos/popfeed.svg",
-  Roomy: "/logos/roomy.svg",
-  Semble: "/logos/semble.svg",
-  Sill: "/logos/sill.svg",
-  Spark: "/logos/spark.svg",
-  Surf: "/logos/surf.svg",
-  Tangled: "/logos/tangled.svg",
-};
+const apps = [
+  { name: "Leaflet", logo: "/logos/leaflet.svg" },
+  { name: "Bluesky", logo: "/logos/bluesky.svg" },
+  { name: "Blacksky", logo: "/logos/blacksky.svg" },
+  { name: "Eurosky", logo: "/logos/eurosky.svg" },
+  { name: "Tangled", logo: "/logos/tangled.svg" },
+  { name: "Semble", logo: "/logos/semble.svg" },
+  { name: "Surf", logo: "/logos/surf.svg" },
+  { name: "Spark", logo: "/logos/spark.svg" },
+  { name: "Pckt", logo: "/logos/pckt.svg" },
+  { name: "pdsls", logo: "/logos/pdsls.svg" },
+  { name: "plyr.fm", logo: "/logos/plyr.fm.svg" },
+  { name: "Popfeed", logo: "/logos/popfeed.svg" },
+  { name: "Roomy", logo: "/logos/roomy.svg" },
+  { name: "Sill", logo: "/logos/sill.svg" },
+  { name: "Offprint", logo: "/logos/offprint.svg" },
+  { name: "Margin", logo: "/logos/margin.svg" },
+  { name: "Anisota", logo: "/logos/anisota.svg" },
+  { name: "Blento", logo: "/logos/blento.svg" },
+  { name: "Cartridge", logo: "/logos/cartridge.svg" },
+  { name: "Graze", logo: "/logos/graze.svg" },
+];
 
 import { Separator } from "components/Layout";
 
@@ -157,24 +157,13 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
       </div>
       <div className="opaque-container pt-3 pb-2 overflow-hidden">
         <div className="logo-scroll-track flex w-max">
-          {(
-            [
-              "Leaflet", "Bluesky", "Blacksky", "Eurosky", "Tangled",
-              "Semble", "Surf", "Spark", "Pckt", "pdsls", "plyr.fm",
-              "Popfeed", "Roomy", "Sill", "Offprint", "Margin",
-              "Anisota", "Blento", "Cartridge", "Graze",
-              "Leaflet", "Bluesky", "Blacksky", "Eurosky", "Tangled",
-              "Semble", "Surf", "Spark", "Pckt", "pdsls", "plyr.fm",
-              "Popfeed", "Roomy", "Sill", "Offprint", "Margin",
-              "Anisota", "Blento", "Cartridge", "Graze",
-            ] as (keyof typeof logos)[]
-          ).map((name, i) => (
-            <AtApp key={i} logo={logos[name]} name={name} />
+          {[...apps, ...apps].map((app, i) => (
+            <AtApp key={i} logo={app.logo} name={app.name} />
           ))}
         </div>
       </div>
 
-      <ButtonPrimary fullWidth className=" mt-3 mx-auto mb-3 mt-1">
+      <ButtonPrimary fullWidth className="mt-3 mx-auto mb-3">
         Sign up via Bluesky!
       </ButtonPrimary>
     </Popover>
