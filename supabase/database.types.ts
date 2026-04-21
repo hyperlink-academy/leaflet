@@ -1057,6 +1057,182 @@ export type Database = {
           },
         ]
       }
+      publication_email_subscriber_events: {
+        Row: {
+          event_type: string
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          publication: string
+          subscriber: string
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          publication: string
+          subscriber: string
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          publication?: string
+          subscriber?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_email_subscriber_events_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "publication_email_subscriber_events_subscriber_fkey"
+            columns: ["subscriber"]
+            isOneToOne: false
+            referencedRelation: "publication_email_subscribers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_email_subscribers: {
+        Row: {
+          confirmation_code: string | null
+          confirmed_at: string | null
+          created_at: string
+          email: string
+          id: string
+          identity_id: string | null
+          publication: string
+          state: string
+          unsubscribe_token: string
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          confirmation_code?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          identity_id?: string | null
+          publication: string
+          state?: string
+          unsubscribe_token?: string
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          confirmation_code?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          identity_id?: string | null
+          publication?: string
+          state?: string
+          unsubscribe_token?: string
+          unsubscribed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_email_subscribers_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_email_subscribers_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      publication_newsletter_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          publication: string
+          reply_to_email: string | null
+          reply_to_verified_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          publication: string
+          reply_to_email?: string | null
+          reply_to_verified_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          publication?: string
+          reply_to_email?: string | null
+          reply_to_verified_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_newsletter_settings_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: true
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      publication_post_sends: {
+        Row: {
+          completed_at: string | null
+          document: string
+          error: string | null
+          publication: string
+          started_at: string
+          status: string
+          subscriber_count: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          document: string
+          error?: string | null
+          publication: string
+          started_at?: string
+          status?: string
+          subscriber_count?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          document?: string
+          error?: string | null
+          publication?: string
+          started_at?: string
+          status?: string
+          subscriber_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_post_sends_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "publication_post_sends_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       publication_subscriptions: {
         Row: {
           created_at: string
@@ -1311,39 +1487,6 @@ export type Database = {
             columns: ["publication"]
             isOneToOne: false
             referencedRelation: "site_standard_publications"
-            referencedColumns: ["uri"]
-          },
-        ]
-      }
-      subscribers_to_publications: {
-        Row: {
-          created_at: string
-          identity: string
-          publication: string
-        }
-        Insert: {
-          created_at?: string
-          identity: string
-          publication: string
-        }
-        Update: {
-          created_at?: string
-          identity?: string
-          publication?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subscribers_to_publications_identity_fkey"
-            columns: ["identity"]
-            isOneToOne: false
-            referencedRelation: "identities"
-            referencedColumns: ["email"]
-          },
-          {
-            foreignKeyName: "subscribers_to_publications_publication_fkey"
-            columns: ["publication"]
-            isOneToOne: false
-            referencedRelation: "publications"
             referencedColumns: ["uri"]
           },
         ]
