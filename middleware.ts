@@ -38,6 +38,15 @@ type DomainRoutes = Awaited<ReturnType<typeof getDomainRoutes>>;
 
 const auth_callback_route = "/auth_callback";
 const receive_auth_callback_route = "/receive_auth_callback";
+
+const botUserAgentRegex =
+  /bot|crawler|spider|crawling|facebookexternalhit|facebookcatalog|whatsapp|telegram|slackbot|discordbot|linkedinbot|twitterbot|embedly|quora link preview|pinterest|redditbot|applebot|duckduckbot|baiduspider|yandex|bingpreview|vkshare|w3c_validator|mastodon|pleroma|misskey|iframely|skypeuripreview|google-inspectiontool|chrome-lighthouse/i;
+
+function isBot(req: NextRequest) {
+  let ua = req.headers.get("user-agent");
+  if (!ua) return false;
+  return botUserAgentRegex.test(ua);
+}
 export default async function middleware(req: NextRequest) {
   let hostname = req.headers.get("host")!;
   if (req.nextUrl.pathname === auth_callback_route) return authCallback(req);
@@ -76,6 +85,7 @@ export default async function middleware(req: NextRequest) {
 
     if (
       !isStaticReq &&
+      !isBot(req) &&
       (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
       !authCompleted &&
       !hostname.includes("leaflet.pub")

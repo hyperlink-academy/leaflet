@@ -591,10 +591,12 @@ pre.shiki {
 .footnote-ref::after {
   content: counter(footnote);
   vertical-align: super;
-  padding-left: 2px;
+  padding: 4px;
+  margin: -4px -4px -4px -2px;
   font-size: 75%;
   line-height: 0rem;
 }
+/* -ml-0.5 -mr-1 -my-1 p-1 */
 .footnote-ref ~ br.ProseMirror-trailingBreak {
   display: inline;
   width: 4px;

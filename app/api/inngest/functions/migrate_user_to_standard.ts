@@ -496,13 +496,6 @@ export const migrate_user_to_standard = inngest.createFunction(
             .update({ document: newUri })
             .eq("document", oldUri),
         ),
-        // Update subscribers_to_publications - publication references
-        ...pubEntries.map(([oldUri, newUri]) =>
-          supabaseServerClient
-            .from("subscribers_to_publications")
-            .update({ publication: newUri })
-            .eq("publication", oldUri),
-        ),
         // Update publication_subscriptions - publication references
         ...pubEntries.map(([oldUri, newUri]) =>
           supabaseServerClient

@@ -7,7 +7,6 @@ import {
   confirmEmailAuthToken,
   requestAuthEmailToken,
 } from "actions/emailAuth";
-import { subscribeToPublicationWithEmail } from "actions/subscribeToPublicationWithEmail";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { Popover } from "components/Popover";
