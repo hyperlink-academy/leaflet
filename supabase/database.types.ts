@@ -1155,6 +1155,7 @@ export type Database = {
       }
       publication_newsletter_settings: {
         Row: {
+          confirmation_code: string | null
           created_at: string
           enabled: boolean
           publication: string
@@ -1163,6 +1164,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          confirmation_code?: string | null
           created_at?: string
           enabled?: boolean
           publication: string
@@ -1171,6 +1173,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          confirmation_code?: string | null
           created_at?: string
           enabled?: boolean
           publication?: string
