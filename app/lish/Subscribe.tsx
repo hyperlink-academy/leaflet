@@ -19,7 +19,7 @@ import {
 } from "./subscribeToPublication";
 import { DotLoader } from "components/utils/DotLoader";
 import { addFeed } from "./addFeed";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 
 import { RSSSmall } from "components/Icons/RSSSmall";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
@@ -168,6 +168,7 @@ let BlueskySubscribeButton = (props: {
 }) => {
   let { identity } = useIdentityData();
   let toaster = useToaster();
+  let pathname = usePathname();
   let [oauthError, setOauthError] = useState<
     import("src/atproto-oauth").OAuthSessionError | null
   >(null);
@@ -195,6 +196,7 @@ let BlueskySubscribeButton = (props: {
   if (!identity?.atp_did) {
     return (
       <LoginModal
+        redirectRoute={pathname}
         trigger={<ButtonPrimary>Subscribe!</ButtonPrimary>}
         noEmailLogin
       />
@@ -206,7 +208,7 @@ let BlueskySubscribeButton = (props: {
         action={subscribe}
         className="place-self-center flex flex-row gap-1"
       >
-        <ButtonPrimary type="button" className="mx-auto max-w-full">
+        <ButtonPrimary type="submit" className="mx-auto max-w-full">
           {subscribePending ? (
             <DotLoader />
           ) : (
