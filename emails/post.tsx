@@ -19,6 +19,26 @@ import { Tailwind, pixelBasedPreset } from "@react-email/components";
 import React from "react";
 import type { EmailBlock, EmailListItem } from "src/utils/postToEmailBlocks";
 
+export type EmailTheme = {
+  primary: string;
+  pageBackground: string;
+  backgroundColor: string;
+  accentBackground: string;
+  accentText: string;
+  headingFont: string;
+  bodyFont: string;
+};
+
+export const defaultEmailTheme: EmailTheme = {
+  primary: "rgb(39, 39, 39)",
+  pageBackground: "rgb(255, 255, 255)",
+  backgroundColor: "rgb(240, 247, 250)",
+  accentBackground: "rgb(0, 0, 225)",
+  accentText: "rgb(255, 255, 255)",
+  headingFont: "Georgia, serif",
+  bodyFont: "Verdana, sans-serif",
+};
+
 export type PostEmailProps = {
   publicationName: string;
   publicationUrl: string;
@@ -34,10 +54,16 @@ export type PostEmailProps = {
    */
   unsubscribeUrl?: string;
   /**
-   * Absolute URL used to resolve bundled /static/* assets. Postmark fetches
-   * `<img src>` verbatim so these must be absolute in outgoing mail.
+   * Absolute URL used to resolve bundled /email-assets/* images. Postmark
+   * fetches `<img src>` verbatim so these must be absolute in outgoing mail.
    */
   assetsBaseUrl: string;
+  theme?: EmailTheme;
+};
+
+const drawerUrl = (base: string, drawer: "quotes" | "comments") => {
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}interactionDrawer=${drawer}`;
 };
 
 const defaultProps: PostEmailProps = {
@@ -90,8 +116,9 @@ const defaultProps: PostEmailProps = {
 
 export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
   const p: PostEmailProps = { ...defaultProps, ...props };
+  const theme = p.theme ?? defaultEmailTheme;
   const staticUrl = (filename: string) =>
-    `${p.assetsBaseUrl.replace(/\/$/, "")}/static/${filename}`;
+    `${p.assetsBaseUrl.replace(/\/$/, "")}/email-assets/${filename}`;
   const byline = [p.authorName, p.publishedAtLabel].filter(Boolean).join(" | ");
 
   return (
@@ -115,21 +142,17 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
               inherit: "inherit",
               transparent: "transparent",
               current: "currentColor",
-              primary: "rgb(39, 39, 39)",
-              secondary:
-                "color-mix(in oklab, rgb(39, 39, 39), rgb(255, 255, 255) 25%)",
-              tertiary:
-                "color-mix(in oklab, rgb(39, 39, 39), rgb(255, 255, 255) 55%)",
-              border:
-                "color-mix(in oklab, rgb(39, 39, 39), rgb(255, 255, 255) 75%)",
-              "border-light":
-                "color-mix(in oklab, rgb(39, 39, 39), rgb(255, 255, 255) 85%)",
+              primary: theme.primary,
+              secondary: `color-mix(in oklab, ${theme.primary}, ${theme.pageBackground} 25%)`,
+              tertiary: `color-mix(in oklab, ${theme.primary}, ${theme.pageBackground} 55%)`,
+              border: `color-mix(in oklab, ${theme.primary}, ${theme.pageBackground} 75%)`,
+              "border-light": `color-mix(in oklab, ${theme.primary}, ${theme.pageBackground} 85%)`,
               white: "#FFFFFF",
-              "accent-1": "rgb(0, 0, 225)",
-              "accent-2": "rgb(255, 255, 255;)",
-              "accent-contrast": "rgb(0, 0, 225)",
-              "bg-leaflet": "rgb(240, 247, 250)",
-              "bg-page": "rgba(255, 255, 255, 1)",
+              "accent-1": theme.accentBackground,
+              "accent-2": theme.accentText,
+              "accent-contrast": theme.accentBackground,
+              "bg-leaflet": theme.backgroundColor,
+              "bg-page": theme.pageBackground,
               "highlight-1": "rgb(255, 177, 177)",
               "highlight-2": "rgb(253, 245, 203)",
               "highlight-3": "rgb(255, 205, 195)",
@@ -146,17 +169,18 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
             },
             extend: {
               fontFamily: {
-                sans: ["Verdana"],
-                serif: ["Georgia"],
+                sans: [theme.bodyFont],
+                serif: [theme.headingFont],
               },
             },
           },
         }}
       >
         <Head />
-        <Body className={`bg-bg-page font-sans p-2 sm:px-4 sm:py-6 !m-0 `}>
+        <Body className={`bg-bg-leaflet font-sans p-2 sm:px-4 sm:py-6 !m-0 `}>
           <Container
-            className={`bg-transparent rounded-lg border border-border`}
+            className={`bg-bg-page rounded-lg border border-border mx-auto px-4 sm:px-6`}
+            style={{ maxWidth: "28rem" }}
           >
             <Button
               href={p.publicationUrl}
@@ -176,7 +200,47 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
 
             {byline ? (
               <Section className={`postActions !mb-7 !mt-3`}>
-                <Text className="text-sm text-tertiary">{byline}</Text>
+                <Row>
+                  <Column width="auto">
+                    <Text className="text-sm text-tertiary !my-0">
+                      {byline}
+                    </Text>
+                  </Column>
+                  <Column width="12px" />
+                  <Column style={{ width: "16px" }}>
+                    <Button href={drawerUrl(p.postUrl, "quotes")}>
+                      <Img
+                        width={16}
+                        height={16}
+                        src={staticUrl("quote.png")}
+                        alt="See quotes"
+                      />
+                    </Button>
+                  </Column>
+                  <Column width="8px" />
+                  <Column style={{ width: "16px" }}>
+                    <Button href={drawerUrl(p.postUrl, "comments")}>
+                      <Img
+                        width={16}
+                        height={16}
+                        src={staticUrl("comment.png")}
+                        alt="See comments"
+                      />
+                    </Button>
+                  </Column>
+                  <Column width="10px" />
+                  <Column style={{ width: "16px" }}>
+                    <Button href={p.postUrl}>
+                      <Img
+                        width={16}
+                        height={16}
+                        src={staticUrl("external-link.png")}
+                        alt="Open post"
+                      />
+                    </Button>
+                  </Column>
+                  <Column width="inherit" />
+                </Row>
               </Section>
             ) : null}
             <Section className="postContent">
@@ -251,14 +315,21 @@ const BlockRenderer = ({
     case "code":
       return <CodeBlock code={block.code} language={block.language} />;
     case "image":
+      // Deliberately no numeric `width`/`height` HTML attributes: Outlook
+      // honors those over CSS `max-width`, so a 1200px natural-size photo
+      // would blow out our 28rem container. `max-width: <natural>px` keeps
+      // smaller images from being upscaled.
       return (
         <Img
           src={block.src}
-          alt={block.alt}
-          width={block.width}
-          height={block.height}
+          alt={block.alt ?? ""}
           className={`${blockPadding} mx-auto`}
-          style={{ maxWidth: "100%", height: "auto" }}
+          style={{
+            display: "block",
+            width: "100%",
+            maxWidth: block.width ? `${block.width}px` : "100%",
+            height: "auto",
+          }}
         />
       );
     case "link":
@@ -284,7 +355,9 @@ export const LeafletWatermark = ({
 }: {
   staticUrl?: (filename: string) => string;
 } = {}) => {
-  const leafletSrc = staticUrl ? staticUrl("leaflet.png") : "/static/leaflet.png";
+  const leafletSrc = staticUrl
+    ? staticUrl("leaflet.png")
+    : "/email-assets/leaflet.png";
   return (
     <Container className={` w-fit `}>
       <Button href="https://leaflet.pub">
@@ -331,7 +404,7 @@ export const Heading = (props: {
   return (
     <ReactEmailHeading
       as={props.as}
-      className={` font-bold ${props.noPadding ? "!my-0" : headingPadding} ${props.as === "h1" ? "text-xl" : props.as === "h2" ? "text-lg" : "text-base text-secondary"}`}
+      className={`font-serif font-bold ${props.noPadding ? "!my-0" : headingPadding} ${props.as === "h1" ? "text-xl" : props.as === "h2" ? "text-lg" : "text-base text-secondary"} ${props.className ?? ""}`}
     >
       {props.children}
     </ReactEmailHeading>

@@ -104,7 +104,7 @@ export const PubConfirmEmail = (props: { code?: string }) => (
                 <Img
                   width={24}
                   height={24}
-                  src="/static/test.jpg"
+                  src="/email-assets/leaflet.png"
                   className="rounded-full"
                 />
               </Column>

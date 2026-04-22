@@ -100,7 +100,7 @@ export const LeafletConfirmEmail = (props: { code?: string }) => (
               <Img
                 width={56}
                 height={56}
-                src="/static/leaflet.png"
+                src="/email-assets/leaflet.png"
                 className="mx-auto mb-2"
               />
 

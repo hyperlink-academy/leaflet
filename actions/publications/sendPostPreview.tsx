@@ -10,6 +10,7 @@ import { extractEmailBlocksFromFacts } from "src/utils/postToEmailBlocks";
 import type { Fact } from "src/replicache";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { PostEmail } from "emails/post";
+import { emailPropsFromPublication } from "emails/fromPublication";
 
 type SendPreviewError =
   | "unauthorized"
@@ -56,8 +57,7 @@ export async function sendPostPreview(args: {
   const blocks = extractEmailBlocksFromFacts(facts, args.root_entity);
 
   const pubRecord = normalizePublicationRecord(publication.record);
-  const publicationName = pubRecord?.name || "Publication";
-  const publicationUrl = pubRecord?.url || "https://leaflet.pub";
+  const pubProps = emailPropsFromPublication(pubRecord);
 
   const assetsBaseUrl = await getCurrentDeploymentDomain();
 
@@ -65,11 +65,10 @@ export async function sendPostPreview(args: {
   try {
     html = await render(
       PostEmail({
-        publicationName,
-        publicationUrl,
+        ...pubProps,
         postTitle: args.title || "(untitled)",
         postDescription: args.description,
-        postUrl: publicationUrl,
+        postUrl: pubProps.publicationUrl,
         authorName: identity.bsky_profiles?.handle ?? undefined,
         publishedAtLabel: new Date().toLocaleDateString("en-US", {
           month: "short",

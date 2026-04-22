@@ -64,6 +64,7 @@ import {
   isPublicationCollection,
   getDocumentType,
 } from "src/utils/collectionHelpers";
+import { inngest } from "app/api/inngest/client";
 
 type PublishResult =
   | { success: true; rkey: string; record: SiteStandardDocument.Record }
@@ -379,6 +380,40 @@ export async function publishToPublication({
       record,
       credentialSession.did!,
     );
+  }
+
+  // Fire newsletter broadcast on first publish to a newsletter-enabled pub.
+  // The composite PK on publication_post_sends is the real idempotency guard —
+  // ignoreDuplicates makes re-publishes and concurrent runs a no-op.
+  if (publication_uri && !existingDocUri) {
+    const { data: settings } = await supabaseServerClient
+      .from("publication_newsletter_settings")
+      .select("enabled")
+      .eq("publication", publication_uri)
+      .maybeSingle();
+    if (settings?.enabled) {
+      const { data: inserted } = await supabaseServerClient
+        .from("publication_post_sends")
+        .upsert(
+          {
+            publication: publication_uri,
+            document: result.uri,
+            status: "pending",
+          },
+          { onConflict: "publication,document", ignoreDuplicates: true },
+        )
+        .select();
+      if (inserted && inserted.length > 0) {
+        await inngest.send({
+          name: "newsletter/post.send.requested",
+          data: {
+            publication_uri,
+            document_uri: result.uri,
+            root_entity,
+          },
+        });
+      }
+    }
   }
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };

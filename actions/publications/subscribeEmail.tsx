@@ -16,6 +16,7 @@ import {
 type RequestError = "invalid_email" | "newsletter_disabled" | ConfirmationError;
 type RequestSuccess = { confirmed: boolean };
 type ConfirmError = "subscriber_not_found" | ConfirmationError;
+type UnsubscribeError = "unauthorized" | "not_subscribed" | "database_error";
 
 export async function requestPublicationEmailSubscription(
   publicationUri: string,
@@ -41,6 +42,16 @@ export async function requestPublicationEmailSubscription(
     identity && identity.email?.toLowerCase() === email ? identity : null;
   const pendingCode = generateConfirmationCode();
 
+  // Check the existing row first — a previous `unsubscribed` row means the
+  // first event we append is `resubscribed` rather than `subscribe_requested`.
+  const { data: existing } = await supabaseServerClient
+    .from("publication_email_subscribers")
+    .select("state")
+    .eq("publication", publicationUri)
+    .eq("email", email)
+    .maybeSingle();
+  const wasUnsubscribed = existing?.state === "unsubscribed";
+
   const subscriberRow = verifiedIdentity
     ? {
         publication: publicationUri,
@@ -49,6 +60,7 @@ export async function requestPublicationEmailSubscription(
         state: "confirmed",
         confirmation_code: null,
         confirmed_at: new Date().toISOString(),
+        unsubscribed_at: null,
       }
     : {
         publication: publicationUri,
@@ -56,6 +68,7 @@ export async function requestPublicationEmailSubscription(
         identity_id: identity?.id ?? null,
         state: "pending",
         confirmation_code: pendingCode,
+        unsubscribed_at: null,
       };
 
   const { data: subscriber, error } = await supabaseServerClient
@@ -74,7 +87,7 @@ export async function requestPublicationEmailSubscription(
       {
         subscriber: subscriber.id,
         publication: publicationUri,
-        event_type: "subscribe_requested",
+        event_type: wasUnsubscribed ? "resubscribed" : "subscribe_requested",
       },
       {
         subscriber: subscriber.id,
@@ -150,6 +163,61 @@ export async function confirmPublicationEmailSubscription(
     );
     return Err("database_error");
   }
+
+  return Ok(null);
+}
+
+export async function unsubscribeFromPublication(
+  publicationUri: string,
+): Promise<Result<null, UnsubscribeError>> {
+  const identity = await getIdentityData();
+  if (!identity?.id) return Err("unauthorized");
+
+  // Identity may have multiple matching subscriber rows historically
+  // (different emails tied to the same identity, e.g. a linked address that
+  // predates an email change). Unsubscribe all of them at once — a single
+  // "Unsubscribe" click from this user should stop all future newsletter
+  // mail from this publication.
+  const { data: subscribers } = await supabaseServerClient
+    .from("publication_email_subscribers")
+    .select("id, state")
+    .eq("publication", publicationUri)
+    .eq("identity_id", identity.id);
+  const active = (subscribers ?? []).filter((s) => s.state !== "unsubscribed");
+  if (!subscribers || subscribers.length === 0) return Err("not_subscribed");
+  if (active.length === 0) return Ok(null); // already unsubscribed; idempotent
+
+  const ids = active.map((s) => s.id);
+  const nowIso = new Date().toISOString();
+  const [{ error: updateError }, { error: eventError }] = await Promise.all([
+    supabaseServerClient
+      .from("publication_email_subscribers")
+      .update({
+        state: "unsubscribed",
+        unsubscribed_at: nowIso,
+        confirmation_code: null,
+      })
+      .in("id", ids),
+    supabaseServerClient.from("publication_email_subscriber_events").insert(
+      active.map((s) => ({
+        subscriber: s.id,
+        publication: publicationUri,
+        event_type: "unsubscribe_requested",
+      })),
+    ),
+  ]);
+  if (updateError || eventError) {
+    console.error(
+      "[subscribeEmail] unsubscribe update/event failed:",
+      updateError ?? eventError,
+    );
+    return Err("database_error");
+  }
+
+  // NOTE: Postmark Suppressions API is deliberately NOT called here. Per spec,
+  // in-app unsubscribes only flip local state — this prevents a Pub A
+  // unsubscribe from silently breaking Pub B deliveries on the shared broadcast
+  // stream. Phase 7 handles webhook-driven suppression reconciliation.
 
   return Ok(null);
 }

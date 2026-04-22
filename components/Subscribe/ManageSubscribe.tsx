@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { GoToArrow } from "components/Icons/GoToArrow";
@@ -8,6 +9,11 @@ import { useToaster } from "components/Toast";
 import { LinkHandle } from "./HandleSubscribe";
 import { EmailInput, EmailConfirm } from "./EmailSubscribe";
 import type { ViewerUser } from "./viewerSubscription";
+import {
+  requestPublicationEmailSubscription,
+  confirmPublicationEmailSubscription,
+  unsubscribeFromPublication,
+} from "actions/publications/subscribeEmail";
 
 export const ManageSubscription = (props: {
   publicationUri: string;
@@ -17,9 +23,96 @@ export const ManageSubscription = (props: {
   const { user } = props;
   let [email, setEmail] = useState(user.email ?? "");
   let [linkEmailOpen, setLinkEmailOpen] = useState(false);
+  let [linkRequesting, setLinkRequesting] = useState(false);
+  let [linkConfirming, setLinkConfirming] = useState(false);
+  let [unsubscribing, setUnsubscribing] = useState(false);
   let toaster = useToaster();
+  let router = useRouter();
   let prefClassName =
     "flex gap-2 justify-between font-bold text-secondary items-center";
+
+  const onRequestLink = async () => {
+    if (linkRequesting || !email) return;
+    setLinkRequesting(true);
+    const res = await requestPublicationEmailSubscription(
+      props.publicationUri,
+      email,
+    );
+    setLinkRequesting(false);
+    if (!res.ok) {
+      toaster({
+        type: "error",
+        content: (
+          <div className="font-bold">
+            {LINK_ERROR_MESSAGES[res.error] ?? "Couldn't link email."}
+          </div>
+        ),
+      });
+      return;
+    }
+    if (res.value.confirmed) {
+      toaster({
+        content: <div className="font-bold">Email Linked!</div>,
+        type: "success",
+      });
+      setLinkEmailOpen(false);
+      router.refresh();
+      return;
+    }
+    setLinkEmailOpen(true);
+  };
+
+  const onConfirmLink = async (code: string) => {
+    if (linkConfirming) return;
+    setLinkConfirming(true);
+    const res = await confirmPublicationEmailSubscription(
+      props.publicationUri,
+      email,
+      code,
+    );
+    setLinkConfirming(false);
+    if (!res.ok) {
+      toaster({
+        type: "error",
+        content: (
+          <div className="font-bold">
+            {LINK_ERROR_MESSAGES[res.error] ?? "Couldn't confirm code."}
+          </div>
+        ),
+      });
+      return;
+    }
+    toaster({
+      content: <div className="font-bold">Email Linked!</div>,
+      type: "success",
+    });
+    setLinkEmailOpen(false);
+    router.refresh();
+  };
+
+  const onUnsubscribe = async () => {
+    if (unsubscribing) return;
+    setUnsubscribing(true);
+    const res = await unsubscribeFromPublication(props.publicationUri);
+    setUnsubscribing(false);
+    if (!res.ok) {
+      toaster({
+        type: "error",
+        content: (
+          <div className="font-bold">
+            {UNSUBSCRIBE_ERROR_MESSAGES[res.error]}
+          </div>
+        ),
+      });
+      return;
+    }
+    toaster({
+      content: <div className="font-bold">Unsubscribed.</div>,
+      type: "success",
+    });
+    router.refresh();
+  };
+
   return (
     <Modal
       title="Preferences"
@@ -75,7 +168,7 @@ export const ManageSubscription = (props: {
             <EmailInput
               value={email}
               onChange={setEmail}
-              disabled={user.loggedIn}
+              loading={linkRequesting}
               action={
                 <Modal
                   open={linkEmailOpen}
@@ -83,6 +176,8 @@ export const ManageSubscription = (props: {
                   trigger={
                     <ButtonPrimary
                       compact
+                      disabled={linkRequesting || !email}
+                      onClick={onRequestLink}
                       className="leading-tight! outline-none! text-sm!"
                     >
                       link
@@ -91,13 +186,10 @@ export const ManageSubscription = (props: {
                 >
                   <EmailConfirm
                     emailValue={email}
+                    autoFocus
+                    loading={linkConfirming}
                     onBack={() => setLinkEmailOpen(false)}
-                    onSubmit={() => {
-                      toaster({
-                        content: <div className="font-bold">Email Linked!</div>,
-                        type: "success",
-                      });
-                    }}
+                    onSubmit={onConfirmLink}
                   />
                 </Modal>
               }
@@ -111,8 +203,30 @@ export const ManageSubscription = (props: {
         ) : null}
 
         <hr className="border-border-light my-2" />
-        <ButtonSecondary fullWidth>Unsubscribe</ButtonSecondary>
+        <ButtonSecondary
+          fullWidth
+          disabled={unsubscribing}
+          onClick={onUnsubscribe}
+        >
+          {unsubscribing ? "Unsubscribing…" : "Unsubscribe"}
+        </ButtonSecondary>
       </div>
     </Modal>
   );
+};
+
+const LINK_ERROR_MESSAGES: Record<string, string> = {
+  invalid_email: "Please enter a valid email address.",
+  newsletter_disabled: "This publication isn't accepting email subscriptions.",
+  email_send_failed: "We couldn't send the confirmation email. Try again.",
+  subscriber_not_found: "No pending subscription. Start over.",
+  invalid_code: "That code didn't match. Try again.",
+  database_error: "Something went wrong. Try again.",
+};
+
+const UNSUBSCRIBE_ERROR_MESSAGES: Record<string, string> = {
+  unauthorized: "Sign in to manage your subscription.",
+  not_subscribed:
+    "We couldn't find an email subscription for this publication.",
+  database_error: "Something went wrong. Try again.",
 };
