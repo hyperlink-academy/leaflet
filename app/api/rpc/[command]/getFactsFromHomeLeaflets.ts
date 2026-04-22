@@ -31,7 +31,7 @@ export const getFactsFromHomeLeaflets = makeRoute({
         {} as { [key: string]: Fact<Attribute>[] },
       );
       for (let token of tokens) {
-        let scan = scanIndexLocal(facts[token]);
+        let scan = scanIndexLocal(facts[token] || []);
         let [root] = scan.eav(token, "root/page");
         let rootEntity = root?.data.value || token;
 
