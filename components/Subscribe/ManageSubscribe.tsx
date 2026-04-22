@@ -222,6 +222,10 @@ const LINK_ERROR_MESSAGES: Record<string, string> = {
   subscriber_not_found: "No pending subscription. Start over.",
   invalid_code: "That code didn't match. Try again.",
   database_error: "Something went wrong. Try again.",
+  suppressed_spam_complaint:
+    "This address was previously marked as spam and can't be linked. Contact the publication to resolve.",
+  suppression_delete_failed:
+    "We couldn't clear a prior delivery issue on this address. Try again later.",
 };
 
 const UNSUBSCRIBE_ERROR_MESSAGES: Record<string, string> = {

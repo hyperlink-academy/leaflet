@@ -15,6 +15,7 @@ import {
   CodeBlock as ReactEmailCodeBlock,
   dracula,
 } from "@react-email/components";
+import type { PrismLanguage } from "@react-email/code-block";
 import { Tailwind, pixelBasedPreset } from "@react-email/components";
 import React from "react";
 import type { EmailBlock, EmailListItem } from "src/utils/postToEmailBlocks";
@@ -509,7 +510,7 @@ export const CodeBlock = ({
       className={`${blockPadding} !p-2 rounded-md border border-light`}
       code={code ?? ""}
       theme={dracula}
-      language={language || "text"}
+      language={(language as PrismLanguage) || "text"}
     />
   );
 };

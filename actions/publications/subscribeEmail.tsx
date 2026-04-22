@@ -12,8 +12,17 @@ import {
   sendConfirmationEmail,
   type ConfirmationError,
 } from "src/utils/confirmationEmail";
+import {
+  getSuppression,
+  deleteSuppression,
+} from "src/utils/postmarkSuppressions";
 
-type RequestError = "invalid_email" | "newsletter_disabled" | ConfirmationError;
+type RequestError =
+  | "invalid_email"
+  | "newsletter_disabled"
+  | "suppressed_spam_complaint"
+  | "suppression_delete_failed"
+  | ConfirmationError;
 type RequestSuccess = { confirmed: boolean };
 type ConfirmError = "subscriber_not_found" | ConfirmationError;
 type UnsubscribeError = "unauthorized" | "not_subscribed" | "database_error";
@@ -34,6 +43,23 @@ export async function requestPublicationEmailSubscription(
     getIdentityData(),
   ]);
   if (!settings?.enabled) return Err("newsletter_disabled");
+
+  // Postmark suppression check: the broadcast stream is shared across all
+  // pubs, so a prior SpamComplaint or HardBounce on ANY publication blocks
+  // this one too. Spam complaints are permanent on Postmark's side (they
+  // refuse deletion) — surface a terminal error. Hard bounces / manual
+  // suppressions we clear now so the upcoming broadcast will deliver.
+  const suppression = await getSuppression(email);
+  if (suppression?.reason === "SpamComplaint") {
+    return Err("suppressed_spam_complaint");
+  }
+  if (
+    suppression?.reason === "HardBounce" ||
+    suppression?.reason === "ManualSuppression"
+  ) {
+    const deleted = await deleteSuppression(email);
+    if (!deleted) return Err("suppression_delete_failed");
+  }
 
   // Fast path: the caller is already authenticated with this email (they
   // previously confirmed it on this or another publication), so we can skip

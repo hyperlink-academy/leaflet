@@ -94,6 +94,8 @@ export function PostPreview(props: {
           record: s.record,
           uri: s.uri,
         })),
+        newsletterMode:
+          !!publication.publication_newsletter_settings?.enabled,
       }
     : null;
 

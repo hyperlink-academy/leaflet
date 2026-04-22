@@ -182,7 +182,9 @@ type SubscribeError =
   | "email_send_failed"
   | "subscriber_not_found"
   | "invalid_code"
-  | "database_error";
+  | "database_error"
+  | "suppressed_spam_complaint"
+  | "suppression_delete_failed";
 
 const ERROR_MESSAGES: Record<SubscribeError, string> = {
   invalid_email: "Please enter a valid email address.",
@@ -191,4 +193,8 @@ const ERROR_MESSAGES: Record<SubscribeError, string> = {
   subscriber_not_found: "No pending subscription. Start over.",
   invalid_code: "That code didn't match. Try again.",
   database_error: "Something went wrong. Try again.",
+  suppressed_spam_complaint:
+    "This address was previously marked as spam and can't be resubscribed. Contact the publication to resolve.",
+  suppression_delete_failed:
+    "We couldn't clear a prior delivery issue on this address. Try again later.",
 };

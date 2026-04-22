@@ -7,7 +7,11 @@ import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import type { Block } from "components/Blocks/Block";
 
 export type EmailBlock =
-  | { type: "text"; plaintext: string; textSize?: number }
+  | {
+      type: "text";
+      plaintext: string;
+      textSize?: "small" | "default" | "large";
+    }
   | { type: "heading"; level: 1 | 2 | 3; plaintext: string }
   | { type: "blockquote"; plaintext: string }
   | { type: "code"; code: string; language?: string }
