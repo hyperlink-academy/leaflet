@@ -18,7 +18,19 @@ import {
 import type { PrismLanguage } from "@react-email/code-block";
 import { Tailwind, pixelBasedPreset } from "@react-email/components";
 import React from "react";
-import type { EmailBlock, EmailListItem } from "src/utils/postToEmailBlocks";
+import {
+  PubLeafletBlocksBlockquote,
+  PubLeafletBlocksCode,
+  PubLeafletBlocksHeader,
+  PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksImage,
+  PubLeafletBlocksOrderedList,
+  PubLeafletBlocksText,
+  PubLeafletBlocksUnorderedList,
+  PubLeafletBlocksWebsite,
+  PubLeafletPagesLinearDocument,
+} from "lexicons/api";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 export type EmailTheme = {
   primary: string;
@@ -48,7 +60,13 @@ export type PostEmailProps = {
   postUrl: string;
   authorName?: string;
   publishedAtLabel?: string;
-  blocks: EmailBlock[];
+  blocks: PubLeafletPagesLinearDocument.Block[];
+  /**
+   * Used to build absolute URLs for `pub.leaflet.blocks.image` blob refs via
+   * the /api/atproto_images proxy. Preview renders from drafts may encode a
+   * direct URL in the blob ref's $link instead — we pass those through.
+   */
+  did: string;
   /**
    * If omitted the template renders a "(preview)" footer in place of the
    * real unsubscribe link — used by the Phase 4 preview-send path.
@@ -67,6 +85,19 @@ const drawerUrl = (base: string, drawer: "quotes" | "comments") => {
   return `${base}${sep}interactionDrawer=${drawer}`;
 };
 
+const textBlock = (plaintext: string): PubLeafletPagesLinearDocument.Block => ({
+  $type: "pub.leaflet.pages.linearDocument#block",
+  block: { $type: "pub.leaflet.blocks.text", plaintext },
+});
+
+const headingBlock = (
+  plaintext: string,
+  level: number,
+): PubLeafletPagesLinearDocument.Block => ({
+  $type: "pub.leaflet.pages.linearDocument#block",
+  block: { $type: "pub.leaflet.blocks.header", plaintext, level },
+});
+
 const defaultProps: PostEmailProps = {
   publicationName: "Publication",
   publicationUrl: "https://leaflet.pub",
@@ -77,41 +108,79 @@ const defaultProps: PostEmailProps = {
   authorName: "author",
   publishedAtLabel: "Jan 1, 2026",
   assetsBaseUrl: "https://leaflet.pub/",
+  did: "did:plc:example",
   blocks: [
+    textBlock(
+      "This would be the post. I'll give it a little lorem ipsum to make it look longer so i don't forget which thing is what.",
+    ),
+    headingBlock("This is a Title", 1),
+    textBlock(
+      "We'll keep it nice and separate so we can see what it looks like.",
+    ),
+    headingBlock("And a Header", 2),
     {
-      type: "text",
-      plaintext:
-        "This would be the post. I'll give it a little lorem ipsum to make it look longer so i don't forget which thing is what.",
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: {
+        $type: "pub.leaflet.blocks.unorderedList",
+        children: [
+          {
+            content: { $type: "pub.leaflet.blocks.text", plaintext: "fruits" },
+            children: [
+              {
+                content: {
+                  $type: "pub.leaflet.blocks.text",
+                  plaintext: "apple",
+                },
+              },
+              {
+                content: {
+                  $type: "pub.leaflet.blocks.text",
+                  plaintext: "banana",
+                },
+              },
+            ],
+          },
+          {
+            content: {
+              $type: "pub.leaflet.blocks.text",
+              plaintext: "veggies",
+            },
+          },
+        ],
+      },
     },
-    { type: "heading", level: 1, plaintext: "This is a Title" },
     {
-      type: "text",
-      plaintext: "We'll keep it nice and separate so we can see what it looks like.",
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: {
+        $type: "pub.leaflet.blocks.blockquote",
+        plaintext: "A quote of some kind.",
+      },
     },
-    { type: "heading", level: 2, plaintext: "And a Header" },
     {
-      type: "list",
-      style: "unordered",
-      items: [
-        { plaintext: "fruits", children: [
-          { type: "list", style: "unordered", items: [
-            { plaintext: "apple" },
-            { plaintext: "banana" },
-          ] },
-        ] },
-        { plaintext: "veggies" },
-      ],
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: {
+        $type: "pub.leaflet.blocks.code",
+        plaintext: "const x = 1;",
+        language: "javascript",
+      },
     },
-    { type: "blockquote", plaintext: "A quote of some kind." },
-    { type: "code", code: "const x = 1;", language: "javascript" },
     {
-      type: "link",
-      url: "https://example.com",
-      title: "Link Title Here",
-      description: "Description on the link",
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: {
+        $type: "pub.leaflet.blocks.website",
+        src: "https://example.com",
+        title: "Link Title Here",
+        description: "Description on the link",
+      },
     },
-    { type: "horizontal-rule" },
-    { type: "unsupported", kind: "math" },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: { $type: "pub.leaflet.blocks.horizontalRule" },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: { $type: "pub.leaflet.blocks.math" },
+    },
   ],
 };
 
@@ -245,8 +314,13 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
               </Section>
             ) : null}
             <Section className="postContent">
-              {p.blocks.map((block, i) => (
-                <BlockRenderer key={i} block={block} assetsBaseUrl={p.assetsBaseUrl} />
+              {p.blocks.map((b, i) => (
+                <BlockRenderer
+                  key={i}
+                  block={b.block}
+                  did={p.did}
+                  assetsBaseUrl={p.assetsBaseUrl}
+                />
               ))}
             </Section>
             <Section className="pt-4">
@@ -289,66 +363,83 @@ export default PostEmail;
 
 const BlockRenderer = ({
   block,
+  did,
   assetsBaseUrl,
 }: {
-  block: EmailBlock;
+  block: PubLeafletPagesLinearDocument.Block["block"];
+  did: string;
   assetsBaseUrl: string;
 }) => {
-  switch (block.type) {
-    case "text":
-      return <Text>{block.plaintext || " "}</Text>;
-    case "heading":
-      return (
-        <Heading as={`h${block.level}` as "h1" | "h2" | "h3"}>
-          {block.plaintext}
-        </Heading>
-      );
-    case "blockquote":
-      return (
-        <Row className={blockPadding}>
-          <Column className="!my-0 w-[2px] bg-border" />
-          <Column className="w-2" />
-          <Column>
-            <Text className="!my-0.5">{block.plaintext}</Text>
-          </Column>
-        </Row>
-      );
-    case "code":
-      return <CodeBlock code={block.code} language={block.language} />;
-    case "image":
-      // Deliberately no numeric `width`/`height` HTML attributes: Outlook
-      // honors those over CSS `max-width`, so a 1200px natural-size photo
-      // would blow out our 28rem container. `max-width: <natural>px` keeps
-      // smaller images from being upscaled.
-      return (
-        <Img
-          src={block.src}
-          alt={block.alt ?? ""}
-          className={`${blockPadding} mx-auto`}
-          style={{
-            display: "block",
-            width: "100%",
-            maxWidth: block.width ? `${block.width}px` : "100%",
-            height: "auto",
-          }}
-        />
-      );
-    case "link":
-      return (
-        <LinkBlock
-          url={block.url}
-          title={block.title}
-          description={block.description}
-          previewSrc={block.previewSrc}
-        />
-      );
-    case "horizontal-rule":
-      return <Hr className="border-border-light my-3" />;
-    case "list":
-      return <List items={block.items} style={block.style} />;
-    case "unsupported":
-      return <BlockNotSupported />;
+  if (PubLeafletBlocksText.isMain(block)) {
+    return <Text>{block.plaintext || " "}</Text>;
   }
+  if (PubLeafletBlocksHeader.isMain(block)) {
+    const raw = Math.floor(block.level ?? 1);
+    const clamped = (raw < 1 ? 1 : raw > 3 ? 3 : raw) as 1 | 2 | 3;
+    return <Heading as={`h${clamped}`}>{block.plaintext}</Heading>;
+  }
+  if (PubLeafletBlocksBlockquote.isMain(block)) {
+    return (
+      <Row className={blockPadding}>
+        <Column className="!my-0 w-[2px] bg-border" />
+        <Column className="w-2" />
+        <Column>
+          <Text className="!my-0.5">{block.plaintext}</Text>
+        </Column>
+      </Row>
+    );
+  }
+  if (PubLeafletBlocksCode.isMain(block)) {
+    return <CodeBlock code={block.plaintext} language={block.language} />;
+  }
+  if (PubLeafletBlocksImage.isMain(block)) {
+    const src = blobRefToSrc(block.image.ref, did, assetsBaseUrl);
+    // Deliberately no numeric `width`/`height` HTML attributes: Outlook
+    // honors those over CSS `max-width`, so a 1200px natural-size photo
+    // would blow out our 28rem container. `max-width: <natural>px` keeps
+    // smaller images from being upscaled.
+    const naturalWidth = block.aspectRatio?.width;
+    return (
+      <Img
+        src={src}
+        alt={block.alt ?? ""}
+        className={`${blockPadding} mx-auto`}
+        style={{
+          display: "block",
+          width: "100%",
+          maxWidth: naturalWidth ? `${naturalWidth}px` : "100%",
+          height: "auto",
+        }}
+      />
+    );
+  }
+  if (PubLeafletBlocksWebsite.isMain(block)) {
+    const previewSrc = block.previewImage
+      ? blobRefToSrc(block.previewImage.ref, did, assetsBaseUrl)
+      : undefined;
+    return (
+      <LinkBlock
+        url={block.src}
+        title={block.title}
+        description={block.description}
+        previewSrc={previewSrc}
+      />
+    );
+  }
+  if (PubLeafletBlocksHorizontalRule.isMain(block)) {
+    return <Hr className="border-border-light my-3" />;
+  }
+  if (PubLeafletBlocksUnorderedList.isMain(block)) {
+    return (
+      <List items={block.children} style="unordered" did={did} assetsBaseUrl={assetsBaseUrl} />
+    );
+  }
+  if (PubLeafletBlocksOrderedList.isMain(block)) {
+    return (
+      <List items={block.children} style="ordered" did={did} assetsBaseUrl={assetsBaseUrl} />
+    );
+  }
+  return <BlockNotSupported />;
 };
 
 export const LeafletWatermark = ({
@@ -412,12 +503,27 @@ export const Heading = (props: {
   );
 };
 
+type ListItem =
+  | PubLeafletBlocksUnorderedList.ListItem
+  | PubLeafletBlocksOrderedList.ListItem;
+
+const listItemPlaintext = (item: ListItem): string => {
+  const content = item.content;
+  if (PubLeafletBlocksText.isMain(content)) return content.plaintext;
+  if (PubLeafletBlocksHeader.isMain(content)) return content.plaintext;
+  return "";
+};
+
 export const List = ({
   items,
   style,
+  did,
+  assetsBaseUrl,
 }: {
-  items: EmailListItem[];
+  items: ListItem[];
   style: "ordered" | "unordered";
+  did: string;
+  assetsBaseUrl: string;
 }) => {
   const listClass = `my-0 !pl-6`;
   const listItemClass = `${headingPadding} !ml-2`;
@@ -425,18 +531,44 @@ export const List = ({
   return (
     <Section className={`${blockPadding} !-mt-1`}>
       <Tag className={listClass}>
-        {items.map((item, i) => (
-          <React.Fragment key={i}>
-            <li className={listItemClass}>
-              {typeof item.checked === "boolean"
-                ? `${item.checked ? "☑ " : "☐ "}${item.plaintext}`
-                : item.plaintext}
-            </li>
-            {item.children?.map((child, j) => (
-              <BlockRenderer key={j} block={child} assetsBaseUrl="" />
-            ))}
-          </React.Fragment>
-        ))}
+        {items.map((item, i) => {
+          const plaintext = listItemPlaintext(item);
+          const nestedUnordered =
+            item.children && style === "unordered"
+              ? (item.children as PubLeafletBlocksUnorderedList.ListItem[])
+              : (item as PubLeafletBlocksOrderedList.ListItem)
+                  .unorderedListChildren?.children;
+          const nestedOrdered =
+            item.children && style === "ordered"
+              ? (item.children as PubLeafletBlocksOrderedList.ListItem[])
+              : (item as PubLeafletBlocksUnorderedList.ListItem)
+                  .orderedListChildren?.children;
+          return (
+            <React.Fragment key={i}>
+              <li className={listItemClass}>
+                {typeof item.checked === "boolean"
+                  ? `${item.checked ? "☑ " : "☐ "}${plaintext}`
+                  : plaintext}
+              </li>
+              {nestedUnordered && nestedUnordered.length > 0 ? (
+                <List
+                  items={nestedUnordered}
+                  style="unordered"
+                  did={did}
+                  assetsBaseUrl={assetsBaseUrl}
+                />
+              ) : null}
+              {nestedOrdered && nestedOrdered.length > 0 ? (
+                <List
+                  items={nestedOrdered}
+                  style="ordered"
+                  did={did}
+                  assetsBaseUrl={assetsBaseUrl}
+                />
+              ) : null}
+            </React.Fragment>
+          );
+        })}
       </Tag>
     </Section>
   );

@@ -1,14 +1,15 @@
 import { render } from "@react-email/render";
+import { AtUri } from "@atproto/syntax";
 import { inngest } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PostEmail } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
-import { extractEmailBlocksFromFacts } from "src/utils/postToEmailBlocks";
 import {
+  getDocumentPages,
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
-import type { Fact } from "src/replicache";
+import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import type { Json } from "supabase/database.types";
 
 const BATCH_SIZE = 500;
@@ -37,7 +38,7 @@ export const send_post_broadcast = inngest.createFunction(
   },
   { event: "newsletter/post.send.requested" },
   async ({ event, step }) => {
-    const { publication_uri, document_uri, root_entity } = event.data;
+    const { publication_uri, document_uri } = event.data;
 
     const loaded = await step.run("load-pub-and-doc", async () => {
       const [pubRes, docRes] = await Promise.all([
@@ -83,6 +84,16 @@ export const send_post_broadcast = inngest.createFunction(
         ? `${pubRecord.url.replace(/\/$/, "")}${docRecord.path}`
         : pubProps.publicationUrl;
     const replyToEmail = settings.reply_to_email;
+    const did = new AtUri(document_uri).host;
+
+    // The first page is the document body. Canvas pages don't map to a linear
+    // email body — the email renders an empty postContent section and falls
+    // back to the "See Full Post" link.
+    const firstPage = docRecord ? getDocumentPages(docRecord)?.[0] : undefined;
+    const blocks: PubLeafletPagesLinearDocument.Block[] =
+      firstPage?.$type === "pub.leaflet.pages.linearDocument"
+        ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
+        : [];
 
     const subscribers = await step.run("snapshot-subscribers", async () => {
       const { data } = await supabaseServerClient
@@ -113,14 +124,6 @@ export const send_post_broadcast = inngest.createFunction(
       return { sent: 0 };
     }
 
-    const blocks = await step.run("extract-blocks", async () => {
-      const { data: factsData } = await supabaseServerClient.rpc("get_facts", {
-        root: root_entity,
-      });
-      const facts = (factsData as unknown as Fact<any>[]) || [];
-      return extractEmailBlocksFromFacts(facts, root_entity);
-    });
-
     const assetsBaseUrl = (
       process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"
     ).replace(/\/$/, "");
@@ -134,6 +137,7 @@ export const send_post_broadcast = inngest.createFunction(
           postDescription,
           postUrl,
           blocks,
+          did,
           assetsBaseUrl: `${assetsBaseUrl}/`,
           unsubscribeUrl: UNSUB_PLACEHOLDER,
         }),
