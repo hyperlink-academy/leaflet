@@ -1,10 +1,6 @@
 import React from "react";
 import { AtUri } from "@atproto/syntax";
-import {
-  getPublicationURL,
-  getDocumentURL,
-} from "app/lish/createPub/getPublicationURL";
-import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
@@ -17,7 +13,6 @@ import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
-import { dummy } from "./[rkey]/PostPubInfo";
 
 type FakePost = {
   title: string;
@@ -40,6 +35,7 @@ export const PublicationContent = ({
     identity_did: string;
     record: unknown;
     publication_subscriptions: { identity: string }[];
+    publication_newsletter_settings: { enabled: boolean } | null;
     documents_in_publications: {
       documents: {
         uri: string;
@@ -55,6 +51,7 @@ export const PublicationContent = ({
   showPageBackground: boolean | undefined;
   fakePosts?: FakePost[];
 }) => {
+  const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
   return (
     <>
       <FontLoader
@@ -83,13 +80,12 @@ export const PublicationContent = ({
             ) : undefined
           }
           subscribeButton={
-            <SubscribeInput {...dummy}/>
-            // <SubscribeWithBluesky
-            //   base_url={getPublicationURL(publication)}
-            //   pubName={publication.name}
-            //   pub_uri={publication.uri}
-            //   subscribers={publication.publication_subscriptions}
-            // />
+            <SubscribeInput
+              publicationUri={publication.uri}
+              publicationName={record?.name ?? publication.name}
+              publicationDescription={record?.description}
+              newsletterMode={newsletterMode}
+            />
           }
         />
         <div className="publicationPostList w-full flex flex-col gap-4">

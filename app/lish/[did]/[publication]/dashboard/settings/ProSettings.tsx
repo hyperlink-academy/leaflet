@@ -20,7 +20,7 @@ import {
   confirmReplyToVerification,
   disableNewsletter,
   requestReplyToVerification,
-} from "actions/publications/newsletter";
+} from "actions/publications/newsletterSettings";
 
 export const NewsletterSettings = () => {
   let { data, mutate } = usePublicationData();

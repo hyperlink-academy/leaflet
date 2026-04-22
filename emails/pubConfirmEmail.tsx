@@ -16,7 +16,7 @@ import { Text, Heading } from "./post";
 import { Tailwind, pixelBasedPreset } from "@react-email/components";
 import { LeafletWatermark } from "./post";
 
-export const PubConfirmEmail = (props: {}) => (
+export const PubConfirmEmail = (props: { code?: string }) => (
   <Html>
     <Tailwind
       config={{
@@ -121,7 +121,7 @@ export const PubConfirmEmail = (props: {}) => (
             </Text>
             <Container className="bg-border-light rounded-md w-fit px-2 py-1">
               <Heading noPadding as="h1">
-                000000
+                {props.code ?? "000000"}
               </Heading>
             </Container>
           </Column>

@@ -8,7 +8,6 @@ import {
 } from "./Interactions/Interactions";
 import { PostContent } from "./PostContent";
 import { PostHeader } from "./PostHeader/PostHeader";
-import { useIdentityData } from "components/IdentityProvider";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 import { PageWrapper } from "components/Pages/Page";
@@ -16,7 +15,6 @@ import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { PostPrevNextButtons } from "./PostPrevNextButtons";
-import { PostSubscribe } from "./PostSubscribe";
 
 import {
   collectFootnotesFromBlocks,
@@ -25,7 +23,7 @@ import {
 } from "./Footnotes/PublishedFootnotes";
 import { PublishedFootnoteSideColumn } from "./Footnotes/PublishedFootnoteSideColumn";
 import { PublishedFootnotePopover } from "./Footnotes/PublishedFootnotePopover";
-import { dummy, PostPubInfo } from "./PostPubInfo";
+import { PostPubInfo } from "./PostPubInfo";
 
 export function LinearDocumentPage({
   blocks,
@@ -93,7 +91,6 @@ export function LinearDocumentPage({
           footnoteIndexMap={footnoteIndexMap}
         />
         <PublishedFootnoteSection footnotes={footnotes} />
-        {/*<PostSubscribe />*/}
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}
         />
@@ -109,8 +106,16 @@ export function LinearDocumentPage({
           recommendsCount={document.recommendsCount}
         />
         <div className={`spacer h-4 w-full`} />
-        <PostPubInfo {...dummy} />
-        
+        {document.publication?.uri && (
+          <PostPubInfo
+            publicationUri={document.publication.uri}
+            publicationName={
+              props.pubRecord?.name ?? document.publication.name
+            }
+            publicationDescription={props.pubRecord?.description}
+            newsletterMode={document.publication.newsletterMode}
+          />
+        )}
 
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>

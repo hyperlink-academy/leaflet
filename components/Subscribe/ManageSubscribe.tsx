@@ -7,17 +7,15 @@ import { Modal } from "components/Modal";
 import { useToaster } from "components/Toast";
 import { LinkHandle } from "./HandleSubscribe";
 import { EmailInput, EmailConfirm } from "./EmailSubscribe";
+import type { ViewerUser } from "./viewerSubscription";
 
 export const ManageSubscription = (props: {
+  publicationUri: string;
   newsletterMode: boolean;
-  user: {
-    loggedIn: boolean;
-    email: string | undefined;
-    handle: string | undefined;
-    subscribed: boolean;
-  };
+  user: ViewerUser;
 }) => {
-  let [email, setEmail] = useState(props.user?.email ?? "");
+  const { user } = props;
+  let [email, setEmail] = useState(user.email ?? "");
   let [linkEmailOpen, setLinkEmailOpen] = useState(false);
   let toaster = useToaster();
   let prefClassName =
@@ -36,22 +34,22 @@ export const ManageSubscription = (props: {
       }
     >
       <div className="manageSubPrefs flex flex-col gap-2">
-        {props.newsletterMode && props.user.email ? (
+        {props.newsletterMode && user.email ? (
           <div className={prefClassName}>
             <div className="flex flex-col leading-snug">
               <p>Linked Email</p>
               <p className="text-tertiary font-normal italic">
-                {props.user.email}
+                {user.email}
               </p>
             </div>
           </div>
         ) : null}
-        {props.user.handle && (
+        {user.handle && (
           <div className={prefClassName}>
             <div className="flex flex-col leading-snug">
               Linked Handle
               <p className="text-tertiary font-normal italic">
-                {props.user.handle}
+                {user.handle}
               </p>
             </div>
           </div>
@@ -64,7 +62,7 @@ export const ManageSubscription = (props: {
           <GoToArrow className="text-accent-contrast" />
         </div>
 
-        {props.newsletterMode && !props.user.email ? (
+        {props.newsletterMode && !user.email ? (
           <div className="linkEmail accent-container p-4 text-sm flex flex-col gap-3 text-center justify-center">
             <div
               className={`text-secondary flex flex-col text-sm leading-snug`}
@@ -77,7 +75,7 @@ export const ManageSubscription = (props: {
             <EmailInput
               value={email}
               onChange={setEmail}
-              disabled={props.user?.loggedIn}
+              disabled={user.loggedIn}
               action={
                 <Modal
                   open={linkEmailOpen}
@@ -106,7 +104,7 @@ export const ManageSubscription = (props: {
             />
           </div>
         ) : null}
-        {!props.user.handle ? (
+        {!user.handle ? (
           <div className="accent-container p-4 text-sm">
             <LinkHandle compact />
           </div>

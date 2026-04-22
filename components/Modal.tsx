@@ -15,13 +15,15 @@ export const Modal = ({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   asChild?: boolean;
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
   title?: React.ReactNode;
   children: React.ReactNode;
 }) => {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Trigger asChild={asChild}>{trigger}</Dialog.Trigger>
+      {trigger !== undefined && (
+        <Dialog.Trigger asChild={asChild}>{trigger}</Dialog.Trigger>
+      )}
       <Dialog.Portal>
         <Dialog.Overlay className="fixed z-50 inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-60" />
         <Dialog.Content

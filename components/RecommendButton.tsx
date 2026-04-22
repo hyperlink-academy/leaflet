@@ -154,7 +154,6 @@ export function RecommendButton(props: {
         e.stopPropagation();
         handleClick(e);
       }}
-      disabled={isPending || isLoading}
       className={`recommendButton relative flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
       aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
     >
