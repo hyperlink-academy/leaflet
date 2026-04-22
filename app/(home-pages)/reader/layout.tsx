@@ -1,7 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Header } from "components/PageHeader";
 import { Footer } from "components/ActionBar/Footer";
 import { DesktopNavigation } from "components/ActionBar/DesktopNavigation";
@@ -9,6 +8,7 @@ import { MobileNavigation } from "components/ActionBar/MobileNavigation";
 import { MediaContents } from "components/Media";
 import { DashboardIdContext } from "components/PageLayouts/DashboardLayout";
 import { useIdentityData } from "components/IdentityProvider";
+import { Tab } from "components/Tab";
 
 const allTabs = [
   { name: "Subs", href: "/reader", requiresAuth: true },
@@ -22,6 +22,7 @@ export default function ReaderLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { identity } = useIdentityData();
   const isLoggedIn = !!identity?.atp_did;
   const tabs = allTabs.filter((tab) => !tab.requiresAuth || isLoggedIn);
@@ -52,17 +53,12 @@ export default function ReaderLayout({
           <Header>
             <div className="pubDashTabs flex flex-row gap-1">
               {tabs.map((tab) => (
-                <Link key={tab.name} href={tab.href}>
-                  <div
-                    className={`pubTabs px-1 py-0 flex gap-1 items-center rounded-md hover:cursor-pointer ${
-                      isActive(tab.href)
-                        ? "text-accent-2 bg-accent-1 font-bold -mb-px"
-                        : "text-secondary"
-                    }`}
-                  >
-                    {tab.name}
-                  </div>
-                </Link>
+                <Tab
+                  key={tab.name}
+                  name={tab.name}
+                  selected={isActive(tab.href)}
+                  onSelect={() => router.push(tab.href)}
+                />
               ))}
             </div>
             <div className="sm:block grow" />
