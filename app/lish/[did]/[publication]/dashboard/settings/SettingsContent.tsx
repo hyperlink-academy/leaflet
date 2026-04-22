@@ -16,7 +16,11 @@ import { PostSettings } from "./PostSettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { ManageProSubscription, NewsletterSettings } from "./ProSettings";
-import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
+import {
+  useIsPro,
+  useCanSeePro,
+  useCanSeeNewsletterMode,
+} from "src/hooks/useEntitlement";
 import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
@@ -31,6 +35,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
   let { publication: pubData } = data || {};
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
+  let canSeeNewsletterMode = useCanSeeNewsletterMode();
   let record = useNormalizedPublicationRecord();
   let [loading, setLoading] = useState(false);
   let toast = useToaster();
@@ -199,7 +204,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
             <DashboardContainer section="Leaflet Pro" className="pb-4">
               <ManageProSubscription compact />
             </DashboardContainer>
-            <NewsletterSettings />
+            {canSeeNewsletterMode && <NewsletterSettings />}
           </>
         )}
         <div className="flex flex-col gap-1">

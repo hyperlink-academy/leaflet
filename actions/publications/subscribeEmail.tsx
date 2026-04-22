@@ -16,6 +16,7 @@ import {
   getSuppression,
   deleteSuppression,
 } from "src/utils/postmarkSuppressions";
+import { unsubscribeToPublication } from "app/lish/subscribeToPublication";
 
 type RequestError =
   | "invalid_email"
@@ -199,45 +200,68 @@ export async function unsubscribeFromPublication(
   const identity = await getIdentityData();
   if (!identity?.id) return Err("unauthorized");
 
+  // A viewer is "subscribed" if they have EITHER an email subscription OR an
+  // atproto subscription (see useViewerSubscription). Unsubscribe must clear
+  // both — otherwise a user with only an atproto sub hits "not_subscribed"
+  // and a user with both ends up half-unsubscribed.
+  const [{ data: subscribers }, { data: atprotoSub }] = await Promise.all([
+    supabaseServerClient
+      .from("publication_email_subscribers")
+      .select("id, state")
+      .eq("publication", publicationUri)
+      .eq("identity_id", identity.id),
+    identity.atp_did
+      ? supabaseServerClient
+          .from("publication_subscriptions")
+          .select("uri")
+          .eq("identity", identity.atp_did)
+          .eq("publication", publicationUri)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
   // Identity may have multiple matching subscriber rows historically
   // (different emails tied to the same identity, e.g. a linked address that
   // predates an email change). Unsubscribe all of them at once — a single
   // "Unsubscribe" click from this user should stop all future newsletter
   // mail from this publication.
-  const { data: subscribers } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .select("id, state")
-    .eq("publication", publicationUri)
-    .eq("identity_id", identity.id);
   const active = (subscribers ?? []).filter((s) => s.state !== "unsubscribed");
-  if (!subscribers || subscribers.length === 0) return Err("not_subscribed");
-  if (active.length === 0) return Ok(null); // already unsubscribed; idempotent
 
-  const ids = active.map((s) => s.id);
-  const nowIso = new Date().toISOString();
-  const [{ error: updateError }, { error: eventError }] = await Promise.all([
-    supabaseServerClient
-      .from("publication_email_subscribers")
-      .update({
-        state: "unsubscribed",
-        unsubscribed_at: nowIso,
-        confirmation_code: null,
-      })
-      .in("id", ids),
-    supabaseServerClient.from("publication_email_subscriber_events").insert(
-      active.map((s) => ({
-        subscriber: s.id,
-        publication: publicationUri,
-        event_type: "unsubscribe_requested",
-      })),
-    ),
-  ]);
-  if (updateError || eventError) {
-    console.error(
-      "[subscribeEmail] unsubscribe update/event failed:",
-      updateError ?? eventError,
-    );
-    return Err("database_error");
+  if (active.length === 0 && !atprotoSub) {
+    if (subscribers && subscribers.length > 0) return Ok(null); // already unsubscribed; idempotent
+    return Err("not_subscribed");
+  }
+
+  if (active.length > 0) {
+    const ids = active.map((s) => s.id);
+    const nowIso = new Date().toISOString();
+    const [{ error: updateError }, { error: eventError }] = await Promise.all([
+      supabaseServerClient
+        .from("publication_email_subscribers")
+        .update({
+          state: "unsubscribed",
+          unsubscribed_at: nowIso,
+          confirmation_code: null,
+        })
+        .in("id", ids),
+      supabaseServerClient.from("publication_email_subscriber_events").insert(
+        active.map((s) => ({
+          subscriber: s.id,
+          publication: publicationUri,
+          event_type: "unsubscribe_requested",
+        })),
+      ),
+    ]);
+    if (updateError || eventError) {
+      console.error(
+        "[subscribeEmail] unsubscribe update/event failed:",
+        updateError ?? eventError,
+      );
+      return Err("database_error");
+    }
+  }
+
+  if (atprotoSub) {
+    await unsubscribeToPublication(publicationUri);
   }
 
   // NOTE: Postmark Suppressions API is deliberately NOT called here. Per spec,

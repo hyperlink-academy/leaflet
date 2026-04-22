@@ -147,7 +147,14 @@ export const LoginContent = (props: {
               loading={loading}
               onSubmit={(handle) => {
                 setLoading(true);
-                const redirectUrl = props.redirectRoute || "/";
+                let redirectUrl: string;
+                if (props.redirectRoute) {
+                  redirectUrl = props.redirectRoute;
+                } else {
+                  let url = new URL(window.location.href);
+                  url.searchParams.set("refreshAuth", "");
+                  redirectUrl = url.toString();
+                }
                 window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}`;
               }}
             />

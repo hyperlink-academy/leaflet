@@ -15,9 +15,9 @@ import { PubLeafletComment } from "lexicons/api";
 import { type CommentOnDocument } from "contexts/DocumentContext";
 import { prefetchQuotesData } from "./Quotes";
 import { useIdentityData } from "components/IdentityProvider";
-import { ManageSubscription } from "app/lish/Subscribe";
+import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
+import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { EditTiny } from "components/Icons/EditTiny";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { RecommendButton } from "components/RecommendButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
@@ -207,9 +207,9 @@ export const ExpandedInteractions = (props: {
     publication,
     leafletId,
   } = useDocument();
-  let { identity } = useIdentityData();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+  let viewer = useViewerSubscription(publication?.uri ?? "");
 
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -222,13 +222,6 @@ export const ExpandedInteractions = (props: {
 
   let noInteractions =
     !props.showComments && !props.showMentions && !props.showRecommends;
-
-  let subscribed =
-    identity?.atp_did &&
-    publication?.publication_subscriptions &&
-    publication?.publication_subscriptions.find(
-      (s) => s.identity === identity.atp_did,
-    );
 
   return (
     <div
@@ -307,11 +300,11 @@ export const ExpandedInteractions = (props: {
                 </ButtonSecondary>
               )}
             </div>
-            {subscribed && publication && (
+            {viewer.subscribed && publication && (
               <ManageSubscription
-                base_url={getPublicationURL(publication)}
-                pub_uri={publication.uri}
-                subscribers={publication.publication_subscriptions}
+                publicationUri={publication.uri}
+                newsletterMode={publication.newsletterMode}
+                user={viewer}
               />
             )}
           </div>

@@ -128,7 +128,12 @@ export const SubscribeInput = (props: SubscribeProps) => {
           }
         />
       ) : (
-        <SubscribeWithHandle user={user} autoFocus={props.autoFocus} />
+        <SubscribeWithHandle
+          user={user}
+          autoFocus={props.autoFocus}
+          publicationUri={props.publicationUri}
+          onSubscribed={() => setLocallySubscribed(true)}
+        />
       )}
       {props.newsletterMode && (
         <Modal

@@ -56,28 +56,32 @@ export function ShareOptions(props: Props) {
 
   return (
     <div className="flex flex-col gap-2">
-      <Checkbox
-        className="gap-4!"
-        checked={shareState.email}
-        onChange={(e) => handleChange("email", e.target.checked)}
-      >
-        <div className="flex flex-col">
-          <div>
-            Email{" "}
-            {props.subscriberCount !== undefined
-              ? `${props.subscriberCount} `
-              : ""}
-            Subscribers
-          </div>
-        </div>
-      </Checkbox>
-      {props.newsletter_enabled && props.publication_uri ? (
-        <EmailPreview
-          publication_uri={props.publication_uri}
-          root_entity={props.root_entity}
-          title={props.title}
-          description={props.description}
-        />
+      {props.newsletter_enabled ? (
+        <>
+          <Checkbox
+            className="gap-4!"
+            checked={shareState.email}
+            onChange={(e) => handleChange("email", e.target.checked)}
+          >
+            <div className="flex flex-col">
+              <div>
+                Email{" "}
+                {props.subscriberCount !== undefined
+                  ? `${props.subscriberCount} `
+                  : ""}
+                Subscribers
+              </div>
+            </div>
+          </Checkbox>
+          {props.publication_uri ? (
+            <EmailPreview
+              publication_uri={props.publication_uri}
+              root_entity={props.root_entity}
+              title={props.title}
+              description={props.description}
+            />
+          ) : null}
+        </>
       ) : null}
 
       <Checkbox
