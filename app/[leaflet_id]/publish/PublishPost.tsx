@@ -41,6 +41,7 @@ type Props = {
   publication_uri?: string;
   record?: NormalizedPublication | null;
   posts_in_pub?: number;
+  newsletter_enabled?: boolean;
   entitiesToDelete?: string[];
   hasDraft: boolean;
 };
@@ -292,6 +293,9 @@ const PublishPostForm = (
                 profile={props.profile}
                 description={props.description}
                 record={props.record}
+                newsletter_enabled={props.newsletter_enabled}
+                publication_uri={props.publication_uri}
+                root_entity={props.root_entity}
               />
               <hr className="border-border mb-2" />
 

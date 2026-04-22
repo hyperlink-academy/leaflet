@@ -4,6 +4,10 @@ import { BlueskyPostEditorProsemirror } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
+import { useState } from "react";
+import { sendPostPreview } from "actions/publications/sendPostPreview";
+import { ButtonSecondary } from "components/Buttons";
+import { DotLoader } from "components/utils/DotLoader";
 
 export type ShareState = {
   bluesky: boolean;
@@ -23,6 +27,9 @@ type Props = {
   description: string;
   record?: NormalizedPublication | null;
   subscriberCount?: number;
+  newsletter_enabled?: boolean;
+  publication_uri?: string;
+  root_entity: string;
 };
 
 export function ShareOptions(props: Props) {
@@ -64,6 +71,14 @@ export function ShareOptions(props: Props) {
           </div>
         </div>
       </Checkbox>
+      {props.newsletter_enabled && props.publication_uri ? (
+        <EmailPreview
+          publication_uri={props.publication_uri}
+          root_entity={props.root_entity}
+          title={props.title}
+          description={props.description}
+        />
+      ) : null}
 
       <Checkbox
         className="gap-4!"
@@ -147,6 +162,95 @@ export function ShareOptions(props: Props) {
           </div>
         </div>
       </Checkbox>
+    </div>
+  );
+}
+
+function EmailPreview(props: {
+  publication_uri: string;
+  root_entity: string;
+  title: string;
+  description: string;
+}) {
+  let [email, setEmail] = useState("");
+  let [status, setStatus] = useState<
+    | { state: "idle" }
+    | { state: "sending" }
+    | { state: "sent" }
+    | { state: "error"; message: string }
+  >({ state: "idle" });
+
+  const errorCopy = (code: string) => {
+    switch (code) {
+      case "unauthorized":
+        return "You don't have permission to send a preview for this publication.";
+      case "invalid_email":
+        return "That email address doesn't look right.";
+      case "newsletter_not_enabled":
+        return "Newsletter mode isn't enabled for this publication.";
+      case "render_failed":
+        return "Couldn't render the email. Try again?";
+      case "email_send_failed":
+        return "Postmark rejected the send. Try again later.";
+      default:
+        return "Something went wrong sending the preview.";
+    }
+  };
+
+  const submit = async () => {
+    if (!email) return;
+    setStatus({ state: "sending" });
+    const res = await sendPostPreview({
+      publication_uri: props.publication_uri,
+      root_entity: props.root_entity,
+      title: props.title,
+      description: props.description,
+      to: email,
+    });
+    if (res.ok) {
+      setStatus({ state: "sent" });
+    } else {
+      setStatus({ state: "error", message: errorCopy(res.error) });
+    }
+  };
+
+  return (
+    <div className="pl-7 pb-2 flex flex-col gap-1">
+      <div className="flex gap-2 items-center">
+        <input
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (status.state !== "idle") setStatus({ state: "idle" });
+          }}
+          className="grow input-with-border px-2 py-1 text-sm rounded-md"
+        />
+        <ButtonSecondary
+          type="button"
+          onClick={submit}
+          disabled={!email || status.state === "sending"}
+          className="h-[30px]"
+        >
+          {status.state === "sending" ? (
+            <DotLoader className="h-[23px]" />
+          ) : (
+            "Send preview"
+          )}
+        </ButtonSecondary>
+      </div>
+      {status.state === "sent" ? (
+        <div className="text-sm text-tertiary italic">
+          Preview sent to {email}.
+        </div>
+      ) : status.state === "error" ? (
+        <div className="text-sm text-accent-contrast">{status.message}</div>
+      ) : (
+        <div className="text-sm text-tertiary font-normal">
+          Send the rendered email to a test address before broadcasting.
+        </div>
+      )}
     </div>
   );
 }

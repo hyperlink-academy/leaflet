@@ -31,7 +31,8 @@ export default async function PublishLeafletPage(props: Props) {
          *,
          publications(
            *,
-           documents_in_publications(count)
+           documents_in_publications(count),
+           publication_newsletter_settings(enabled)
          ),
        documents(*)),
        leaflets_to_documents(
@@ -53,7 +54,9 @@ export default async function PublishLeafletPage(props: Props) {
       console.log(decodeURIComponent(pub_uri));
       let { data: pubData, error } = await supabaseServerClient
         .from("publications")
-        .select("*, documents_in_publications(count)")
+        .select(
+          "*, documents_in_publications(count), publication_newsletter_settings(enabled)",
+        )
         .eq("uri", decodeURIComponent(pub_uri))
         .single();
       console.log(error);
@@ -120,6 +123,9 @@ export default async function PublishLeafletPage(props: Props) {
         publication_uri={publication?.uri}
         record={normalizePublicationRecord(publication?.record)}
         posts_in_pub={publication?.documents_in_publications[0]?.count}
+        newsletter_enabled={
+          !!publication?.publication_newsletter_settings?.enabled
+        }
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}
       />
