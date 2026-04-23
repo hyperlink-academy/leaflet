@@ -45,6 +45,18 @@ export async function subscribeToPublication(
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
+
+  let { data: existingSubscription } = await supabaseServerClient
+    .from("publication_subscriptions")
+    .select("uri")
+    .eq("identity", credentialSession.did!)
+    .eq("publication", publication)
+    .maybeSingle();
+  if (existingSubscription) {
+    revalidatePath("/lish/[did]/[publication]", "layout");
+    return { success: true, hasFeed: true };
+  }
+
   let record = await agent.site.standard.graph.subscription.create(
     { repo: credentialSession.did!, rkey: TID.nextStr() },
     {
