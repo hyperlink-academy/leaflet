@@ -1,5 +1,4 @@
 "use client";
-import { AppBskyActorProfile } from "lexicons/api";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { ButtonPrimary } from "components/Buttons";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
@@ -7,27 +6,63 @@ import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Menu";
 import { Separator } from "components/Layout";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
-import { Checkbox } from "components/Checkbox";
-import { useEffect, useState } from "react";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 type subscriber = { email: string | undefined; did: string | undefined };
 
-// HELLO! THIS FILE HAS CHECKBOXES AND A HEADER COMMENTED OUT
-// the checkboxes would let you select users and and the eader provided a count and let you select all and do actions
-// I also removed some props from SubscriberListItem around emails since we dont have them yet.
-// WHen we get emails in, we can uncomment some of this stuff
+type MergedSubscriber = {
+  key: string;
+  did: string | undefined;
+  handle: string | undefined;
+  email: string | undefined;
+  created_at: string;
+};
 
 export function PublicationSubscribers(props: {
   showPageBackground?: boolean;
 }) {
   let smoker = useSmoker();
   let { data: publication } = usePublicationData();
-  // let [checkedSubscribers, setCheckedSubscribers] = useState<subscriber[]>([]);
-  // let [checkAll, setCheckAll] = useState(false);
 
   if (!publication) return <div>null</div>;
-  let subscribers = publication.publication?.publication_subscriptions || [];
+  let atprotoSubs = publication.publication?.publication_subscriptions || [];
+  let newsletterEnabled =
+    !!publication.publication?.publication_newsletter_settings?.enabled;
+  let emailSubs = newsletterEnabled
+    ? (publication.publication?.publication_email_subscribers || []).filter(
+        (s) => s.state === "confirmed",
+      )
+    : [];
+
+  let byDid = new Map<string, MergedSubscriber>();
+  let emailOnly: MergedSubscriber[] = [];
+  for (let s of atprotoSubs) {
+    let did = s.identities?.bsky_profiles?.did;
+    if (!did) continue;
+    byDid.set(did, {
+      key: `did:${did}`,
+      did,
+      handle: s.identities?.bsky_profiles?.handle ?? undefined,
+      email: undefined,
+      created_at: s.created_at,
+    });
+  }
+  for (let s of emailSubs) {
+    let linkedDid = s.identities?.atp_did ?? undefined;
+    let existing = linkedDid ? byDid.get(linkedDid) : undefined;
+    if (existing) {
+      existing.email = s.email;
+      continue;
+    }
+    emailOnly.push({
+      key: `email:${s.id}`,
+      did: linkedDid,
+      handle: s.identities?.bsky_profiles?.handle ?? undefined,
+      email: s.email,
+      created_at: s.created_at,
+    });
+  }
+  let subscribers: MergedSubscriber[] = [...byDid.values(), ...emailOnly];
 
   // useEffect(() => {
   //   const allSubscribersSelected = subscribers.every((subscriber) =>
@@ -123,25 +158,16 @@ export function PublicationSubscribers(props: {
       <hr className="mb-2 border-border " />
       <div className="subscriberListContent flex gap-3 flex-col ">
         {subscribers
-          .sort((a, b) => {
-            return b.created_at.localeCompare(a.created_at);
-          })
-          .map((subscriber, index) => {
-            if (!subscriber.identities?.bsky_profiles) return null;
-            let handle = subscriber.identities?.bsky_profiles.handle;
-            let did = subscriber.identities?.bsky_profiles.did;
-            let profile = subscriber.identities?.bsky_profiles
-              ?.record as AppBskyActorProfile.Record | null;
-            if (!profile) return null;
-            return (
-              <SubscriberListItem
-                key={`${subscriber.identities.bsky_profiles?.did}`}
-                handle={handle ? handle : undefined}
-                did={`${subscriber.identities.bsky_profiles?.did}`}
-                createdAt={subscriber.created_at}
-              />
-            );
-          })}
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))
+          .map((subscriber) => (
+            <SubscriberListItem
+              key={subscriber.key}
+              handle={subscriber.handle}
+              did={subscriber.did}
+              email={subscriber.email}
+              createdAt={subscriber.created_at}
+            />
+          ))}
       </div>
     </div>
   );
@@ -150,59 +176,34 @@ export function PublicationSubscribers(props: {
 const SubscriberListItem = (props: {
   handle: string | undefined;
   did: string | undefined;
+  email: string | undefined;
   createdAt: string;
 }) => {
   return (
-    // <Checkbox
-    //   className="!font-normal"
-    //   checked={props.checked}
-    //   onChange={() => {
-    //     if (props.checked === false) {
-    //       const newCheckedSubscribers = [
-    //         ...props.checkedSubscribers,
-    //         {
-    //           email: props.email,
-    //           did: props.did,
-    //         },
-    //       ];
-    //       props.setCheckedSubscribers(newCheckedSubscribers);
-    //     } else {
-    //       const newCheckedSubscribers = props.checkedSubscribers.filter(
-    //         (subscriber) =>
-    //           !(
-    //             subscriber.email === props.email && subscriber.did === props.did
-    //           ),
-    //       );
-    //       props.setCheckedSubscribers(newCheckedSubscribers);
-    //     }
-    //   }}
-    // >
-    <>
-      <div className="flex items-end flex-row gap-2 w-full">
-        {/*<a
-            target="_blank"
-            href={`mailto:${props.email}`}
-            className="font-bold  text-primary"
-          >
-            {props.email}
-          </a>
-
-          {props.handle && props.email && (
-            <Separator classname="sm:block hidden" />
-          )}*/}
-        {props.handle && (
-          <a
-            target="_blank"
-            href={`https://bsky.app/profile/${props.did}`}
-            className={"font-bold"}
-          >
-            @{props.handle}
-          </a>
-        )}
-        <SubscriberDate createdAt={props.createdAt} />
-      </div>
-    </>
-    // </Checkbox>
+    <div className="flex items-end flex-row gap-2 w-full">
+      {props.handle && (
+        <a
+          target="_blank"
+          href={`https://bsky.app/profile/${props.did}`}
+          className="font-bold"
+        >
+          @{props.handle}
+        </a>
+      )}
+      {props.handle && props.email && (
+        <Separator classname="sm:block hidden" />
+      )}
+      {props.email && (
+        <a
+          target="_blank"
+          href={`mailto:${props.email}`}
+          className="font-bold text-primary"
+        >
+          {props.email}
+        </a>
+      )}
+      <SubscriberDate createdAt={props.createdAt} />
+    </div>
   );
 };
 

@@ -44,6 +44,7 @@ export const get_publication_data = makeRoute({
           recommends_on_documents(count)
         )),
         publication_subscriptions(*, identities(bsky_profiles(*))),
+        publication_email_subscribers(*, identities(atp_did, bsky_profiles(*))),
         publication_domains(*),
         publication_newsletter_settings(enabled),
         leaflets_in_publications(*,
