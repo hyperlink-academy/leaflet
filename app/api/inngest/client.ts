@@ -96,6 +96,13 @@ export type Events = {
       customerId: string;
     };
   };
+  "newsletter/post.send.requested": {
+    data: {
+      publication_uri: string;
+      document_uri: string;
+      root_entity: string;
+    };
+  };
 };
 
 // Create a client to send and receive events

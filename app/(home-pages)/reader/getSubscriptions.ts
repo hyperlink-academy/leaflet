@@ -30,7 +30,7 @@ export async function getSubscriptions(
   let query = supabaseServerClient
     .from("publication_subscriptions")
     .select(
-      `*, publications(*, publication_subscriptions(*), documents_in_publications(*, documents(*)))`,
+      `*, publications(*, publication_subscriptions(*), publication_newsletter_settings(enabled), documents_in_publications(*, documents(*)))`,
     )
     .order(`created_at`, { ascending: false })
     .order(`uri`, { ascending: false })
@@ -85,6 +85,7 @@ export type PublicationSubscription = {
   authorProfile?: { handle: string };
   record: NormalizedPublication;
   publication_subscriptions: { identity: string }[];
+  publication_newsletter_settings: { enabled: boolean } | null;
   uri: string;
   documents_in_publications: {
     documents: { data?: Json; sort_date: string } | null;

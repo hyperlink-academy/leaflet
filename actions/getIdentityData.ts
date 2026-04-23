@@ -22,6 +22,7 @@ export async function uncachedGetIdentityData() {
             bsky_profiles(*),
             notifications(count),
             publication_subscriptions(*),
+            publication_email_subscribers(publication, state),
             custom_domains!custom_domains_identity_id_fkey(publication_domains(*, publications(name)), custom_domain_routes(*), *),
             home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*,
                               entity_sets(entities(facts(*)))

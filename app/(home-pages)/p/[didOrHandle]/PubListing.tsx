@@ -1,9 +1,6 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
 import { PublicationSubscription } from "app/(home-pages)/reader/getSubscriptions";
-import { dummy } from "app/lish/[did]/[publication]/[rkey]/PostPubInfo";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
 import { PubIcon } from "components/ActionBar/Publications";
 import { SubscribeButton } from "components/Subscribe/SubscribeButton";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
@@ -24,6 +21,7 @@ export const PubListing = (props: PublicationSubscription) => {
   let backgroundImageRepeat = record?.theme?.backgroundImage?.repeat;
   let backgroundImageSize = record?.theme?.backgroundImage?.width || 500;
   if (!record) return null;
+
   return (
     <BaseThemeProvider {...theme} local>
       <div
@@ -66,13 +64,14 @@ export const PubListing = (props: PublicationSubscription) => {
             </p>
           </div>
           <div className="mt-3 mx-auto">
-            {/*<SubscribeButton autoFocus {...dummy} />*/}
-            <SubscribeWithBluesky
-              compact
-              pub_uri={props.uri}
-              pubName={props.record.name}
-              subscribers={props.publication_subscriptions || []}
-              base_url={getPublicationURL({ ...props })}
+            <SubscribeButton
+              autoFocus
+              publicationUri={props.uri}
+              publicationName={record.name}
+              publicationDescription={record.description}
+              newsletterMode={
+                props.publication_newsletter_settings?.enabled ?? false
+              }
             />
           </div>
         </div>

@@ -304,7 +304,7 @@ export function BlueskyPostEditorProsemirror(props: {
       />
       {editorState?.doc.textContent.length === 0 && (
         <div className="italic text-tertiary absolute top-0 left-0 pointer-events-none">
-          Write a post to share your writing!
+          post something...
         </div>
       )}
       <div

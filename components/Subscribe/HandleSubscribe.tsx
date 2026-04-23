@@ -1,8 +1,14 @@
 "use client";
 import { ButtonPrimary } from "components/Buttons";
-import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import Link from "next/link";
+import { useState } from "react";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import { subscribeToPublication } from "app/lish/subscribeToPublication";
+import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
+import { useToaster } from "components/Toast";
+import { DotLoader } from "components/utils/DotLoader";
+import type { OAuthSessionError } from "src/atproto-oauth";
 import { HandleInput } from "./HandleInput";
 const apps = [
   { name: "Leaflet", logo: "/logos/leaflet.svg" },
@@ -31,37 +37,102 @@ import { Separator } from "components/Layout";
 
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
+  publicationUri: string;
+  onSubscribed?: () => void;
   user: {
     loggedIn: boolean;
     email: string | undefined;
     handle: string | undefined;
   };
 }) => {
+  let toaster = useToaster();
+  let [loading, setLoading] = useState(false);
+  let [subscribing, setSubscribing] = useState(false);
+  let [oauthError, setOauthError] = useState<OAuthSessionError | null>(null);
+
   if (props.user.loggedIn && props.user.handle) {
     return (
-      <ButtonPrimary className="mx-auto max-w-full">
-        <span className="shrink-0">Subscribe as</span>
-        <span className="flex gap-1 items-center max-w-full grow min-w-0">
-          <div className="w-4 h-4 shrink-0 rounded-full bg-test" />
+      <div className="flex flex-col gap-2">
+        <ButtonPrimary
+          className="mx-auto max-w-full"
+          disabled={subscribing}
+          onClick={async () => {
+            if (subscribing) return;
+            setSubscribing(true);
+            setOauthError(null);
+            let url = new URL(window.location.href);
+            url.searchParams.set("refreshAuth", "");
+            let result = await subscribeToPublication(
+              props.publicationUri,
+              url.toString(),
+            );
+            if (!result.success) {
+              if (isOAuthSessionError(result.error))
+                setOauthError(result.error);
+              setSubscribing(false);
+              return;
+            }
+            toaster({
+              content: <div>You're Subscribed!</div>,
+              type: "success",
+            });
+            props.onSubscribed?.();
+            setSubscribing(false);
+          }}
+        >
+          {subscribing ? (
+            <DotLoader />
+          ) : (
+            <>
+              <span className="shrink-0">Subscribe as</span>
+              <span className="flex gap-1 items-center max-w-full grow min-w-0">
+                <div className="w-4 h-4 shrink-0 rounded-full bg-test" />
 
-          <div className="grow truncate">{props.user.handle}</div>
-        </span>
-      </ButtonPrimary>
+                <div className="grow truncate">{props.user.handle}</div>
+              </span>
+            </>
+          )}
+        </ButtonPrimary>
+        {oauthError && (
+          <OAuthErrorMessage
+            error={oauthError}
+            className="text-center text-sm text-accent-1"
+          />
+        )}
+      </div>
     );
   } else
     return (
       <div className="max-w-sm mx-auto w-full ">
-        <HandleInput autoFocus={props.autoFocus} />
-        <div className="flex gap-2 justify-center items-center mx-auto pt-0.5 ">
+        <HandleInput
+          autoFocus={props.autoFocus}
+          loading={loading}
+          onSubmit={(handle) => {
+            let trimmed = handle.trim();
+            if (!trimmed) return;
+            setLoading(true);
+            let action = encodeActionToSearchParam({
+              action: "subscribe",
+              publication: props.publicationUri,
+            });
+            let url = new URL(window.location.href);
+            url.searchParams.set("refreshAuth", "");
+            let redirectUrl = encodeURIComponent(url.toString());
+            window.location.href = `/api/oauth/login?handle=${encodeURIComponent(trimmed)}&redirect_url=${redirectUrl}&action=${action}`;
+          }}
+          action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+            Subscribe
+          </div>
+        />
+        <div className=" pt-1 ">
           <AtmosphericHandleInfo />
-          <Separator classname="h-3! border-accent-contrast!" />
-          <div className="text-sm text-accent-contrast font-bold">Create</div>
         </div>
       </div>
     );
 };
 
 export const LinkHandle = (props: { compact?: boolean }) => {
+  let [loading, setLoading] = useState(false);
   return (
     <div
       className={`flex flex-col text-center justify-center ${props.compact ? "gap-3" : "gap-4"}`}
@@ -77,34 +148,25 @@ export const LinkHandle = (props: { compact?: boolean }) => {
         </div>
         <AtmosphericHandleInfo />
       </div>
-      <HandleInputandOAuth link compact />
-    </div>
-  );
-};
-
-export const HandleInputandOAuth = (props: {
-  link?: boolean;
-  compact?: boolean;
-}) => {
-  return (
-    <div className="handleInputAndOAuth flex flex-col">
-      <HandleInput action="link" />
-      <div
-        className={`${props.compact ? "mt-1 mb-2 text-xs" : "text-sm mt-2 mb-3"} w-full flex gap-2 items-center`}
-      >
-        <hr className="grow border-border-light" />
-        <div className="shrink-0 text-tertiary">
-          or {props.link ? "link with" : "sign in via"}
-        </div>
-        <hr className="grow border-border-light" />
+      <div className="text-base">
+        <HandleInput
+          loading={loading}
+          onSubmit={(handle) => {
+            let trimmed = handle.trim();
+            if (!trimmed) return;
+            setLoading(true);
+            let url = new URL(window.location.href);
+            url.searchParams.set("refreshAuth", "");
+            let redirectUrl = encodeURIComponent(url.toString());
+            window.location.href = `/api/oauth/login?handle=${encodeURIComponent(trimmed)}&redirect_url=${redirectUrl}`;
+          }}
+          action={
+            <div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+              Link
+            </div>
+          }
+        />
       </div>
-      <ButtonPrimary
-        compact={props.compact}
-        className={`${props.compact && "text-sm"} `}
-        fullWidth
-      >
-        <BlueskyTiny /> Bluesky
-      </ButtonPrimary>
     </div>
   );
 };
@@ -138,7 +200,7 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
           props.trigger
         ) : (
           <div className="text-accent-contrast text-sm">
-            What's the Atmosphere
+            What's the Atmosphere?
           </div>
         )
       }

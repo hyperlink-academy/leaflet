@@ -73,7 +73,9 @@ export const LoginContent = (props: {
     } catch (e) {
       toaster({
         content: (
-          <div className="font-bold">Could not send email — please try again</div>
+          <div className="font-bold">
+            Could not send email — please try again
+          </div>
         ),
         type: "error",
       });
@@ -145,7 +147,14 @@ export const LoginContent = (props: {
               loading={loading}
               onSubmit={(handle) => {
                 setLoading(true);
-                const redirectUrl = props.redirectRoute || "/";
+                let redirectUrl: string;
+                if (props.redirectRoute) {
+                  redirectUrl = props.redirectRoute;
+                } else {
+                  let url = new URL(window.location.href);
+                  url.searchParams.set("refreshAuth", "");
+                  redirectUrl = url.toString();
+                }
                 window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}`;
               }}
             />
@@ -202,6 +211,7 @@ export const LoginContent = (props: {
             emailValue={loginEmail}
             loading={loading}
             onSubmit={handleCodeSubmit}
+            onBack={() => setState("email log in")}
           />
         ) : (
           <div className="text-center text-sm">

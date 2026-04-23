@@ -1,50 +1,29 @@
 "use server";
 
-import * as Y from "yjs";
-import * as base64 from "base64-js";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import {
   AtpBaseClient,
-  PubLeafletBlocksHeader,
-  PubLeafletBlocksImage,
-  PubLeafletBlocksText,
-  PubLeafletBlocksUnorderedList,
-  PubLeafletBlocksOrderedList,
-  PubLeafletDocument,
-  SiteStandardDocument,
-  PubLeafletContent,
-  PubLeafletPagesLinearDocument,
-  PubLeafletPagesCanvas,
-  PubLeafletRichtextFacet,
-  PubLeafletBlocksWebsite,
-  PubLeafletBlocksCode,
-  PubLeafletBlocksMath,
-  PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
-  PubLeafletBlocksBlockquote,
-  PubLeafletBlocksIframe,
-  PubLeafletBlocksPage,
-  PubLeafletBlocksPoll,
-  PubLeafletBlocksButton,
-  PubLeafletPollDefinition,
+  PubLeafletBlocksText,
+  PubLeafletContent,
+  PubLeafletDocument,
+  PubLeafletPagesCanvas,
+  PubLeafletPagesLinearDocument,
+  PubLeafletRichtextFacet,
+  SiteStandardDocument,
 } from "lexicons/api";
-import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
-import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
-import { ids } from "lexicons/api/lexicons";
 import { BlobRef } from "@atproto/lexicon";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
-import { $Typed, UnicodeString } from "@atproto/api";
-import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
-import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
+import { processBlocksToPages } from "src/utils/factsToPagesRecord";
 import {
   normalizeDocumentRecord,
   type NormalizedDocument,
@@ -64,6 +43,7 @@ import {
   isPublicationCollection,
   getDocumentType,
 } from "src/utils/collectionHelpers";
+import { inngest } from "app/api/inngest/client";
 
 type PublishResult =
   | { success: true; rkey: string; record: SiteStandardDocument.Record }
@@ -175,12 +155,43 @@ export async function publishToPublication({
   });
   let facts = (data as unknown as Fact<Attribute>[]) || [];
 
-  let { pages } = await processBlocksToPages(
+  const uploadLock = new Lock();
+  let { pages } = await processBlocksToPages({
     facts,
-    agent,
     root_entity,
-    credentialSession.did!,
-  );
+    hooks: {
+      uploadImage: async (src: string) => {
+        const data = await fetch(src);
+        if (data.status !== 200) return;
+        const binary = await data.blob();
+        return uploadLock.withLock(async () => {
+          const blob = await agent.com.atproto.repo.uploadBlob(binary, {
+            headers: { "Content-Type": binary.type },
+          });
+          return blob.data.blob;
+        });
+      },
+      uploadPoll: async (entityId, record) => {
+        // Use the entity id as the rkey so the editor can associate the poll
+        // definition with the in-document poll block.
+        const { data: pollResult } = await agent.com.atproto.repo.putRecord({
+          rkey: entityId,
+          repo: credentialSession.did!,
+          collection: record.$type,
+          record,
+          validate: false,
+        });
+        console.log(
+          await supabaseServerClient.from("atp_poll_records").upsert({
+            uri: pollResult.uri,
+            cid: pollResult.cid,
+            record: record as Json,
+          }),
+        );
+        return { uri: pollResult.uri, cid: pollResult.cid };
+      },
+    },
+  });
 
   let existingRecord: Partial<SiteStandardDocument.Record> = {};
   const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
@@ -381,656 +392,43 @@ export async function publishToPublication({
     );
   }
 
+  // Fire newsletter broadcast on first publish to a newsletter-enabled pub.
+  // The composite PK on publication_post_sends is the real idempotency guard —
+  // ignoreDuplicates makes re-publishes and concurrent runs a no-op.
+  if (publication_uri && !existingDocUri) {
+    const { data: settings } = await supabaseServerClient
+      .from("publication_newsletter_settings")
+      .select("enabled")
+      .eq("publication", publication_uri)
+      .maybeSingle();
+    if (settings?.enabled) {
+      const { data: inserted } = await supabaseServerClient
+        .from("publication_post_sends")
+        .upsert(
+          {
+            publication: publication_uri,
+            document: result.uri,
+            status: "pending",
+          },
+          { onConflict: "publication,document", ignoreDuplicates: true },
+        )
+        .select();
+      if (inserted && inserted.length > 0) {
+        await inngest.send({
+          name: "newsletter/post.send.requested",
+          data: {
+            publication_uri,
+            document_uri: result.uri,
+            root_entity,
+          },
+        });
+      }
+    }
+  }
+
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
 }
 
-async function processBlocksToPages(
-  facts: Fact<any>[],
-  agent: AtpBaseClient,
-  root_entity: string,
-  did: string,
-) {
-  let scan = scanIndexLocal(facts);
-  let pages: {
-    id: string;
-    blocks:
-      | PubLeafletPagesLinearDocument.Block[]
-      | PubLeafletPagesCanvas.Block[];
-    type: "doc" | "canvas";
-  }[] = [];
-
-  // Create a lock to serialize image uploads
-  const uploadLock = new Lock();
-
-  let firstEntity = scan.eav(root_entity, "root/page")?.[0];
-  if (!firstEntity) throw new Error("No root page");
-
-  // Check if the first page is a canvas or linear document
-  let [pageType] = scan.eav(firstEntity.data.value, "page/type");
-
-  if (pageType?.data.value === "canvas") {
-    // First page is a canvas
-    let canvasBlocks = await canvasBlocksToRecord(firstEntity.data.value, did);
-    pages.unshift({
-      id: firstEntity.data.value,
-      blocks: canvasBlocks,
-      type: "canvas",
-    });
-  } else {
-    // First page is a linear document
-    let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
-    let b = await blocksToRecord(blocks, did);
-    pages.unshift({
-      id: firstEntity.data.value,
-      blocks: b,
-      type: "doc",
-    });
-  }
-
-  return { pages };
-
-  async function uploadImage(src: string) {
-    let data = await fetch(src);
-    if (data.status !== 200) return;
-    let binary = await data.blob();
-    return uploadLock.withLock(async () => {
-      let blob = await agent.com.atproto.repo.uploadBlob(binary, {
-        headers: { "Content-Type": binary.type },
-      });
-      return blob.data.blob;
-    });
-  }
-  async function blocksToRecord(
-    blocks: Block[],
-    did: string,
-  ): Promise<PubLeafletPagesLinearDocument.Block[]> {
-    let parsedBlocks = parseBlocksToList(blocks);
-    return (
-      await Promise.all(
-        parsedBlocks.map(async (blockOrList) => {
-          if (blockOrList.type === "block") {
-            let alignmentValue = scan.eav(
-              blockOrList.block.value,
-              "block/text-alignment",
-            )[0]?.data.value;
-            let alignment: ExcludeString<
-              PubLeafletPagesLinearDocument.Block["alignment"]
-            > =
-              alignmentValue === "center"
-                ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
-                : alignmentValue === "right"
-                  ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
-                  : alignmentValue === "justify"
-                    ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
-                    : alignmentValue === "left"
-                      ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
-                      : undefined;
-            let b = await blockToRecord(blockOrList.block, did);
-            if (!b) return [];
-            let block: PubLeafletPagesLinearDocument.Block = {
-              $type: "pub.leaflet.pages.linearDocument#block",
-              block: b,
-            };
-            if (alignment) block.alignment = alignment;
-            return [block];
-          } else {
-            let runs = splitListByStyle(blockOrList.children);
-            let blocks = await Promise.all(
-              runs.map(async (run) => {
-                if (run.style === "ordered") {
-                  let block: PubLeafletPagesLinearDocument.Block = {
-                    $type: "pub.leaflet.pages.linearDocument#block",
-                    block: {
-                      $type: "pub.leaflet.blocks.orderedList",
-                      startIndex:
-                        run.children[0].block.listData?.listStart || 1,
-                      children: await orderedChildrenToRecord(
-                        run.children,
-                        did,
-                      ),
-                    },
-                  };
-                  return block;
-                } else {
-                  let block: PubLeafletPagesLinearDocument.Block = {
-                    $type: "pub.leaflet.pages.linearDocument#block",
-                    block: {
-                      $type: "pub.leaflet.blocks.unorderedList",
-                      children: await unorderedChildrenToRecord(
-                        run.children,
-                        did,
-                      ),
-                    },
-                  };
-                  return block;
-                }
-              }),
-            );
-            return blocks;
-          }
-        }),
-      )
-    ).flat();
-  }
-
-  function splitListByStyle(children: List[]) {
-    let runs: { style: "ordered" | "unordered"; children: List[] }[] = [];
-    for (let child of children) {
-      let style: "ordered" | "unordered" =
-        child.block.listData?.listStyle === "ordered"
-          ? "ordered"
-          : "unordered";
-      let last = runs[runs.length - 1];
-      if (last && last.style === style) {
-        last.children.push(child);
-      } else {
-        runs.push({ style, children: [child] });
-      }
-    }
-    return runs;
-  }
-
-  async function unorderedChildrenToRecord(
-    children: List[],
-    did: string,
-  ): Promise<PubLeafletBlocksUnorderedList.ListItem[]> {
-    return (
-      await Promise.all(
-        children.map(async (child) => {
-          let content = await blockToRecord(child.block, did);
-          if (!content) return [];
-          let record: PubLeafletBlocksUnorderedList.ListItem = {
-            $type: "pub.leaflet.blocks.unorderedList#listItem",
-            content,
-            ...(child.block.listData?.checklist && {
-              checked: child.block.listData.checked ?? false,
-            }),
-          };
-          let sameStyle = child.children.filter(
-            (c) => c.block.listData?.listStyle !== "ordered",
-          );
-          let diffStyle = child.children.filter(
-            (c) => c.block.listData?.listStyle === "ordered",
-          );
-          if (sameStyle.length > 0) {
-            record.children = await unorderedChildrenToRecord(sameStyle, did);
-          }
-          if (diffStyle.length > 0) {
-            record.orderedListChildren = {
-              $type: "pub.leaflet.blocks.orderedList",
-              children: await orderedChildrenToRecord(diffStyle, did),
-            };
-          }
-          return record;
-        }),
-      )
-    ).flat();
-  }
-
-  async function orderedChildrenToRecord(
-    children: List[],
-    did: string,
-  ): Promise<PubLeafletBlocksOrderedList.ListItem[]> {
-    return (
-      await Promise.all(
-        children.map(async (child) => {
-          let content = await blockToRecord(child.block, did);
-          if (!content) return [];
-          let record: PubLeafletBlocksOrderedList.ListItem = {
-            $type: "pub.leaflet.blocks.orderedList#listItem",
-            content,
-            ...(child.block.listData?.checklist && {
-              checked: child.block.listData.checked ?? false,
-            }),
-          };
-          let sameStyle = child.children.filter(
-            (c) => c.block.listData?.listStyle === "ordered",
-          );
-          let diffStyle = child.children.filter(
-            (c) => c.block.listData?.listStyle !== "ordered",
-          );
-          if (sameStyle.length > 0) {
-            record.children = await orderedChildrenToRecord(sameStyle, did);
-          }
-          if (diffStyle.length > 0) {
-            record.unorderedListChildren = {
-              $type: "pub.leaflet.blocks.unorderedList",
-              children: await unorderedChildrenToRecord(diffStyle, did),
-            };
-          }
-          return record;
-        }),
-      )
-    ).flat();
-  }
-  async function blockToRecord(b: Block, did: string) {
-    const footnoteContentResolver = (footnoteEntityID: string) => {
-      let [content] = scan.eav(footnoteEntityID, "block/text");
-      if (!content) return { plaintext: "", facets: [] as PubLeafletRichtextFacet.Main[] };
-      let doc = new Y.Doc();
-      const update = base64.toByteArray(content.data.value);
-      Y.applyUpdate(doc, update);
-      let nodes = doc.getXmlElement("prosemirror").toArray();
-      let plaintext = YJSFragmentToString(nodes[0]);
-      let { facets } = YJSFragmentToFacets(nodes[0]);
-      return { plaintext, facets };
-    };
-    const getBlockContent = (b: string) => {
-      let [content] = scan.eav(b, "block/text");
-      if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
-      let doc = new Y.Doc();
-      const update = base64.toByteArray(content.data.value);
-      Y.applyUpdate(doc, update);
-      let nodes = doc.getXmlElement("prosemirror").toArray();
-      let stringValue = YJSFragmentToString(nodes[0]);
-      let { facets } = YJSFragmentToFacets(nodes[0], 0, footnoteContentResolver);
-      return [stringValue, facets] as const;
-    };
-    if (b.type === "card") {
-      let [page] = scan.eav(b.value, "block/card");
-      if (!page) return;
-      let [pageType] = scan.eav(page.data.value, "page/type");
-
-      if (pageType?.data.value === "canvas") {
-        let canvasBlocks = await canvasBlocksToRecord(page.data.value, did);
-        pages.push({
-          id: page.data.value,
-          blocks: canvasBlocks,
-          type: "canvas",
-        });
-      } else {
-        let blocks = getBlocksWithTypeLocal(facts, page.data.value);
-        pages.push({
-          id: page.data.value,
-          blocks: await blocksToRecord(blocks, did),
-          type: "doc",
-        });
-      }
-
-      let block: $Typed<PubLeafletBlocksPage.Main> = {
-        $type: "pub.leaflet.blocks.page",
-        id: page.data.value,
-      };
-      return block;
-    }
-
-    if (b.type === "bluesky-post") {
-      let [post] = scan.eav(b.value, "block/bluesky-post");
-      if (!post || !post.data.value.post) return;
-      let [hostFact] = scan.eav(b.value, "bluesky-post/host");
-      let block: $Typed<PubLeafletBlocksBskyPost.Main> = {
-        $type: ids.PubLeafletBlocksBskyPost,
-        postRef: {
-          uri: post.data.value.post.uri,
-          cid: post.data.value.post.cid,
-        },
-        clientHost: hostFact?.data.value,
-      };
-      return block;
-    }
-    if (b.type === "horizontal-rule") {
-      let block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
-        $type: ids.PubLeafletBlocksHorizontalRule,
-      };
-      return block;
-    }
-
-    if (b.type === "heading") {
-      let [headingLevel] = scan.eav(b.value, "block/heading-level");
-
-      let [stringValue, facets] = getBlockContent(b.value);
-      let block: $Typed<PubLeafletBlocksHeader.Main> = {
-        $type: "pub.leaflet.blocks.header",
-        level: Math.floor(headingLevel?.data.value || 1),
-        plaintext: stringValue,
-        ...(facets.length > 0 && { facets }),
-      };
-      return block;
-    }
-
-    if (b.type === "blockquote") {
-      let [stringValue, facets] = getBlockContent(b.value);
-      let block: $Typed<PubLeafletBlocksBlockquote.Main> = {
-        $type: ids.PubLeafletBlocksBlockquote,
-        plaintext: stringValue,
-        ...(facets.length > 0 && { facets }),
-      };
-      return block;
-    }
-
-    if (b.type == "text") {
-      let [stringValue, facets] = getBlockContent(b.value);
-      let [textSize] = scan.eav(b.value, "block/text-size");
-      let block: $Typed<PubLeafletBlocksText.Main> = {
-        $type: ids.PubLeafletBlocksText,
-        plaintext: stringValue,
-        ...(facets.length > 0 && { facets }),
-        ...(textSize && { textSize: textSize.data.value }),
-      };
-      return block;
-    }
-    if (b.type === "embed") {
-      let [url] = scan.eav(b.value, "embed/url");
-      let [height] = scan.eav(b.value, "embed/height");
-      let [aspectRatio] = scan.eav(b.value, "embed/aspect-ratio");
-      if (!url) return;
-      let block: $Typed<PubLeafletBlocksIframe.Main> = {
-        $type: "pub.leaflet.blocks.iframe",
-        url: url.data.value,
-        height: Math.floor(height?.data.value || 600),
-      };
-      if (aspectRatio) {
-        let [w, h] = aspectRatio.data.value.split("/").map(Number);
-        if (w && h) {
-          block.aspectRatio = { width: w, height: h };
-        }
-      }
-      return block;
-    }
-    if (b.type == "image") {
-      let [image] = scan.eav(b.value, "block/image");
-      if (!image) return;
-      let [altText] = scan.eav(b.value, "image/alt");
-      let [fullBleed] = scan.eav(b.value, "image/full-bleed");
-      let blobref = await uploadImage(image.data.src);
-      if (!blobref) return;
-      let block: $Typed<PubLeafletBlocksImage.Main> = {
-        $type: "pub.leaflet.blocks.image",
-        image: blobref,
-        aspectRatio: {
-          height: Math.floor(image.data.height),
-          width: Math.floor(image.data.width),
-        },
-        alt: altText ? altText.data.value : undefined,
-        fullBleed: fullBleed?.data.value || undefined,
-      };
-      return block;
-    }
-    if (b.type === "link") {
-      let [previewImage] = scan.eav(b.value, "link/preview");
-      let [description] = scan.eav(b.value, "link/description");
-      let [src] = scan.eav(b.value, "link/url");
-      if (!src) return;
-      let blobref = previewImage
-        ? await uploadImage(previewImage?.data.src)
-        : undefined;
-      let [title] = scan.eav(b.value, "link/title");
-      let block: $Typed<PubLeafletBlocksWebsite.Main> = {
-        $type: "pub.leaflet.blocks.website",
-        previewImage: blobref,
-        src: src.data.value,
-        description: description?.data.value,
-        title: title?.data.value,
-      };
-      return block;
-    }
-    if (b.type === "code") {
-      let [language] = scan.eav(b.value, "block/code-language");
-      let [code] = scan.eav(b.value, "block/code");
-      let [theme] = scan.eav(root_entity, "theme/code-theme");
-      let block: $Typed<PubLeafletBlocksCode.Main> = {
-        $type: "pub.leaflet.blocks.code",
-        language: language?.data.value,
-        plaintext: code?.data.value || "",
-        syntaxHighlightingTheme: theme?.data.value,
-      };
-      return block;
-    }
-    if (b.type === "math") {
-      let [math] = scan.eav(b.value, "block/math");
-      let block: $Typed<PubLeafletBlocksMath.Main> = {
-        $type: "pub.leaflet.blocks.math",
-        tex: math?.data.value || "",
-      };
-      return block;
-    }
-    if (b.type === "poll") {
-      // Get poll options from the entity
-      let pollOptions = scan.eav(b.value, "poll/options");
-      let options: PubLeafletPollDefinition.Option[] = pollOptions.map(
-        (opt) => {
-          let optionName = scan.eav(opt.data.value, "poll-option/name")?.[0];
-          return {
-            $type: "pub.leaflet.poll.definition#option",
-            text: optionName?.data.value || "",
-          };
-        },
-      );
-
-      // Create the poll definition record
-      let pollRecord: PubLeafletPollDefinition.Record = {
-        $type: "pub.leaflet.poll.definition",
-        name: "Poll", // Default name, can be customized
-        options,
-      };
-
-      // Upload the poll record
-      let { data: pollResult } = await agent.com.atproto.repo.putRecord({
-        //use the entity id as the rkey so we can associate it in the editor
-        rkey: b.value,
-        repo: did,
-        collection: pollRecord.$type,
-        record: pollRecord,
-        validate: false,
-      });
-
-      // Optimistically write poll definition to database
-      console.log(
-        await supabaseServerClient.from("atp_poll_records").upsert({
-          uri: pollResult.uri,
-          cid: pollResult.cid,
-          record: pollRecord as Json,
-        }),
-      );
-
-      // Return a poll block with reference to the poll record
-      let block: $Typed<PubLeafletBlocksPoll.Main> = {
-        $type: "pub.leaflet.blocks.poll",
-        pollRef: {
-          uri: pollResult.uri,
-          cid: pollResult.cid,
-        },
-      };
-      return block;
-    }
-    if (b.type === "button") {
-      let [text] = scan.eav(b.value, "button/text");
-      let [url] = scan.eav(b.value, "button/url");
-      if (!text || !url) return;
-      let block: $Typed<PubLeafletBlocksButton.Main> = {
-        $type: "pub.leaflet.blocks.button",
-        text: text.data.value,
-        url: url.data.value,
-      };
-      return block;
-    }
-    return;
-  }
-
-  async function canvasBlocksToRecord(
-    pageID: string,
-    did: string,
-  ): Promise<PubLeafletPagesCanvas.Block[]> {
-    let canvasBlocks = scan.eav(pageID, "canvas/block");
-    return (
-      await Promise.all(
-        canvasBlocks.map(async (canvasBlock) => {
-          let blockEntity = canvasBlock.data.value;
-          let position = canvasBlock.data.position;
-
-          // Get the block content
-          let blockType = scan.eav(blockEntity, "block/type")?.[0];
-          if (!blockType) return null;
-
-          let block: Block = {
-            type: blockType.data.value,
-            value: blockEntity,
-            parent: pageID,
-            position: "",
-            factID: canvasBlock.id,
-          };
-
-          let content = await blockToRecord(block, did);
-          if (!content) return null;
-
-          // Get canvas-specific properties
-          let width =
-            scan.eav(blockEntity, "canvas/block/width")?.[0]?.data.value || 360;
-          let rotation = scan.eav(blockEntity, "canvas/block/rotation")?.[0]
-            ?.data.value;
-
-          let canvasBlockRecord: PubLeafletPagesCanvas.Block = {
-            $type: "pub.leaflet.pages.canvas#block",
-            block: content,
-            x: Math.floor(position.x),
-            y: Math.floor(position.y),
-            width: Math.floor(width),
-            ...(rotation !== undefined && { rotation: Math.floor(rotation) }),
-          };
-
-          return canvasBlockRecord;
-        }),
-      )
-    ).filter((b): b is PubLeafletPagesCanvas.Block => b !== null);
-  }
-}
-
-function YJSFragmentToFacets(
-  node: Y.XmlElement | Y.XmlText | Y.XmlHook,
-  byteOffset: number = 0,
-  footnoteContentResolver?: (footnoteEntityID: string) => { plaintext: string; facets: PubLeafletRichtextFacet.Main[] },
-): { facets: PubLeafletRichtextFacet.Main[]; byteLength: number } {
-  if (node.constructor === Y.XmlElement) {
-    // Handle footnote inline nodes
-    if (node.nodeName === "footnote") {
-      const footnoteEntityID = node.getAttribute("footnoteEntityID") || "";
-      const placeholder = "*";
-      const unicodestring = new UnicodeString(placeholder);
-      let footnoteContent = footnoteContentResolver?.(footnoteEntityID);
-      const facet: PubLeafletRichtextFacet.Main = {
-        index: {
-          byteStart: byteOffset,
-          byteEnd: byteOffset + unicodestring.length,
-        },
-        features: [
-          {
-            $type: "pub.leaflet.richtext.facet#footnote",
-            footnoteId: footnoteEntityID,
-            contentPlaintext: footnoteContent?.plaintext || "",
-            ...(footnoteContent?.facets?.length
-              ? { contentFacets: footnoteContent.facets }
-              : {}),
-          },
-        ],
-      };
-      return { facets: [facet], byteLength: unicodestring.length };
-    }
-
-    // Handle inline mention nodes
-    if (node.nodeName === "didMention") {
-      const text = node.getAttribute("text") || "";
-      const unicodestring = new UnicodeString(text);
-      const facet: PubLeafletRichtextFacet.Main = {
-        index: {
-          byteStart: byteOffset,
-          byteEnd: byteOffset + unicodestring.length,
-        },
-        features: [
-          {
-            $type: "pub.leaflet.richtext.facet#didMention",
-            did: node.getAttribute("did"),
-          },
-        ],
-      };
-      return { facets: [facet], byteLength: unicodestring.length };
-    }
-
-    if (node.nodeName === "atMention") {
-      const text = node.getAttribute("text") || "";
-      const unicodestring = new UnicodeString(text);
-      const facet: PubLeafletRichtextFacet.Main = {
-        index: {
-          byteStart: byteOffset,
-          byteEnd: byteOffset + unicodestring.length,
-        },
-        features: [
-          {
-            $type: "pub.leaflet.richtext.facet#atMention",
-            atURI: node.getAttribute("atURI"),
-            ...(node.getAttribute("href")
-              ? { href: node.getAttribute("href") }
-              : {}),
-          },
-        ],
-      };
-      return { facets: [facet], byteLength: unicodestring.length };
-    }
-
-    if (node.nodeName === "hard_break") {
-      const unicodestring = new UnicodeString("\n");
-      return { facets: [], byteLength: unicodestring.length };
-    }
-
-    // For other elements (like paragraph), process children
-    let allFacets: PubLeafletRichtextFacet.Main[] = [];
-    let currentOffset = byteOffset;
-    for (const child of node.toArray()) {
-      const result = YJSFragmentToFacets(child, currentOffset, footnoteContentResolver);
-      allFacets.push(...result.facets);
-      currentOffset += result.byteLength;
-    }
-    return { facets: allFacets, byteLength: currentOffset - byteOffset };
-  }
-
-  if (node.constructor === Y.XmlText) {
-    let facets: PubLeafletRichtextFacet.Main[] = [];
-    let delta = node.toDelta() as Delta[];
-    let byteStart = byteOffset;
-    let totalLength = 0;
-    for (let d of delta) {
-      let unicodestring = new UnicodeString(d.insert);
-      let facet: PubLeafletRichtextFacet.Main = {
-        index: {
-          byteStart,
-          byteEnd: byteStart + unicodestring.length,
-        },
-        features: [],
-      };
-
-      if (d.attributes?.strikethrough)
-        facet.features.push({
-          $type: "pub.leaflet.richtext.facet#strikethrough",
-        });
-
-      if (d.attributes?.code)
-        facet.features.push({ $type: "pub.leaflet.richtext.facet#code" });
-      if (d.attributes?.highlight)
-        facet.features.push({ $type: "pub.leaflet.richtext.facet#highlight" });
-      if (d.attributes?.underline)
-        facet.features.push({ $type: "pub.leaflet.richtext.facet#underline" });
-      if (d.attributes?.strong)
-        facet.features.push({ $type: "pub.leaflet.richtext.facet#bold" });
-      if (d.attributes?.em)
-        facet.features.push({ $type: "pub.leaflet.richtext.facet#italic" });
-      if (d.attributes?.link)
-        facet.features.push({
-          $type: "pub.leaflet.richtext.facet#link",
-          uri: d.attributes.link.href,
-        });
-      if (facet.features.length > 0) facets.push(facet);
-      byteStart += unicodestring.length;
-      totalLength += unicodestring.length;
-    }
-    return { facets, byteLength: totalLength };
-  }
-  return { facets: [], byteLength: 0 };
-}
-
-type ExcludeString<T> = T extends string
-  ? string extends T
-    ? never
-    : T /* maybe literal, not the whole `string` */
-  : T; /* not a string */
 
 async function extractThemeFromFacts(
   facts: Fact<any>[],

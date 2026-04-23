@@ -13,3 +13,7 @@ export function useIsPro(): boolean {
 export function useCanSeePro(): boolean {
   return true;
 }
+
+export function useCanSeeNewsletterMode(): boolean {
+  return useHasEntitlement("can_see_newsletter_mode");
+}

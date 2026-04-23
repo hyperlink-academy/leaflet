@@ -39,15 +39,19 @@ export const Tag = (props: {
 export const TagSelector = (props: {
   selectedTags: string[];
   setSelectedTags: (tags: string[]) => void;
+  rightAlign?: boolean;
 }) => {
   return (
     <div className="flex flex-col gap-2 text-primary">
       <TagSearchInput
         selectedTags={props.selectedTags}
         setSelectedTags={props.setSelectedTags}
+        rightAlign={props.rightAlign}
       />
       {props.selectedTags.length > 0 ? (
-        <div className="flex flex-wrap gap-2 ">
+        <div
+          className={`flex flex-wrap gap-2 ${props.rightAlign && "justify-end"}`}
+        >
           {props.selectedTags.map((tag) => (
             <Tag
               key={tag}
@@ -62,13 +66,18 @@ export const TagSelector = (props: {
           ))}
         </div>
       ) : (
-        <div className="text-tertiary italic text-sm h-6">no tags selected</div>
+        <div
+          className={`text-tertiary italic text-sm h-6 ${props.rightAlign && "text-right"}`}
+        >
+          no tags selected
+        </div>
       )}
     </div>
   );
 };
 
 export const TagSearchInput = (props: {
+  rightAlign?: boolean;
   selectedTags: string[];
   setSelectedTags: (tags: string[]) => void;
 }) => {
@@ -203,7 +212,9 @@ export const TagSearchInput = (props: {
             }}
           />
           {props.selectedTags.length > 0 ? (
-            <div className="flex flex-wrap gap-2 pb-[6px]">
+            <div
+              className={`flex flex-wrap gap-2 pb-[6px] ${props.rightAlign && "justify-end"}`}
+            >
               {props.selectedTags.map((tag) => (
                 <Tag
                   key={tag}
@@ -218,7 +229,9 @@ export const TagSearchInput = (props: {
               ))}
             </div>
           ) : (
-            <div className="text-tertiary italic text-sm h-6">
+            <div
+              className={`text-tertiary italic text-sm h-6 ${props.rightAlign && "text-right"}`}
+            >
               no tags selected
             </div>
           )}

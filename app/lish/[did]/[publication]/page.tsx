@@ -28,6 +28,7 @@ export default async function Publication(props: {
       .select(
         `*,
         publication_subscriptions(*),
+        publication_newsletter_settings(enabled),
         documents_in_publications(documents(
           *,
           comments_on_documents(count),
