@@ -10,6 +10,9 @@ import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import type { OAuthSessionError } from "src/atproto-oauth";
 import { HandleInput } from "./HandleInput";
+import { Avatar } from "components/Avatar";
+import { useIdentityData } from "components/IdentityProvider";
+import { useRecordFromDid } from "src/utils/useRecordFromDid";
 const apps = [
   { name: "Leaflet", logo: "/logos/leaflet.svg" },
   { name: "Bluesky", logo: "/logos/bluesky.svg" },
@@ -46,6 +49,8 @@ export const SubscribeWithHandle = (props: {
   };
 }) => {
   let toaster = useToaster();
+  let { identity } = useIdentityData();
+  let { data: record } = useRecordFromDid(identity?.atp_did);
   let [loading, setLoading] = useState(false);
   let [subscribing, setSubscribing] = useState(false);
   let [oauthError, setOauthError] = useState<OAuthSessionError | null>(null);
@@ -86,7 +91,11 @@ export const SubscribeWithHandle = (props: {
             <>
               <span className="shrink-0">Subscribe as</span>
               <span className="flex gap-1 items-center max-w-full grow min-w-0">
-                <div className="w-4 h-4 shrink-0 rounded-full bg-test" />
+                <Avatar
+                  size="tiny"
+                  src={record?.avatar}
+                  displayName={record?.displayName || record?.handle}
+                />
 
                 <div className="grow truncate">{props.user.handle}</div>
               </span>
