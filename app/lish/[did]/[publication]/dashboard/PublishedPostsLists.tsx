@@ -136,6 +136,7 @@ function PublishedPostItem(props: {
             {doc.record.publishedAt ? (
               <PublishedDate dateString={doc.record.publishedAt} />
             ) : null}
+            {doc.postSend ? <PostSendStatus send={doc.postSend} /> : null}
             <InteractionPreview
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
@@ -239,4 +240,27 @@ function PublishedDate(props: { dateString: string }) {
   });
 
   return <p className="text-sm text-tertiary">Published {formattedDate}</p>;
+}
+
+function PostSendStatus(props: {
+  send: NonNullable<PublishedDocument["postSend"]>;
+}) {
+  const { status, subscriber_count } = props.send;
+  if (status === "sent") {
+    return (
+      <p className="text-sm text-tertiary">
+        Emailed{" "}
+        {subscriber_count !== null
+          ? `${subscriber_count.toLocaleString()} ${subscriber_count === 1 ? "subscriber" : "subscribers"}`
+          : "subscribers"}
+      </p>
+    );
+  }
+  if (status === "sending" || status === "pending") {
+    return <p className="text-sm text-tertiary italic">Email sending…</p>;
+  }
+  if (status === "failed") {
+    return <p className="text-sm text-accent-contrast">Email failed</p>;
+  }
+  return null;
 }

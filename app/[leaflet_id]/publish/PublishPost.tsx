@@ -1,7 +1,7 @@
 "use client";
 import { publishToPublication } from "actions/publishToPublication";
 import { DotLoader } from "components/utils/DotLoader";
-import { useState, useRef } from "react";
+import { useState, useRef, type CSSProperties } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -29,6 +29,10 @@ import {
   ThemeBackgroundProvider,
   ThemeProvider,
 } from "components/ThemeManager/ThemeProvider";
+import {
+  PublicationThemeProvider,
+  PublicationBackgroundProvider,
+} from "components/ThemeManager/PublicationThemeProvider";
 import { useEntity } from "src/replicache";
 import { LeafletContent } from "app/(home-pages)/home/LeafletList/LeafletContent";
 
@@ -42,6 +46,7 @@ type Props = {
   record?: NormalizedPublication | null;
   posts_in_pub?: number;
   newsletter_enabled?: boolean;
+  subscriberCount?: number;
   entitiesToDelete?: string[];
   hasDraft: boolean;
 };
@@ -83,6 +88,11 @@ const PublishPostForm = (
     quiet: false,
   });
   let [isLoading, setIsLoading] = useState(false);
+  const nothingSelected =
+    !shareState.bluesky &&
+    !shareState.postToReaders &&
+    !shareState.email &&
+    !shareState.quiet;
   let [oauthError, setOauthError] = useState<
     import("src/atproto-oauth").OAuthSessionError | null
   >(null);
@@ -241,6 +251,8 @@ const PublishPostForm = (
                     rootEntity={props.root_entity}
                     did={props.profile.did}
                     coverImageCid={replicacheCoverImage ?? null}
+                    publication_uri={props.publication_uri}
+                    record={props.record}
                   />
                   <hr className="border-border" />
                   <div className="flex flex-col p-2 gap-0.5">
@@ -294,6 +306,7 @@ const PublishPostForm = (
                 description={props.description}
                 record={props.record}
                 newsletter_enabled={props.newsletter_enabled}
+                subscriberCount={props.subscriberCount}
                 publication_uri={props.publication_uri}
                 root_entity={props.root_entity}
               />
@@ -311,7 +324,7 @@ const PublishPostForm = (
                   <ButtonPrimary
                     type="submit"
                     className="place-self-end h-[30px]"
-                    disabled={charCount > 300}
+                    disabled={charCount > 300 || nothingSelected}
                   >
                     {isLoading ? (
                       <DotLoader className="h-[23px]" />
@@ -339,6 +352,8 @@ const SocialPreviewImage = (props: {
   rootEntity: string;
   did: string;
   coverImageCid: string | null;
+  publication_uri?: string;
+  record?: NormalizedPublication | null;
 }) => {
   const firstPage = useEntity(props.rootEntity, "root/page")[0];
   const page = firstPage?.data.value || props.rootEntity;
@@ -353,22 +368,98 @@ const SocialPreviewImage = (props: {
     );
   }
 
+  if (props.publication_uri && props.record) {
+    return (
+      <PublicationSocialPreview
+        publication_uri={props.publication_uri}
+        record={props.record}
+        page={page}
+      />
+    );
+  }
+
+  return <EntitySocialPreview rootEntity={props.rootEntity} page={page} />;
+};
+
+const SocialPreviewFrame = (props: {
+  page: string;
+  wrapperStyle: CSSProperties;
+}) => (
+  <div
+    inert
+    className="w-full aspect-video overflow-hidden flex justify-center items-end pointer-events-none"
+  >
+    <div
+      className="leafletContentWrapper h-full w-40 sm:w-48 pt-3 overflow-clip"
+      style={props.wrapperStyle}
+    >
+      <LeafletContent entityID={props.page} isOnScreen={true} />
+    </div>
+  </div>
+);
+
+const EntitySocialPreview = (props: { rootEntity: string; page: string }) => {
+  const cardBackgroundImage = useEntity(
+    props.rootEntity,
+    "theme/card-background-image",
+  );
+  const cardBackgroundRepeat = useEntity(
+    props.rootEntity,
+    "theme/card-background-image-repeat",
+  );
+  const cardBackgroundOpacity = useEntity(
+    props.rootEntity,
+    "theme/card-background-image-opacity",
+  );
+
+  const wrapperStyle: CSSProperties = {
+    backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+    backgroundImage: cardBackgroundImage
+      ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`
+      : undefined,
+    backgroundRepeat: cardBackgroundRepeat ? "repeat" : "no-repeat",
+    backgroundPosition: "center",
+    backgroundSize: !cardBackgroundRepeat
+      ? "cover"
+      : (cardBackgroundRepeat.data.value as number) / 3,
+    opacity:
+      cardBackgroundImage?.data.src && cardBackgroundOpacity
+        ? cardBackgroundOpacity.data.value
+        : 1,
+  };
+
   return (
     <ThemeProvider local entityID={props.rootEntity} className="w-full!">
       <ThemeBackgroundProvider entityID={props.rootEntity}>
-        <div
-          inert
-          className="w-full aspect-video overflow-hidden flex items-end pointer-events-none"
-        >
-          <div
-            className="leafletContentWrapper h-full w-[60%] pt-3
-            overflow-clip mx-auto"
-          >
-            <LeafletContent entityID={page} isOnScreen={true} />
-          </div>
-        </div>
+        <SocialPreviewFrame page={props.page} wrapperStyle={wrapperStyle} />
       </ThemeBackgroundProvider>
     </ThemeProvider>
+  );
+};
+
+const PublicationSocialPreview = (props: {
+  publication_uri: string;
+  record: NormalizedPublication;
+  page: string;
+}) => {
+  const pub_creator = new AtUri(props.publication_uri).host;
+  return (
+    <PublicationThemeProvider
+      theme={props.record.theme}
+      pub_creator={pub_creator}
+    >
+      <PublicationBackgroundProvider
+        theme={props.record.theme}
+        pub_creator={pub_creator}
+      >
+        <SocialPreviewFrame
+          page={props.page}
+          wrapperStyle={{
+            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+          }}
+        />
+      </PublicationBackgroundProvider>
+    </PublicationThemeProvider>
   );
 };
 

@@ -87,7 +87,19 @@ export default async function PublishLeafletPage(props: Props) {
     decodeURIComponent((await props.searchParams).description || "");
 
   let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
-  let profile = await agent.getProfile({ actor: identity.atp_did });
+  let newsletterEnabled =
+    !!publication?.uri && !!publication.publication_newsletter_settings?.enabled;
+  let [profile, subscriberCount] = await Promise.all([
+    agent.getProfile({ actor: identity.atp_did }),
+    newsletterEnabled
+      ? supabaseServerClient
+          .from("publication_email_subscribers")
+          .select("*", { count: "exact", head: true })
+          .eq("publication", publication!.uri)
+          .eq("state", "confirmed")
+          .then(({ count }) => count ?? 0)
+      : Promise.resolve(undefined),
+  ]);
 
   // Parse entitiesToDelete from URL params
   let searchParams = await props.searchParams;
@@ -123,9 +135,8 @@ export default async function PublishLeafletPage(props: Props) {
         publication_uri={publication?.uri}
         record={normalizePublicationRecord(publication?.record)}
         posts_in_pub={publication?.documents_in_publications[0]?.count}
-        newsletter_enabled={
-          !!publication?.publication_newsletter_settings?.enabled
-        }
+        newsletter_enabled={newsletterEnabled}
+        subscriberCount={subscriberCount}
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}
       />

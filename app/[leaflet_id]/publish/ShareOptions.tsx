@@ -67,9 +67,9 @@ export function ShareOptions(props: Props) {
               <div>
                 Email{" "}
                 {props.subscriberCount !== undefined
-                  ? `${props.subscriberCount} `
+                  ? `${props.subscriberCount.toLocaleString()} `
                   : ""}
-                Subscribers
+                {props.subscriberCount === 1 ? "Subscriber" : "Subscribers"}
               </div>
             </div>
           </Checkbox>
@@ -90,10 +90,10 @@ export function ShareOptions(props: Props) {
         onChange={(e) => handleChange("postToReaders", e.target.checked)}
       >
         <div className="flex flex-col">
-          <div>Post to Readers</div>
+          <div>Show in Discover</div>
           <div className="text-sm text-tertiary font-normal">
-            This post will show up in Leaflet feeds and other Standard Site
-            enabled reader feeds
+            Show this post in Leaflet's Discover feed and other standard.site
+            reader feeds
           </div>
         </div>
       </Checkbox>
@@ -106,7 +106,7 @@ export function ShareOptions(props: Props) {
         <div className="flex flex-col">
           <div>Share on Bluesky</div>
           <div className="text-sm text-tertiary font-normal">
-            Pub subscribers will be updated via a custom Bluesky feed
+            Subscribers will be updated via a custom Bluesky feed
           </div>
         </div>
       </Checkbox>

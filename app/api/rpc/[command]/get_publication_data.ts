@@ -41,7 +41,8 @@ export const get_publication_data = makeRoute({
           *,
           comments_on_documents(count),
           document_mentions_in_bsky(count),
-          recommends_on_documents(count)
+          recommends_on_documents(count),
+          publication_post_sends(status, subscriber_count)
         )),
         publication_subscriptions(*, identities(bsky_profiles(*))),
         publication_email_subscribers(*, identities(atp_did, bsky_profiles(*))),
@@ -93,6 +94,7 @@ export const get_publication_data = makeRoute({
           mentionsCount: dip.documents.document_mentions_in_bsky[0]?.count || 0,
           recommendsCount:
             dip.documents.recommends_on_documents?.[0]?.count || 0,
+          postSend: dip.documents.publication_post_sends?.[0] || null,
         };
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
