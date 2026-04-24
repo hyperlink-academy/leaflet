@@ -300,13 +300,6 @@ export const ExpandedInteractions = (props: {
                 </ButtonSecondary>
               )}
             </div>
-            {viewer.subscribed && publication && (
-              <ManageSubscription
-                publicationUri={publication.uri}
-                newsletterMode={publication.newsletterMode}
-                user={viewer}
-              />
-            )}
           </div>
         )}
 
