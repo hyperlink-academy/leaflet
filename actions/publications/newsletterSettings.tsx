@@ -140,7 +140,12 @@ export async function setReplyToEmail(
   const sent = await sendConfirmationEmail({
     to: email,
     subject: `Your newsletter reply-to code is ${code}`,
-    template: <LeafletConfirmEmail code={code} />,
+    template: (
+      <LeafletConfirmEmail
+        code={code}
+        assetsBaseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"}
+      />
+    ),
     text: `Paste this code to verify your newsletter reply-to address:\n\n${code}\n`,
     devLogTag: "newsletter reply-to",
     code,

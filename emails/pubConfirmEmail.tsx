@@ -16,7 +16,16 @@ import { Text, Heading } from "./post";
 import { Tailwind, pixelBasedPreset } from "@react-email/components";
 import { LeafletWatermark } from "./post";
 
-export const PubConfirmEmail = (props: { code?: string }) => (
+export const PubConfirmEmail = (props: {
+  code?: string;
+  assetsBaseUrl?: string;
+}) => {
+  const base = (props.assetsBaseUrl ?? "https://leaflet.pub").replace(
+    /\/$/,
+    "",
+  );
+  const staticUrl = (filename: string) => `${base}/email-assets/${filename}`;
+  return (
   <Html>
     <Tailwind
       config={{
@@ -104,7 +113,7 @@ export const PubConfirmEmail = (props: { code?: string }) => (
                 <Img
                   width={24}
                   height={24}
-                  src="/email-assets/leaflet.png"
+                  src={staticUrl("leaflet.png")}
                   className="rounded-full"
                 />
               </Column>
@@ -126,9 +135,10 @@ export const PubConfirmEmail = (props: { code?: string }) => (
             </Container>
           </Column>
         </Row>
-        <LeafletWatermark />
+        <LeafletWatermark staticUrl={staticUrl} />
       </Body>
     </Tailwind>
   </Html>
-);
+  );
+};
 export default PubConfirmEmail;

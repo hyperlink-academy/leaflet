@@ -143,7 +143,12 @@ export async function requestPublicationEmailSubscription(
   const sent = await sendConfirmationEmail({
     to: email,
     subject: `Your subscription code is ${pendingCode}`,
-    template: <PubConfirmEmail code={pendingCode} />,
+    template: (
+      <PubConfirmEmail
+        code={pendingCode}
+        assetsBaseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"}
+      />
+    ),
     text: `Paste this code to confirm your subscription:\n\n${pendingCode}\n`,
     devLogTag: "subscriber",
     code: pendingCode,
