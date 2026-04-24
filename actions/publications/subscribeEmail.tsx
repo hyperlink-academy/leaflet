@@ -16,7 +16,10 @@ import {
   getSuppression,
   deleteSuppression,
 } from "src/utils/postmarkSuppressions";
-import { unsubscribeToPublication } from "app/lish/subscribeToPublication";
+import {
+  publishAtprotoSubscriptionForDid,
+  unsubscribeToPublication,
+} from "app/lish/subscribeToPublication";
 
 type RequestError =
   | "invalid_email"
@@ -127,7 +130,15 @@ export async function requestPublicationEmailSubscription(
     return Err("database_error");
   }
 
-  if (verifiedIdentity) return Ok({ confirmed: true });
+  if (verifiedIdentity) {
+    if (verifiedIdentity.atp_did) {
+      await publishAtprotoSubscriptionForDid(
+        verifiedIdentity.atp_did,
+        publicationUri,
+      );
+    }
+    return Ok({ confirmed: true });
+  }
 
   const sent = await sendConfirmationEmail({
     to: email,
@@ -189,6 +200,18 @@ export async function confirmPublicationEmailSubscription(
       updateError ?? eventError,
     );
     return Err("database_error");
+  }
+
+  const { data: confirmedIdentity } = await supabaseServerClient
+    .from("identities")
+    .select("atp_did")
+    .eq("id", identityId)
+    .maybeSingle();
+  if (confirmedIdentity?.atp_did) {
+    await publishAtprotoSubscriptionForDid(
+      confirmedIdentity.atp_did,
+      publicationUri,
+    );
   }
 
   return Ok(null);

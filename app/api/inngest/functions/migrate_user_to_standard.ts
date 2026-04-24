@@ -1,5 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import {
   AtpBaseClient,
@@ -30,8 +30,10 @@ async function createAuthenticatedAgent(did: string): Promise<AtpBaseClient> {
 }
 
 export const migrate_user_to_standard = inngest.createFunction(
-  { id: "migrate_user_to_standard" },
-  { event: "user/migrate-to-standard" },
+  {
+    id: "migrate_user_to_standard",
+    triggers: [events.userMigrateToStandard],
+  },
   async ({ event, step }) => {
     const { did } = event.data;
 

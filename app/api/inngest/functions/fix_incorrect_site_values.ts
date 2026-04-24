@@ -1,5 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
@@ -52,8 +52,10 @@ function buildValidSiteValues(pubUri: string): Set<string> {
  * Takes a DID as input and processes publications owned by that identity.
  */
 export const fix_incorrect_site_values = inngest.createFunction(
-  { id: "fix_incorrect_site_values" },
-  { event: "documents/fix-incorrect-site-values" },
+  {
+    id: "fix_incorrect_site_values",
+    triggers: [events.documentsFixIncorrectSiteValues],
+  },
   async ({ event, step }) => {
     const { did } = event.data;
 

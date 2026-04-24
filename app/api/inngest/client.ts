@@ -1,112 +1,103 @@
-import { Inngest } from "inngest";
+import { Inngest, eventType, staticSchema } from "inngest";
 
-import { EventSchemas } from "inngest";
-
-export type Events = {
-  "feeds/index-follows": {
-    data: {
-      did: string;
-    };
-  };
-  "appview/profile-update": {
-    data: {
-      record: any;
-      did: string;
-    };
-  };
-  "appview/index-bsky-post-mention": {
-    data: {
-      post_uri: string;
-      document_link: string;
-    };
-  };
-  "appview/come-online": { data: {} };
-  "user/migrate-to-standard": {
-    data: {
-      did: string;
-    };
-  };
-  "user/cleanup-expired-oauth-sessions": {
-    data: {};
-  };
-  "user/check-oauth-session": {
-    data: {
+// Event type definitions. In v4, the client no longer has centralized
+// schemas — each event is its own EventType, usable both as a trigger and
+// as an argument to inngest.send() via event.create().
+export const events = {
+  feedsIndexFollows: eventType("feeds/index-follows", {
+    schema: staticSchema<{ did: string }>(),
+  }),
+  appviewProfileUpdate: eventType("appview/profile-update", {
+    schema: staticSchema<{ record: any; did: string }>(),
+  }),
+  appviewIndexBskyPostMention: eventType("appview/index-bsky-post-mention", {
+    schema: staticSchema<{ post_uri: string; document_link: string }>(),
+  }),
+  appviewComeOnline: eventType("appview/come-online", {
+    schema: staticSchema<Record<string, never>>(),
+  }),
+  userMigrateToStandard: eventType("user/migrate-to-standard", {
+    schema: staticSchema<{ did: string }>(),
+  }),
+  userCleanupExpiredOauthSessions: eventType(
+    "user/cleanup-expired-oauth-sessions",
+    { schema: staticSchema<Record<string, never>>() },
+  ),
+  userCheckOauthSession: eventType("user/check-oauth-session", {
+    schema: staticSchema<{
       identityId: string;
       did: string;
       tokenCount: number;
-    };
-  };
-  "documents/fix-publication-references": {
-    data: {
-      documentUris: string[];
-    };
-  };
-  "documents/fix-incorrect-site-values": {
-    data: {
-      did: string;
-    };
-  };
-  "documents/fix-postref": {
-    data: {
-      documentUris?: string[];
-    };
-  };
-  "appview/sync-document-metadata": {
-    data: {
-      document_uri: string;
-      bsky_post_uri?: string;
-    };
-  };
-  "user/write-records-to-pds": {
-    data: {
+    }>(),
+  }),
+  documentsFixPublicationReferences: eventType(
+    "documents/fix-publication-references",
+    { schema: staticSchema<{ documentUris: string[] }>() },
+  ),
+  documentsFixIncorrectSiteValues: eventType(
+    "documents/fix-incorrect-site-values",
+    { schema: staticSchema<{ did: string }>() },
+  ),
+  documentsFixPostref: eventType("documents/fix-postref", {
+    schema: staticSchema<{ documentUris?: string[] }>(),
+  }),
+  appviewSyncDocumentMetadata: eventType("appview/sync-document-metadata", {
+    schema: staticSchema<{ document_uri: string; bsky_post_uri?: string }>(),
+  }),
+  userWriteRecordsToPds: eventType("user/write-records-to-pds", {
+    schema: staticSchema<{
       did: string;
       records: Array<{
         collection: string;
         rkey: string;
         record: unknown;
       }>;
-    };
-  };
-  "stripe/checkout.session.completed": {
-    data: {
-      sessionId: string;
-    };
-  };
-  "stripe/customer.subscription.updated": {
-    data: {
-      subscriptionId: string;
-    };
-  };
-  "stripe/customer.subscription.deleted": {
-    data: {
-      subscriptionId: string;
-    };
-  };
-  "stripe/invoice.payment.succeeded": {
-    data: {
+    }>(),
+  }),
+  stripeCheckoutSessionCompleted: eventType(
+    "stripe/checkout.session.completed",
+    { schema: staticSchema<{ sessionId: string }>() },
+  ),
+  stripeCustomerSubscriptionUpdated: eventType(
+    "stripe/customer.subscription.updated",
+    { schema: staticSchema<{ subscriptionId: string }>() },
+  ),
+  stripeCustomerSubscriptionDeleted: eventType(
+    "stripe/customer.subscription.deleted",
+    { schema: staticSchema<{ subscriptionId: string }>() },
+  ),
+  stripeInvoicePaymentSucceeded: eventType(
+    "stripe/invoice.payment.succeeded",
+    {
+      schema: staticSchema<{
+        invoiceId: string;
+        subscriptionId: string;
+        customerId: string;
+      }>(),
+    },
+  ),
+  stripeInvoicePaymentFailed: eventType("stripe/invoice.payment.failed", {
+    schema: staticSchema<{
       invoiceId: string;
       subscriptionId: string;
       customerId: string;
-    };
-  };
-  "stripe/invoice.payment.failed": {
-    data: {
-      invoiceId: string;
-      subscriptionId: string;
-      customerId: string;
-    };
-  };
-  "newsletter/post.send.requested": {
-    data: {
+    }>(),
+  }),
+  newsletterPostSendRequested: eventType("newsletter/post.send.requested", {
+    schema: staticSchema<{
       publication_uri: string;
       document_uri: string;
       root_entity: string;
-    };
-  };
+    }>(),
+  }),
 };
 
-// Create a client to send and receive events
+// Create a client to send and receive events.
+// v4 defaults to cloud mode; opt into dev mode in local development so
+// the Inngest dev server can auto-connect without a signing key.
 export const inngest = new Inngest({
   id: "leaflet",
-  schemas: new EventSchemas().fromRecord<Events>(),
+  isDev:
+    process.env.INNGEST_DEV === "1" ||
+    process.env.NODE_ENV === "development",
 });

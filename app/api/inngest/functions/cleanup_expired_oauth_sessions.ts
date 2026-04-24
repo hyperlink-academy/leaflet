@@ -1,11 +1,13 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 
 // Main function that fetches identities and publishes events for each one
 export const cleanup_expired_oauth_sessions = inngest.createFunction(
-  { id: "cleanup_expired_oauth_sessions" },
-  { event: "user/cleanup-expired-oauth-sessions" },
+  {
+    id: "cleanup_expired_oauth_sessions",
+    triggers: [events.userCleanupExpiredOauthSessions],
+  },
   async ({ step }) => {
     // Get all identities with an atp_did (OAuth users) that have at least one auth token
     const identities = await step.run("fetch-oauth-identities", async () => {
@@ -70,8 +72,10 @@ export const cleanup_expired_oauth_sessions = inngest.createFunction(
 
 // Function that checks a single identity's OAuth session and cleans up if expired
 export const check_oauth_session = inngest.createFunction(
-  { id: "check_oauth_session" },
-  { event: "user/check-oauth-session" },
+  {
+    id: "check_oauth_session",
+    triggers: [events.userCheckOauthSession],
+  },
   async ({ event, step }) => {
     const { identityId, did, tokenCount } = event.data;
 

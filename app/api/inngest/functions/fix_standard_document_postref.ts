@@ -1,5 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import {
   AtpBaseClient,
@@ -29,8 +29,10 @@ async function createAuthenticatedAgent(did: string): Promise<AtpBaseClient> {
  * if no URIs are provided.
  */
 export const fix_standard_document_postref = inngest.createFunction(
-  { id: "fix_standard_document_postref" },
-  { event: "documents/fix-postref" },
+  {
+    id: "fix_standard_document_postref",
+    triggers: [events.documentsFixPostref],
+  },
   async ({ event, step }) => {
     const { documentUris: providedUris } = event.data as {
       documentUris?: string[];

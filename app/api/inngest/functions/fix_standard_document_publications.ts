@@ -1,5 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
@@ -21,8 +21,10 @@ async function createAuthenticatedAgent(did: string): Promise<AtpBaseClient> {
  * references in their site field. Updates both the PDS record and database.
  */
 export const fix_standard_document_publications = inngest.createFunction(
-  { id: "fix_standard_document_publications" },
-  { event: "documents/fix-publication-references" },
+  {
+    id: "fix_standard_document_publications",
+    triggers: [events.documentsFixPublicationReferences],
+  },
   async ({ event, step }) => {
     const { documentUris } = event.data as { documentUris: string[] };
 

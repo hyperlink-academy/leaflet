@@ -111,6 +111,87 @@ export async function subscribeToPublication(
   };
 }
 
+// Best-effort publish of an AT Protocol subscription record for a known DID.
+// Used by the email-subscribe flow when the subscribing email is linked to an
+// atp_did: we want the user's PDS record to match their email subscription.
+// Swallows all failures — the email subscription is the source of truth and
+// must succeed regardless of whether the atproto write goes through.
+export async function publishAtprotoSubscriptionForDid(
+  atp_did: string,
+  publication: string,
+): Promise<void> {
+  try {
+    let { data: existingSubscription } = await supabaseServerClient
+      .from("publication_subscriptions")
+      .select("uri")
+      .eq("identity", atp_did)
+      .eq("publication", publication)
+      .maybeSingle();
+    if (existingSubscription) return;
+
+    const sessionResult = await restoreOAuthSession(atp_did);
+    if (!sessionResult.ok) return;
+    let credentialSession = sessionResult.value;
+    let agent = new AtpBaseClient(
+      credentialSession.fetchHandler.bind(credentialSession),
+    );
+
+    let record = await agent.site.standard.graph.subscription.create(
+      { repo: atp_did, rkey: TID.nextStr() },
+      { publication },
+    );
+    await supabaseServerClient.from("publication_subscriptions").insert({
+      uri: record.uri,
+      record,
+      publication,
+      identity: atp_did,
+    });
+
+    let publicationOwner = new AtUri(publication).host;
+    if (publicationOwner !== atp_did) {
+      let notification: Notification = {
+        id: v7(),
+        recipient: publicationOwner,
+        data: {
+          type: "subscribe",
+          subscription_uri: record.uri,
+        },
+      };
+      await supabaseServerClient.from("notifications").insert(notification);
+      await pingIdentityToUpdateNotification(publicationOwner);
+    }
+
+    let { data: existingProfile } = await supabaseServerClient
+      .from("bsky_profiles")
+      .select("did")
+      .eq("did", atp_did)
+      .maybeSingle();
+    if (!existingProfile) {
+      let bsky = new BskyAgent(credentialSession);
+      let [profile, resolveDid] = await Promise.all([
+        bsky.app.bsky.actor.profile
+          .get({ repo: atp_did, rkey: "self" })
+          .catch(() => null),
+        idResolver.did.resolve(atp_did).catch(() => null),
+      ]);
+      if (profile?.value) {
+        await supabaseServerClient.from("bsky_profiles").insert({
+          did: atp_did,
+          record: profile.value as Json,
+          handle: resolveDid?.alsoKnownAs?.[0]?.slice(5),
+        });
+      }
+    }
+  } catch (e) {
+    console.error(
+      "[publishAtprotoSubscriptionForDid] failed:",
+      atp_did,
+      publication,
+      e,
+    );
+  }
+}
+
 type UnsubscribeResult =
   | { success: true }
   | { success: false; error: OAuthSessionError };

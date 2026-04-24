@@ -1,6 +1,6 @@
 import { render } from "@react-email/render";
 import { AtUri } from "@atproto/syntax";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PostEmail } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
@@ -35,8 +35,8 @@ export const send_post_broadcast = inngest.createFunction(
         .eq("publication", publication_uri)
         .eq("document", document_uri);
     },
+    triggers: [events.newsletterPostSendRequested],
   },
-  { event: "newsletter/post.send.requested" },
   async ({ event, step }) => {
     const { publication_uri, document_uri } = event.data;
 

@@ -1,4 +1,4 @@
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtpAgent, AtUri } from "@atproto/api";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
@@ -17,8 +17,8 @@ export const sync_document_metadata = inngest.createFunction(
       timeout: "3m",
     },
     concurrency: [{ key: "event.data.document_uri", limit: 1 }],
+    triggers: [events.appviewSyncDocumentMetadata],
   },
-  { event: "appview/sync-document-metadata" },
   async ({ event, step }) => {
     const { document_uri, bsky_post_uri } = event.data;
 

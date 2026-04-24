@@ -1,4 +1,4 @@
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient } from "lexicons/api";
 
@@ -16,8 +16,10 @@ async function createAuthenticatedAgent(did: string): Promise<AtpBaseClient> {
 }
 
 export const write_records_to_pds = inngest.createFunction(
-  { id: "write-records-to-pds" },
-  { event: "user/write-records-to-pds" },
+  {
+    id: "write-records-to-pds",
+    triggers: [events.userWriteRecordsToPds],
+  },
   async ({ event, step }) => {
     const { did, records } = event.data;
 

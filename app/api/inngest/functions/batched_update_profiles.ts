@@ -1,5 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 
 export const batched_update_profiles = inngest.createFunction(
   {
@@ -8,8 +8,8 @@ export const batched_update_profiles = inngest.createFunction(
       maxSize: 100,
       timeout: "10s",
     },
+    triggers: [events.appviewProfileUpdate],
   },
-  { event: "appview/profile-update" },
   async ({ events, step }) => {
     let existingProfiles = await supabaseServerClient
       .from("bsky_profiles")

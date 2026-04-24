@@ -1,5 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 import { AtpAgent, AtUri } from "@atproto/api";
 import { Json } from "supabase/database.types";
 import { ids } from "lexicons/api/lexicons";
@@ -12,8 +12,10 @@ import { idResolver } from "app/(home-pages)/reader/idResolver";
 import { documentUriFilter } from "src/utils/uriHelpers";
 
 export const index_post_mention = inngest.createFunction(
-  { id: "index_post_mention" },
-  { event: "appview/index-bsky-post-mention" },
+  {
+    id: "index_post_mention",
+    triggers: [events.appviewIndexBskyPostMention],
+  },
   async ({ event, step }) => {
     let url = new URL(event.data.document_link);
     let path = url.pathname.split("/").filter(Boolean);

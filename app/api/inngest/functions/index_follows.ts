@@ -1,6 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtpAgent, AtUri } from "@atproto/api";
-import { inngest } from "../client";
+import { inngest, events } from "../client";
 
 export const index_follows = inngest.createFunction(
   {
@@ -10,8 +10,8 @@ export const index_follows = inngest.createFunction(
       period: "5m",
       key: "event.data.did",
     },
+    triggers: [events.feedsIndexFollows],
   },
-  { event: "feeds/index-follows" },
   async ({ event, step }) => {
     let follows: string[] = [];
     let cursor: null | string = null;
