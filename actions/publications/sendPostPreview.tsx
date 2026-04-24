@@ -11,6 +11,11 @@ import { processBlocksToPages } from "src/utils/factsToPagesRecord";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import {
+  buildFromHeader,
+  resolveFromDomain,
+  resolveReplyToEmail,
+} from "src/utils/newsletterSender";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { PostEmail } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
@@ -20,6 +25,7 @@ type SendPreviewError =
   | "invalid_email"
   | "publication_not_found"
   | "newsletter_not_enabled"
+  | "no_from_address"
   | "render_failed"
   | "email_send_failed";
 
@@ -39,7 +45,7 @@ export async function sendPostPreview(args: {
   const { data: publication } = await supabaseServerClient
     .from("publications")
     .select(
-      "identity_did, record, publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at)",
+      "identity_did, record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at)",
     )
     .eq("uri", args.publication_uri)
     .single();
@@ -48,7 +54,7 @@ export async function sendPostPreview(args: {
   if (publication.identity_did !== identity.atp_did) return Err("unauthorized");
 
   const settings = publication.publication_newsletter_settings;
-  if (!settings?.enabled || !settings.reply_to_email) {
+  if (!settings?.enabled) {
     return Err("newsletter_not_enabled");
   }
 
@@ -78,6 +84,13 @@ export async function sendPostPreview(args: {
 
   const pubRecord = normalizePublicationRecord(publication.record);
   const pubProps = emailPropsFromPublication(pubRecord);
+  const fromDomain = resolveFromDomain(
+    pubRecord?.url,
+    publication.publication_domains?.[0]?.domain,
+  );
+  if (!fromDomain) return Err("no_from_address");
+  const fromHeader = buildFromHeader(pubRecord?.name, fromDomain);
+  const replyToEmail = resolveReplyToEmail(settings);
 
   const assetsBaseUrl = await getCurrentDeploymentDomain();
 
@@ -114,8 +127,8 @@ export async function sendPostPreview(args: {
     },
     body: JSON.stringify({
       MessageStream: "outbound",
-      From: "Leaflet <newsletters@leaflet.pub>",
-      ReplyTo: settings.reply_to_email,
+      From: fromHeader,
+      ReplyTo: replyToEmail,
       To: email,
       Subject: `[preview] ${args.title || "(untitled)"}`,
       HtmlBody: html,

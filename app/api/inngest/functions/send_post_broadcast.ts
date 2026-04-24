@@ -9,6 +9,11 @@ import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import {
+  buildFromHeader,
+  resolveFromDomain,
+  resolveReplyToEmail,
+} from "src/utils/newsletterSender";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import type { Json } from "supabase/database.types";
 
@@ -45,7 +50,7 @@ export const send_post_broadcast = inngest.createFunction(
         supabaseServerClient
           .from("publications")
           .select(
-            "record, publication_newsletter_settings(enabled, reply_to_email)",
+            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at)",
           )
           .eq("uri", publication_uri)
           .maybeSingle(),
@@ -59,7 +64,7 @@ export const send_post_broadcast = inngest.createFunction(
     });
 
     const settings = loaded.pub?.publication_newsletter_settings;
-    if (!loaded.pub || !settings?.enabled || !settings.reply_to_email) {
+    if (!loaded.pub || !settings?.enabled) {
       await step.run("mark-failed-not-enabled", async () => {
         await supabaseServerClient
           .from("publication_post_sends")
@@ -83,7 +88,26 @@ export const send_post_broadcast = inngest.createFunction(
       pubRecord?.url && docRecord?.path
         ? `${pubRecord.url.replace(/\/$/, "")}${docRecord.path}`
         : pubProps.publicationUrl;
-    const replyToEmail = settings.reply_to_email;
+    const fromDomain = resolveFromDomain(
+      pubRecord?.url,
+      loaded.pub.publication_domains?.[0]?.domain,
+    );
+    if (!fromDomain) {
+      await step.run("mark-failed-no-from-address", async () => {
+        await supabaseServerClient
+          .from("publication_post_sends")
+          .update({
+            status: "failed",
+            error: "no_from_address",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("publication", publication_uri)
+          .eq("document", document_uri);
+      });
+      return { aborted: "no_from_address" };
+    }
+    const fromHeader = buildFromHeader(pubRecord?.name, fromDomain);
+    const replyToEmail = resolveReplyToEmail(settings);
     const did = new AtUri(document_uri).host;
 
     // The first page is the document body. Canvas pages don't map to a linear
@@ -165,7 +189,7 @@ export const send_post_broadcast = inngest.createFunction(
             );
             return {
               MessageStream: "broadcast",
-              From: "Leaflet <newsletters@leaflet.pub>",
+              From: fromHeader,
               ReplyTo: replyToEmail,
               To: sub.email,
               Subject: postTitle,

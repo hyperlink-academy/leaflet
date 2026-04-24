@@ -192,6 +192,8 @@ function EmailPreview(props: {
         return "That email address doesn't look right.";
       case "newsletter_not_enabled":
         return "Newsletter mode isn't enabled for this publication.";
+      case "no_from_address":
+        return "This publication doesn't have a leaflet.pub subdomain to send from.";
       case "render_failed":
         return "Couldn't render the email. Try again?";
       case "email_send_failed":

@@ -12,12 +12,16 @@ import {
   type ConfirmationError,
 } from "src/utils/confirmationEmail";
 
-type RequestError = "unauthorized" | "invalid_email" | ConfirmationError;
+type ToggleError = "unauthorized" | "database_error";
+type SetReplyToError =
+  | "unauthorized"
+  | "invalid_email"
+  | "database_error"
+  | ConfirmationError;
 type ConfirmError =
   | "unauthorized"
   | "no_pending_verification"
   | ConfirmationError;
-type DisableError = "unauthorized" | "database_error";
 
 async function assertPublicationOwner(publicationUri: string) {
   const [identity, { data: publication }] = await Promise.all([
@@ -34,33 +38,102 @@ async function assertPublicationOwner(publicationUri: string) {
   return identity;
 }
 
-export async function requestReplyToVerification(
+export async function enableNewsletter(
   publicationUri: string,
-  emailRaw: string,
-): Promise<Result<null, RequestError>> {
+): Promise<Result<null, ToggleError>> {
   if (!(await assertPublicationOwner(publicationUri)))
     return Err("unauthorized");
-
-  const email = emailRaw.trim().toLowerCase();
-  if (!EMAIL_REGEX.test(email)) return Err("invalid_email");
-
-  const code = generateConfirmationCode();
 
   const { error } = await supabaseServerClient
     .from("publication_newsletter_settings")
     .upsert(
       {
         publication: publicationUri,
-        reply_to_email: email,
-        confirmation_code: code,
-        enabled: false,
-        reply_to_verified_at: null,
+        enabled: true,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "publication" },
     );
   if (error) {
-    console.error("[newsletterSettings] upsert failed:", error);
+    console.error("[newsletterSettings] enable upsert failed:", error);
+    return Err("database_error");
+  }
+  return Ok(null);
+}
+
+export async function disableNewsletter(
+  publicationUri: string,
+): Promise<Result<null, ToggleError>> {
+  if (!(await assertPublicationOwner(publicationUri)))
+    return Err("unauthorized");
+
+  const { error } = await supabaseServerClient
+    .from("publication_newsletter_settings")
+    .update({
+      enabled: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("publication", publicationUri);
+  if (error) {
+    console.error("[newsletterSettings] disable update failed:", error);
+    return Err("database_error");
+  }
+  return Ok(null);
+}
+
+// If the email matches the user's identity email we trust the address and
+// skip the confirmation flow.
+export async function setReplyToEmail(
+  publicationUri: string,
+  emailRaw: string,
+): Promise<Result<{ verification_required: boolean }, SetReplyToError>> {
+  const identity = await assertPublicationOwner(publicationUri);
+  if (!identity) return Err("unauthorized");
+
+  const email = emailRaw.trim().toLowerCase();
+  if (!EMAIL_REGEX.test(email)) return Err("invalid_email");
+
+  const identityEmail = identity.email?.trim().toLowerCase() ?? null;
+  const trustedMatch = identityEmail !== null && identityEmail === email;
+
+  if (trustedMatch) {
+    const { error } = await supabaseServerClient
+      .from("publication_newsletter_settings")
+      .upsert(
+        {
+          publication: publicationUri,
+          reply_to_email: email,
+          reply_to_verified_at: new Date().toISOString(),
+          confirmation_code: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "publication" },
+      );
+    if (error) {
+      console.error(
+        "[newsletterSettings] trusted reply-to upsert failed:",
+        error,
+      );
+      return Err("database_error");
+    }
+    return Ok({ verification_required: false });
+  }
+
+  const code = generateConfirmationCode();
+  const { error } = await supabaseServerClient
+    .from("publication_newsletter_settings")
+    .upsert(
+      {
+        publication: publicationUri,
+        reply_to_email: email,
+        reply_to_verified_at: null,
+        confirmation_code: code,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "publication" },
+    );
+  if (error) {
+    console.error("[newsletterSettings] reply-to upsert failed:", error);
     return Err("database_error");
   }
 
@@ -74,7 +147,7 @@ export async function requestReplyToVerification(
   });
   if (!sent) return Err("email_send_failed");
 
-  return Ok(null);
+  return Ok({ verification_required: true });
 }
 
 export async function confirmReplyToVerification(
@@ -100,7 +173,6 @@ export async function confirmReplyToVerification(
   const { error } = await supabaseServerClient
     .from("publication_newsletter_settings")
     .update({
-      enabled: true,
       reply_to_verified_at: new Date().toISOString(),
       confirmation_code: null,
       updated_at: new Date().toISOString(),
@@ -114,23 +186,24 @@ export async function confirmReplyToVerification(
   return Ok(null);
 }
 
-export async function disableNewsletter(
+export async function clearReplyToEmail(
   publicationUri: string,
-): Promise<Result<null, DisableError>> {
+): Promise<Result<null, ToggleError>> {
   if (!(await assertPublicationOwner(publicationUri)))
     return Err("unauthorized");
 
   const { error } = await supabaseServerClient
     .from("publication_newsletter_settings")
     .update({
-      enabled: false,
+      reply_to_email: null,
+      reply_to_verified_at: null,
+      confirmation_code: null,
       updated_at: new Date().toISOString(),
     })
     .eq("publication", publicationUri);
   if (error) {
-    console.error("[newsletterSettings] disable update failed:", error);
+    console.error("[newsletterSettings] clear reply-to failed:", error);
     return Err("database_error");
   }
-
   return Ok(null);
 }
