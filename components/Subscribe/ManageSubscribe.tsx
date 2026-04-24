@@ -15,8 +15,12 @@ import {
   unsubscribeFromPublication,
 } from "actions/publications/subscribeEmail";
 
+const BLUESKY_FEED_URL =
+  "https://bsky.app/profile/leaflet.pub/feed/subscribedPublications";
+
 export const ManageSubscription = (props: {
   publicationUri: string;
+  publicationUrl?: string;
   newsletterMode: boolean;
   user: ViewerUser;
 }) => {
@@ -115,7 +119,11 @@ export const ManageSubscription = (props: {
 
   return (
     <Modal
-      title="Preferences"
+      title={
+        <div className="text-secondary border-b border-border mb-2">
+          Preferences
+        </div>
+      }
       className="w-md max-w-full"
       trigger={
         <div className="manageSubPrefsTrigger flex gap-1 text-accent-contrast text-sm items-center ">
@@ -131,9 +139,7 @@ export const ManageSubscription = (props: {
           <div className={prefClassName}>
             <div className="flex flex-col leading-snug">
               <p>Linked Email</p>
-              <p className="text-tertiary font-normal italic">
-                {user.email}
-              </p>
+              <p className="text-tertiary font-normal italic">{user.email}</p>
             </div>
           </div>
         ) : null}
@@ -141,19 +147,29 @@ export const ManageSubscription = (props: {
           <div className={prefClassName}>
             <div className="flex flex-col leading-snug">
               Linked Handle
-              <p className="text-tertiary font-normal italic">
-                {user.handle}
-              </p>
+              <p className="text-tertiary font-normal italic">{user.handle}</p>
             </div>
           </div>
         )}
-        <div className={prefClassName}>
-          Get RSS Feed <GoToArrow className="text-accent-contrast" />
-        </div>
-        <div className={prefClassName}>
-          Pin Custom Bluesky Feed
+        {props.publicationUrl && (
+          <a
+            href={`${props.publicationUrl}/rss`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${prefClassName} no-underline hover:text-accent-contrast`}
+          >
+            RSS Feed <GoToArrow className="text-accent-contrast" />
+          </a>
+        )}
+        <a
+          href={BLUESKY_FEED_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${prefClassName} no-underline hover:text-accent-contrast`}
+        >
+          Bluesky Feed
           <GoToArrow className="text-accent-contrast" />
-        </div>
+        </a>
 
         {props.newsletterMode && !user.email ? (
           <div className="linkEmail accent-container p-4 text-sm flex flex-col gap-3 text-center justify-center">

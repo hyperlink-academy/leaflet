@@ -109,6 +109,7 @@ export function LinearDocumentPage({
         {document.publication?.uri && (
           <PostPubInfo
             publicationUri={document.publication.uri}
+            publicationUrl={props.pubRecord?.url}
             publicationName={
               props.pubRecord?.name ?? document.publication.name
             }

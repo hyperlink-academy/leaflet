@@ -18,6 +18,7 @@ import { useViewerSubscription } from "./viewerSubscription";
 export type SubscribeProps = {
   autoFocus?: boolean;
   publicationUri: string;
+  publicationUrl?: string;
   publicationName: string;
   publicationDescription?: string;
   newsletterMode: boolean;
@@ -52,6 +53,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
         user.subscribed ? (
           <ManageSubscription
             publicationUri={props.publicationUri}
+            publicationUrl={props.publicationUrl}
             newsletterMode={props.newsletterMode}
             user={user}
           />
@@ -86,6 +88,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
       {isSubscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
           newsletterMode={props.newsletterMode}
           user={user}
         />

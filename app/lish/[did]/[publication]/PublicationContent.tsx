@@ -82,6 +82,7 @@ export const PublicationContent = ({
           subscribeButton={
             <SubscribeInput
               publicationUri={publication.uri}
+              publicationUrl={record?.url}
               publicationName={record?.name ?? publication.name}
               publicationDescription={record?.description}
               newsletterMode={newsletterMode}

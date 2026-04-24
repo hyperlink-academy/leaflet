@@ -67,6 +67,7 @@ export const PubListing = (props: PublicationSubscription) => {
             <SubscribeButton
               autoFocus
               publicationUri={props.uri}
+              publicationUrl={record.url}
               publicationName={record.name}
               publicationDescription={record.description}
               newsletterMode={
