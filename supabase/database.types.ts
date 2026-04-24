@@ -337,6 +337,7 @@ export type Database = {
         Row: {
           bsky_like_count: number
           data: Json
+          identity_did: string | null
           indexed: boolean
           indexed_at: string
           recommend_count: number
@@ -346,6 +347,7 @@ export type Database = {
         Insert: {
           bsky_like_count?: number
           data: Json
+          identity_did?: string | null
           indexed?: boolean
           indexed_at?: string
           recommend_count?: number
@@ -355,6 +357,7 @@ export type Database = {
         Update: {
           bsky_like_count?: number
           data?: Json
+          identity_did?: string | null
           indexed?: boolean
           indexed_at?: string
           recommend_count?: number
@@ -1618,11 +1621,24 @@ export type Database = {
           like: unknown
         }[]
       }
+      get_leaflet_page_data: {
+        Args: {
+          p_token_id: string
+        }
+        Returns: {
+          permission_token: Json
+          permission_token_rights: Json
+          leaflets_in_publications: Json
+          leaflets_to_documents: Json
+          custom_domain_routes: Json
+          facts: Json
+        }[]
+      }
       get_profile_posts: {
         Args: {
           p_did: string
-          p_cursor_sort_date?: string | null
-          p_cursor_uri?: string | null
+          p_cursor_sort_date?: string
+          p_cursor_uri?: string
           p_limit?: number
         }
         Returns: {

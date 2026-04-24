@@ -113,6 +113,7 @@ function PublishedPostItem(props: {
                             bsky_like_count: doc.bsky_like_count ?? 0,
                             indexed: true,
                             recommend_count: doc.recommendsCount ?? 0,
+                            identity_did: null,
                           },
                         },
                       ],

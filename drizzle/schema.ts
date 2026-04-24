@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, uniqueIndex, unique, smallint, integer, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, unique, uniqueIndex, smallint, integer, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -81,6 +81,29 @@ export const facts = pgTable("facts", {
 (table) => {
 	return {
 		entity_idx: index("facts_entity_idx").on(table.entity),
+	}
+});
+
+export const mention_services = pgTable("mention_services", {
+	uri: text("uri").primaryKey().notNull(),
+	identity_did: text("identity_did").notNull(),
+	record: jsonb("record").notNull(),
+},
+(table) => {
+	return {
+		idx_mention_services_did: index("idx_mention_services_did").on(table.identity_did),
+	}
+});
+
+export const mention_service_configs = pgTable("mention_service_configs", {
+	uri: text("uri").primaryKey().notNull(),
+	identity_did: text("identity_did").notNull(),
+	record: jsonb("record").notNull(),
+},
+(table) => {
+	return {
+		idx_mention_service_configs_did: index("idx_mention_service_configs_did").on(table.identity_did),
+		mention_service_configs_identity_did_key: unique("mention_service_configs_identity_did_key").on(table.identity_did),
 	}
 });
 
@@ -304,6 +327,56 @@ export const oauth_session_store = pgTable("oauth_session_store", {
 	session: jsonb("session").notNull(),
 });
 
+export const publication_newsletter_settings = pgTable("publication_newsletter_settings", {
+	publication: text("publication").primaryKey().notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	enabled: boolean("enabled").default(false).notNull(),
+	reply_to_email: text("reply_to_email"),
+	reply_to_verified_at: timestamp("reply_to_verified_at", { withTimezone: true, mode: 'string' }),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	confirmation_code: text("confirmation_code"),
+},
+(table) => {
+	return {
+		enabled_idx: index("publication_newsletter_settings_enabled_idx").on(table.publication),
+	}
+});
+
+export const publication_email_subscribers = pgTable("publication_email_subscribers", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	email: text("email").notNull(),
+	identity_id: uuid("identity_id").references(() => identities.id, { onDelete: "set null" } ),
+	state: text("state").default('pending').notNull(),
+	confirmation_code: text("confirmation_code"),
+	unsubscribe_token: uuid("unsubscribe_token").defaultRandom().notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	confirmed_at: timestamp("confirmed_at", { withTimezone: true, mode: 'string' }),
+	unsubscribed_at: timestamp("unsubscribed_at", { withTimezone: true, mode: 'string' }),
+},
+(table) => {
+	return {
+		confirmed_idx: index("publication_email_subscribers_confirmed_idx").on(table.publication),
+		publication_email_subscribers_publication_email_key: unique("publication_email_subscribers_publication_email_key").on(table.publication, table.email),
+		publication_email_subscribers_unsubscribe_token_key: unique("publication_email_subscribers_unsubscribe_token_key").on(table.unsubscribe_token),
+	}
+});
+
+export const publication_email_subscriber_events = pgTable("publication_email_subscriber_events", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	subscriber: uuid("subscriber").notNull().references(() => publication_email_subscribers.id, { onDelete: "cascade" } ),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	event_type: text("event_type").notNull(),
+	occurred_at: timestamp("occurred_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	metadata: jsonb("metadata"),
+},
+(table) => {
+	return {
+		subscriber_idx: index("publication_email_subscriber_events_subscriber_idx").on(table.subscriber, table.occurred_at),
+		publication_type_idx: index("publication_email_subscriber_events_publication_type_idx").on(table.publication, table.event_type, table.occurred_at),
+	}
+});
+
 export const bsky_follows = pgTable("bsky_follows", {
 	identity: text("identity").default('').notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	follows: text("follows").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
@@ -311,17 +384,6 @@ export const bsky_follows = pgTable("bsky_follows", {
 (table) => {
 	return {
 		bsky_follows_pkey: primaryKey({ columns: [table.identity, table.follows], name: "bsky_follows_pkey"}),
-	}
-});
-
-export const subscribers_to_publications = pgTable("subscribers_to_publications", {
-	identity: text("identity").notNull().references(() => identities.email, { onUpdate: "cascade" } ),
-	publication: text("publication").notNull().references(() => publications.uri),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-},
-(table) => {
-	return {
-		subscribers_to_publications_pkey: primaryKey({ columns: [table.identity, table.publication], name: "subscribers_to_publications_pkey"}),
 	}
 });
 
@@ -446,6 +508,22 @@ export const permission_token_rights = pgTable("permission_token_rights", {
 		token_idx: index("permission_token_rights_token_idx").on(table.token),
 		entity_set_idx: index("permission_token_rights_entity_set_idx").on(table.entity_set),
 		permission_token_rights_pkey: primaryKey({ columns: [table.token, table.entity_set], name: "permission_token_rights_pkey"}),
+	}
+});
+
+export const publication_post_sends = pgTable("publication_post_sends", {
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade" } ),
+	status: text("status").default('pending').notNull(),
+	subscriber_count: integer("subscriber_count"),
+	started_at: timestamp("started_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	completed_at: timestamp("completed_at", { withTimezone: true, mode: 'string' }),
+	error: text("error"),
+},
+(table) => {
+	return {
+		publication_started_idx: index("publication_post_sends_publication_started_idx").on(table.publication, table.started_at),
+		publication_post_sends_pkey: primaryKey({ columns: [table.publication, table.document], name: "publication_post_sends_pkey"}),
 	}
 });
 

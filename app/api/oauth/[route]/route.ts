@@ -3,7 +3,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
 import { createOauthClient } from "src/atproto-oauth";
-import { setAuthToken } from "src/auth";
+import {
+  AUTH_TOKEN_COOKIE,
+  setAuthToken,
+  setPendingMergeToken,
+} from "src/auth";
 
 import { supabaseServerClient } from "supabase/serverClient";
 import { URLSearchParams } from "url";
@@ -16,6 +20,7 @@ import { inngest } from "app/api/inngest/client";
 type OauthRequestClientState = {
   redirect: string | null;
   action: ActionAfterSignIn | null;
+  link?: boolean;
 };
 
 export async function GET(
@@ -33,11 +38,12 @@ export async function GET(
       const searchParams = req.nextUrl.searchParams;
       const handle = searchParams.get("handle") as string;
       const signup = searchParams.get("signup") === "true";
+      const link = searchParams.get("link") === "true";
       // Put originating page here!
       let redirect = searchParams.get("redirect_url");
       if (redirect) redirect = decodeURIComponent(redirect);
       let action = parseActionFromSearchParam(searchParams.get("action"));
-      let state: OauthRequestClientState = { redirect, action };
+      let state: OauthRequestClientState = { redirect, action, link };
 
       // Revoke any pending authentication requests if the connection is closed (optional)
       const ac = new AbortController();
@@ -65,20 +71,53 @@ export async function GET(
           .select()
           .eq("atp_did", session.did)
           .single();
-        if (!identity) {
-          let existingIdentity = (await cookies()).get("auth_token");
-          if (existingIdentity) {
-            let data = await supabaseServerClient
-              .from("email_auth_tokens")
-              .select("*, identities(*)")
-              .eq("id", existingIdentity.value)
-              .single();
-            if (data.data?.identity && data.data.confirmed)
-              await supabaseServerClient
-                .from("identities")
-                .update({ atp_did: session.did })
-                .eq("id", data.data.identity);
 
+        const currentAuthToken = (await cookies()).get(AUTH_TOKEN_COOKIE)?.value;
+        let currentIdentity: {
+          id: string;
+          email: string | null;
+          atp_did: string | null;
+        } | null = null;
+        if (currentAuthToken) {
+          const { data: currentTokenRow } = await supabaseServerClient
+            .from("email_auth_tokens")
+            .select("confirmed, identities(id, email, atp_did)")
+            .eq("id", currentAuthToken)
+            .single();
+          if (currentTokenRow?.confirmed)
+            currentIdentity = currentTokenRow.identities;
+        }
+
+        // Explicit link flow from the LoginModal for an email-only user. Never
+        // fall through to a normal DID login — we must either attach the atp_did
+        // to the existing email identity or route to /merge-accounts.
+        if (
+          s.link &&
+          currentIdentity &&
+          currentIdentity.email &&
+          !currentIdentity.atp_did
+        ) {
+          if (!identity) {
+            await supabaseServerClient
+              .from("identities")
+              .update({ atp_did: session.did })
+              .eq("id", currentIdentity.id);
+            return handleAction(s.action, redirectPath);
+          }
+          if (identity.id !== currentIdentity.id) {
+            await stagePendingMerge(identity.id, redirectPath);
+            // Only reached if the token insert failed. Fall through to the
+            // normal sign-in flow rather than blocking the user.
+          }
+          // Same identity already linked — fall through to refresh session.
+        }
+
+        if (!identity) {
+          if (currentIdentity && !currentIdentity.atp_did) {
+            await supabaseServerClient
+              .from("identities")
+              .update({ atp_did: session.did })
+              .eq("id", currentIdentity.id);
             return handleAction(s.action, redirectPath);
           }
           const { data } = await supabaseServerClient
@@ -87,6 +126,17 @@ export async function GET(
             .select()
             .single();
           identity = data;
+        } else if (
+          currentIdentity &&
+          currentIdentity.id !== identity.id &&
+          !currentIdentity.atp_did &&
+          currentIdentity.email
+        ) {
+          // DID already has an identity row. Caller is currently signed in as a
+          // *different* email-only identity. Stage a pending merge and let the
+          // user confirm on /merge-accounts before we touch either account.
+          await stagePendingMerge(identity.id, redirectPath);
+          // Only reached if the token insert failed — fall through.
         }
 
         // Trigger migration if identity needs it
@@ -117,6 +167,16 @@ export async function GET(
         console.log("User authenticated as:", session.did);
         return handleAction(s.action, redirectPath);
       } catch (e) {
+        // `redirect()` throws a NEXT_REDIRECT error that Next.js needs to see
+        // at the framework boundary — don't swallow it.
+        if (
+          e &&
+          typeof e === "object" &&
+          "digest" in e &&
+          typeof (e as { digest?: unknown }).digest === "string" &&
+          (e as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+        )
+          throw e;
         console.log(e);
         redirect(redirectPath);
       }
@@ -125,6 +185,34 @@ export async function GET(
       return NextResponse.json({ error: "Invalid route" }, { status: 404 });
   }
 }
+
+// Mints a confirmed email_auth_token for `identityId`, stores it as the
+// pending_merge_token cookie, and redirects to /merge-accounts. Throws on
+// success (via `redirect()`), so callers only reach the line after the call
+// when the token insert failed — at which point they should fall through to
+// the normal sign-in flow rather than blocking the user.
+const stagePendingMerge = async (
+  identityId: string,
+  redirectPath: string,
+) => {
+  const { data: targetToken, error } = await supabaseServerClient
+    .from("email_auth_tokens")
+    .insert({
+      identity: identityId,
+      confirmed: true,
+      confirmation_code: "",
+    })
+    .select("id")
+    .single();
+  if (error)
+    console.error(
+      "[oauth/callback] pending merge token insert failed:",
+      error,
+    );
+  if (!targetToken) return;
+  await setPendingMergeToken(targetToken.id);
+  redirect(`/merge-accounts?redirect=${encodeURIComponent(redirectPath)}`);
+};
 
 const handleAction = async (
   action: ActionAfterSignIn | null,

@@ -62,7 +62,16 @@ export const LoginContent = (props: {
   let [loading, setLoading] = useState(false);
   let toaster = useToaster();
 
-  if (identityData.identity) return null;
+  if (identityData.identity?.atp_did) return null;
+  if (identityData.identity?.email && !identityData.identity.atp_did) {
+    return (
+      <LinkAtmosphereContent
+        pageView={props.pageView}
+        redirectRoute={props.redirectRoute}
+        open={props.open}
+      />
+    );
+  }
 
   const handleEmailSubmit = async () => {
     setLoading(true);
@@ -237,6 +246,67 @@ export const LoginContent = (props: {
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+const LinkAtmosphereContent = (props: {
+  pageView?: boolean;
+  redirectRoute?: string;
+  open?: boolean;
+}) => {
+  let [loading, setLoading] = useState(false);
+  return (
+    <div
+      className={`accent-container w-xs flex flex-col gap-1 ${props.pageView ? " p-4 py-5" : "px-3 py-4  "}`}
+    >
+      <div className="flex flex-col gap-1 text-center mx-auto leading-tight pb-2">
+        <h3>
+          Link your <br />
+          Atmosphere account
+        </h3>
+        <AtmosphericHandleInfo
+          trigger={
+            <div className="text-sm text-accent-contrast">
+              What's the Atmosphere?
+            </div>
+          }
+        />
+      </div>
+      <HandleInput
+        large
+        autoFocus={props.open !== false}
+        action={<GoToArrow className="text-accent-contrast" />}
+        loading={loading}
+        onSubmit={(handle) => {
+          setLoading(true);
+          let redirectUrl: string;
+          if (props.redirectRoute) {
+            redirectUrl = props.redirectRoute;
+          } else {
+            let url = new URL(window.location.href);
+            url.searchParams.set("refreshAuth", "");
+            redirectUrl = url.toString();
+          }
+          window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}&link=true`;
+        }}
+      />
+      <hr className="border-border-light mt-2 mb-1" />
+      <form action="/api/oauth/login" method="GET">
+        <input
+          type="hidden"
+          name="redirect_url"
+          value={props.redirectRoute || "/"}
+        />
+        <input type="hidden" name="signup" value="true" />
+        <input type="hidden" name="link" value="true" />
+        <button
+          type="submit"
+          className="text-sm text-accent-contrast flex gap-1 items-center mx-auto"
+        >
+          <BlueskyTiny /> or sign up via Bluesky
+        </button>
+      </form>
     </div>
   );
 };

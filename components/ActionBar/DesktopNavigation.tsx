@@ -29,7 +29,7 @@ export const DesktopNavigation = (props: {
   return (
     <div className="flex flex-col gap-3">
       <Sidebar alwaysOpen>
-        {identity?.atp_did ? (
+        {identity ? (
           <>
             <ProfileButton />
             <NotificationButton

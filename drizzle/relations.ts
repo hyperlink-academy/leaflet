@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, recommends_on_documents, poll_votes_on_entity, permission_tokens, user_subscriptions, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, site_standard_documents_in_publications, documents_in_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_subscriptions, site_standard_subscriptions, user_entitlements, permission_token_rights, leaflets_to_documents, leaflets_in_publications } from "./schema";
+import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, recommends_on_documents, poll_votes_on_entity, permission_tokens, user_subscriptions, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, publication_newsletter_settings, publication_email_subscribers, publication_email_subscriber_events, bsky_follows, site_standard_documents_in_publications, documents_in_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_subscriptions, site_standard_subscriptions, user_entitlements, permission_token_rights, publication_post_sends, leaflets_to_documents, leaflets_in_publications } from "./schema";
 
 export const notificationsRelations = relations(notifications, ({one}) => ({
 	identity: one(identities, {
@@ -27,13 +27,13 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	custom_domains_identity_id: many(custom_domains, {
 		relationName: "custom_domains_identity_id_identities_id"
 	}),
+	publication_email_subscribers: many(publication_email_subscribers),
 	bsky_follows_follows: many(bsky_follows, {
 		relationName: "bsky_follows_follows_identities_atp_did"
 	}),
 	bsky_follows_identity: many(bsky_follows, {
 		relationName: "bsky_follows_identity_identities_atp_did"
 	}),
-	subscribers_to_publications: many(subscribers_to_publications),
 	permission_token_on_homepages: many(permission_token_on_homepage),
 	publication_domains: many(publication_domains),
 	publication_subscriptions: many(publication_subscriptions),
@@ -46,10 +46,13 @@ export const publicationsRelations = relations(publications, ({one, many}) => ({
 		fields: [publications.identity_did],
 		references: [identities.atp_did]
 	}),
-	subscribers_to_publications: many(subscribers_to_publications),
+	publication_newsletter_settings: many(publication_newsletter_settings),
+	publication_email_subscribers: many(publication_email_subscribers),
+	publication_email_subscriber_events: many(publication_email_subscriber_events),
 	documents_in_publications: many(documents_in_publications),
 	publication_domains: many(publication_domains),
 	publication_subscriptions: many(publication_subscriptions),
+	publication_post_sends: many(publication_post_sends),
 	leaflets_in_publications: many(leaflets_in_publications),
 }));
 
@@ -69,6 +72,7 @@ export const documentsRelations = relations(documents, ({many}) => ({
 	recommends_on_documents: many(recommends_on_documents),
 	documents_in_publications: many(documents_in_publications),
 	document_mentions_in_bskies: many(document_mentions_in_bsky),
+	publication_post_sends: many(publication_post_sends),
 	leaflets_to_documents: many(leaflets_to_documents),
 	leaflets_in_publications: many(leaflets_in_publications),
 }));
@@ -245,6 +249,36 @@ export const atp_poll_recordsRelations = relations(atp_poll_records, ({many}) =>
 	atp_poll_votes: many(atp_poll_votes),
 }));
 
+export const publication_newsletter_settingsRelations = relations(publication_newsletter_settings, ({one}) => ({
+	publication: one(publications, {
+		fields: [publication_newsletter_settings.publication],
+		references: [publications.uri]
+	}),
+}));
+
+export const publication_email_subscribersRelations = relations(publication_email_subscribers, ({one, many}) => ({
+	identity: one(identities, {
+		fields: [publication_email_subscribers.identity_id],
+		references: [identities.id]
+	}),
+	publication: one(publications, {
+		fields: [publication_email_subscribers.publication],
+		references: [publications.uri]
+	}),
+	publication_email_subscriber_events: many(publication_email_subscriber_events),
+}));
+
+export const publication_email_subscriber_eventsRelations = relations(publication_email_subscriber_events, ({one}) => ({
+	publication: one(publications, {
+		fields: [publication_email_subscriber_events.publication],
+		references: [publications.uri]
+	}),
+	publication_email_subscriber: one(publication_email_subscribers, {
+		fields: [publication_email_subscriber_events.subscriber],
+		references: [publication_email_subscribers.id]
+	}),
+}));
+
 export const bsky_followsRelations = relations(bsky_follows, ({one}) => ({
 	identity_follows: one(identities, {
 		fields: [bsky_follows.follows],
@@ -255,17 +289,6 @@ export const bsky_followsRelations = relations(bsky_follows, ({one}) => ({
 		fields: [bsky_follows.identity],
 		references: [identities.atp_did],
 		relationName: "bsky_follows_identity_identities_atp_did"
-	}),
-}));
-
-export const subscribers_to_publicationsRelations = relations(subscribers_to_publications, ({one}) => ({
-	identity: one(identities, {
-		fields: [subscribers_to_publications.identity],
-		references: [identities.email]
-	}),
-	publication: one(publications, {
-		fields: [subscribers_to_publications.publication],
-		references: [publications.uri]
 	}),
 }));
 
@@ -369,6 +392,17 @@ export const permission_token_rightsRelations = relations(permission_token_right
 	permission_token: one(permission_tokens, {
 		fields: [permission_token_rights.token],
 		references: [permission_tokens.id]
+	}),
+}));
+
+export const publication_post_sendsRelations = relations(publication_post_sends, ({one}) => ({
+	document: one(documents, {
+		fields: [publication_post_sends.document],
+		references: [documents.uri]
+	}),
+	publication: one(publications, {
+		fields: [publication_post_sends.publication],
+		references: [publications.uri]
 	}),
 }));
 

@@ -23,8 +23,8 @@ export async function getProfilePosts(
   let [{ data: rawFeed, error }, { data: profile }] = await Promise.all([
     supabaseServerClient.rpc("get_profile_posts", {
       p_did: did,
-      p_cursor_sort_date: cursor?.sort_date ?? null,
-      p_cursor_uri: cursor?.uri ?? null,
+      p_cursor_sort_date: cursor?.sort_date ?? undefined,
+      p_cursor_uri: cursor?.uri ?? undefined,
       p_limit: limit,
     }),
     supabaseServerClient
