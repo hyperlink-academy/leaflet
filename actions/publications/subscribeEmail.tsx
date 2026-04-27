@@ -20,6 +20,7 @@ import {
   publishAtprotoSubscriptionForDid,
   unsubscribeToPublication,
 } from "app/lish/subscribeToPublication";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 type RequestError =
   | "invalid_email"
@@ -38,15 +39,24 @@ export async function requestPublicationEmailSubscription(
   const email = emailRaw.trim().toLowerCase();
   if (!EMAIL_REGEX.test(email)) return Err("invalid_email");
 
-  const [{ data: settings }, identity] = await Promise.all([
-    supabaseServerClient
-      .from("publication_newsletter_settings")
-      .select("enabled")
-      .eq("publication", publicationUri)
-      .maybeSingle(),
-    getIdentityData(),
-  ]);
+  const [{ data: settings }, { data: publication }, identity] =
+    await Promise.all([
+      supabaseServerClient
+        .from("publication_newsletter_settings")
+        .select("enabled")
+        .eq("publication", publicationUri)
+        .maybeSingle(),
+      supabaseServerClient
+        .from("publications")
+        .select("record")
+        .eq("uri", publicationUri)
+        .maybeSingle(),
+      getIdentityData(),
+    ]);
   if (!settings?.enabled) return Err("newsletter_disabled");
+  const normalizedPub = normalizePublicationRecord(publication?.record);
+  const pubName = normalizedPub?.name;
+  const pubUrl = normalizedPub?.url;
 
   // Postmark suppression check: the broadcast stream is shared across all
   // pubs, so a prior SpamComplaint or HardBounce on ANY publication blocks
@@ -146,6 +156,8 @@ export async function requestPublicationEmailSubscription(
     template: (
       <PubConfirmEmail
         code={pendingCode}
+        publicationName={pubName}
+        publicationUrl={pubUrl}
         assetsBaseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"}
       />
     ),

@@ -4,6 +4,7 @@ import {
   Container,
   Html,
   Img,
+  Link,
   Row,
   Tailwind,
 } from "@react-email/components";
@@ -18,6 +19,8 @@ import {
 export const PubConfirmEmail = (props: {
   code?: string;
   assetsBaseUrl?: string;
+  publicationName?: string;
+  publicationUrl?: string;
 }) => {
   const staticUrl = makeStaticUrl(
     props.assetsBaseUrl ?? "https://leaflet.pub",
@@ -48,9 +51,20 @@ export const PubConfirmEmail = (props: {
               <Column width={"8px"} />
 
               <Column>
-                <Heading noPadding as="h2">
-                  Leaflet Explorers
-                </Heading>
+                {props.publicationUrl ? (
+                  <Link
+                    href={props.publicationUrl}
+                    className="!text-primary !no-underline"
+                  >
+                    <Heading noPadding as="h2">
+                      {props.publicationName ?? "Leaflet Explorers"}
+                    </Heading>
+                  </Link>
+                ) : (
+                  <Heading noPadding as="h2">
+                    {props.publicationName ?? "Leaflet Explorers"}
+                  </Heading>
+                )}
               </Column>
             </Row>
             <Text className="!mt-6 !mb-1 text-secondary">
