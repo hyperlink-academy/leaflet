@@ -1,4 +1,4 @@
-import { defaultEmailTheme, type EmailTheme } from "./post";
+import { defaultEmailTheme, type EmailTheme } from "./shared";
 import type { PubLeafletPublication } from "lexicons/api";
 import { getFontConfig, getFontFamilyValue } from "src/fonts";
 

@@ -1,7 +1,6 @@
 import {
   Body,
   Column,
-  Head,
   Heading as ReactEmailHeading,
   Hr,
   Html,
@@ -28,99 +27,16 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-
-export type EmailTheme = {
-  primary: string;
-  pageBackground: string;
-  backgroundColor: string;
-  accentBackground: string;
-  accentText: string;
-  headingFont: string;
-  bodyFont: string;
-  // Matches the publication's web `pageWidth` (px) so subscribers see the
-  // post at the same column width in their inbox as on the live page.
-  // Default 624 mirrors `ThemeProvider.tsx`'s fallback.
-  pageWidth: number;
-};
-
-export const defaultEmailTheme: EmailTheme = {
-  primary: "rgb(39, 39, 39)",
-  pageBackground: "rgb(255, 255, 255)",
-  backgroundColor: "rgb(240, 247, 250)",
-  accentBackground: "rgb(0, 0, 225)",
-  accentText: "rgb(255, 255, 255)",
-  headingFont: "Georgia, serif",
-  bodyFont: "Verdana, sans-serif",
-  pageWidth: 624,
-};
-
-// Parse rgb()/rgba()/#hex into [r, g, b]. Returns black on parse failure —
-// theme colors come from a typed config so this is just defensive.
-const parseColor = (input: string): [number, number, number] => {
-  const rgbMatch = input.match(
-    /rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i,
-  );
-  if (rgbMatch)
-    return [
-      Number(rgbMatch[1]),
-      Number(rgbMatch[2]),
-      Number(rgbMatch[3]),
-    ];
-  const hexMatch = input.match(/^#([0-9a-f]{6})$/i);
-  if (hexMatch) {
-    const h = hexMatch[1];
-    return [
-      parseInt(h.slice(0, 2), 16),
-      parseInt(h.slice(2, 4), 16),
-      parseInt(h.slice(4, 6), 16),
-    ];
-  }
-  const hex3 = input.match(/^#([0-9a-f]{3})$/i);
-  if (hex3) {
-    const h = hex3[1];
-    return [
-      parseInt(h[0] + h[0], 16),
-      parseInt(h[1] + h[1], 16),
-      parseInt(h[2] + h[2], 16),
-    ];
-  }
-  return [0, 0, 0];
-};
-
-// Linear sRGB mix of two colors. We resolve theme tints to literal rgb() at
-// render time because Gmail's CSS sanitizer drops `color-mix(...)` — leaving
-// borders invisible and accent text fall back to defaults. Linear mixing
-// isn't perceptually identical to the oklab original, but for the
-// near-grayscale tints we use it's visually indistinguishable.
-const mixRgb = (
-  a: string,
-  b: string,
-  bPercent: number,
-): string => {
-  const [ar, ag, ab] = parseColor(a);
-  const [br, bg, bb] = parseColor(b);
-  const t = bPercent / 100;
-  const round = (x: number) => Math.round(x);
-  return `rgb(${round(ar * (1 - t) + br * t)}, ${round(
-    ag * (1 - t) + bg * t,
-  )}, ${round(ab * (1 - t) + bb * t)})`;
-};
-
-type ResolvedColors = {
-  primary: string;
-  secondary: string;
-  tertiary: string;
-  border: string;
-  borderLight: string;
-};
-
-const resolveColors = (theme: EmailTheme): ResolvedColors => ({
-  primary: theme.primary,
-  secondary: mixRgb(theme.primary, theme.pageBackground, 25),
-  tertiary: mixRgb(theme.primary, theme.pageBackground, 55),
-  border: mixRgb(theme.primary, theme.pageBackground, 75),
-  borderLight: mixRgb(theme.primary, theme.pageBackground, 85),
-});
+import {
+  bgcolorAttr,
+  defaultEmailTheme,
+  LeafletWatermark,
+  MailHead,
+  makeStaticUrl,
+  resolveColors,
+  type EmailTheme,
+  type ResolvedColors,
+} from "./shared";
 
 export type PostEmailProps = {
   publicationName: string;
@@ -254,15 +170,22 @@ const defaultProps: PostEmailProps = {
   ],
 };
 
-const BLOCK_MARGIN = "4px 0 16px";
-const HEADING_MARGIN = "4px 0 0";
+const BLOCK_MARGIN_TOP = 4;
+const BLOCK_MARGIN_BOTTOM = 16;
+const BLOCK_MARGIN = `${BLOCK_MARGIN_TOP}px 0 ${BLOCK_MARGIN_BOTTOM}px`;
+const IMAGE_MARGIN = `${BLOCK_MARGIN_TOP}px auto ${BLOCK_MARGIN_BOTTOM}px`;
+const HEADING_MARGIN = `${BLOCK_MARGIN_TOP}px 0 0`;
+const HEADING_FONT_SIZE_PX: Record<1 | 2 | 3, number> = {
+  1: 26,
+  2: 18,
+  3: 16,
+};
 
 export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
   const p: PostEmailProps = { ...defaultProps, ...props };
   const theme = p.theme ?? defaultEmailTheme;
   const c = resolveColors(theme);
-  const staticUrl = (filename: string) =>
-    `${p.assetsBaseUrl.replace(/\/$/, "")}/email-assets/${filename}`;
+  const staticUrl = makeStaticUrl(p.assetsBaseUrl);
   const byline = [p.authorName, p.publishedAtLabel].filter(Boolean).join(" | ");
 
   const accentLink: CSSProperties = {
@@ -271,25 +194,9 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
     fontFamily: theme.bodyFont,
   };
 
-  // Page width as both an HTML width attribute (px) and a CSS max-width.
-  // Gmail strips/ignores `max-width` in some contexts but always honors the
-  // HTML `width` attribute on a <table>, so we set both: the HTML `width`
-  // pins the box for Gmail, and `maxWidth: 100%` lets it shrink on narrow
-  // viewports. The value mirrors the publication's web page width.
-  const pageWidth = theme.pageWidth;
-
   return (
     <Html>
-      <Head>
-        {/* Without this, iOS Mail / Gmail iOS auto-scale the email down to
-            fit a wider-than-viewport layout (e.g. 624px in a 400px screen)
-            — which makes every element appear "too small". With it, we get
-            1:1 pixel sizing and our @media queries below can shrink the
-            card to viewport width directly. */}
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1.0"
-        />
+      <MailHead>
         {/* Mobile-only padding tightening. Apple Mail, iOS Mail, Gmail web,
             and most other clients honor @media in <head>; Outlook desktop
             ignores it and keeps the wider inline padding, which is fine
@@ -308,7 +215,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
             }
           }
         `}</style>
-      </Head>
+      </MailHead>
       <Body
         style={{
           backgroundColor: theme.backgroundColor,
@@ -339,30 +246,32 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
               <td
                 align="center"
                 className="email-page-pad"
-                {...({ bgcolor: theme.backgroundColor } as Record<string, string>)}
+                {...bgcolorAttr(theme.backgroundColor)}
                 style={{
                   backgroundColor: theme.backgroundColor,
                   padding: "24px 16px",
                 }}
               >
+                {/* Both the HTML `width` attribute and CSS `width` are set:
+                    Gmail strips/ignores `max-width` in some contexts but
+                    always honors the HTML attribute, so it pins the box at
+                    the publication's web page width on desktop. The
+                    media-query rule above forces 100% on small screens. */}
                 <table
                   role="presentation"
                   align="center"
                   className="email-card-table"
-                  width={pageWidth}
+                  width={theme.pageWidth}
                   cellPadding={0}
                   cellSpacing={0}
                   border={0}
-                  style={{ width: pageWidth, maxWidth: "100%" }}
+                  style={{ width: theme.pageWidth, maxWidth: "100%" }}
                 >
                   <tbody>
                     <tr>
                       <td
                         className="email-card-pad"
-                        {...({ bgcolor: theme.pageBackground } as Record<
-                          string,
-                          string
-                        >)}
+                        {...bgcolorAttr(theme.pageBackground)}
                         style={{
                           backgroundColor: theme.pageBackground,
                           border: `1px solid ${c.border}`,
@@ -636,18 +545,18 @@ const BlockRenderer = ({
     );
   }
   if (PubLeafletBlocksHeader.isMain(block)) {
-    const raw = Math.floor(block.level ?? 1);
-    const clamped = (raw < 1 ? 1 : raw > 3 ? 3 : raw) as 1 | 2 | 3;
-    const fontSize = clamped === 1 ? 26 : clamped === 2 ? 18 : 16;
-    const color = clamped === 3 ? colors.secondary : theme.primary;
+    const level = Math.min(
+      3,
+      Math.max(1, Math.floor(block.level ?? 1)),
+    ) as 1 | 2 | 3;
     return (
       <ReactEmailHeading
-        as={`h${clamped}`}
+        as={`h${level}`}
         style={{
-          color,
+          color: level === 3 ? colors.secondary : theme.primary,
           fontFamily: theme.headingFont,
           fontWeight: "bold",
-          fontSize,
+          fontSize: HEADING_FONT_SIZE_PX[level],
           lineHeight: 1.25,
           margin: HEADING_MARGIN,
         }}
@@ -702,9 +611,7 @@ const BlockRenderer = ({
         style={{
           display: "block",
           height: "auto",
-          margin: `${BLOCK_MARGIN.split(" ")[0]} auto ${
-            BLOCK_MARGIN.split(" ").slice(-1)[0]
-          }`,
+          margin: IMAGE_MARGIN,
           maxWidth: naturalWidth ? `${naturalWidth}px` : "100%",
           width: "100%",
         }}
@@ -763,76 +670,10 @@ const BlockRenderer = ({
   return <BlockNotSupported theme={theme} colors={colors} />;
 };
 
-export const LeafletWatermark = ({
-  staticUrl,
-  theme = defaultEmailTheme,
-}: {
-  staticUrl?: (filename: string) => string;
-  theme?: EmailTheme;
-} = {}) => {
-  const c = resolveColors(theme);
-  const leafletSrc = staticUrl
-    ? staticUrl("leaflet.png")
-    : "/email-assets/leaflet.png";
-  // Shrink-to-fit table with align="center" — the bulletproof email
-  // pattern for centering a chunk of inline content within whatever
-  // container it lands in.
-  return (
-    <table
-      role="presentation"
-      align="center"
-      cellPadding={0}
-      cellSpacing={0}
-      border={0}
-    >
-      <tbody>
-        <tr>
-          <td>
-            <Link
-              href="https://leaflet.pub"
-              style={{
-                color: c.tertiary,
-                fontFamily: theme.bodyFont,
-                fontSize: 14,
-                fontStyle: "italic",
-                textDecoration: "none",
-              }}
-            >
-              <Img
-                src={leafletSrc}
-                width={16}
-                height={16}
-                alt=""
-                style={{
-                  display: "inline-block",
-                  marginRight: 4,
-                  verticalAlign: "middle",
-                }}
-              />
-              <span style={{ verticalAlign: "middle" }}>
-                Published with{" "}
-                <span
-                  style={{
-                    color: theme.accentBackground,
-                    fontWeight: "bold",
-                  }}
-                >
-                  Leaflet
-                </span>
-              </span>
-            </Link>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  );
-};
-
-// Backwards-compatible helpers used by `leafletConfirmEmail.tsx` and
-// `pubConfirmEmail.tsx`, which wrap themselves in their own <Tailwind>
-// context. We keep layout (margin/font-size/line-height) inline so the
-// helpers still look right outside Tailwind, but leave color/font-family
-// to the caller (via className inside Tailwind, or a `style` override).
+// Helpers used by the confirm-email templates inside their <Tailwind>
+// context. Layout (margin/font-size/line-height) is inline so they render
+// without Tailwind too; color and font-family are left to the caller via
+// className or a `style` override so Tailwind classes can win.
 export const Text = (props: {
   children: React.ReactNode;
   noPadding?: boolean;
