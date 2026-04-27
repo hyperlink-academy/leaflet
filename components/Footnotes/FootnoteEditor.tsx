@@ -24,6 +24,7 @@ export function FootnoteEditor(props: {
   editable: boolean;
   onDelete?: () => void;
   autoFocus?: boolean;
+  hideIndex?: boolean;
 }) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let rep = useReplicache();
@@ -190,6 +191,7 @@ export function FootnoteEditor(props: {
     <div data-footnote-editor={props.footnoteEntityID}>
       <FootnoteItemLayout
         index={props.index}
+        hideIndex={props.hideIndex}
         indexAction={() => {
           let pm = mountRef.current?.querySelector(
             ".ProseMirror",

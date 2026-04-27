@@ -140,21 +140,16 @@ export function PublishedFootnotePopover(props: {
         visibility: position ? "visible" : "hidden",
       }}
     >
-      <div className="flex gap-2 items-start text-sm">
-        <span className="text-accent-contrast font-bold shrink-0">
-          {footnote.index}
-        </span>
-        <div className="min-w-0">
-          {footnote.contentPlaintext ? (
-            <TextBlockCore
-              plaintext={footnote.contentPlaintext}
-              facets={footnote.contentFacets}
-              index={[]}
-            />
-          ) : (
-            <span className="italic text-tertiary">Empty footnote</span>
-          )}
-        </div>
+      <div className="text-sm" style={{ wordBreak: "break-word" }}>
+        {footnote.contentPlaintext ? (
+          <TextBlockCore
+            plaintext={footnote.contentPlaintext}
+            facets={footnote.contentFacets}
+            index={[]}
+          />
+        ) : (
+          <span className="italic text-tertiary">Empty footnote</span>
+        )}
       </div>
     </div>
   );

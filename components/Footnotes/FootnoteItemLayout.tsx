@@ -4,6 +4,7 @@ export function FootnoteItemLayout(props: {
   index: number;
   indexAction?: () => void;
   indexHref?: string;
+  hideIndex?: boolean;
   children: ReactNode;
   trailing?: ReactNode;
   id?: string;
@@ -19,7 +20,7 @@ export function FootnoteItemLayout(props: {
       id={props.id}
       className={`footnote-item flex items-start gap-2 text-sm group/footnote ${props.className ?? ""}`}
     >
-      {props.indexHref ? (
+      {props.hideIndex ? null : props.indexHref ? (
         <a href={props.indexHref} className={indexClassName}>
           {indexContent}
         </a>
