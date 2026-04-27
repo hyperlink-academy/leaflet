@@ -44,7 +44,11 @@ export const ProfileButton = () => {
               <AccountSmall />
             )
           }
-          label={record ? record.displayName || record.handle : "Account"}
+          label={
+            record
+              ? record.displayName || record.handle
+              : identity?.email || "Account"
+          }
           className={`w-full`}
         />
       }

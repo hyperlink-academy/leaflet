@@ -32,9 +32,11 @@ export const DesktopNavigation = (props: {
         {identity ? (
           <>
             <ProfileButton />
-            <NotificationButton
-              current={props.currentPage === "notifications"}
-            />
+            {identity.atp_did && (
+              <NotificationButton
+                current={props.currentPage === "notifications"}
+              />
+            )}
           </>
         ) : (
           <LoginModal

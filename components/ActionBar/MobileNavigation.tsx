@@ -54,7 +54,7 @@ export const MobileNavigation = (props: {
       </div>
       {identity ? (
         <div className="flex gap-2">
-          <NotificationButton />
+          {identity.atp_did && <NotificationButton />}
           <ProfileButton />
         </div>
       ) : (
