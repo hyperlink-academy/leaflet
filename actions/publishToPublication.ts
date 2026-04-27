@@ -1,6 +1,7 @@
 "use server";
 
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
+import { OAuthSession } from "@atproto/oauth-client-node";
 import { getIdentityData } from "actions/getIdentityData";
 import {
   AtpBaseClient,
@@ -49,18 +50,7 @@ type PublishResult =
   | { success: true; rkey: string; record: SiteStandardDocument.Record }
   | { success: false; error: OAuthSessionError };
 
-export async function publishToPublication({
-  root_entity,
-  publication_uri,
-  leaflet_id,
-  title,
-  description,
-  tags,
-  cover_image,
-  entitiesToDelete,
-  publishedAt,
-  postPreferences,
-}: {
+type PublishArgs = {
   root_entity: string;
   publication_uri?: string;
   leaflet_id: string;
@@ -75,7 +65,11 @@ export async function publishToPublication({
     showMentions?: boolean;
     showRecommends?: boolean;
   } | null;
-}): Promise<PublishResult> {
+};
+
+export async function publishToPublication(
+  args: PublishArgs,
+): Promise<PublishResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
     return {
@@ -92,7 +86,31 @@ export async function publishToPublication({
   if (!sessionResult.ok) {
     return { success: false, error: sessionResult.error };
   }
-  let credentialSession = sessionResult.value;
+
+  return publishToPublicationWithSession({
+    ...args,
+    credentialSession: sessionResult.value,
+    did: identity.atp_did,
+  });
+}
+
+export async function publishToPublicationWithSession({
+  root_entity,
+  publication_uri,
+  leaflet_id,
+  title,
+  description,
+  tags,
+  cover_image,
+  entitiesToDelete,
+  publishedAt,
+  postPreferences,
+  credentialSession,
+  did,
+}: PublishArgs & {
+  credentialSession: OAuthSession;
+  did: string;
+}): Promise<PublishResult> {
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -111,7 +129,7 @@ export async function publishToPublication({
       .single();
     console.log(error);
 
-    if (!data || identity.atp_did !== data?.identity_did)
+    if (!data || did !== data?.identity_did)
       throw new Error("No draft or not publisher");
     draft = data.leaflets_in_publications[0];
     existingDocUri = draft?.doc;
@@ -128,13 +146,13 @@ export async function publishToPublication({
     // If updating an existing document, verify the current user is the owner
     if (existingDocUri) {
       let docOwner = new AtUri(existingDocUri).host;
-      if (docOwner !== identity.atp_did) {
+      if (docOwner !== did) {
         return {
           success: false,
           error: {
             type: "oauth_session_expired" as const,
             message: "Not the document owner",
-            did: identity.atp_did,
+            did,
           },
         };
       }

@@ -1,5 +1,6 @@
 "use client";
 import { publishToPublication } from "actions/publishToPublication";
+import { cancelScheduledPost } from "actions/cancelScheduledPost";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import {
@@ -9,11 +10,17 @@ import {
 } from "components/ActionBar/Publications";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { AddSmall } from "components/Icons/AddSmall";
+import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";
 import { Menu, MenuItem } from "components/Menu";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import {
+  SCHEDULED_DATE_FORMAT_NO_YEAR,
+  getFutureScheduledAt,
+} from "src/utils/scheduledPublish";
 import {
   useLeafletDomains,
   useLeafletPublicationData,
@@ -43,11 +50,27 @@ import { useLocalPublishedAt } from "components/Pages/Backdater";
 import { LoginModal } from "components/LoginButton";
 
 export const PublishButton = (props: { entityID: string }) => {
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, mutate } = useLeafletPublicationData();
+  let { permission_token } = useReplicache();
   let params = useParams();
   let router = useRouter();
 
   if (!pub) return <PublishToPublicationButton entityID={props.entityID} />;
+
+  const scheduledFor = getFutureScheduledAt(pub.scheduled_publish_at);
+
+  if (scheduledFor) {
+    return (
+      <ScheduledMenuButton
+        scheduledFor={scheduledFor}
+        leafletId={permission_token.id}
+        publicationUri={pub.publications?.uri}
+        onChanged={mutate}
+        onEdit={() => router.push(`/${params.leaflet_id}/publish`)}
+      />
+    );
+  }
+
   if (!pub?.doc)
     return (
       <ActionButton
@@ -165,6 +188,55 @@ const UpdateButton = () => {
         });
       }}
     />
+  );
+};
+
+const ScheduledMenuButton = (props: {
+  scheduledFor: string;
+  leafletId: string;
+  publicationUri: string | undefined;
+  onChanged: () => void;
+  onEdit: () => void;
+}) => {
+  let formattedDate = useLocalizedDate(
+    props.scheduledFor,
+    SCHEDULED_DATE_FORMAT_NO_YEAR,
+  );
+  let toaster = useToaster();
+  let [isLoading, setIsLoading] = useState(false);
+
+  return (
+    <Menu
+      asChild
+      trigger={
+        <ActionButton
+          primary
+          icon={<BlockCalendarSmall className="shrink-0" />}
+          label={isLoading ? <DotLoader /> : `Scheduled ${formattedDate}`}
+        />
+      }
+    >
+      <MenuItem onSelect={() => props.onEdit()}>Edit schedule</MenuItem>
+      <MenuItem
+        onSelect={async () => {
+          setIsLoading(true);
+          const result = await cancelScheduledPost({
+            leaflet_id: props.leafletId,
+            publication_uri: props.publicationUri,
+          });
+          setIsLoading(false);
+          props.onChanged();
+          if (!result.ok) {
+            toaster({
+              content: "Failed to cancel schedule",
+              type: "error",
+            });
+          }
+        }}
+      >
+        Cancel schedule
+      </MenuItem>
+    </Menu>
   );
 };
 

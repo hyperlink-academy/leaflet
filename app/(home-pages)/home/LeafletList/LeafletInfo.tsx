@@ -4,6 +4,13 @@ import { LeafletOptions } from "./LeafletOptions";
 import { timeAgo } from "src/utils/timeAgo";
 import { usePageTitle } from "components/utils/UpdateLeafletTitle";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
+import { Popover } from "components/Popover";
+import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import {
+  SCHEDULED_DATE_FORMAT,
+  getFutureScheduledAt,
+} from "src/utils/scheduledPublish";
 
 export const LeafletInfo = (props: {
   title?: string;
@@ -18,6 +25,8 @@ export const LeafletInfo = (props: {
   let prettyPublishedAt = pubStatus?.publishedAt
     ? timeAgo(pubStatus.publishedAt)
     : "";
+
+  const scheduledFor = getFutureScheduledAt(pubStatus?.scheduledPublishAt);
 
   // Look up root page first, like UpdateLeafletTitle does
   let firstPage = useEntity(pubStatus?.leafletId ?? "", "root/page")[0];
@@ -35,6 +44,7 @@ export const LeafletInfo = (props: {
           {title}
         </h3>
         <div className="flex gap-1 shrink-0">
+          {scheduledFor && <ScheduledIcon scheduledFor={scheduledFor} />}
           <LeafletOptions archived={props.archived} loggedIn={props.loggedIn} />
         </div>
       </div>
@@ -56,5 +66,27 @@ export const LeafletInfo = (props: {
         )}
       </div>
     </div>
+  );
+};
+
+const ScheduledIcon = (props: { scheduledFor: string }) => {
+  const formatted = useLocalizedDate(props.scheduledFor, SCHEDULED_DATE_FORMAT);
+  return (
+    <Popover
+      asChild
+      trigger={
+        <button
+          type="button"
+          className="text-tertiary hover:text-secondary"
+          aria-label="Scheduled"
+        >
+          <BlockCalendarSmall />
+        </button>
+      }
+    >
+      <div className="text-sm font-bold text-secondary">
+        Scheduled for {formatted}
+      </div>
+    </Popover>
   );
 };

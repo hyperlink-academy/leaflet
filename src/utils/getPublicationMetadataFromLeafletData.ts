@@ -12,6 +12,7 @@ export type PublicationMetadata = {
   title: string;
   leaflet: string;
   doc: string | null;
+  scheduled_publish_at: string | null;
   publications: {
     identity_did: string;
     name: string;

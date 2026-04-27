@@ -1,5 +1,6 @@
 "use client";
 import { publishToPublication } from "actions/publishToPublication";
+import { schedulePost } from "actions/schedulePost";
 import { DotLoader } from "components/utils/DotLoader";
 import { useState, useRef, type CSSProperties } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
@@ -23,8 +24,11 @@ import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { DatePicker, TimePicker } from "components/DatePicker";
 import { Popover } from "components/Popover";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { SCHEDULED_DATE_FORMAT } from "src/utils/scheduledPublish";
 import { Separator } from "react-aria-components";
-import { setHours, setMinutes } from "date-fns";
+import { isFuture, setHours, setMinutes } from "date-fns";
+import { useIsPro } from "src/hooks/useEntitlement";
+import { UpgradeModal } from "app/lish/[did]/[publication]/UpgradeModal";
 import {
   ThemeBackgroundProvider,
   ThemeProvider,
@@ -49,33 +53,58 @@ type Props = {
   subscriberCount?: number;
   entitiesToDelete?: string[];
   hasDraft: boolean;
+  scheduledPublishAt?: string;
 };
 
 export function PublishPost(props: Props) {
   let [publishState, setPublishState] = useState<
-    { state: "default" } | { state: "success"; post_url: string }
+    | { state: "default" }
+    | { state: "success"; post_url: string }
+    | { state: "scheduled"; scheduled_for: string }
   >({ state: "default" });
+
+  const renderState = () => {
+    switch (publishState.state) {
+      case "default":
+        return <PublishPostForm setPublishState={setPublishState} {...props} />;
+      case "scheduled":
+        return (
+          <SchedulePostSuccess
+            publication_uri={props.publication_uri}
+            record={props.record}
+            scheduled_for={publishState.scheduled_for}
+          />
+        );
+      case "success":
+        return (
+          <PublishPostSuccess
+            record={props.record}
+            publication_uri={props.publication_uri}
+            post_url={publishState.post_url}
+            posts_in_pub={(props.posts_in_pub || 0) + 1}
+          />
+        );
+    }
+  };
+
   return (
     <div className="publishPage w-screen h-full bg-bg-page flex sm:pt-0 pt-4 sm:place-items-center justify-center text-primary">
-      {publishState.state === "default" ? (
-        <PublishPostForm setPublishState={setPublishState} {...props} />
-      ) : (
-        <PublishPostSuccess
-          record={props.record}
-          publication_uri={props.publication_uri}
-          post_url={publishState.post_url}
-          posts_in_pub={(props.posts_in_pub || 0) + 1}
-        />
-      )}
+      {renderState()}
     </div>
   );
 }
 
 const PublishPostForm = (
   props: {
-    setPublishState: (s: { state: "success"; post_url: string }) => void;
+    setPublishState: (
+      s:
+        | { state: "success"; post_url: string }
+        | { state: "scheduled"; scheduled_for: string },
+    ) => void;
   } & Props,
 ) => {
+  const isPro = useIsPro();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   let editorStateRef = useRef<EditorState | null>(null);
   let [state, setState] = useState<"post-details" | "share-options">(
     "post-details",
@@ -107,7 +136,7 @@ const PublishPostForm = (
   let [showTagSelector, setShowTagSelector] = useState(false);
 
   let [localPublishedAt, setLocalPublishedAt] = useState<Date | undefined>(
-    undefined,
+    props.scheduledPublishAt ? new Date(props.scheduledPublishAt) : undefined,
   );
   // Get cover image from Replicache
   let replicacheCoverImage = useSubscribe(rep, (tx) =>
@@ -141,11 +170,51 @@ const PublishPostForm = (
     }
   };
 
+  const isScheduled = !!localPublishedAt && isFuture(localPublishedAt);
+
   async function submit() {
     if (isLoading) return;
+
+    if (isScheduled && !isPro) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setIsLoading(true);
     setOauthError(null);
     await rep?.push();
+
+    let [text, facets] = editorStateRef.current
+      ? editorStateToFacetedText(editorStateRef.current)
+      : [];
+
+    if (isScheduled && localPublishedAt) {
+      let result = await schedulePost({
+        leaflet_id: props.leaflet_id,
+        publication_uri: props.publication_uri,
+        scheduled_publish_at: localPublishedAt.toISOString(),
+        title: props.title,
+        description: props.description,
+        tags: currentTags,
+        cover_image: replicacheCoverImage,
+        preferences: postPreferences,
+        shareState,
+        bskyText: text,
+        bskyFacets: facets,
+        publicationUrl: props.record?.url,
+      });
+      setIsLoading(false);
+      if (!result.ok) {
+        if (result.error.type === "not_pro") setShowUpgradeModal(true);
+        return;
+      }
+      props.setPublishState({
+        state: "scheduled",
+        scheduled_for: result.value.scheduled_publish_at,
+      });
+      return;
+    }
+
     let result = await publishToPublication({
       root_entity: props.root_entity,
       publication_uri: props.publication_uri,
@@ -172,9 +241,6 @@ const PublishPostForm = (
       ? `${props.record.url}/${result.rkey}`
       : `https://leaflet.pub/p/${props.profile.did}/${result.rkey}`;
 
-    let [text, facets] = editorStateRef.current
-      ? editorStateToFacetedText(editorStateRef.current)
-      : [];
     if (shareState.bluesky) {
       let bskyResult = await publishPostToBsky({
         facets: facets || [],
@@ -197,6 +263,10 @@ const PublishPostForm = (
 
   return (
     <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3 text-primary">
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+      />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -213,7 +283,7 @@ const PublishPostForm = (
               />
               <hr className="border-border-light" />
 
-              <BackdateOptions
+              <DateOptions
                 publishedAt={localPublishedAt}
                 setPublishedAt={setLocalPublishedAt}
               />
@@ -328,6 +398,8 @@ const PublishPostForm = (
                   >
                     {isLoading ? (
                       <DotLoader className="h-[23px]" />
+                    ) : isScheduled ? (
+                      "Schedule this Post!"
                     ) : (
                       "Publish this Post!"
                     )}
@@ -463,20 +535,13 @@ const PublicationSocialPreview = (props: {
   );
 };
 
-const BackdateOptions = (props: {
+const DateOptions = (props: {
   publishedAt: Date | undefined;
   setPublishedAt: (date: Date | undefined) => void;
 }) => {
   const formattedDate = useLocalizedDate(
     props.publishedAt?.toISOString() || "",
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-      hour12: true,
-    },
+    SCHEDULED_DATE_FORMAT,
   );
 
   const [timeValue, setTimeValue] = useState<string>(() => {
@@ -484,20 +549,13 @@ const BackdateOptions = (props: {
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
   });
 
-  let currentTime = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`;
-
   const handleTimeChange = (time: string) => {
     setTimeValue(time);
     if (!props.publishedAt) return;
 
     const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
     const newDate = setHours(setMinutes(props.publishedAt, minutes), hours);
-    const currentDate = new Date();
-
-    if (newDate > currentDate) {
-      props.setPublishedAt(currentDate);
-      setTimeValue(currentTime);
-    } else props.setPublishedAt(newDate);
+    props.setPublishedAt(newDate);
   };
 
   const handleDateChange = (date: Date | undefined) => {
@@ -515,16 +573,16 @@ const BackdateOptions = (props: {
       hours,
       minutes,
     );
-    const currentDate = new Date();
-    if (newDate > currentDate) {
-      props.setPublishedAt(currentDate);
-      setTimeValue(currentTime);
-    } else props.setPublishedAt(newDate);
+    props.setPublishedAt(newDate);
   };
+
+  const scheduled = !!props.publishedAt && isFuture(props.publishedAt);
 
   return (
     <div className="flex justify-between gap-2">
-      <div className="text-tertiary">Publish Date</div>
+      <div className="text-tertiary">
+        {scheduled ? "Scheduled for" : "Publish Date"}
+      </div>
       <Popover
         className="w-64 px-2!"
         trigger={
@@ -539,9 +597,9 @@ const BackdateOptions = (props: {
       >
         <div className="flex flex-col gap-3">
           <DatePicker
+            mode="single"
             selected={props.publishedAt}
             onSelect={handleDateChange}
-            disabled={(date) => date > new Date()}
           />
           <Separator className="border-border" />
           <div className="flex gap-4 pb-1 items-center">
@@ -576,6 +634,41 @@ const PublishingTo = (props: {
         <LooseLeafSmall className="shrink-0" />
         <div className="font-bold text-secondary">Looseleaf</div>
       </div>
+    </div>
+  );
+};
+
+const SchedulePostSuccess = (props: {
+  scheduled_for: string;
+  publication_uri?: string;
+  record: Props["record"];
+}) => {
+  let uri = props.publication_uri ? new AtUri(props.publication_uri) : null;
+  const formattedDate = useLocalizedDate(
+    props.scheduled_for,
+    SCHEDULED_DATE_FORMAT,
+  );
+  return (
+    <div className="frosted-container p-4 m-3 sm:m-4 flex flex-col gap-2 justify-center text-center w-fit h-fit mx-auto">
+      <h2 className="pt-2">Scheduled!</h2>
+      <div className="text-secondary">
+        Will be published {formattedDate}
+      </div>
+      {uri && props.record ? (
+        <Link
+          className="hover:no-underline! font-bold place-self-center pt-2"
+          href={`/lish/${uri.host}/${encodeURIComponent(props.record.name || "")}/dashboard`}
+        >
+          <ButtonPrimary>Back to Dashboard</ButtonPrimary>
+        </Link>
+      ) : (
+        <Link
+          className="hover:no-underline! font-bold place-self-center pt-2"
+          href="/"
+        >
+          <ButtonPrimary>Back to Home</ButtonPrimary>
+        </Link>
+      )}
     </div>
   );
 };

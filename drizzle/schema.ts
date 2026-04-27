@@ -536,6 +536,8 @@ export const leaflets_to_documents = pgTable("leaflets_to_documents", {
 	tags: text("tags").default('RRAY[').array(),
 	cover_image: text("cover_image"),
 	preferences: jsonb("preferences"),
+	scheduled_publish_at: timestamp("scheduled_publish_at", { withTimezone: true, mode: 'string' }),
+	scheduled_publish_data: jsonb("scheduled_publish_data"),
 },
 (table) => {
 	return {
@@ -553,6 +555,8 @@ export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 	tags: text("tags").default('RRAY[').array(),
 	cover_image: text("cover_image"),
 	preferences: jsonb("preferences"),
+	scheduled_publish_at: timestamp("scheduled_publish_at", { withTimezone: true, mode: 'string' }),
+	scheduled_publish_data: jsonb("scheduled_publish_data"),
 },
 (table) => {
 	return {

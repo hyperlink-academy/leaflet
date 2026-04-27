@@ -90,6 +90,12 @@ export const events = {
       root_entity: string;
     }>(),
   }),
+  postScheduledPublish: eventType("post/scheduled-publish", {
+    schema: staticSchema<{
+      leaflet_id: string;
+      publication_uri?: string;
+    }>(),
+  }),
 };
 
 // Create a client to send and receive events.

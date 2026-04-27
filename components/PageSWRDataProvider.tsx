@@ -18,6 +18,7 @@ import {
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { getScheduledPublishAt } from "src/utils/scheduledPublish";
 
 export const StaticLeafletDataContext = createContext<
   null | GetLeafletDataReturnType["result"]["data"]
@@ -143,6 +144,8 @@ export function useLeafletPublicationStatus() {
     }
   }
 
+  const scheduledPublishAt = getScheduledPublishAt(data);
+
   return {
     token: data,
     leafletId: data.root_entity,
@@ -155,6 +158,7 @@ export function useLeafletPublicationStatus() {
     publishedAt:
       publishedInPublication?.documents?.indexed_at ??
       publishedStandalone?.documents?.indexed_at,
+    scheduledPublishAt,
     documentUri,
     // Full URL for sharing published posts
     postShareLink,

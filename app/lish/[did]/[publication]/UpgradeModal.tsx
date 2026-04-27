@@ -72,14 +72,22 @@ export const UpgradeContent = () => {
 };
 
 export const UpgradeModal = (props: {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
   asChild?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) => {
   return (
     <Modal
       asChild={props.asChild}
+      open={props.open}
+      onOpenChange={props.onOpenChange}
       className="sm:w-fit w-[90vw]"
-      trigger={<div className="sm:w-full">{props.trigger}</div>}
+      trigger={
+        props.trigger ? (
+          <div className="sm:w-full">{props.trigger}</div>
+        ) : undefined
+      }
     >
       <UpgradeContent />
     </Modal>

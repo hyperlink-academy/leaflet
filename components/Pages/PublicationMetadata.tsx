@@ -22,6 +22,11 @@ import { PostHeaderLayout } from "app/lish/[did]/[publication]/[rkey]/PostHeader
 import { Backdater } from "./Backdater";
 import { RecommendTinyEmpty } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import {
+  SCHEDULED_DATE_FORMAT,
+  getFutureScheduledAt,
+} from "src/utils/scheduledPublish";
 
 export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
   let { rep } = useReplicache();
@@ -47,6 +52,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
     normalizedPublication?.preferences,
   );
   let publishedAt = normalizedDocument?.publishedAt;
+  const scheduledFor = getFutureScheduledAt(pub?.scheduled_publish_at);
 
   if (!pub) return null;
 
@@ -107,7 +113,9 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
       }
       postInfo={
         <>
-          {pub.doc ? (
+          {scheduledFor ? (
+            <ScheduledForLabel scheduledFor={scheduledFor} />
+          ) : pub.doc ? (
             <div className="flex gap-2 items-center">
               <p className="text-sm text-tertiary">
                 Published{" "}
@@ -236,6 +244,11 @@ export const TextField = ({
       placeholder={placeholder}
     />
   );
+};
+
+const ScheduledForLabel = (props: { scheduledFor: string }) => {
+  const formatted = useLocalizedDate(props.scheduledFor, SCHEDULED_DATE_FORMAT);
+  return <p className="text-sm text-tertiary">Will be published {formatted}</p>;
 };
 
 export const PublicationMetadataPreview = () => {

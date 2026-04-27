@@ -3,26 +3,23 @@
 import {
   AppBskyRichtextFacet,
   Agent as BskyAgent,
-  UnicodeString,
 } from "@atproto/api";
 import sharp from "sharp";
 import { TID } from "@atproto/common";
+import { OAuthSession } from "@atproto/oauth-client-node";
 import { getIdentityData } from "actions/getIdentityData";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
-import {
-  getMicroLinkOgImage,
-  getWebpageImage,
-} from "src/utils/getMicroLinkOgImage";
+import { getWebpageImage } from "src/utils/getMicroLinkOgImage";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 
 type PublishBskyResult =
   | { success: true }
   | { success: false; error: OAuthSessionError };
 
-export async function publishPostToBsky(args: {
+type PublishBskyArgs = {
   text: string;
   url: string;
   title: string;
@@ -30,24 +27,12 @@ export async function publishPostToBsky(args: {
   document_record: SiteStandardDocument.Record;
   rkey: string;
   facets: AppBskyRichtextFacet.Main[];
-}): Promise<PublishBskyResult> {
-  let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) {
-    return {
-      success: false,
-      error: {
-        type: "oauth_session_expired",
-        message: "Not authenticated",
-        did: "",
-      },
-    };
-  }
+};
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
-  if (!sessionResult.ok) {
-    return { success: false, error: sessionResult.error };
-  }
-  let credentialSession = sessionResult.value;
+export async function publishPostToBskyWithSession(
+  args: PublishBskyArgs & { credentialSession: OAuthSession; did: string },
+): Promise<PublishBskyResult> {
+  const { credentialSession, did } = args;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -61,7 +46,7 @@ export async function publishPostToBsky(args: {
         "$link"
       ] || args.document_record.coverImage.ref.toString();
 
-    let coverImageResponse = await fetchAtprotoBlob(identity.atp_did, cid);
+    let coverImageResponse = await fetchAtprotoBlob(did, cid);
     if (coverImageResponse) {
       imageBinary = await coverImageResponse.blob();
     }
@@ -128,4 +113,31 @@ export async function publishPostToBsky(args: {
     })
     .eq("uri", result.uri);
   return { success: true };
+}
+
+export async function publishPostToBsky(
+  args: PublishBskyArgs,
+): Promise<PublishBskyResult> {
+  let identity = await getIdentityData();
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
+
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+
+  return publishPostToBskyWithSession({
+    ...args,
+    credentialSession: sessionResult.value,
+    did: identity.atp_did,
+  });
 }

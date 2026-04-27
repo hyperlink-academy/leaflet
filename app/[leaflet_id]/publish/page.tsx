@@ -2,6 +2,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { PublishPost } from "./PublishPost";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { getIdentityData } from "actions/getIdentityData";
+import { getScheduledPublishAt } from "src/utils/scheduledPublish";
 
 import { AtpAgent } from "@atproto/api";
 import { ReplicacheProvider } from "src/replicache";
@@ -119,6 +120,8 @@ export default async function PublishLeafletPage(props: Props) {
     data.leaflets_in_publications.length > 0 ||
     data.leaflets_to_documents.length > 0;
 
+  let scheduledPublishAt = getScheduledPublishAt(data) ?? undefined;
+
   return (
     <ReplicacheProvider
       rootEntity={rootEntity}
@@ -139,6 +142,7 @@ export default async function PublishLeafletPage(props: Props) {
         subscriberCount={subscriberCount}
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}
+        scheduledPublishAt={scheduledPublishAt}
       />
     </ReplicacheProvider>
   );

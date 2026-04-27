@@ -605,6 +605,8 @@ export type Database = {
           leaflet: string
           preferences: Json | null
           publication: string
+          scheduled_publish_at: string | null
+          scheduled_publish_data: Json | null
           tags: string[] | null
           title: string
         }
@@ -616,6 +618,8 @@ export type Database = {
           leaflet: string
           preferences?: Json | null
           publication: string
+          scheduled_publish_at?: string | null
+          scheduled_publish_data?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -627,6 +631,8 @@ export type Database = {
           leaflet?: string
           preferences?: Json | null
           publication?: string
+          scheduled_publish_at?: string | null
+          scheduled_publish_data?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -663,6 +669,8 @@ export type Database = {
           document: string
           leaflet: string
           preferences: Json | null
+          scheduled_publish_at: string | null
+          scheduled_publish_data: Json | null
           tags: string[] | null
           title: string
         }
@@ -674,6 +682,8 @@ export type Database = {
           document: string
           leaflet: string
           preferences?: Json | null
+          scheduled_publish_at?: string | null
+          scheduled_publish_data?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -685,6 +695,8 @@ export type Database = {
           document?: string
           leaflet?: string
           preferences?: Json | null
+          scheduled_publish_at?: string | null
+          scheduled_publish_data?: Json | null
           tags?: string[] | null
           title?: string
         }
