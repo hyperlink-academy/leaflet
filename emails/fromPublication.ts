@@ -40,6 +40,7 @@ export const resolveEmailTheme = (
     accentText: colorToCss(theme.accentText, defaultEmailTheme.accentText),
     headingFont: getFontFamilyValue(getFontConfig(theme.headingFont)),
     bodyFont: getFontFamilyValue(getFontConfig(theme.bodyFont)),
+    pageWidth: theme.pageWidth ?? defaultEmailTheme.pageWidth,
   };
 };
 

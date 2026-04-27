@@ -1,7 +1,6 @@
 import {
   Body,
   Column,
-  Container,
   Head,
   Heading as ReactEmailHeading,
   Hr,
@@ -11,13 +10,11 @@ import {
   Text as ReactEmailText,
   Section,
   Row,
-  Button,
   CodeBlock as ReactEmailCodeBlock,
   dracula,
 } from "@react-email/components";
 import type { PrismLanguage } from "@react-email/code-block";
-import { Tailwind, pixelBasedPreset } from "@react-email/components";
-import React from "react";
+import React, { type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksCode,
@@ -40,6 +37,10 @@ export type EmailTheme = {
   accentText: string;
   headingFont: string;
   bodyFont: string;
+  // Matches the publication's web `pageWidth` (px) so subscribers see the
+  // post at the same column width in their inbox as on the live page.
+  // Default 624 mirrors `ThemeProvider.tsx`'s fallback.
+  pageWidth: number;
 };
 
 export const defaultEmailTheme: EmailTheme = {
@@ -50,7 +51,76 @@ export const defaultEmailTheme: EmailTheme = {
   accentText: "rgb(255, 255, 255)",
   headingFont: "Georgia, serif",
   bodyFont: "Verdana, sans-serif",
+  pageWidth: 624,
 };
+
+// Parse rgb()/rgba()/#hex into [r, g, b]. Returns black on parse failure —
+// theme colors come from a typed config so this is just defensive.
+const parseColor = (input: string): [number, number, number] => {
+  const rgbMatch = input.match(
+    /rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i,
+  );
+  if (rgbMatch)
+    return [
+      Number(rgbMatch[1]),
+      Number(rgbMatch[2]),
+      Number(rgbMatch[3]),
+    ];
+  const hexMatch = input.match(/^#([0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const h = hexMatch[1];
+    return [
+      parseInt(h.slice(0, 2), 16),
+      parseInt(h.slice(2, 4), 16),
+      parseInt(h.slice(4, 6), 16),
+    ];
+  }
+  const hex3 = input.match(/^#([0-9a-f]{3})$/i);
+  if (hex3) {
+    const h = hex3[1];
+    return [
+      parseInt(h[0] + h[0], 16),
+      parseInt(h[1] + h[1], 16),
+      parseInt(h[2] + h[2], 16),
+    ];
+  }
+  return [0, 0, 0];
+};
+
+// Linear sRGB mix of two colors. We resolve theme tints to literal rgb() at
+// render time because Gmail's CSS sanitizer drops `color-mix(...)` — leaving
+// borders invisible and accent text fall back to defaults. Linear mixing
+// isn't perceptually identical to the oklab original, but for the
+// near-grayscale tints we use it's visually indistinguishable.
+const mixRgb = (
+  a: string,
+  b: string,
+  bPercent: number,
+): string => {
+  const [ar, ag, ab] = parseColor(a);
+  const [br, bg, bb] = parseColor(b);
+  const t = bPercent / 100;
+  const round = (x: number) => Math.round(x);
+  return `rgb(${round(ar * (1 - t) + br * t)}, ${round(
+    ag * (1 - t) + bg * t,
+  )}, ${round(ab * (1 - t) + bb * t)})`;
+};
+
+type ResolvedColors = {
+  primary: string;
+  secondary: string;
+  tertiary: string;
+  border: string;
+  borderLight: string;
+};
+
+const resolveColors = (theme: EmailTheme): ResolvedColors => ({
+  primary: theme.primary,
+  secondary: mixRgb(theme.primary, theme.pageBackground, 25),
+  tertiary: mixRgb(theme.primary, theme.pageBackground, 55),
+  border: mixRgb(theme.primary, theme.pageBackground, 75),
+  borderLight: mixRgb(theme.primary, theme.pageBackground, 85),
+});
 
 export type PostEmailProps = {
   publicationName: string;
@@ -184,178 +254,354 @@ const defaultProps: PostEmailProps = {
   ],
 };
 
+const BLOCK_MARGIN = "4px 0 16px";
+const HEADING_MARGIN = "4px 0 0";
+
 export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
   const p: PostEmailProps = { ...defaultProps, ...props };
   const theme = p.theme ?? defaultEmailTheme;
+  const c = resolveColors(theme);
   const staticUrl = (filename: string) =>
     `${p.assetsBaseUrl.replace(/\/$/, "")}/email-assets/${filename}`;
   const byline = [p.authorName, p.publishedAtLabel].filter(Boolean).join(" | ");
 
+  const accentLink: CSSProperties = {
+    color: theme.accentBackground,
+    textDecoration: "none",
+    fontFamily: theme.bodyFont,
+  };
+
+  // Page width as both an HTML width attribute (px) and a CSS max-width.
+  // Gmail strips/ignores `max-width` in some contexts but always honors the
+  // HTML `width` attribute on a <table>, so we set both: the HTML `width`
+  // pins the box for Gmail, and `maxWidth: 100%` lets it shrink on narrow
+  // viewports. The value mirrors the publication's web page width.
+  const pageWidth = theme.pageWidth;
+
   return (
     <Html>
-      <Tailwind
-        config={{
-          presets: [pixelBasedPreset],
-          theme: {
-            screens: {
-              sm: "640px",
-              md: "960px",
-              lg: "1280px",
-            },
-            borderRadius: {
-              none: "0",
-              md: "0.25rem",
-              lg: "0.5rem",
-              full: "9999px",
-            },
-            colors: {
-              inherit: "inherit",
-              transparent: "transparent",
-              current: "currentColor",
-              primary: theme.primary,
-              secondary: `color-mix(in oklab, ${theme.primary}, ${theme.pageBackground} 25%)`,
-              tertiary: `color-mix(in oklab, ${theme.primary}, ${theme.pageBackground} 55%)`,
-              border: `color-mix(in oklab, ${theme.primary}, ${theme.pageBackground} 75%)`,
-              "border-light": `color-mix(in oklab, ${theme.primary}, ${theme.pageBackground} 85%)`,
-              white: "#FFFFFF",
-              "accent-1": theme.accentBackground,
-              "accent-2": theme.accentText,
-              "accent-contrast": theme.accentBackground,
-              "bg-leaflet": theme.backgroundColor,
-              "bg-page": theme.pageBackground,
-              "highlight-1": "rgb(255, 177, 177)",
-              "highlight-2": "rgb(253, 245, 203)",
-              "highlight-3": "rgb(255, 205, 195)",
-              test: "#E18181",
-              "test-blue": "#48D1EF",
-            },
-            fontSize: {
-              xs: ".75rem",
-              sm: ".875rem",
-              base: "1rem",
-              lg: "1.125rem",
-              xl: "1.625rem",
-              "2xl": "2rem",
-            },
-            extend: {
-              fontFamily: {
-                sans: [theme.bodyFont],
-                serif: [theme.headingFont],
-              },
-            },
-          },
+      <Head>
+        {/* Without this, iOS Mail / Gmail iOS auto-scale the email down to
+            fit a wider-than-viewport layout (e.g. 624px in a 400px screen)
+            — which makes every element appear "too small". With it, we get
+            1:1 pixel sizing and our @media queries below can shrink the
+            card to viewport width directly. */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0"
+        />
+        {/* Mobile-only padding tightening. Apple Mail, iOS Mail, Gmail web,
+            and most other clients honor @media in <head>; Outlook desktop
+            ignores it and keeps the wider inline padding, which is fine
+            (it's a desktop client). !important is required so the
+            media-query rule beats the inline `style.padding`. */}
+        <style>{`
+          @media only screen and (max-width: 480px) {
+            .email-page-pad { padding: 12px 8px !important; }
+            .email-card-pad { padding: 16px !important; }
+            /* The card table carries an HTML width attribute (e.g. 624) so
+               Gmail anchors on it; on mobile that pins it wider than the
+               viewport. Force it to fit. */
+            .email-card-table {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+          }
+        `}</style>
+      </Head>
+      <Body
+        style={{
+          backgroundColor: theme.backgroundColor,
+          color: theme.primary,
+          fontFamily: theme.bodyFont,
+          margin: 0,
+          padding: 0,
         }}
       >
-        <Head />
-        <Body className={`bg-bg-leaflet font-sans p-2 sm:px-4 sm:py-6 !m-0 `}>
-          <Container
-            className={`bg-bg-page rounded-lg border border-border mx-auto px-4 sm:px-6`}
-            style={{ maxWidth: "28rem" }}
-          >
-            <Button
-              href={p.publicationUrl}
-              className={`${link} font-bold !my-0`}
-            >
-              {p.publicationName}
-            </Button>
-
-            <Heading as="h1" noPadding>
-              {p.postTitle}
-            </Heading>
-            {p.postDescription ? (
-              <Text noPadding className={`text-secondary italic pt-1`}>
-                {p.postDescription}
-              </Text>
-            ) : null}
-
-            {byline ? (
-              <Section className={`postActions !mb-7 !mt-3`}>
-                <Row>
-                  <Column width="auto">
-                    <Text className="text-sm text-tertiary !my-0">
-                      {byline}
-                    </Text>
-                  </Column>
-                  <Column width="12px" />
-                  <Column style={{ width: "16px" }}>
-                    <Button href={drawerUrl(p.postUrl, "quotes")}>
-                      <Img
-                        width={16}
-                        height={16}
-                        src={staticUrl("quote.png")}
-                        alt="See quotes"
-                      />
-                    </Button>
-                  </Column>
-                  <Column width="8px" />
-                  <Column style={{ width: "16px" }}>
-                    <Button href={drawerUrl(p.postUrl, "comments")}>
-                      <Img
-                        width={16}
-                        height={16}
-                        src={staticUrl("comment.png")}
-                        alt="See comments"
-                      />
-                    </Button>
-                  </Column>
-                  <Column width="10px" />
-                  <Column style={{ width: "16px" }}>
-                    <Button href={p.postUrl}>
-                      <Img
-                        width={16}
-                        height={16}
-                        src={staticUrl("external-link.png")}
-                        alt="Open post"
-                      />
-                    </Button>
-                  </Column>
-                  <Column width="inherit" />
-                </Row>
-              </Section>
-            ) : null}
-            <Section className="postContent">
-              {p.blocks.map((b, i) => (
-                <BlockRenderer
-                  key={i}
-                  block={b.block}
-                  did={p.did}
-                  assetsBaseUrl={p.assetsBaseUrl}
-                />
-              ))}
-            </Section>
-            <Section className="pt-4">
-              <Text noPadding className="text-center leading-5">
-                <Button
-                  href={p.postUrl}
-                  className={`${link} font-bold text-sm leading-5 !my-0`}
-                >
-                  See Full Post
-                </Button>
-              </Text>
-              <Text
-                noPadding
-                className="text-sm text-tertiary text-center leading-5"
+        {/* Page-background wrapper. Gmail strips/replaces <body> styling, so
+            we paint the background on this table's <td> using both the
+            bgcolor HTML attribute (Outlook/Gmail bulletproof) and a
+            backgroundColor style (everything else). */}
+        <table
+          role="presentation"
+          width="100%"
+          cellPadding={0}
+          cellSpacing={0}
+          border={0}
+          bgcolor={theme.backgroundColor}
+          style={{
+            width: "100%",
+            backgroundColor: theme.backgroundColor,
+          }}
+        >
+          <tbody>
+            <tr>
+              <td
+                align="center"
+                className="email-page-pad"
+                {...({ bgcolor: theme.backgroundColor } as Record<string, string>)}
+                style={{
+                  backgroundColor: theme.backgroundColor,
+                  padding: "24px 16px",
+                }}
               >
-                {p.unsubscribeUrl ? (
-                  <Button
-                    href={p.unsubscribeUrl}
-                    className={`leading-5 !my-0`}
-                  >
-                    Unsubscribe
-                  </Button>
-                ) : (
-                  <span className={`leading-5 !my-0 italic`}>
-                    (preview — not sent to subscribers)
-                  </span>
-                )}
-              </Text>
-            </Section>
-          </Container>
-          <Hr className="border-border-light my-3" />
+                <table
+                  role="presentation"
+                  align="center"
+                  className="email-card-table"
+                  width={pageWidth}
+                  cellPadding={0}
+                  cellSpacing={0}
+                  border={0}
+                  style={{ width: pageWidth, maxWidth: "100%" }}
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        className="email-card-pad"
+                        {...({ bgcolor: theme.pageBackground } as Record<
+                          string,
+                          string
+                        >)}
+                        style={{
+                          backgroundColor: theme.pageBackground,
+                          border: `1px solid ${c.border}`,
+                          borderRadius: 8,
+                          padding: "20px 24px",
+                        }}
+                      >
+                <Link
+                  href={p.publicationUrl}
+                  style={{
+                    ...accentLink,
+                    fontWeight: "bold",
+                    fontSize: 16,
+                  }}
+                >
+                  {p.publicationName}
+                </Link>
 
-          <LeafletWatermark staticUrl={staticUrl} />
-        </Body>
-      </Tailwind>
+                <ReactEmailHeading
+                  as="h1"
+                  style={{
+                    color: theme.primary,
+                    fontFamily: theme.headingFont,
+                    fontWeight: "bold",
+                    fontSize: 26,
+                    lineHeight: 1.2,
+                    margin: "8px 0 0",
+                  }}
+                >
+                  {p.postTitle}
+                </ReactEmailHeading>
+
+                {p.postDescription ? (
+                  <ReactEmailText
+                    style={{
+                      color: c.secondary,
+                      fontFamily: theme.bodyFont,
+                      fontSize: 16,
+                      fontStyle: "italic",
+                      lineHeight: 1.4,
+                      margin: "4px 0 0",
+                    }}
+                  >
+                    {p.postDescription}
+                  </ReactEmailText>
+                ) : null}
+
+                {byline ? (
+                  <Section
+                    style={{ margin: "12px 0 28px", minWidth: "100%" }}
+                  >
+                    <Row style={{ minWidth: "100%" }}>
+                      <Column style={{ verticalAlign: "middle" }}>
+                        <ReactEmailText
+                          style={{
+                            color: c.tertiary,
+                            fontFamily: theme.bodyFont,
+                            fontSize: 14,
+                            lineHeight: 1.4,
+                            margin: 0,
+                          }}
+                        >
+                          {byline}
+                        </ReactEmailText>
+                      </Column>
+                      <Column style={{ width: 12 }} />
+                      <Column style={{ width: 16, verticalAlign: "middle" }}>
+                        <Link
+                          href={drawerUrl(p.postUrl, "quotes")}
+                          style={accentLink}
+                        >
+                          <Img
+                            width={16}
+                            height={16}
+                            src={staticUrl("quote.png")}
+                            alt="See quotes"
+                          />
+                        </Link>
+                      </Column>
+                      <Column style={{ width: 8 }} />
+                      <Column style={{ width: 16, verticalAlign: "middle" }}>
+                        <Link
+                          href={drawerUrl(p.postUrl, "comments")}
+                          style={accentLink}
+                        >
+                          <Img
+                            width={16}
+                            height={16}
+                            src={staticUrl("comment.png")}
+                            alt="See comments"
+                          />
+                        </Link>
+                      </Column>
+                      <Column style={{ width: 10 }} />
+                      <Column style={{ width: 16, verticalAlign: "middle" }}>
+                        <Link href={p.postUrl} style={accentLink}>
+                          <Img
+                            width={16}
+                            height={16}
+                            src={staticUrl("external-link.png")}
+                            alt="Open post"
+                          />
+                        </Link>
+                      </Column>
+                    </Row>
+                  </Section>
+                ) : null}
+
+                {p.blocks.map((b, i) => (
+                  <BlockRenderer
+                    key={i}
+                    block={b.block}
+                    did={p.did}
+                    assetsBaseUrl={p.assetsBaseUrl}
+                    theme={theme}
+                    colors={c}
+                  />
+                ))}
+
+                {/* Footer: Gmail won't reliably cascade `text-align` from a
+                    wrapping <table>, so each centered row is its own <td
+                    align="center"> — the bulletproof email-centering
+                    pattern. `min-width: 100%` keeps Gmail iOS from
+                    shrink-wrapping the table around the short link text. */}
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellPadding={0}
+                  cellSpacing={0}
+                  border={0}
+                  style={{ width: "100%", minWidth: "100%" }}
+                >
+                  <tbody>
+                    <tr>
+                      <td align="center" style={{ paddingTop: 16 }}>
+                        <Link
+                          href={p.postUrl}
+                          style={{
+                            ...accentLink,
+                            fontWeight: "bold",
+                            fontSize: 14,
+                            lineHeight: "20px",
+                          }}
+                        >
+                          See Full Post
+                        </Link>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        align="center"
+                        style={{
+                          color: c.tertiary,
+                          fontFamily: theme.bodyFont,
+                          fontSize: 14,
+                          lineHeight: "20px",
+                          paddingTop: 8,
+                        }}
+                      >
+                        {p.unsubscribeUrl ? (
+                          <Link
+                            href={p.unsubscribeUrl}
+                            style={{
+                              color: c.tertiary,
+                              fontSize: 14,
+                              lineHeight: "20px",
+                              textDecoration: "underline",
+                            }}
+                          >
+                            Unsubscribe
+                          </Link>
+                        ) : (
+                          <span style={{ fontStyle: "italic" }}>
+                            (preview — not sent to subscribers)
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+
+                    {/* Spacer */}
+                    <tr>
+                      <td
+                        style={{
+                          fontSize: 0,
+                          height: 12,
+                          lineHeight: "12px",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                    </tr>
+
+                    {/* Horizontal rule between card and watermark. <hr>
+                        margins are flaky in Gmail, so we use a 1px-tall
+                        <td> with border-top instead. */}
+                    <tr>
+                      <td
+                        style={{
+                          borderTop: `1px solid ${c.borderLight}`,
+                          fontSize: 0,
+                          height: 1,
+                          lineHeight: "1px",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td
+                        style={{
+                          fontSize: 0,
+                          height: 12,
+                          lineHeight: "12px",
+                        }}
+                      >
+                        &nbsp;
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td align="center">
+                        <LeafletWatermark
+                          theme={theme}
+                          staticUrl={staticUrl}
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </Body>
     </Html>
   );
 };
@@ -365,32 +611,82 @@ const BlockRenderer = ({
   block,
   did,
   assetsBaseUrl,
+  theme,
+  colors,
 }: {
   block: PubLeafletPagesLinearDocument.Block["block"];
   did: string;
   assetsBaseUrl: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
 }) => {
   if (PubLeafletBlocksText.isMain(block)) {
-    return <Text>{block.plaintext || " "}</Text>;
+    return (
+      <ReactEmailText
+        style={{
+          color: theme.primary,
+          fontFamily: theme.bodyFont,
+          fontSize: 16,
+          lineHeight: 1.5,
+          margin: BLOCK_MARGIN,
+        }}
+      >
+        {block.plaintext || " "}
+      </ReactEmailText>
+    );
   }
   if (PubLeafletBlocksHeader.isMain(block)) {
     const raw = Math.floor(block.level ?? 1);
     const clamped = (raw < 1 ? 1 : raw > 3 ? 3 : raw) as 1 | 2 | 3;
-    return <Heading as={`h${clamped}`}>{block.plaintext}</Heading>;
+    const fontSize = clamped === 1 ? 26 : clamped === 2 ? 18 : 16;
+    const color = clamped === 3 ? colors.secondary : theme.primary;
+    return (
+      <ReactEmailHeading
+        as={`h${clamped}`}
+        style={{
+          color,
+          fontFamily: theme.headingFont,
+          fontWeight: "bold",
+          fontSize,
+          lineHeight: 1.25,
+          margin: HEADING_MARGIN,
+        }}
+      >
+        {block.plaintext}
+      </ReactEmailHeading>
+    );
   }
   if (PubLeafletBlocksBlockquote.isMain(block)) {
     return (
-      <Row className={blockPadding}>
-        <Column className="!my-0 w-[2px] bg-border" />
-        <Column className="w-2" />
-        <Column>
-          <Text className="!my-0.5">{block.plaintext}</Text>
-        </Column>
-      </Row>
+      <Section style={{ margin: BLOCK_MARGIN }}>
+        <Row>
+          <Column style={{ width: 2, backgroundColor: colors.border }} />
+          <Column style={{ width: 8 }} />
+          <Column>
+            <ReactEmailText
+              style={{
+                color: theme.primary,
+                fontFamily: theme.bodyFont,
+                fontSize: 16,
+                lineHeight: 1.5,
+                margin: "2px 0",
+              }}
+            >
+              {block.plaintext}
+            </ReactEmailText>
+          </Column>
+        </Row>
+      </Section>
     );
   }
   if (PubLeafletBlocksCode.isMain(block)) {
-    return <CodeBlock code={block.plaintext} language={block.language} />;
+    return (
+      <CodeBlock
+        code={block.plaintext}
+        language={block.language}
+        borderColor={colors.borderLight}
+      />
+    );
   }
   if (PubLeafletBlocksImage.isMain(block)) {
     const src = blobRefToSrc(block.image.ref, did, assetsBaseUrl);
@@ -403,12 +699,14 @@ const BlockRenderer = ({
       <Img
         src={src}
         alt={block.alt ?? ""}
-        className={`${blockPadding} mx-auto`}
         style={{
           display: "block",
-          width: "100%",
-          maxWidth: naturalWidth ? `${naturalWidth}px` : "100%",
           height: "auto",
+          margin: `${BLOCK_MARGIN.split(" ")[0]} auto ${
+            BLOCK_MARGIN.split(" ").slice(-1)[0]
+          }`,
+          maxWidth: naturalWidth ? `${naturalWidth}px` : "100%",
+          width: "100%",
         }}
       />
     );
@@ -423,64 +721,135 @@ const BlockRenderer = ({
         title={block.title}
         description={block.description}
         previewSrc={previewSrc}
+        theme={theme}
+        colors={colors}
       />
     );
   }
   if (PubLeafletBlocksHorizontalRule.isMain(block)) {
-    return <Hr className="border-border-light my-3" />;
+    return (
+      <Hr
+        style={{
+          border: "none",
+          borderTop: `1px solid ${colors.borderLight}`,
+          margin: "12px 0",
+          width: "100%",
+        }}
+      />
+    );
   }
   if (PubLeafletBlocksUnorderedList.isMain(block)) {
     return (
-      <List items={block.children} style="unordered" did={did} assetsBaseUrl={assetsBaseUrl} />
+      <List
+        items={block.children}
+        style="unordered"
+        did={did}
+        assetsBaseUrl={assetsBaseUrl}
+        theme={theme}
+      />
     );
   }
   if (PubLeafletBlocksOrderedList.isMain(block)) {
     return (
-      <List items={block.children} style="ordered" did={did} assetsBaseUrl={assetsBaseUrl} />
+      <List
+        items={block.children}
+        style="ordered"
+        did={did}
+        assetsBaseUrl={assetsBaseUrl}
+        theme={theme}
+      />
     );
   }
-  return <BlockNotSupported />;
+  return <BlockNotSupported theme={theme} colors={colors} />;
 };
 
 export const LeafletWatermark = ({
   staticUrl,
+  theme = defaultEmailTheme,
 }: {
   staticUrl?: (filename: string) => string;
+  theme?: EmailTheme;
 } = {}) => {
+  const c = resolveColors(theme);
   const leafletSrc = staticUrl
     ? staticUrl("leaflet.png")
     : "/email-assets/leaflet.png";
+  // Shrink-to-fit table with align="center" — the bulletproof email
+  // pattern for centering a chunk of inline content within whatever
+  // container it lands in.
   return (
-    <Container className={` w-fit `}>
-      <Button href="https://leaflet.pub">
-        <Row className={`text-tertiary italic text-sm`}>
-          <Column style={{ width: "16px" }}>
-            <Img width={16} height={16} src={leafletSrc} />
-          </Column>
-          <Column width="4px" />
-          <Column style={{ width: "164px" }}>
-            Published with{" "}
-            <Link className={`${link} font-bold text-sm`}>Leaflet</Link>
-          </Column>
-        </Row>
-      </Button>
-    </Container>
+    <table
+      role="presentation"
+      align="center"
+      cellPadding={0}
+      cellSpacing={0}
+      border={0}
+    >
+      <tbody>
+        <tr>
+          <td>
+            <Link
+              href="https://leaflet.pub"
+              style={{
+                color: c.tertiary,
+                fontFamily: theme.bodyFont,
+                fontSize: 14,
+                fontStyle: "italic",
+                textDecoration: "none",
+              }}
+            >
+              <Img
+                src={leafletSrc}
+                width={16}
+                height={16}
+                alt=""
+                style={{
+                  display: "inline-block",
+                  marginRight: 4,
+                  verticalAlign: "middle",
+                }}
+              />
+              <span style={{ verticalAlign: "middle" }}>
+                Published with{" "}
+                <span
+                  style={{
+                    color: theme.accentBackground,
+                    fontWeight: "bold",
+                  }}
+                >
+                  Leaflet
+                </span>
+              </span>
+            </Link>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 };
 
-const blockPadding = "mt-1 mb-3 sm:mb-4";
-const headingPadding = "mt-1 mb-0";
-const link = `text-base text-accent-contrast ${blockPadding}`;
-
+// Backwards-compatible helpers used by `leafletConfirmEmail.tsx` and
+// `pubConfirmEmail.tsx`, which wrap themselves in their own <Tailwind>
+// context. We keep layout (margin/font-size/line-height) inline so the
+// helpers still look right outside Tailwind, but leave color/font-family
+// to the caller (via className inside Tailwind, or a `style` override).
 export const Text = (props: {
   children: React.ReactNode;
   noPadding?: boolean;
   small?: boolean;
   className?: string;
+  style?: CSSProperties;
 }) => {
+  const fontSize = props.small ? 14 : 16;
   return (
     <ReactEmailText
-      className={`text-primary ${props.small ? "text-sm" : "text-base"} ${props.noPadding ? "!my-0" : blockPadding} ${props.className ?? ""}`}
+      className={props.className}
+      style={{
+        fontSize,
+        lineHeight: 1.5,
+        margin: props.noPadding ? 0 : BLOCK_MARGIN,
+        ...props.style,
+      }}
     >
       {props.children}
     </ReactEmailText>
@@ -492,11 +861,21 @@ export const Heading = (props: {
   noPadding?: boolean;
   as: "h1" | "h2" | "h3";
   className?: string;
+  style?: CSSProperties;
 }) => {
+  const fontSize =
+    props.as === "h1" ? 26 : props.as === "h2" ? 18 : 16;
   return (
     <ReactEmailHeading
       as={props.as}
-      className={`font-serif font-bold ${props.noPadding ? "!my-0" : headingPadding} ${props.as === "h1" ? "text-xl" : props.as === "h2" ? "text-lg" : "text-base text-secondary"} ${props.className ?? ""}`}
+      className={props.className}
+      style={{
+        fontWeight: "bold",
+        fontSize,
+        lineHeight: 1.25,
+        margin: props.noPadding ? 0 : HEADING_MARGIN,
+        ...props.style,
+      }}
     >
       {props.children}
     </ReactEmailHeading>
@@ -519,18 +898,27 @@ export const List = ({
   style,
   did,
   assetsBaseUrl,
+  theme = defaultEmailTheme,
 }: {
   items: ListItem[];
   style: "ordered" | "unordered";
   did: string;
   assetsBaseUrl: string;
+  theme?: EmailTheme;
 }) => {
-  const listClass = `my-0 !pl-6`;
-  const listItemClass = `${headingPadding} !ml-2`;
   const Tag = style === "ordered" ? "ol" : "ul";
   return (
-    <Section className={`${blockPadding} !-mt-1`}>
-      <Tag className={listClass}>
+    <Section style={{ margin: BLOCK_MARGIN }}>
+      <Tag
+        style={{
+          color: theme.primary,
+          fontFamily: theme.bodyFont,
+          fontSize: 16,
+          lineHeight: 1.5,
+          margin: 0,
+          paddingLeft: 24,
+        }}
+      >
         {items.map((item, i) => {
           const plaintext = listItemPlaintext(item);
           const nestedUnordered =
@@ -545,7 +933,7 @@ export const List = ({
                   .orderedListChildren?.children;
           return (
             <React.Fragment key={i}>
-              <li className={listItemClass}>
+              <li style={{ margin: "2px 0", paddingLeft: 4 }}>
                 {typeof item.checked === "boolean"
                   ? `${item.checked ? "☑ " : "☐ "}${plaintext}`
                   : plaintext}
@@ -556,6 +944,7 @@ export const List = ({
                   style="unordered"
                   did={did}
                   assetsBaseUrl={assetsBaseUrl}
+                  theme={theme}
                 />
               ) : null}
               {nestedOrdered && nestedOrdered.length > 0 ? (
@@ -564,6 +953,7 @@ export const List = ({
                   style="ordered"
                   did={did}
                   assetsBaseUrl={assetsBaseUrl}
+                  theme={theme}
                 />
               ) : null}
             </React.Fragment>
@@ -579,12 +969,17 @@ export const LinkBlock = ({
   title,
   description,
   previewSrc,
+  theme = defaultEmailTheme,
+  colors,
 }: {
   url?: string;
   title?: string;
   description?: string;
   previewSrc?: string;
+  theme?: EmailTheme;
+  colors?: ResolvedColors;
 } = {}) => {
+  const c = colors ?? resolveColors(theme);
   const displayUrl = (() => {
     if (!url) return "www.example.com";
     try {
@@ -594,52 +989,115 @@ export const LinkBlock = ({
     }
   })();
   return (
-    <Row
-      border={1}
-      className={`${blockPadding} h-[104px] border-accent-contrast rounded-lg !p-0 border-solid`}
-    >
-      <Column
-        style={{ verticalAlign: "top" }}
-        className="border-transparent py-1 px-2 "
+    <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+      <Row
+        style={{
+          border: `1px solid ${theme.accentBackground}`,
+          borderRadius: 8,
+          minWidth: "100%",
+        }}
       >
-        <Link href={url}>
-          <Text noPadding className={`font-bold`}>
+        <Column
+          style={{
+            padding: "8px 12px",
+            verticalAlign: "top",
+            // Long URL-like titles or domains have no break opportunities
+            // and would otherwise force the column wider than the card.
+            wordBreak: "break-word",
+          }}
+        >
+          <Link
+            href={url}
+            style={{
+              color: theme.primary,
+              fontFamily: theme.bodyFont,
+              fontWeight: "bold",
+              fontSize: 16,
+              textDecoration: "none",
+              wordBreak: "break-word",
+            }}
+          >
             {title || displayUrl}
-          </Text>
-        </Link>
-        {description ? (
-          <Text noPadding className={`text-secondary`}>
-            {description}
-          </Text>
-        ) : null}
-        <Text small noPadding className={`text-accent-contrast italic`}>
-          {displayUrl}
-        </Text>
-      </Column>
-      {previewSrc ? (
-        <Column className="border-none w-28 pr-2 pt-2">
-          <Img
-            src={previewSrc}
-            alt=""
-            className="rounded-t-md w-full h-full"
-            style={{ objectFit: "cover" }}
-          />
+          </Link>
+          {description ? (
+            <ReactEmailText
+              style={{
+                color: c.secondary,
+                fontFamily: theme.bodyFont,
+                fontSize: 16,
+                lineHeight: 1.4,
+                margin: "4px 0 0",
+                wordBreak: "break-word",
+              }}
+            >
+              {description}
+            </ReactEmailText>
+          ) : null}
+          <ReactEmailText
+            style={{
+              color: theme.accentBackground,
+              fontFamily: theme.bodyFont,
+              fontSize: 14,
+              fontStyle: "italic",
+              lineHeight: 1.4,
+              margin: "4px 0 0",
+              wordBreak: "break-word",
+            }}
+          >
+            {displayUrl}
+          </ReactEmailText>
         </Column>
-      ) : null}
-    </Row>
+        {previewSrc ? (
+          <Column
+            style={{
+              padding: "8px 8px 8px 0",
+              verticalAlign: "top",
+              width: 112,
+            }}
+          >
+            <Img
+              src={previewSrc}
+              alt=""
+              style={{
+                borderRadius: 4,
+                display: "block",
+                height: 88,
+                objectFit: "cover",
+                width: "100%",
+              }}
+            />
+          </Column>
+        ) : null}
+      </Row>
+    </Section>
   );
 };
 
 export const CodeBlock = ({
   code,
   language,
+  borderColor,
 }: {
   code?: string;
   language?: string;
+  borderColor?: string;
 } = {}) => {
   return (
     <ReactEmailCodeBlock
-      className={`${blockPadding} !p-2 rounded-md border border-light`}
+      style={{
+        border: `1px solid ${borderColor ?? "rgba(0, 0, 0, 0.1)"}`,
+        borderRadius: 4,
+        boxSizing: "border-box",
+        margin: BLOCK_MARGIN,
+        maxWidth: "100%",
+        // <pre> defaults to `white-space: pre`, so long lines blow past the
+        // card on mobile. Wrap, and break long tokens (URLs, identifiers)
+        // when nothing else fits.
+        overflow: "hidden",
+        padding: 8,
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+      }}
       code={code ?? ""}
       theme={dracula}
       language={(language as PrismLanguage) || "text"}
@@ -647,21 +1105,54 @@ export const CodeBlock = ({
   );
 };
 
-export const BlockNotSupported = () => {
+export const BlockNotSupported = ({
+  theme = defaultEmailTheme,
+  colors,
+}: {
+  theme?: EmailTheme;
+  colors?: ResolvedColors;
+} = {}) => {
+  const c = colors ?? resolveColors(theme);
   return (
-    <Container
-      className={`bg-border-light h-20 rounded-md text-tertiary ${blockPadding}`}
+    <Section
+      style={{
+        backgroundColor: c.borderLight,
+        borderRadius: 4,
+        margin: BLOCK_MARGIN,
+        padding: "16px 12px",
+      }}
     >
-      <Text noPadding small className={"text-tertiary text-center italic"}>
+      <ReactEmailText
+        style={{
+          color: c.tertiary,
+          fontFamily: theme.bodyFont,
+          fontSize: 14,
+          fontStyle: "italic",
+          lineHeight: 1.4,
+          margin: 0,
+          textAlign: "center",
+        }}
+      >
         This media isn't supported in email...
-      </Text>
-      <Text noPadding small className="text-center">
+      </ReactEmailText>
+      <ReactEmailText
+        style={{
+          fontSize: 14,
+          lineHeight: 1.4,
+          margin: "4px 0 0",
+          textAlign: "center",
+        }}
+      >
         <Link
-          className={`w-full text-accent-contrast text-sm text-center font-bold`}
+          style={{
+            color: theme.accentBackground,
+            fontWeight: "bold",
+            textDecoration: "none",
+          }}
         >
           See full post
         </Link>
-      </Text>
-    </Container>
+      </ReactEmailText>
+    </Section>
   );
 };
