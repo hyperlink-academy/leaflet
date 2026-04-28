@@ -16,6 +16,10 @@ export async function cancelScheduledPost(args: {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return Err({ type: "not_authenticated" });
 
+  if (!identity.entitlements?.can_schedule_posts) {
+    return Err({ type: "not_found" });
+  }
+
   if (args.publication_uri) {
     const { data: pub } = await supabaseServerClient
       .from("publications")

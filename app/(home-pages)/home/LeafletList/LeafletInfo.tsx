@@ -11,6 +11,7 @@ import {
   SCHEDULED_DATE_FORMAT,
   getFutureScheduledAt,
 } from "src/utils/scheduledPublish";
+import { useCanSchedulePosts } from "src/hooks/useEntitlement";
 
 export const LeafletInfo = (props: {
   title?: string;
@@ -21,6 +22,7 @@ export const LeafletInfo = (props: {
   loggedIn: boolean;
 }) => {
   const pubStatus = useLeafletPublicationStatus();
+  const canSchedule = useCanSchedulePosts();
   let prettyCreatedAt = props.added_at ? timeAgo(props.added_at) : "";
   let prettyPublishedAt = pubStatus?.publishedAt
     ? timeAgo(pubStatus.publishedAt)
@@ -44,7 +46,9 @@ export const LeafletInfo = (props: {
           {title}
         </h3>
         <div className="flex gap-1 shrink-0">
-          {scheduledFor && <ScheduledIcon scheduledFor={scheduledFor} />}
+          {scheduledFor && canSchedule && (
+            <ScheduledIcon scheduledFor={scheduledFor} />
+          )}
           <LeafletOptions archived={props.archived} loggedIn={props.loggedIn} />
         </div>
       </div>

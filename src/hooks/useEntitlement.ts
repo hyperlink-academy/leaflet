@@ -17,3 +17,7 @@ export function useCanSeePro(): boolean {
 export function useCanSeeNewsletterMode(): boolean {
   return useHasEntitlement("can_see_newsletter_mode");
 }
+
+export function useCanSchedulePosts(): boolean {
+  return useHasEntitlement("can_schedule_posts");
+}

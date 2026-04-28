@@ -39,6 +39,10 @@ export async function schedulePost(args: {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return Err({ type: "not_authenticated" });
 
+  if (!identity.entitlements?.can_schedule_posts) {
+    return Err({ type: "not_found" });
+  }
+
   if (!identity.entitlements?.publication_analytics) {
     return Err({ type: "not_pro" });
   }
@@ -85,13 +89,17 @@ export async function schedulePost(args: {
   );
   if (!found) return Err({ type: "not_found" });
 
-  await inngest.send({
-    name: "post/scheduled-publish",
-    data: {
-      leaflet_id: args.leaflet_id,
-      publication_uri: args.publication_uri,
-    },
-  });
+  try {
+    await inngest.send({
+      name: "post/scheduled-publish",
+      data: {
+        leaflet_id: args.leaflet_id,
+        publication_uri: args.publication_uri,
+      },
+    });
+  } catch (e) {
+    console.log(e);
+  }
 
   return Ok({ scheduled_publish_at: scheduledAt.toISOString() });
 }

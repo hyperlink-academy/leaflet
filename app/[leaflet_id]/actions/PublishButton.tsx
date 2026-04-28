@@ -33,6 +33,7 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
+import { useCanSchedulePosts } from "src/hooks/useEntitlement";
 import { useReplicache, useEntity } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { Json } from "supabase/database.types";
@@ -54,12 +55,13 @@ export const PublishButton = (props: { entityID: string }) => {
   let { permission_token } = useReplicache();
   let params = useParams();
   let router = useRouter();
+  const canSchedule = useCanSchedulePosts();
 
   if (!pub) return <PublishToPublicationButton entityID={props.entityID} />;
 
   const scheduledFor = getFutureScheduledAt(pub.scheduled_publish_at);
 
-  if (scheduledFor) {
+  if (scheduledFor && canSchedule) {
     return (
       <ScheduledMenuButton
         scheduledFor={scheduledFor}

@@ -64,6 +64,7 @@ export const get_publication_data = makeRoute({
       .limit(1)
       .single();
 
+    console.log(error);
     let leaflet_data = await getFactsFromHomeLeaflets.handler(
       {
         tokens:

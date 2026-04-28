@@ -27,7 +27,7 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { SCHEDULED_DATE_FORMAT } from "src/utils/scheduledPublish";
 import { Separator } from "react-aria-components";
 import { isFuture, setHours, setMinutes } from "date-fns";
-import { useIsPro } from "src/hooks/useEntitlement";
+import { useCanSchedulePosts, useIsPro } from "src/hooks/useEntitlement";
 import { UpgradeModal } from "app/lish/[did]/[publication]/UpgradeModal";
 import {
   ThemeBackgroundProvider,
@@ -104,6 +104,7 @@ const PublishPostForm = (
   } & Props,
 ) => {
   const isPro = useIsPro();
+  const canSchedule = useCanSchedulePosts();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   let editorStateRef = useRef<EditorState | null>(null);
   let [state, setState] = useState<"post-details" | "share-options">(
@@ -286,6 +287,7 @@ const PublishPostForm = (
               <DateOptions
                 publishedAt={localPublishedAt}
                 setPublishedAt={setLocalPublishedAt}
+                canSchedule={canSchedule}
               />
               <hr className="border-border-light" />
 
@@ -538,6 +540,7 @@ const PublicationSocialPreview = (props: {
 const DateOptions = (props: {
   publishedAt: Date | undefined;
   setPublishedAt: (date: Date | undefined) => void;
+  canSchedule: boolean;
 }) => {
   const formattedDate = useLocalizedDate(
     props.publishedAt?.toISOString() || "",
@@ -549,13 +552,24 @@ const DateOptions = (props: {
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
   });
 
+  const clampToNow = (date: Date): { date: Date; time: string } => {
+    const now = new Date();
+    if (!props.canSchedule && date > now) {
+      const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+      return { date: now, time };
+    }
+    return { date, time: timeValue };
+  };
+
   const handleTimeChange = (time: string) => {
     setTimeValue(time);
     if (!props.publishedAt) return;
 
     const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
     const newDate = setHours(setMinutes(props.publishedAt, minutes), hours);
-    props.setPublishedAt(newDate);
+    const clamped = clampToNow(newDate);
+    setTimeValue(clamped.time);
+    props.setPublishedAt(clamped.date);
   };
 
   const handleDateChange = (date: Date | undefined) => {
@@ -573,7 +587,9 @@ const DateOptions = (props: {
       hours,
       minutes,
     );
-    props.setPublishedAt(newDate);
+    const clamped = clampToNow(newDate);
+    setTimeValue(clamped.time);
+    props.setPublishedAt(clamped.date);
   };
 
   const scheduled = !!props.publishedAt && isFuture(props.publishedAt);
@@ -600,6 +616,11 @@ const DateOptions = (props: {
             mode="single"
             selected={props.publishedAt}
             onSelect={handleDateChange}
+            disabled={
+              props.canSchedule
+                ? undefined
+                : (date: Date) => date > new Date()
+            }
           />
           <Separator className="border-border" />
           <div className="flex gap-4 pb-1 items-center">
