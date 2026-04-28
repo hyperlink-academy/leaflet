@@ -6,11 +6,9 @@ import { Actions } from "./Actions";
 import React, { useState } from "react";
 import { PublishedPostsList } from "./PublishedPostsLists";
 import { PublicationSubscribers } from "./PublicationSubscribers";
-import {
-  DashboardLayout,
-  PageSearch,
-} from "components/PageLayouts/DashboardLayout";
+import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
+import { PageSearch } from "components/PageLayouts/PageSearch";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationAnalytics } from "./PublicationAnalytics";

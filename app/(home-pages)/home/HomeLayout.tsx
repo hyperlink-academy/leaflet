@@ -14,12 +14,12 @@ import type { Attribute } from "src/replicache/attributes";
 import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import {
-  PageSearch,
   DashboardLayout,
   DashboardState,
   useDashboardState,
 } from "components/PageLayouts/DashboardLayout";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
+import { PageSearch } from "components/PageLayouts/PageSearch";
 import { Actions } from "./Actions/Actions";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { useState } from "react";
