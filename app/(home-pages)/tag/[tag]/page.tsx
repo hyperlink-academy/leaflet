@@ -1,4 +1,5 @@
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { PostListing } from "components/PostListing";
 import { getDocumentsByTag } from "./getDocumentsByTag";
 import { Metadata } from "next";
@@ -26,8 +27,14 @@ export default async function TagPage(props: {
       actions={null}
       tabs={{
         default: {
-          controls: null,
-          content: <TagContent tag={decodedTag} posts={posts} />,
+          content: (
+            <DashboardPageLayout
+              scrollKey="dashboard-tag-default"
+              showHeader={false}
+            >
+              <TagContent tag={decodedTag} posts={posts} />
+            </DashboardPageLayout>
+          ),
         },
       }}
     />

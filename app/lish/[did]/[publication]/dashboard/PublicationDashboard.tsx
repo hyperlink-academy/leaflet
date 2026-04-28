@@ -10,6 +10,7 @@ import {
   DashboardLayout,
   PublicationDashboardControls,
 } from "components/PageLayouts/DashboardLayout";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationAnalytics } from "./PublicationAnalytics";
@@ -39,70 +40,103 @@ export default function PublicationDashboard({
     [searchValue],
   );
 
+  const pubUri = publication.uri;
+  const showPageBackground = !!record.theme?.showPageBackground;
+
   return (
     <DashboardLayout
-      id={publication.uri}
+      id={pubUri}
       defaultTab="Drafts"
       tabs={{
         Drafts: {
           content: (
-            <DraftList
-              searchValue={debouncedSearchValue}
-              showPageBackground={!!record.theme?.showPageBackground}
-            />
-          ),
-          controls: (
-            <PublicationDashboardControls
-              defaultDisplay={"list"}
-              hasBackgroundImage={!!record?.theme?.backgroundImage}
-              searchValue={searchValue}
-              setSearchValueAction={setSearchValue}
-            />
+            <DashboardPageLayout
+              scrollKey={`dashboard-${pubUri}-Drafts`}
+              pageTitle={record.name}
+              actions={<Actions publication={pubUri} />}
+              controls={
+                <PublicationDashboardControls
+                  defaultDisplay={"list"}
+                  hasBackgroundImage={!!record?.theme?.backgroundImage}
+                  searchValue={searchValue}
+                  setSearchValueAction={setSearchValue}
+                />
+              }
+              publication={pubUri}
+              showHeader={true}
+            >
+              <DraftList
+                searchValue={debouncedSearchValue}
+                showPageBackground={showPageBackground}
+              />
+            </DashboardPageLayout>
           ),
         },
         Posts: {
           content: (
-            <PublishedPostsList
-              searchValue={debouncedSearchValue}
-              showPageBackground={!!record.theme?.showPageBackground}
-            />
+            <DashboardPageLayout
+              scrollKey={`dashboard-${pubUri}-Posts`}
+              pageTitle={record.name}
+              actions={<Actions publication={pubUri} />}
+              publication={pubUri}
+              showHeader={false}
+            >
+              <PublishedPostsList
+                searchValue={debouncedSearchValue}
+                showPageBackground={showPageBackground}
+              />
+            </DashboardPageLayout>
           ),
-          controls: null,
         },
         Subs: {
           content: (
-            <PublicationSubscribers
-              showPageBackground={!!record.theme?.showPageBackground}
-            />
+            <DashboardPageLayout
+              scrollKey={`dashboard-${pubUri}-Subs`}
+              pageTitle={record.name}
+              actions={<Actions publication={pubUri} />}
+              publication={pubUri}
+              showHeader={false}
+            >
+              <PublicationSubscribers showPageBackground={showPageBackground} />
+            </DashboardPageLayout>
           ),
-          controls: null,
         },
         ...(canSeePro
           ? {
               Analytics: {
                 content: (
-                  <PublicationAnalytics
-                    showPageBackground={!!record.theme?.showPageBackground}
-                  />
+                  <DashboardPageLayout
+                    scrollKey={`dashboard-${pubUri}-Analytics`}
+                    pageTitle={record.name}
+                    actions={<Actions publication={pubUri} />}
+                    publication={pubUri}
+                    showHeader={false}
+                  >
+                    <PublicationAnalytics showPageBackground={showPageBackground} />
+                  </DashboardPageLayout>
                 ),
-                controls: null,
               },
             }
           : {}),
         Settings: {
           icon: <SettingsTiny />,
           content: (
-            <SettingsContent
-              showPageBackground={!!record.theme?.showPageBackground}
-            />
+            <DashboardPageLayout
+              scrollKey={`dashboard-${pubUri}-Settings`}
+              pageTitle={record.name}
+              actions={<Actions publication={pubUri} />}
+              publication={pubUri}
+              showHeader={false}
+            >
+              <SettingsContent showPageBackground={showPageBackground} />
+            </DashboardPageLayout>
           ),
-          controls: null,
         },
       }}
-      actions={<Actions publication={publication.uri} />}
+      actions={<Actions publication={pubUri} />}
       currentPage="pub"
-      publication={publication.uri}
-      pageTitle={record.name}
+      publication={pubUri}
+      pubName={record.name}
     />
   );
 }

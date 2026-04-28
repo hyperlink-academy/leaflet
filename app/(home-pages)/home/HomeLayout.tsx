@@ -19,6 +19,7 @@ import {
   DashboardState,
   useDashboardState,
 } from "components/PageLayouts/DashboardLayout";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { Actions } from "./Actions/Actions";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { useState } from "react";
@@ -80,26 +81,32 @@ export const HomeLayout = (props: {
       actions={<Actions />}
       tabs={{
         home: {
-          controls: (
-            <HomeDashboardControls
-              defaultDisplay={"grid"}
-              searchValue={searchValue}
-              setSearchValueAction={setSearchValue}
-              hasBackgroundImage={hasBackgroundImage}
-              hasPubs={hasPubs}
-              hasArchived={!!hasArchived}
-            />
-          ),
           content: (
-            <HomeLeafletList
-              titles={props.titles}
-              initialFacts={props.initialFacts}
-              searchValue={debouncedSearchValue}
-            />
+            <DashboardPageLayout
+              scrollKey="dashboard-home-home"
+              pageTitle="Home"
+              actions={<Actions />}
+              controls={
+                <HomeDashboardControls
+                  defaultDisplay={"grid"}
+                  searchValue={searchValue}
+                  setSearchValueAction={setSearchValue}
+                  hasBackgroundImage={hasBackgroundImage}
+                  hasPubs={hasPubs}
+                  hasArchived={!!hasArchived}
+                />
+              }
+              showHeader={true}
+            >
+              <HomeLeafletList
+                titles={props.titles}
+                initialFacts={props.initialFacts}
+                searchValue={debouncedSearchValue}
+              />
+            </DashboardPageLayout>
           ),
         },
       }}
-      pageTitle={"Home"}
     />
   );
 };

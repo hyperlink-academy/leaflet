@@ -5,6 +5,7 @@ import { Json } from "supabase/database.types";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileTabs } from "./ProfileTabs";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { ProfileLayout } from "./ProfileLayout";
 import { Agent } from "@atproto/api";
 import { get_profile_data } from "app/api/rpc/[command]/get_profile_data";
@@ -86,16 +87,20 @@ export default async function ProfilePageLayout(props: {
       actions={null}
       tabs={{
         default: {
-          controls: null,
           content: (
-            <ProfileLayout>
-              <ProfileHeader
-                profile={profile}
-                publications={publications || []}
-              />
-              <ProfileTabs didOrHandle={params.didOrHandle} />
-              <>{props.children}</>
-            </ProfileLayout>
+            <DashboardPageLayout
+              scrollKey="dashboard-profile-default"
+              showHeader={false}
+            >
+              <ProfileLayout>
+                <ProfileHeader
+                  profile={profile}
+                  publications={publications || []}
+                />
+                <ProfileTabs didOrHandle={params.didOrHandle} />
+                <>{props.children}</>
+              </ProfileLayout>
+            </DashboardPageLayout>
           ),
         },
       }}

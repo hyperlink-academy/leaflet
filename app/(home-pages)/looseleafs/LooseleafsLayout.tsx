@@ -1,5 +1,6 @@
 "use client";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { Fact, PermissionToken } from "src/replicache";
@@ -37,17 +38,22 @@ export const LooseleafsLayout = (props: {
       actions={<Actions />}
       tabs={{
         home: {
-          controls: null,
           content: (
-            <LooseleafList
-              titles={props.titles}
-              initialFacts={props.initialFacts}
-              searchValue={debouncedSearchValue}
-            />
+            <DashboardPageLayout
+              scrollKey="dashboard-looseleafs-home"
+              pageTitle="Looseleafs"
+              actions={<Actions />}
+              showHeader={false}
+            >
+              <LooseleafList
+                titles={props.titles}
+                initialFacts={props.initialFacts}
+                searchValue={debouncedSearchValue}
+              />
+            </DashboardPageLayout>
           ),
         },
       }}
-      pageTitle="Looseleafs"
     />
   );
 };

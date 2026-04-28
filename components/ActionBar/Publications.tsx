@@ -23,9 +23,7 @@ import { LoginModal } from "components/LoginButton";
 
 export const PublicationButtons = (props: {
   currentPage: navPages;
-  currentPubUri: string | undefined;
   className?: string;
-  optionClassName?: string;
 }) => {
   let { identity } = useIdentityData();
   let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
@@ -48,29 +46,30 @@ export const PublicationButtons = (props: {
           <SpeedyLink href={`/looseleafs`} className={` hover:no-underline!  `}>
             {/*TODO How should i get if this is the current page or not?
               theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
-            <ActionButton label="Looseleafs" icon={<LooseLeafSmall />} />
+            <ActionButton
+              labelOnMobile
+              label="Looseleafs"
+              icon={<LooseLeafSmall />}
+            />
           </SpeedyLink>
           <hr className="border-border-light border-dashed my-1" />
         </>
       )}
 
       {identity.publications?.map((d) => {
-        return (
-          <PublicationOption
-            {...d}
-            key={d.uri}
-            record={d.record}
-            current={d.uri === props.currentPubUri}
-          />
-        );
+        return <PublicationOption {...d} key={d.uri} record={d.record} />;
       })}
-      <Link
+      <SpeedyLink
         href={"/lish/createPub"}
-        className={`pubListCreateNew group/new-pub text-tertiary hover:text-accent-contrast flex gap-2 items-center p-1 no-underline! ${props.optionClassName}`}
+        className={`pubListCreateNew  no-underline!`}
       >
-        <div className="group-hover/new-pub:border-accent-contrast w-6 h-6 border-border-light border-2 border-dashed rounded-full" />
-        New Publication
-      </Link>
+        <ActionButton
+          labelOnMobile
+          icon=<div className="group-hover/new-pub:border-accent-contrast m-0.5 w-5 h-5 border-border border-2 border-dashed rounded-full" />
+          label="New"
+          className="text-tertiary!"
+        />
+      </SpeedyLink>
     </div>
   );
 };
@@ -79,7 +78,6 @@ export const PublicationOption = (props: {
   uri: string;
   name: string;
   record: Json;
-  current?: boolean;
   className?: string;
 }) => {
   let record = normalizePublicationRecord(props.record);
@@ -91,9 +89,10 @@ export const PublicationOption = (props: {
       className={`hover:no-underline! `}
     >
       <ActionButton
+        labelOnMobile
         label={record.name}
         icon={<PubIcon record={record} uri={props.uri} />}
-        className={`w-full! ${props.current ? "bg-bg-page! border-border!" : ""} ${props.className}`}
+        className={` ${props.className}`}
       />
     </SpeedyLink>
   );

@@ -48,7 +48,7 @@ export const ProfileButton = () => {
               ? record.displayName || record.handle
               : identity?.email || "Account"
           }
-          className={`w-full`}
+          className={`font-bold`}
         />
       }
     >

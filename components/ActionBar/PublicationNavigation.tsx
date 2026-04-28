@@ -19,10 +19,7 @@ import { Separator } from "components/Layout";
 import { Menu, MenuItem } from "components/Menu";
 import { AddTiny } from "components/Icons/AddTiny";
 
-export const PublicationNavigation = (props: {
-  currentPage: navPages;
-  currentPubUri?: string;
-}) => {
+export const PublicationNavigation = (props: { currentPage: navPages }) => {
   let { identity } = useIdentityData();
 
   if (!identity) return;
@@ -121,10 +118,7 @@ export const PublicationNavigation = (props: {
     >
       <HomeButton current={props.currentPage === "home"} />
       <hr className="my-1 border-border-light" />
-      <PublicationButtons
-        currentPage={props.currentPage}
-        currentPubUri={props.currentPubUri}
-      />
+      <PublicationButtons currentPage={props.currentPage} />
     </Popover>
   );
 };

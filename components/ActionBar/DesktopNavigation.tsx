@@ -58,10 +58,10 @@ export const DesktopNavigation = (props: {
       {props.currentPage === "home" && (
         <>
           <hr className="border-border-light my-1" />
-          <PublicationButtons
-            currentPage={props.currentPage}
-            currentPubUri={thisPublication?.uri}
-          />
+          <div className="text-tertiary uppercase text-sm px-1 pt-1">
+            PUBLICATIONS
+          </div>
+          <PublicationButtons currentPage={props.currentPage} />
         </>
       )}
 
@@ -79,7 +79,10 @@ export const DesktopNavigation = (props: {
         <NotificationButton current={props.currentPage === "notifications"} />
       )}
       {identity ? (
-        <ProfileButton />
+        <>
+          <hr className="border-border-light my-1" />
+          <ProfileButton />
+        </>
       ) : (
         <LoginModal
           asChild

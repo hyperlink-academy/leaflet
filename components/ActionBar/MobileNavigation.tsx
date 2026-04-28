@@ -11,64 +11,97 @@ import { LoginModal } from "components/LoginButton";
 import { ProfileButton } from "./ProfileButton";
 import { ActionButton } from "./ActionButton";
 import { AccountSmall } from "components/Icons/AccountSmall";
+import { TabsSmall } from "components/Icons/TabsSmall";
+import { Popover } from "components/Popover";
+import { MenuSmall } from "components/Icons/MenuSmall";
 
 export const MobileNavigation = (props: {
   currentPage: navPages;
-  currentPublicationUri?: string;
-  currentProfileDid?: string;
+  pubName?: string;
+  tabs?: { [name: string]: { icon?: React.ReactNode } };
+  currentTab?: string;
+  onTabClick?: (tab: string) => void;
+  onTabHover?: (tab: string) => void;
 }) => {
   let { identity } = useIdentityData();
 
-  let compactOnMobile =
+  let isWriterPage =
     props.currentPage === "home" ||
     props.currentPage === "looseleafs" ||
     props.currentPage === "pub";
 
+  let tabClassName =
+    "font-bold text-secondary flex gap-2 items-center grow min-w-0 text-sm h-[34px] px-2 accent-container min-w-0";
+
   return (
     <div
-      className={`mobileFooter w-full flex gap-4 px-1 text-secondary grow items-center justify-between`}
+      className={`mobileFooter w-full flex gap-4 px-1 text-secondary grow items-center justify-between min-w-0`}
     >
-      <div className="mobileNav flex gap-2 items-center justify-start min-w-0">
-        <ReaderButton
-          compactOnMobile={compactOnMobile}
-          current={props.currentPage === "reader"}
-          subs={
-            identity?.publication_subscriptions?.length !== 0 &&
-            identity?.publication_subscriptions?.length !== undefined
-          }
-        />
-        <WriterButton
-          compactOnMobile={compactOnMobile}
-          currentPage={props.currentPage}
-          currentPubUri={props.currentPublicationUri}
-        />
+      {props.currentPage === "home" ? (
+        <PublicationNavigation currentPage={props.currentPage} />
+      ) : props.currentPage === "pub" &&
+        props.tabs &&
+        Object.keys(props.tabs).length > 1 ? (
+        <Popover
+          className="p-1! w-48"
+          trigger={
+            <div className={tabClassName}>
+              <MenuSmall className="shrink-0" />
 
-        {compactOnMobile && (
-          <>
-            <PublicationNavigation
-              currentPage={props.currentPage}
-              currentPubUri={props.currentPublicationUri}
+              <div className="truncate w-full min-w-0">{props.pubName}</div>
+            </div>
+          }
+        >
+          {Object.keys(props.tabs).map((t) => (
+            <ActionButton
+              labelOnMobile
+              key={t}
+              icon={props.tabs![t].icon ?? <TabsSmall />}
+              label={t}
+              className={
+                t === props.currentTab ? "bg-bg-page! border-border-light!" : ""
+              }
+              onClick={() => props.onTabClick?.(t)}
+              onMouseEnter={() => props.onTabHover?.(t)}
+              onPointerDown={() => props.onTabHover?.(t)}
             />
+          ))}
+        </Popover>
+      ) : (
+        <div className="spacer flex-1" />
+      )}
+
+      <div className="mobileNav flex grow gap-2 items-center justify-start ">
+        <WriterButton />
+        {isWriterPage && (
+          <ReaderButton
+            subs={
+              identity?.publication_subscriptions?.length !== 0 &&
+              identity?.publication_subscriptions?.length !== undefined
+            }
+          />
+        )}
+        {identity?.atp_did && (
+          <NotificationButton current={props.currentPage === "notifications"} />
+        )}
+        {identity ? (
+          <>
+            <Separator classname="h-6!" />
+            <ProfileButton />
           </>
+        ) : (
+          <LoginModal
+            asChild
+            trigger={
+              <ActionButton
+                secondary
+                icon={<AccountSmall />}
+                label="Log In/Sign Up"
+              />
+            }
+          />
         )}
       </div>
-      {identity ? (
-        <div className="flex gap-2">
-          {identity.atp_did && <NotificationButton />}
-          <ProfileButton />
-        </div>
-      ) : (
-        <LoginModal
-          asChild
-          trigger={
-            <ActionButton
-              secondary
-              icon={<AccountSmall />}
-              label="Log In/Sign Up"
-            />
-          }
-        />
-      )}
     </div>
   );
 };

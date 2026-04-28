@@ -70,10 +70,7 @@ export const LeafletListItem = (props: {
         </div>
         {cardBorderHidden && (
           <hr
-            className="last:hidden border-border-light"
-            style={{
-              display: props.isHidden ? "none" : "block",
-            }}
+            className={`${props.isHidden ? "hidden" : "block last:hidden"} border-border-light`}
           />
         )}
       </>

@@ -30,7 +30,7 @@ export function Sidebar(props: {
           style={{ height: "-webkit-fill-available" }}
           className={`
           actionSidebar
-          ${!props.alwaysOpen ? "absolute top-0 left-0 z-10 w-max" : "w-[192px] max-w-[192px]"}
+          ${!props.alwaysOpen ? "absolute top-0 left-0 z-10 w-max" : "w-56"}
           p-[6px] my-6
           flex flex-col gap-0.5 justify-start border
           rounded-md ${cardBorderHidden ? "light-container" : "frosted-container"}

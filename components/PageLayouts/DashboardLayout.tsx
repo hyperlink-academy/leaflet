@@ -1,7 +1,6 @@
 "use client";
-import { useState, createContext, useContext, useEffect } from "react";
+import { useState, createContext, useContext } from "react";
 import { useSearchParams } from "next/navigation";
-import { Header } from "../PageHeader";
 import { Footer } from "components/ActionBar/Footer";
 import { MobileNavigation } from "components/ActionBar/MobileNavigation";
 import { navPages } from "components/ActionBar/NavigationButtons";
@@ -11,15 +10,11 @@ import { Popover } from "components/Popover";
 import { Checkbox } from "components/Checkbox";
 import { Separator } from "components/Layout";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { MediaContents } from "components/Media";
-import { SortSmall } from "components/Icons/SortSmall";
-import { TabsSmall } from "components/Icons/TabsSmall";
 import { Input } from "components/Input";
 import { SearchTiny } from "components/Icons/SearchTiny";
 import { InterfaceState, useIdentityData } from "components/IdentityProvider";
 import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceState";
-import { usePreserveScroll } from "src/hooks/usePreserveScroll";
-import { Tab } from "components/Tab";
+export { PageTitle } from "./DashboardPageLayout";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -123,7 +118,6 @@ export function DashboardLayout<
   T extends {
     [name: string]: {
       content: React.ReactNode;
-      controls: React.ReactNode;
       icon?: React.ReactNode;
     };
   },
@@ -133,9 +127,9 @@ export function DashboardLayout<
   defaultTab: keyof T;
   currentPage: navPages;
   publication?: string;
+  pubName?: string;
   profileDid?: string;
   actions?: React.ReactNode;
-  pageTitle?: string;
   onTabHover?: (tabName: string) => void;
 }) {
   const searchParams = useSearchParams();
@@ -153,14 +147,7 @@ export function DashboardLayout<
     window.history.replaceState(null, "", newUrl);
   };
 
-  let { content, controls } = props.tabs[tab];
-  let { ref } = usePreserveScroll<HTMLDivElement>(
-    `dashboard-${props.id}-${tab as string}`,
-  );
-
-  let [headerState, setHeaderState] = useState<"default" | "controls">(
-    "default",
-  );
+  let { content } = props.tabs[tab];
 
   return (
     <DashboardIdContext.Provider value={props.id}>
@@ -176,90 +163,21 @@ export function DashboardLayout<
           onTabClick={(t) => setTabWithUrl(t as keyof T)}
           onTabHover={props.onTabHover}
         />
-        <div
-          className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-3 px-3 sm:pt-8 sm:pb-6 sm:pl-8 sm:pr-4 `}
-          ref={ref}
-          id="home-content"
-        >
-          {props.pageTitle && (
-            <PageTitle pageTitle={props.pageTitle} actions={props.actions} />
-          )}
-
-          {!controls && Object.keys(props.tabs).length <= 1 ? null : (
-            <Header>
-              {headerState === "default" ? (
-                <>
-                  {Object.keys(props.tabs).length > 1 && (
-                    <div className="sm:hidden pubDashTabs flex flex-row gap-1">
-                      {Object.keys(props.tabs).map((t) => (
-                        <Tab
-                          key={t}
-                          name={t}
-                          icon={props.tabs[t].icon}
-                          selected={t === tab}
-                          onSelect={() => setTabWithUrl(t)}
-                          onMouseEnter={() => props.onTabHover?.(t)}
-                          onPointerDown={() => props.onTabHover?.(t)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  {props.publication && controls && (
-                    <button
-                      className={`sm:hidden block text-tertiary`}
-                      onClick={() => setHeaderState("controls")}
-                    >
-                      <SortSmall />
-                    </button>
-                  )}
-                  <div
-                    className={`sm:block ${props.publication && "hidden"} grow`}
-                  >
-                    {controls}
-                  </div>
-                </>
-              ) : (
-                <>
-                  {controls}
-                  <button
-                    className="text-tertiary"
-                    onClick={() => setHeaderState("default")}
-                  >
-                    <TabsSmall />
-                  </button>
-                </>
-              )}
-            </Header>
-          )}
-          {content}
-        </div>
+        {content}
         <Footer>
           <MobileNavigation
+            pubName={props.pubName}
             currentPage={props.currentPage}
-            currentPublicationUri={props.publication}
-            currentProfileDid={props.profileDid}
+            tabs={props.tabs}
+            currentTab={tab as string}
+            onTabClick={(t) => setTabWithUrl(t as keyof T)}
+            onTabHover={props.onTabHover}
           />
         </Footer>
       </div>
     </DashboardIdContext.Provider>
   );
 }
-
-export const PageTitle = (props: {
-  pageTitle: string;
-  actions: React.ReactNode;
-}) => {
-  return (
-    <MediaContents
-      mobile={true}
-      className="flex justify-between items-center px-1 mt-1 -mb-1 w-full "
-    >
-      <h4 className="grow truncate">{props.pageTitle}</h4>
-      <div className="flex flex-row-reverse! gap-1">{props.actions}</div>
-      {/* <div className="shrink-0 h-6">{props.controls}</div> */}
-    </MediaContents>
-  );
-};
 
 export const HomeDashboardControls = (props: {
   searchValue: string;

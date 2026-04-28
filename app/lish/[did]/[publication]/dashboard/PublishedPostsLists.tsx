@@ -43,7 +43,7 @@ export function PublishedPostsList(props: {
   });
 
   return (
-    <div className="publishedList w-full flex flex-col gap-2 pb-4">
+    <div className="publishedList w-full flex flex-col gap-2 pt-3 pb-6">
       {sortedDocuments.map((doc) => (
         <PublishedPostItem
           key={doc.uri}

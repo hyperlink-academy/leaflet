@@ -45,7 +45,7 @@ export const ActionButton = forwardRef<
     }
   }, [sidebar, inOpenPopover]);
 
-  let showLabelOnMobile = labelOnMobile !== false && (primary || secondary);
+  // let showLabelOnMobile = labelOnMobile !== false && (primary || secondary);
 
   return (
     <button
@@ -54,11 +54,12 @@ export const ActionButton = forwardRef<
       className={`
       actionButton relative
       rounded-md border
+      py-0.5 px-1
       flex gap-2 items-start justify-start
-      sm:w-full sm:max-w-full py-0.5 px-1
-      w-max
+      sm:w-full sm:max-w-full ${labelOnMobile ? "w-full" : "w-fit"}
       outline-2 outline-transparent outline-offset-1
       ${smallOnMobile && "sm:text-base text-sm py-0! sm:py-1! sm:h-fit h-6 items-center!"}
+
       ${
         primary
           ? "bg-accent-1 border-accent-1 text-accent-2  sm:hover:outline-accent-contrast focus:outline-accent-1  font-bold"
@@ -70,12 +71,12 @@ export const ActionButton = forwardRef<
       `}
     >
       <div
-        className={`shrink-0 flex flex-row gap-0.5 ${!primary && !secondary && "text-tertiary"}`}
+        className={`shrink-0 flex flex-row gap-0.5 ${!primary && !secondary && "text-secondary sm:text-tertiary"}`}
       >
         {icon}
       </div>
       <div
-        className={`flex flex-col ${subtext && "leading-snug"}  sm:max-w-full min-w-0 mr-1  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
+        className={`flex flex-col ${subtext && "leading-snug"}  sm:max-w-full min-w-0 mr-1  ${sidebar.open ? "block" : labelOnMobile ? "sm:hidden block" : "hidden"}`}
         style={{ width: "-webkit-fill-available" }}
       >
         <div className="truncate text-left">{label}</div>

@@ -1,5 +1,6 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { redirect } from "next/navigation";
 import { hydrateNotifications } from "src/notifications";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -15,8 +16,14 @@ export default async function Notifications() {
       actions={null}
       tabs={{
         default: {
-          controls: null,
-          content: <NotificationContent />,
+          content: (
+            <DashboardPageLayout
+              scrollKey="dashboard-discover-default"
+              showHeader={false}
+            >
+              <NotificationContent />
+            </DashboardPageLayout>
+          ),
         },
       }}
     />

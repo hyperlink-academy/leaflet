@@ -41,11 +41,7 @@ export const WriterButton = (props: {
 }) => {
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
-      <ActionButton
-        labelOnMobile={!props.compactOnMobile}
-        icon={<WriterSmall />}
-        label="Write"
-      />
+      <ActionButton icon={<WriterSmall />} label="Write" />
     </SpeedyLink>
   );
 };
@@ -56,11 +52,7 @@ export const ReaderButton = (props: {
 }) => {
   return (
     <SpeedyLink href={"/reader"} className="hover:no-underline!">
-      <ActionButton
-        labelOnMobile={!props.compactOnMobile}
-        icon={<ReaderUnreadSmall />}
-        label="Read"
-      />
+      <ActionButton icon={<ReaderUnreadSmall />} label="Read" />
     </SpeedyLink>
   );
 };
