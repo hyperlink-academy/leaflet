@@ -19,6 +19,7 @@ import { ActionButton } from "./ActionButton";
 import { LoginModal } from "components/LoginButton";
 import { useIdentityData } from "components/IdentityProvider";
 import { SearchTiny } from "components/Icons/SearchTiny";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export const MobileNavigation = (props: {
   controls?: React.ReactNode;
@@ -27,8 +28,10 @@ export const MobileNavigation = (props: {
   let [state, setState] = useState<"search" | "default">("default");
   let [hidden, setHidden] = useState(false);
   let [sticky, setSticky] = useState(false);
+  let [scrollPos, setScrollPos] = useState(0);
   let lastScrollY = useRef(0);
   let stickyRef = useRef(false);
+  let cardBorderHidden = useCardBorderHidden();
 
   useEffect(() => {
     const homeContent = document.getElementById("home-content");
@@ -38,6 +41,14 @@ export const MobileNavigation = (props: {
       const currentScrollY = homeContent.scrollTop;
       const delta = currentScrollY - lastScrollY.current;
       lastScrollY.current = currentScrollY;
+      setScrollPos(currentScrollY);
+
+      if (currentScrollY === 0) {
+        stickyRef.current = false;
+        setSticky(false);
+        setHidden(false);
+        return;
+      }
 
       if (delta > 8) {
         if (stickyRef.current) setHidden(true);
@@ -58,37 +69,68 @@ export const MobileNavigation = (props: {
     homeContent.addEventListener("scroll", handleScroll, { passive: true });
     return () => homeContent.removeEventListener("scroll", handleScroll);
   }, []);
+
+  let headerBGColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
+
   return (
     <MediaContents
       mobile={true}
-      className={`mobilePageHeader z-20 container flex gap-4 justify-between items-center p-1 w-full bg-bg-page transition-transform duration-200 ${sticky ? "sticky top-0" : ""} ${hidden ? "-translate-y-[80px] " : ""}`}
+      className={`mobilePageHeader z-20 w-full transition-transform duration-200 ${sticky ? "sticky top-0" : ""} ${sticky && hidden ? "-translate-y-[80px] " : ""}`}
     >
-      {props.controls && state === "search" ? (
-        <>
-          {props.controls}
-          <Separator classname="h-6" />
-          <button
-            onClick={() => {
-              setState("default");
-            }}
-          >
-            <CloseTiny />
-          </button>
-        </>
-      ) : (
-        <>
-          <MobileSidebar />
-          <div className="flex-1" />
-          <button
-            onClick={() => {
-              setState("search");
-            }}
-          >
-            <SearchTiny />
-          </button>
-          <div className="flex flex-row-reverse! gap-1">{props.actions}</div>
-        </>
-      )}
+      <div
+        style={
+          sticky && scrollPos < 20
+            ? {
+                paddingLeft: `calc(${scrollPos / 20}*8px)`,
+                paddingRight: `calc(${scrollPos / 20}*8px)`,
+              }
+            : !sticky
+              ? { paddingLeft: 0, paddingRight: 0 }
+              : { paddingLeft: "8px", paddingRight: "8px" }
+        }
+      >
+        <div
+          className={`mobilePageHeaderContent border rounded-lg ${scrollPos > 20 ? "border-border-light" : "border-transparent"} flex gap-4 justify-between items-center p-1 w-full`}
+          style={
+            scrollPos < 20
+              ? {
+                  backgroundColor: !cardBorderHidden
+                    ? `rgba(${headerBGColor}, ${scrollPos / 60 + 0.75})`
+                    : `rgba(${headerBGColor}, ${scrollPos / 20})`,
+                }
+              : { backgroundColor: `rgb(${headerBGColor})` }
+          }
+        >
+          {props.controls && state === "search" ? (
+            <>
+              {props.controls}
+              <Separator classname="h-6" />
+              <button
+                onClick={() => {
+                  setState("default");
+                }}
+              >
+                <CloseTiny />
+              </button>
+            </>
+          ) : (
+            <>
+              <MobileSidebar />
+              <div className="flex-1" />
+              <button
+                onClick={() => {
+                  setState("search");
+                }}
+              >
+                <SearchTiny />
+              </button>
+              <div className="flex flex-row-reverse! gap-1">
+                {props.actions}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </MediaContents>
   );
 };
