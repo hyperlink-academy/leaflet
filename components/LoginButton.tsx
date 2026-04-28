@@ -24,11 +24,19 @@ import { mutate } from "swr";
 
 export const LoginModal = (props: {
   noEmailLogin?: boolean;
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
   asChild?: boolean;
   redirectRoute?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) => {
-  let [open, setOpen] = useState(false);
+  let [internalOpen, setInternalOpen] = useState(false);
+  let isControlled = props.open !== undefined;
+  let open = props.open ?? internalOpen;
+  let setOpen = (o: boolean) => {
+    if (!isControlled) setInternalOpen(o);
+    props.onOpenChange?.(o);
+  };
   return (
     <Modal
       asChild={props.asChild}
