@@ -14,7 +14,7 @@ import type { Attribute } from "src/replicache/attributes";
 import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import {
-  HomeDashboardControls,
+  PageSearch,
   DashboardLayout,
   DashboardState,
   useDashboardState,
@@ -83,11 +83,11 @@ export const HomeLayout = (props: {
         home: {
           content: (
             <DashboardPageLayout
-              scrollKey="dashboard-home-home"
+              scrollKey="dashboard-home"
               pageTitle="Home"
               actions={<Actions />}
               controls={
-                <HomeDashboardControls
+                <PageSearch
                   defaultDisplay={"grid"}
                   searchValue={searchValue}
                   setSearchValueAction={setSearchValue}

@@ -10,11 +10,12 @@ import { Popover } from "components/Popover";
 import { Checkbox } from "components/Checkbox";
 import { Separator } from "components/Layout";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { Input } from "components/Input";
 import { SearchTiny } from "components/Icons/SearchTiny";
 import { InterfaceState, useIdentityData } from "components/IdentityProvider";
 import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceState";
-export { PageTitle } from "./DashboardPageLayout";
+export { MobileHeader } from "../PageHeader";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -179,18 +180,17 @@ export function DashboardLayout<
   );
 }
 
-export const HomeDashboardControls = (props: {
+export const PageSearch = (props: {
   searchValue: string;
   setSearchValueAction: (searchValue: string) => void;
   hasBackgroundImage: boolean;
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
-  hasPubs: boolean;
-  hasArchived: boolean;
+  hasPubs?: boolean;
+  hasArchived?: boolean;
 }) => {
   let { display, sort } = useDashboardState();
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
-
   let { identity } = useIdentityData();
 
   return (
@@ -202,45 +202,28 @@ export const HomeDashboardControls = (props: {
           hasBackgroundImage={props.hasBackgroundImage}
         />
       )}
-      <div className="flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
+      <div className="hidden sm:flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
         <DisplayToggle setState={setState} display={display} />
         <Separator classname="h-4 min-h-4!" />
-
-        {props.hasPubs || props.hasArchived ? (
+        {(props.hasPubs || props.hasArchived) ? (
           <>
             <FilterOptions
-              hasPubs={props.hasPubs}
-              hasArchived={props.hasArchived}
+              hasPubs={props.hasPubs ?? false}
+              hasArchived={props.hasArchived ?? false}
             />
             <Separator classname="h-4 min-h-4!" />{" "}
           </>
         ) : null}
         <SortToggle setState={setState} sort={sort} />
       </div>
-    </div>
-  );
-};
-
-export const PublicationDashboardControls = (props: {
-  searchValue: string;
-  setSearchValueAction: (searchValue: string) => void;
-  hasBackgroundImage: boolean;
-  defaultDisplay: Exclude<DashboardState["display"], undefined>;
-}) => {
-  let { display, sort } = useDashboardState();
-  display = display || props.defaultDisplay;
-  let setState = useSetDashboardState();
-  return (
-    <div className="dashboardControls w-full flex gap-4">
-      <SearchInput
-        searchValue={props.searchValue}
-        setSearchValue={props.setSearchValueAction}
-        hasBackgroundImage={props.hasBackgroundImage}
-      />
-      <div className="flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
-        <DisplayToggle setState={setState} display={display} />
-        <Separator classname="h-4 min-h-4!" />
-        <SortToggle setState={setState} sort={sort} />
+      <div className="flex sm:hidden w-max shrink-0 items-center text-sm text-tertiary">
+        <MobileControlsPopover
+          display={display}
+          sort={sort}
+          setState={setState}
+          hasPubs={props.hasPubs}
+          hasArchived={props.hasArchived}
+        />
       </div>
     </div>
   );
@@ -357,6 +340,130 @@ const FilterOptions = (props: { hasPubs: boolean; hasArchived: boolean }) => {
       >
         <CloseTiny className="scale-75" /> Clear
       </button>
+    </Popover>
+  );
+};
+
+const MobileControlsPopover = (props: {
+  display: string;
+  sort: string | undefined;
+  setState: (partial: Partial<DashboardState>) => Promise<void>;
+  hasPubs?: boolean;
+  hasArchived?: boolean;
+}) => {
+  let { filter } = useDashboardState();
+  let filterCount = Object.values(filter).filter(Boolean).length;
+
+  return (
+    <Popover
+      align="end"
+      className="text-sm min-w-[140px]"
+      trigger={
+        <div className="relative flex items-center">
+          <MoreOptionsTiny />
+          {filterCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 text-[10px] leading-none bg-accent text-accent-contrast rounded-full w-3.5 h-3.5 flex items-center justify-center">
+              {filterCount}
+            </span>
+          )}
+        </div>
+      }
+    >
+      <button
+        className="w-full text-left"
+        onClick={() =>
+          props.setState({
+            display: props.display === "list" ? "grid" : "list",
+          })
+        }
+      >
+        {props.display === "list" ? "List" : "Grid"}
+      </button>
+      <button
+        className="w-full text-left"
+        onClick={() =>
+          props.setState({
+            sort: props.sort === "created" ? "alphabetical" : "created",
+          })
+        }
+      >
+        Sort: {props.sort === "created" ? "Created On" : "A to Z"}
+      </button>
+      {(props.hasPubs || props.hasArchived) && (
+        <>
+          <hr className="border-border-light my-1" />
+          {props.hasPubs && (
+            <>
+              <Checkbox
+                small
+                checked={filter.drafts}
+                onChange={(e) =>
+                  props.setState({
+                    filter: { ...filter, drafts: !!e.target.checked },
+                  })
+                }
+              >
+                Drafts
+              </Checkbox>
+              <Checkbox
+                small
+                checked={filter.published}
+                onChange={(e) =>
+                  props.setState({
+                    filter: { ...filter, published: !!e.target.checked },
+                  })
+                }
+              >
+                Published
+              </Checkbox>
+            </>
+          )}
+          {props.hasArchived && (
+            <Checkbox
+              small
+              checked={filter.archived}
+              onChange={(e) =>
+                props.setState({
+                  filter: { ...filter, archived: !!e.target.checked },
+                })
+              }
+            >
+              Archived
+            </Checkbox>
+          )}
+          <Checkbox
+            small
+            checked={filter.docs}
+            onChange={(e) =>
+              props.setState({
+                filter: { ...filter, docs: !!e.target.checked },
+              })
+            }
+          >
+            Docs
+          </Checkbox>
+          {filterCount > 0 && (
+            <>
+              <hr className="border-border-light mt-1 mb-0.5" />
+              <button
+                className="flex gap-1 items-center -mx-[2px] text-tertiary"
+                onClick={() =>
+                  props.setState({
+                    filter: {
+                      docs: false,
+                      published: false,
+                      drafts: false,
+                      archived: false,
+                    },
+                  })
+                }
+              >
+                <CloseTiny className="scale-75" /> Clear
+              </button>
+            </>
+          )}
+        </>
+      )}
     </Popover>
   );
 };

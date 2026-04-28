@@ -8,7 +8,7 @@ import { PublishedPostsList } from "./PublishedPostsLists";
 import { PublicationSubscribers } from "./PublicationSubscribers";
 import {
   DashboardLayout,
-  PublicationDashboardControls,
+  PageSearch,
 } from "components/PageLayouts/DashboardLayout";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
@@ -55,7 +55,7 @@ export default function PublicationDashboard({
               pageTitle={record.name}
               actions={<Actions publication={pubUri} />}
               controls={
-                <PublicationDashboardControls
+                <PageSearch
                   defaultDisplay={"list"}
                   hasBackgroundImage={!!record?.theme?.backgroundImage}
                   searchValue={searchValue}

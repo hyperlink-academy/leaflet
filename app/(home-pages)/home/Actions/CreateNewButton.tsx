@@ -24,6 +24,7 @@ export const CreateNewLeafletButton = (props: {}) => {
       align={isMobile ? "center" : "start"}
       trigger={
         <ActionButton
+          labelOnMobile
           id="new-leaflet-button"
           primary
           icon=<AddTiny className="sm:m-1 shrink-0 sm:scale-100 scale-75" />

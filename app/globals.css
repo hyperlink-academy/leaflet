@@ -492,6 +492,7 @@ pre.shiki {
   @apply border-border-light;
   @apply rounded-md;
 }
+
 .frosted-container {
   background: rgba(var(--bg-page), 0.75);
   @apply border;

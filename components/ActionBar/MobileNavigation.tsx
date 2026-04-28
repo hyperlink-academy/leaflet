@@ -67,20 +67,19 @@ export const MobileNavigation = (props: {
             />
           ))}
         </Popover>
-      ) : (
-        <div className="spacer flex-1" />
-      )}
+      ) : null}
+      <div className="spacer flex-1" />
 
       <div className="mobileNav flex grow gap-2 items-center justify-start ">
         <WriterButton />
-        {isWriterPage && (
-          <ReaderButton
-            subs={
-              identity?.publication_subscriptions?.length !== 0 &&
-              identity?.publication_subscriptions?.length !== undefined
-            }
-          />
-        )}
+
+        <ReaderButton
+          subs={
+            identity?.publication_subscriptions?.length !== 0 &&
+            identity?.publication_subscriptions?.length !== undefined
+          }
+        />
+
         {identity?.atp_did && (
           <NotificationButton current={props.currentPage === "notifications"} />
         )}

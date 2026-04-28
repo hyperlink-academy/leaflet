@@ -71,4 +71,4 @@ To add or modify a lexicon:
 - **React contexts**: `DocumentProvider`, `LeafletContentProvider` for page-level data
 - **Inngest functions**: Async jobs in `app/api/inngest/functions/`
 - **Icons**: Icon components live in `components/Icons/`. Each icon is a named export in its own file (e.g. `RefreshSmall.tsx`), imports `Props` from `./Props`, spreads `{...props}` on the `<svg>` element, and uses `fill="currentColor"` instead of hardcoded colors like `fill="black"`.
-- **Popovers and menus**: Use the existing `Popover` (`components/Popover`), `Menu`, and `MenuItem` (`components/Menu`) components — do not create new popover/menu primitives
+- **Popovers and menus**: Use the existing `Popover` (`components/Popover`), `Menu`, and `MenuItem` (`components/Menu`) components — do not create new popover/menu primitives. Avoid using buttons inside Popover or Modal triggers unless using a specific button component. If button is being used as trigger, always add an "asChild" prop to the Menu or Popover

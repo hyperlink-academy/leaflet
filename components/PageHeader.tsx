@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useCardBorderHidden } from "./Pages/useCardBorderHidden";
+import { MediaContents } from "./Media";
 
-export const Header = (props: { children: React.ReactNode }) => {
+export const DesktopHeader = (props: { children: React.ReactNode }) => {
   let cardBorderHidden = useCardBorderHidden();
   let [scrollPos, setScrollPos] = useState(0);
 
@@ -24,7 +25,8 @@ export const Header = (props: { children: React.ReactNode }) => {
   let headerBGColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
 
   return (
-    <div
+    <MediaContents
+      mobile={false}
       className={`
       headerWrapper
       sticky top-0 z-20
@@ -71,6 +73,25 @@ export const Header = (props: { children: React.ReactNode }) => {
           {props.children}
         </div>
       </div>
-    </div>
+    </MediaContents>
+  );
+};
+
+export const MobileHeader = (props: {
+  controls?: React.ReactNode;
+  actions: React.ReactNode;
+}) => {
+  return (
+    <MediaContents
+      mobile={true}
+      className="mobilePageHeader flex gap-4 justify-between items-center px-1 mt-1 -mb-1 w-full "
+    >
+      {props.controls ? (
+        <div className="grow">{props.controls}</div>
+      ) : (
+        <div className="spacer flex-1" />
+      )}
+      <div className="flex flex-row-reverse! gap-1">{props.actions}</div>
+    </MediaContents>
   );
 };

@@ -6,9 +6,9 @@ import { ThemeSetterContent } from "components/ThemeManager/ThemeSetter";
 import { useIsMobile } from "src/hooks/isMobile";
 import { PaintSmall } from "components/Icons/PaintSmall";
 
-export const AccountSettings = (props: { entityID: string }) => {
+export const HomeThemeSetter = (props: { entityID: string }) => {
   let isMobile = useIsMobile();
-
+  if (isMobile) return null;
   return (
     <Popover
       asChild
