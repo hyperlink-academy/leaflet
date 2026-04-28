@@ -15,7 +15,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { Popover } from "components/Popover";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
-import { useIsMobile } from "src/hooks/isMobile";
+import { useIsInitialRender, useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { type navPages } from "./NavigationButtons";
@@ -45,24 +45,12 @@ export const PublicationButtons = (props: {
     >
       {hasLooseleafs && (
         <>
-          <SpeedyLink
-            href={`/looseleafs`}
-            className={`flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full `}
-          >
+          <SpeedyLink href={`/looseleafs`} className={` hover:no-underline!  `}>
             {/*TODO How should i get if this is the current page or not?
               theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
-            <ActionButton
-              label="Looseleafs"
-              icon={<LooseLeafSmall />}
-              nav
-              className={`w-full! ${
-                props.currentPage === "looseleafs"
-                  ? "bg-bg-page! border-border!"
-                  : ""
-              }
-                ${props.optionClassName}`}
-            />
+            <ActionButton label="Looseleafs" icon={<LooseLeafSmall />} />
           </SpeedyLink>
+          <hr className="border-border-light border-dashed my-1" />
         </>
       )}
 
@@ -100,12 +88,11 @@ export const PublicationOption = (props: {
   return (
     <SpeedyLink
       href={`${getBasePublicationURL(props)}/dashboard`}
-      className={`flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full `}
+      className={`hover:no-underline! `}
     >
       <ActionButton
         label={record.name}
         icon={<PubIcon record={record} uri={props.uri} />}
-        nav
         className={`w-full! ${props.current ? "bg-bg-page! border-border!" : ""} ${props.className}`}
       />
     </SpeedyLink>
@@ -113,15 +100,17 @@ export const PublicationOption = (props: {
 };
 
 const PubListEmpty = () => {
-  let isMobile = useIsMobile();
+  let initialRender = useIsInitialRender();
+  let mobile = useIsMobile();
+  let isMobile = !initialRender && mobile;
 
   let [state, setState] = useState<"default" | "info">("default");
   if (isMobile && state == "default")
     return (
       <ActionButton
         label="Publish"
+        secondary
         icon={<PublishSmall />}
-        nav
         subtext="Start a blog on ATProto!"
         onClick={() => {
           setState("info");
@@ -139,9 +128,9 @@ const PubListEmpty = () => {
         asChild
         trigger={
           <ActionButton
+            secondary
             label="Publish"
             icon={<PublishSmall />}
-            nav
             subtext="Start a blog on ATProto!"
           />
         }

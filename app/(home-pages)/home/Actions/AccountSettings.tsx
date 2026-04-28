@@ -16,7 +16,14 @@ export const AccountSettings = (props: { entityID: string }) => {
       align={isMobile ? "center" : "start"}
       className={`w-xs bg-white!`}
       arrowFill="bg-white"
-      trigger={<ActionButton smallOnMobile icon=<PaintSmall /> label="Theme" />}
+      trigger={
+        <ActionButton
+          secondary
+          smallOnMobile
+          icon=<PaintSmall />
+          label="Theme"
+        />
+      }
     >
       <ThemeSetterContent entityID={props.entityID} home />
     </Popover>

@@ -486,6 +486,12 @@ pre.shiki {
   @apply rounded-md;
 }
 
+.light-container {
+  background: color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 95%);
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
+}
 .frosted-container {
   background: rgba(var(--bg-page), 0.75);
   @apply border;

@@ -38,6 +38,7 @@ function PublicationShareButton() {
       asChild
       trigger={
         <ActionButton
+          secondary
           id="pub-share-button"
           icon=<ShareSmall />
           label="Share"

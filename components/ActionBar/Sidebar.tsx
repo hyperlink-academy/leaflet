@@ -1,6 +1,7 @@
 "use client";
 import { uv } from "colorjs.io/fn";
 import { Media } from "components/Media";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { createContext, useState } from "react";
 
 export const SidebarContext = createContext({
@@ -16,6 +17,7 @@ export function Sidebar(props: {
   let [sidebarExpanded, setSidebarExpanded] = useState(false);
   let [childForceOpen, setChildForceOpen] = useState(false);
   let open = sidebarExpanded || childForceOpen;
+  let cardBorderHidden = useCardBorderHidden();
   return (
     <Media mobile={false}>
       <SidebarContext
@@ -25,12 +27,13 @@ export function Sidebar(props: {
         }}
       >
         <div
+          style={{ height: "-webkit-fill-available" }}
           className={`
           actionSidebar
           ${!props.alwaysOpen ? "absolute top-0 left-0 z-10 w-max" : "w-[192px] max-w-[192px]"}
-          h-fit p-[6px]
-          flex flex-col gap-1 justify-start border
-          rounded-md  bg-bg-page ${open && !props.alwaysOpen ? "border-border-light" : "frosted-container"}
+          p-[6px] my-6
+          flex flex-col gap-0.5 justify-start border
+          rounded-md ${cardBorderHidden ? "light-container" : "frosted-container"}
           ${props.className}
           `}
           onMouseOver={() => {

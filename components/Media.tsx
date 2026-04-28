@@ -31,7 +31,7 @@ export function MediaContents(props: {
   if (initialRender)
     return (
       <div
-        className={`${props.mobile ? "sm:hidden contents" : "hidden sm:contents"} ${props.className}`}
+        className={`mediaContentContainer ${props.mobile ? "sm:hidden contents" : "hidden sm:contents"} ${props.className}`}
       >
         {props.children}
       </div>

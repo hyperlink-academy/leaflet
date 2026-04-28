@@ -15,7 +15,6 @@ export const ActionButton = forwardRef<
     label: React.ReactNode;
     primary?: boolean;
     secondary?: boolean;
-    nav?: boolean;
     className?: string;
     subtext?: string;
     labelOnMobile?: boolean;
@@ -29,7 +28,6 @@ export const ActionButton = forwardRef<
     label,
     primary,
     secondary,
-    nav,
     labelOnMobile,
     smallOnMobile,
     subtext,
@@ -47,40 +45,44 @@ export const ActionButton = forwardRef<
     }
   }, [sidebar, inOpenPopover]);
 
-  let showLabelOnMobile =
-    labelOnMobile !== false && (primary || secondary || nav);
+  let showLabelOnMobile = labelOnMobile !== false && (primary || secondary);
 
   return (
     <button
       {...buttonProps}
       ref={ref}
       className={`
-      actionButton relative font-bold
+      actionButton relative
       rounded-md border
       flex gap-2 items-start justify-start
-      sm:w-full sm:max-w-full p-1
+      sm:w-full sm:max-w-full py-0.5 px-1
       w-max
+      outline-2 outline-transparent outline-offset-1
       ${smallOnMobile && "sm:text-base text-sm py-0! sm:py-1! sm:h-fit h-6 items-center!"}
       ${
         primary
-          ? "bg-accent-1 border-accent-1 text-accent-2 transparent-outline sm:hover:outline-accent-contrast focus:outline-accent-1 outline-offset-1 "
+          ? "bg-accent-1 border-accent-1 text-accent-2  sm:hover:outline-accent-contrast focus:outline-accent-1  font-bold"
           : secondary
-            ? " bg-bg-page border-accent-contrast text-accent-contrast transparent-outline focus:outline-accent-contrast sm:hover:outline-accent-contrast outline-offset-1"
-            : nav
-              ? "border-transparent text-secondary sm:hover:border-border justify-start! max-w-full"
-              : "border-transparent text-accent-contrast sm:hover:border-accent-contrast"
+            ? "border-accent-contrast  sm:hover:outline-accent-contrast focus:outline-accent-1   text-accent-contrast hover:border-accent-contrast  focus:border-accent-contrast font-bold"
+            : "border-transparent text-secondary sm:hover:border-border justify-start! max-w-full"
       }
       ${className}
       `}
     >
-      <div className="shrink-0 flex flex-row gap-0.5">{icon}</div>
+      <div
+        className={`shrink-0 flex flex-row gap-0.5 ${!primary && !secondary && "text-tertiary"}`}
+      >
+        {icon}
+      </div>
       <div
         className={`flex flex-col ${subtext && "leading-snug"}  sm:max-w-full min-w-0 mr-1  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
         style={{ width: "-webkit-fill-available" }}
       >
         <div className="truncate text-left">{label}</div>
         {subtext && (
-          <div className="text-xs text-tertiary font-normal text-left">
+          <div
+            className={`text-xs  ${secondary ? "text-accent-contrast" : "text-tertiary"} font-normal text-left`}
+          >
             {subtext}
           </div>
         )}

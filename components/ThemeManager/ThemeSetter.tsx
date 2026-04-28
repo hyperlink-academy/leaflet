@@ -80,7 +80,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
         asChild
         side={isMobile ? "top" : "right"}
         align={isMobile ? "center" : "start"}
-        trigger={<ActionButton icon={<PaintSmall />} label="Theme" />}
+        trigger={<ActionButton secondary icon={<PaintSmall />} label="Theme" />}
       >
         <ThemeSetterContent {...props} />
       </Popover>
@@ -260,7 +260,8 @@ const SamplePage = (props: {
     ?.data.value;
 
   // Read font values directly since the popover is portalled outside .leafletWrapper
-  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value;
+  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data
+    .value;
   let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value;
   let bodyFontFamily = getFontFamilyValue(getFontConfig(bodyFontId));
   let headingFontFamily = getFontFamilyValue(getFontConfig(headingFontId));

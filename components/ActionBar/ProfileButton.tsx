@@ -32,7 +32,6 @@ export const ProfileButton = () => {
       className="w-xs py-1!"
       trigger={
         <ActionButton
-          nav
           labelOnMobile={false}
           icon={
             record ? (

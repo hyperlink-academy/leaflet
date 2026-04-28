@@ -3,14 +3,9 @@ import { useState, createContext, useContext, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Header } from "../PageHeader";
 import { Footer } from "components/ActionBar/Footer";
-import { Sidebar } from "components/ActionBar/Sidebar";
-import { DesktopNavigation } from "components/ActionBar/DesktopNavigation";
-
 import { MobileNavigation } from "components/ActionBar/MobileNavigation";
-import {
-  navPages,
-  NotificationButton,
-} from "components/ActionBar/NavigationButtons";
+import { navPages } from "components/ActionBar/NavigationButtons";
+import { DesktopNavigation } from "components/ActionBar/DesktopNavigation";
 import { create } from "zustand";
 import { Popover } from "components/Popover";
 import { Checkbox } from "components/Checkbox";
@@ -23,11 +18,8 @@ import { Input } from "components/Input";
 import { SearchTiny } from "components/Icons/SearchTiny";
 import { InterfaceState, useIdentityData } from "components/IdentityProvider";
 import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceState";
-import Link from "next/link";
-import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 import { Tab } from "components/Tab";
-import { PubIcon, PublicationButtons } from "components/ActionBar/Publications";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -149,12 +141,10 @@ export function DashboardLayout<
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
 
-  // Initialize tab from search param if valid, otherwise use default
   const initialTab =
     tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
   let [tab, setTab] = useState<keyof T>(initialTab);
 
-  // Custom setter that updates both state and URL
   const setTabWithUrl = (newTab: keyof T) => {
     setTab(newTab);
     const params = new URLSearchParams(searchParams.toString());
@@ -177,15 +167,15 @@ export function DashboardLayout<
       <div
         className={`dashboard pwa-padding relative max-w-(--breakpoint-lg) w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6`}
       >
-        <MediaContents mobile={false}>
-          <div className="flex flex-col gap-3 my-6">
-            <DesktopNavigation
-              currentPage={props.currentPage}
-              publication={props.publication}
-            />
-            {props.actions && <Sidebar alwaysOpen>{props.actions}</Sidebar>}
-          </div>
-        </MediaContents>
+        <DesktopNavigation
+          currentPage={props.currentPage}
+          publication={props.publication}
+          actions={props.actions}
+          tabs={props.tabs}
+          currentTab={tab as string}
+          onTabClick={(t) => setTabWithUrl(t as keyof T)}
+          onTabHover={props.onTabHover}
+        />
         <div
           className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-3 px-3 sm:pt-8 sm:pb-6 sm:pl-8 sm:pr-4 `}
           ref={ref}
@@ -195,59 +185,51 @@ export function DashboardLayout<
             <PageTitle pageTitle={props.pageTitle} actions={props.actions} />
           )}
 
-          {Object.keys(props.tabs).length <= 1 && !controls ? null : (
-            <>
-              <Header>
-                {headerState === "default" ? (
-                  <>
-                    {Object.keys(props.tabs).length > 1 && (
-                      <div className="pubDashTabs flex flex-row gap-1">
-                        {Object.keys(props.tabs).map((t) => {
-                          return (
-                            <Tab
-                              key={t}
-                              name={t}
-                              icon={props.tabs[t].icon}
-                              selected={t === tab}
-                              onSelect={() => setTabWithUrl(t)}
-                              onMouseEnter={() => props.onTabHover?.(t)}
-                              onPointerDown={() => props.onTabHover?.(t)}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
-                    {props.publication && controls && (
-                      <button
-                        className={`sm:hidden block text-tertiary`}
-                        onClick={() => {
-                          setHeaderState("controls");
-                        }}
-                      >
-                        <SortSmall />
-                      </button>
-                    )}
-                    <div
-                      className={`sm:block ${props.publication && "hidden"} grow`}
-                    >
-                      {controls}
+          {!controls && Object.keys(props.tabs).length <= 1 ? null : (
+            <Header>
+              {headerState === "default" ? (
+                <>
+                  {Object.keys(props.tabs).length > 1 && (
+                    <div className="sm:hidden pubDashTabs flex flex-row gap-1">
+                      {Object.keys(props.tabs).map((t) => (
+                        <Tab
+                          key={t}
+                          name={t}
+                          icon={props.tabs[t].icon}
+                          selected={t === tab}
+                          onSelect={() => setTabWithUrl(t)}
+                          onMouseEnter={() => props.onTabHover?.(t)}
+                          onPointerDown={() => props.onTabHover?.(t)}
+                        />
+                      ))}
                     </div>
-                  </>
-                ) : (
-                  <>
-                    {controls}
+                  )}
+                  {props.publication && controls && (
                     <button
-                      className="text-tertiary"
-                      onClick={() => {
-                        setHeaderState("default");
-                      }}
+                      className={`sm:hidden block text-tertiary`}
+                      onClick={() => setHeaderState("controls")}
                     >
-                      <TabsSmall />
+                      <SortSmall />
                     </button>
-                  </>
-                )}
-              </Header>
-            </>
+                  )}
+                  <div
+                    className={`sm:block ${props.publication && "hidden"} grow`}
+                  >
+                    {controls}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {controls}
+                  <button
+                    className="text-tertiary"
+                    onClick={() => setHeaderState("default")}
+                  >
+                    <TabsSmall />
+                  </button>
+                </>
+              )}
+            </Header>
           )}
           {content}
         </div>

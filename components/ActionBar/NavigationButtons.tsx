@@ -27,7 +27,6 @@ export const HomeButton = (props: {
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
       <ActionButton
-        nav
         icon={<HomeSmall />}
         label="Home"
         className={`${props.current ? "bg-bg-page! border-border-light!" : ""} w-full! ${props.className}`}
@@ -37,41 +36,30 @@ export const HomeButton = (props: {
 };
 
 export const WriterButton = (props: {
-  currentPage: navPages;
   currentPubUri?: string;
   compactOnMobile?: boolean;
 }) => {
-  let current =
-    props.currentPage === "home" ||
-    props.currentPage === "looseleafs" ||
-    props.currentPage === "pub";
-
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
       <ActionButton
-        nav
         labelOnMobile={!props.compactOnMobile}
         icon={<WriterSmall />}
         label="Write"
-        className={`${current ? "bg-bg-page! border-border-light!" : ""}`}
       />
     </SpeedyLink>
   );
 };
 
 export const ReaderButton = (props: {
-  current?: boolean;
   subs: boolean;
   compactOnMobile?: boolean;
 }) => {
   return (
     <SpeedyLink href={"/reader"} className="hover:no-underline!">
       <ActionButton
-        nav
         labelOnMobile={!props.compactOnMobile}
         icon={<ReaderUnreadSmall />}
         label="Read"
-        className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />
     </SpeedyLink>
   );
@@ -84,7 +72,6 @@ export function NotificationButton(props: { current?: boolean }) {
   return (
     <SpeedyLink href={"/notifications"} className="hover:no-underline!">
       <ActionButton
-        nav
         labelOnMobile={false}
         icon={
           unreads ? (
