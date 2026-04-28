@@ -1,5 +1,6 @@
 "use client";
-import { DesktopHeader, MobileHeader } from "../PageHeader";
+import { PageHeader } from "../PageHeader";
+import { MobileNavigation } from "../ActionBar/MobileNavigation";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 
 export function DashboardPageLayout(props: {
@@ -21,13 +22,13 @@ export function DashboardPageLayout(props: {
     >
       {props.showHeader && (
         <>
-          <MobileHeader controls={props.controls} actions={props.actions} />
+          <MobileNavigation controls={props.controls} actions={props.actions} />
 
-          <DesktopHeader>
+          <PageHeader>
             <div className={`sm:block ${props.publication && "hidden"} grow`}>
               {props.controls}
             </div>
-          </DesktopHeader>
+          </PageHeader>
         </>
       )}
       {props.children}

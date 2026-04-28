@@ -1,14 +1,11 @@
 "use client";
 import { useState, createContext, useContext } from "react";
 import { useSearchParams } from "next/navigation";
-import { Footer } from "components/ActionBar/Footer";
-import { MobileNavigation } from "components/ActionBar/MobileNavigation";
 import { navPages } from "components/ActionBar/NavigationButtons";
 import { DesktopNavigation } from "components/ActionBar/DesktopNavigation";
 import { create } from "zustand";
 import { InterfaceState, useIdentityData } from "components/IdentityProvider";
 import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceState";
-export { MobileHeader } from "../PageHeader";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -158,16 +155,6 @@ export function DashboardLayout<
           onTabHover={props.onTabHover}
         />
         {content}
-        <Footer>
-          <MobileNavigation
-            pubName={props.pubName}
-            currentPage={props.currentPage}
-            tabs={props.tabs}
-            currentTab={tab as string}
-            onTabClick={(t) => setTabWithUrl(t as keyof T)}
-            onTabHover={props.onTabHover}
-          />
-        </Footer>
       </div>
     </DashboardIdContext.Provider>
   );

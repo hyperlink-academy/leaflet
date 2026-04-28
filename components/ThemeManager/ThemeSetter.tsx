@@ -50,25 +50,10 @@ export function setColorAttribute(
       });
 }
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
-  let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let isMobile = useIsMobile();
 
-  // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let permission = useEntitySetContext().permissions.write;
-  let leafletBGImage = useEntity(props.entityID, "theme/background-image");
-  let leafletBGRepeat = useEntity(
-    props.entityID,
-    "theme/background-image-repeat",
-  );
-
-  let [openPicker, setOpenPicker] = useState<pickers>(
-    props.home === true ? "leaflet" : "null",
-  );
-  let set = useMemo(() => {
-    return setColorAttribute(rep, props.entityID);
-  }, [rep, props.entityID]);
-
   if (!permission) return null;
   if (pub?.publications) return null;
 

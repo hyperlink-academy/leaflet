@@ -626,6 +626,29 @@ pre.shiki {
   }
 }
 
+@keyframes mobile-sidebar-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes mobile-sidebar-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+.mobile-sidebar-content[data-state="open"] {
+  animation: mobile-sidebar-slide-in 80ms ease-out;
+}
+.mobile-sidebar-content[data-state="closed"] {
+  animation: mobile-sidebar-slide-out 80ms ease-in;
+}
+
 .footnote-side-item {
   overflow: hidden;
   transition:

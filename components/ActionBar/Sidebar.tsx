@@ -1,5 +1,4 @@
 "use client";
-import { uv } from "colorjs.io/fn";
 import { Media } from "components/Media";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { createContext, useState } from "react";
@@ -12,6 +11,7 @@ export const SidebarContext = createContext({
 export function Sidebar(props: {
   children?: React.ReactNode;
   alwaysOpen?: boolean;
+  mobile?: boolean;
   className?: string;
 }) {
   let [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -19,7 +19,7 @@ export function Sidebar(props: {
   let open = sidebarExpanded || childForceOpen;
   let cardBorderHidden = useCardBorderHidden();
   return (
-    <Media mobile={false}>
+    <Media mobile={props.mobile ?? false}>
       <SidebarContext
         value={{
           open: props.alwaysOpen ? true : open,

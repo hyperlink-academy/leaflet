@@ -8,7 +8,6 @@ import { PaintSmall } from "components/Icons/PaintSmall";
 
 export const HomeThemeSetter = (props: { entityID: string }) => {
   let isMobile = useIsMobile();
-  if (isMobile) return null;
   return (
     <Popover
       asChild
@@ -22,6 +21,7 @@ export const HomeThemeSetter = (props: { entityID: string }) => {
           smallOnMobile
           icon=<PaintSmall />
           label="Theme"
+          className="sm:flex! hidden"
         />
       }
     >

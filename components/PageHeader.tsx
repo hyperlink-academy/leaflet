@@ -2,12 +2,8 @@
 import { useState, useEffect } from "react";
 import { useCardBorderHidden } from "./Pages/useCardBorderHidden";
 import { MediaContents } from "./Media";
-import { SearchSmall } from "./Icons/SearchSmall";
-import { MenuSmall } from "./Icons/MenuSmall";
-import { Separator } from "./Layout";
-import { CloseTiny } from "./Icons/CloseTiny";
 
-export const DesktopHeader = (props: { children: React.ReactNode }) => {
+export const PageHeader = (props: { children: React.ReactNode }) => {
   let cardBorderHidden = useCardBorderHidden();
   let [scrollPos, setScrollPos] = useState(0);
 
@@ -77,47 +73,6 @@ export const DesktopHeader = (props: { children: React.ReactNode }) => {
           {props.children}
         </div>
       </div>
-    </MediaContents>
-  );
-};
-
-export const MobileHeader = (props: {
-  controls?: React.ReactNode;
-  actions: React.ReactNode;
-}) => {
-  let [state, setState] = useState<"search" | "default">("default");
-  return (
-    <MediaContents
-      mobile={true}
-      className="mobilePageHeader container flex gap-4 justify-between items-center p-1 mt-1 -mb-1 w-full "
-    >
-      {props.controls && state === "search" ? (
-        <>
-          {props.controls}
-          <Separator classname="h-6" />
-          <button
-            onClick={() => {
-              setState("default");
-            }}
-          >
-            <CloseTiny />
-          </button>
-        </>
-      ) : (
-        <>
-          <MenuSmall /> Home
-          <div className="flex-1" />
-          <button
-            onClick={() => {
-              console.log("click");
-              setState("search");
-            }}
-          >
-            <SearchSmall />
-          </button>
-          <div className="flex flex-row-reverse! gap-1">{props.actions}</div>
-        </>
-      )}
     </MediaContents>
   );
 };
