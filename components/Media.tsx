@@ -25,6 +25,7 @@ export function MediaContents(props: {
   mobile: boolean;
   children: React.ReactNode;
   className?: string;
+  style?: {};
 }) {
   let initialRender = useIsInitialRender();
   let isMobile = useIsMobile();
@@ -32,6 +33,7 @@ export function MediaContents(props: {
     return (
       <div
         className={`mediaContentContainer ${props.mobile ? "sm:hidden contents" : "hidden sm:contents"} ${props.className}`}
+        style={props.style}
       >
         {props.children}
       </div>

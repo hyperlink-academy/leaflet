@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import * as Dialog from "@radix-ui/react-dialog";
 import { MediaContents } from "components/Media";
 import { Separator } from "components/Layout";
-import { SearchSmall } from "components/Icons/SearchSmall";
 import { MenuSmall } from "components/Icons/MenuSmall";
 import { AccountSmall } from "components/Icons/AccountSmall";
 import { CloseTiny } from "components/Icons/CloseTiny";
@@ -25,10 +25,43 @@ export const MobileNavigation = (props: {
   actions?: React.ReactNode;
 }) => {
   let [state, setState] = useState<"search" | "default">("default");
+  let [hidden, setHidden] = useState(false);
+  let [sticky, setSticky] = useState(false);
+  let lastScrollY = useRef(0);
+  let stickyRef = useRef(false);
+
+  useEffect(() => {
+    const homeContent = document.getElementById("home-content");
+    if (!homeContent) return;
+
+    const handleScroll = () => {
+      const currentScrollY = homeContent.scrollTop;
+      const delta = currentScrollY - lastScrollY.current;
+      lastScrollY.current = currentScrollY;
+
+      if (delta > 8) {
+        if (stickyRef.current) setHidden(true);
+      } else if (delta < -1 && currentScrollY > 0) {
+        if (!stickyRef.current) {
+          stickyRef.current = true;
+          setSticky(true);
+          setHidden(true);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => setHidden(false));
+          });
+        } else {
+          setHidden(false);
+        }
+      }
+    };
+
+    homeContent.addEventListener("scroll", handleScroll, { passive: true });
+    return () => homeContent.removeEventListener("scroll", handleScroll);
+  }, []);
   return (
     <MediaContents
       mobile={true}
-      className="mobilePageHeader container flex gap-4 justify-between items-center p-1  w-full "
+      className={`mobilePageHeader z-20 container flex gap-4 justify-between items-center p-1 w-full bg-bg-page transition-transform duration-200 ${sticky ? "sticky top-0" : ""} ${hidden ? "-translate-y-[80px] " : ""}`}
     >
       {props.controls && state === "search" ? (
         <>
