@@ -2,11 +2,20 @@
 import { Media } from "components/Media";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { createContext, useState } from "react";
+import { create } from "zustand";
 
 export const SidebarContext = createContext({
   open: false,
   setChildForceOpen: (b: boolean) => {},
 });
+
+export const useSidebarStore = create<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}>((set) => ({
+  open: false,
+  setOpen: (open) => set({ open }),
+}));
 
 export function Sidebar(props: {
   children?: React.ReactNode;

@@ -13,7 +13,7 @@ import { ActionButton } from "./ActionButton";
 import { AccountSmall } from "components/Icons/AccountSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
 
-export const DesktopNavigation = (props: {
+type NavigationProps = {
   currentPage: navPages;
   publication?: string;
   actions?: React.ReactNode;
@@ -21,11 +21,10 @@ export const DesktopNavigation = (props: {
   currentTab?: string;
   onTabClick?: (tab: string) => void;
   onTabHover?: (tab: string) => void;
-}) => {
+};
+
+export const NavigationContent = (props: NavigationProps) => {
   let { identity } = useIdentityData();
-  let thisPublication = identity?.publications?.find(
-    (pub) => pub.uri === props.publication,
-  );
 
   let isWriterPage =
     props.currentPage === "home" ||
@@ -33,7 +32,7 @@ export const DesktopNavigation = (props: {
     props.currentPage === "pub";
 
   return (
-    <Sidebar alwaysOpen>
+    <>
       {props.actions}
 
       {props.tabs && Object.keys(props.tabs).length > 1 && (
@@ -95,6 +94,14 @@ export const DesktopNavigation = (props: {
           }
         />
       )}
+    </>
+  );
+};
+
+export const DesktopNavigation = (props: NavigationProps) => {
+  return (
+    <Sidebar alwaysOpen>
+      <NavigationContent {...props} />
     </Sidebar>
   );
 };
