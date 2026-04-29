@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { SubscribeWithHandle } from "./HandleSubscribe";
 import { EmailInput, EmailConfirm } from "./EmailSubscribe";
 import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
+import { LinkIdentityModal } from "./LinkIdentityModal";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
 import { useToaster } from "components/Toast";
+import { useIdentityData } from "components/IdentityProvider";
 import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
@@ -73,6 +75,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let toaster = useToaster();
   let router = useRouter();
   const user = useViewerSubscription(props.publicationUri);
+  const { identity } = useIdentityData();
   let [email, setEmail] = useState(user.email ?? "");
   let [confirmState, setConfirmState] = useState<"confirm" | "success">(
     "confirm",
@@ -81,6 +84,39 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let [requesting, setRequesting] = useState(false);
   let [confirming, setConfirming] = useState(false);
   let [locallySubscribed, setLocallySubscribed] = useState(false);
+  let [linkModalOpen, setLinkModalOpen] = useState(false);
+  // Tracks that the user passed through LinkIdentityModal — when they enter
+  // the confirmation code we attach the email to their current atp identity
+  // (or merge from any existing email-only identity) instead of creating a
+  // disconnected email-only account.
+  let [linkToCurrent, setLinkToCurrent] = useState(false);
+
+  const viewerHandle = identity?.bsky_profiles?.handle;
+  const viewerAtpDid = identity?.atp_did;
+  const viewerEmail = identity?.email;
+  // The atp-only-but-subscribing-via-email case: signed in as a Bluesky
+  // account with no email yet. The modal asks them to link the typed email
+  // (or log out) before we send a confirmation code.
+  const needsLinkConfirmation = !!viewerAtpDid && !viewerEmail && !!email;
+
+  const sendRequest = async (link: boolean) => {
+    setRequesting(true);
+    setLinkToCurrent(link);
+    let res = await requestPublicationEmailSubscription(
+      props.publicationUri,
+      email,
+    );
+    setRequesting(false);
+    if (!res.ok) {
+      toaster({ type: "error", content: ERROR_MESSAGES[res.error] });
+      return;
+    }
+    if (res.value.confirmed) {
+      setConfirmState("success");
+      router.refresh();
+    }
+    setConfirmOpen(true);
+  };
 
   const isSubscribed = user.subscribed || locallySubscribed;
   return (
@@ -106,24 +142,11 @@ export const SubscribeInput = (props: SubscribeProps) => {
               disabled={requesting || !email}
               onClick={async () => {
                 if (requesting) return;
-                setRequesting(true);
-                let res = await requestPublicationEmailSubscription(
-                  props.publicationUri,
-                  email,
-                );
-                setRequesting(false);
-                if (!res.ok) {
-                  toaster({
-                    type: "error",
-                    content: ERROR_MESSAGES[res.error],
-                  });
+                if (needsLinkConfirmation) {
+                  setLinkModalOpen(true);
                   return;
                 }
-                if (res.value.confirmed) {
-                  setConfirmState("success");
-                  router.refresh();
-                }
-                setConfirmOpen(true);
+                await sendRequest(false);
               }}
             >
               Subscribe
@@ -138,6 +161,20 @@ export const SubscribeInput = (props: SubscribeProps) => {
           onSubscribed={() => setLocallySubscribed(true)}
         />
       )}
+      {props.newsletterMode && needsLinkConfirmation && (
+        <LinkIdentityModal
+          open={linkModalOpen}
+          onOpenChange={setLinkModalOpen}
+          signedInAs={viewerHandle ? `@${viewerHandle}` : "your Bluesky account"}
+          linkingIdentity={email}
+          confirmButtonLabel="Link email"
+          confirming={requesting}
+          onConfirm={async () => {
+            setLinkModalOpen(false);
+            await sendRequest(true);
+          }}
+        />
+      )}
       {props.newsletterMode && (
         <Modal
           open={confirmOpen}
@@ -146,6 +183,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
             if (!open) {
               if (confirmState === "success") setLocallySubscribed(true);
               setConfirmState("confirm");
+              setLinkToCurrent(false);
             }
           }}
         >
@@ -164,6 +202,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   props.publicationUri,
                   email,
                   code,
+                  linkToCurrent,
                 );
                 setConfirming(false);
                 if (!res.ok) {
@@ -192,7 +231,9 @@ type SubscribeError =
   | "invalid_code"
   | "database_error"
   | "suppressed_spam_complaint"
-  | "suppression_delete_failed";
+  | "suppression_delete_failed"
+  | "link_invalid_state"
+  | "email_belongs_to_other_account";
 
 const ERROR_MESSAGES: Record<SubscribeError, string> = {
   invalid_email: "Please enter a valid email address.",
@@ -205,4 +246,8 @@ const ERROR_MESSAGES: Record<SubscribeError, string> = {
     "This address was previously marked as spam and can't be resubscribed. Contact the publication to resolve.",
   suppression_delete_failed:
     "We couldn't clear a prior delivery issue on this address. Try again later.",
+  link_invalid_state:
+    "Couldn't link this email to your account. Try logging out and subscribing again.",
+  email_belongs_to_other_account:
+    "This email is already linked to a different Bluesky account. Log out to use that account instead.",
 };

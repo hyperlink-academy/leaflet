@@ -1,6 +1,7 @@
 "use server";
 
 import { getIdentityData } from "actions/getIdentityData";
+import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { setAuthToken } from "src/auth";
 import { PubConfirmEmail } from "emails/pubConfirmEmail";
@@ -29,7 +30,11 @@ type RequestError =
   | "suppression_delete_failed"
   | ConfirmationError;
 type RequestSuccess = { confirmed: boolean };
-type ConfirmError = "subscriber_not_found" | ConfirmationError;
+type ConfirmError =
+  | "subscriber_not_found"
+  | "link_invalid_state"
+  | "email_belongs_to_other_account"
+  | ConfirmationError;
 type UnsubscribeError = "unauthorized" | "not_subscribed" | "database_error";
 
 export async function requestPublicationEmailSubscription(
@@ -174,6 +179,7 @@ export async function confirmPublicationEmailSubscription(
   publicationUri: string,
   emailRaw: string,
   code: string,
+  linkToCurrent: boolean = false,
 ): Promise<Result<null, ConfirmError>> {
   const email = emailRaw.trim().toLowerCase();
 
@@ -192,8 +198,15 @@ export async function confirmPublicationEmailSubscription(
   // The confirmation code proves ownership of `email`. Issue (or look up) an
   // auth token for it so the subscriber is logged in and can one-click
   // subscribe to other publications from the same device.
-  const identityId = await ensureAuthTokenForEmail(email);
-  if (!identityId) return Err("database_error");
+  let identityId: string | null;
+  if (linkToCurrent) {
+    const linkResult = await linkEmailToCurrentIdentity(email);
+    if (!linkResult.ok) return linkResult;
+    identityId = linkResult.value;
+  } else {
+    identityId = await ensureAuthTokenForEmail(email);
+    if (!identityId) return Err("database_error");
+  }
 
   const [{ error: updateError }, { error: eventError }] = await Promise.all([
     supabaseServerClient
@@ -310,6 +323,57 @@ export async function unsubscribeFromPublication(
   // stream. Phase 7 handles webhook-driven suppression reconciliation.
 
   return Ok(null);
+}
+
+// Confirms an email subscription where the user has already chosen to link
+// the email to their currently signed-in atp-only identity (via the
+// LinkIdentityModal in the subscribe flow). Either attaches `email` to the
+// current identity, or — if another email-only identity already owns it —
+// merges that identity into the current one.
+async function linkEmailToCurrentIdentity(
+  email: string,
+): Promise<Result<string, ConfirmError>> {
+  const [current, { data: existing }] = await Promise.all([
+    getIdentityData(),
+    supabaseServerClient
+      .from("identities")
+      .select("id, atp_did")
+      .eq("email", email)
+      .maybeSingle(),
+  ]);
+  if (!current || !current.atp_did) return Err("link_invalid_state");
+
+  // Already linked — confirmation is a no-op for the identity row itself.
+  if (current.email && current.email.toLowerCase() === email)
+    return Ok(current.id);
+
+  // Current identity already has a *different* email. Linking would clobber
+  // it, which the modal didn't promise — refuse.
+  if (current.email) return Err("link_invalid_state");
+
+  if (!existing || existing.id === current.id) {
+    const { error } = await supabaseServerClient
+      .from("identities")
+      .update({ email })
+      .eq("id", current.id);
+    if (error) {
+      console.error("[subscribeEmail] attach email failed:", error);
+      return Err("database_error");
+    }
+    return Ok(current.id);
+  }
+
+  // Existing identity owns this email and isn't us. We can only merge if it's
+  // an unlinked email-only account; otherwise it has its own atp_did and
+  // merging would silently drop one of the two Bluesky links.
+  if (existing.atp_did) return Err("email_belongs_to_other_account");
+
+  const merged = await mergeEmailIdentityIntoAtpIdentity({
+    sourceId: existing.id,
+    targetId: current.id,
+  });
+  if (!merged.ok) return Err("database_error");
+  return Ok(current.id);
 }
 
 async function ensureAuthTokenForEmail(email: string): Promise<string | null> {

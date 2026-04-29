@@ -13,6 +13,7 @@ import { HandleInput } from "./HandleInput";
 import { Avatar } from "components/Avatar";
 import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
+import { LinkIdentityModal } from "./LinkIdentityModal";
 const apps = [
   { name: "Leaflet", logo: "/logos/leaflet.svg" },
   { name: "Bluesky", logo: "/logos/bluesky.svg" },
@@ -54,6 +55,26 @@ export const SubscribeWithHandle = (props: {
   let [loading, setLoading] = useState(false);
   let [subscribing, setSubscribing] = useState(false);
   let [oauthError, setOauthError] = useState<OAuthSessionError | null>(null);
+  // When an email-only user subscribes via the atproto flow, we surface a
+  // confirmation modal first ("link Bluesky to your account?") so they can't
+  // accidentally orphan their email account.
+  let [pendingLinkHandle, setPendingLinkHandle] = useState<string | null>(null);
+  const viewerEmail = identity?.email;
+  const viewerAtpDid = identity?.atp_did;
+  const needsLinkConfirmation =
+    !!viewerEmail && !viewerAtpDid;
+
+  const redirectToOauthForSubscribe = (handle: string, link: boolean) => {
+    let action = encodeActionToSearchParam({
+      action: "subscribe",
+      publication: props.publicationUri,
+    });
+    let url = new URL(window.location.href);
+    url.searchParams.set("refreshAuth", "");
+    let redirectUrl = encodeURIComponent(url.toString());
+    let extra = link ? "&link=true&autoMerge=true" : "";
+    window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
+  };
 
   if (props.user.loggedIn && props.user.handle) {
     return (
@@ -119,15 +140,12 @@ export const SubscribeWithHandle = (props: {
           onSubmit={(handle) => {
             let trimmed = handle.trim();
             if (!trimmed) return;
+            if (needsLinkConfirmation) {
+              setPendingLinkHandle(trimmed);
+              return;
+            }
             setLoading(true);
-            let action = encodeActionToSearchParam({
-              action: "subscribe",
-              publication: props.publicationUri,
-            });
-            let url = new URL(window.location.href);
-            url.searchParams.set("refreshAuth", "");
-            let redirectUrl = encodeURIComponent(url.toString());
-            window.location.href = `/api/oauth/login?handle=${encodeURIComponent(trimmed)}&redirect_url=${redirectUrl}&action=${action}`;
+            redirectToOauthForSubscribe(trimmed, false);
           }}
           action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
             Subscribe
@@ -136,6 +154,23 @@ export const SubscribeWithHandle = (props: {
         <div className=" pt-1 ">
           <AtmosphericHandleInfo />
         </div>
+        {needsLinkConfirmation && (
+          <LinkIdentityModal
+            open={pendingLinkHandle !== null}
+            onOpenChange={(open) => {
+              if (!open) setPendingLinkHandle(null);
+            }}
+            signedInAs={viewerEmail!}
+            linkingIdentity={`@${pendingLinkHandle ?? ""}`}
+            confirmButtonLabel="Link Bluesky"
+            confirming={loading}
+            onConfirm={() => {
+              if (!pendingLinkHandle) return;
+              setLoading(true);
+              redirectToOauthForSubscribe(pendingLinkHandle, true);
+            }}
+          />
+        )}
       </div>
     );
 };

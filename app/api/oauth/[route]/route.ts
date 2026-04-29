@@ -16,11 +16,16 @@ import {
   parseActionFromSearchParam,
 } from "./afterSignInActions";
 import { inngest } from "app/api/inngest/client";
+import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 
 type OauthRequestClientState = {
   redirect: string | null;
   action: ActionAfterSignIn | null;
   link?: boolean;
+  // Auto-confirm a cross-identity merge instead of routing to /merge-accounts.
+  // Set when the caller already showed an in-context "link this account?"
+  // confirmation (e.g. the subscribe-flow LinkIdentityModal).
+  autoMerge?: boolean;
 };
 
 export async function GET(
@@ -39,11 +44,17 @@ export async function GET(
       const handle = searchParams.get("handle") as string;
       const signup = searchParams.get("signup") === "true";
       const link = searchParams.get("link") === "true";
+      const autoMerge = searchParams.get("autoMerge") === "true";
       // Put originating page here!
       let redirect = searchParams.get("redirect_url");
       if (redirect) redirect = decodeURIComponent(redirect);
       let action = parseActionFromSearchParam(searchParams.get("action"));
-      let state: OauthRequestClientState = { redirect, action, link };
+      let state: OauthRequestClientState = {
+        redirect,
+        action,
+        link,
+        autoMerge,
+      };
 
       // Revoke any pending authentication requests if the connection is closed (optional)
       const ac = new AbortController();
@@ -90,7 +101,8 @@ export async function GET(
 
         // Explicit link flow from the LoginModal for an email-only user. Never
         // fall through to a normal DID login — we must either attach the atp_did
-        // to the existing email identity or route to /merge-accounts.
+        // to the existing email identity or route to /merge-accounts (or merge
+        // inline if autoMerge is set).
         if (
           s.link &&
           currentIdentity &&
@@ -105,9 +117,27 @@ export async function GET(
             return handleAction(s.action, redirectPath);
           }
           if (identity.id !== currentIdentity.id) {
-            await stagePendingMerge(identity.id, redirectPath);
-            // Only reached if the token insert failed. Fall through to the
-            // normal sign-in flow rather than blocking the user.
+            if (s.autoMerge) {
+              const merged = await mergeEmailIdentityIntoAtpIdentity({
+                sourceId: currentIdentity.id,
+                targetId: identity.id,
+              });
+              if (merged.ok) {
+                // Source identity is gone; clear it so the cross-identity
+                // merge block below doesn't try to merge a deleted row.
+                currentIdentity = null;
+              } else {
+                console.error(
+                  "[oauth/callback] autoMerge failed:",
+                  merged.error,
+                );
+                await stagePendingMerge(identity.id, redirectPath);
+              }
+            } else {
+              await stagePendingMerge(identity.id, redirectPath);
+              // Only reached if the token insert failed. Fall through to the
+              // normal sign-in flow rather than blocking the user.
+            }
           }
           // Same identity already linked — fall through to refresh session.
         }
@@ -133,10 +163,25 @@ export async function GET(
           currentIdentity.email
         ) {
           // DID already has an identity row. Caller is currently signed in as a
-          // *different* email-only identity. Stage a pending merge and let the
-          // user confirm on /merge-accounts before we touch either account.
-          await stagePendingMerge(identity.id, redirectPath);
-          // Only reached if the token insert failed — fall through.
+          // *different* email-only identity. Either merge inline (autoMerge
+          // means the caller already collected the user's confirmation) or
+          // stage a pending merge for /merge-accounts.
+          if (s.autoMerge) {
+            const merged = await mergeEmailIdentityIntoAtpIdentity({
+              sourceId: currentIdentity.id,
+              targetId: identity.id,
+            });
+            if (!merged.ok) {
+              console.error(
+                "[oauth/callback] autoMerge failed:",
+                merged.error,
+              );
+              await stagePendingMerge(identity.id, redirectPath);
+            }
+          } else {
+            await stagePendingMerge(identity.id, redirectPath);
+            // Only reached if the token insert failed — fall through.
+          }
         }
 
         // Trigger migration if identity needs it
