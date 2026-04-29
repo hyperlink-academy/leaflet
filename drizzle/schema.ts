@@ -527,6 +527,23 @@ export const publication_post_sends = pgTable("publication_post_sends", {
 	}
 });
 
+export const publication_pages = pgTable("publication_pages", {
+	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
+	id: bigint("id", { mode: "number" }).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	leaflet_src: uuid("leaflet_src").notNull().references(() => permission_tokens.id),
+	document: text("document").references(() => documents.uri),
+	path: text("path"),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	title: text("title").default('').notNull(),
+	metadata: jsonb("metadata").default({}).notNull(),
+},
+(table) => {
+	return {
+		publication_pages_pkey: primaryKey({ columns: [table.id, table.publication], name: "publication_pages_pkey"}),
+	}
+});
+
 export const leaflets_to_documents = pgTable("leaflets_to_documents", {
 	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
@@ -536,6 +553,8 @@ export const leaflets_to_documents = pgTable("leaflets_to_documents", {
 	tags: text("tags").default('RRAY[').array(),
 	cover_image: text("cover_image"),
 	preferences: jsonb("preferences"),
+	scheduled_publish_at: timestamp("scheduled_publish_at", { withTimezone: true, mode: 'string' }),
+	scheduled_publish_data: jsonb("scheduled_publish_data"),
 },
 (table) => {
 	return {
@@ -553,6 +572,8 @@ export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 	tags: text("tags").default('RRAY[').array(),
 	cover_image: text("cover_image"),
 	preferences: jsonb("preferences"),
+	scheduled_publish_at: timestamp("scheduled_publish_at", { withTimezone: true, mode: 'string' }),
+	scheduled_publish_data: jsonb("scheduled_publish_data"),
 },
 (table) => {
 	return {

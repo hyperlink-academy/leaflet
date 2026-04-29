@@ -337,31 +337,28 @@ export type Database = {
         Row: {
           bsky_like_count: number
           data: Json
-          identity_did: string | null
           indexed: boolean
           indexed_at: string
           recommend_count: number
-          sort_date: string
+          sort_date: string | null
           uri: string
         }
         Insert: {
           bsky_like_count?: number
           data: Json
-          identity_did?: string | null
           indexed?: boolean
           indexed_at?: string
           recommend_count?: number
-          sort_date?: string
+          sort_date?: string | null
           uri: string
         }
         Update: {
           bsky_like_count?: number
           data?: Json
-          identity_did?: string | null
           indexed?: boolean
           indexed_at?: string
           recommend_count?: number
-          sort_date?: string
+          sort_date?: string | null
           uri?: string
         }
         Relationships: []
@@ -605,6 +602,8 @@ export type Database = {
           leaflet: string
           preferences: Json | null
           publication: string
+          scheduled_publish_at: string | null
+          scheduled_publish_data: Json | null
           tags: string[] | null
           title: string
         }
@@ -616,6 +615,8 @@ export type Database = {
           leaflet: string
           preferences?: Json | null
           publication: string
+          scheduled_publish_at?: string | null
+          scheduled_publish_data?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -627,6 +628,8 @@ export type Database = {
           leaflet?: string
           preferences?: Json | null
           publication?: string
+          scheduled_publish_at?: string | null
+          scheduled_publish_data?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -656,35 +659,38 @@ export type Database = {
       }
       leaflets_to_documents: {
         Row: {
-          archived: boolean | null
           cover_image: string | null
           created_at: string
           description: string
           document: string
           leaflet: string
           preferences: Json | null
+          scheduled_publish_at: string | null
+          scheduled_publish_data: Json | null
           tags: string[] | null
           title: string
         }
         Insert: {
-          archived?: boolean | null
           cover_image?: string | null
           created_at?: string
           description?: string
           document: string
           leaflet: string
           preferences?: Json | null
+          scheduled_publish_at?: string | null
+          scheduled_publish_data?: Json | null
           tags?: string[] | null
           title?: string
         }
         Update: {
-          archived?: boolean | null
           cover_image?: string | null
           created_at?: string
           description?: string
           document?: string
           leaflet?: string
           preferences?: Json | null
+          scheduled_publish_at?: string | null
+          scheduled_publish_data?: Json | null
           tags?: string[] | null
           title?: string
         }
@@ -1189,6 +1195,61 @@ export type Database = {
             foreignKeyName: "publication_newsletter_settings_publication_fkey"
             columns: ["publication"]
             isOneToOne: true
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      publication_pages: {
+        Row: {
+          created_at: string
+          document: string | null
+          id: number
+          leaflet_src: string
+          metadata: Json
+          path: string | null
+          publication: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          document?: string | null
+          id?: number
+          leaflet_src: string
+          metadata?: Json
+          path?: string | null
+          publication: string
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          document?: string | null
+          id?: number
+          leaflet_src?: string
+          metadata?: Json
+          path?: string | null
+          publication?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_pages_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "publication_pages_leaflet_src_fkey"
+            columns: ["leaflet_src"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_pages_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
             referencedRelation: "publications"
             referencedColumns: ["uri"]
           },
