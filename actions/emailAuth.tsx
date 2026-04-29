@@ -9,35 +9,24 @@ import { cookies } from "next/headers";
 import { setAuthToken } from "src/auth";
 import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
+import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
+import { sendConfirmationEmail } from "src/utils/confirmationEmail";
 
 async function sendAuthCode(email: string, code: string) {
-  if (process.env.NODE_ENV === "development") {
-    console.log("Auth code:", code);
-    return;
-  }
-
-  let res = await fetch("https://api.postmarkapp.com/email", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Postmark-Server-Token": process.env.POSTMARK_API_KEY!,
-    },
-    body: JSON.stringify({
-      From: "Leaflet <accounts@leaflet.pub>",
-      Subject: `Your authentication code for Leaflet is ${code}`,
-      To: email,
-      TextBody: `Paste this code to login to Leaflet:
-
-${code}
-      `,
-      HtmlBody: `
-      <html>
-        <body>
-          <p>Paste this code to login to Leaflet: <strong>${code}</strong></p>
-        </body>
-      </html>
-      `,
-    }),
+  await sendConfirmationEmail({
+    to: email,
+    subject: `Your authentication code for Leaflet is ${code}`,
+    template: (
+      <LeafletConfirmEmail
+        code={code}
+        title="Sign in to Leaflet"
+        message="Paste this code to sign in"
+        assetsBaseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"}
+      />
+    ),
+    text: `Paste this code to login to Leaflet:\n\n${code}\n`,
+    devLogTag: "auth code",
+    code,
   });
 }
 

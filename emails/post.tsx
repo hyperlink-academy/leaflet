@@ -16,6 +16,7 @@ import type { PrismLanguage } from "@react-email/code-block";
 import React, { type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
+  PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
@@ -161,6 +162,32 @@ const defaultProps: PostEmailProps = {
     },
     {
       $type: "pub.leaflet.pages.linearDocument#block",
+      block: {
+        $type: "pub.leaflet.blocks.button",
+        text: "Click me",
+        url: "https://leaflet.pub",
+      },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      alignment: "lex:pub.leaflet.pages.linearDocument#textAlignLeft",
+      block: {
+        $type: "pub.leaflet.blocks.button",
+        text: "Aligned left",
+        url: "https://leaflet.pub",
+      },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      alignment: "lex:pub.leaflet.pages.linearDocument#textAlignRight",
+      block: {
+        $type: "pub.leaflet.blocks.button",
+        text: "Aligned right",
+        url: "https://leaflet.pub",
+      },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
       block: { $type: "pub.leaflet.blocks.horizontalRule" },
     },
     {
@@ -301,7 +328,16 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                     margin: "8px 0 0",
                   }}
                 >
-                  {p.postTitle}
+                  <Link
+                    href={p.postUrl}
+                    style={{
+                      color: theme.primary,
+                      fontFamily: theme.headingFont,
+                      textDecoration: "none",
+                    }}
+                  >
+                    {p.postTitle}
+                  </Link>
                 </ReactEmailHeading>
 
                 {p.postDescription ? (
@@ -365,17 +401,6 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                           />
                         </Link>
                       </Column>
-                      <Column style={{ width: 10 }} />
-                      <Column style={{ width: 16, verticalAlign: "middle" }}>
-                        <Link href={p.postUrl} style={accentLink}>
-                          <Img
-                            width={16}
-                            height={16}
-                            src={staticUrl("external-link.png")}
-                            alt="Open post"
-                          />
-                        </Link>
-                      </Column>
                     </Row>
                   </Section>
                 ) : null}
@@ -384,6 +409,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                   <BlockRenderer
                     key={i}
                     block={b.block}
+                    alignment={b.alignment}
                     did={p.did}
                     assetsBaseUrl={p.assetsBaseUrl}
                     theme={theme}
@@ -416,7 +442,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             lineHeight: "20px",
                           }}
                         >
-                          See Full Post
+                          Read in Browser
                         </Link>
                       </td>
                     </tr>
@@ -450,27 +476,23 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                         )}
                       </td>
                     </tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
 
                     {/* Spacer */}
                     <tr>
                       <td
                         style={{
                           fontSize: 0,
-                          height: 12,
-                          lineHeight: "12px",
+                          height: 16,
+                          lineHeight: "16px",
                         }}
                       >
                         &nbsp;
                       </td>
                     </tr>
 
-                    {/* Horizontal rule between card and watermark. <hr>
-                        margins are flaky in Gmail, so we use a 1px-tall
-                        <td> with border-top instead. */}
+                    {/* Horizontal rule above watermark. <hr> margins are
+                        flaky in Gmail, so we use a 1px-tall <td> with
+                        border-top instead. */}
                     <tr>
                       <td
                         style={{
@@ -506,6 +528,10 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                     </tr>
                   </tbody>
                 </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </td>
             </tr>
           </tbody>
@@ -516,14 +542,35 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
 };
 export default PostEmail;
 
+// Map the lexicon's alignment token to the simple left/center/right values
+// usable as HTML `align` attributes. `justify` falls through to `left` to
+// match published web behavior (`justify-start` flex). For buttons we
+// default to `center` when alignment is unset, matching PostContent.tsx.
+const resolveButtonAlignment = (
+  alignment: string | undefined,
+): "left" | "center" | "right" => {
+  switch (alignment) {
+    case "lex:pub.leaflet.pages.linearDocument#textAlignRight":
+      return "right";
+    case "lex:pub.leaflet.pages.linearDocument#textAlignLeft":
+    case "lex:pub.leaflet.pages.linearDocument#textAlignJustify":
+      return "left";
+    case "lex:pub.leaflet.pages.linearDocument#textAlignCenter":
+    default:
+      return "center";
+  }
+};
+
 const BlockRenderer = ({
   block,
+  alignment,
   did,
   assetsBaseUrl,
   theme,
   colors,
 }: {
   block: PubLeafletPagesLinearDocument.Block["block"];
+  alignment?: string;
   did: string;
   assetsBaseUrl: string;
   theme: EmailTheme;
@@ -630,6 +677,16 @@ const BlockRenderer = ({
         previewSrc={previewSrc}
         theme={theme}
         colors={colors}
+      />
+    );
+  }
+  if (PubLeafletBlocksButton.isMain(block)) {
+    return (
+      <ButtonBlock
+        text={block.text}
+        url={block.url}
+        align={resolveButtonAlignment(alignment)}
+        theme={theme}
       />
     );
   }
@@ -910,6 +967,66 @@ export const LinkBlock = ({
           </Column>
         ) : null}
       </Row>
+    </Section>
+  );
+};
+
+export const ButtonBlock = ({
+  text,
+  url,
+  align = "center",
+  theme = defaultEmailTheme,
+}: {
+  text: string;
+  url: string;
+  align?: "left" | "center" | "right";
+  theme?: EmailTheme;
+}) => {
+  // Bulletproof button: table-based so Outlook (which ignores padding on
+  // <a>) renders a real clickable button. The `<td>` carries the bgcolor
+  // attribute and padding; the `<a>` is `display: block` so the entire
+  // padded area is clickable. Alignment via the table's `align` HTML
+  // attribute — Gmail won't reliably cascade `text-align` from a wrapping
+  // <Section>, so we anchor on the table itself.
+  return (
+    <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+      <table
+        role="presentation"
+        align={align}
+        cellPadding={0}
+        cellSpacing={0}
+        border={0}
+        style={{ borderCollapse: "separate" }}
+      >
+        <tbody>
+          <tr>
+            <td
+              align="center"
+              {...bgcolorAttr(theme.accentBackground)}
+              style={{
+                backgroundColor: theme.accentBackground,
+                borderRadius: 6,
+                padding: "10px 20px",
+              }}
+            >
+              <Link
+                href={url}
+                style={{
+                  color: theme.accentText,
+                  display: "block",
+                  fontFamily: theme.bodyFont,
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  lineHeight: "20px",
+                  textDecoration: "none",
+                }}
+              >
+                {text}
+              </Link>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </Section>
   );
 };
