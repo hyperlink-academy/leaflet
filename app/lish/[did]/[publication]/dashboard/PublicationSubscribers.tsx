@@ -7,8 +7,11 @@ import { Menu, MenuItem } from "components/Menu";
 import { Separator } from "components/Layout";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { useDashboardState } from "components/PageLayouts/DashboardLayout";
 
 type subscriber = { email: string | undefined; did: string | undefined };
+
+type SubscriberStatus = "subscribed" | "unconfirmed" | "unsubscribed";
 
 type MergedSubscriber = {
   key: string;
@@ -16,6 +19,7 @@ type MergedSubscriber = {
   handle: string | undefined;
   email: string | undefined;
   created_at: string;
+  status: SubscriberStatus;
 };
 
 export function PublicationSubscribers(props: {
@@ -23,14 +27,24 @@ export function PublicationSubscribers(props: {
 }) {
   let smoker = useSmoker();
   let { data: publication } = usePublicationData();
+  let { subscriberStatus } = useDashboardState();
 
   if (!publication) return <div>null</div>;
-  let atprotoSubs = publication.publication?.publication_subscriptions || [];
+  // ATProto subscribers have no email lifecycle state — they're just present
+  // or absent, so they only count under the "subscribed" status filter.
+  let atprotoSubs = subscriberStatus.subscribed
+    ? publication.publication?.publication_subscriptions || []
+    : [];
   let newsletterEnabled =
     !!publication.publication?.publication_newsletter_settings?.enabled;
   let emailSubs = newsletterEnabled
     ? (publication.publication?.publication_email_subscribers || []).filter(
-        (s) => s.state === "confirmed",
+        (s) => {
+          if (s.state === "confirmed") return subscriberStatus.subscribed;
+          if (s.state === "pending") return subscriberStatus.unconfirmed;
+          if (s.state === "unsubscribed") return subscriberStatus.unsubscribed;
+          return false;
+        },
       )
     : [];
 
@@ -45,12 +59,19 @@ export function PublicationSubscribers(props: {
       handle: s.identities?.bsky_profiles?.handle ?? undefined,
       email: undefined,
       created_at: s.created_at,
+      status: "subscribed",
     });
   }
   for (let s of emailSubs) {
+    let status: SubscriberStatus =
+      s.state === "pending"
+        ? "unconfirmed"
+        : s.state === "unsubscribed"
+          ? "unsubscribed"
+          : "subscribed";
     let linkedDid = s.identities?.atp_did ?? undefined;
     let existing = linkedDid ? byDid.get(linkedDid) : undefined;
-    if (existing) {
+    if (existing && status === "subscribed") {
       existing.email = s.email;
       continue;
     }
@@ -60,6 +81,7 @@ export function PublicationSubscribers(props: {
       handle: s.identities?.bsky_profiles?.handle ?? undefined,
       email: s.email,
       created_at: s.created_at,
+      status,
     });
   }
   let subscribers: MergedSubscriber[] = [...byDid.values(), ...emailOnly];
@@ -80,7 +102,37 @@ export function PublicationSubscribers(props: {
   //   }
   // }, [checkedSubscribers]);
 
-  if (subscribers.length === 0)
+  let activeStatuses = (
+    Object.keys(subscriberStatus) as SubscriberStatus[]
+  ).filter((k) => subscriberStatus[k]);
+  let isDefaultStatusFilter =
+    activeStatuses.length === 1 && activeStatuses[0] === "subscribed";
+
+  if (subscribers.length === 0) {
+    if (!isDefaultStatusFilter) {
+      let label =
+        activeStatuses.length === 0
+          ? "any status"
+          : activeStatuses
+              .map((s) => (s === "unconfirmed" ? "unconfirmed" : s))
+              .join(", ");
+      return (
+        <div
+          className={`italic text-tertiary flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
+          style={
+            props.showPageBackground
+              ? {
+                  backgroundColor:
+                    "rgba(var(--bg-page), var(--bg-page-alpha)) ",
+                }
+              : { backgroundColor: "transparent" }
+          }
+        >
+          <p className="font-bold">No subscribers match this filter</p>
+          <p>Showing: {label}</p>
+        </div>
+      );
+    }
     return (
       <div
         className={`italic text-tertiary  flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
@@ -115,6 +167,7 @@ export function PublicationSubscribers(props: {
         </ButtonPrimary>
       </div>
     );
+  }
 
   return (
     <div
@@ -166,6 +219,7 @@ export function PublicationSubscribers(props: {
               did={subscriber.did}
               email={subscriber.email}
               createdAt={subscriber.created_at}
+              status={subscriber.status}
             />
           ))}
       </div>
@@ -178,6 +232,7 @@ const SubscriberListItem = (props: {
   did: string | undefined;
   email: string | undefined;
   createdAt: string;
+  status: SubscriberStatus;
 }) => {
   return (
     <div className="flex items-end flex-row gap-2 w-full">
@@ -197,10 +252,15 @@ const SubscriberListItem = (props: {
         <a
           target="_blank"
           href={`mailto:${props.email}`}
-          className="font-bold text-primary"
+          className={`font-bold ${props.status === "subscribed" ? "text-primary" : "text-tertiary line-through"}`}
         >
           {props.email}
         </a>
+      )}
+      {props.status !== "subscribed" && (
+        <span className="text-sm italic text-tertiary">
+          {props.status === "unconfirmed" ? "unconfirmed" : "unsubscribed"}
+        </span>
       )}
       <SubscriberDate createdAt={props.createdAt} />
     </div>

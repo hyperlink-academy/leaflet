@@ -38,6 +38,11 @@ export type DashboardState = {
     docs: boolean;
     archived: boolean;
   };
+  subscriberStatus: {
+    unconfirmed: boolean;
+    subscribed: boolean;
+    unsubscribed: boolean;
+  };
 };
 
 type DashboardStore = {
@@ -54,7 +59,27 @@ const defaultDashboardState: DashboardState = {
     docs: false,
     archived: false,
   },
+  subscriberStatus: {
+    unconfirmed: false,
+    subscribed: true,
+    unsubscribed: false,
+  },
 };
+
+// Existing identities have stored interface_state without newer fields
+// (e.g. subscriberStatus). Merge so callers always see a complete shape.
+function withDefaults(stored: DashboardState | undefined): DashboardState {
+  if (!stored) return defaultDashboardState;
+  return {
+    ...defaultDashboardState,
+    ...stored,
+    filter: { ...defaultDashboardState.filter, ...stored.filter },
+    subscriberStatus: {
+      ...defaultDashboardState.subscriberStatus,
+      ...stored.subscriberStatus,
+    },
+  };
+}
 
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
   dashboards: {},
@@ -84,12 +109,10 @@ export const useDashboardId = () => {
 export const useDashboardState = () => {
   const id = useDashboardId();
   let { identity } = useIdentityData();
-  let localState = useDashboardStore(
-    (state) => state.dashboards[id] || defaultDashboardState,
-  );
-  if (!identity) return localState;
+  let localState = useDashboardStore((state) => state.dashboards[id]);
+  if (!identity) return withDefaults(localState);
   let metadata = identity.interface_state as InterfaceState;
-  return metadata?.dashboards?.[id] || defaultDashboardState;
+  return withDefaults(metadata?.dashboards?.[id]);
 };
 
 export const useSetDashboardState = () => {
@@ -458,6 +481,72 @@ const FilterOptions = (props: { hasPubs: boolean; hasArchived: boolean }) => {
         <CloseTiny className="scale-75" /> Clear
       </button>
     </Popover>
+  );
+};
+
+export const SubscriberStatusFilter = () => {
+  let { subscriberStatus } = useDashboardState();
+  let setState = useSetDashboardState();
+  let count = Object.values(subscriberStatus).filter(Boolean).length;
+
+  return (
+    <Popover
+      className="text-sm px-2! py-1!"
+      trigger={<div>Status {count > 0 && `(${count})`}</div>}
+    >
+      <Checkbox
+        small
+        checked={subscriberStatus.subscribed}
+        onChange={(e) =>
+          setState({
+            subscriberStatus: {
+              ...subscriberStatus,
+              subscribed: !!e.target.checked,
+            },
+          })
+        }
+      >
+        Subscribed
+      </Checkbox>
+      <Checkbox
+        small
+        checked={subscriberStatus.unconfirmed}
+        onChange={(e) =>
+          setState({
+            subscriberStatus: {
+              ...subscriberStatus,
+              unconfirmed: !!e.target.checked,
+            },
+          })
+        }
+      >
+        Unconfirmed
+      </Checkbox>
+      <Checkbox
+        small
+        checked={subscriberStatus.unsubscribed}
+        onChange={(e) =>
+          setState({
+            subscriberStatus: {
+              ...subscriberStatus,
+              unsubscribed: !!e.target.checked,
+            },
+          })
+        }
+      >
+        Unsubscribed
+      </Checkbox>
+    </Popover>
+  );
+};
+
+export const SubscriberDashboardControls = () => {
+  return (
+    <div className="dashboardControls w-full flex gap-4 justify-end">
+      <div className="flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
+        <SubscriberStatusFilter />
+      </div>
+    </div>
   );
 };
 

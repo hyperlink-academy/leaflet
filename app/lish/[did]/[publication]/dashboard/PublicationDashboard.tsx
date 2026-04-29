@@ -9,6 +9,7 @@ import { PublicationSubscribers } from "./PublicationSubscribers";
 import {
   DashboardLayout,
   PublicationDashboardControls,
+  SubscriberDashboardControls,
 } from "components/PageLayouts/DashboardLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
@@ -75,7 +76,7 @@ export default function PublicationDashboard({
               showPageBackground={!!record.theme?.showPageBackground}
             />
           ),
-          controls: null,
+          controls: <SubscriberDashboardControls />,
         },
         ...(canSeePro
           ? {
