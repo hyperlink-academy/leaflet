@@ -1,9 +1,4 @@
-import {
-  Head,
-  Img,
-  Link,
-  pixelBasedPreset,
-} from "@react-email/components";
+import { Head, Img, Link, pixelBasedPreset } from "@react-email/components";
 import React from "react";
 
 export type EmailTheme = {
@@ -34,15 +29,9 @@ export const defaultEmailTheme: EmailTheme = {
 // Parse rgb()/rgba()/#hex into [r, g, b]. Returns black on parse failure —
 // theme colors come from a typed config so this is just defensive.
 const parseColor = (input: string): [number, number, number] => {
-  const rgbMatch = input.match(
-    /rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i,
-  );
+  const rgbMatch = input.match(/rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
   if (rgbMatch)
-    return [
-      Number(rgbMatch[1]),
-      Number(rgbMatch[2]),
-      Number(rgbMatch[3]),
-    ];
+    return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
   const hexMatch = input.match(/^#([0-9a-f]{6})$/i);
   if (hexMatch) {
     const h = hexMatch[1];
@@ -69,11 +58,7 @@ const parseColor = (input: string): [number, number, number] => {
 // leaving borders invisible and tinted text falling back to defaults.
 // Linear mixing isn't perceptually identical to the oklab original, but
 // for the near-grayscale tints we use it's visually indistinguishable.
-export const mixRgb = (
-  a: string,
-  b: string,
-  bPercent: number,
-): string => {
+export const mixRgb = (a: string, b: string, bPercent: number): string => {
   const [ar, ag, ab] = parseColor(a);
   const [br, bg, bb] = parseColor(b);
   const t = bPercent / 100;
@@ -179,16 +164,9 @@ export const confirmEmailTailwindConfig = {
 // makes every element render visually small). Templates can pass extra
 // children — usually a `<style>` block with template-specific @media
 // rules — and they'll be appended after the meta.
-export const MailHead = ({
-  children,
-}: {
-  children?: React.ReactNode;
-}) => (
+export const MailHead = ({ children }: { children?: React.ReactNode }) => (
   <Head>
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {children}
   </Head>
 );
@@ -259,4 +237,3 @@ export const LeafletWatermark = ({
     </table>
   );
 };
-

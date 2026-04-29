@@ -233,13 +233,6 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
           @media only screen and (max-width: 480px) {
             .email-page-pad { padding: 12px 8px !important; }
             .email-card-pad { padding: 16px !important; }
-            /* The card table carries an HTML width attribute (e.g. 624) so
-               Gmail anchors on it; on mobile that pins it wider than the
-               viewport. Force it to fit. */
-            .email-card-table {
-              width: 100% !important;
-              max-width: 100% !important;
-            }
           }
         `}</style>
       </MailHead>
@@ -279,20 +272,27 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                   padding: "24px 16px",
                 }}
               >
-                {/* Both the HTML `width` attribute and CSS `width` are set:
-                    Gmail strips/ignores `max-width` in some contexts but
-                    always honors the HTML attribute, so it pins the box at
-                    the publication's web page width on desktop. The
-                    media-query rule above forces 100% on small screens. */}
+                {/* Responsive width: `width="100%"` lets the card fill its
+                    container, and `max-width: pageWidth` caps it on wider
+                    viewports. This keeps it readable at the publication's
+                    page width on desktop while shrinking gracefully when
+                    the email is viewed in a narrow window (e.g. Apple Mail
+                    desktop resized below the page width). Outlook desktop
+                    ignores `max-width` and will render full-width — that's
+                    a known tradeoff for the simpler markup. */}
                 <table
                   role="presentation"
                   align="center"
                   className="email-card-table"
-                  width={theme.pageWidth}
+                  width="100%"
                   cellPadding={0}
                   cellSpacing={0}
                   border={0}
-                  style={{ width: theme.pageWidth, maxWidth: "100%" }}
+                  style={{
+                    width: "100%",
+                    maxWidth: theme.pageWidth,
+                    margin: "0 auto",
+                  }}
                 >
                   <tbody>
                     <tr>
