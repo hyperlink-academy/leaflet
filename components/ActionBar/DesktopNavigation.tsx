@@ -14,6 +14,7 @@ import { AccountSmall } from "components/Icons/AccountSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
 
 type NavigationProps = {
+  pageTitle: React.ReactNode;
   currentPage: navPages;
   publication?: string;
   actions?: React.ReactNode;
@@ -33,13 +34,15 @@ export const NavigationContent = (props: NavigationProps) => {
 
   return (
     <>
-      {props.actions}
+      {props.pageTitle}
 
+      <div className="flex flex-col gap-1 pt-0.5">{props.actions}</div>
       {props.tabs && Object.keys(props.tabs).length > 1 && (
         <>
-          <hr className="border-border-light border-dashed my-1" />
+          <hr className="border-border-light my-2" />
           {Object.keys(props.tabs).map((t) => (
             <ActionButton
+              labelOnMobile
               key={t}
               icon={props.tabs![t].icon ?? <TabsSmall />}
               label={t}
@@ -56,7 +59,7 @@ export const NavigationContent = (props: NavigationProps) => {
 
       {props.currentPage === "home" && (
         <>
-          <hr className="border-border-light my-1" />
+          <hr className="border-border-light my-2" />
           <div className="text-tertiary uppercase text-sm px-1 pt-1">
             PUBLICATIONS
           </div>
@@ -95,6 +98,20 @@ export const NavigationContent = (props: NavigationProps) => {
         />
       )}
     </>
+  );
+};
+
+export const PageTitle = (props: {
+  pageTitle: string;
+  icon: React.ReactNode;
+}) => {
+  return (
+    <div className="flex gap-2 w-full px-1 py-0.5 items-center ">
+      {/*{props.icon}*/}
+      <div className="truncate min-w-0 text-tertiary uppercase text-sm font-bold">
+        {props.pageTitle}
+      </div>
+    </div>
   );
 };
 

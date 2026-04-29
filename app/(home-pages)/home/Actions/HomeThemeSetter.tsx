@@ -18,7 +18,6 @@ export const HomeThemeSetter = (props: { entityID: string }) => {
       trigger={
         <ActionButton
           secondary
-          smallOnMobile
           icon=<PaintSmall />
           label="Theme"
           className="sm:flex! hidden"

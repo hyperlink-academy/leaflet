@@ -9,14 +9,8 @@ import { usePublicationData } from "./PublicationSWRProvider";
 import { useSmoker } from "components/Toast";
 import { useIsMobile } from "src/hooks/isMobile";
 import { SpeedyLink } from "components/SpeedyLink";
-import { ButtonSecondary, ButtonTertiary } from "components/Buttons";
-import { UpgradeModal } from "../UpgradeModal";
-import { LeafletPro } from "components/Icons/LeafletPro";
-import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 
 export const Actions = (props: { publication: string }) => {
-  let isPro = useIsPro();
-  let canSeePro = useCanSeePro();
   return (
     <>
       <NewDraftActionButton publication={props.publication} />
@@ -43,7 +37,7 @@ function PublicationShareButton() {
           icon=<ShareSmall />
           label="Share"
           onClick={() => {}}
-          smallOnMobile
+          className="w-full"
         />
       }
     >

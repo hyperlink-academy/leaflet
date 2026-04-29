@@ -18,7 +18,6 @@ export const ActionButton = forwardRef<
     className?: string;
     subtext?: string;
     labelOnMobile?: boolean;
-    smallOnMobile?: boolean;
     z?: boolean;
   }
 >((_props, ref) => {
@@ -29,7 +28,6 @@ export const ActionButton = forwardRef<
     primary,
     secondary,
     labelOnMobile,
-    smallOnMobile,
     subtext,
     className,
     ...buttonProps
@@ -58,7 +56,6 @@ export const ActionButton = forwardRef<
       flex gap-2 items-start justify-start
       sm:w-full sm:max-w-full ${labelOnMobile ? "w-full" : "w-fit"}
       outline-2 outline-transparent outline-offset-1
-      ${smallOnMobile && "sm:text-base text-sm py-0! sm:py-1! sm:h-fit h-6 items-center!"}
 
       ${
         primary

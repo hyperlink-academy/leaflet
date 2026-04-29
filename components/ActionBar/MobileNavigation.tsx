@@ -12,6 +12,7 @@ import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 export const MobileNavigation = (props: {
   controls?: React.ReactNode;
   actions?: React.ReactNode;
+  pageTitle: string;
 }) => {
   let [state, setState] = useState<"search" | "default">("default");
   let [hidden, setHidden] = useState(false);
@@ -78,7 +79,7 @@ export const MobileNavigation = (props: {
         }
       >
         <div
-          className={`mobilePageHeaderContent border rounded-lg ${scrollPos > 20 ? "border-border-light" : "border-transparent"} flex gap-4 justify-between items-center p-1 w-full`}
+          className={`mobilePageHeaderContent border rounded-lg border-border-light flex gap-4 justify-between items-center p-1 w-full`}
           style={
             scrollPos < 20
               ? {
@@ -103,7 +104,7 @@ export const MobileNavigation = (props: {
             </>
           ) : (
             <>
-              <MobileSidebarTrigger />
+              <MobileSidebarTrigger pageTitle={props.pageTitle} />
               <div className="flex-1" />
               <button
                 onClick={() => {
@@ -123,15 +124,15 @@ export const MobileNavigation = (props: {
   );
 };
 
-const MobileSidebarTrigger = () => {
+const MobileSidebarTrigger = (props: { pageTitle: string }) => {
   let setOpen = useSidebarStore((s) => s.setOpen);
   return (
     <button
-      className="flex gap-1 items-center text-secondary font-bold"
+      className="flex gap-2 items-center text-secondary font-bold"
       onClick={() => setOpen(true)}
     >
       <MenuSmall />
-      Home
+      {props.pageTitle}
     </button>
   );
 };

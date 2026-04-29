@@ -16,8 +16,8 @@ export function NewDraftActionButton(props: { publication: string }) {
         let newLeaflet = await createPublicationDraft(props.publication);
         router.push(`/${newLeaflet}`);
       }}
-      icon=<AddTiny className="sm:m-1 shrink-0 sm:scale-100 scale-75" />
-      smallOnMobile
+      icon=<AddTiny className="m-1" />
+      className="w-full"
       label="Draft"
     />
   );

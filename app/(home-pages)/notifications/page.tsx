@@ -6,18 +6,27 @@ import { hydrateNotifications } from "src/notifications";
 import { supabaseServerClient } from "supabase/serverClient";
 import { CommentNotification } from "./CommentNotication";
 import { NotificationList } from "./NotificationList";
+import { NotificationsUnreadSmall } from "components/Icons/NotificationSmall";
+import { PageTitle } from "components/ActionBar/DesktopNavigation";
 
 export default async function Notifications() {
   return (
     <DashboardLayout
-      id="discover"
+      id="notifications"
       currentPage="notifications"
       defaultTab="default"
       actions={null}
+      pageTitle={
+        <PageTitle
+          icon={<NotificationsUnreadSmall />}
+          pageTitle={"Notifications"}
+        />
+      }
       tabs={{
         default: {
           content: (
             <DashboardPageLayout
+              pageTitle="Notifications"
               scrollKey="dashboard-discover-default"
               showHeader={false}
             >

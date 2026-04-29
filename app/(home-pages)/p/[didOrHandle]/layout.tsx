@@ -11,6 +11,8 @@ import { Agent } from "@atproto/api";
 import { get_profile_data } from "app/api/rpc/[command]/get_profile_data";
 import { Metadata } from "next";
 import { cache } from "react";
+import { PageTitle } from "components/ActionBar/DesktopNavigation";
+import { Avatar } from "components/Avatar";
 
 // Cache the profile data call to prevent concurrent OAuth restores
 const getCachedProfileData = cache(async (did: string) => {
@@ -85,10 +87,27 @@ export default async function ProfilePageLayout(props: {
       currentPage="profile"
       profileDid={did}
       actions={null}
+      pageTitle={
+        <PageTitle
+          icon={
+            <Avatar
+              src={profile.avatar}
+              size="small"
+              displayName={
+                profile?.displayName ? profile.displayName : profile.handle
+              }
+            />
+          }
+          pageTitle={
+            profile?.displayName ? profile.displayName : profile.handle
+          }
+        />
+      }
       tabs={{
         default: {
           content: (
             <DashboardPageLayout
+              pageTitle={params.didOrHandle}
               scrollKey="dashboard-profile-default"
               showHeader={false}
             >

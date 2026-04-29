@@ -123,10 +123,10 @@ export function DashboardLayout<
   defaultTab: keyof T;
   currentPage: navPages;
   publication?: string;
-  pubName?: string;
   profileDid?: string;
   actions?: React.ReactNode;
   onTabHover?: (tabName: string) => void;
+  pageTitle: React.ReactNode;
 }) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -153,6 +153,7 @@ export function DashboardLayout<
     currentTab: tab as string,
     onTabClick: (t: string) => setTabWithUrl(t as keyof T),
     onTabHover: props.onTabHover,
+    pageTitle: props.pageTitle,
   };
 
   let { open, setOpen } = useSidebarStore();
@@ -183,4 +184,3 @@ export function DashboardLayout<
     </DashboardIdContext.Provider>
   );
 }
-

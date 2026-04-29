@@ -11,6 +11,9 @@ import { useIdentityData } from "components/IdentityProvider";
 import useSWR from "swr";
 import { getHomeDocs } from "../home/storage";
 import { Leaflet, LeafletList } from "../home/HomeLayout";
+import { PageTitle } from "components/ActionBar/DesktopNavigation";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
+import { LooseleafTiny } from "components/Icons/LooseleafTiny";
 
 export const LooseleafsLayout = (props: {
   entityID: string | null;
@@ -36,6 +39,9 @@ export const LooseleafsLayout = (props: {
       currentPage="looseleafs"
       defaultTab="home"
       actions={<Actions />}
+      pageTitle={
+        <PageTitle icon={<LooseleafTiny />} pageTitle={"Looseleafs"} />
+      }
       tabs={{
         home: {
           content: (

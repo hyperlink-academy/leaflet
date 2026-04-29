@@ -3,6 +3,8 @@ import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout"
 import { PostListing } from "components/PostListing";
 import { getDocumentsByTag } from "./getDocumentsByTag";
 import { Metadata } from "next";
+import { PageTitle } from "components/ActionBar/DesktopNavigation";
+import { TagTiny } from "components/Icons/TagTiny";
 
 export async function generateMetadata(props: {
   params: Promise<{ tag: string }>;
@@ -25,10 +27,12 @@ export default async function TagPage(props: {
       currentPage="tag"
       defaultTab="default"
       actions={null}
+      pageTitle=<PageTitle icon={<TagTiny />} pageTitle={decodedTag} />
       tabs={{
         default: {
           content: (
             <DashboardPageLayout
+              pageTitle={decodedTag}
               scrollKey="dashboard-tag-default"
               showHeader={false}
             >

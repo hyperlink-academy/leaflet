@@ -25,6 +25,9 @@ import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
+import { PageTitle } from "components/ActionBar/DesktopNavigation";
+import { HomeSmall } from "components/Icons/HomeSmall";
+import { HomeTiny } from "components/Icons/HomeTiny";
 
 export type Leaflet = {
   added_at: string;
@@ -79,6 +82,7 @@ export const HomeLayout = (props: {
       currentPage="home"
       defaultTab="home"
       actions={<Actions />}
+      pageTitle={<PageTitle icon={<HomeTiny />} pageTitle="Home" />}
       tabs={{
         home: {
           content: (

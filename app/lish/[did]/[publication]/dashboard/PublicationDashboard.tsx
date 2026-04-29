@@ -8,13 +8,15 @@ import { PublishedPostsList } from "./PublishedPostsLists";
 import { PublicationSubscribers } from "./PublicationSubscribers";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
-import { PageSearch } from "components/PageLayouts/PageSearch";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationAnalytics } from "./PublicationAnalytics";
 import { useCanSeePro } from "src/hooks/useEntitlement";
 import { SettingsContent } from "./settings/SettingsContent";
 import { SettingsTiny } from "components/Icons/SettingsTiny";
+import { PageSearch } from "components/PageLayouts/PageSearch";
+import { PubIcon } from "components/ActionBar/Publications";
+import { PageTitle } from "components/ActionBar/DesktopNavigation";
 
 export default function PublicationDashboard({
   publication,
@@ -45,12 +47,21 @@ export default function PublicationDashboard({
     <DashboardLayout
       id={pubUri}
       defaultTab="Drafts"
+      actions={<Actions publication={pubUri} />}
+      currentPage="pub"
+      publication={pubUri}
+      pageTitle={
+        <PageTitle
+          pageTitle={record.name}
+          icon={<PubIcon small uri={pubUri} record={record} />}
+        />
+      }
       tabs={{
         Drafts: {
           content: (
             <DashboardPageLayout
               scrollKey={`dashboard-${pubUri}-Drafts`}
-              pageTitle={record.name}
+              pageTitle="Drafts"
               actions={<Actions publication={pubUri} />}
               controls={
                 <PageSearch
@@ -74,7 +85,7 @@ export default function PublicationDashboard({
           content: (
             <DashboardPageLayout
               scrollKey={`dashboard-${pubUri}-Posts`}
-              pageTitle={record.name}
+              pageTitle={"Posts"}
               actions={<Actions publication={pubUri} />}
               publication={pubUri}
               showHeader={false}
@@ -90,7 +101,7 @@ export default function PublicationDashboard({
           content: (
             <DashboardPageLayout
               scrollKey={`dashboard-${pubUri}-Subs`}
-              pageTitle={record.name}
+              pageTitle={"Subscribers"}
               actions={<Actions publication={pubUri} />}
               publication={pubUri}
               showHeader={false}
@@ -105,12 +116,14 @@ export default function PublicationDashboard({
                 content: (
                   <DashboardPageLayout
                     scrollKey={`dashboard-${pubUri}-Analytics`}
-                    pageTitle={record.name}
+                    pageTitle={"Analytics"}
                     actions={<Actions publication={pubUri} />}
                     publication={pubUri}
                     showHeader={false}
                   >
-                    <PublicationAnalytics showPageBackground={showPageBackground} />
+                    <PublicationAnalytics
+                      showPageBackground={showPageBackground}
+                    />
                   </DashboardPageLayout>
                 ),
               },
@@ -121,7 +134,7 @@ export default function PublicationDashboard({
           content: (
             <DashboardPageLayout
               scrollKey={`dashboard-${pubUri}-Settings`}
-              pageTitle={record.name}
+              pageTitle={"Settings"}
               actions={<Actions publication={pubUri} />}
               publication={pubUri}
               showHeader={false}
@@ -131,10 +144,6 @@ export default function PublicationDashboard({
           ),
         },
       }}
-      actions={<Actions publication={pubUri} />}
-      currentPage="pub"
-      publication={pubUri}
-      pubName={record.name}
     />
   );
 }
