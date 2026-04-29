@@ -269,7 +269,7 @@ function SettingsFooter(props: { loading: boolean }) {
 export const DashboardContainer = (props: {
   children: React.ReactNode;
   className?: string;
-  section?: string;
+  section?: React.ReactNode;
 }) => {
   let cardBorderHidden = useCardBorderHidden();
   return (
@@ -278,7 +278,9 @@ export const DashboardContainer = (props: {
     >
       {props.section && (
         <>
-          <h3 className="font-bold text-primary">{props.section}</h3>
+          <h3 className="font-bold text-primary flex items-center gap-2">
+            {props.section}
+          </h3>
           <hr className="-mt-1 mb-2 border-border-light" />
         </>
       )}

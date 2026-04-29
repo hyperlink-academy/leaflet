@@ -65,9 +65,23 @@ export const NewsletterSettings = () => {
 
   if (!newsletterMode) {
     return (
-      <DashboardContainer section="Newsletter" className="pb-4">
+      <DashboardContainer
+      section={
+        <>
+          Newsletter
+          <span className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+            alpha
+          </span>
+        </>
+      }
+      className="pb-4"
+    >
         <div className="leading-snug text-secondary">
           Email posts directly to publication subscribers when you publish.
+        </div>
+        <div className="leading-snug text-tertiary text-sm">
+          Your first 1k email subscribers are included with Leaflet Pro. After
+          that, it's $5 for each additional 1k subs. Questions? Reach out!
         </div>
         <ButtonPrimary
           className="self-start"
@@ -98,7 +112,17 @@ export const NewsletterSettings = () => {
     replyToValue.trim().toLowerCase() !== savedReplyTo.toLowerCase();
 
   return (
-    <DashboardContainer section="Newsletter" className="pb-4">
+    <DashboardContainer
+      section={
+        <>
+          Newsletter
+          <span className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+            alpha
+          </span>
+        </>
+      }
+      className="pb-4"
+    >
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="text-secondary leading-snug">
