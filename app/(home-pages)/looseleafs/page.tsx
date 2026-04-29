@@ -1,8 +1,4 @@
 import { getIdentityData } from "actions/getIdentityData";
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-import { Actions } from "../home/Actions/Actions";
-import { Fact } from "src/replicache";
-import { Attribute } from "src/replicache/attributes";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
 import { supabaseServerClient } from "supabase/serverClient";
 import { LooseleafsLayout } from "./LooseleafsLayout";

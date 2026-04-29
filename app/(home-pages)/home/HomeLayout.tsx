@@ -27,7 +27,7 @@ import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
 import { HomeSmall } from "components/Icons/HomeSmall";
-import { HomeTiny } from "components/Icons/HomeTiny";
+import { CreateNewLeafletButton } from "./Actions/CreateNewButton";
 
 export type Leaflet = {
   added_at: string;
@@ -82,15 +82,15 @@ export const HomeLayout = (props: {
       currentPage="home"
       defaultTab="home"
       actions={<Actions />}
-      pageTitle={<PageTitle icon={<HomeTiny />} pageTitle="Home" />}
+      pageTitle={<PageTitle icon={<HomeSmall />} pageTitle="Home" />}
       tabs={{
         home: {
           content: (
             <DashboardPageLayout
               scrollKey="dashboard-home"
               pageTitle="Home"
-              actions={<Actions />}
-              controls={
+              mobileActions={<CreateNewLeafletButton compact />}
+              search={
                 <PageSearch
                   defaultDisplay={"grid"}
                   searchValue={searchValue}

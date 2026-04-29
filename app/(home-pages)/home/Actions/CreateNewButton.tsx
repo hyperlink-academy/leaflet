@@ -2,13 +2,14 @@
 
 import { createNewLeaflet } from "actions/createNewLeaflet";
 import { ActionButton } from "components/ActionBar/ActionButton";
+import { ButtonPrimary } from "components/Buttons";
 import { AddTiny } from "components/Icons/AddTiny";
 import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { Menu, MenuItem } from "components/Menu";
 import { useIsMobile } from "src/hooks/isMobile";
 
-export const CreateNewLeafletButton = (props: {}) => {
+export const CreateNewLeafletButton = (props: { compact?: boolean }) => {
   let isMobile = useIsMobile();
   let openNewLeaflet = (id: string) => {
     if (isMobile) {
@@ -23,13 +24,19 @@ export const CreateNewLeafletButton = (props: {}) => {
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       trigger={
-        <ActionButton
-          labelOnMobile
-          id="new-leaflet-button"
-          primary
-          icon=<AddTiny className="m-1" />
-          label="New"
-        />
+        props.compact ? (
+          <ButtonPrimary compact className="text-sm!">
+            <AddTiny className="scale-90" /> New Doc
+          </ButtonPrimary>
+        ) : (
+          <ActionButton
+            labelOnMobile
+            id="new-leaflet-button"
+            primary
+            icon=<AddTiny className="m-1" />
+            label="New"
+          />
+        )
       }
     >
       <MenuItem

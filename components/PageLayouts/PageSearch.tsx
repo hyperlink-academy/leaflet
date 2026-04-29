@@ -27,7 +27,7 @@ export const PageSearch = (props: {
   let { identity } = useIdentityData();
 
   return (
-    <div className="dashboardControls w-full flex sm:gap-4 gap-2">
+    <div className="searchControls w-full flex sm:gap-4 gap-2">
       {identity && (
         <SearchInput
           searchValue={props.searchValue}
@@ -35,7 +35,7 @@ export const PageSearch = (props: {
           hasBackgroundImage={props.hasBackgroundImage}
         />
       )}
-      <div className="hidden sm:flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
+      <div className="desktopSearchControls hidden sm:flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
         <DisplayToggle setState={setState} display={display} />
         <Separator classname="h-4 min-h-4!" />
         {props.hasPubs || props.hasArchived ? (
@@ -201,9 +201,13 @@ const MobileSearchControls = (props: {
   return (
     <Popover
       align="end"
-      className="text-sm w-48"
+      className={`text-sm w-48`}
       trigger={
-        <SortSmall className={filterCount > 0 ? "text-accent-contrast" : ""} />
+        <div
+          className={`${filterCount > 0 ? "text-accent-2 bg-accent-1 rounded-md" : "text-secondary"}`}
+        >
+          <SortSmall />
+        </div>
       }
     >
       <button
@@ -259,7 +263,7 @@ const SearchInput = (props: {
           appearance-none! outline-hidden!
           w-full min-w-0 text-primary relative pl-7 pr-1 -my-px
           border rounded-md border-border-light focus-within:border-border
-          bg-transparent ${props.hasBackgroundImage ? "focus-within:bg-bg-page" : "focus-within:bg-bg-leaflet"} `}
+          bg-transparent focus-within:bg-bg-page`}
         type="text"
         id="pubName"
         size={1}
@@ -269,7 +273,7 @@ const SearchInput = (props: {
           props.setSearchValue(e.currentTarget.value);
         }}
       />
-      <div className="absolute left-[6px] top-[4px] text-tertiary">
+      <div className="absolute left-[6px] top-[4px] text-secondary">
         <SearchTiny />
       </div>
     </div>

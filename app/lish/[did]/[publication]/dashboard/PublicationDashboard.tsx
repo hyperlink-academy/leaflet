@@ -13,10 +13,11 @@ import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationAnalytics } from "./PublicationAnalytics";
 import { useCanSeePro } from "src/hooks/useEntitlement";
 import { SettingsContent } from "./settings/SettingsContent";
-import { SettingsTiny } from "components/Icons/SettingsTiny";
 import { PageSearch } from "components/PageLayouts/PageSearch";
 import { PubIcon } from "components/ActionBar/Publications";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
+import { NewDraftActionButton } from "./NewDraftButton";
+import { SettingsSmall } from "components/Icons/SettingsSmall";
 
 export default function PublicationDashboard({
   publication,
@@ -62,8 +63,10 @@ export default function PublicationDashboard({
             <DashboardPageLayout
               scrollKey={`dashboard-${pubUri}-Drafts`}
               pageTitle="Drafts"
-              actions={<Actions publication={pubUri} />}
-              controls={
+              mobileActions={
+                <NewDraftActionButton publication={pubUri} compact />
+              }
+              search={
                 <PageSearch
                   defaultDisplay={"list"}
                   hasBackgroundImage={!!record?.theme?.backgroundImage}
@@ -86,7 +89,9 @@ export default function PublicationDashboard({
             <DashboardPageLayout
               scrollKey={`dashboard-${pubUri}-Posts`}
               pageTitle={"Posts"}
-              actions={<Actions publication={pubUri} />}
+              mobileActions={
+                <NewDraftActionButton publication={pubUri} compact />
+              }
               publication={pubUri}
               showHeader={false}
             >
@@ -102,7 +107,9 @@ export default function PublicationDashboard({
             <DashboardPageLayout
               scrollKey={`dashboard-${pubUri}-Subs`}
               pageTitle={"Subscribers"}
-              actions={<Actions publication={pubUri} />}
+              mobileActions={
+                <NewDraftActionButton publication={pubUri} compact />
+              }
               publication={pubUri}
               showHeader={false}
             >
@@ -117,7 +124,9 @@ export default function PublicationDashboard({
                   <DashboardPageLayout
                     scrollKey={`dashboard-${pubUri}-Analytics`}
                     pageTitle={"Analytics"}
-                    actions={<Actions publication={pubUri} />}
+                    mobileActions={
+                      <NewDraftActionButton publication={pubUri} compact />
+                    }
                     publication={pubUri}
                     showHeader={false}
                   >
@@ -130,12 +139,14 @@ export default function PublicationDashboard({
             }
           : {}),
         Settings: {
-          icon: <SettingsTiny />,
+          icon: <SettingsSmall />,
           content: (
             <DashboardPageLayout
               scrollKey={`dashboard-${pubUri}-Settings`}
               pageTitle={"Settings"}
-              actions={<Actions publication={pubUri} />}
+              mobileActions={
+                <NewDraftActionButton publication={pubUri} compact />
+              }
               publication={pubUri}
               showHeader={false}
             >

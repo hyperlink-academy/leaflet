@@ -9,11 +9,10 @@ import { Actions } from "../home/Actions/Actions";
 import { callRPC } from "app/api/rpc/client";
 import { useIdentityData } from "components/IdentityProvider";
 import useSWR from "swr";
-import { getHomeDocs } from "../home/storage";
 import { Leaflet, LeafletList } from "../home/HomeLayout";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
-import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LooseleafTiny } from "components/Icons/LooseleafTiny";
+import { CreateNewLeafletButton } from "../home/Actions/CreateNewButton";
 
 export const LooseleafsLayout = (props: {
   entityID: string | null;
@@ -48,7 +47,7 @@ export const LooseleafsLayout = (props: {
             <DashboardPageLayout
               scrollKey="dashboard-looseleafs-home"
               pageTitle="Looseleafs"
-              actions={<Actions />}
+              mobileActions={<CreateNewLeafletButton compact />}
               showHeader={false}
             >
               <LooseleafList

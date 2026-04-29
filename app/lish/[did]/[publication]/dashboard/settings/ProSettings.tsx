@@ -147,13 +147,16 @@ export const NewsletterSettings = () => {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-secondary font-bold" htmlFor="newsletterReplyTo">
+          <label
+            className="text-secondary font-bold"
+            htmlFor="newsletterReplyTo"
+          >
             Reply-to Email{" "}
             <span className="font-normal text-tertiary">(optional)</span>
           </label>
           <p className="text-tertiary text-sm leading-snug">
-            Where subscriber replies are sent. Leave blank to use the
-            no-reply address ({NO_REPLY_EMAIL}).
+            Where subscriber replies are sent. Leave blank to use the no-reply
+            address ({NO_REPLY_EMAIL}).
           </p>
           <div className="flex gap-2 items-stretch max-w-prose">
             <Input

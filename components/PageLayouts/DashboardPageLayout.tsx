@@ -6,8 +6,8 @@ import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 export function DashboardPageLayout(props: {
   scrollKey: string;
   pageTitle: string;
-  actions?: React.ReactNode;
-  controls?: React.ReactNode;
+  mobileActions?: React.ReactNode;
+  search?: React.ReactNode;
   publication?: string;
   showHeader?: boolean;
   children: React.ReactNode;
@@ -21,15 +21,15 @@ export function DashboardPageLayout(props: {
       id="home-content"
     >
       <MobileNavigation
-        controls={props.controls}
-        actions={props.actions}
+        search={props.search}
+        mobileActions={props.mobileActions}
         pageTitle={props.pageTitle}
       />
 
       {props.showHeader && (
         <PageHeader>
           <div className={`sm:block ${props.publication && "hidden"} grow`}>
-            {props.controls}
+            {props.search}
           </div>
         </PageHeader>
       )}

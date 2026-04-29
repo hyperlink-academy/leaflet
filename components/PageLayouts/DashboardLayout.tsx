@@ -167,7 +167,16 @@ export function DashboardLayout<
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed z-50 inset-0 bg-primary opacity-60 data-[state=open]:animate-overlayShow" />
-            <Dialog.Content className="mobile-sidebar-content fixed z-50 left-0 top-0 h-dvh outline-none">
+            <Dialog.Content
+              className="mobile-sidebar-content fixed z-50 left-0 top-0 h-dvh outline-none"
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                const interactive = target.closest("a, button");
+                if (!interactive) return;
+                if (interactive.getAttribute("aria-haspopup")) return;
+                setOpen(false);
+              }}
+            >
               <Dialog.Title className="sr-only">Navigation</Dialog.Title>
               <Sidebar
                 mobile

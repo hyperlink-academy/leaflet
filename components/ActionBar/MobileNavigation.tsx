@@ -10,8 +10,8 @@ import { SearchTiny } from "components/Icons/SearchTiny";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export const MobileNavigation = (props: {
-  controls?: React.ReactNode;
-  actions?: React.ReactNode;
+  search?: React.ReactNode;
+  mobileActions?: React.ReactNode;
   pageTitle: string;
 }) => {
   let [state, setState] = useState<"search" | "default">("default");
@@ -79,43 +79,59 @@ export const MobileNavigation = (props: {
         }
       >
         <div
-          className={`mobilePageHeaderContent border rounded-lg border-border-light flex gap-4 justify-between items-center p-1 w-full`}
+          className={`mobilePageHeaderContent rounded-lg  text-secondary flex gap-2 border justify-between items-center py-1 w-full ${cardBorderHidden && scrollPos < 20 ? "border-transparent" : " border-border-light"}`}
           style={
             scrollPos < 20
               ? {
+                  paddingLeft: cardBorderHidden
+                    ? `calc(${scrollPos / 20}*8px)`
+                    : "8px",
+                  paddingRight: cardBorderHidden
+                    ? `calc(${scrollPos / 20}*8px)`
+                    : "8px",
                   backgroundColor: !cardBorderHidden
                     ? `rgba(${headerBGColor}, ${scrollPos / 60 + 0.75})`
                     : `rgba(${headerBGColor}, ${scrollPos / 20})`,
                 }
-              : { backgroundColor: `rgb(${headerBGColor})` }
+              : {
+                  paddingLeft: "8px",
+                  paddingRight: "8px",
+                  backgroundColor: cardBorderHidden
+                    ? "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 95%)"
+                    : `rgb(var(--bg-page))`,
+                }
           }
         >
-          {props.controls && state === "search" ? (
+          {state === "default" ? (
             <>
-              {props.controls}
-              <Separator classname="h-6" />
+              <MobileSidebarTrigger pageTitle={props.pageTitle} />
+              <div className="flex-1" />
+
+              {props.search && (
+                <button
+                  onClick={() => {
+                    setState("search");
+                  }}
+                >
+                  <SearchTiny />
+                </button>
+              )}
+              <div className="flex flex-row-reverse! gap-1">
+                {props.mobileActions}
+              </div>
+            </>
+          ) : (
+            <>
+              {props.search}
+              <Separator classname="h-6!" />
               <button
+                className="text-secondary"
                 onClick={() => {
                   setState("default");
                 }}
               >
                 <CloseTiny />
               </button>
-            </>
-          ) : (
-            <>
-              <MobileSidebarTrigger pageTitle={props.pageTitle} />
-              <div className="flex-1" />
-              <button
-                onClick={() => {
-                  setState("search");
-                }}
-              >
-                <SearchTiny />
-              </button>
-              <div className="flex flex-row-reverse! gap-1">
-                {props.actions}
-              </div>
             </>
           )}
         </div>
