@@ -1,6 +1,6 @@
 "use server";
 
-import { AtpBaseClient, PubLeafletInteractionsRecommend } from "lexicons/api";
+import { AtpBaseClient, SiteStandardGraphRecommend } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
@@ -45,19 +45,19 @@ export async function recommendAction(args: {
     credentialSession.fetchHandler.bind(credentialSession),
   );
 
-  let record: Un$Typed<PubLeafletInteractionsRecommend.Record> = {
-    subject: args.document,
+  let record: Un$Typed<SiteStandardGraphRecommend.Record> = {
+    document: args.document,
     createdAt: new Date().toISOString(),
   };
 
   let rkey = TID.nextStr();
   let uri = AtUri.make(
     credentialSession.did!,
-    "pub.leaflet.interactions.recommend",
+    "site.standard.graph.recommend",
     rkey,
   );
 
-  await agent.pub.leaflet.interactions.recommend.create(
+  await agent.site.standard.graph.recommend.create(
     { rkey, repo: credentialSession.did! },
     record,
   );
@@ -67,7 +67,7 @@ export async function recommendAction(args: {
     document: args.document,
     recommender_did: credentialSession.did!,
     record: {
-      $type: "pub.leaflet.interactions.recommend",
+      $type: "site.standard.graph.recommend",
       ...record,
     } as unknown as Json,
   });
@@ -139,10 +139,15 @@ export async function unrecommendAction(args: {
 
   let uri = new AtUri(existingRecommend.uri);
 
-  await agent.pub.leaflet.interactions.recommend.delete({
-    rkey: uri.rkey,
-    repo: credentialSession.did!,
-  });
+  // Delete from both collections (old and new schema) - one or both may exist
+  await Promise.all([
+    agent.site.standard.graph.recommend
+      .delete({ rkey: uri.rkey, repo: credentialSession.did! })
+      .catch(() => {}),
+    agent.pub.leaflet.interactions.recommend
+      .delete({ rkey: uri.rkey, repo: credentialSession.did! })
+      .catch(() => {}),
+  ]);
 
   await supabaseServerClient
     .from("recommends_on_documents")

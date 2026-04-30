@@ -15,6 +15,7 @@ import {
   SiteStandardDocument,
   SiteStandardPublication,
   SiteStandardGraphSubscription,
+  SiteStandardGraphRecommend,
 } from "lexicons/api";
 import {
   AppBskyEmbedExternal,
@@ -55,6 +56,7 @@ async function main() {
       ids.SiteStandardDocument,
       ids.SiteStandardPublication,
       ids.SiteStandardGraphSubscription,
+      ids.SiteStandardGraphRecommend,
       "parts.page.mention.service",
       "parts.page.mention.config",
     ],
@@ -336,6 +338,30 @@ async function handleEvent(evt: Event) {
     if (evt.event === "delete") {
       await supabase
         .from("publications")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
+
+  // site.standard.graph.recommend records go into the main "recommends_on_documents" table
+  if (evt.collection === ids.SiteStandardGraphRecommend) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = SiteStandardGraphRecommend.validateRecord(evt.record);
+      if (!record.success) return;
+      await supabase
+        .from("identities")
+        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      let { error } = await supabase.from("recommends_on_documents").upsert({
+        uri: evt.uri.toString(),
+        recommender_did: evt.did,
+        document: record.value.document,
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting recommend:", error);
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("recommends_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
     }
