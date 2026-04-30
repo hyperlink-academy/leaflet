@@ -23,7 +23,11 @@ export function ToggleGroup<T extends string>(props: {
           }
           ${props.optionClassName}
             `}
-          onClick={() => props.onChange(option.value)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            props.onChange(option.value);
+          }}
         >
           {option.label}
         </button>

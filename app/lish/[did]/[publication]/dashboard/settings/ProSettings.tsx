@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useMemo, useState } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { createBillingPortalSession } from "actions/createBillingPortalSession";

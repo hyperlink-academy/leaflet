@@ -203,7 +203,7 @@ export const AtSubscribeSuccess = (props: {}) => {
 export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
   return (
     <Popover
-      className="z-100! max-w-sm flex flex-col"
+      className="z-100! w-[min(24rem,var(--radix-popover-content-available-width))] flex flex-col"
       trigger={
         props.trigger ? (
           props.trigger
@@ -214,12 +214,12 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
         )
       }
     >
-      <div className="font-bold text-secondary pb-1">
+      <div className="font-bold text-secondary pb-1 ">
         The Atmosphere is a growing ecosystem of social apps, like Leaflet and
         Bluesky.
         <br />
       </div>
-      <div className="pb-3  font-bold text-secondary">
+      <div className="pb-3 font-bold text-secondary">
         One account gets you into <em>all</em> of them.
       </div>
 

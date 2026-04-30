@@ -35,11 +35,16 @@ export const NavigationContent = (props: NavigationProps) => {
   return (
     <>
       {props.pageTitle}
+      <hr className="border-border-light mb-2" />
 
-      <div className="flex flex-col gap-1 pt-0.5">{props.actions}</div>
+      {props.actions && (
+        <>
+          <div className="flex flex-col gap-1 pt-0.5">{props.actions}</div>
+          <hr className="border-border-light my-2" />
+        </>
+      )}
       {props.tabs && Object.keys(props.tabs).length > 1 && (
         <>
-          <hr className="border-border-light my-2" />
           {Object.keys(props.tabs).map((t) => (
             <ActionButton
               labelOnMobile
@@ -90,6 +95,7 @@ export const NavigationContent = (props: NavigationProps) => {
           asChild
           trigger={
             <ActionButton
+              className="w-full!"
               secondary
               icon={<AccountSmall />}
               label="Log In/Sign Up"

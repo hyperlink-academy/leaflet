@@ -13,11 +13,15 @@ import {
   MobileInteractionPreviewDrawer,
 } from "./InteractionDrawers";
 import { useSelectedPostListing } from "src/useSelectedPostState";
+import { getIdentityData } from "actions/getIdentityData";
+import { useIdentityData } from "components/IdentityProvider";
+import { LoginContent } from "components/LoginButton";
 
 export const InboxContent = (props: {
   promise: Promise<{ posts: Post[]; nextCursor: Cursor | null }>;
 }) => {
   const { posts, nextCursor } = use(props.promise);
+  let { identity: identityData } = useIdentityData();
   const getKey = (
     pageIndex: number,
     previousPageData: {
@@ -76,6 +80,17 @@ export const InboxContent = (props: {
       new Date(b.documents.data?.publishedAt || 0).getTime() -
       new Date(a.documents.data?.publishedAt || 0).getTime(),
   );
+
+  if (!identityData) {
+    return (
+      <div className="mx-auto w-fit h-full flex pt-2 sm:pt-0 place-items-start sm:place-items-center">
+        <div className="flex flex-col gap-4 h-fit justify-center text-center">
+          <h3>Log in or sign up to see your subscriptions!</h3>
+          <LoginContent className="w-full! sm:min-w-xs" />
+        </div>
+      </div>
+    );
+  }
 
   if (allPosts.length === 0) return <ReaderEmpty />;
 

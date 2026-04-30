@@ -3,14 +3,15 @@ import { getReaderFeed } from "./getReaderFeed";
 import { getHotFeed } from "./getHotFeed";
 import { InboxContent } from "./InboxContent";
 import { GlobalContent } from "./GlobalContent";
+import { ReaderLayout } from "./ReaderLayout";
 
 export default async function Reader() {
   let identityData = await getIdentityData();
-  if (!identityData?.atp_did) {
-    const feedPromise = getHotFeed();
-    return <GlobalContent promise={feedPromise} />;
-  }
-
-  const feedPromise = getReaderFeed();
-  return <InboxContent promise={feedPromise} />;
+  return (
+    <ReaderLayout
+      defaultTab={!identityData?.atp_did ? "Trending" : "Inbox"}
+      readerFeedPromise={getReaderFeed()}
+      hotFeedPromise={getHotFeed()}
+    />
+  );
 }
