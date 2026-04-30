@@ -32,7 +32,7 @@ export const EmailInput = (props: {
       <Input
         type="email"
         autoFocus={props.autoFocus}
-        className={`appearance-none! outline-none! grow ${props.large ? "py-1!" : "py-0.5 "}`}
+        className={`appearance-none! outline-none! grow ${props.large ? "py-1!" : "py-0.5 disabled:text-tertiary disabled:italic disabled:border-border-light"}`}
         disabled={props.disabled || props.loading}
         placeholder="email@example.com"
         size={0}

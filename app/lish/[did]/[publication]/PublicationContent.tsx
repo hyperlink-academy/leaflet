@@ -80,13 +80,15 @@ export const PublicationContent = ({
             ) : undefined
           }
           subscribeButton={
-            <SubscribeInput
-              publicationUri={publication.uri}
-              publicationUrl={record?.url}
-              publicationName={record?.name ?? publication.name}
-              publicationDescription={record?.description}
-              newsletterMode={newsletterMode}
-            />
+            <div className="max-w-sm mx-auto">
+              <SubscribeInput
+                publicationUri={publication.uri}
+                publicationUrl={record?.url}
+                publicationName={record?.name ?? publication.name}
+                publicationDescription={record?.description}
+                newsletterMode={newsletterMode}
+              />
+            </div>
           }
         />
         <div className="publicationPostList w-full flex flex-col gap-4">

@@ -32,12 +32,12 @@ export const SubscribePanel = (props: SubscribeProps) => {
       <div className="accent-container rounded-lg! w-full px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5 text-center justify-center">
         <h3 className="leading-snug text-secondary">{props.publicationName}</h3>
         {props.publicationDescription && (
-          <div className="text-tertiary pb-3">
+          <div className="text-tertiary pb-1">
             {props.publicationDescription}
           </div>
         )}
 
-        <div className="max-w-sm mx-auto ">
+        <div className="mx-auto">
           <SubscribeInput {...props} />
         </div>
       </div>
@@ -127,20 +127,59 @@ export const SubscribeInput = (props: SubscribeProps) => {
   const isSubscribed = showManage || locallySubscribed;
   return (
     <>
+      <div className="h-1 w-full spacer" />
+
       {isSubscribed ? (
-        <ManageSubscription
-          publicationUri={props.publicationUri}
-          publicationUrl={props.publicationUrl}
-          newsletterMode={props.newsletterMode}
-          user={user}
-        />
-      ) : props.newsletterMode ? (
         <>
-          {user.atprotoSubscribed && (
-            <div className="text-tertiary text-sm pb-2">
-              You're already subscribed with atproto. Subscribe with email too?
+          <ManageSubscription
+            publicationUri={props.publicationUri}
+            publicationUrl={props.publicationUrl}
+            newsletterMode={props.newsletterMode}
+            user={user}
+          />
+
+          {/*{props.newsletterMode &&
+          user.atprotoSubscribed &&
+          !user.emailSubscribed ? (*/}
+          <div
+            className="text-secondary  w-full text-sm p-2 pt-1.5 mt-1 rounded-md flex flex-col gap-1"
+            style={{
+              background:
+                "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 70%",
+            }}
+          >
+            <div className="font-bold">Opt in to get updates via email!</div>
+            <div className="max-w-sm w-full mx-auto">
+              <EmailInput
+                value={email}
+                onChange={setEmail}
+                disabled={user.loggedIn && !!user.email}
+                autoFocus={props.autoFocus}
+                loading={requesting}
+                action={
+                  <ButtonPrimary
+                    compact
+                    className="leading-tight! outline-none! text-sm!"
+                    disabled={requesting || !email}
+                    onClick={async () => {
+                      if (requesting) return;
+                      if (needsLinkConfirmation) {
+                        setLinkModalOpen(true);
+                        return;
+                      }
+                      await sendRequest(false);
+                    }}
+                  >
+                    Get Emails
+                  </ButtonPrimary>
+                }
+              />
             </div>
-          )}
+          </div>
+          {/*) : null}*/}
+        </>
+      ) : props.newsletterMode ? (
+        <div className="max-w-sm w-full mx-auto">
           <EmailInput
             value={email}
             onChange={setEmail}
@@ -165,7 +204,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               </ButtonPrimary>
             }
           />
-        </>
+        </div>
       ) : (
         <SubscribeWithHandle
           user={user}
@@ -178,7 +217,9 @@ export const SubscribeInput = (props: SubscribeProps) => {
         <LinkIdentityModal
           open={linkModalOpen}
           onOpenChange={setLinkModalOpen}
-          signedInAs={viewerHandle ? `@${viewerHandle}` : "your Bluesky account"}
+          signedInAs={
+            viewerHandle ? `@${viewerHandle}` : "your Bluesky account"
+          }
           linkingIdentity={email}
           confirmButtonLabel="Link email"
           confirming={requesting}

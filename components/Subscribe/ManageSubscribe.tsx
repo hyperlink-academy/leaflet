@@ -121,7 +121,7 @@ export const ManageSubscription = (props: {
     <Modal
       title={
         <div className="text-secondary border-b border-border mb-2">
-          Preferences
+          Manage Subscription
         </div>
       }
       className="w-md max-w-full"
