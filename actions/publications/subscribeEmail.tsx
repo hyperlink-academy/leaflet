@@ -18,6 +18,7 @@ import {
   deleteSuppression,
 } from "src/utils/postmarkSuppressions";
 import {
+  backfillAtprotoSubscriptionsForIdentity,
   publishAtprotoSubscriptionForDid,
   unsubscribeToPublication,
 } from "app/lish/subscribeToPublication";
@@ -360,6 +361,7 @@ async function linkEmailToCurrentIdentity(
       console.error("[subscribeEmail] attach email failed:", error);
       return Err("database_error");
     }
+    await backfillAtprotoSubscriptionsForIdentity(current.id, current.atp_did);
     return Ok(current.id);
   }
 

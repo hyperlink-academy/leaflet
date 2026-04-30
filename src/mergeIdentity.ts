@@ -11,6 +11,7 @@ import {
 } from "drizzle/schema";
 import { pool } from "supabase/pool";
 import { Err, Ok, type Result } from "src/result";
+import { backfillAtprotoSubscriptionsForIdentity } from "app/lish/subscribeToPublication";
 
 export type MergeError =
   | "merge_not_pending"
@@ -34,6 +35,7 @@ export async function mergeEmailIdentityIntoAtpIdentity(args: {
   if (sourceId === targetId) return Err("same_identity");
 
   const client = await pool.connect();
+  let targetAtpDid: string;
   try {
     const db = drizzle(client);
     await db.transaction(async (tx) => {
@@ -55,6 +57,7 @@ export async function mergeEmailIdentityIntoAtpIdentity(args: {
       if (lockedTarget.atp_did === null)
         throw new Error("merge: target missing atp_did");
       if (!lockedSource.email) throw new Error("merge: source missing email");
+      targetAtpDid = lockedTarget.atp_did;
 
       const sourceEmail = lockedSource.email;
 
@@ -151,6 +154,8 @@ export async function mergeEmailIdentityIntoAtpIdentity(args: {
   } finally {
     client.release();
   }
+
+  await backfillAtprotoSubscriptionsForIdentity(targetId, targetAtpDid!);
 
   return Ok(null);
 }

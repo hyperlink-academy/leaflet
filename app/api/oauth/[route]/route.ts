@@ -1,4 +1,7 @@
-import { subscribeToPublication } from "app/lish/subscribeToPublication";
+import {
+  backfillAtprotoSubscriptionsForIdentity,
+  subscribeToPublication,
+} from "app/lish/subscribeToPublication";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
@@ -114,6 +117,10 @@ export async function GET(
               .from("identities")
               .update({ atp_did: session.did })
               .eq("id", currentIdentity.id);
+            await backfillAtprotoSubscriptionsForIdentity(
+              currentIdentity.id,
+              session.did,
+            );
             return handleAction(s.action, redirectPath);
           }
           if (identity.id !== currentIdentity.id) {
@@ -148,6 +155,10 @@ export async function GET(
               .from("identities")
               .update({ atp_did: session.did })
               .eq("id", currentIdentity.id);
+            await backfillAtprotoSubscriptionsForIdentity(
+              currentIdentity.id,
+              session.did,
+            );
             return handleAction(s.action, redirectPath);
           }
           const { data } = await supabaseServerClient
