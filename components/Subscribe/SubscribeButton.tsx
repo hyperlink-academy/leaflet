@@ -138,45 +138,45 @@ export const SubscribeInput = (props: SubscribeProps) => {
             user={user}
           />
 
-          {/*{props.newsletterMode &&
+          {props.newsletterMode &&
           user.atprotoSubscribed &&
-          !user.emailSubscribed ? (*/}
-          <div
-            className="text-secondary  w-full text-sm p-2 pt-1.5 mt-1 rounded-md flex flex-col gap-1"
-            style={{
-              background:
-                "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 70%",
-            }}
-          >
-            <div className="font-bold">Opt in to get updates via email!</div>
-            <div className="max-w-sm w-full mx-auto">
-              <EmailInput
-                value={email}
-                onChange={setEmail}
-                disabled={user.loggedIn && !!user.email}
-                autoFocus={props.autoFocus}
-                loading={requesting}
-                action={
-                  <ButtonPrimary
-                    compact
-                    className="leading-tight! outline-none! text-sm!"
-                    disabled={requesting || !email}
-                    onClick={async () => {
-                      if (requesting) return;
-                      if (needsLinkConfirmation) {
-                        setLinkModalOpen(true);
-                        return;
-                      }
-                      await sendRequest(false);
-                    }}
-                  >
-                    Get Emails
-                  </ButtonPrimary>
-                }
-              />
+          !user.emailSubscribed ? (
+            <div
+              className="text-secondary  w-full text-sm p-2 pt-1.5 mt-1 rounded-md flex flex-col gap-1"
+              style={{
+                background:
+                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 70%",
+              }}
+            >
+              <div className="font-bold">Opt in to get updates via email!</div>
+              <div className="max-w-sm w-full mx-auto">
+                <EmailInput
+                  value={email}
+                  onChange={setEmail}
+                  disabled={user.loggedIn && !!user.email}
+                  autoFocus={props.autoFocus}
+                  loading={requesting}
+                  action={
+                    <ButtonPrimary
+                      compact
+                      className="leading-tight! outline-none! text-sm!"
+                      disabled={requesting || !email}
+                      onClick={async () => {
+                        if (requesting) return;
+                        if (needsLinkConfirmation) {
+                          setLinkModalOpen(true);
+                          return;
+                        }
+                        await sendRequest(false);
+                      }}
+                    >
+                      Get Emails
+                    </ButtonPrimary>
+                  }
+                />
+              </div>
             </div>
-          </div>
-          {/*) : null}*/}
+          ) : null}
         </>
       ) : props.newsletterMode ? (
         <div className="max-w-sm w-full mx-auto">
