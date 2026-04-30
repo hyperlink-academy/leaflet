@@ -59,6 +59,9 @@ export const EmailConfirm = (props: {
       <h3>Confirm your email</h3>
       Enter the code sent to <br />
       <div className="italic min-w-0 truncate">{props.emailValue}</div>
+      <button className="text-sm text-accent-contrast mt-1">
+        Change Email
+      </button>
       <OneTimePasswordField.Root
         autoSubmit
         autoFocus={props.autoFocus}
@@ -77,9 +80,6 @@ export const EmailConfirm = (props: {
         </div>
         <OneTimePasswordField.HiddenInput />
       </OneTimePasswordField.Root>
-      <button className="text-sm text-accent-contrast mt-2">
-        Change Email
-      </button>
     </div>
   );
 };
