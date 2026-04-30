@@ -29,7 +29,7 @@ export const ProfileButton = () => {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="w-xs py-1!"
+      className="w-xs py-1! z-[60]!"
       trigger={
         <ActionButton
           labelOnMobile={false}
