@@ -47,12 +47,15 @@ export const SubscribePanel = (props: SubscribeProps) => {
 
 export const SubscribeButton = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
+  const showManage = props.newsletterMode
+    ? user.emailSubscribed
+    : user.atprotoSubscribed;
   return (
     <Modal
       className="px-0! py-3! sm:py-4! w-[1000px] sm:max-w-md max-w-full"
       asChild
       trigger={
-        user.subscribed ? (
+        showManage ? (
           <ManageSubscription
             publicationUri={props.publicationUri}
             publicationUrl={props.publicationUrl}
@@ -118,7 +121,10 @@ export const SubscribeInput = (props: SubscribeProps) => {
     setConfirmOpen(true);
   };
 
-  const isSubscribed = user.subscribed || locallySubscribed;
+  const showManage = props.newsletterMode
+    ? user.emailSubscribed
+    : user.atprotoSubscribed;
+  const isSubscribed = showManage || locallySubscribed;
   return (
     <>
       {isSubscribed ? (
@@ -129,30 +135,37 @@ export const SubscribeInput = (props: SubscribeProps) => {
           user={user}
         />
       ) : props.newsletterMode ? (
-        <EmailInput
-          value={email}
-          onChange={setEmail}
-          disabled={user.loggedIn && !!user.email}
-          autoFocus={props.autoFocus}
-          loading={requesting}
-          action={
-            <ButtonPrimary
-              compact
-              className="leading-tight! outline-none! text-sm!"
-              disabled={requesting || !email}
-              onClick={async () => {
-                if (requesting) return;
-                if (needsLinkConfirmation) {
-                  setLinkModalOpen(true);
-                  return;
-                }
-                await sendRequest(false);
-              }}
-            >
-              Subscribe
-            </ButtonPrimary>
-          }
-        />
+        <>
+          {user.atprotoSubscribed && (
+            <div className="text-tertiary text-sm pb-2">
+              You're already subscribed with atproto. Subscribe with email too?
+            </div>
+          )}
+          <EmailInput
+            value={email}
+            onChange={setEmail}
+            disabled={user.loggedIn && !!user.email}
+            autoFocus={props.autoFocus}
+            loading={requesting}
+            action={
+              <ButtonPrimary
+                compact
+                className="leading-tight! outline-none! text-sm!"
+                disabled={requesting || !email}
+                onClick={async () => {
+                  if (requesting) return;
+                  if (needsLinkConfirmation) {
+                    setLinkModalOpen(true);
+                    return;
+                  }
+                  await sendRequest(false);
+                }}
+              >
+                Subscribe
+              </ButtonPrimary>
+            }
+          />
+        </>
       ) : (
         <SubscribeWithHandle
           user={user}
