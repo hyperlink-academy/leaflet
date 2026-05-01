@@ -52,7 +52,8 @@ export const ActionButton = forwardRef<
       {...buttonProps}
       ref={ref}
       className={`
-      actionButton relative
+      actionButton relative shrink-0
+      h-fit
       rounded-md border
       py-0.5 px-1
       flex gap-2 items-start justify-start

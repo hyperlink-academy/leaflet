@@ -67,7 +67,7 @@ export const PublicationButtons = (props: { className?: string }) => {
         <ActionButton
           labelOnMobile
           icon=<div className="group-hover/new-pub:border-accent-contrast m-0.5 w-5 h-5 border-border border-2 border-dashed rounded-full" />
-          label="New"
+          label="New Publication"
           className="text-tertiary!"
         />
       </SpeedyLink>

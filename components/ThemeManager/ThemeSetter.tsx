@@ -65,7 +65,13 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
         asChild
         side={isMobile ? "top" : "right"}
         align={isMobile ? "center" : "start"}
-        trigger={<ActionButton secondary icon={<PaintSmall />} label="Theme" />}
+        trigger={
+          <ActionButton
+            icon={<PaintSmall />}
+            label="Theme"
+            className="sm:w-full! w-fit!"
+          />
+        }
       >
         <ThemeSetterContent {...props} />
       </Popover>

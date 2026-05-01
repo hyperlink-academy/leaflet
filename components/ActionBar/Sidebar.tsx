@@ -36,13 +36,22 @@ export function Sidebar(props: {
         }}
       >
         <div
-          style={{ height: "-webkit-fill-available" }}
+          style={
+            props.alwaysOpen
+              ? { height: "-webkit-fill-available" }
+              : { height: "fit-content" }
+          }
           className={`
           actionSidebar
-          ${!props.alwaysOpen ? "absolute top-0 left-0 z-10 w-max" : "w-56"}
-          p-[6px] my-6
+
+          ${
+            !props.alwaysOpen
+              ? ` w-max hover:w-48 absolute top-0 left-0 z-10 opaque-container`
+              : `my-6 w-56 ${cardBorderHidden ? "light-container" : "frosted-container"}`
+          }
+          p-[6px]
           flex flex-col gap-0.5 justify-start border
-          rounded-md ${cardBorderHidden ? "light-container" : "frosted-container"}
+          rounded-md
           ${props.className}
           `}
           onMouseOver={() => {

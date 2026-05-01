@@ -63,8 +63,10 @@ export function ShareOptions() {
       trigger={
         <ActionButton
           icon=<ShareSmall />
+          className="sm:w-full! w-fit!"
           secondary
           label={`Share ${pub ? "Draft" : ""}`}
+          labelOnMobile
         />
       }
     >

@@ -23,26 +23,22 @@ export function HomeButton() {
         className="hover:no-underline"
         style={{ textDecorationLine: "none !important" }}
       >
-        <ActionButton icon={<HomeSmall />} label="Go Home" />
+        <ActionButton icon={<HomeSmall />} label="Back Home" />
       </Link>
-      {<AddToHomeButton />}
     </>
   );
 }
 
-const AddToHomeButton = (props: {}) => {
+export const AddToHomeButton = (props: { primary?: boolean }) => {
   let { permission_token } = useReplicache();
   let { identity, mutate } = useIdentityData();
   let smoker = useSmoker();
-  if (
-    identity?.permission_token_on_homepage.find(
-      (pth) => pth.permission_tokens.id === permission_token.id,
-    ) ||
-    !identity
-  )
-    return null;
+
   return (
     <ActionButton
+      primary
+      labelOnMobile
+      className="sm:w-full! w-fit!"
       onClick={async (e) => {
         await addLeafletToHome(permission_token.id);
         mutate((identity) => {
@@ -68,7 +64,7 @@ const AddToHomeButton = (props: {}) => {
         });
       }}
       icon={<AddToHomeSmall />}
-      label="Add to Home"
+      label="Save to Home"
     />
   );
 };

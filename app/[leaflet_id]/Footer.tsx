@@ -6,14 +6,17 @@ import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
 import { FootnoteToolbar } from "components/Toolbar/FootnoteToolbarWrapper";
 import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
-import { HomeButton } from "app/[leaflet_id]/actions/HomeButton";
+import {
+  AddToHomeButton,
+  HomeButton,
+} from "app/[leaflet_id]/actions/HomeButton";
 import { PublishButton } from "./actions/PublishButton";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { Watermark } from "components/Watermark";
 import { BackToPubButton } from "./actions/BackToPubButton";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
-import { useEntity } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import { block } from "sharp";
 import { PostSettings } from "components/PostSettings";
 
@@ -29,9 +32,9 @@ export function hasBlockToolbar(blockType: string | null | undefined) {
 }
 export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
-
   let entity_set = useEntitySetContext();
   let { identity } = useIdentityData();
+  let { permission_token } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
@@ -77,8 +80,17 @@ export function LeafletFooter(props: { entityID: string }) {
           ) : (
             <HomeButton />
           )}
+
           <div className="mobileLeafletActions flex gap-2 shrink-0">
-            <PublishButton entityID={props.entityID} />
+            {identity &&
+            !identity.permission_token_on_homepage.find(
+              (pth) => pth.permission_tokens.id === permission_token.id,
+            ) ? (
+              <AddToHomeButton primary />
+            ) : (
+              <PublishButton entityID={props.entityID} />
+            )}
+
             <ShareOptions />
             <PostSettings />
             <ThemePopover entityID={props.entityID} />

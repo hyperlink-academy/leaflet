@@ -52,6 +52,8 @@ export const PublishButton = (props: { entityID: string }) => {
     return (
       <ActionButton
         primary
+        labelOnMobile
+        className="w-fit!"
         icon={<PublishSmall className="shrink-0" />}
         label={"Publish!"}
         onClick={() => {
@@ -116,6 +118,8 @@ const UpdateButton = () => {
   return (
     <ActionButton
       primary
+      className="w-fit!"
+      labelOnMobile
       icon={<PublishSmall className="shrink-0" />}
       label={isLoading ? <DotLoader /> : "Update!"}
       onClick={async () => {
@@ -192,6 +196,8 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
       trigger={
         <ActionButton
           primary
+          className="w-fit!"
+          labelOnMobile
           icon={<PublishSmall className="shrink-0" />}
           label={"Publish"}
         />

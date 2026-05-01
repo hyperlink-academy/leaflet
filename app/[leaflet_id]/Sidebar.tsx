@@ -2,7 +2,10 @@
 import { Sidebar } from "components/ActionBar/Sidebar";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { HelpButton } from "app/[leaflet_id]/actions/HelpButton";
-import { HomeButton } from "app/[leaflet_id]/actions/HomeButton";
+import {
+  AddToHomeButton,
+  HomeButton,
+} from "app/[leaflet_id]/actions/HomeButton";
 import { Media } from "components/Media";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
@@ -19,6 +22,7 @@ export function LeafletSidebar() {
   let { rootEntity } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let { identity } = useIdentityData();
+  let { permission_token } = useReplicache();
 
   return (
     <Media mobile={false} className="w-0 h-full relative">
@@ -28,8 +32,16 @@ export function LeafletSidebar() {
       >
         <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
           {entity_set.permissions.write && (
-            <Sidebar>
-              <PublishButton entityID={rootEntity} />
+            <Sidebar className="my-0!">
+              {identity &&
+              !identity.permission_token_on_homepage.find(
+                (pth) => pth.permission_tokens.id === permission_token.id,
+              ) ? (
+                <AddToHomeButton />
+              ) : (
+                <PublishButton entityID={rootEntity} />
+              )}
+
               <ShareOptions />
               <PostSettings />
               <ThemePopover entityID={rootEntity} />
