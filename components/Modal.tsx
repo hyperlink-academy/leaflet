@@ -1,6 +1,9 @@
+"use client";
 import * as Dialog from "@radix-ui/react-dialog";
 import React from "react";
+import { isIOS } from "src/utils/isDevice";
 import { CloseTiny } from "./Icons/CloseTiny";
+import { useVisualViewport } from "./ViewportSizeLayout";
 
 export const Modal = ({
   className,
@@ -19,14 +22,33 @@ export const Modal = ({
   title?: React.ReactNode;
   children: React.ReactNode;
 }) => {
+  let { height, offsetTop, difference } = useVisualViewport();
+  // iOS keyboard open: re-center modal against the visual viewport. Android
+  // resizes the layout viewport via interactiveWidget: "resizes-content".
+  let keyboardOpen = isIOS() && difference !== 0 && height > 0;
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger !== undefined && (
         <Dialog.Trigger asChild={asChild}>{trigger}</Dialog.Trigger>
       )}
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed z-50 inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-60" />
+        <Dialog.Overlay
+          style={
+            keyboardOpen
+              ? { top: `${offsetTop}px`, height: `${height}px` }
+              : undefined
+          }
+          className="fixed z-50 inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-60"
+        />
         <Dialog.Content
+          style={
+            keyboardOpen
+              ? {
+                  top: `${offsetTop + height / 2}px`,
+                  maxHeight: `${height - 32}px`,
+                }
+              : undefined
+          }
           className={`
           z-50 fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           overflow-y-scroll no-scrollbar max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] p-3 flex flex-col w-full sm:w-max

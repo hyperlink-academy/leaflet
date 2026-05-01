@@ -23,6 +23,7 @@ export const CreateNewLeafletButton = (props: { compact?: boolean }) => {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
+      className="z-[60]!"
       trigger={
         props.compact ? (
           <ButtonPrimary compact className="text-sm!">
@@ -34,7 +35,7 @@ export const CreateNewLeafletButton = (props: { compact?: boolean }) => {
             id="new-leaflet-button"
             primary
             icon=<AddTiny className="m-1" />
-            label="New"
+            label="New Doc"
           />
         )
       }

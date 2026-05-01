@@ -50,7 +50,12 @@ export const WriterButton = () => {
   let current = useIsOnWriterPage();
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
-      <ActionButton icon={<WriterSmall />} label="Write" active={current} />
+      <ActionButton
+        className={"w-full!"}
+        icon={<WriterSmall />}
+        label="Write"
+        active={current}
+      />
     </SpeedyLink>
   );
 };
@@ -59,7 +64,12 @@ export const ReaderButton = (props: { subs: boolean }) => {
   let current = useIsActive("/reader");
   return (
     <SpeedyLink href={"/reader"} className="hover:no-underline!">
-      <ActionButton icon={<ReaderUnreadSmall />} label="Read" active={current} />
+      <ActionButton
+        className="w-full!"
+        icon={<ReaderUnreadSmall />}
+        label="Read"
+        active={current}
+      />
     </SpeedyLink>
   );
 };

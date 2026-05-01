@@ -13,19 +13,16 @@ const PAGE_META = [
     prefix: "/home",
     id: "home",
     title: "Home",
-    icon: <HomeSmall />,
   },
   {
     prefix: "/looseleafs",
     id: "looseleafs",
     title: "Looseleafs",
-    icon: <LooseleafTiny />,
   },
   {
     prefix: "/notifications",
     id: "notifications",
     title: "Notifications",
-    icon: <NotificationsUnreadSmall />,
   },
 ];
 
@@ -36,9 +33,7 @@ export function WriterShell(props: { children: React.ReactNode }) {
   return (
     <DashboardShell
       id={meta?.id ?? ""}
-      pageTitle={
-        meta && <PageTitle icon={meta.icon} pageTitle={meta.title} />
-      }
+      pageTitle={meta && <PageTitle pageTitle={meta.title} />}
       actions={<Actions />}
     >
       {props.children}

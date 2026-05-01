@@ -85,18 +85,7 @@ export default async function ProfilePageLayout(props: {
   return (
     <DashboardShell
       id="profile"
-      pageTitle={
-        <PageTitle
-          icon={
-            <Avatar
-              src={profile.avatar}
-              size="small"
-              displayName={displayName}
-            />
-          }
-          pageTitle={displayName}
-        />
-      }
+      pageTitle={<PageTitle pageTitle={displayName} />}
       tabs={{
         Inbox: { href: "/reader" },
         Trending: { href: "/reader/trending" },
@@ -108,10 +97,7 @@ export default async function ProfilePageLayout(props: {
         showHeader={false}
       >
         <ProfileLayout>
-          <ProfileHeader
-            profile={profile}
-            publications={publications || []}
-          />
+          <ProfileHeader profile={profile} publications={publications || []} />
           <ProfileTabs didOrHandle={params.didOrHandle} />
           <>{props.children}</>
         </ProfileLayout>

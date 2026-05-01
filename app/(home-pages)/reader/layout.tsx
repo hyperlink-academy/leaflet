@@ -14,7 +14,7 @@ export default async function ReaderLayout(props: {
   return (
     <DashboardShell
       id="reader"
-      pageTitle={<PageTitle icon={<ReaderUnreadSmall />} pageTitle="Reader" />}
+      pageTitle={<PageTitle pageTitle="Reader" />}
       tabs={tabs}
     >
       {props.children}

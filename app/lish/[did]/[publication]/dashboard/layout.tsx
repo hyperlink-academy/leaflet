@@ -6,7 +6,12 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { LoginModal } from "components/LoginButton";
 import { AtUri } from "@atproto/syntax";
-import { DashboardChrome } from "./DashboardChrome";
+import { PageTitle } from "components/ActionBar/DesktopNavigation";
+import { SettingsSmall } from "components/Icons/SettingsSmall";
+import { DashboardShell } from "components/PageLayouts/DashboardShell";
+import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
+import { Actions } from "./Actions";
+import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -76,19 +81,35 @@ export default async function PublicationDashboardLayout(props: {
   }
 
   let uri = new AtUri(publication.uri);
+  let baseHref = `/lish/${params.did}/${params.publication}/dashboard`;
 
   return (
-    <DashboardChrome
-      publication_did={did}
+    <PublicationSWRDataProvider
+      publication_did={uri.host}
       publication_rkey={uri.rkey}
       publication_data={publication_data}
-      pubUri={publication.uri}
-      record={record}
-      routeDid={params.did}
-      routePublication={params.publication}
     >
-      {props.children}
-    </DashboardChrome>
+      <PublicationThemeProviderDashboard>
+        <DashboardShell
+          id={publication.uri}
+          publication={publication.uri}
+          pageTitle={<PageTitle pageTitle={record.name} showBackButton />}
+          actions={<Actions publication={publication.uri} />}
+          tabs={{
+            Drafts: { href: baseHref },
+            Posts: { href: `${baseHref}/posts` },
+            Subs: { href: `${baseHref}/subs` },
+            Analytics: { href: `${baseHref}/analytics` },
+            Settings: {
+              href: `${baseHref}/settings`,
+              icon: <SettingsSmall />,
+            },
+          }}
+        >
+          {props.children}
+        </DashboardShell>
+      </PublicationThemeProviderDashboard>
+    </PublicationSWRDataProvider>
   );
 }
 

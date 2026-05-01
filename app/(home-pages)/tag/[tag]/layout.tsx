@@ -1,6 +1,5 @@
 import { DashboardShell } from "components/PageLayouts/DashboardShell";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
-import { TagTiny } from "components/Icons/TagTiny";
 
 export default async function TagLayout(props: {
   children: React.ReactNode;
@@ -12,7 +11,7 @@ export default async function TagLayout(props: {
   return (
     <DashboardShell
       id="tag"
-      pageTitle={<PageTitle icon={<TagTiny />} pageTitle={decodedTag} />}
+      pageTitle={<PageTitle pageTitle={decodedTag} />}
       tabs={{
         Inbox: { href: "/reader" },
         Trending: { href: "/reader/trending" },

@@ -15,6 +15,8 @@ import { ActionButton } from "./ActionButton";
 import { AccountSmall } from "components/Icons/AccountSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
 import { SpeedyLink } from "components/SpeedyLink";
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 
 type NavigationProps = {
   pageTitle: React.ReactNode;
@@ -49,42 +51,40 @@ function pickActiveTabHref(
 export const NavigationContent = (props: NavigationProps) => {
   let { identity } = useIdentityData();
   let pathname = usePathname();
-  let activeTabHref = props.tabs ? pickActiveTabHref(pathname, props.tabs) : null;
+  let activeTabHref = props.tabs
+    ? pickActiveTabHref(pathname, props.tabs)
+    : null;
   let onWriterPage = useIsOnWriterPage();
 
   return (
     <>
       {props.pageTitle}
+
       <hr className="border-border-light mb-2" />
 
       {props.actions && (
         <>
-          <div className="flex flex-col gap-1 pt-0.5">{props.actions}</div>
+          <div className="flex flex-col gap-1">{props.actions}</div>
           <hr className="border-border-light my-2" />
         </>
       )}
 
-      {props.tabs &&
-        Object.entries(props.tabs).map(([name, { href, icon }]) => (
-          <SpeedyLink key={name} href={href} className="hover:no-underline!">
-            <ActionButton
-              labelOnMobile
-              icon={icon ?? <TabsSmall />}
-              label={name}
-              active={href === activeTabHref}
-            />
-          </SpeedyLink>
-        ))}
-
-      {onWriterPage && (
+      {props.tabs && (
         <>
-          <hr className="border-border-light my-2" />
-          <div className="text-tertiary uppercase text-sm px-1 pt-1">
-            PUBLICATIONS
-          </div>
-          <PublicationButtons />
+          {Object.entries(props.tabs).map(([name, { href, icon }]) => (
+            <SpeedyLink key={name} href={href} className="hover:no-underline!">
+              <ActionButton
+                labelOnMobile
+                icon={icon ?? <TabsSmall />}
+                label={name}
+                active={href === activeTabHref}
+              />
+            </SpeedyLink>
+          ))}
         </>
       )}
+
+      {onWriterPage && <PublicationButtons />}
 
       <div className="flex-1" />
       <WriterButton />
@@ -119,11 +119,20 @@ export const NavigationContent = (props: NavigationProps) => {
 
 export const PageTitle = (props: {
   pageTitle: string;
-  icon: React.ReactNode;
+  showBackButton?: boolean;
 }) => {
   return (
     <div className="flex gap-2 w-full px-1 py-0.5 items-center ">
-      {props.icon}
+      {props.showBackButton && (
+        <SpeedyLink href={"/home"} className="flex items-center">
+          <button>
+            <GoToArrowLined
+              className="accent-accent-contrast rotate-180 shrink-0"
+              aria-label="Go Back"
+            />
+          </button>
+        </SpeedyLink>
+      )}
       <div className="truncate min-w-0 text-tertiary uppercase text-sm font-bold">
         {props.pageTitle}
       </div>

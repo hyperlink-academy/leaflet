@@ -41,6 +41,7 @@ export const PublicationButtons = (props: { className?: string }) => {
     <div
       className={`pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0 ${props.className}`}
     >
+      <div className="text-tertiary uppercase text-sm px-1">PUBLICATIONS</div>
       {hasLooseleafs && (
         <>
           <SpeedyLink href={`/looseleafs`} className={` hover:no-underline!  `}>
@@ -108,10 +109,13 @@ const PubListEmpty = () => {
     return (
       <ActionButton
         label="Publish"
+        className="w-full!"
         secondary
         icon={<PublishSmall />}
         subtext="Start a blog on ATProto!"
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           setState("info");
         }}
       />
@@ -127,6 +131,7 @@ const PubListEmpty = () => {
         asChild
         trigger={
           <ActionButton
+            className="w-full!"
             secondary
             label="Publish"
             icon={<PublishSmall />}
@@ -173,7 +178,7 @@ export const PubListEmptyContent = (props: { compact?: boolean }) => {
             noEmailLogin
             asChild
             trigger={
-              <ButtonPrimary compact className="mx-auto">
+              <ButtonPrimary compact className="mx-auto text-sm!">
                 {identity ? "Link to" : "Log in with"} Atmosphere
               </ButtonPrimary>
             }
