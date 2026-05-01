@@ -1,11 +1,13 @@
 "use client";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useSearchParams } from "next/navigation";
 import {
   DesktopNavigation,
   NavigationContent,
 } from "components/ActionBar/DesktopNavigation";
 import { Sidebar, useSidebarStore } from "components/ActionBar/Sidebar";
 import { DashboardIdContext } from "./dashboardState";
+import { NotificationContent } from "./NotificationContent";
 
 export type DashboardShellProps = {
   id: string;
@@ -19,6 +21,8 @@ export type DashboardShellProps = {
 export function DashboardShell(props: DashboardShellProps) {
   let { id, children, ...navigationProps } = props;
   let { open, setOpen } = useSidebarStore();
+  let searchParams = useSearchParams();
+  let showNotifications = searchParams.get("notifications") === "open";
 
   return (
     <DashboardIdContext.Provider value={id}>
@@ -50,7 +54,7 @@ export function DashboardShell(props: DashboardShellProps) {
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
-        {children}
+        {showNotifications ? <NotificationContent /> : children}
       </div>
     </DashboardIdContext.Provider>
   );

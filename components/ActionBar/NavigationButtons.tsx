@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import { ActionButton } from "./ActionButton";
 import { useIdentityData } from "components/IdentityProvider";
@@ -77,10 +77,28 @@ export const ReaderButton = (props: { subs: boolean }) => {
 export function NotificationButton() {
   let { identity } = useIdentityData();
   let unreads = identity?.notifications[0]?.count;
-  let current = useIsActive("/notifications");
+  let pathname = usePathname();
+  let searchParams = useSearchParams();
+  let router = useRouter();
+
+  let isOnPage =
+    pathname === "/notifications" || pathname.startsWith("/notifications/");
+  let isOpen = searchParams.get("notifications") === "open";
+  let active = isOnPage || isOpen;
+
+  function handleClick() {
+    if (isOnPage || isOpen) return;
+    let params = new URLSearchParams(searchParams.toString());
+    params.set("notifications", "open");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   return (
-    <SpeedyLink href={"/notifications"} className="hover:no-underline!">
+    <button
+      type="button"
+      onClick={handleClick}
+      className="hover:no-underline!"
+    >
       <ActionButton
         labelOnMobile={false}
         icon={
@@ -91,9 +109,9 @@ export function NotificationButton() {
           )
         }
         label="Notifications"
-        active={current}
+        active={active}
         className={unreads ? "text-accent-contrast!" : ""}
       />
-    </SpeedyLink>
+    </button>
   );
 }
