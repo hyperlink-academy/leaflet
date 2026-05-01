@@ -32,8 +32,12 @@ export const UpgradeContent = () => {
           <div className="">Subscriber Counts</div>
           <div className="">Top Referrers</div>
           <hr className="my-4 border-border-light" />
+          <div className="font-bold text-primary">Emails</div>
+          <div className="text-sm italic">
+            First 1,000 subscribers included
+          </div>
+          <hr className="my-4 border-border-light" />
           <div className="font-bold text-primary">Coming ASAP</div>
-          <div className="">Emails</div>
           <div className="">Paid Membership</div>
         </div>
         <div className="sm:w-64  w-full accent-container flex justify-center items-center">
