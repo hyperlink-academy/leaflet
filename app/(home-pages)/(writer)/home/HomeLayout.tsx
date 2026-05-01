@@ -14,19 +14,15 @@ import type { Attribute } from "src/replicache/attributes";
 import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import {
-  DashboardLayout,
-  DashboardState,
+  type DashboardState,
   useDashboardState,
-} from "components/PageLayouts/DashboardLayout";
+} from "components/PageLayouts/dashboardState";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { PageSearch } from "components/PageLayouts/PageSearch";
-import { Actions } from "./Actions/Actions";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
-import { PageTitle } from "components/ActionBar/DesktopNavigation";
-import { HomeSmall } from "components/Icons/HomeSmall";
 import { CreateNewLeafletButton } from "./Actions/CreateNewButton";
 
 export type Leaflet = {
@@ -44,7 +40,7 @@ export type Leaflet = {
   };
 };
 
-export const HomeLayout = (props: {
+export const HomeContent = (props: {
   entityID: string | null;
   titles: { [root_entity: string]: string };
   initialFacts: {
@@ -77,41 +73,28 @@ export const HomeLayout = (props: {
     ).length > 0;
 
   return (
-    <DashboardLayout
-      id="home"
-      currentPage="home"
-      defaultTab="home"
-      actions={<Actions />}
-      pageTitle={<PageTitle icon={<HomeSmall />} pageTitle="Home" />}
-      tabs={{
-        home: {
-          content: (
-            <DashboardPageLayout
-              scrollKey="dashboard-home"
-              pageTitle="Home"
-              mobileActions={<CreateNewLeafletButton compact />}
-              search={
-                <PageSearch
-                  defaultDisplay={"grid"}
-                  searchValue={searchValue}
-                  setSearchValueAction={setSearchValue}
-                  hasBackgroundImage={hasBackgroundImage}
-                  hasPubs={hasPubs}
-                  hasArchived={!!hasArchived}
-                />
-              }
-              showHeader={true}
-            >
-              <HomeLeafletList
-                titles={props.titles}
-                initialFacts={props.initialFacts}
-                searchValue={debouncedSearchValue}
-              />
-            </DashboardPageLayout>
-          ),
-        },
-      }}
-    />
+    <DashboardPageLayout
+      scrollKey="dashboard-home"
+      pageTitle="Home"
+      mobileActions={<CreateNewLeafletButton compact />}
+      search={
+        <PageSearch
+          defaultDisplay={"grid"}
+          searchValue={searchValue}
+          setSearchValueAction={setSearchValue}
+          hasBackgroundImage={hasBackgroundImage}
+          hasPubs={hasPubs}
+          hasArchived={!!hasArchived}
+        />
+      }
+      showHeader={true}
+    >
+      <HomeLeafletList
+        titles={props.titles}
+        initialFacts={props.initialFacts}
+        searchValue={debouncedSearchValue}
+      />
+    </DashboardPageLayout>
   );
 };
 

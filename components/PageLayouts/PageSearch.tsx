@@ -11,7 +11,7 @@ import {
   DashboardState,
   useDashboardState,
   useSetDashboardState,
-} from "./DashboardLayout";
+} from "./dashboardState";
 
 export const PageSearch = (props: {
   searchValue: string;

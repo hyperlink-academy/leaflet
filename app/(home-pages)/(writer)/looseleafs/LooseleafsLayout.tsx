@@ -1,20 +1,16 @@
 "use client";
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { Fact, PermissionToken } from "src/replicache";
 import { Attribute } from "src/replicache/attributes";
-import { Actions } from "../home/Actions/Actions";
 import { callRPC } from "app/api/rpc/client";
 import { useIdentityData } from "components/IdentityProvider";
 import useSWR from "swr";
 import { Leaflet, LeafletList } from "../home/HomeLayout";
-import { PageTitle } from "components/ActionBar/DesktopNavigation";
-import { LooseleafTiny } from "components/Icons/LooseleafTiny";
 import { CreateNewLeafletButton } from "../home/Actions/CreateNewButton";
 
-export const LooseleafsLayout = (props: {
+export const LooseleafsContent = (props: {
   entityID: string | null;
   titles: { [root_entity: string]: string };
   initialFacts: {
@@ -33,33 +29,18 @@ export const LooseleafsLayout = (props: {
   );
 
   return (
-    <DashboardLayout
-      id="looseleafs"
-      currentPage="looseleafs"
-      defaultTab="home"
-      actions={<Actions />}
-      pageTitle={
-        <PageTitle icon={<LooseleafTiny />} pageTitle={"Looseleafs"} />
-      }
-      tabs={{
-        home: {
-          content: (
-            <DashboardPageLayout
-              scrollKey="dashboard-looseleafs-home"
-              pageTitle="Looseleafs"
-              mobileActions={<CreateNewLeafletButton compact />}
-              showHeader={false}
-            >
-              <LooseleafList
-                titles={props.titles}
-                initialFacts={props.initialFacts}
-                searchValue={debouncedSearchValue}
-              />
-            </DashboardPageLayout>
-          ),
-        },
-      }}
-    />
+    <DashboardPageLayout
+      scrollKey="dashboard-looseleafs-home"
+      pageTitle="Looseleafs"
+      mobileActions={<CreateNewLeafletButton compact />}
+      showHeader={false}
+    >
+      <LooseleafList
+        titles={props.titles}
+        initialFacts={props.initialFacts}
+        searchValue={debouncedSearchValue}
+      />
+    </DashboardPageLayout>
   );
 };
 

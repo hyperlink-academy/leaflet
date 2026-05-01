@@ -2,7 +2,7 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { createContext, useContext, useEffect } from "react";
 import useSWR, { KeyedMutator, mutate } from "swr";
-import { DashboardState } from "./PageLayouts/DashboardLayout";
+import type { DashboardState } from "./PageLayouts/dashboardState";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { produce, Draft } from "immer";
 

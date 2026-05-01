@@ -4,7 +4,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileTabs } from "./ProfileTabs";
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { DashboardShell } from "components/PageLayouts/DashboardShell";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { ProfileLayout } from "./ProfileLayout";
 import { Agent } from "@atproto/api";
@@ -81,12 +81,8 @@ export default async function ProfilePageLayout(props: {
   if (!profile) return null;
 
   return (
-    <DashboardLayout
+    <DashboardShell
       id="profile"
-      defaultTab="default"
-      currentPage="profile"
-      profileDid={did}
-      actions={null}
       pageTitle={
         <PageTitle
           icon={
@@ -104,26 +100,25 @@ export default async function ProfilePageLayout(props: {
         />
       }
       tabs={{
-        default: {
-          content: (
-            <DashboardPageLayout
-              pageTitle={params.didOrHandle}
-              scrollKey="dashboard-profile-default"
-              showHeader={false}
-            >
-              <ProfileLayout>
-                <ProfileHeader
-                  profile={profile}
-                  publications={publications || []}
-                />
-                <ProfileTabs didOrHandle={params.didOrHandle} />
-                <>{props.children}</>
-              </ProfileLayout>
-            </DashboardPageLayout>
-          ),
-        },
+        Inbox: { href: "/reader/inbox" },
+        Trending: { href: "/reader/trending" },
       }}
-    />
+    >
+      <DashboardPageLayout
+        pageTitle={params.didOrHandle}
+        scrollKey="dashboard-profile-default"
+        showHeader={false}
+      >
+        <ProfileLayout>
+          <ProfileHeader
+            profile={profile}
+            publications={publications || []}
+          />
+          <ProfileTabs didOrHandle={params.didOrHandle} />
+          <>{props.children}</>
+        </ProfileLayout>
+      </DashboardPageLayout>
+    </DashboardShell>
   );
 }
 

@@ -1,6 +1,7 @@
+"use client";
+import { usePathname } from "next/navigation";
 import { useIdentityData } from "components/IdentityProvider";
 import {
-  navPages,
   NotificationButton,
   ReaderButton,
   WriterButton,
@@ -12,25 +13,36 @@ import { ProfileButton } from "./ProfileButton";
 import { ActionButton } from "./ActionButton";
 import { AccountSmall } from "components/Icons/AccountSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
+import { SpeedyLink } from "components/SpeedyLink";
 
 type NavigationProps = {
   pageTitle: React.ReactNode;
-  currentPage: navPages;
   publication?: string;
   actions?: React.ReactNode;
-  tabs?: { [name: string]: { icon?: React.ReactNode } };
-  currentTab?: string;
-  onTabClick?: (tab: string) => void;
-  onTabHover?: (tab: string) => void;
+  tabs?: { [name: string]: { href: string; icon?: React.ReactNode } };
 };
+
+function pickActiveTabHref(
+  pathname: string,
+  tabs: { [name: string]: { href: string } },
+): string | null {
+  let best: string | null = null;
+  for (const { href } of Object.values(tabs)) {
+    if (pathname === href || pathname.startsWith(href + "/")) {
+      if (!best || href.length > best.length) best = href;
+    }
+  }
+  return best;
+}
 
 export const NavigationContent = (props: NavigationProps) => {
   let { identity } = useIdentityData();
-
-  let isWriterPage =
-    props.currentPage === "home" ||
-    props.currentPage === "looseleafs" ||
-    props.currentPage === "pub";
+  let pathname = usePathname();
+  let activeTabHref = props.tabs ? pickActiveTabHref(pathname, props.tabs) : null;
+  let onWriterPage =
+    pathname.startsWith("/home") ||
+    pathname.startsWith("/looseleafs") ||
+    pathname.startsWith("/notifications");
 
   return (
     <>
@@ -43,48 +55,40 @@ export const NavigationContent = (props: NavigationProps) => {
           <hr className="border-border-light my-2" />
         </>
       )}
-      {props.tabs && Object.keys(props.tabs).length > 1 && (
-        <>
-          {Object.keys(props.tabs).map((t) => (
+
+      {props.tabs &&
+        Object.entries(props.tabs).map(([name, { href, icon }]) => (
+          <SpeedyLink key={name} href={href} className="hover:no-underline!">
             <ActionButton
               labelOnMobile
-              key={t}
-              icon={props.tabs![t].icon ?? <TabsSmall />}
-              label={t}
+              icon={icon ?? <TabsSmall />}
+              label={name}
               className={
-                t === props.currentTab ? "bg-bg-page! border-border-light!" : ""
+                href === activeTabHref ? "bg-bg-page! border-border-light!" : ""
               }
-              onClick={() => props.onTabClick?.(t)}
-              onMouseEnter={() => props.onTabHover?.(t)}
-              onPointerDown={() => props.onTabHover?.(t)}
             />
-          ))}
-        </>
-      )}
+          </SpeedyLink>
+        ))}
 
-      {props.currentPage === "home" && (
+      {onWriterPage && (
         <>
           <hr className="border-border-light my-2" />
           <div className="text-tertiary uppercase text-sm px-1 pt-1">
             PUBLICATIONS
           </div>
-          <PublicationButtons currentPage={props.currentPage} />
+          <PublicationButtons />
         </>
       )}
 
       <div className="flex-1" />
       <WriterButton />
-      {isWriterPage && (
-        <ReaderButton
-          subs={
-            identity?.publication_subscriptions?.length !== 0 &&
-            identity?.publication_subscriptions?.length !== undefined
-          }
-        />
-      )}
-      {identity?.atp_did && (
-        <NotificationButton current={props.currentPage === "notifications"} />
-      )}
+      <ReaderButton
+        subs={
+          identity?.publication_subscriptions?.length !== 0 &&
+          identity?.publication_subscriptions?.length !== undefined
+        }
+      />
+      {identity?.atp_did && <NotificationButton />}
       {identity ? (
         <>
           <hr className="border-border-light my-1" />

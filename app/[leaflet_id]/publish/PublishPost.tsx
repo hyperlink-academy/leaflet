@@ -34,7 +34,7 @@ import {
   PublicationBackgroundProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
 import { useEntity } from "src/replicache";
-import { LeafletContent } from "app/(home-pages)/home/LeafletList/LeafletContent";
+import { LeafletContent } from "app/(home-pages)/(writer)/home/LeafletList/LeafletContent";
 
 type Props = {
   title: string;

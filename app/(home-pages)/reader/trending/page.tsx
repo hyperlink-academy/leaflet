@@ -1,18 +1,18 @@
 import { Suspense } from "react";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
-import { getNewFeed } from "../getNewFeed";
-import { NewContent } from "../NewContent";
+import { getHotFeed } from "../getHotFeed";
+import { GlobalContent } from "../GlobalContent";
 import { FeedSkeleton } from "../FeedSkeleton";
 
-export default function NewPage() {
+export default function ReaderTrendingPage() {
   return (
     <DashboardPageLayout
-      scrollKey="dashboard-reader-new"
-      pageTitle="New"
+      scrollKey="dashboard-reader-trending"
+      pageTitle="Trending"
       showHeader={false}
     >
       <Suspense fallback={<FeedSkeleton />}>
-        <NewContent promise={getNewFeed()} />
+        <GlobalContent promise={getHotFeed()} />
       </Suspense>
     </DashboardPageLayout>
   );

@@ -1,7 +1,5 @@
-import { getHotFeed } from "../getHotFeed";
-import { GlobalContent } from "../GlobalContent";
+import { redirect } from "next/navigation";
 
-export default async function HotPage() {
-  const feedPromise = getHotFeed();
-  return <GlobalContent promise={feedPromise} />;
+export default function HotPage() {
+  redirect("/reader/trending");
 }

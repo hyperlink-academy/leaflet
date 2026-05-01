@@ -17,7 +17,7 @@ import {
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import { LeafletOptions } from "app/(home-pages)/home/LeafletList/LeafletOptions";
+import { LeafletOptions } from "app/(home-pages)/(writer)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 
 export function PublishedPostsList(props: {

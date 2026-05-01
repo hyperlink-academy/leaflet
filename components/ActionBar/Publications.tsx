@@ -18,13 +18,9 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useIsInitialRender, useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
-import { type navPages } from "./NavigationButtons";
 import { LoginModal } from "components/LoginButton";
 
-export const PublicationButtons = (props: {
-  currentPage: navPages;
-  className?: string;
-}) => {
+export const PublicationButtons = (props: { className?: string }) => {
   let { identity } = useIdentityData();
   let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
     (f) =>

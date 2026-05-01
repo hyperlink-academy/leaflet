@@ -19,7 +19,7 @@ import {
   confirmEmailAuthToken,
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
-import { getHomeDocs } from "app/(home-pages)/home/storage";
+import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
 import { mutate } from "swr";
 
 export const LoginModal = (props: {
