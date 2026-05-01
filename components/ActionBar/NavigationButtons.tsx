@@ -39,9 +39,18 @@ export const HomeButton = (props: { className?: string }) => {
 };
 
 export const WriterButton = () => {
+  let pathname = usePathname();
+  let current =
+    pathname.startsWith("/home") ||
+    pathname.startsWith("/looseleafs") ||
+    pathname.startsWith("/notifications");
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
-      <ActionButton icon={<WriterSmall />} label="Write" />
+      <ActionButton
+        icon={<WriterSmall />}
+        label="Write"
+        className={current ? "bg-bg-page! border-border-light!" : ""}
+      />
     </SpeedyLink>
   );
 };

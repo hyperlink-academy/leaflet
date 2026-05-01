@@ -12,7 +12,6 @@ export async function uncachedGetIdentityData() {
   let auth_token =
     cookieStore.get("auth_token")?.value ||
     cookieStore.get("external_auth_token")?.value;
-  console.log("AUTH_TOKEN: " + auth_token);
   let auth_res = auth_token
     ? await supabaseServerClient
         .from("email_auth_tokens")
@@ -48,8 +47,6 @@ export async function uncachedGetIdentityData() {
         .eq("confirmed", true)
         .single()
     : null;
-  console.log("GETTING IDENTITY", auth_res);
-  if (auth_res?.error) console.log(auth_res.error);
   if (!auth_res?.data?.identities) return null;
 
   // Transform embedded entitlements into a keyed record, filtering expired

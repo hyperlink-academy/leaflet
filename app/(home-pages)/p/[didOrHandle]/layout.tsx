@@ -100,12 +100,12 @@ export default async function ProfilePageLayout(props: {
         />
       }
       tabs={{
-        Inbox: { href: "/reader/inbox" },
+        Inbox: { href: "/reader" },
         Trending: { href: "/reader/trending" },
       }}
     >
       <DashboardPageLayout
-        pageTitle={params.didOrHandle}
+        pageTitle={profile?.displayName ? profile.displayName : profile.handle}
         scrollKey="dashboard-profile-default"
         showHeader={false}
       >

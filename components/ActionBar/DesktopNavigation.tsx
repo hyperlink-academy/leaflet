@@ -26,9 +26,19 @@ function pickActiveTabHref(
   pathname: string,
   tabs: { [name: string]: { href: string } },
 ): string | null {
+  const hrefs = Object.values(tabs).map((t) => t.href);
   let best: string | null = null;
-  for (const { href } of Object.values(tabs)) {
-    if (pathname === href || pathname.startsWith(href + "/")) {
+  for (const href of hrefs) {
+    // If this href is a strict prefix of another tab's href, only allow exact
+    // match — otherwise a parent tab would always swallow sibling-but-unmatched
+    // paths (e.g. /reader/new highlighting /reader's Inbox tab).
+    const isPrefixOfAnother = hrefs.some(
+      (other) => other !== href && other.startsWith(href + "/"),
+    );
+    const matches = isPrefixOfAnother
+      ? pathname === href
+      : pathname === href || pathname.startsWith(href + "/");
+    if (matches) {
       if (!best || href.length > best.length) best = href;
     }
   }
@@ -117,7 +127,7 @@ export const PageTitle = (props: {
 }) => {
   return (
     <div className="flex gap-2 w-full px-1 py-0.5 items-center ">
-      {/*{props.icon}*/}
+      {props.icon}
       <div className="truncate min-w-0 text-tertiary uppercase text-sm font-bold">
         {props.pageTitle}
       </div>

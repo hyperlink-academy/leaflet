@@ -30,7 +30,11 @@ export const PublicationButtons = (props: { className?: string }) => {
 
   // don't show pub list button if not logged in or no pub list
   // we show a "start a pub" banner instead
-  if (!identity || !identity.atp_did || identity.publications.length === 0)
+  if (
+    !identity ||
+    !identity.atp_did ||
+    (!hasLooseleafs && identity.publications.length === 0)
+  )
     return <PubListEmpty />;
 
   return (

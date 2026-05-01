@@ -14,7 +14,7 @@ export default async function TagLayout(props: {
       id="tag"
       pageTitle={<PageTitle icon={<TagTiny />} pageTitle={decodedTag} />}
       tabs={{
-        Inbox: { href: "/reader/inbox" },
+        Inbox: { href: "/reader" },
         Trending: { href: "/reader/trending" },
       }}
     >

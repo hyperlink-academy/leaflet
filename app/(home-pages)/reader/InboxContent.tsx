@@ -13,7 +13,6 @@ import {
   MobileInteractionPreviewDrawer,
 } from "./InteractionDrawers";
 import { useSelectedPostListing } from "src/useSelectedPostState";
-import { getIdentityData } from "actions/getIdentityData";
 import { useIdentityData } from "components/IdentityProvider";
 import { LoginContent } from "components/LoginButton";
 

@@ -54,7 +54,6 @@ export function IdentityContextProvider(props: {
       channel.unsubscribe();
     };
   }, [identity?.atp_did]);
-  console.log("IDENTITY", identity);
   return (
     <IdentityContext.Provider value={{ identity, mutate }}>
       {props.children}
