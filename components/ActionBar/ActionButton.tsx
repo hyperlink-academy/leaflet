@@ -15,6 +15,7 @@ export const ActionButton = forwardRef<
     label: React.ReactNode;
     primary?: boolean;
     secondary?: boolean;
+    active?: boolean;
     className?: string;
     subtext?: string;
     labelOnMobile?: boolean;
@@ -27,6 +28,7 @@ export const ActionButton = forwardRef<
     label,
     primary,
     secondary,
+    active,
     labelOnMobile,
     subtext,
     className,
@@ -64,6 +66,7 @@ export const ActionButton = forwardRef<
             ? "border-accent-contrast  sm:hover:outline-accent-contrast focus:outline-accent-1   text-accent-contrast hover:border-accent-contrast  focus:border-accent-contrast font-bold"
             : "border-transparent text-secondary sm:hover:border-border justify-start! max-w-full"
       }
+      ${active ? "bg-bg-page! border-border-light!" : ""}
       ${className}
       `}
     >

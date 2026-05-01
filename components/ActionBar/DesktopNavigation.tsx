@@ -5,6 +5,7 @@ import {
   NotificationButton,
   ReaderButton,
   WriterButton,
+  useIsOnWriterPage,
 } from "./NavigationButtons";
 import { PublicationButtons } from "./Publications";
 import { Sidebar } from "./Sidebar";
@@ -49,10 +50,7 @@ export const NavigationContent = (props: NavigationProps) => {
   let { identity } = useIdentityData();
   let pathname = usePathname();
   let activeTabHref = props.tabs ? pickActiveTabHref(pathname, props.tabs) : null;
-  let onWriterPage =
-    pathname.startsWith("/home") ||
-    pathname.startsWith("/looseleafs") ||
-    pathname.startsWith("/notifications");
+  let onWriterPage = useIsOnWriterPage();
 
   return (
     <>
@@ -73,9 +71,7 @@ export const NavigationContent = (props: NavigationProps) => {
               labelOnMobile
               icon={icon ?? <TabsSmall />}
               label={name}
-              className={
-                href === activeTabHref ? "bg-bg-page! border-border-light!" : ""
-              }
+              active={href === activeTabHref}
             />
           </SpeedyLink>
         ))}

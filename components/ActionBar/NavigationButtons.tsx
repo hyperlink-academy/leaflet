@@ -25,6 +25,13 @@ function useIsActive(href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
+export const WRITER_PATHS = ["/home", "/looseleafs", "/notifications"] as const;
+
+export function useIsOnWriterPage() {
+  let pathname = usePathname();
+  return WRITER_PATHS.some((p) => pathname.startsWith(p));
+}
+
 export const HomeButton = (props: { className?: string }) => {
   let current = useIsActive("/home");
   return (
@@ -32,25 +39,18 @@ export const HomeButton = (props: { className?: string }) => {
       <ActionButton
         icon={<HomeSmall />}
         label="Home"
-        className={`${current ? "bg-bg-page! border-border-light!" : ""} w-full! ${props.className}`}
+        active={current}
+        className={`w-full! ${props.className}`}
       />
     </SpeedyLink>
   );
 };
 
 export const WriterButton = () => {
-  let pathname = usePathname();
-  let current =
-    pathname.startsWith("/home") ||
-    pathname.startsWith("/looseleafs") ||
-    pathname.startsWith("/notifications");
+  let current = useIsOnWriterPage();
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
-      <ActionButton
-        icon={<WriterSmall />}
-        label="Write"
-        className={current ? "bg-bg-page! border-border-light!" : ""}
-      />
+      <ActionButton icon={<WriterSmall />} label="Write" active={current} />
     </SpeedyLink>
   );
 };
@@ -59,11 +59,7 @@ export const ReaderButton = (props: { subs: boolean }) => {
   let current = useIsActive("/reader");
   return (
     <SpeedyLink href={"/reader"} className="hover:no-underline!">
-      <ActionButton
-        icon={<ReaderUnreadSmall />}
-        label="Read"
-        className={current ? "bg-bg-page! border-border-light!" : ""}
-      />
+      <ActionButton icon={<ReaderUnreadSmall />} label="Read" active={current} />
     </SpeedyLink>
   );
 };
@@ -85,7 +81,8 @@ export function NotificationButton() {
           )
         }
         label="Notifications"
-        className={`${current ? "bg-bg-page! border-border-light!" : ""} ${unreads ? "text-accent-contrast!" : ""}`}
+        active={current}
+        className={unreads ? "text-accent-contrast!" : ""}
       />
     </SpeedyLink>
   );

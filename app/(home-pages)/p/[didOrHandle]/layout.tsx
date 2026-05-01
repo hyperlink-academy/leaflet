@@ -80,6 +80,8 @@ export default async function ProfilePageLayout(props: {
 
   if (!profile) return null;
 
+  let displayName = profile.displayName || profile.handle;
+
   return (
     <DashboardShell
       id="profile"
@@ -89,14 +91,10 @@ export default async function ProfilePageLayout(props: {
             <Avatar
               src={profile.avatar}
               size="small"
-              displayName={
-                profile?.displayName ? profile.displayName : profile.handle
-              }
+              displayName={displayName}
             />
           }
-          pageTitle={
-            profile?.displayName ? profile.displayName : profile.handle
-          }
+          pageTitle={displayName}
         />
       }
       tabs={{
@@ -105,7 +103,7 @@ export default async function ProfilePageLayout(props: {
       }}
     >
       <DashboardPageLayout
-        pageTitle={profile?.displayName ? profile.displayName : profile.handle}
+        pageTitle={displayName}
         scrollKey="dashboard-profile-default"
         showHeader={false}
       >
