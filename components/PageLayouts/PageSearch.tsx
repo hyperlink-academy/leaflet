@@ -5,7 +5,6 @@ import { Separator } from "components/Layout";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { Input } from "components/Input";
 import { SearchTiny } from "components/Icons/SearchTiny";
-import { useIdentityData } from "components/IdentityProvider";
 import { SortSmall } from "components/Icons/SortSmall";
 import {
   DashboardState,
@@ -24,17 +23,14 @@ export const PageSearch = (props: {
   let { display, sort } = useDashboardState();
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
-  let { identity } = useIdentityData();
 
   return (
     <div className="searchControls w-full flex sm:gap-4 gap-2">
-      {identity && (
-        <SearchInput
-          searchValue={props.searchValue}
-          setSearchValue={props.setSearchValueAction}
-          hasBackgroundImage={props.hasBackgroundImage}
-        />
-      )}
+      <SearchInput
+        searchValue={props.searchValue}
+        setSearchValue={props.setSearchValueAction}
+        hasBackgroundImage={props.hasBackgroundImage}
+      />
       <div className="desktopSearchControls hidden sm:flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
         <DisplayToggle setState={setState} display={display} />
         <Separator classname="h-4 min-h-4!" />
