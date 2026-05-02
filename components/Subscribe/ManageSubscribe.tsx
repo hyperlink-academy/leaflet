@@ -6,6 +6,7 @@ import { CheckTiny } from "components/Icons/CheckTiny";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { Modal } from "components/Modal";
 import { useToaster } from "components/Toast";
+import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { LinkHandle } from "./HandleSubscribe";
 import { EmailInput, EmailConfirm } from "./EmailSubscribe";
 import type { ViewerUser } from "./viewerSubscription";
@@ -102,9 +103,11 @@ export const ManageSubscription = (props: {
     if (!res.ok) {
       toaster({
         type: "error",
-        content: (
+        content: isOAuthSessionError(res.error) ? (
+          <OAuthErrorMessage error={res.error} />
+        ) : (
           <div className="font-bold">
-            {UNSUBSCRIBE_ERROR_MESSAGES[res.error]}
+            {UNSUBSCRIBE_ERROR_MESSAGES[res.error] ?? "Couldn't unsubscribe."}
           </div>
         ),
       });

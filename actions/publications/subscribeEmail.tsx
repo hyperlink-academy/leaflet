@@ -22,6 +22,7 @@ import {
   publishAtprotoSubscriptionForDid,
   unsubscribeToPublication,
 } from "app/lish/subscribeToPublication";
+import type { OAuthSessionError } from "src/atproto-oauth";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 type RequestError =
@@ -36,7 +37,11 @@ type ConfirmError =
   | "link_invalid_state"
   | "email_belongs_to_other_account"
   | ConfirmationError;
-type UnsubscribeError = "unauthorized" | "not_subscribed" | "database_error";
+type UnsubscribeError =
+  | "unauthorized"
+  | "not_subscribed"
+  | "database_error"
+  | OAuthSessionError;
 
 export async function requestPublicationEmailSubscription(
   publicationUri: string,
@@ -315,7 +320,8 @@ export async function unsubscribeFromPublication(
   }
 
   if (atprotoSub) {
-    await unsubscribeToPublication(publicationUri);
+    const atprotoResult = await unsubscribeToPublication(publicationUri);
+    if (!atprotoResult.success) return Err(atprotoResult.error);
   }
 
   // NOTE: Postmark Suppressions API is deliberately NOT called here. Per spec,
