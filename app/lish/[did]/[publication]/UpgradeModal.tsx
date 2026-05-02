@@ -34,7 +34,7 @@ export const UpgradeContent = () => {
           <hr className="my-4 border-border-light" />
           <div className="font-bold text-primary">Emails</div>
           <div className="text-sm italic">
-            First 1,000 subscribers included
+            First 1,000 subscribers included, $5/1K after that
           </div>
           <hr className="my-4 border-border-light" />
           <div className="font-bold text-primary">Coming ASAP</div>
