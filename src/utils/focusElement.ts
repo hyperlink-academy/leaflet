@@ -1,5 +1,14 @@
 import { isIOS } from "src/utils/isDevice";
 
+// setSelectionRange throws InvalidStateError on input types other than
+// text/search/url/tel/password (e.g. email, number).
+const supportsSelection = (
+  el: HTMLInputElement | HTMLTextAreaElement,
+): boolean => {
+  if (el instanceof HTMLTextAreaElement) return true;
+  return ["text", "search", "url", "tel", "password"].includes(el.type);
+};
+
 export const focusElement = (
   el?: HTMLInputElement | HTMLTextAreaElement | null,
 ) => {
@@ -22,7 +31,7 @@ export const focusElement = (
     el?.focus();
     fakeInput.remove();
     el.value = " ";
-    el.setSelectionRange(1, 1);
+    if (supportsSelection(el)) el.setSelectionRange(1, 1);
     requestAnimationFrame(() => {
       if (el) {
         el.style.transform = "";
@@ -31,7 +40,7 @@ export const focusElement = (
     setTimeout(() => {
       if (!el) return;
       el.value = "";
-      el.setSelectionRange(0, 0);
+      if (supportsSelection(el)) el.setSelectionRange(0, 0);
     }, 50);
   }, 20);
 };
