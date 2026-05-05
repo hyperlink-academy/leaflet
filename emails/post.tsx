@@ -28,6 +28,9 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { supabaseServerClient } from "supabase/serverClient";
+import { emailPropsFromPublication } from "./fromPublication";
 import {
   bgcolorAttr,
   defaultEmailTheme,
@@ -89,8 +92,7 @@ const defaultProps: PostEmailProps = {
   publicationName: "Publication",
   publicationUrl: "https://leaflet.pub",
   postTitle: "Post Title Here",
-  postDescription:
-    "Hello this is a description of everything that is to come",
+  postDescription: "Hello this is a description of everything that is to come",
   postUrl: "https://leaflet.pub",
   authorName: "author",
   publishedAtLabel: "Jan 1, 2026",
@@ -298,236 +300,246 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                     <tr>
                       <td
                         className="email-card-pad"
-                        {...bgcolorAttr(theme.pageBackground)}
+                        {...(theme.showPageBackground
+                          ? bgcolorAttr(theme.pageBackground)
+                          : {})}
                         style={{
-                          backgroundColor: theme.pageBackground,
-                          border: `1px solid ${c.border}`,
+                          backgroundColor: theme.showPageBackground
+                            ? theme.pageBackground
+                            : undefined,
+                          border: theme.showPageBackground
+                            ? `1px solid ${c.border}`
+                            : undefined,
                           borderRadius: 8,
                           padding: "20px 24px",
                         }}
                       >
-                <Link
-                  href={p.publicationUrl}
-                  style={{
-                    ...accentLink,
-                    fontWeight: "bold",
-                    fontSize: 16,
-                  }}
-                >
-                  {p.publicationName}
-                </Link>
-
-                <ReactEmailHeading
-                  as="h1"
-                  style={{
-                    color: theme.primary,
-                    fontFamily: theme.headingFont,
-                    fontWeight: "bold",
-                    fontSize: 26,
-                    lineHeight: 1.2,
-                    margin: "8px 0 0",
-                  }}
-                >
-                  <Link
-                    href={p.postUrl}
-                    style={{
-                      color: theme.primary,
-                      fontFamily: theme.headingFont,
-                      textDecoration: "none",
-                    }}
-                  >
-                    {p.postTitle}
-                  </Link>
-                </ReactEmailHeading>
-
-                {p.postDescription ? (
-                  <ReactEmailText
-                    style={{
-                      color: c.secondary,
-                      fontFamily: theme.bodyFont,
-                      fontSize: 16,
-                      fontStyle: "italic",
-                      lineHeight: 1.4,
-                      margin: "4px 0 0",
-                    }}
-                  >
-                    {p.postDescription}
-                  </ReactEmailText>
-                ) : null}
-
-                {byline ? (
-                  <Section
-                    style={{ margin: "12px 0 28px", minWidth: "100%" }}
-                  >
-                    <Row style={{ minWidth: "100%" }}>
-                      <Column style={{ verticalAlign: "middle" }}>
-                        <ReactEmailText
+                        <Link
+                          href={p.publicationUrl}
                           style={{
-                            color: c.tertiary,
-                            fontFamily: theme.bodyFont,
-                            fontSize: 14,
-                            lineHeight: 1.4,
-                            margin: 0,
+                            ...accentLink,
+                            fontWeight: "bold",
+                            fontSize: 16,
                           }}
                         >
-                          {byline}
-                        </ReactEmailText>
-                      </Column>
-                      <Column style={{ width: 12 }} />
-                      <Column style={{ width: 16, verticalAlign: "middle" }}>
-                        <Link
-                          href={drawerUrl(p.postUrl, "quotes")}
-                          style={accentLink}
-                        >
-                          <Img
-                            width={16}
-                            height={16}
-                            src={staticUrl("quote.png")}
-                            alt="See quotes"
-                          />
+                          {p.publicationName}
                         </Link>
-                      </Column>
-                      <Column style={{ width: 8 }} />
-                      <Column style={{ width: 16, verticalAlign: "middle" }}>
-                        <Link
-                          href={drawerUrl(p.postUrl, "comments")}
-                          style={accentLink}
+
+                        <ReactEmailHeading
+                          as="h1"
+                          style={{
+                            color: theme.primary,
+                            fontFamily: theme.headingFont,
+                            fontWeight: "bold",
+                            fontSize: 26,
+                            lineHeight: 1.2,
+                            margin: "8px 0 0",
+                          }}
                         >
-                          <Img
-                            width={16}
-                            height={16}
-                            src={staticUrl("comment.png")}
-                            alt="See comments"
+                          <Link
+                            href={p.postUrl}
+                            style={{
+                              color: theme.primary,
+                              fontFamily: theme.headingFont,
+                              textDecoration: "none",
+                            }}
+                          >
+                            {p.postTitle}
+                          </Link>
+                        </ReactEmailHeading>
+
+                        {p.postDescription ? (
+                          <ReactEmailText
+                            style={{
+                              color: c.secondary,
+                              fontFamily: theme.bodyFont,
+                              fontSize: 16,
+                              fontStyle: "italic",
+                              lineHeight: 1.4,
+                              margin: "4px 0 0",
+                            }}
+                          >
+                            {p.postDescription}
+                          </ReactEmailText>
+                        ) : null}
+
+                        {byline ? (
+                          <Section
+                            style={{ margin: "12px 0 28px", minWidth: "100%" }}
+                          >
+                            <Row style={{ minWidth: "100%" }}>
+                              <Column style={{ verticalAlign: "middle" }}>
+                                <ReactEmailText
+                                  style={{
+                                    color: c.tertiary,
+                                    fontFamily: theme.bodyFont,
+                                    fontSize: 14,
+                                    lineHeight: 1.4,
+                                    margin: 0,
+                                  }}
+                                >
+                                  {byline}
+                                </ReactEmailText>
+                              </Column>
+                              <Column style={{ width: 12 }} />
+                              <Column
+                                style={{ width: 16, verticalAlign: "middle" }}
+                              >
+                                <Link
+                                  href={drawerUrl(p.postUrl, "quotes")}
+                                  style={accentLink}
+                                >
+                                  <Img
+                                    width={16}
+                                    height={16}
+                                    src={staticUrl("quote.png")}
+                                    alt="See quotes"
+                                  />
+                                </Link>
+                              </Column>
+                              <Column style={{ width: 8 }} />
+                              <Column
+                                style={{ width: 16, verticalAlign: "middle" }}
+                              >
+                                <Link
+                                  href={drawerUrl(p.postUrl, "comments")}
+                                  style={accentLink}
+                                >
+                                  <Img
+                                    width={16}
+                                    height={16}
+                                    src={staticUrl("comment.png")}
+                                    alt="See comments"
+                                  />
+                                </Link>
+                              </Column>
+                            </Row>
+                          </Section>
+                        ) : null}
+
+                        {p.blocks.map((b, i) => (
+                          <BlockRenderer
+                            key={i}
+                            block={b.block}
+                            alignment={b.alignment}
+                            did={p.did}
+                            assetsBaseUrl={p.assetsBaseUrl}
+                            theme={theme}
+                            colors={c}
                           />
-                        </Link>
-                      </Column>
-                    </Row>
-                  </Section>
-                ) : null}
+                        ))}
 
-                {p.blocks.map((b, i) => (
-                  <BlockRenderer
-                    key={i}
-                    block={b.block}
-                    alignment={b.alignment}
-                    did={p.did}
-                    assetsBaseUrl={p.assetsBaseUrl}
-                    theme={theme}
-                    colors={c}
-                  />
-                ))}
-
-                {/* Footer: Gmail won't reliably cascade `text-align` from a
+                        {/* Footer: Gmail won't reliably cascade `text-align` from a
                     wrapping <table>, so each centered row is its own <td
                     align="center"> — the bulletproof email-centering
                     pattern. `min-width: 100%` keeps Gmail iOS from
                     shrink-wrapping the table around the short link text. */}
-                <table
-                  role="presentation"
-                  width="100%"
-                  cellPadding={0}
-                  cellSpacing={0}
-                  border={0}
-                  style={{ width: "100%", minWidth: "100%" }}
-                >
-                  <tbody>
-                    <tr>
-                      <td align="center" style={{ paddingTop: 16 }}>
-                        <Link
-                          href={p.postUrl}
-                          style={{
-                            ...accentLink,
-                            fontWeight: "bold",
-                            fontSize: 14,
-                            lineHeight: "20px",
-                          }}
+                        <table
+                          role="presentation"
+                          width="100%"
+                          cellPadding={0}
+                          cellSpacing={0}
+                          border={0}
+                          style={{ width: "100%", minWidth: "100%" }}
                         >
-                          Read in Browser
-                        </Link>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        align="center"
-                        style={{
-                          color: c.tertiary,
-                          fontFamily: theme.bodyFont,
-                          fontSize: 14,
-                          lineHeight: "20px",
-                          paddingTop: 8,
-                        }}
-                      >
-                        {p.unsubscribeUrl ? (
-                          <Link
-                            href={p.unsubscribeUrl}
-                            style={{
-                              color: c.tertiary,
-                              fontSize: 14,
-                              lineHeight: "20px",
-                              textDecoration: "underline",
-                            }}
-                          >
-                            Unsubscribe
-                          </Link>
-                        ) : (
-                          <span style={{ fontStyle: "italic" }}>
-                            (preview — not sent to subscribers)
-                          </span>
-                        )}
-                      </td>
-                    </tr>
+                          <tbody>
+                            <tr>
+                              <td align="center" style={{ paddingTop: 16 }}>
+                                <Link
+                                  href={p.postUrl}
+                                  style={{
+                                    ...accentLink,
+                                    fontWeight: "bold",
+                                    fontSize: 14,
+                                    lineHeight: "20px",
+                                  }}
+                                >
+                                  Read in Browser
+                                </Link>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td
+                                align="center"
+                                style={{
+                                  color: c.tertiary,
+                                  fontFamily: theme.bodyFont,
+                                  fontSize: 14,
+                                  lineHeight: "20px",
+                                  paddingTop: 8,
+                                }}
+                              >
+                                {p.unsubscribeUrl ? (
+                                  <Link
+                                    href={p.unsubscribeUrl}
+                                    style={{
+                                      color: c.tertiary,
+                                      fontSize: 14,
+                                      lineHeight: "20px",
+                                      textDecoration: "underline",
+                                    }}
+                                  >
+                                    Unsubscribe
+                                  </Link>
+                                ) : (
+                                  <span style={{ fontStyle: "italic" }}>
+                                    (preview — not sent to subscribers)
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
 
-                    {/* Spacer */}
-                    <tr>
-                      <td
-                        style={{
-                          fontSize: 0,
-                          height: 16,
-                          lineHeight: "16px",
-                        }}
-                      >
-                        &nbsp;
-                      </td>
-                    </tr>
+                            {/* Spacer */}
+                            <tr>
+                              <td
+                                style={{
+                                  fontSize: 0,
+                                  height: 16,
+                                  lineHeight: "16px",
+                                }}
+                              >
+                                &nbsp;
+                              </td>
+                            </tr>
 
-                    {/* Horizontal rule above watermark. <hr> margins are
+                            {/* Horizontal rule above watermark. <hr> margins are
                         flaky in Gmail, so we use a 1px-tall <td> with
                         border-top instead. */}
-                    <tr>
-                      <td
-                        style={{
-                          borderTop: `1px solid ${c.borderLight}`,
-                          fontSize: 0,
-                          height: 1,
-                          lineHeight: "1px",
-                        }}
-                      >
-                        &nbsp;
-                      </td>
-                    </tr>
+                            <tr>
+                              <td
+                                style={{
+                                  borderTop: `1px solid ${c.borderLight}`,
+                                  fontSize: 0,
+                                  height: 1,
+                                  lineHeight: "1px",
+                                }}
+                              >
+                                &nbsp;
+                              </td>
+                            </tr>
 
-                    <tr>
-                      <td
-                        style={{
-                          fontSize: 0,
-                          height: 12,
-                          lineHeight: "12px",
-                        }}
-                      >
-                        &nbsp;
-                      </td>
-                    </tr>
+                            <tr>
+                              <td
+                                style={{
+                                  fontSize: 0,
+                                  height: 12,
+                                  lineHeight: "12px",
+                                }}
+                              >
+                                &nbsp;
+                              </td>
+                            </tr>
 
-                    <tr>
-                      <td align="center">
-                        <LeafletWatermark
-                          theme={theme}
-                          staticUrl={staticUrl}
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                            <tr>
+                              <td align="center">
+                                <LeafletWatermark
+                                  theme={theme}
+                                  staticUrl={staticUrl}
+                                />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </td>
                     </tr>
                   </tbody>
@@ -540,7 +552,38 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
     </Html>
   );
 };
-export default PostEmail;
+// `npm run email:dev` renders this default export. Set
+// `PREVIEW_PUBLICATION_URI` below to an `at://did:plc:.../pub.leaflet.publication/<rkey>`
+// to preview the post template with that publication's name, url, and theme —
+// matching what `send_post_broadcast` and `sendPostPreview` resolve at send time.
+// Leave it null to render with the static default props.
+const PREVIEW_PUBLICATION_URI: string | null =
+  "at://did:plc:x2xmijn2egk5g67u3cwkddzy/site.standard.publication/3m2avdoogvs2f";
+
+const PostEmailPreview = async () => {
+  if (!PREVIEW_PUBLICATION_URI) return <PostEmail />;
+
+  const { data: publication, error } = await supabaseServerClient
+    .from("publications")
+    .select("record")
+    .eq("uri", PREVIEW_PUBLICATION_URI)
+    .maybeSingle();
+
+  if (error || !publication) {
+    console.warn(
+      `[email preview] could not load publication ${PREVIEW_PUBLICATION_URI}:`,
+      error?.message ?? "not found",
+    );
+    return <PostEmail />;
+  }
+
+  const pubProps = emailPropsFromPublication(
+    normalizePublicationRecord(publication.record),
+  );
+  return <PostEmail {...pubProps} />;
+};
+
+export default PostEmailPreview;
 
 // Map the lexicon's alignment token to the simple left/center/right values
 // usable as HTML `align` attributes. `justify` falls through to `left` to
@@ -592,10 +635,10 @@ const BlockRenderer = ({
     );
   }
   if (PubLeafletBlocksHeader.isMain(block)) {
-    const level = Math.min(
-      3,
-      Math.max(1, Math.floor(block.level ?? 1)),
-    ) as 1 | 2 | 3;
+    const level = Math.min(3, Math.max(1, Math.floor(block.level ?? 1))) as
+      | 1
+      | 2
+      | 3;
     return (
       <ReactEmailHeading
         as={`h${level}`}
@@ -761,8 +804,7 @@ export const Heading = (props: {
   className?: string;
   style?: CSSProperties;
 }) => {
-  const fontSize =
-    props.as === "h1" ? 26 : props.as === "h2" ? 18 : 16;
+  const fontSize = props.as === "h1" ? 26 : props.as === "h2" ? 18 : 16;
   return (
     <ReactEmailHeading
       as={props.as}
