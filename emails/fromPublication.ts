@@ -41,6 +41,7 @@ export const resolveEmailTheme = (
     headingFont: getFontFamilyValue(getFontConfig(theme.headingFont)),
     bodyFont: getFontFamilyValue(getFontConfig(theme.bodyFont)),
     pageWidth: theme.pageWidth ?? defaultEmailTheme.pageWidth,
+    showPageBackground: theme.showPageBackground ?? false,
   };
 };
 

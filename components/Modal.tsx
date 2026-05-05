@@ -51,8 +51,7 @@ export const Modal = ({
           }
           className={`
           z-50 fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-          overflow-y-scroll no-scrollbar max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] p-3 flex flex-col w-full sm:w-max
-
+          overflow-y-scroll no-scrollbar max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] p-3 flex flex-col w-full sm:w-max text-primary
           `}
         >
           <Dialog.Close className="bg-bg-page rounded-full -mb-3 mr-2  z-10 w-fit p-1 place-self-end border border-border-light text-tertiary">
@@ -66,7 +65,7 @@ export const Modal = ({
           >
             {title ? (
               <Dialog.Title asChild>
-                <h3 className="pb-1">{title}</h3>
+                <h3 className="pb-1 text-primary">{title}</h3>
               </Dialog.Title>
             ) : (
               <Dialog.Title />

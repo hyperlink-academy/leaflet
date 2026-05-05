@@ -13,6 +13,11 @@ export type DashboardState = {
     docs: boolean;
     archived: boolean;
   };
+  subscriberStatus: {
+    unconfirmed: boolean;
+    subscribed: boolean;
+    unsubscribed: boolean;
+  };
 };
 
 type DashboardStore = {
@@ -29,7 +34,27 @@ const defaultDashboardState: DashboardState = {
     docs: false,
     archived: false,
   },
+  subscriberStatus: {
+    unconfirmed: false,
+    subscribed: true,
+    unsubscribed: false,
+  },
 };
+
+// Existing identities have stored interface_state without newer fields
+// (e.g. subscriberStatus). Merge so callers always see a complete shape.
+function withDefaults(stored: DashboardState | undefined): DashboardState {
+  if (!stored) return defaultDashboardState;
+  return {
+    ...defaultDashboardState,
+    ...stored,
+    filter: { ...defaultDashboardState.filter, ...stored.filter },
+    subscriberStatus: {
+      ...defaultDashboardState.subscriberStatus,
+      ...stored.subscriberStatus,
+    },
+  };
+}
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
   dashboards: {},
@@ -59,12 +84,10 @@ export const useDashboardId = () => {
 export const useDashboardState = () => {
   const id = useDashboardId();
   let { identity } = useIdentityData();
-  let localState = useDashboardStore(
-    (state) => state.dashboards[id] || defaultDashboardState,
-  );
-  if (!identity) return localState;
+  let localState = useDashboardStore((state) => state.dashboards[id]);
+  if (!identity) return withDefaults(localState);
   let metadata = identity.interface_state as InterfaceState;
-  return metadata?.dashboards?.[id] || defaultDashboardState;
+  return withDefaults(metadata?.dashboards?.[id]);
 };
 
 export const useSetDashboardState = () => {

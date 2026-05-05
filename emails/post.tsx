@@ -16,6 +16,7 @@ import type { PrismLanguage } from "@react-email/code-block";
 import React, { type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
+  PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
@@ -27,6 +28,9 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { supabaseServerClient } from "supabase/serverClient";
+import { emailPropsFromPublication } from "./fromPublication";
 import {
   bgcolorAttr,
   defaultEmailTheme,
@@ -88,8 +92,7 @@ const defaultProps: PostEmailProps = {
   publicationName: "Publication",
   publicationUrl: "https://leaflet.pub",
   postTitle: "Post Title Here",
-  postDescription:
-    "Hello this is a description of everything that is to come",
+  postDescription: "Hello this is a description of everything that is to come",
   postUrl: "https://leaflet.pub",
   authorName: "author",
   publishedAtLabel: "Jan 1, 2026",
@@ -161,6 +164,32 @@ const defaultProps: PostEmailProps = {
     },
     {
       $type: "pub.leaflet.pages.linearDocument#block",
+      block: {
+        $type: "pub.leaflet.blocks.button",
+        text: "Click me",
+        url: "https://leaflet.pub",
+      },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      alignment: "lex:pub.leaflet.pages.linearDocument#textAlignLeft",
+      block: {
+        $type: "pub.leaflet.blocks.button",
+        text: "Aligned left",
+        url: "https://leaflet.pub",
+      },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      alignment: "lex:pub.leaflet.pages.linearDocument#textAlignRight",
+      block: {
+        $type: "pub.leaflet.blocks.button",
+        text: "Aligned right",
+        url: "https://leaflet.pub",
+      },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
       block: { $type: "pub.leaflet.blocks.horizontalRule" },
     },
     {
@@ -206,13 +235,6 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
           @media only screen and (max-width: 480px) {
             .email-page-pad { padding: 12px 8px !important; }
             .email-card-pad { padding: 16px !important; }
-            /* The card table carries an HTML width attribute (e.g. 624) so
-               Gmail anchors on it; on mobile that pins it wider than the
-               viewport. Force it to fit. */
-            .email-card-table {
-              width: 100% !important;
-              max-width: 100% !important;
-            }
           }
         `}</style>
       </MailHead>
@@ -252,256 +274,272 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                   padding: "24px 16px",
                 }}
               >
-                {/* Both the HTML `width` attribute and CSS `width` are set:
-                    Gmail strips/ignores `max-width` in some contexts but
-                    always honors the HTML attribute, so it pins the box at
-                    the publication's web page width on desktop. The
-                    media-query rule above forces 100% on small screens. */}
+                {/* Responsive width: `width="100%"` lets the card fill its
+                    container, and `max-width: pageWidth` caps it on wider
+                    viewports. This keeps it readable at the publication's
+                    page width on desktop while shrinking gracefully when
+                    the email is viewed in a narrow window (e.g. Apple Mail
+                    desktop resized below the page width). Outlook desktop
+                    ignores `max-width` and will render full-width — that's
+                    a known tradeoff for the simpler markup. */}
                 <table
                   role="presentation"
                   align="center"
                   className="email-card-table"
-                  width={theme.pageWidth}
+                  width="100%"
                   cellPadding={0}
                   cellSpacing={0}
                   border={0}
-                  style={{ width: theme.pageWidth, maxWidth: "100%" }}
+                  style={{
+                    width: "100%",
+                    maxWidth: theme.pageWidth,
+                    margin: "0 auto",
+                  }}
                 >
                   <tbody>
                     <tr>
                       <td
                         className="email-card-pad"
-                        {...bgcolorAttr(theme.pageBackground)}
+                        {...(theme.showPageBackground
+                          ? bgcolorAttr(theme.pageBackground)
+                          : {})}
                         style={{
-                          backgroundColor: theme.pageBackground,
-                          border: `1px solid ${c.border}`,
+                          backgroundColor: theme.showPageBackground
+                            ? theme.pageBackground
+                            : undefined,
+                          border: theme.showPageBackground
+                            ? `1px solid ${c.border}`
+                            : undefined,
                           borderRadius: 8,
                           padding: "20px 24px",
                         }}
                       >
-                <Link
-                  href={p.publicationUrl}
-                  style={{
-                    ...accentLink,
-                    fontWeight: "bold",
-                    fontSize: 16,
-                  }}
-                >
-                  {p.publicationName}
-                </Link>
-
-                <ReactEmailHeading
-                  as="h1"
-                  style={{
-                    color: theme.primary,
-                    fontFamily: theme.headingFont,
-                    fontWeight: "bold",
-                    fontSize: 26,
-                    lineHeight: 1.2,
-                    margin: "8px 0 0",
-                  }}
-                >
-                  {p.postTitle}
-                </ReactEmailHeading>
-
-                {p.postDescription ? (
-                  <ReactEmailText
-                    style={{
-                      color: c.secondary,
-                      fontFamily: theme.bodyFont,
-                      fontSize: 16,
-                      fontStyle: "italic",
-                      lineHeight: 1.4,
-                      margin: "4px 0 0",
-                    }}
-                  >
-                    {p.postDescription}
-                  </ReactEmailText>
-                ) : null}
-
-                {byline ? (
-                  <Section
-                    style={{ margin: "12px 0 28px", minWidth: "100%" }}
-                  >
-                    <Row style={{ minWidth: "100%" }}>
-                      <Column style={{ verticalAlign: "middle" }}>
-                        <ReactEmailText
+                        <Link
+                          href={p.publicationUrl}
                           style={{
-                            color: c.tertiary,
-                            fontFamily: theme.bodyFont,
-                            fontSize: 14,
-                            lineHeight: 1.4,
-                            margin: 0,
+                            ...accentLink,
+                            fontWeight: "bold",
+                            fontSize: 16,
                           }}
                         >
-                          {byline}
-                        </ReactEmailText>
-                      </Column>
-                      <Column style={{ width: 12 }} />
-                      <Column style={{ width: 16, verticalAlign: "middle" }}>
-                        <Link
-                          href={drawerUrl(p.postUrl, "quotes")}
-                          style={accentLink}
-                        >
-                          <Img
-                            width={16}
-                            height={16}
-                            src={staticUrl("quote.png")}
-                            alt="See quotes"
-                          />
+                          {p.publicationName}
                         </Link>
-                      </Column>
-                      <Column style={{ width: 8 }} />
-                      <Column style={{ width: 16, verticalAlign: "middle" }}>
-                        <Link
-                          href={drawerUrl(p.postUrl, "comments")}
-                          style={accentLink}
-                        >
-                          <Img
-                            width={16}
-                            height={16}
-                            src={staticUrl("comment.png")}
-                            alt="See comments"
-                          />
-                        </Link>
-                      </Column>
-                      <Column style={{ width: 10 }} />
-                      <Column style={{ width: 16, verticalAlign: "middle" }}>
-                        <Link href={p.postUrl} style={accentLink}>
-                          <Img
-                            width={16}
-                            height={16}
-                            src={staticUrl("external-link.png")}
-                            alt="Open post"
-                          />
-                        </Link>
-                      </Column>
-                    </Row>
-                  </Section>
-                ) : null}
 
-                {p.blocks.map((b, i) => (
-                  <BlockRenderer
-                    key={i}
-                    block={b.block}
-                    did={p.did}
-                    assetsBaseUrl={p.assetsBaseUrl}
-                    theme={theme}
-                    colors={c}
-                  />
-                ))}
+                        <ReactEmailHeading
+                          as="h1"
+                          style={{
+                            color: theme.primary,
+                            fontFamily: theme.headingFont,
+                            fontWeight: "bold",
+                            fontSize: 26,
+                            lineHeight: 1.2,
+                            margin: "8px 0 0",
+                          }}
+                        >
+                          <Link
+                            href={p.postUrl}
+                            style={{
+                              color: theme.primary,
+                              fontFamily: theme.headingFont,
+                              textDecoration: "none",
+                            }}
+                          >
+                            {p.postTitle}
+                          </Link>
+                        </ReactEmailHeading>
 
-                {/* Footer: Gmail won't reliably cascade `text-align` from a
+                        {p.postDescription ? (
+                          <ReactEmailText
+                            style={{
+                              color: c.secondary,
+                              fontFamily: theme.bodyFont,
+                              fontSize: 16,
+                              fontStyle: "italic",
+                              lineHeight: 1.4,
+                              margin: "4px 0 0",
+                            }}
+                          >
+                            {p.postDescription}
+                          </ReactEmailText>
+                        ) : null}
+
+                        {byline ? (
+                          <Section
+                            style={{ margin: "12px 0 28px", minWidth: "100%" }}
+                          >
+                            <Row style={{ minWidth: "100%" }}>
+                              <Column style={{ verticalAlign: "middle" }}>
+                                <ReactEmailText
+                                  style={{
+                                    color: c.tertiary,
+                                    fontFamily: theme.bodyFont,
+                                    fontSize: 14,
+                                    lineHeight: 1.4,
+                                    margin: 0,
+                                  }}
+                                >
+                                  {byline}
+                                </ReactEmailText>
+                              </Column>
+                              <Column style={{ width: 12 }} />
+                              <Column
+                                style={{ width: 16, verticalAlign: "middle" }}
+                              >
+                                <Link
+                                  href={drawerUrl(p.postUrl, "quotes")}
+                                  style={accentLink}
+                                >
+                                  <Img
+                                    width={16}
+                                    height={16}
+                                    src={staticUrl("quote.png")}
+                                    alt="See quotes"
+                                  />
+                                </Link>
+                              </Column>
+                              <Column style={{ width: 8 }} />
+                              <Column
+                                style={{ width: 16, verticalAlign: "middle" }}
+                              >
+                                <Link
+                                  href={drawerUrl(p.postUrl, "comments")}
+                                  style={accentLink}
+                                >
+                                  <Img
+                                    width={16}
+                                    height={16}
+                                    src={staticUrl("comment.png")}
+                                    alt="See comments"
+                                  />
+                                </Link>
+                              </Column>
+                            </Row>
+                          </Section>
+                        ) : null}
+
+                        {p.blocks.map((b, i) => (
+                          <BlockRenderer
+                            key={i}
+                            block={b.block}
+                            alignment={b.alignment}
+                            did={p.did}
+                            assetsBaseUrl={p.assetsBaseUrl}
+                            theme={theme}
+                            colors={c}
+                          />
+                        ))}
+
+                        {/* Footer: Gmail won't reliably cascade `text-align` from a
                     wrapping <table>, so each centered row is its own <td
                     align="center"> — the bulletproof email-centering
                     pattern. `min-width: 100%` keeps Gmail iOS from
                     shrink-wrapping the table around the short link text. */}
-                <table
-                  role="presentation"
-                  width="100%"
-                  cellPadding={0}
-                  cellSpacing={0}
-                  border={0}
-                  style={{ width: "100%", minWidth: "100%" }}
-                >
-                  <tbody>
-                    <tr>
-                      <td align="center" style={{ paddingTop: 16 }}>
-                        <Link
-                          href={p.postUrl}
-                          style={{
-                            ...accentLink,
-                            fontWeight: "bold",
-                            fontSize: 14,
-                            lineHeight: "20px",
-                          }}
+                        <table
+                          role="presentation"
+                          width="100%"
+                          cellPadding={0}
+                          cellSpacing={0}
+                          border={0}
+                          style={{ width: "100%", minWidth: "100%" }}
                         >
-                          See Full Post
-                        </Link>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        align="center"
-                        style={{
-                          color: c.tertiary,
-                          fontFamily: theme.bodyFont,
-                          fontSize: 14,
-                          lineHeight: "20px",
-                          paddingTop: 8,
-                        }}
-                      >
-                        {p.unsubscribeUrl ? (
-                          <Link
-                            href={p.unsubscribeUrl}
-                            style={{
-                              color: c.tertiary,
-                              fontSize: 14,
-                              lineHeight: "20px",
-                              textDecoration: "underline",
-                            }}
-                          >
-                            Unsubscribe
-                          </Link>
-                        ) : (
-                          <span style={{ fontStyle: "italic" }}>
-                            (preview — not sent to subscribers)
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
+                          <tbody>
+                            <tr>
+                              <td align="center" style={{ paddingTop: 16 }}>
+                                <Link
+                                  href={p.postUrl}
+                                  style={{
+                                    ...accentLink,
+                                    fontWeight: "bold",
+                                    fontSize: 14,
+                                    lineHeight: "20px",
+                                  }}
+                                >
+                                  Read in Browser
+                                </Link>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td
+                                align="center"
+                                style={{
+                                  color: c.tertiary,
+                                  fontFamily: theme.bodyFont,
+                                  fontSize: 14,
+                                  lineHeight: "20px",
+                                  paddingTop: 8,
+                                }}
+                              >
+                                {p.unsubscribeUrl ? (
+                                  <Link
+                                    href={p.unsubscribeUrl}
+                                    style={{
+                                      color: c.tertiary,
+                                      fontSize: 14,
+                                      lineHeight: "20px",
+                                      textDecoration: "underline",
+                                    }}
+                                  >
+                                    Unsubscribe
+                                  </Link>
+                                ) : (
+                                  <span style={{ fontStyle: "italic" }}>
+                                    (preview — not sent to subscribers)
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
 
-                    {/* Spacer */}
-                    <tr>
-                      <td
-                        style={{
-                          fontSize: 0,
-                          height: 12,
-                          lineHeight: "12px",
-                        }}
-                      >
-                        &nbsp;
-                      </td>
-                    </tr>
+                            {/* Spacer */}
+                            <tr>
+                              <td
+                                style={{
+                                  fontSize: 0,
+                                  height: 16,
+                                  lineHeight: "16px",
+                                }}
+                              >
+                                &nbsp;
+                              </td>
+                            </tr>
 
-                    {/* Horizontal rule between card and watermark. <hr>
-                        margins are flaky in Gmail, so we use a 1px-tall
-                        <td> with border-top instead. */}
-                    <tr>
-                      <td
-                        style={{
-                          borderTop: `1px solid ${c.borderLight}`,
-                          fontSize: 0,
-                          height: 1,
-                          lineHeight: "1px",
-                        }}
-                      >
-                        &nbsp;
-                      </td>
-                    </tr>
+                            {/* Horizontal rule above watermark. <hr> margins are
+                        flaky in Gmail, so we use a 1px-tall <td> with
+                        border-top instead. */}
+                            <tr>
+                              <td
+                                style={{
+                                  borderTop: `1px solid ${c.borderLight}`,
+                                  fontSize: 0,
+                                  height: 1,
+                                  lineHeight: "1px",
+                                }}
+                              >
+                                &nbsp;
+                              </td>
+                            </tr>
 
-                    <tr>
-                      <td
-                        style={{
-                          fontSize: 0,
-                          height: 12,
-                          lineHeight: "12px",
-                        }}
-                      >
-                        &nbsp;
-                      </td>
-                    </tr>
+                            <tr>
+                              <td
+                                style={{
+                                  fontSize: 0,
+                                  height: 12,
+                                  lineHeight: "12px",
+                                }}
+                              >
+                                &nbsp;
+                              </td>
+                            </tr>
 
-                    <tr>
-                      <td align="center">
-                        <LeafletWatermark
-                          theme={theme}
-                          staticUrl={staticUrl}
-                        />
+                            <tr>
+                              <td align="center">
+                                <LeafletWatermark
+                                  theme={theme}
+                                  staticUrl={staticUrl}
+                                />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </td>
                     </tr>
                   </tbody>
@@ -514,16 +552,68 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
     </Html>
   );
 };
-export default PostEmail;
+// `npm run email:dev` renders this default export. Set
+// `PREVIEW_PUBLICATION_URI` below to an `at://did:plc:.../pub.leaflet.publication/<rkey>`
+// to preview the post template with that publication's name, url, and theme —
+// matching what `send_post_broadcast` and `sendPostPreview` resolve at send time.
+// Leave it null to render with the static default props.
+const PREVIEW_PUBLICATION_URI: string | null =
+  "at://did:plc:x2xmijn2egk5g67u3cwkddzy/site.standard.publication/3m2avdoogvs2f";
+
+const PostEmailPreview = async () => {
+  if (!PREVIEW_PUBLICATION_URI) return <PostEmail />;
+
+  const { data: publication, error } = await supabaseServerClient
+    .from("publications")
+    .select("record")
+    .eq("uri", PREVIEW_PUBLICATION_URI)
+    .maybeSingle();
+
+  if (error || !publication) {
+    console.warn(
+      `[email preview] could not load publication ${PREVIEW_PUBLICATION_URI}:`,
+      error?.message ?? "not found",
+    );
+    return <PostEmail />;
+  }
+
+  const pubProps = emailPropsFromPublication(
+    normalizePublicationRecord(publication.record),
+  );
+  return <PostEmail {...pubProps} />;
+};
+
+export default PostEmailPreview;
+
+// Map the lexicon's alignment token to the simple left/center/right values
+// usable as HTML `align` attributes. `justify` falls through to `left` to
+// match published web behavior (`justify-start` flex). For buttons we
+// default to `center` when alignment is unset, matching PostContent.tsx.
+const resolveButtonAlignment = (
+  alignment: string | undefined,
+): "left" | "center" | "right" => {
+  switch (alignment) {
+    case "lex:pub.leaflet.pages.linearDocument#textAlignRight":
+      return "right";
+    case "lex:pub.leaflet.pages.linearDocument#textAlignLeft":
+    case "lex:pub.leaflet.pages.linearDocument#textAlignJustify":
+      return "left";
+    case "lex:pub.leaflet.pages.linearDocument#textAlignCenter":
+    default:
+      return "center";
+  }
+};
 
 const BlockRenderer = ({
   block,
+  alignment,
   did,
   assetsBaseUrl,
   theme,
   colors,
 }: {
   block: PubLeafletPagesLinearDocument.Block["block"];
+  alignment?: string;
   did: string;
   assetsBaseUrl: string;
   theme: EmailTheme;
@@ -545,10 +635,10 @@ const BlockRenderer = ({
     );
   }
   if (PubLeafletBlocksHeader.isMain(block)) {
-    const level = Math.min(
-      3,
-      Math.max(1, Math.floor(block.level ?? 1)),
-    ) as 1 | 2 | 3;
+    const level = Math.min(3, Math.max(1, Math.floor(block.level ?? 1))) as
+      | 1
+      | 2
+      | 3;
     return (
       <ReactEmailHeading
         as={`h${level}`}
@@ -633,6 +723,16 @@ const BlockRenderer = ({
       />
     );
   }
+  if (PubLeafletBlocksButton.isMain(block)) {
+    return (
+      <ButtonBlock
+        text={block.text}
+        url={block.url}
+        align={resolveButtonAlignment(alignment)}
+        theme={theme}
+      />
+    );
+  }
   if (PubLeafletBlocksHorizontalRule.isMain(block)) {
     return (
       <Hr
@@ -704,8 +804,7 @@ export const Heading = (props: {
   className?: string;
   style?: CSSProperties;
 }) => {
-  const fontSize =
-    props.as === "h1" ? 26 : props.as === "h2" ? 18 : 16;
+  const fontSize = props.as === "h1" ? 26 : props.as === "h2" ? 18 : 16;
   return (
     <ReactEmailHeading
       as={props.as}
@@ -910,6 +1009,66 @@ export const LinkBlock = ({
           </Column>
         ) : null}
       </Row>
+    </Section>
+  );
+};
+
+export const ButtonBlock = ({
+  text,
+  url,
+  align = "center",
+  theme = defaultEmailTheme,
+}: {
+  text: string;
+  url: string;
+  align?: "left" | "center" | "right";
+  theme?: EmailTheme;
+}) => {
+  // Bulletproof button: table-based so Outlook (which ignores padding on
+  // <a>) renders a real clickable button. The `<td>` carries the bgcolor
+  // attribute and padding; the `<a>` is `display: block` so the entire
+  // padded area is clickable. Alignment via the table's `align` HTML
+  // attribute — Gmail won't reliably cascade `text-align` from a wrapping
+  // <Section>, so we anchor on the table itself.
+  return (
+    <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+      <table
+        role="presentation"
+        align={align}
+        cellPadding={0}
+        cellSpacing={0}
+        border={0}
+        style={{ borderCollapse: "separate" }}
+      >
+        <tbody>
+          <tr>
+            <td
+              align="center"
+              {...bgcolorAttr(theme.accentBackground)}
+              style={{
+                backgroundColor: theme.accentBackground,
+                borderRadius: 6,
+                padding: "10px 20px",
+              }}
+            >
+              <Link
+                href={url}
+                style={{
+                  color: theme.accentText,
+                  display: "block",
+                  fontFamily: theme.bodyFont,
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  lineHeight: "20px",
+                  textDecoration: "none",
+                }}
+              >
+                {text}
+              </Link>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </Section>
   );
 };

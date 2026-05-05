@@ -13,6 +13,8 @@ import { useSmoker, useToaster } from "./Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "./OAuthError";
 import { ButtonSecondary } from "./Buttons";
 import { Separator } from "./Layout";
+import { useIdentityData } from "./IdentityProvider";
+import { LoginModal } from "./LoginButton";
 
 // Create a batcher for recommendation checks
 // Batches requests made within 10ms window
@@ -61,11 +63,13 @@ export function RecommendButton(props: {
   const { hasRecommended, isLoading } = useUserRecommendation(
     props.documentUri,
   );
+  const { identity } = useIdentityData();
   const [count, setCount] = useState(props.recommendsCount);
   const [isPending, setIsPending] = useState(false);
   const [optimisticRecommended, setOptimisticRecommended] = useState<
     boolean | null
   >(null);
+  const [loginOpen, setLoginOpen] = useState(false);
   const toaster = useToaster();
   const smoker = useSmoker();
 
@@ -75,6 +79,10 @@ export function RecommendButton(props: {
 
   const handleClick = async (e: React.MouseEvent) => {
     if (isPending || isLoading) return;
+    if (!identity?.atp_did) {
+      setLoginOpen(true);
+      return;
+    }
 
     const currentlyRecommended = displayRecommended;
     setIsPending(true);
@@ -117,43 +125,34 @@ export function RecommendButton(props: {
     setIsPending(false);
   };
 
-  if (props.expanded)
-    return (
-      <ButtonSecondary
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleClick(e);
-        }}
-      >
-        {displayRecommended ? (
-          <RecommendTinyFilled className="text-accent-contrast" />
-        ) : (
-          <RecommendTinyEmpty />
-        )}
-        <div className="flex gap-2 items-center">
-          {count > 0 && (
-            <>
-              <span
-                className={`${displayRecommended && "text-accent-contrast"}`}
-              >
-                {count}
-              </span>
-              <Separator classname="h-4! text-accent-contrast!" />
-            </>
-          )}
-          {displayRecommended ? "Recommended!" : "Recommend"}
-        </div>
-      </ButtonSecondary>
-    );
+  const onClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleClick(e);
+  };
 
-  return (
+  const button = props.expanded ? (
+    <ButtonSecondary onClick={onClick}>
+      {displayRecommended ? (
+        <RecommendTinyFilled className="text-accent-contrast" />
+      ) : (
+        <RecommendTinyEmpty />
+      )}
+      <div className="flex gap-2 items-center">
+        {count > 0 && (
+          <>
+            <span className={`${displayRecommended && "text-accent-contrast"}`}>
+              {count}
+            </span>
+            <Separator classname="h-4! text-accent-contrast!" />
+          </>
+        )}
+        {displayRecommended ? "Recommended!" : "Recommend"}
+      </div>
+    </ButtonSecondary>
+  ) : (
     <button
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleClick(e);
-      }}
+      onClick={onClick}
       className={`recommendButton relative flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
       aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
     >
@@ -168,5 +167,18 @@ export function RecommendButton(props: {
         </span>
       )}
     </button>
+  );
+
+  return (
+    <>
+      {button}
+      {loginOpen && (
+        <LoginModal
+          noEmailLogin
+          open={loginOpen}
+          onOpenChange={setLoginOpen}
+        />
+      )}
+    </>
   );
 }

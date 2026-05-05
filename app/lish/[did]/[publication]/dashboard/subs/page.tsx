@@ -1,6 +1,7 @@
 "use client";
 
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
+import { SubscriberStatusFilter } from "components/PageLayouts/PageSearch";
 import { PublicationSubscribers } from "../PublicationSubscribers";
 import { NewDraftActionButton } from "../NewDraftButton";
 import {
@@ -22,6 +23,9 @@ export default function SubsPage() {
       publication={pubUri}
       showHeader={false}
     >
+      <div className="flex justify-end text-sm text-tertiary">
+        <SubscriberStatusFilter />
+      </div>
       <PublicationSubscribers showPageBackground={showPageBackground} />
     </DashboardPageLayout>
   );

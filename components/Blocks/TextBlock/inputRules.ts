@@ -3,6 +3,7 @@ import {
   inputRules,
   wrappingInputRule,
 } from "prosemirror-inputrules";
+import { EditorState } from "prosemirror-state";
 import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
@@ -14,6 +15,14 @@ import { flushSync } from "react-dom";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 import { insertFootnote } from "./insertFootnote";
 import { useEditorStates } from "src/state/useEditorState";
+
+const anchorInCodeMark = (state: EditorState, start: number, end: number) => {
+  const codeMark = state.schema.marks.code;
+  if (!codeMark) return false;
+  const startMarks = state.doc.resolve(start).marks();
+  const endMarks = state.doc.resolve(end).marks();
+  return !!codeMark.isInSet(startMarks) || !!codeMark.isInSet(endMarks);
+};
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
@@ -23,6 +32,7 @@ export const inputrules = (
     //Strikethrough
     rules: [
       new InputRule(/\~\~([^*]+)\~\~$/, (state, match, start, end) => {
+        if (anchorInCodeMark(state, start, end)) return null;
         const [fullMatch, content] = match;
         const { tr } = state;
         if (content) {
@@ -40,6 +50,7 @@ export const inputrules = (
 
       //Highlight
       new InputRule(/\=\=([^*]+)\=\=$/, (state, match, start, end) => {
+        if (anchorInCodeMark(state, start, end)) return null;
         const [fullMatch, content] = match;
         const { tr } = state;
         if (content) {
@@ -59,6 +70,7 @@ export const inputrules = (
 
       //Bold
       new InputRule(/\*\*([^*]+)\*\*$/, (state, match, start, end) => {
+        if (anchorInCodeMark(state, start, end)) return null;
         const [fullMatch, content] = match;
         const { tr } = state;
         if (content) {
@@ -76,6 +88,7 @@ export const inputrules = (
 
       //Code
       new InputRule(/\`([^`]+)\`$/, (state, match, start, end) => {
+        if (anchorInCodeMark(state, start, end)) return null;
         const [fullMatch, content] = match;
         const { tr } = state;
         if (content) {
@@ -94,6 +107,7 @@ export const inputrules = (
 
       //Italic
       new InputRule(/(?:^|[^*])\*([^*]+)\*$/, (state, match, start, end) => {
+        if (anchorInCodeMark(state, start, end)) return null;
         const [fullMatch, content] = match;
         const { tr } = state;
         if (content) {
@@ -231,6 +245,7 @@ export const inputrules = (
 
       // Footnote - [^ triggers footnote insertion
       new InputRule(/\[\^$/, (state, match, start, end) => {
+        if (anchorInCodeMark(state, start, end)) return null;
         let tr = state.tr.delete(start, end);
         setTimeout(() => {
           let view = useEditorStates.getState().editorStates[propsRef.current.entityID]?.view;
@@ -248,6 +263,7 @@ export const inputrules = (
       // Mention - @ at start of line, after space, or after hard break
       new InputRule(/(?:^|\s)@$/, (state, match, start, end) => {
         if (!openMentionAutocomplete) return null;
+        if (anchorInCodeMark(state, start, end)) return null;
         // Schedule opening the autocomplete after the transaction is applied
         setTimeout(() => openMentionAutocomplete(), 0);
         return null; // Let the @ be inserted normally
@@ -255,6 +271,7 @@ export const inputrules = (
       // Mention - @ immediately after a hard break (hard breaks are nodes, not text)
       new InputRule(/@$/, (state, match, start, end) => {
         if (!openMentionAutocomplete) return null;
+        if (anchorInCodeMark(state, start, end)) return null;
         // Check if the character before @ is a hard break node
         const $pos = state.doc.resolve(start);
         const nodeBefore = $pos.nodeBefore;

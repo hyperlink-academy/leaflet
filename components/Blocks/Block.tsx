@@ -124,6 +124,12 @@ export const Block = memo(function Block(
   const bindSwipe = useDrag(
     ({ last, movement: [mx], event }) => {
       if (!last) return;
+      if (
+        event &&
+        "pointerType" in event &&
+        event.pointerType !== "touch"
+      )
+        return;
       if (!rep || !props.listData || !entity_set.permissions.write) return;
       if (Math.abs(mx) < SWIPE_THRESHOLD) return;
       event?.preventDefault();

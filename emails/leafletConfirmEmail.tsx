@@ -17,10 +17,14 @@ import {
 export const LeafletConfirmEmail = (props: {
   code?: string;
   assetsBaseUrl?: string;
+  title?: string;
+  message?: string;
 }) => {
   const leafletSrc = makeStaticUrl(
     props.assetsBaseUrl ?? "https://leaflet.pub",
   )("leaflet.png");
+  const title = props.title ?? "Welcome to Leaflet!";
+  const message = props.message ?? "Verify your email with this code";
   return (
   <Html>
     <Tailwind config={confirmEmailTailwindConfig}>
@@ -42,12 +46,12 @@ export const LeafletConfirmEmail = (props: {
 
               <Column>
                 <Heading noPadding as="h2">
-                  Welcome to Leaflet!{" "}
+                  {title}{" "}
                 </Heading>
               </Column>
             </Row>
             <Text className="!mt-6 !mb-1 text-secondary">
-              Verify your email with this code
+              {message}
             </Text>
             <Container className="bg-border-light rounded-md w-fit px-2 py-1">
               <Heading noPadding as="h1">

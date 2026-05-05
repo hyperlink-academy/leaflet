@@ -23,7 +23,7 @@ import {
 } from "./Footnotes/PublishedFootnotes";
 import { PublishedFootnoteSideColumn } from "./Footnotes/PublishedFootnoteSideColumn";
 import { PublishedFootnotePopover } from "./Footnotes/PublishedFootnotePopover";
-import { PostPubInfo } from "./PostPubInfo";
+import { SubscribePanel } from "components/Subscribe/SubscribeButton";
 
 export function LinearDocumentPage({
   blocks,
@@ -107,12 +107,10 @@ export function LinearDocumentPage({
         />
         <div className={`spacer h-4 w-full`} />
         {document.publication?.uri && (
-          <PostPubInfo
+          <SubscribePanel
             publicationUri={document.publication.uri}
             publicationUrl={props.pubRecord?.url}
-            publicationName={
-              props.pubRecord?.name ?? document.publication.name
-            }
+            publicationName={props.pubRecord?.name ?? document.publication.name}
             publicationDescription={props.pubRecord?.description}
             newsletterMode={document.publication.newsletterMode}
           />

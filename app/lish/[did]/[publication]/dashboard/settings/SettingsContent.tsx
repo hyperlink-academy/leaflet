@@ -16,11 +16,7 @@ import { PostSettings } from "./PostSettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { ManageProSubscription, NewsletterSettings } from "./ProSettings";
-import {
-  useIsPro,
-  useCanSeePro,
-  useCanSeeNewsletterMode,
-} from "src/hooks/useEntitlement";
+import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
@@ -35,7 +31,6 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
   let { publication: pubData } = data || {};
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
-  let canSeeNewsletterMode = useCanSeeNewsletterMode();
   let record = useNormalizedPublicationRecord();
   let [loading, setLoading] = useState(false);
   let toast = useToaster();
@@ -204,7 +199,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
             <DashboardContainer section="Leaflet Pro" className="pb-4">
               <ManageProSubscription compact />
             </DashboardContainer>
-            {canSeeNewsletterMode && <NewsletterSettings />}
+            <NewsletterSettings />
           </>
         )}
         <div className="flex flex-col gap-1">
@@ -269,7 +264,7 @@ function SettingsFooter(props: { loading: boolean }) {
 export const DashboardContainer = (props: {
   children: React.ReactNode;
   className?: string;
-  section?: string;
+  section?: React.ReactNode;
 }) => {
   let cardBorderHidden = useCardBorderHidden();
   return (
@@ -278,7 +273,9 @@ export const DashboardContainer = (props: {
     >
       {props.section && (
         <>
-          <h3 className="font-bold text-primary">{props.section}</h3>
+          <h3 className="font-bold text-primary flex items-center gap-2">
+            {props.section}
+          </h3>
           <hr className="-mt-1 mb-2 border-border-light" />
         </>
       )}

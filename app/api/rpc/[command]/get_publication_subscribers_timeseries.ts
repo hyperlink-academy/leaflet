@@ -34,38 +34,56 @@ export const get_publication_subscribers_timeseries = makeRoute({
       return { error: "not_found" as const };
     }
 
-    let query = supabase
-      .from("publication_subscriptions")
-      .select("created_at")
+    // Fetch all atproto subscriptions and confirmed email subscriptions in
+    // parallel. We dedupe in memory (mirroring PublicationSubscribers.tsx) so
+    // we need the full sets — date filtering is applied after.
+    const { data: newsletterSettings } = await supabase
+      .from("publication_newsletter_settings")
+      .select("enabled")
       .eq("publication", publication_uri)
-      .order("created_at", { ascending: true });
+      .maybeSingle();
+    const newsletterEnabled = !!newsletterSettings?.enabled;
 
-    if (from) {
-      query = query.gte("created_at", from);
-    }
-    if (to) {
-      query = query.lte("created_at", to);
-    }
-
-    const { data: subscriptions } = await query;
-
-    // Bucket subscriptions by day and compute cumulative count
-    const dailyCounts: Record<string, number> = {};
-    for (const sub of subscriptions || []) {
-      const day = sub.created_at.slice(0, 10);
-      dailyCounts[day] = (dailyCounts[day] || 0) + 1;
-    }
-
-    let cumulative = 0;
-
-    // If we have a from filter, get the count of subscriptions before that date
-    if (from) {
-      const { count } = await supabase
+    const [{ data: atprotoSubs }, { data: emailSubs }] = await Promise.all([
+      supabase
         .from("publication_subscriptions")
-        .select("*", { count: "exact", head: true })
-        .eq("publication", publication_uri)
-        .lt("created_at", from);
-      cumulative = count || 0;
+        .select("created_at, identities(bsky_profiles(did))")
+        .eq("publication", publication_uri),
+      newsletterEnabled
+        ? supabase
+            .from("publication_email_subscribers")
+            .select("id, created_at, identities(atp_did)")
+            .eq("publication", publication_uri)
+            .eq("state", "confirmed")
+        : Promise.resolve({ data: [] as const }),
+    ]);
+
+    // Build dedup map keyed by DID (atproto identity) or email-sub id.
+    // Atproto sub's created_at wins when both channels exist for the same DID,
+    // matching the UI merge in PublicationSubscribers.tsx.
+    const subscribers = new Map<string, string>();
+    for (const s of atprotoSubs || []) {
+      const did = s.identities?.bsky_profiles?.did;
+      if (!did) continue;
+      subscribers.set(`did:${did}`, s.created_at);
+    }
+    for (const s of emailSubs || []) {
+      const linkedDid = s.identities?.atp_did ?? undefined;
+      if (linkedDid && subscribers.has(`did:${linkedDid}`)) continue;
+      subscribers.set(`email:${s.id}`, s.created_at);
+    }
+
+    // Bucket the deduped subscribers' creation dates.
+    const dailyCounts: Record<string, number> = {};
+    let cumulative = 0;
+    for (const createdAt of subscribers.values()) {
+      if (from && createdAt < from) {
+        cumulative += 1;
+        continue;
+      }
+      if (to && createdAt > to) continue;
+      const day = createdAt.slice(0, 10);
+      dailyCounts[day] = (dailyCounts[day] || 0) + 1;
     }
 
     // Build timeseries over the full date range, filling gaps with the

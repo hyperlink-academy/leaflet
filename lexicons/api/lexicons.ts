@@ -2602,6 +2602,33 @@ export const schemaDict = {
     id: 'site.standard.document',
     lexicon: 1,
   },
+  SiteStandardGraphRecommend: {
+    id: 'site.standard.graph.recommend',
+    defs: {
+      main: {
+        key: 'tid',
+        type: 'record',
+        record: {
+          type: 'object',
+          required: ['document', 'createdAt'],
+          properties: {
+            document: {
+              type: 'string',
+              format: 'at-uri',
+              description:
+                'AT-URI reference to the document record being recommended (ex: at://did:plc:abc123/site.standard.document/xyz789).',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+        description: 'Record declaring a recommendation of a document.',
+      },
+    },
+    lexicon: 1,
+  },
   SiteStandardGraphSubscription: {
     defs: {
       main: {
@@ -2856,6 +2883,7 @@ export const ids = {
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
   PubLeafletThemeColor: 'pub.leaflet.theme.color',
   SiteStandardDocument: 'site.standard.document',
+  SiteStandardGraphRecommend: 'site.standard.graph.recommend',
   SiteStandardGraphSubscription: 'site.standard.graph.subscription',
   SiteStandardPublication: 'site.standard.publication',
   SiteStandardThemeBasic: 'site.standard.theme.basic',

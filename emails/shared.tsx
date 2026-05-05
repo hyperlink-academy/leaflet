@@ -1,9 +1,4 @@
-import {
-  Head,
-  Img,
-  Link,
-  pixelBasedPreset,
-} from "@react-email/components";
+import { Head, Img, Link, pixelBasedPreset } from "@react-email/components";
 import React from "react";
 
 export type EmailTheme = {
@@ -18,6 +13,7 @@ export type EmailTheme = {
   // post at the same column width in their inbox as on the live page.
   // Default 624 mirrors `ThemeProvider.tsx`'s fallback.
   pageWidth: number;
+  showPageBackground: boolean;
 };
 
 export const defaultEmailTheme: EmailTheme = {
@@ -29,20 +25,15 @@ export const defaultEmailTheme: EmailTheme = {
   headingFont: "Georgia, serif",
   bodyFont: "Verdana, sans-serif",
   pageWidth: 624,
+  showPageBackground: true,
 };
 
 // Parse rgb()/rgba()/#hex into [r, g, b]. Returns black on parse failure —
 // theme colors come from a typed config so this is just defensive.
 const parseColor = (input: string): [number, number, number] => {
-  const rgbMatch = input.match(
-    /rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i,
-  );
+  const rgbMatch = input.match(/rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
   if (rgbMatch)
-    return [
-      Number(rgbMatch[1]),
-      Number(rgbMatch[2]),
-      Number(rgbMatch[3]),
-    ];
+    return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
   const hexMatch = input.match(/^#([0-9a-f]{6})$/i);
   if (hexMatch) {
     const h = hexMatch[1];
@@ -69,11 +60,7 @@ const parseColor = (input: string): [number, number, number] => {
 // leaving borders invisible and tinted text falling back to defaults.
 // Linear mixing isn't perceptually identical to the oklab original, but
 // for the near-grayscale tints we use it's visually indistinguishable.
-export const mixRgb = (
-  a: string,
-  b: string,
-  bPercent: number,
-): string => {
+export const mixRgb = (a: string, b: string, bPercent: number): string => {
   const [ar, ag, ab] = parseColor(a);
   const [br, bg, bb] = parseColor(b);
   const t = bPercent / 100;
@@ -91,13 +78,25 @@ export type ResolvedColors = {
   borderLight: string;
 };
 
-export const resolveColors = (theme: EmailTheme): ResolvedColors => ({
-  primary: theme.primary,
-  secondary: mixRgb(theme.primary, theme.pageBackground, 25),
-  tertiary: mixRgb(theme.primary, theme.pageBackground, 55),
-  border: mixRgb(theme.primary, theme.pageBackground, 75),
-  borderLight: mixRgb(theme.primary, theme.pageBackground, 85),
-});
+export const resolveColors = (theme: EmailTheme): ResolvedColors => {
+  // When the card background is hidden, the surface visible behind every
+  // block is the outer page bg, not the publication's pageBackground.
+  // Mix tints against that visible surface so block fills (e.g. the
+  // unsupported-block fallback) sit on a tone derived from what's
+  // actually behind them — mirroring `BaseThemeProvider`'s web behavior
+  // where `bgPage` collapses to `bgLeaflet` when showPageBackground is
+  // false.
+  const effectiveBg = theme.showPageBackground
+    ? theme.pageBackground
+    : theme.backgroundColor;
+  return {
+    primary: theme.primary,
+    secondary: mixRgb(theme.primary, effectiveBg, 25),
+    tertiary: mixRgb(theme.primary, effectiveBg, 55),
+    border: mixRgb(theme.primary, effectiveBg, 75),
+    borderLight: mixRgb(theme.primary, effectiveBg, 85),
+  };
+};
 
 // Postmark fetches `<img src>` and link `href` values verbatim from the
 // rendered HTML — relative paths break. Templates accept an `assetsBaseUrl`
@@ -179,16 +178,9 @@ export const confirmEmailTailwindConfig = {
 // makes every element render visually small). Templates can pass extra
 // children — usually a `<style>` block with template-specific @media
 // rules — and they'll be appended after the meta.
-export const MailHead = ({
-  children,
-}: {
-  children?: React.ReactNode;
-}) => (
+export const MailHead = ({ children }: { children?: React.ReactNode }) => (
   <Head>
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {children}
   </Head>
 );
@@ -259,4 +251,3 @@ export const LeafletWatermark = ({
     </table>
   );
 };
-

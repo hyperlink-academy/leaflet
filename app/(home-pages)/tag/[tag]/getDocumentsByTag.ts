@@ -45,6 +45,11 @@ export async function getDocumentsByTag(
         return null;
       }
 
+      // Skip if document has no sort_date
+      if (!doc.sort_date) {
+        return null;
+      }
+
       // Normalize the document data - skip unrecognized formats
       const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
       if (!normalizedData) {

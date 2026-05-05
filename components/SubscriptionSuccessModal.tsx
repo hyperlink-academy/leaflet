@@ -62,7 +62,10 @@ export function SubscriptionSuccessModal() {
             We're looking forward to bringing you even cooler stuff in the near
             future!
           </p>
-          <ButtonPrimary className="mx-auto mb-2">
+          <ButtonPrimary
+            className="mx-auto mb-2"
+            onClick={() => handleOpenChange(false)}
+          >
             Got it, Thanks!
           </ButtonPrimary>
         </div>

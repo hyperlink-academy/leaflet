@@ -45,8 +45,10 @@ export const send_post_broadcast = inngest.createFunction(
   async ({ event, step }) => {
     const { publication_uri, document_uri } = event.data;
 
+    const authorDid = new AtUri(document_uri).host;
+
     const loaded = await step.run("load-pub-and-doc", async () => {
-      const [pubRes, docRes] = await Promise.all([
+      const [pubRes, docRes, profileRes] = await Promise.all([
         supabaseServerClient
           .from("publications")
           .select(
@@ -59,8 +61,17 @@ export const send_post_broadcast = inngest.createFunction(
           .select("data")
           .eq("uri", document_uri)
           .maybeSingle(),
+        supabaseServerClient
+          .from("bsky_profiles")
+          .select("handle")
+          .eq("did", authorDid)
+          .maybeSingle(),
       ]);
-      return { pub: pubRes.data, doc: docRes.data };
+      return {
+        pub: pubRes.data,
+        doc: docRes.data,
+        profile: profileRes.data,
+      };
     });
 
     const settings = loaded.pub?.publication_newsletter_settings;
@@ -108,7 +119,15 @@ export const send_post_broadcast = inngest.createFunction(
     }
     const fromHeader = buildFromHeader(pubRecord?.name, fromDomain);
     const replyToEmail = resolveReplyToEmail(settings);
-    const did = new AtUri(document_uri).host;
+    const did = authorDid;
+    const authorName = loaded.profile?.handle ?? undefined;
+    const publishedAtLabel = docRecord?.publishedAt
+      ? new Date(docRecord.publishedAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : undefined;
 
     // The first page is the document body. Canvas pages don't map to a linear
     // email body — the email renders an empty postContent section and falls
@@ -160,6 +179,8 @@ export const send_post_broadcast = inngest.createFunction(
           postTitle,
           postDescription,
           postUrl,
+          authorName,
+          publishedAtLabel,
           blocks,
           did,
           assetsBaseUrl: `${assetsBaseUrl}/`,

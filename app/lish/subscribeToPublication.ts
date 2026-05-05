@@ -192,6 +192,28 @@ export async function publishAtprotoSubscriptionForDid(
   }
 }
 
+// Publishes atproto subscription records for every confirmed email
+// subscription tied to `identityId`. Call after an identity gains an atp_did
+// (account-linking, merge) so existing email-only subscriptions also live as
+// records on the user's PDS — otherwise they'd be invisible to atproto-side
+// consumers and would silently drop if a publication ever leaves email-only
+// mode. Best-effort: errors are swallowed by publishAtprotoSubscriptionForDid.
+export async function backfillAtprotoSubscriptionsForIdentity(
+  identityId: string,
+  atp_did: string,
+): Promise<void> {
+  const { data: subs } = await supabaseServerClient
+    .from("publication_email_subscribers")
+    .select("publication")
+    .eq("identity_id", identityId)
+    .eq("state", "confirmed");
+  if (!subs || subs.length === 0) return;
+
+  await Promise.all(
+    subs.map((s) => publishAtprotoSubscriptionForDid(atp_did, s.publication)),
+  );
+}
+
 type UnsubscribeResult =
   | { success: true }
   | { success: false; error: OAuthSessionError };
