@@ -211,7 +211,14 @@ export const LoginContent = (props: {
               onChange={setLoginEmail}
               loading={loading}
               action={
-                <button type="submit">
+                <button
+                  type="submit"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleEmailSubmit();
+                  }}
+                >
                   <GoToArrow className="h-fit" />
                 </button>
               }
