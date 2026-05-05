@@ -1,4 +1,5 @@
 import { inngest, events } from "../client";
+import { TID } from "@atproto/common";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { publishToPublicationWithSession } from "actions/publishToPublication";
 import { publishPostToBskyWithSession } from "app/[leaflet_id]/publish/publishBskyPost";
@@ -49,7 +50,22 @@ async function loadSchedule(
 }
 
 export const scheduled_publish = inngest.createFunction(
-  { id: "scheduled-publish", triggers: [events.postScheduledPublish] },
+  {
+    id: "scheduled-publish",
+    concurrency: [{ key: "event.data.leaflet_id", limit: 1 }],
+    onFailure: async ({ event }) => {
+      // Exhausted step retries — clear the schedule columns so the row
+      // doesn't sit with stale scheduled_publish_data forever and the UI
+      // stops advertising the post as scheduled. The error itself surfaces
+      // in the Inngest dashboard.
+      const { leaflet_id, publication_uri } = event.data.event.data;
+      await updateScheduleColumns(leaflet_id, publication_uri, {
+        scheduled_publish_at: null,
+        scheduled_publish_data: null,
+      });
+    },
+    triggers: [events.postScheduledPublish],
+  },
   async ({ event, step }) => {
     const { leaflet_id, publication_uri } = event.data;
 
@@ -107,6 +123,13 @@ export const scheduled_publish = inngest.createFunction(
     });
 
     if (data.shareState.bluesky) {
+      // Mint the bsky post rkey in its own memoized step so retries of the
+      // post-to-bsky step (e.g. transient putRecord/supabase failure after the
+      // post is already created) reuse the same rkey instead of creating a
+      // second public Bluesky post.
+      const bskyPostRkey = await step.run("bsky-post-rkey", () =>
+        TID.nextStr(),
+      );
       await step.run("post-to-bsky", async () => {
         const sessionResult = await restoreOAuthSession(data.did);
         if (!sessionResult.ok) {
@@ -128,6 +151,7 @@ export const scheduled_publish = inngest.createFunction(
           url: post_url,
           document_record: publishResult.record,
           rkey: publishResult.rkey,
+          bskyPostRkey,
         });
         if (!bskyResult.success) {
           throw new Error(

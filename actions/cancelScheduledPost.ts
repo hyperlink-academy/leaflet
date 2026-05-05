@@ -29,6 +29,14 @@ export async function cancelScheduledPost(args: {
     if (!pub || pub.identity_did !== identity.atp_did) {
       return Err({ type: "not_found" });
     }
+  } else {
+    const { data: ownership } = await supabaseServerClient
+      .from("permission_token_on_homepage")
+      .select("token")
+      .eq("token", args.leaflet_id)
+      .eq("identity", identity.id)
+      .maybeSingle();
+    if (!ownership) return Err({ type: "not_found" });
   }
 
   const { found } = await updateScheduleColumns(

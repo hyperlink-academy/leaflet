@@ -27,6 +27,9 @@ type PublishBskyArgs = {
   document_record: SiteStandardDocument.Record;
   rkey: string;
   facets: AppBskyRichtextFacet.Main[];
+  // Optional override for the bsky post rkey. Callers running inside an Inngest
+  // step.run should supply a memoized rkey so retries don't duplicate posts.
+  bskyPostRkey?: string;
 };
 
 export async function publishPostToBskyWithSession(
@@ -79,7 +82,7 @@ export async function publishPostToBskyWithSession(
   let post = await bsky.app.bsky.feed.post.create(
     {
       repo: credentialSession.did!,
-      rkey: TID.nextStr(),
+      rkey: args.bskyPostRkey ?? TID.nextStr(),
     },
     {
       text: args.text,

@@ -552,13 +552,16 @@ const DateOptions = (props: {
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
   });
 
-  const clampToNow = (date: Date): { date: Date; time: string } => {
+  const clampToNow = (
+    date: Date,
+    time: string,
+  ): { date: Date; time: string } => {
     const now = new Date();
     if (!props.canSchedule && date > now) {
-      const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-      return { date: now, time };
+      const clampedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+      return { date: now, time: clampedTime };
     }
-    return { date, time: timeValue };
+    return { date, time };
   };
 
   const handleTimeChange = (time: string) => {
@@ -567,7 +570,7 @@ const DateOptions = (props: {
 
     const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
     const newDate = setHours(setMinutes(props.publishedAt, minutes), hours);
-    const clamped = clampToNow(newDate);
+    const clamped = clampToNow(newDate, time);
     setTimeValue(clamped.time);
     props.setPublishedAt(clamped.date);
   };
@@ -587,7 +590,7 @@ const DateOptions = (props: {
       hours,
       minutes,
     );
-    const clamped = clampToNow(newDate);
+    const clamped = clampToNow(newDate, timeValue);
     setTimeValue(clamped.time);
     props.setPublishedAt(clamped.date);
   };

@@ -364,7 +364,9 @@ export async function publishToPublicationWithSession({
   });
 
   if (publication_uri) {
-    // Publishing to a publication - update both tables
+    // Publishing to a publication - update both tables.
+    // Always clear scheduled_publish_* so a manual publish (or backdate) of a
+    // previously-scheduled post cancels the pending inngest run on wake-up.
     await Promise.all([
       supabaseServerClient.from("documents_in_publications").upsert({
         publication: publication_uri,
@@ -378,6 +380,8 @@ export async function publishToPublicationWithSession({
         description: description,
         tags: resolvedTags ?? [],
         cover_image: cover_image ?? null,
+        scheduled_publish_at: null,
+        scheduled_publish_data: null,
       }),
     ]);
   } else {
@@ -389,6 +393,8 @@ export async function publishToPublicationWithSession({
       description: description || "",
       tags: resolvedTags ?? [],
       cover_image: cover_image ?? null,
+      scheduled_publish_at: null,
+      scheduled_publish_data: null,
     });
 
     // Heuristic: Remove title entities if this is the first time publishing standalone

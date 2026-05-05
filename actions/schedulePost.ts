@@ -80,6 +80,14 @@ export async function schedulePost(args: {
     if (!pub || pub.identity_did !== identity.atp_did) {
       return Err({ type: "not_found" });
     }
+  } else {
+    const { data: ownership } = await supabaseServerClient
+      .from("permission_token_on_homepage")
+      .select("token")
+      .eq("token", args.leaflet_id)
+      .eq("identity", identity.id)
+      .maybeSingle();
+    if (!ownership) return Err({ type: "not_found" });
   }
 
   const { found } = await updateScheduleColumns(
@@ -91,6 +99,9 @@ export async function schedulePost(args: {
 
   try {
     await inngest.send({
+      // Dedupe duplicate dispatches for the same (leaflet, target time) — e.g.
+      // double-clicks or re-saving an Edit-schedule with the same value.
+      id: `scheduled-publish:${args.leaflet_id}:${scheduledAt.toISOString()}`,
       name: "post/scheduled-publish",
       data: {
         leaflet_id: args.leaflet_id,
