@@ -24,6 +24,7 @@ import {
 } from "app/lish/subscribeToPublication";
 import type { OAuthSessionError } from "src/atproto-oauth";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 
 type RequestError =
   | "invalid_email"
@@ -367,6 +368,7 @@ async function linkEmailToCurrentIdentity(
       console.error("[subscribeEmail] attach email failed:", error);
       return Err("database_error");
     }
+    await linkOrphanedEmailSubscribers(current.id, email);
     await backfillAtprotoSubscriptionsForIdentity(current.id, current.atp_did);
     return Ok(current.id);
   }
@@ -397,6 +399,10 @@ async function ensureAuthTokenForEmail(email: string): Promise<string | null> {
     console.error("[subscribeEmail] identity upsert failed:", identityError);
     return null;
   }
+
+  // Cover any sibling subscriber rows (e.g. CSV-imported entries on other
+  // publications) so this confirmation also adopts them under the new identity.
+  await linkOrphanedEmailSubscribers(identity.id, email);
 
   const { data: token, error: tokenError } = await supabaseServerClient
     .from("email_auth_tokens")

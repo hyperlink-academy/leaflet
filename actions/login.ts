@@ -11,6 +11,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
+import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 
 export async function loginWithEmailToken(
   localLeaflets: { token: { id: string }; added_at: string }[],
@@ -51,6 +52,7 @@ export async function loginWithEmailToken(
       .where(eq(identities.email, token.email));
 
     let identity = existingIdentity;
+    let newlyOwnedEmail = false;
     if (!existingIdentity) {
       let identityCookie = (await cookies()).get("identity");
       if (identityCookie) {
@@ -69,6 +71,7 @@ export async function loginWithEmailToken(
             .set({ email: token.email })
             .where(eq(identities.id, existingIdentityFromCookie.id));
           identity = existingIdentityFromCookie;
+          newlyOwnedEmail = true;
         }
       } else {
         const { data: newIdentity } = await supabaseServerClient
@@ -77,7 +80,12 @@ export async function loginWithEmailToken(
           .select()
           .single();
         identity = newIdentity!;
+        newlyOwnedEmail = true;
       }
+    }
+
+    if (newlyOwnedEmail && identity) {
+      await linkOrphanedEmailSubscribers(identity.id, token.email);
     }
 
     await tx
