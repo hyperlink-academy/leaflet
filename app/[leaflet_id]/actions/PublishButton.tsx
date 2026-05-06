@@ -53,9 +53,9 @@ export const PublishButton = (props: { entityID: string }) => {
       <ActionButton
         primary
         labelOnMobile
-        className="w-fit!"
+        className="sm:w-full! w-fit!"
         icon={<PublishSmall className="shrink-0" />}
-        label={"Publish!"}
+        label={"Publish!!!"}
         onClick={() => {
           router.push(`/${params.leaflet_id}/publish`);
         }}
@@ -196,10 +196,10 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
       trigger={
         <ActionButton
           primary
-          className="w-fit!"
+          className="sm:w-full! w-fit!"
           labelOnMobile
           icon={<PublishSmall className="shrink-0" />}
-          label={"Publish"}
+          label={"Publish!"}
         />
       }
     >

@@ -72,17 +72,18 @@ export const NavigationContent = (props: NavigationProps) => {
     <>
       {props.pageTitle}
 
-      <hr className="border-border-light mb-2" />
-
       {props.actions && (
         <>
+          <hr className="border-border-light mb-2" />
+
           <div className="flex flex-col gap-1">{props.actions}</div>
-          <hr className="border-border-light my-2" />
         </>
       )}
 
       {props.tabs && (
         <>
+          <hr className="border-border-light my-2" />
+
           {Object.entries(props.tabs).map(([name, { href, icon }]) => (
             <SpeedyLink key={name} href={href} className="hover:no-underline!">
               <ActionButton

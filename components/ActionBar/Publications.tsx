@@ -19,6 +19,8 @@ import { useIsInitialRender, useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LoginModal } from "components/LoginButton";
+import useSWR from "swr";
+import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
 
 export const PublicationButtons = (props: { className?: string }) => {
   let { identity } = useIdentityData();
@@ -27,51 +29,74 @@ export const PublicationButtons = (props: { className?: string }) => {
       f.permission_tokens.leaflets_to_documents &&
       f.permission_tokens.leaflets_to_documents[0]?.document,
   );
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
+    fallbackData: [],
+  });
+  let hasDocs = identity
+    ? identity.permission_token_on_homepage.length > 0
+    : localLeaflets.filter((d) => !d.hidden).length > 0;
 
-  // don't show pub list button if not logged in or no pub list
+  // don't show pub list button if
+  // no pubs or looseleafs but has docs
+  // if they don't have docs, the empty state of the homepage prompts them to make publications
   // we show a "start a pub" banner instead
+  console.log(hasDocs);
   if (
-    !identity ||
-    !identity.atp_did ||
-    (!hasLooseleafs && identity.publications.length === 0)
+    !hasLooseleafs &&
+    hasDocs &&
+    (!identity || identity.publications.length === 0)
   )
-    return <PubListEmpty />;
+    return <PubListEmptyContent />;
+
+  if (
+    !hasLooseleafs &&
+    !hasDocs &&
+    (!identity || identity.publications.length === 0)
+  )
+    return null;
 
   return (
-    <div
-      className={`pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0 ${props.className}`}
-    >
-      <div className="text-tertiary uppercase text-sm px-1">PUBLICATIONS</div>
-      {hasLooseleafs && (
-        <>
-          <SpeedyLink href={`/looseleafs`} className={` hover:no-underline!  `}>
-            {/*TODO How should i get if this is the current page or not?
-              theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
-            <ActionButton
-              labelOnMobile
-              label="Looseleafs"
-              icon={<LooseLeafSmall />}
-            />
-          </SpeedyLink>
-          <hr className="border-border-light border-dashed my-1" />
-        </>
-      )}
+    <>
+      <hr className="border-border-light my-2" />
 
-      {identity.publications?.map((d) => {
-        return <PublicationOption {...d} key={d.uri} record={d.record} />;
-      })}
-      <SpeedyLink
-        href={"/lish/createPub"}
-        className={`pubListCreateNew  no-underline!`}
+      <div
+        className={`pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0 ${props.className}`}
       >
-        <ActionButton
-          labelOnMobile
-          icon=<div className="group-hover/new-pub:border-accent-contrast m-0.5 w-5 h-5 border-border border-2 border-dashed rounded-full" />
-          label="New Publication"
-          className="text-tertiary!"
-        />
-      </SpeedyLink>
-    </div>
+        <div className="text-tertiary uppercase text-sm px-1">PUBLICATIONS</div>
+        {hasLooseleafs && (
+          <>
+            <SpeedyLink
+              href={`/looseleafs`}
+              className={` hover:no-underline!  `}
+            >
+              {/*TODO How should i get if this is the current page or not?
+              theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
+              <ActionButton
+                labelOnMobile
+                label="Looseleafs"
+                icon={<LooseLeafSmall />}
+              />
+            </SpeedyLink>
+            <hr className="border-border-light border-dashed my-1" />
+          </>
+        )}
+
+        {identity?.publications?.map((d) => {
+          return <PublicationOption {...d} key={d.uri} record={d.record} />;
+        })}
+        <SpeedyLink
+          href={"/lish/createPub"}
+          className={`pubListCreateNew  no-underline!`}
+        >
+          <ActionButton
+            labelOnMobile
+            icon=<div className="group-hover/new-pub:border-accent-contrast m-0.5 w-5 h-5 border-border border-2 border-dashed rounded-full" />
+            label="New Publication"
+            className="text-tertiary!"
+          />
+        </SpeedyLink>
+      </div>
+    </>
   );
 };
 
@@ -99,57 +124,12 @@ export const PublicationOption = (props: {
   );
 };
 
-const PubListEmpty = () => {
-  let initialRender = useIsInitialRender();
-  let mobile = useIsMobile();
-  let isMobile = !initialRender && mobile;
-
-  let [state, setState] = useState<"default" | "info">("default");
-  if (isMobile && state == "default")
-    return (
-      <ActionButton
-        label="Publish"
-        className="w-full!"
-        secondary
-        icon={<PublishSmall />}
-        subtext="Start a blog on ATProto!"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setState("info");
-        }}
-      />
-    );
-
-  if (isMobile && state === "info") return <PubListEmptyContent />;
-  else
-    return (
-      <Popover
-        side="right"
-        align="start"
-        className="p-1! max-w-full sm:max-w-xs w-[1000px] "
-        asChild
-        trigger={
-          <ActionButton
-            className="w-full!"
-            secondary
-            label="Publish"
-            icon={<PublishSmall />}
-            subtext="Start a blog on ATProto!"
-          />
-        }
-      >
-        <PubListEmptyContent />
-      </Popover>
-    );
-};
-
 export const PubListEmptyContent = (props: { compact?: boolean }) => {
   let { identity } = useIdentityData();
 
   return (
     <div
-      className={`accent-container w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4`}
+      className={`accent-container w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 mt-2`}
     >
       <div className="mx-auto pt-2 scale-90">
         <PubListEmptyIllo />
