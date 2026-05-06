@@ -106,7 +106,18 @@ export function NotificationButton() {
           <NotificationsReadSmall />
         )
       }
-      label="Notifications"
+      label={
+        unreads ? (
+          <span className="flex items-center justify-between gap-1.5">
+            Notifications
+            <span className="min-w-6 h-fit px-1 py-0.5 rounded-full bg-accent-1 text-accent-2 text-sm leading-none font-bold flex items-center justify-center max-w-full truncate">
+              {unreads}
+            </span>
+          </span>
+        ) : (
+          "Notifications"
+        )
+      }
       active={active}
       className={unreads ? "text-accent-contrast! font-bold" : ""}
     />

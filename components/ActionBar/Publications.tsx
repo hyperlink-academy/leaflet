@@ -57,10 +57,11 @@ export const PublicationButtons = (props: { className?: string }) => {
 
   return (
     <>
-      <hr className="border-border-light my-2" />
+      <hr className="border-border-light mt-2" />
 
       <div
-        className={`pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0 ${props.className}`}
+        className={`pubListWrapper w-full flex flex-col gap-1 -mt-1 sm:bg-transparent grow overflow-y-auto min-h-0 py-2
+          ${props.className}`}
       >
         <div className="text-tertiary uppercase text-sm px-1">PUBLICATIONS</div>
         {hasLooseleafs && (
@@ -80,10 +81,10 @@ export const PublicationButtons = (props: { className?: string }) => {
             <hr className="border-border-light border-dashed my-1" />
           </>
         )}
-
         {identity?.publications?.map((d) => {
           return <PublicationOption {...d} key={d.uri} record={d.record} />;
         })}
+
         <SpeedyLink
           href={"/lish/createPub"}
           className={`pubListCreateNew  no-underline!`}

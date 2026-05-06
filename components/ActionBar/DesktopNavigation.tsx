@@ -99,7 +99,6 @@ export const NavigationContent = (props: NavigationProps) => {
 
       {onWriterPage && <PublicationButtons />}
 
-      <div className="flex-1" />
       <WriterButton />
       <ReaderButton
         subs={
