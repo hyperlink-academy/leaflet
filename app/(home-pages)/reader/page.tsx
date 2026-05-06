@@ -5,6 +5,7 @@ import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout"
 import { getReaderFeed } from "./getReaderFeed";
 import { InboxContent } from "./InboxContent";
 import { FeedSkeleton } from "./FeedSkeleton";
+import { FeedLayout } from "./FeedLayout";
 
 export default async function ReaderPage(props: {
   searchParams: Promise<{ tab?: string }>;
@@ -22,7 +23,9 @@ export default async function ReaderPage(props: {
       showHeader={false}
     >
       <Suspense fallback={<FeedSkeleton />}>
-        <InboxContent promise={getReaderFeed()} />
+        <FeedLayout>
+          <InboxContent promise={getReaderFeed()} />
+        </FeedLayout>
       </Suspense>
     </DashboardPageLayout>
   );

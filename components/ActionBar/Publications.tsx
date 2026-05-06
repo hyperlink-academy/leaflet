@@ -12,11 +12,7 @@ import {
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { SpeedyLink } from "components/SpeedyLink";
-import { PublishSmall } from "components/Icons/PublishSmall";
-import { Popover } from "components/Popover";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
-import { useIsInitialRender, useIsMobile } from "src/hooks/isMobile";
-import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LoginModal } from "components/LoginButton";
 import useSWR from "swr";

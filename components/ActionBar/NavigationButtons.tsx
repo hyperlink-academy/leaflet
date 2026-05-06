@@ -99,6 +99,7 @@ export function NotificationButton() {
       type="button"
       onClick={handleClick}
       labelOnMobile={false}
+      className="w-full!"
       icon={
         unreads ? (
           <NotificationsUnreadSmall className="text-accent-contrast" />
@@ -119,7 +120,7 @@ export function NotificationButton() {
         )
       }
       active={active}
-      className={unreads ? "text-accent-contrast! font-bold" : ""}
+      className={unreads ? "text-accent-contrast! font-bold w-full!" : "w-full"}
     />
   );
 }

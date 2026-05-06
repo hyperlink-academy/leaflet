@@ -8,13 +8,10 @@ import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PostListing } from "components/PostListing";
-import {
-  DesktopInteractionPreviewDrawer,
-  MobileInteractionPreviewDrawer,
-} from "./InteractionDrawers";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { useIdentityData } from "components/IdentityProvider";
 import { LoginContent } from "components/LoginButton";
+import { EmptyState } from "components/EmptyState";
 
 export const InboxContent = (props: {
   promise: Promise<{ posts: Post[]; nextCursor: Cursor | null }>;
@@ -82,55 +79,47 @@ export const InboxContent = (props: {
 
   if (!identityData) {
     return (
-      <div className="mx-auto w-fit h-full flex pt-2 sm:pt-0 place-items-start sm:place-items-center">
-        <div className="flex flex-col gap-4 h-fit justify-center text-center">
-          <h3>Log in or sign up to see your subscriptions!</h3>
-          <LoginContent className="w-full! sm:min-w-xs" />
-        </div>
-      </div>
+      <EmptyState container="frosted" title="Log in or sign up">
+        <LoginContent className="w-full! sm:min-w-xs" />
+      </EmptyState>
     );
   }
 
   if (allPosts.length === 0) return <ReaderEmpty />;
 
   return (
-    <div className="inboxReader flex flex-row gap-6 w-full ">
-      <div className="inboxPostListings flex flex-col gap-6 min-w-0 grow w-full relative">
-        {sortedPosts.map((p) => (
-          <PostListing
-            {...p}
-            key={p.documents.uri}
-            selected={selectedPost?.document_uri === p.documents.uri}
-          />
-        ))}
-        {/* Trigger element for loading more posts */}
-        <div
-          ref={loadMoreRef}
-          className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
-          aria-hidden="true"
+    <>
+      {sortedPosts.map((p) => (
+        <PostListing
+          {...p}
+          key={p.documents.uri}
+          selected={selectedPost?.document_uri === p.documents.uri}
         />
-        {isValidating && allPosts.length > 0 && (
-          <div className="text-center text-tertiary py-4">
-            Loading more posts...
-          </div>
-        )}
-      </div>
-      <DesktopInteractionPreviewDrawer />
-      <MobileInteractionPreviewDrawer />
-    </div>
+      ))}
+      {/* Trigger element for loading more posts */}
+      <div
+        ref={loadMoreRef}
+        className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
+        aria-hidden="true"
+      />
+      {isValidating && allPosts.length > 0 && (
+        <div className="text-center text-tertiary py-4">
+          Loading more posts...
+        </div>
+      )}
+    </>
   );
 };
 
 export const ReaderEmpty = () => {
   return (
-    <div className="flex flex-col gap-2 frosted-container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
-      Nothing to read yet… <br />
-      Subscribe to publications and find their posts here!
+    <EmptyState container="frosted" title="Nothing to read yet…">
+      Subscribe to publications and find their latest posts here!
       <Link href={"/reader/trending"}>
         <ButtonPrimary className="mx-auto place-self-center">
           <DiscoverSmall /> See what posts people are reading!
         </ButtonPrimary>
       </Link>
-    </div>
+    </EmptyState>
   );
 };

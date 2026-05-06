@@ -3,6 +3,7 @@ import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout"
 import { getNewFeed } from "../getNewFeed";
 import { NewContent } from "../NewContent";
 import { FeedSkeleton } from "../FeedSkeleton";
+import { FeedLayout } from "../FeedLayout";
 
 export default function NewPage() {
   return (
@@ -12,7 +13,9 @@ export default function NewPage() {
       showHeader={false}
     >
       <Suspense fallback={<FeedSkeleton />}>
-        <NewContent promise={getNewFeed()} />
+        <FeedLayout>
+          <NewContent promise={getNewFeed()} />
+        </FeedLayout>
       </Suspense>
     </DashboardPageLayout>
   );
