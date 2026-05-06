@@ -18,6 +18,7 @@ const PAGE_META = [
     prefix: "/looseleafs",
     id: "looseleafs",
     title: "Looseleafs",
+    showBackButton: true,
   },
   {
     prefix: "/notifications",
@@ -33,7 +34,14 @@ export function WriterShell(props: { children: React.ReactNode }) {
   return (
     <DashboardShell
       id={meta?.id ?? ""}
-      pageTitle={meta && <PageTitle pageTitle={meta.title} />}
+      pageTitle={
+        meta && (
+          <PageTitle
+            pageTitle={meta.title}
+            showBackButton={meta.showBackButton}
+          />
+        )
+      }
       actions={<Actions />}
     >
       {props.children}

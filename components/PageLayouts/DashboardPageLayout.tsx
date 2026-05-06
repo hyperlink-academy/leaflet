@@ -1,5 +1,5 @@
 "use client";
-import { PageHeader } from "../PageHeader";
+import { PageHeader } from "components/PageHeader";
 import { MobileNavigation } from "../ActionBar/MobileNavigation";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 
@@ -21,9 +21,9 @@ export function DashboardPageLayout(props: {
       id="home-content"
     >
       <MobileNavigation
-        search={props.search}
-        mobileActions={props.mobileActions}
         pageTitle={props.pageTitle}
+        mobileActions={props.mobileActions}
+        search={props.search}
       />
 
       {props.showHeader && (

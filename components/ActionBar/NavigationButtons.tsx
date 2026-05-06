@@ -77,6 +77,7 @@ export const ReaderButton = (props: { subs: boolean }) => {
 export function NotificationButton() {
   let { identity } = useIdentityData();
   let unreads = identity?.notifications[0]?.count;
+
   let pathname = usePathname();
   let searchParams = useSearchParams();
   let router = useRouter();
@@ -94,24 +95,20 @@ export function NotificationButton() {
   }
 
   return (
-    <button
+    <ActionButton
       type="button"
       onClick={handleClick}
-      className="hover:no-underline!"
-    >
-      <ActionButton
-        labelOnMobile={false}
-        icon={
-          unreads ? (
-            <NotificationsUnreadSmall className="text-accent-contrast" />
-          ) : (
-            <NotificationsReadSmall />
-          )
-        }
-        label="Notifications"
-        active={active}
-        className={unreads ? "text-accent-contrast!" : ""}
-      />
-    </button>
+      labelOnMobile={false}
+      icon={
+        unreads ? (
+          <NotificationsUnreadSmall className="text-accent-contrast" />
+        ) : (
+          <NotificationsReadSmall />
+        )
+      }
+      label="Notifications"
+      active={active}
+      className={unreads ? "text-accent-contrast! font-bold" : ""}
+    />
   );
 }

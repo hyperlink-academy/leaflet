@@ -10,6 +10,7 @@ export default async function ReaderLayout(props: {
   const tabs: { [name: string]: { href: string } } = {};
   if (identity?.atp_did) tabs.Inbox = { href: "/reader" };
   tabs.Trending = { href: "/reader/trending" };
+  tabs.New = { href: "/reader/new" };
 
   return (
     <DashboardShell

@@ -89,6 +89,7 @@ export default async function ProfilePageLayout(props: {
       tabs={{
         Inbox: { href: "/reader" },
         Trending: { href: "/reader/trending" },
+        New: { href: "/reader/new" },
       }}
     >
       <DashboardPageLayout

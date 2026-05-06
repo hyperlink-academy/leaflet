@@ -15,6 +15,7 @@ export default async function TagLayout(props: {
       tabs={{
         Inbox: { href: "/reader" },
         Trending: { href: "/reader/trending" },
+        New: { href: "/reader/new" },
       }}
     >
       {props.children}

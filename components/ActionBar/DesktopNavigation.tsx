@@ -25,22 +25,34 @@ type NavigationProps = {
   tabs?: { [name: string]: { href: string; icon?: React.ReactNode } };
 };
 
+function safeDecode(p: string): string {
+  try {
+    return decodeURIComponent(p);
+  } catch {
+    return p;
+  }
+}
+
 function pickActiveTabHref(
   pathname: string,
   tabs: { [name: string]: { href: string } },
 ): string | null {
+  const decodedPathname = safeDecode(pathname);
   const hrefs = Object.values(tabs).map((t) => t.href);
   let best: string | null = null;
   for (const href of hrefs) {
+    const decodedHref = safeDecode(href);
     // If this href is a strict prefix of another tab's href, only allow exact
     // match — otherwise a parent tab would always swallow sibling-but-unmatched
     // paths (e.g. /reader/new highlighting /reader's Inbox tab).
     const isPrefixOfAnother = hrefs.some(
-      (other) => other !== href && other.startsWith(href + "/"),
+      (other) =>
+        other !== href && safeDecode(other).startsWith(decodedHref + "/"),
     );
     const matches = isPrefixOfAnother
-      ? pathname === href
-      : pathname === href || pathname.startsWith(href + "/");
+      ? decodedPathname === decodedHref
+      : decodedPathname === decodedHref ||
+        decodedPathname.startsWith(decodedHref + "/");
     if (matches) {
       if (!best || href.length > best.length) best = href;
     }
