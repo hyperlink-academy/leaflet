@@ -71,7 +71,7 @@ export const MobileNavigation = (props: {
   return (
     <MediaContents
       mobile={true}
-      className={`mobilePageHeader z-20 fixed left-0 bottom-6 right-0 transition-transform duration-200 ${hidden ? "translate-y-[120px]" : ""}`}
+      className={`mobilePageHeader  pwa-padding-x z-20 fixed left-0 bottom-6 right-0 transition-transform duration-200 ${hidden ? "translate-y-[120px]" : ""}`}
       style={{ bottom: "var(--safe-padding-bottom)" }}
     >
       <div
@@ -85,7 +85,7 @@ export const MobileNavigation = (props: {
         }
       >
         <div
-          className={`mobilePageHeaderContent pwa-padding-x rounded-lg  text-secondary flex gap-2 border justify-between items-center py-1 w-full ${cardBorderHidden && atBottom ? "border-transparent " : " border-border-light"}`}
+          className={`mobilePageHeaderContent rounded-lg  text-secondary flex gap-2 border justify-between items-center py-1 w-full ${cardBorderHidden && atBottom ? "border-transparent " : " border-border-light"}`}
           style={
             atBottom
               ? {
