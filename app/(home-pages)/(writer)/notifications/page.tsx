@@ -1,25 +1,19 @@
 import { getIdentityData } from "actions/getIdentityData";
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { redirect } from "next/navigation";
 import { hydrateNotifications } from "src/notifications";
 import { supabaseServerClient } from "supabase/serverClient";
-import { CommentNotification } from "./CommentNotication";
 import { NotificationList } from "./NotificationList";
 
-export default async function Notifications() {
+export default async function NotificationsPage() {
   return (
-    <DashboardLayout
-      id="discover"
-      currentPage="notifications"
-      defaultTab="default"
-      actions={null}
-      tabs={{
-        default: {
-          controls: null,
-          content: <NotificationContent />,
-        },
-      }}
-    />
+    <DashboardPageLayout
+      pageTitle="Notifications"
+      scrollKey="dashboard-discover-default"
+      showHeader={false}
+    >
+      <NotificationContent />
+    </DashboardPageLayout>
   );
 }
 

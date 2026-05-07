@@ -2,7 +2,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
 import { supabaseServerClient } from "supabase/serverClient";
 
-import { HomeLayout } from "./HomeLayout";
+import { HomeContent } from "./HomeLayout";
 
 export default async function Home() {
   let auth_res = await getIdentityData();
@@ -23,7 +23,7 @@ export default async function Home() {
   let home_docs_initialFacts = allLeafletFacts?.result || {};
 
   return (
-    <HomeLayout
+    <HomeContent
       titles={{
         ...home_docs_initialFacts.titles,
         ...auth_res?.permission_token_on_homepage.reduce(

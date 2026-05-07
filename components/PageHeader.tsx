@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useCardBorderHidden } from "./Pages/useCardBorderHidden";
+import { MediaContents } from "./Media";
 
-export const Header = (props: { children: React.ReactNode }) => {
+export const PageHeader = (props: { children: React.ReactNode }) => {
   let cardBorderHidden = useCardBorderHidden();
   let [scrollPos, setScrollPos] = useState(0);
 
@@ -24,7 +25,8 @@ export const Header = (props: { children: React.ReactNode }) => {
   let headerBGColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
 
   return (
-    <div
+    <MediaContents
+      mobile={false}
       className={`
       headerWrapper
       sticky top-0 z-20
@@ -71,6 +73,6 @@ export const Header = (props: { children: React.ReactNode }) => {
           {props.children}
         </div>
       </div>
-    </div>
+    </MediaContents>
   );
 };

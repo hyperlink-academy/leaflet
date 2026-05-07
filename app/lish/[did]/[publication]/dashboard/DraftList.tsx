@@ -5,7 +5,7 @@ import {
   usePublicationData,
   useNormalizedPublicationRecord,
 } from "./PublicationSWRProvider";
-import { LeafletList } from "app/(home-pages)/home/HomeLayout";
+import { LeafletList } from "app/(home-pages)/(writer)/home/HomeLayout";
 
 export function DraftList(props: {
   searchValue: string;

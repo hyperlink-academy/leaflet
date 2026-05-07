@@ -50,25 +50,10 @@ export function setColorAttribute(
       });
 }
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
-  let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let isMobile = useIsMobile();
 
-  // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let permission = useEntitySetContext().permissions.write;
-  let leafletBGImage = useEntity(props.entityID, "theme/background-image");
-  let leafletBGRepeat = useEntity(
-    props.entityID,
-    "theme/background-image-repeat",
-  );
-
-  let [openPicker, setOpenPicker] = useState<pickers>(
-    props.home === true ? "leaflet" : "null",
-  );
-  let set = useMemo(() => {
-    return setColorAttribute(rep, props.entityID);
-  }, [rep, props.entityID]);
-
   if (!permission) return null;
   if (pub?.publications) return null;
 
@@ -80,7 +65,13 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
         asChild
         side={isMobile ? "top" : "right"}
         align={isMobile ? "center" : "start"}
-        trigger={<ActionButton icon={<PaintSmall />} label="Theme" />}
+        trigger={
+          <ActionButton
+            icon={<PaintSmall />}
+            label="Theme"
+            className="sm:w-full! w-fit!"
+          />
+        }
       >
         <ThemeSetterContent {...props} />
       </Popover>
@@ -260,7 +251,8 @@ const SamplePage = (props: {
     ?.data.value;
 
   // Read font values directly since the popover is portalled outside .leafletWrapper
-  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value;
+  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data
+    .value;
   let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value;
   let bodyFontFamily = getFontFamilyValue(getFontConfig(bodyFontId));
   let headingFontFamily = getFontFamilyValue(getFontConfig(headingFontId));

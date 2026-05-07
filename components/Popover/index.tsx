@@ -5,6 +5,7 @@ import { NestedCardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { useEffect, useState } from "react";
 import { PopoverArrow } from "../Icons/PopoverArrow";
 import { PopoverOpenContext } from "./PopoverContext";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 export const Popover = (props: {
   trigger: React.ReactNode;
   disabled?: boolean;
@@ -28,6 +29,7 @@ export const Popover = (props: {
   useEffect(() => {
     if (props.open !== undefined) setOpen(props.open);
   }, [props.open]);
+  let cardBorderHidden = useCardBorderHidden();
   return (
     <RadixPopover.Root
       defaultOpen={props.defaultOpen}
@@ -38,14 +40,18 @@ export const Popover = (props: {
       }}
     >
       <PopoverOpenContext value={open}>
-        <RadixPopover.Trigger disabled={props.disabled} asChild={props.asChild}>
+        <RadixPopover.Trigger
+          className="min-w-0"
+          disabled={props.disabled}
+          asChild={props.asChild}
+        >
           {props.trigger}
         </RadixPopover.Trigger>
         <RadixPopover.Portal>
           <NestedCardThemeProvider>
             <RadixPopover.Content
               className={`
-              z-20 relative bg-bg-page
+              z-20 relative
               text-primary
               flex flex-col
               px-3 py-2
@@ -53,6 +59,7 @@ export const Popover = (props: {
               max-h-(--radix-popover-content-available-height)
               border border-border rounded-md shadow-md
               ${props.className}
+              ${cardBorderHidden ? "light-container" : "bg-bg-page"}
             `}
               side={props.side}
               align={props.align ? props.align : "center"}

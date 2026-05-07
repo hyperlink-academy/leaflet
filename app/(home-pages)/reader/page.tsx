@@ -1,16 +1,32 @@
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { getIdentityData } from "actions/getIdentityData";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { getReaderFeed } from "./getReaderFeed";
-import { getHotFeed } from "./getHotFeed";
 import { InboxContent } from "./InboxContent";
-import { GlobalContent } from "./GlobalContent";
+import { FeedSkeleton } from "./FeedSkeleton";
+import { FeedLayout } from "./FeedLayout";
 
-export default async function Reader() {
-  let identityData = await getIdentityData();
-  if (!identityData?.atp_did) {
-    const feedPromise = getHotFeed();
-    return <GlobalContent promise={feedPromise} />;
-  }
+export default async function ReaderPage(props: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await props.searchParams;
+  if (tab === "Trending") redirect("/reader/trending");
 
-  const feedPromise = getReaderFeed();
-  return <InboxContent promise={feedPromise} />;
+  const identity = await getIdentityData();
+  if (!identity?.atp_did) redirect("/reader/trending");
+
+  return (
+    <DashboardPageLayout
+      scrollKey="dashboard-reader-inbox"
+      pageTitle="Inbox"
+      showHeader={false}
+    >
+      <Suspense fallback={<FeedSkeleton />}>
+        <FeedLayout>
+          <InboxContent promise={getReaderFeed()} />
+        </FeedLayout>
+      </Suspense>
+    </DashboardPageLayout>
+  );
 }

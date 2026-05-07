@@ -7,7 +7,7 @@ import { Menu, MenuItem } from "components/Menu";
 import { Separator } from "components/Layout";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import { useDashboardState } from "components/PageLayouts/DashboardLayout";
+import { useDashboardState } from "components/PageLayouts/dashboardState";
 
 type subscriber = { email: string | undefined; did: string | undefined };
 

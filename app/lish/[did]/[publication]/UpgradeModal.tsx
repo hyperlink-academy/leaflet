@@ -1,3 +1,4 @@
+"use client";
 import { ButtonPrimary } from "components/Buttons";
 import { Modal } from "components/Modal";
 import { useState } from "react";

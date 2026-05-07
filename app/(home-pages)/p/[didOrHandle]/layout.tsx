@@ -4,12 +4,15 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileTabs } from "./ProfileTabs";
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { DashboardShell } from "components/PageLayouts/DashboardShell";
+import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { ProfileLayout } from "./ProfileLayout";
 import { Agent } from "@atproto/api";
 import { get_profile_data } from "app/api/rpc/[command]/get_profile_data";
 import { Metadata } from "next";
 import { cache } from "react";
+import { PageTitle } from "components/ActionBar/DesktopNavigation";
+import { Avatar } from "components/Avatar";
 
 // Cache the profile data call to prevent concurrent OAuth restores
 const getCachedProfileData = cache(async (did: string) => {
@@ -77,29 +80,30 @@ export default async function ProfilePageLayout(props: {
 
   if (!profile) return null;
 
+  let displayName = profile.displayName || profile.handle;
+
   return (
-    <DashboardLayout
+    <DashboardShell
       id="profile"
-      defaultTab="default"
-      currentPage="profile"
-      profileDid={did}
-      actions={null}
+      pageTitle={<PageTitle pageTitle={displayName} />}
       tabs={{
-        default: {
-          controls: null,
-          content: (
-            <ProfileLayout>
-              <ProfileHeader
-                profile={profile}
-                publications={publications || []}
-              />
-              <ProfileTabs didOrHandle={params.didOrHandle} />
-              <>{props.children}</>
-            </ProfileLayout>
-          ),
-        },
+        Inbox: { href: "/reader" },
+        Trending: { href: "/reader/trending" },
+        New: { href: "/reader/new" },
       }}
-    />
+    >
+      <DashboardPageLayout
+        pageTitle={displayName}
+        scrollKey="dashboard-profile-default"
+        showHeader={false}
+      >
+        <ProfileLayout>
+          <ProfileHeader profile={profile} publications={publications || []} />
+          <ProfileTabs didOrHandle={params.didOrHandle} />
+          <>{props.children}</>
+        </ProfileLayout>
+      </DashboardPageLayout>
+    </DashboardShell>
   );
 }
 

@@ -6,9 +6,8 @@ import { ThemeSetterContent } from "components/ThemeManager/ThemeSetter";
 import { useIsMobile } from "src/hooks/isMobile";
 import { PaintSmall } from "components/Icons/PaintSmall";
 
-export const AccountSettings = (props: { entityID: string }) => {
+export const HomeThemeSetter = (props: { entityID: string }) => {
   let isMobile = useIsMobile();
-
   return (
     <Popover
       asChild
@@ -16,7 +15,14 @@ export const AccountSettings = (props: { entityID: string }) => {
       align={isMobile ? "center" : "start"}
       className={`w-xs bg-white!`}
       arrowFill="bg-white"
-      trigger={<ActionButton smallOnMobile icon=<PaintSmall /> label="Theme" />}
+      trigger={
+        <ActionButton
+          secondary
+          icon=<PaintSmall />
+          label="Theme"
+          className="sm:flex! hidden"
+        />
+      }
     >
       <ThemeSetterContent entityID={props.entityID} home />
     </Popover>

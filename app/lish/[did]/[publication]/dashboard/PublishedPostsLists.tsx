@@ -17,7 +17,7 @@ import {
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import { LeafletOptions } from "app/(home-pages)/home/LeafletList/LeafletOptions";
+import { LeafletOptions } from "app/(home-pages)/(writer)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 
 export function PublishedPostsList(props: {
@@ -43,7 +43,7 @@ export function PublishedPostsList(props: {
   });
 
   return (
-    <div className="publishedList w-full flex flex-col gap-2 pb-4">
+    <div className="publishedList w-full flex flex-col gap-2 pt-3 pb-6">
       {sortedDocuments.map((doc) => (
         <PublishedPostItem
           key={doc.uri}

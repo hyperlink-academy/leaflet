@@ -19,7 +19,7 @@ import {
   confirmEmailAuthToken,
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
-import { getHomeDocs } from "app/(home-pages)/home/storage";
+import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
 import { mutate } from "swr";
 
 export const LoginModal = (props: {
@@ -43,6 +43,7 @@ export const LoginModal = (props: {
       trigger={props.trigger}
       open={open}
       onOpenChange={setOpen}
+      className="w-full!"
     >
       <LoginContent
         noEmailLogin={props.noEmailLogin}
@@ -60,6 +61,7 @@ export const LoginContent = (props: {
   redirectRoute?: string;
   open?: boolean;
   onSuccess?: () => void;
+  className?: string;
 }) => {
   let identityData = useIdentityData();
   let [state, setState] = useState<
@@ -125,7 +127,7 @@ export const LoginContent = (props: {
   };
 
   return (
-    <div className="flex flex-col gap-2 w-xs">
+    <div className={`flex flex-col gap-2 w-full sm:w-xs ${props.className}`}>
       <ToggleGroup
         value={
           state === "email log in" || state === "email confirm"
@@ -180,7 +182,9 @@ export const LoginContent = (props: {
                 <hr className="border-border-light mt-2 mb-1" />
                 <button
                   className="text-sm text-accent-contrast"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setState("email log in");
                   }}
                 >
@@ -194,6 +198,7 @@ export const LoginContent = (props: {
             className="flex flex-col gap-1"
             onSubmit={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               handleEmailSubmit();
             }}
           >
@@ -206,7 +211,14 @@ export const LoginContent = (props: {
               onChange={setLoginEmail}
               loading={loading}
               action={
-                <button type="submit">
+                <button
+                  type="submit"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleEmailSubmit();
+                  }}
+                >
                   <GoToArrow className="h-fit" />
                 </button>
               }
@@ -215,7 +227,9 @@ export const LoginContent = (props: {
             <button
               type="button"
               className="text-accent-contrast text-sm"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setState("log in");
               }}
             >

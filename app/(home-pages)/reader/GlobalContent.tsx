@@ -5,10 +5,6 @@ import { callRPC } from "app/api/rpc/client";
 import { EmptyState } from "components/EmptyState";
 import { PostListing } from "components/PostListing";
 import type { Post } from "./getReaderFeed";
-import {
-  DesktopInteractionPreviewDrawer,
-  MobileInteractionPreviewDrawer,
-} from "./InteractionDrawers";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 
 export const GlobalContent = (props: {
@@ -38,18 +34,14 @@ export const GlobalContent = (props: {
   }
 
   return (
-    <div className="globalReader flex flex-row gap-6 w-full">
-      <div className="globalPostListings flex flex-col gap-6 min-w-0 grow w-full">
-        {posts.map((p) => (
-          <PostListing
-            {...p}
-            key={p.documents.uri}
-            selected={selectedPost?.document_uri === p.documents.uri}
-          />
-        ))}
-      </div>
-      <DesktopInteractionPreviewDrawer />
-      <MobileInteractionPreviewDrawer />
-    </div>
+    <>
+      {posts.map((p) => (
+        <PostListing
+          {...p}
+          key={p.documents.uri}
+          selected={selectedPost?.document_uri === p.documents.uri}
+        />
+      ))}
+    </>
   );
 };

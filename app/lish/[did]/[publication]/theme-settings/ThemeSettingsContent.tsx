@@ -46,7 +46,7 @@ export function ThemeSettingsContent() {
     changes,
   } = state;
 
-  let settingsHref = `/lish/${params.did}/${params.publication}/dashboard?tab=Settings`;
+  let settingsHref = `/lish/${params.did}/${params.publication}/dashboard/settings`;
 
   let hasUnsavedChanges =
     changes ||
