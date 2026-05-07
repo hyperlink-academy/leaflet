@@ -1,6 +1,6 @@
 "use client";
 import { useUIState } from "src/useUIState";
-import { Footer } from "components/ActionBar/Footer";
+import { DefaultFooter } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
@@ -52,14 +52,14 @@ export function LeafletFooter(props: { entityID: string }) {
   return (
     <Media
       mobile
-      className="mobileLeafletFooter w-full z-10 touch-none -mt-[54px] "
+      className="mobileLeafletFooter w-full z-10 touch-none -mt-[54px]"
     >
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
       hasBlockToolbar(blockType) &&
       entity_set.permissions.write ? (
         <div
-          className="w-full z-10 p-2 flex bg-bg-page pwa-padding-bottom"
+          className="w-full z-10 p-2 flex bg-bg-page"
           onMouseDown={(e) => {
             if (e.currentTarget === e.target) e.preventDefault();
           }}
@@ -82,7 +82,7 @@ export function LeafletFooter(props: { entityID: string }) {
           <FootnoteToolbar pageID={focusedBlock.parent} />
         </div>
       ) : entity_set.permissions.write ? (
-        <Footer>
+        <DefaultFooter>
           {pub?.publications &&
           identity?.atp_did &&
           pub.publications.identity_did === identity.atp_did ? (
@@ -91,7 +91,7 @@ export function LeafletFooter(props: { entityID: string }) {
             <HomeButton />
           )}
 
-          <div className="mobileLeafletActions flex gap-2 shrink-0 pwa-padding-x">
+          <div className="mobileLeafletActions flex gap-2 shrink-0">
             {!isOnHome ? (
               <AddToHomeButton primary />
             ) : (
@@ -102,7 +102,7 @@ export function LeafletFooter(props: { entityID: string }) {
             <PostSettings />
             <ThemePopover entityID={props.entityID} />
           </div>
-        </Footer>
+        </DefaultFooter>
       ) : (
         <div className="pb-2 px-2 z-10 flex justify-end">
           <Watermark mobile />

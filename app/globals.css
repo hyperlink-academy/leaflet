@@ -542,7 +542,7 @@ pre.shiki {
   padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
 }
 .pwa-padding-bottom {
-  padding-bottom: var(--safe-padding-bottom);
+  padding-bottom: var(--safe-padding-bottom) !important;
 }
 
 .pwa-padding-x {
