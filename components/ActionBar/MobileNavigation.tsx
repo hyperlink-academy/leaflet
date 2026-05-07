@@ -14,85 +14,90 @@ export const MobileNavigation = (props: {
   search?: React.ReactNode;
   mobileActions?: React.ReactNode;
   pageTitle: string;
+  hiddenOnScroll?: boolean;
 }) => {
   let [state, setState] = useState<"search" | "default">("default");
   let [hidden, setHidden] = useState(false);
-  let [sticky, setSticky] = useState(false);
-  let [scrollPos, setScrollPos] = useState(0);
+  let [distFromBottom, setDistFromBottom] = useState(1000);
   let lastScrollY = useRef(0);
-  let stickyRef = useRef(false);
   let cardBorderHidden = useCardBorderHidden();
+  let hiddenOnScroll = props.hiddenOnScroll;
 
   useEffect(() => {
     const homeContent = document.getElementById("home-content");
     if (!homeContent) return;
 
+    const computeDist = () =>
+      Math.max(
+        0,
+        homeContent.scrollHeight -
+          homeContent.clientHeight -
+          homeContent.scrollTop,
+      );
+
+    setDistFromBottom(computeDist());
+
     const handleScroll = () => {
       const currentScrollY = homeContent.scrollTop;
+      const dist = computeDist();
       const delta = currentScrollY - lastScrollY.current;
       lastScrollY.current = currentScrollY;
-      setScrollPos(currentScrollY);
+      setDistFromBottom(dist);
 
-      if (currentScrollY === 0) {
-        stickyRef.current = false;
-        setSticky(false);
+      if (!hiddenOnScroll) {
+        setHidden(false);
+        return;
+      }
+
+      if (dist <= 0) {
         setHidden(false);
         return;
       }
 
       if (delta > 8) {
-        if (stickyRef.current) setHidden(true);
-      } else if (delta < -1 && currentScrollY > 0) {
-        if (!stickyRef.current) {
-          stickyRef.current = true;
-          setSticky(true);
-          setHidden(true);
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => setHidden(false));
-          });
-        } else {
-          setHidden(false);
-        }
+        setHidden(true);
+      } else if (delta < -1) {
+        setHidden(false);
       }
     };
 
     homeContent.addEventListener("scroll", handleScroll, { passive: true });
     return () => homeContent.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [hiddenOnScroll]);
 
   let headerBGColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
+  let atBottom = distFromBottom < 20;
 
   return (
     <MediaContents
       mobile={true}
-      className={`mobilePageHeader z-20 w-full transition-transform duration-200 ${sticky ? "sticky top-0" : ""} ${sticky && hidden ? "-translate-y-[80px] " : ""}`}
+      className={`mobilePageHeader z-20 fixed left-0 bottom-6 right-0 transition-transform duration-200 ${hidden ? "translate-y-[120px]" : ""}`}
+      style={{ bottom: "var(--safe-padding-bottom)" }}
     >
       <div
         style={
-          sticky && scrollPos < 20
+          atBottom
             ? {
-                paddingLeft: `calc(${scrollPos / 20}*8px)`,
-                paddingRight: `calc(${scrollPos / 20}*8px)`,
+                paddingLeft: `calc(${distFromBottom / 20}*8px + 12px)`,
+                paddingRight: `calc(${distFromBottom / 20}*8px + 12px)`,
               }
-            : !sticky
-              ? { paddingLeft: 0, paddingRight: 0 }
-              : { paddingLeft: "8px", paddingRight: "8px" }
+            : { paddingLeft: "20px", paddingRight: "20px" }
         }
       >
         <div
-          className={`mobilePageHeaderContent rounded-lg  text-secondary flex gap-2 border justify-between items-center py-1 w-full ${cardBorderHidden && scrollPos < 20 ? "border-transparent" : " border-border-light"}`}
+          className={`mobilePageHeaderContent pwa-padding-x rounded-lg  text-secondary flex gap-2 border justify-between items-center py-1 w-full ${cardBorderHidden && atBottom ? "border-transparent " : " border-border-light"}`}
           style={
-            scrollPos < 20
+            atBottom
               ? {
                   paddingLeft: cardBorderHidden
-                    ? `calc(${scrollPos / 20}*8px)`
+                    ? `calc(${distFromBottom / 20}*8px)`
                     : "8px",
                   paddingRight: cardBorderHidden
-                    ? `calc(${scrollPos / 20}*8px)`
+                    ? `calc(${distFromBottom / 20}*8px)`
                     : "8px",
                   backgroundColor: !cardBorderHidden
-                    ? `rgba(${headerBGColor}, ${scrollPos / 60 + 0.75})`
-                    : `rgba(${headerBGColor}, ${scrollPos / 20})`,
+                    ? `rgba(${headerBGColor}, ${distFromBottom / 60 + 0.75})`
+                    : `rgba(${headerBGColor}, ${distFromBottom / 20})`,
                 }
               : {
                   paddingLeft: "8px",

@@ -16,16 +16,10 @@ export function DashboardPageLayout(props: {
 
   return (
     <div
-      className={`dashboardPage w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-3 px-3 sm:pt-6 sm:pb-6 sm:pl-8 sm:pr-4`}
+      className={`dashboardPage w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-[calc(var(--safe-padding-bottom)+56px)] px-3 sm:pt-6 sm:pb-6 sm:pl-8 sm:pr-4`}
       ref={ref}
       id="home-content"
     >
-      <MobileNavigation
-        pageTitle={props.pageTitle}
-        mobileActions={props.mobileActions}
-        search={props.search}
-      />
-
       {props.showHeader && (
         <PageHeader>
           <div className={`sm:block ${props.publication && "hidden"} grow`}>
@@ -34,6 +28,12 @@ export function DashboardPageLayout(props: {
         </PageHeader>
       )}
       {props.children}
+
+      <MobileNavigation
+        pageTitle={props.pageTitle}
+        mobileActions={props.mobileActions}
+        search={props.search}
+      />
     </div>
   );
 }

@@ -55,7 +55,7 @@ export const PublishButton = (props: { entityID: string }) => {
         labelOnMobile
         className="sm:w-full! w-fit!"
         icon={<PublishSmall className="shrink-0" />}
-        label={"Publish!!!"}
+        label={"Publish!"}
         onClick={() => {
           router.push(`/${params.leaflet_id}/publish`);
         }}

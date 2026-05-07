@@ -545,6 +545,13 @@ pre.shiki {
   padding-bottom: var(--safe-padding-bottom);
 }
 
+.pwa-padding-x {
+  @media (display-mode: standalone) {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }
+}
+
 /* animation for atmosphere logo carousel */
 @keyframes logo-scroll {
   0% {
