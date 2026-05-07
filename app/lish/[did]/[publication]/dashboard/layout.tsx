@@ -12,6 +12,10 @@ import { DashboardShell } from "components/PageLayouts/DashboardShell";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { Actions } from "./Actions";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
+import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
+import { SubscribersSmall } from "components/Icons/SubscribersSmall";
+import { PublishSmall } from "components/Icons/PublishSmall";
+import { ArchiveSmall } from "components/Icons/ArchiveSmall";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -96,10 +100,13 @@ export default async function PublicationDashboardLayout(props: {
           pageTitle={<PageTitle pageTitle={record.name} showBackButton />}
           actions={<Actions publication={publication.uri} />}
           tabs={{
-            Drafts: { href: baseHref },
-            Posts: { href: `${baseHref}/posts` },
-            Subs: { href: `${baseHref}/subs` },
-            Analytics: { href: `${baseHref}/analytics` },
+            Drafts: { href: baseHref, icon: <ArchiveSmall /> },
+            Posts: { href: `${baseHref}/posts`, icon: <PublishSmall /> },
+            Subs: { href: `${baseHref}/subs`, icon: <SubscribersSmall /> },
+            Analytics: {
+              href: `${baseHref}/analytics`,
+              icon: <AnalyticsSmall />,
+            },
             Settings: {
               href: `${baseHref}/settings`,
               icon: <SettingsSmall />,
