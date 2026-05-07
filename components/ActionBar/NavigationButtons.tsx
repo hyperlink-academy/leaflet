@@ -99,7 +99,6 @@ export function NotificationButton() {
       type="button"
       onClick={handleClick}
       labelOnMobile={false}
-      className="w-full!"
       icon={
         unreads ? (
           <NotificationsUnreadSmall className="text-accent-contrast" />

@@ -7,6 +7,7 @@ export function SpeedyLink(props: {
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
+  target?: string;
 }) {
   let [prefetch, setPrefetch] = useState(false);
   return (
@@ -16,6 +17,7 @@ export function SpeedyLink(props: {
       style={props.style}
       prefetch={prefetch}
       href={props.href}
+      target={props.target}
       className={props.className}
     >
       {props.children}

@@ -17,6 +17,14 @@ import { TabsSmall } from "components/Icons/TabsSmall";
 import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
+import { HelpSmall } from "components/Icons/HelpSmall";
+import { Popover } from "components/Popover";
+import { useIsMobile } from "src/hooks/isMobile";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { BlueskySmall } from "components/Icons/BlueskySmall";
+import { Separator } from "components/Layout";
+import { LeafletTiny } from "components/Icons/LeafletTiny";
+import { ButtonPrimary } from "components/Buttons";
 
 type NavigationProps = {
   pageTitle: React.ReactNode;
@@ -70,20 +78,15 @@ export const NavigationContent = (props: NavigationProps) => {
 
   return (
     <>
-      {props.pageTitle}
-
+      {props.pageTitle} <hr className="border-border-light mb-2" />
       {props.actions && (
         <>
-          <hr className="border-border-light mb-2" />
-
           <div className="flex flex-col gap-1">{props.actions}</div>
+          {props.tabs && <hr className="border-border-light my-2" />}
         </>
       )}
-
       {props.tabs && (
         <>
-          <hr className="border-border-light my-2" />
-
           {Object.entries(props.tabs).map(([name, { href, icon }]) => (
             <SpeedyLink key={name} href={href} className="hover:no-underline!">
               <ActionButton
@@ -96,10 +99,8 @@ export const NavigationContent = (props: NavigationProps) => {
           ))}
         </>
       )}
-
       {onWriterPage && <PublicationButtons />}
       <div className="flex-1" />
-
       <WriterButton />
       <ReaderButton
         subs={
@@ -108,25 +109,107 @@ export const NavigationContent = (props: NavigationProps) => {
         }
       />
       {identity?.atp_did && <NotificationButton />}
-      {identity ? (
-        <>
-          <hr className="border-border-light my-1" />
-          <ProfileButton />
-        </>
-      ) : (
-        <LoginModal
-          asChild
-          trigger={
-            <ActionButton
-              className="w-full!"
-              secondary
-              icon={<AccountSmall />}
-              label="Log In/Sign Up"
+      <div className="flex gap-1 items-center">
+        {identity ? (
+          <>
+            <hr className="border-border-light my-1" />
+            <div className="grow min-w-0">
+              <ProfileButton />
+            </div>
+          </>
+        ) : (
+          <div className="grow min-w-0">
+            <LoginModal
+              asChild
+              trigger={
+                <ActionButton
+                  className="w-full! grow"
+                  secondary
+                  icon={<AccountSmall />}
+                  label="Log In/Sign Up"
+                />
+              }
             />
-          }
-        />
-      )}
+          </div>
+        )}
+        <HelpPopover />
+      </div>
     </>
+  );
+};
+
+const HelpPopover = () => {
+  let isMobile = useIsMobile();
+  return (
+    <Popover
+      asChild
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
+      className="w-xs max-sw-full"
+      trigger={
+        <button
+          type="button"
+          aria-label="About Leaflet"
+          className="shrink-0 pr-2 text-tertiary"
+        >
+          <HelpSmall />
+        </button>
+      }
+    >
+      <div className="flex flex-col text-secondary text-center pt-2 ">
+        <h3>Welcome to Leaflet!</h3>
+        <div className="pb-3">
+          An expressive tool for publishing blogs and newsletters
+        </div>
+        <div className="flex flex-col gap-1 ">
+          <a
+            href="https://bsky.app/profile/leaflet.pub"
+            target="_blank"
+            rel="noreferrer"
+            className="no-underline!"
+          >
+            <ButtonPrimary
+              compact
+              fullWidth
+              className="bg-[#1281F6]! border-[#1281F6]!  hover:outline-[#1281F6]! text-white!"
+            >
+              <BlueskyTiny className="shrink-0" />
+              Follow us on Bluesky
+            </ButtonPrimary>
+          </a>
+
+          <a
+            href="https://buttondown.com/leaflet"
+            target="_blank"
+            rel="noreferrer"
+            className="no-underline!"
+          >
+            <ButtonPrimary
+              compact
+              fullWidth
+              className="bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white!"
+            >
+              <LeafletTiny className="shrink-0" /> Sign up for our Newsletter
+            </ButtonPrimary>
+          </a>
+        </div>
+        <hr className="mt-3 mb-1  border-border-light" />
+        <div className="text-sm flex gap-4  mx-auto pb-1">
+          <SpeedyLink href="/legal" target="_blank">
+            Terms
+          </SpeedyLink>
+          {/*
+            THIS SHOULD GO TO THE LANDING PAGE
+            <SpeedyLink href="/about" target="_blank">
+            Learn More
+            </SpeedyLink>
+          */}
+          <a href="mailto:contact@leaflet.pub" target="_blank" rel="noreferrer">
+            Contact
+          </a>
+        </div>
+      </div>
+    </Popover>
   );
 };
 
