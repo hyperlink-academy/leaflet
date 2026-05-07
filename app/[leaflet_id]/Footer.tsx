@@ -19,6 +19,8 @@ import { useIdentityData } from "components/IdentityProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { block } from "sharp";
 import { PostSettings } from "components/PostSettings";
+import useSWR from "swr";
+import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
 
 export function hasBlockToolbar(blockType: string | null | undefined) {
   return (
@@ -36,8 +38,16 @@ export function LeafletFooter(props: { entityID: string }) {
   let { identity } = useIdentityData();
   let { permission_token } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
+    fallbackData: [],
+  });
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
+  let isOnHome = identity
+    ? !!identity.permission_token_on_homepage.find(
+        (pth) => pth.permission_tokens.id === permission_token.id,
+      )
+    : !!localLeaflets.find((f) => f.token.id === permission_token.id);
 
   return (
     <Media
@@ -82,10 +92,7 @@ export function LeafletFooter(props: { entityID: string }) {
           )}
 
           <div className="mobileLeafletActions flex gap-2 shrink-0">
-            {identity &&
-            !identity.permission_token_on_homepage.find(
-              (pth) => pth.permission_tokens.id === permission_token.id,
-            ) ? (
+            {!isOnHome ? (
               <AddToHomeButton primary />
             ) : (
               <PublishButton entityID={props.entityID} />

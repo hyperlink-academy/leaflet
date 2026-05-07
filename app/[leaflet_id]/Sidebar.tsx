@@ -16,6 +16,8 @@ import { Watermark } from "components/Watermark";
 import { BackToPubButton } from "./actions/BackToPubButton";
 import { useIdentityData } from "components/IdentityProvider";
 import { useReplicache } from "src/replicache";
+import useSWR from "swr";
+import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
 
 export function LeafletSidebar() {
   let entity_set = useEntitySetContext();
@@ -23,6 +25,14 @@ export function LeafletSidebar() {
   let { data: pub } = useLeafletPublicationData();
   let { identity } = useIdentityData();
   let { permission_token } = useReplicache();
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
+    fallbackData: [],
+  });
+  let isOnHome = identity
+    ? !!identity.permission_token_on_homepage.find(
+        (pth) => pth.permission_tokens.id === permission_token.id,
+      )
+    : !!localLeaflets.find((f) => f.token.id === permission_token.id);
 
   return (
     <Media mobile={false} className="w-0 h-full relative">
@@ -33,10 +43,7 @@ export function LeafletSidebar() {
         <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
           {entity_set.permissions.write && (
             <Sidebar className="my-0!">
-              {identity &&
-              !identity.permission_token_on_homepage.find(
-                (pth) => pth.permission_tokens.id === permission_token.id,
-              ) ? (
+              {!isOnHome ? (
                 <AddToHomeButton />
               ) : (
                 <PublishButton entityID={rootEntity} />

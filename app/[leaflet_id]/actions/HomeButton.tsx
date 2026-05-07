@@ -10,6 +10,8 @@ import { useSmoker } from "../../../components/Toast";
 import { AddToHomeSmall } from "../../../components/Icons/AddToHomeSmall";
 import { HomeSmall } from "../../../components/Icons/HomeSmall";
 import { produce } from "immer";
+import { addDocToHome } from "app/(home-pages)/(writer)/home/storage";
+import { mutate as swrMutate } from "swr";
 
 export function HomeButton() {
   let { permissions } = useEntitySetContext();
@@ -40,21 +42,26 @@ export const AddToHomeButton = (props: { primary?: boolean }) => {
       labelOnMobile
       className="sm:w-full! w-fit!"
       onClick={async (e) => {
-        await addLeafletToHome(permission_token.id);
-        mutate((identity) => {
-          if (!identity) return;
-          return produce<typeof identity>((draft) => {
-            draft.permission_token_on_homepage.push({
-              created_at: new Date().toISOString(),
-              archived: null,
-              permission_tokens: {
-                ...permission_token,
-                leaflets_to_documents: [],
-                leaflets_in_publications: [],
-              },
-            });
-          })(identity);
-        });
+        if (identity) {
+          await addLeafletToHome(permission_token.id);
+          mutate((identity) => {
+            if (!identity) return;
+            return produce<typeof identity>((draft) => {
+              draft.permission_token_on_homepage.push({
+                created_at: new Date().toISOString(),
+                archived: null,
+                permission_tokens: {
+                  ...permission_token,
+                  leaflets_to_documents: [],
+                  leaflets_in_publications: [],
+                },
+              });
+            })(identity);
+          });
+        } else {
+          addDocToHome(permission_token);
+          swrMutate("leaflets");
+        }
         smoker({
           position: {
             x: e.clientX + 64,
