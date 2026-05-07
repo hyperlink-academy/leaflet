@@ -57,6 +57,57 @@ export const sync_document_metadata = inngest.createFunction(
         .select();
     });
 
+    const broadcast = await step.run(
+      "maybe-claim-newsletter-broadcast",
+      async () => {
+        const { data: docInPub } = await supabaseServerClient
+          .from("documents_in_publications")
+          .select("publication")
+          .eq("document", document_uri)
+          .maybeSingle();
+        const publication_uri = docInPub?.publication;
+        if (!publication_uri) return { skipped: "no_publication" as const };
+
+        const { data: settings } = await supabaseServerClient
+          .from("publication_newsletter_settings")
+          .select("enabled")
+          .eq("publication", publication_uri)
+          .maybeSingle();
+        if (!settings?.enabled) {
+          return { skipped: "newsletter_not_enabled" as const };
+        }
+
+        // Composite PK on (publication, document) is the idempotency guard:
+        // re-runs on document updates and races with publishToPublication
+        // both no-op here.
+        const { data: inserted } = await supabaseServerClient
+          .from("publication_post_sends")
+          .upsert(
+            {
+              publication: publication_uri,
+              document: document_uri,
+              status: "pending",
+            },
+            { onConflict: "publication,document", ignoreDuplicates: true },
+          )
+          .select();
+        if (!inserted || inserted.length === 0) {
+          return { skipped: "already_sent_or_pending" as const };
+        }
+        return { claimed: true as const, publication_uri };
+      },
+    );
+
+    if ("claimed" in broadcast) {
+      await step.sendEvent("send-newsletter-broadcast", {
+        name: "newsletter/post.send.requested",
+        data: {
+          publication_uri: broadcast.publication_uri,
+          document_uri,
+        },
+      });
+    }
+
     if (!bsky_post_uri) {
       return { handle: handleResult.handle };
     }

@@ -87,7 +87,7 @@ export const events = {
     schema: staticSchema<{
       publication_uri: string;
       document_uri: string;
-      root_entity: string;
+      root_entity?: string;
     }>(),
   }),
 };
