@@ -106,6 +106,22 @@ export const makeStaticUrl = (assetsBaseUrl: string) => {
   return (filename: string): string => `${base}/email-assets/${filename}`;
 };
 
+// Build a URL for the dynamic icon endpoint that bakes the theme color
+// into a PNG at request time. We render PNG (not SVG) because Gmail's
+// image proxy strips SVG for @gmail.com inboxes, and Microsoft removed
+// SVG support across new Outlook + Outlook.com in late 2025.
+export const makeEmailIconUrl = (
+  assetsBaseUrl: string,
+  name: "quote" | "comment",
+  color: string,
+  size = 16,
+): string => {
+  const base = assetsBaseUrl.replace(/\/$/, "");
+  const params = new URLSearchParams({ color });
+  if (size !== 16) params.set("size", String(size));
+  return `${base}/api/email-assets/${name}.png?${params.toString()}`;
+};
+
 // React's TypeScript types don't include the deprecated `bgcolor` HTML
 // attribute on <td>, but every email client (especially Outlook) reads it
 // directly — so we spread it via a typed cast. Combined with an inline

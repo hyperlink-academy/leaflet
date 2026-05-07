@@ -36,6 +36,7 @@ import {
   defaultEmailTheme,
   LeafletWatermark,
   MailHead,
+  makeEmailIconUrl,
   makeStaticUrl,
   resolveColors,
   type EmailTheme,
@@ -392,7 +393,11 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                                   <Img
                                     width={16}
                                     height={16}
-                                    src={staticUrl("quote.png")}
+                                    src={makeEmailIconUrl(
+                                      p.assetsBaseUrl,
+                                      "quote",
+                                      theme.accentBackground,
+                                    )}
                                     alt="See quotes"
                                   />
                                 </Link>
@@ -408,7 +413,11 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                                   <Img
                                     width={16}
                                     height={16}
-                                    src={staticUrl("comment.png")}
+                                    src={makeEmailIconUrl(
+                                      p.assetsBaseUrl,
+                                      "comment",
+                                      theme.accentBackground,
+                                    )}
                                     alt="See comments"
                                   />
                                 </Link>
