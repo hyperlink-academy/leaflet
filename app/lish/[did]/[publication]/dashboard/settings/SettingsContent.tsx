@@ -317,7 +317,7 @@ const DeletePublication = () => {
         ) : typeof result.error === "string" ? (
           result.error
         ) : (
-          "Failed to delete publication"
+          "We couldn't delete the publication. Please try again!"
         ),
       });
       return;

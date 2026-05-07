@@ -144,7 +144,7 @@ const UpdateButton = () => {
             content: isOAuthSessionError(result.error) ? (
               <OAuthErrorMessage error={result.error} />
             ) : (
-              "Failed to publish"
+              "We couldn't publish this. Please try again!"
             ),
             type: "error",
           });

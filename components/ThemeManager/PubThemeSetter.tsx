@@ -101,7 +101,7 @@ export function usePubThemeEditorState() {
         });
       } else {
         toaster({
-          content: "Failed to update theme",
+          content: "Something went wrong. Please try again!",
           type: "error",
         });
       }

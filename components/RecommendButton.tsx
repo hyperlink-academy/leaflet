@@ -112,7 +112,7 @@ export function RecommendButton(props: {
         content: isOAuthSessionError(result.error) ? (
           <OAuthErrorMessage error={result.error} />
         ) : (
-          "oh no! error!"
+          "Oh no! Something went wrong!"
         ),
         type: "error",
       });
@@ -173,11 +173,7 @@ export function RecommendButton(props: {
     <>
       {button}
       {loginOpen && (
-        <LoginModal
-          noEmailLogin
-          open={loginOpen}
-          onOpenChange={setLoginOpen}
-        />
+        <LoginModal noEmailLogin open={loginOpen} onOpenChange={setLoginOpen} />
       )}
     </>
   );

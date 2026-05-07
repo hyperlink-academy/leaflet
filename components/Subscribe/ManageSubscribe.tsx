@@ -49,7 +49,8 @@ export const ManageSubscription = (props: {
         type: "error",
         content: (
           <div className="font-bold">
-            {LINK_ERROR_MESSAGES[res.error] ?? "Couldn't link email."}
+            {LINK_ERROR_MESSAGES[res.error] ??
+              "We couldn't link that email. Please try again!"}
           </div>
         ),
       });
@@ -81,7 +82,8 @@ export const ManageSubscription = (props: {
         type: "error",
         content: (
           <div className="font-bold">
-            {LINK_ERROR_MESSAGES[res.error] ?? "Couldn't confirm code."}
+            {LINK_ERROR_MESSAGES[res.error] ??
+              "We couldn't confirm the code. Please try again!"}
           </div>
         ),
       });
@@ -107,14 +109,15 @@ export const ManageSubscription = (props: {
           <OAuthErrorMessage error={res.error} />
         ) : (
           <div className="font-bold">
-            {UNSUBSCRIBE_ERROR_MESSAGES[res.error] ?? "Couldn't unsubscribe."}
+            {UNSUBSCRIBE_ERROR_MESSAGES[res.error] ??
+              "We couldn't unsubscribe you. Please try again!"}
           </div>
         ),
       });
       return;
     }
     toaster({
-      content: <div className="font-bold">Unsubscribed.</div>,
+      content: <div className="font-bold">Unsubscribed!</div>,
       type: "success",
     });
     router.refresh();

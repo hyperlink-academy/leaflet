@@ -688,3 +688,7 @@ pre.shiki {
   z-index: 1;
   background: rgba(var(--bg-page), 1);
 }
+
+.toastError a {
+  color: var(--color-white);
+}
