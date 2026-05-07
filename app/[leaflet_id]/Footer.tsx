@@ -91,7 +91,7 @@ export function LeafletFooter(props: { entityID: string }) {
             <HomeButton />
           )}
 
-          <div className="mobileLeafletActions flex gap-2 shrink-0">
+          <div className="mobileLeafletActions flex gap-2 shrink-0 pwa-padding-x">
             {!isOnHome ? (
               <AddToHomeButton primary />
             ) : (

@@ -28,7 +28,10 @@ export function Sidebar(props: {
   let open = sidebarExpanded || childForceOpen;
   let cardBorderHidden = useCardBorderHidden();
   return (
-    <Media mobile={props.mobile ?? false}>
+    <Media
+      mobile={props.mobile ?? false}
+      className="pwa-padding pwa-padding-bottom"
+    >
       <SidebarContext
         value={{
           open: props.alwaysOpen ? true : open,
@@ -43,7 +46,6 @@ export function Sidebar(props: {
           }
           className={`
           actionSidebar
-
           ${
             !props.alwaysOpen
               ? ` w-max hover:w-48 absolute top-0 left-0 z-10 opaque-container`
