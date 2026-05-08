@@ -48,6 +48,10 @@ export function LeafletFooter(props: { entityID: string }) {
         (pth) => pth.permission_tokens.id === permission_token.id,
       )
     : !!localLeaflets.find((f) => f.token.id === permission_token.id);
+  let isOwnerOfPub =
+    !!pub?.publications &&
+    !!identity?.atp_did &&
+    pub.publications.identity_did === identity.atp_did;
 
   return (
     <Media
@@ -81,19 +85,17 @@ export function LeafletFooter(props: { entityID: string }) {
         </FooterLayout>
       ) : entity_set.permissions.write ? (
         <FooterLayout>
-          {pub?.publications &&
-          identity?.atp_did &&
-          pub.publications.identity_did === identity.atp_did ? (
+          {isOwnerOfPub && pub?.publications ? (
             <BackToPubButton publication={pub.publications} />
           ) : (
             <HomeButton />
           )}
 
           <div className="mobileLeafletActions flex gap-2 shrink-0">
-            {!isOnHome ? (
-              <AddToHomeButton primary />
-            ) : (
+            {isOwnerOfPub || isOnHome ? (
               <PublishButton entityID={props.entityID} />
+            ) : (
+              <AddToHomeButton primary />
             )}
 
             <ShareOptions />

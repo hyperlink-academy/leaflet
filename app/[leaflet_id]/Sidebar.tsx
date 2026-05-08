@@ -33,6 +33,10 @@ export function LeafletSidebar() {
         (pth) => pth.permission_tokens.id === permission_token.id,
       )
     : !!localLeaflets.find((f) => f.token.id === permission_token.id);
+  let isOwnerOfPub =
+    !!pub?.publications &&
+    !!identity?.atp_did &&
+    pub.publications.identity_did === identity.atp_did;
 
   return (
     <Media mobile={false} className="w-0 h-full relative">
@@ -43,10 +47,10 @@ export function LeafletSidebar() {
         <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
           {entity_set.permissions.write && (
             <Sidebar className="my-0!">
-              {!isOnHome ? (
-                <AddToHomeButton />
-              ) : (
+              {isOwnerOfPub || isOnHome ? (
                 <PublishButton entityID={rootEntity} />
+              ) : (
+                <AddToHomeButton />
               )}
 
               <ShareOptions />
@@ -54,9 +58,7 @@ export function LeafletSidebar() {
               <ThemePopover entityID={rootEntity} />
               <HelpButton />
               <hr className="text-border" />
-              {pub?.publications &&
-              identity?.atp_did &&
-              pub.publications.identity_did === identity.atp_did ? (
+              {isOwnerOfPub && pub?.publications ? (
                 <BackToPubButton publication={pub.publications} />
               ) : (
                 <HomeButton />
