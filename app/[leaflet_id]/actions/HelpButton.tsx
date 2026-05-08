@@ -32,7 +32,7 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
           text="✨ Explore Publications"
           url="https://leaflet.pub/reader"
         />
-        <HelpLink text="📣 Newsletter" url="https://buttondown.com/leaflet" />
+        <HelpLink text="📣 Newsletter" url="https://lab.leaflet.pub" />
         {/* contact links */}
         <div className="columns-2 gap-2">
           <HelpLink

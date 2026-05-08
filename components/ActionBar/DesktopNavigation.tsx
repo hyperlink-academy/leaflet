@@ -179,7 +179,7 @@ const HelpPopover = () => {
           </a>
 
           <a
-            href="https://buttondown.com/leaflet"
+            href="https://lab.leaflet.pub"
             target="_blank"
             rel="noreferrer"
             className="no-underline!"
