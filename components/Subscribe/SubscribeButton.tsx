@@ -19,6 +19,8 @@ import {
 } from "actions/publications/subscribeEmail";
 
 import { useViewerSubscription } from "./viewerSubscription";
+import { Separator } from "components/Layout";
+import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 
 type SubscribeMode = "email" | "atproto";
 
@@ -276,35 +278,35 @@ export const SubscribeInput = (props: SubscribeProps) => {
             }}
           >
             {confirmState === "success" ? (
-            <EmailSubscribeSuccess email={email} handle={user.handle} />
-          ) : (
-            <EmailConfirm
-              autoFocus
-              loading={confirming}
-              onBack={() => setConfirmOpen(false)}
-              emailValue={email}
-              onSubmit={async (code) => {
-                if (confirming) return;
-                setConfirming(true);
-                let res = await confirmPublicationEmailSubscription(
-                  props.publicationUri,
-                  email,
-                  code,
-                  linkToCurrent,
-                );
-                setConfirming(false);
-                if (!res.ok) {
-                  toaster({
-                    type: "error",
-                    content: ERROR_MESSAGES[res.error],
-                  });
-                  return;
-                }
-                setConfirmState("success");
-                router.refresh();
-              }}
-            />
-          )}
+              <EmailSubscribeSuccess email={email} handle={user.handle} />
+            ) : (
+              <EmailConfirm
+                autoFocus
+                loading={confirming}
+                onBack={() => setConfirmOpen(false)}
+                emailValue={email}
+                onSubmit={async (code) => {
+                  if (confirming) return;
+                  setConfirming(true);
+                  let res = await confirmPublicationEmailSubscription(
+                    props.publicationUri,
+                    email,
+                    code,
+                    linkToCurrent,
+                  );
+                  setConfirming(false);
+                  if (!res.ok) {
+                    toaster({
+                      type: "error",
+                      content: ERROR_MESSAGES[res.error],
+                    });
+                    return;
+                  }
+                  setConfirmState("success");
+                  router.refresh();
+                }}
+              />
+            )}
           </Modal>
         </>
       )}
@@ -317,35 +319,42 @@ const SubscribeModeMenu = (props: {
   onChange: (mode: SubscribeMode) => void;
 }) => {
   return (
-    <Menu
-      align="start"
-      asChild
-      trigger={
-        <button
-          type="button"
-          aria-label="Choose subscribe method"
-          className="text-tertiary hover:text-accent-contrast flex items-center"
-        >
-          {props.mode === "email" ? <EmailTiny /> : <AtmosphereAccount />}
-        </button>
-      }
-    >
-      <RadioMenuGroup
-        value={props.mode}
-        onValueChange={(v) => props.onChange(v as SubscribeMode)}
+    <div className="flex gap-1">
+      <Menu
+        align="start"
+        asChild
+        trigger={
+          <button
+            type="button"
+            aria-label="Choose subscribe method"
+            className="text-inherit  flex items-center gap-1"
+          >
+            {props.mode === "email" ? <EmailTiny /> : <AtmosphereAccount />}
+            <ArrowDownTiny className="scale-90" />
+          </button>
+        }
       >
-        <RadioMenuItem value="email" selected={props.mode === "email"}>
-          <span className="flex items-center gap-2">
-            <EmailTiny /> Email
-          </span>
-        </RadioMenuItem>
-        <RadioMenuItem value="atproto" selected={props.mode === "atproto"}>
-          <span className="flex items-center gap-2">
-            <AtmosphereAccount /> Atmosphere handle
-          </span>
-        </RadioMenuItem>
-      </RadioMenuGroup>
-    </Menu>
+        <div className="text-tertiary text-sm px-1 pt-0.5 -mb-0.5">
+          Subscribe via…
+        </div>
+        <RadioMenuGroup
+          value={props.mode}
+          onValueChange={(v) => props.onChange(v as SubscribeMode)}
+        >
+          <RadioMenuItem value="email" selected={props.mode === "email"}>
+            <span className="flex items-center gap-2 shrink-0">
+              <EmailTiny /> Email
+            </span>
+          </RadioMenuItem>
+          <RadioMenuItem value="atproto" selected={props.mode === "atproto"}>
+            <span className="flex items-center gap-2">
+              <AtmosphereAccount /> Atmosphere
+            </span>
+          </RadioMenuItem>
+        </RadioMenuGroup>
+      </Menu>
+      <Separator classname="h-5! " />
+    </div>
   );
 };
 

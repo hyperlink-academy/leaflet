@@ -37,8 +37,6 @@ const apps = [
   { name: "Graze", logo: "/logos/graze.svg" },
 ];
 
-import { Separator } from "components/Layout";
-
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
   publicationUri: string;
@@ -79,9 +77,8 @@ export const SubscribeWithHandle = (props: {
 
   if (props.user.loggedIn && props.user.handle) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 w-max mx-auto">
         <div className="flex items-center gap-2">
-          {props.leading}
           <ButtonPrimary
             className="mx-auto max-w-full grow"
             disabled={subscribing}
@@ -117,6 +114,7 @@ export const SubscribeWithHandle = (props: {
               <DotLoader />
             ) : (
               <>
+                {props.leading}
                 <span className="shrink-0">Subscribe as</span>
                 <span className="flex gap-1 items-center max-w-full grow min-w-0">
                   <Avatar

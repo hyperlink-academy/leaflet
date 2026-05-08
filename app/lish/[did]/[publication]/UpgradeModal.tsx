@@ -98,7 +98,7 @@ export const InlineUpgradeToPro = (props: { compact?: boolean }) => {
       <div
         className={`${props.compact ? `text-sm` : "text-base"} leading-snug text-tertiary pt-2`}
       >
-        Analytics for all your pubs! <br /> Emails and membership coming soon.
+        Analytics and Emails for all your pubs! <br /> Membership coming soon.
       </div>
     </div>
   );
