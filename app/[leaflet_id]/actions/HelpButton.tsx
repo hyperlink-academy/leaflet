@@ -19,7 +19,7 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       asChild
-      className="max-w-xs w-full p-0!"
+      className="max-w-xs w-full p-0! z-[60]!"
       trigger={<ActionButton icon={<HelpSmall />} label="About" />}
     >
       <div

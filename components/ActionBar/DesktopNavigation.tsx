@@ -145,7 +145,7 @@ const HelpPopover = () => {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="w-xs max-sw-full"
+      className="w-xs max-sw-full z-[60]!"
       trigger={
         <button
           type="button"
