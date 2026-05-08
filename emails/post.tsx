@@ -13,6 +13,7 @@ import {
   dracula,
 } from "@react-email/components";
 import type { PrismLanguage } from "@react-email/code-block";
+import { UnicodeString } from "@atproto/api";
 import React, { type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
@@ -26,8 +27,10 @@ import {
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
   PubLeafletPagesLinearDocument,
+  PubLeafletRichtextFacet,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { atUriToUrl, didToBlueskyUrl } from "src/utils/mentionUtils";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { supabaseServerClient } from "supabase/serverClient";
 import { emailPropsFromPublication } from "./fromPublication";
@@ -76,9 +79,12 @@ const drawerUrl = (base: string, drawer: "quotes" | "comments") => {
   return `${base}${sep}interactionDrawer=${drawer}`;
 };
 
-const textBlock = (plaintext: string): PubLeafletPagesLinearDocument.Block => ({
+const textBlock = (
+  plaintext: string,
+  facets?: PubLeafletRichtextFacet.Main[],
+): PubLeafletPagesLinearDocument.Block => ({
   $type: "pub.leaflet.pages.linearDocument#block",
-  block: { $type: "pub.leaflet.blocks.text", plaintext },
+  block: { $type: "pub.leaflet.blocks.text", plaintext, facets },
 });
 
 const headingBlock = (
@@ -87,6 +93,16 @@ const headingBlock = (
 ): PubLeafletPagesLinearDocument.Block => ({
   $type: "pub.leaflet.pages.linearDocument#block",
   block: { $type: "pub.leaflet.blocks.header", plaintext, level },
+});
+
+const facet = (
+  byteStart: number,
+  byteEnd: number,
+  features: PubLeafletRichtextFacet.Main["features"],
+): PubLeafletRichtextFacet.Main => ({
+  $type: "pub.leaflet.richtext.facet",
+  index: { byteStart, byteEnd },
+  features,
 });
 
 const defaultProps: PostEmailProps = {
@@ -105,7 +121,26 @@ const defaultProps: PostEmailProps = {
     ),
     headingBlock("This is a Title", 1),
     textBlock(
-      "We'll keep it nice and separate so we can see what it looks like.",
+      "We'll keep it nice and separate so we can see what it looks like. Also bold, italic, underlined, struck, code, a link, and a mention to @leaflet.pub.",
+      [
+        facet(71, 75, [{ $type: "pub.leaflet.richtext.facet#bold" }]),
+        facet(77, 83, [{ $type: "pub.leaflet.richtext.facet#italic" }]),
+        facet(85, 95, [{ $type: "pub.leaflet.richtext.facet#underline" }]),
+        facet(97, 103, [{ $type: "pub.leaflet.richtext.facet#strikethrough" }]),
+        facet(105, 109, [{ $type: "pub.leaflet.richtext.facet#code" }]),
+        facet(111, 117, [
+          {
+            $type: "pub.leaflet.richtext.facet#link",
+            uri: "https://leaflet.pub",
+          },
+        ]),
+        facet(136, 148, [
+          {
+            $type: "pub.leaflet.richtext.facet#didMention",
+            did: "did:plc:x2xmijn2egk5g67u3cwkddzy",
+          },
+        ]),
+      ],
     ),
     headingBlock("And a Header", 2),
     {
@@ -566,9 +601,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
 // to preview the post template with that publication's name, url, and theme —
 // matching what `send_post_broadcast` and `sendPostPreview` resolve at send time.
 // Leave it null to render with the static default props.
-const PREVIEW_PUBLICATION_URI: string | null =
-  "at://did:plc:x2xmijn2egk5g67u3cwkddzy/site.standard.publication/3m2avdoogvs2f";
-
+const PREVIEW_PUBLICATION_URI: string | null = null;
 const PostEmailPreview = async () => {
   if (!PREVIEW_PUBLICATION_URI) return <PostEmail />;
 
@@ -639,7 +672,16 @@ const BlockRenderer = ({
           margin: BLOCK_MARGIN,
         }}
       >
-        {block.plaintext || " "}
+        {block.plaintext ? (
+          <RichTextSpans
+            plaintext={block.plaintext}
+            facets={block.facets}
+            theme={theme}
+            assetsBaseUrl={assetsBaseUrl}
+          />
+        ) : (
+          " "
+        )}
       </ReactEmailText>
     );
   }
@@ -660,7 +702,12 @@ const BlockRenderer = ({
           margin: HEADING_MARGIN,
         }}
       >
-        {block.plaintext}
+        <RichTextSpans
+          plaintext={block.plaintext}
+          facets={block.facets}
+          theme={theme}
+          assetsBaseUrl={assetsBaseUrl}
+        />
       </ReactEmailHeading>
     );
   }
@@ -680,7 +727,12 @@ const BlockRenderer = ({
                 margin: "2px 0",
               }}
             >
-              {block.plaintext}
+              <RichTextSpans
+                plaintext={block.plaintext}
+                facets={block.facets}
+                theme={theme}
+                assetsBaseUrl={assetsBaseUrl}
+              />
             </ReactEmailText>
           </Column>
         </Row>
@@ -835,11 +887,15 @@ type ListItem =
   | PubLeafletBlocksUnorderedList.ListItem
   | PubLeafletBlocksOrderedList.ListItem;
 
-const listItemPlaintext = (item: ListItem): string => {
+const listItemContent = (
+  item: ListItem,
+): { plaintext: string; facets?: PubLeafletRichtextFacet.Main[] } => {
   const content = item.content;
-  if (PubLeafletBlocksText.isMain(content)) return content.plaintext;
-  if (PubLeafletBlocksHeader.isMain(content)) return content.plaintext;
-  return "";
+  if (PubLeafletBlocksText.isMain(content))
+    return { plaintext: content.plaintext, facets: content.facets };
+  if (PubLeafletBlocksHeader.isMain(content))
+    return { plaintext: content.plaintext, facets: content.facets };
+  return { plaintext: "" };
 };
 
 export const List = ({
@@ -869,7 +925,7 @@ export const List = ({
         }}
       >
         {items.map((item, i) => {
-          const plaintext = listItemPlaintext(item);
+          const { plaintext, facets } = listItemContent(item);
           const nestedUnordered =
             item.children && style === "unordered"
               ? (item.children as PubLeafletBlocksUnorderedList.ListItem[])
@@ -884,8 +940,14 @@ export const List = ({
             <React.Fragment key={i}>
               <li style={{ margin: "2px 0", paddingLeft: 4 }}>
                 {typeof item.checked === "boolean"
-                  ? `${item.checked ? "☑ " : "☐ "}${plaintext}`
-                  : plaintext}
+                  ? `${item.checked ? "☑ " : "☐ "}`
+                  : null}
+                <RichTextSpans
+                  plaintext={plaintext}
+                  facets={facets}
+                  theme={theme}
+                  assetsBaseUrl={assetsBaseUrl}
+                />
               </li>
               {nestedUnordered && nestedUnordered.length > 0 ? (
                 <List
@@ -1164,4 +1226,178 @@ export const BlockNotSupported = ({
       </ReactEmailText>
     </Section>
   );
+};
+
+type Facet = PubLeafletRichtextFacet.Main;
+type FacetFeatures = Exclude<Facet["features"], { $type: string }>;
+
+type RichTextSegment = { text: string; features?: FacetFeatures };
+
+function* segments(
+  plaintext: string,
+  facets: Facet[] | undefined,
+): Generator<RichTextSegment, void, void> {
+  const text = new UnicodeString(plaintext);
+  const sorted = (facets ?? [])
+    .filter((f) => f.index.byteStart <= f.index.byteEnd)
+    .sort((a, b) => a.index.byteStart - b.index.byteStart);
+  if (!sorted.length) {
+    yield { text: text.utf16 };
+    return;
+  }
+  let textCursor = 0;
+  let facetCursor = 0;
+  do {
+    const f = sorted[facetCursor];
+    if (textCursor < f.index.byteStart) {
+      yield { text: text.slice(textCursor, f.index.byteStart) };
+    } else if (textCursor > f.index.byteStart) {
+      facetCursor++;
+      continue;
+    }
+    if (f.index.byteStart < f.index.byteEnd) {
+      const sub = text.slice(f.index.byteStart, f.index.byteEnd);
+      if (!sub.trim()) yield { text: sub };
+      else yield { text: sub, features: f.features };
+    }
+    textCursor = f.index.byteEnd;
+    facetCursor++;
+  } while (facetCursor < sorted.length);
+  if (textCursor < text.length) {
+    yield { text: text.slice(textCursor, text.length) };
+  }
+}
+
+const renderTextWithBreaks = (text: string, key: string): React.ReactNode => {
+  const parts = text.split("\n");
+  if (parts.length === 1) return text;
+  return parts.flatMap((part, i) =>
+    i < parts.length - 1 ? [part, <br key={`${key}-br-${i}`} />] : [part],
+  );
+};
+
+const resolveAtMentionHref = (
+  feature: { atURI: string; href?: string },
+  assetsBaseUrl: string,
+): string => {
+  if (feature.href) return feature.href;
+  const path = atUriToUrl(feature.atURI);
+  // atUriToUrl returns either an absolute http(s) URL or a leading-slash
+  // path; absolutize relative paths against assetsBaseUrl so the link works
+  // in mail clients that don't have a base.
+  try {
+    return new URL(path, assetsBaseUrl).toString();
+  } catch {
+    return path;
+  }
+};
+
+export const RichTextSpans = ({
+  plaintext,
+  facets,
+  theme,
+  assetsBaseUrl,
+}: {
+  plaintext: string;
+  facets?: PubLeafletRichtextFacet.Main[];
+  theme: EmailTheme;
+  assetsBaseUrl: string;
+}) => {
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+  for (const seg of segments(plaintext, facets)) {
+    const key = `s${i++}`;
+    const features = seg.features;
+    const link = features?.find(PubLeafletRichtextFacet.isLink);
+    const didMention = features?.find(PubLeafletRichtextFacet.isDidMention);
+    const atMention = features?.find(PubLeafletRichtextFacet.isAtMention);
+    const isBold = !!features?.find(PubLeafletRichtextFacet.isBold);
+    const isItalic = !!features?.find(PubLeafletRichtextFacet.isItalic);
+    const isUnderline = !!features?.find(PubLeafletRichtextFacet.isUnderline);
+    const isStrikethrough = !!features?.find(
+      PubLeafletRichtextFacet.isStrikethrough,
+    );
+    const isCode = !!features?.find(PubLeafletRichtextFacet.isCode);
+    const isHighlight = !!features?.find(PubLeafletRichtextFacet.isHighlight);
+
+    const decorations: string[] = [];
+    if (isUnderline) decorations.push("underline");
+    if (isStrikethrough) decorations.push("line-through");
+
+    const baseStyle: CSSProperties = {
+      fontWeight: isBold ? "bold" : undefined,
+      fontStyle: isItalic ? "italic" : undefined,
+      textDecoration: decorations.length ? decorations.join(" ") : undefined,
+      backgroundColor: isCode
+        ? "rgba(0,0,0,0.06)"
+        : isHighlight
+          ? "#fff3a3"
+          : undefined,
+      fontFamily: isCode ? "monospace" : undefined,
+      padding: isCode ? "1px 4px" : undefined,
+      borderRadius: isCode ? 3 : undefined,
+    };
+
+    const content = renderTextWithBreaks(seg.text, key);
+
+    if (didMention) {
+      nodes.push(
+        <Link
+          key={key}
+          href={didToBlueskyUrl(didMention.did)}
+          style={{
+            ...baseStyle,
+            color: theme.accentBackground,
+            textDecoration: baseStyle.textDecoration ?? "none",
+          }}
+        >
+          {content}
+        </Link>,
+      );
+    } else if (atMention) {
+      nodes.push(
+        <Link
+          key={key}
+          href={resolveAtMentionHref(atMention, assetsBaseUrl)}
+          style={{
+            ...baseStyle,
+            color: theme.accentBackground,
+            textDecoration: baseStyle.textDecoration ?? "none",
+          }}
+        >
+          {content}
+        </Link>,
+      );
+    } else if (link) {
+      nodes.push(
+        <Link
+          key={key}
+          href={link.uri.trim()}
+          style={{
+            ...baseStyle,
+            color: theme.accentBackground,
+            textDecoration: baseStyle.textDecoration ?? "underline",
+          }}
+        >
+          {content}
+        </Link>,
+      );
+    } else if (
+      isBold ||
+      isItalic ||
+      isUnderline ||
+      isStrikethrough ||
+      isCode ||
+      isHighlight
+    ) {
+      nodes.push(
+        <span key={key} style={baseStyle}>
+          {content}
+        </span>,
+      );
+    } else {
+      nodes.push(<React.Fragment key={key}>{content}</React.Fragment>);
+    }
+  }
+  return <>{nodes}</>;
 };
