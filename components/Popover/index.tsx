@@ -23,7 +23,6 @@ export const Popover = (props: {
   asChild?: boolean;
   arrowFill?: string;
   noArrow?: boolean;
-  onInteractOutside?: (e: Event) => void;
 }) => {
   let [open, setOpen] = useState(props.open || props.defaultOpen || false);
   useEffect(() => {
@@ -41,7 +40,7 @@ export const Popover = (props: {
     >
       <PopoverOpenContext value={open}>
         <RadixPopover.Trigger
-          className="min-w-0"
+          className="min-w-0 outline-none! touch-manipulation [-webkit-tap-highlight-color:transparent]"
           disabled={props.disabled}
           asChild={props.asChild}
         >
@@ -66,7 +65,6 @@ export const Popover = (props: {
               sideOffset={props.sideOffset ? props.sideOffset : 4}
               collisionPadding={16}
               onOpenAutoFocus={props.onOpenAutoFocus}
-              onInteractOutside={props.onInteractOutside}
             >
               {props.children}
               {!props.noArrow && (
