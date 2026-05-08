@@ -123,7 +123,7 @@
     --hatchSVG: url("/hatchPattern.svg");
     --wavySVG: (url("/RSVPBackground/wavy.svg"));
 
-    --safe-padding-bottom: max(calc(env(safe-area-inset-bottom) - 8px), 16px);
+    --safe-padding-bottom: calc(env(safe-area-inset-bottom) - 8px);
   }
   @media (max-width: 640px) {
     :root {
@@ -539,7 +539,7 @@ pre.shiki {
 }
 
 .pwa-padding {
-  padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
+  padding-top: calc(env(safe-area-inset-top) - 8px) !important;
 }
 .pwa-padding-bottom {
   padding-bottom: var(--safe-padding-bottom) !important;

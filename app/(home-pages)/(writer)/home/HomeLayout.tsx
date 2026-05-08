@@ -164,7 +164,7 @@ export function HomeLeafletList(props: {
         initialFacts={initialFacts?.facts || {}}
         showPreview
       />
-      <div className="spacer h-4 w-full bg-transparent shrink-0 " />
+      <div className="spacer sm:block hidden h-4 w-full bg-transparent shrink-0 " />
     </>
   );
 }

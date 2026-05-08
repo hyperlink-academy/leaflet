@@ -30,7 +30,7 @@ export function Sidebar(props: {
   return (
     <Media
       mobile={props.mobile ?? false}
-      className="pwa-padding pwa-padding-bottom"
+      className="pwa-padding pwa-padding-bottom sm:h-full h-[calc(100dvh-16px)]"
     >
       <SidebarContext
         value={{

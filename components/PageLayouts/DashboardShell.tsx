@@ -47,7 +47,7 @@ export function DashboardShell(props: DashboardShellProps) {
               <Sidebar
                 mobile
                 alwaysOpen
-                className="my-2! ml-2 h-[calc(100dvh-16px)]! bg-bg-page!"
+                className="my-2! ml-2 h-full bg-bg-page!"
               >
                 <NavigationContent {...navigationProps} />
               </Sidebar>

@@ -1,6 +1,6 @@
 "use client";
 import { useUIState } from "src/useUIState";
-import { DefaultFooter } from "components/ActionBar/Footer";
+import { FooterLayout } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
@@ -52,14 +52,13 @@ export function LeafletFooter(props: { entityID: string }) {
   return (
     <Media
       mobile
-      className="mobileLeafletFooter w-full z-10 touch-none -mt-[54px]"
+      className="mobileLeafletFooter pwa-padding-bottom  w-full z-10 touch-none -mt-[54px]"
     >
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
       hasBlockToolbar(blockType) &&
       entity_set.permissions.write ? (
-        <div
-          className="w-full z-10 p-2 flex bg-bg-page"
+        <FooterLayout
           onMouseDown={(e) => {
             if (e.currentTarget === e.target) e.preventDefault();
           }}
@@ -69,20 +68,19 @@ export function LeafletFooter(props: { entityID: string }) {
             blockID={focusedBlock.entityID}
             blockType={blockType}
           />
-        </div>
+        </FooterLayout>
       ) : focusedBlock &&
         focusedBlock.entityType === "footnote" &&
         entity_set.permissions.write ? (
-        <div
-          className="w-full z-10 p-2 flex bg-bg-page pwa-padding-bottom"
+        <FooterLayout
           onMouseDown={(e) => {
             if (e.currentTarget === e.target) e.preventDefault();
           }}
         >
           <FootnoteToolbar pageID={focusedBlock.parent} />
-        </div>
+        </FooterLayout>
       ) : entity_set.permissions.write ? (
-        <DefaultFooter>
+        <FooterLayout>
           {pub?.publications &&
           identity?.atp_did &&
           pub.publications.identity_did === identity.atp_did ? (
@@ -102,7 +100,7 @@ export function LeafletFooter(props: { entityID: string }) {
             <PostSettings />
             <ThemePopover entityID={props.entityID} />
           </div>
-        </DefaultFooter>
+        </FooterLayout>
       ) : (
         <div className="pb-2 px-2 z-10 flex justify-end">
           <Watermark mobile />

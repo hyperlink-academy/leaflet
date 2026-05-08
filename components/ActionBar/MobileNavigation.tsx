@@ -71,7 +71,7 @@ export const MobileNavigation = (props: {
   return (
     <MediaContents
       mobile={true}
-      className={`mobilePageFooter  pwa-padding-x z-20 fixed left-0 bottom-6 right-0 transition-transform duration-200 ${hidden ? "translate-y-[120px]" : ""}`}
+      className={`mobilePageFooter  pwa-padding-x z-20 fixed left-0 bottom-4 right-0 transition-transform duration-200 ${hidden ? "translate-y-[120px]" : ""}`}
       style={{ bottom: "var(--safe-padding-bottom)" }}
     >
       <div
