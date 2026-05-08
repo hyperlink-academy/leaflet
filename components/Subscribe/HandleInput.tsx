@@ -104,7 +104,7 @@ export const HandleInput = (props: {
           </div>
           <Input
             autoFocus={props.autoFocus}
-            className={`appearance-none! grow outline-none! ${props.large ? "py-1!" : "py-0.5"}`}
+            className={`appearance-none! grow outline-none! min-w-0 ${props.large ? "py-1!" : "py-0.5"}`}
             placeholder="atmosphere.handle"
             size={0}
             value={handleValue}

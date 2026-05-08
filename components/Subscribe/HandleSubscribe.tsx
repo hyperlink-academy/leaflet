@@ -61,8 +61,7 @@ export const SubscribeWithHandle = (props: {
   let [pendingLinkHandle, setPendingLinkHandle] = useState<string | null>(null);
   const viewerEmail = identity?.email;
   const viewerAtpDid = identity?.atp_did;
-  const needsLinkConfirmation =
-    !!viewerEmail && !viewerAtpDid;
+  const needsLinkConfirmation = !!viewerEmail && !viewerAtpDid;
 
   const redirectToOauthForSubscribe = (handle: string, link: boolean) => {
     let action = encodeActionToSearchParam({
@@ -185,7 +184,7 @@ export const LinkHandle = (props: { compact?: boolean }) => {
         className={`text-secondary flex flex-col ${props.compact && "text-sm leading-snug"}`}
       >
         <h4 className={`${props.compact && "text-sm"}`}>
-          Link your universal handle
+          Link your Atmosphere account
         </h4>
         <div className="text-tertiary">
           to comment, recommend, and see what your friends are reading
