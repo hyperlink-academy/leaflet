@@ -43,6 +43,8 @@ export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
   publicationUri: string;
   onSubscribed?: () => void;
+  onAtSuccess?: () => void;
+  leading?: React.ReactNode;
   user: {
     loggedIn: boolean;
     email: string | undefined;
@@ -78,50 +80,57 @@ export const SubscribeWithHandle = (props: {
   if (props.user.loggedIn && props.user.handle) {
     return (
       <div className="flex flex-col gap-2">
-        <ButtonPrimary
-          className="mx-auto max-w-full"
-          disabled={subscribing}
-          onClick={async () => {
-            if (subscribing) return;
-            setSubscribing(true);
-            setOauthError(null);
-            let url = new URL(window.location.href);
-            url.searchParams.set("refreshAuth", "");
-            let result = await subscribeToPublication(
-              props.publicationUri,
-              url.toString(),
-            );
-            if (!result.success) {
-              if (isOAuthSessionError(result.error))
-                setOauthError(result.error);
+        <div className="flex items-center gap-2">
+          {props.leading}
+          <ButtonPrimary
+            className="mx-auto max-w-full grow"
+            disabled={subscribing}
+            onClick={async () => {
+              if (subscribing) return;
+              setSubscribing(true);
+              setOauthError(null);
+              let url = new URL(window.location.href);
+              url.searchParams.set("refreshAuth", "");
+              let result = await subscribeToPublication(
+                props.publicationUri,
+                url.toString(),
+              );
+              if (!result.success) {
+                if (isOAuthSessionError(result.error))
+                  setOauthError(result.error);
+                setSubscribing(false);
+                return;
+              }
+              if (props.onAtSuccess) {
+                props.onAtSuccess();
+              } else {
+                toaster({
+                  content: <div>You're Subscribed!</div>,
+                  type: "success",
+                });
+              }
+              props.onSubscribed?.();
               setSubscribing(false);
-              return;
-            }
-            toaster({
-              content: <div>You're Subscribed!</div>,
-              type: "success",
-            });
-            props.onSubscribed?.();
-            setSubscribing(false);
-          }}
-        >
-          {subscribing ? (
-            <DotLoader />
-          ) : (
-            <>
-              <span className="shrink-0">Subscribe as</span>
-              <span className="flex gap-1 items-center max-w-full grow min-w-0">
-                <Avatar
-                  size="tiny"
-                  src={record?.avatar}
-                  displayName={record?.displayName || record?.handle}
-                />
+            }}
+          >
+            {subscribing ? (
+              <DotLoader />
+            ) : (
+              <>
+                <span className="shrink-0">Subscribe as</span>
+                <span className="flex gap-1 items-center max-w-full grow min-w-0">
+                  <Avatar
+                    size="tiny"
+                    src={record?.avatar}
+                    displayName={record?.displayName || record?.handle}
+                  />
 
-                <div className="grow truncate">{props.user.handle}</div>
-              </span>
-            </>
-          )}
-        </ButtonPrimary>
+                  <div className="grow truncate">{props.user.handle}</div>
+                </span>
+              </>
+            )}
+          </ButtonPrimary>
+        </div>
         {oauthError && (
           <OAuthErrorMessage
             error={oauthError}
@@ -136,6 +145,7 @@ export const SubscribeWithHandle = (props: {
         <HandleInput
           autoFocus={props.autoFocus}
           loading={loading}
+          leading={props.leading}
           onSubmit={(handle) => {
             let trimmed = handle.trim();
             if (!trimmed) return;

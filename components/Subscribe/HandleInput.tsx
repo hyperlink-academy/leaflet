@@ -18,6 +18,7 @@ type ActorSuggestion = {
 export const HandleInput = (props: {
   autoFocus?: boolean;
   action?: React.ReactNode;
+  leading?: React.ReactNode;
   className?: string;
   large?: boolean;
   loading?: boolean;
@@ -100,7 +101,7 @@ export const HandleInput = (props: {
           }
         >
           <div className="text-tertiary text-center shrink-0 flex justify-end h-full items-center">
-            <AtmosphereAccount />
+            {props.leading ?? <AtmosphereAccount />}
           </div>
           <Input
             autoFocus={props.autoFocus}

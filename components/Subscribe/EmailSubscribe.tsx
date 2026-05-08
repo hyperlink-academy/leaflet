@@ -7,6 +7,7 @@ import { theme } from "tailwind.config";
 
 export const EmailInput = (props: {
   action: React.ReactNode;
+  leading?: React.ReactNode;
   autoFocus?: boolean;
   large?: boolean;
   value: string;
@@ -29,6 +30,11 @@ export const EmailInput = (props: {
             }
       }
     >
+      {props.leading && (
+        <div className="text-tertiary shrink-0 flex items-center">
+          {props.leading}
+        </div>
+      )}
       <Input
         type="email"
         autoFocus={props.autoFocus}
