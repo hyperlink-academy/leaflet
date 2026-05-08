@@ -41,6 +41,10 @@ export const get_publication_analytics = makeRoute({
       return { error: "not_found" as const };
     }
 
+    if (publication.identity_did !== identity.atp_did) {
+      return { error: "unauthorized" as const };
+    }
+
     const domains = (publication.publication_domains ?? [])
       .map((d) => d.domain)
       .filter(Boolean)
