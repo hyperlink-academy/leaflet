@@ -77,7 +77,7 @@ export const SubscribeWithHandle = (props: {
 
   if (props.user.loggedIn && props.user.handle) {
     return (
-      <div className="flex flex-col gap-2 w-max mx-auto">
+      <div className="flex flex-col gap-2 w-max max-w-full mx-auto">
         <div className="flex items-center gap-2">
           <ButtonPrimary
             className="mx-auto max-w-full grow"
