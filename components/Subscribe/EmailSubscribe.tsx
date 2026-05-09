@@ -3,6 +3,7 @@ import * as OneTimePasswordField from "@radix-ui/react-one-time-password-field";
 import { ButtonPrimary } from "components/Buttons";
 import { Input } from "components/Input";
 import { DotLoader } from "components/utils/DotLoader";
+import { onMouseDown as iosOnPointerDown } from "src/utils/iosInputMouseDown";
 import { theme } from "tailwind.config";
 
 export const EmailInput = (props: {
@@ -74,12 +75,30 @@ export const EmailConfirm = (props: {
         }}
       >
         <div className="flex gap-1 pt-4 w-full justify-center">
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
         </div>
         <OneTimePasswordField.HiddenInput />
       </OneTimePasswordField.Root>
