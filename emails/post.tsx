@@ -269,8 +269,8 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
             media-query rule beats the inline `style.padding`. */}
         <style>{`
           @media only screen and (max-width: 480px) {
-            .email-page-pad { padding: 12px 8px !important; }
-            .email-card-pad { padding: 16px !important; }
+            .email-page-pad { padding: 0 !important; }
+            .email-card-pad { padding: 12px !important; }
           }
         `}</style>
       </MailHead>
