@@ -32,7 +32,6 @@ import {
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { atUriToUrl, didToBlueskyUrl } from "src/utils/mentionUtils";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { supabaseServerClient } from "supabase/serverClient";
 import { emailPropsFromPublication } from "./fromPublication";
 import {
   bgcolorAttr,
@@ -45,6 +44,7 @@ import {
   type EmailTheme,
   type ResolvedColors,
 } from "./shared";
+import { supabaseServerClient } from "supabase/serverClient";
 
 export type PostEmailProps = {
   publicationName: string;
@@ -223,6 +223,18 @@ const defaultProps: PostEmailProps = {
         text: "Aligned right",
         url: "https://leaflet.pub",
       },
+    },
+    {
+      ...textBlock("This text is centered."),
+      alignment: "lex:pub.leaflet.pages.linearDocument#textAlignCenter",
+    },
+    {
+      ...textBlock("This text is right-aligned."),
+      alignment: "lex:pub.leaflet.pages.linearDocument#textAlignRight",
+    },
+    {
+      ...headingBlock("Centered heading", 2),
+      alignment: "lex:pub.leaflet.pages.linearDocument#textAlignCenter",
     },
     {
       $type: "pub.leaflet.pages.linearDocument#block",
@@ -627,11 +639,32 @@ const PostEmailPreview = async () => {
 
 export default PostEmailPreview;
 
-// Map the lexicon's alignment token to the simple left/center/right values
-// usable as HTML `align` attributes. `justify` falls through to `left` to
-// match published web behavior (`justify-start` flex). For buttons we
-// default to `center` when alignment is unset, matching PostContent.tsx.
-const resolveButtonAlignment = (
+// Map the lexicon's alignment token to a CSS `text-align` value for
+// text-like blocks (text, header, blockquote, list). Returns `undefined`
+// when no alignment is set so the element inherits the default (left).
+const resolveTextAlignment = (
+  alignment: string | undefined,
+): CSSProperties["textAlign"] => {
+  switch (alignment) {
+    case "lex:pub.leaflet.pages.linearDocument#textAlignRight":
+      return "right";
+    case "lex:pub.leaflet.pages.linearDocument#textAlignCenter":
+      return "center";
+    case "lex:pub.leaflet.pages.linearDocument#textAlignJustify":
+      return "justify";
+    case "lex:pub.leaflet.pages.linearDocument#textAlignLeft":
+      return "left";
+    default:
+      return undefined;
+  }
+};
+
+// Map the lexicon's alignment token to a simple left/center/right value
+// usable as an HTML `align` attribute. `justify` falls through to `left`
+// to match published web behavior (`justify-start` flex). For buttons and
+// images we default to `center` when alignment is unset, matching
+// PostContent.tsx.
+const resolveBlockAlignment = (
   alignment: string | undefined,
 ): "left" | "center" | "right" => {
   switch (alignment) {
@@ -670,6 +703,7 @@ const BlockRenderer = ({
           fontSize: 16,
           lineHeight: 1.5,
           margin: BLOCK_MARGIN,
+          textAlign: resolveTextAlignment(alignment),
         }}
       >
         {block.plaintext ? (
@@ -700,6 +734,7 @@ const BlockRenderer = ({
           fontSize: HEADING_FONT_SIZE_PX[level],
           lineHeight: 1.25,
           margin: HEADING_MARGIN,
+          textAlign: resolveTextAlignment(alignment),
         }}
       >
         <RichTextSpans
@@ -725,6 +760,7 @@ const BlockRenderer = ({
                 fontSize: 16,
                 lineHeight: 1.5,
                 margin: "2px 0",
+                textAlign: resolveTextAlignment(alignment),
               }}
             >
               <RichTextSpans
@@ -756,16 +792,11 @@ const BlockRenderer = ({
     // smaller images from being upscaled.
     const naturalWidth = block.aspectRatio?.width;
     return (
-      <Img
+      <ImageBlock
         src={src}
         alt={block.alt ?? ""}
-        style={{
-          display: "block",
-          height: "auto",
-          margin: IMAGE_MARGIN,
-          maxWidth: naturalWidth ? `${naturalWidth}px` : "100%",
-          width: "100%",
-        }}
+        naturalWidth={naturalWidth}
+        align={resolveBlockAlignment(alignment)}
       />
     );
   }
@@ -789,7 +820,7 @@ const BlockRenderer = ({
       <ButtonBlock
         text={block.text}
         url={block.url}
-        align={resolveButtonAlignment(alignment)}
+        align={resolveBlockAlignment(alignment)}
         theme={theme}
       />
     );
@@ -814,6 +845,7 @@ const BlockRenderer = ({
         did={did}
         assetsBaseUrl={assetsBaseUrl}
         theme={theme}
+        textAlign={resolveTextAlignment(alignment)}
       />
     );
   }
@@ -825,6 +857,7 @@ const BlockRenderer = ({
         did={did}
         assetsBaseUrl={assetsBaseUrl}
         theme={theme}
+        textAlign={resolveTextAlignment(alignment)}
       />
     );
   }
@@ -904,12 +937,14 @@ export const List = ({
   did,
   assetsBaseUrl,
   theme = defaultEmailTheme,
+  textAlign,
 }: {
   items: ListItem[];
   style: "ordered" | "unordered";
   did: string;
   assetsBaseUrl: string;
   theme?: EmailTheme;
+  textAlign?: CSSProperties["textAlign"];
 }) => {
   const Tag = style === "ordered" ? "ol" : "ul";
   return (
@@ -922,6 +957,7 @@ export const List = ({
           lineHeight: 1.5,
           margin: 0,
           paddingLeft: 24,
+          textAlign,
         }}
       >
         {items.map((item, i) => {
@@ -999,6 +1035,15 @@ export const LinkBlock = ({
       return url;
     }
   })();
+  // Each column wraps its content in a single `display: block` <Link> so
+  // the entire padded area — text column and image column — is clickable.
+  // Two anchors instead of one outer anchor keeps the markup table-friendly
+  // for Outlook (which dislikes <a> wrapping <table>).
+  const cellLinkStyle: CSSProperties = {
+    color: "inherit",
+    display: "block",
+    textDecoration: "none",
+  };
   return (
     <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
       <Row
@@ -1010,77 +1055,128 @@ export const LinkBlock = ({
       >
         <Column
           style={{
-            padding: "8px 12px",
             verticalAlign: "top",
             // Long URL-like titles or domains have no break opportunities
             // and would otherwise force the column wider than the card.
             wordBreak: "break-word",
           }}
         >
-          <Link
-            href={url}
-            style={{
-              color: theme.primary,
-              fontFamily: theme.bodyFont,
-              fontWeight: "bold",
-              fontSize: 16,
-              textDecoration: "none",
-              wordBreak: "break-word",
-            }}
-          >
-            {title || displayUrl}
-          </Link>
-          {description ? (
-            <ReactEmailText
+          <Link href={url} style={{ ...cellLinkStyle, padding: "8px 12px" }}>
+            <span
               style={{
-                color: c.secondary,
+                color: theme.primary,
+                display: "block",
                 fontFamily: theme.bodyFont,
+                fontWeight: "bold",
                 fontSize: 16,
-                lineHeight: 1.4,
-                margin: "4px 0 0",
                 wordBreak: "break-word",
               }}
             >
-              {description}
-            </ReactEmailText>
-          ) : null}
-          <ReactEmailText
-            style={{
-              color: theme.accentBackground,
-              fontFamily: theme.bodyFont,
-              fontSize: 14,
-              fontStyle: "italic",
-              lineHeight: 1.4,
-              margin: "4px 0 0",
-              wordBreak: "break-word",
-            }}
-          >
-            {displayUrl}
-          </ReactEmailText>
+              {title || displayUrl}
+            </span>
+            {description ? (
+              <span
+                style={{
+                  color: c.secondary,
+                  // 2-line clamp matches the editor's `line-clamp-2`.
+                  // -webkit-line-clamp works in Apple Mail / iOS / Gmail;
+                  // Outlook ignores it but max-height + overflow still
+                  // truncates (just without an ellipsis).
+                  display: "-webkit-box",
+                  fontFamily: theme.bodyFont,
+                  fontSize: 16,
+                  lineHeight: 1.4,
+                  marginTop: 4,
+                  maxHeight: "2.8em",
+                  overflow: "hidden",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 2,
+                  wordBreak: "break-word",
+                }}
+              >
+                {description}
+              </span>
+            ) : null}
+            <span
+              style={{
+                color: theme.accentBackground,
+                display: "block",
+                fontFamily: theme.bodyFont,
+                fontSize: 14,
+                fontStyle: "italic",
+                lineHeight: 1.4,
+                marginTop: 4,
+                wordBreak: "break-word",
+              }}
+            >
+              {displayUrl}
+            </span>
+          </Link>
         </Column>
         {previewSrc ? (
           <Column
             style={{
-              padding: "8px 8px 8px 0",
               verticalAlign: "top",
               width: 112,
             }}
           >
-            <Img
-              src={previewSrc}
-              alt=""
-              style={{
-                borderRadius: 4,
-                display: "block",
-                height: 88,
-                objectFit: "cover",
-                width: "100%",
-              }}
-            />
+            <Link
+              href={url}
+              style={{ ...cellLinkStyle, padding: "8px 8px 8px 0" }}
+            >
+              <Img
+                src={previewSrc}
+                alt=""
+                style={{
+                  borderRadius: 4,
+                  display: "block",
+                  height: 88,
+                  objectFit: "cover",
+                  width: "100%",
+                }}
+              />
+            </Link>
           </Column>
         ) : null}
       </Row>
     </Section>
+  );
+};
+
+export const ImageBlock = ({
+  src,
+  alt,
+  naturalWidth,
+  align = "center",
+}: {
+  src: string;
+  alt?: string;
+  naturalWidth?: number;
+  align?: "left" | "center" | "right";
+}) => {
+  // For images smaller than the column, `margin-left/right: auto` shifts
+  // the block within the available space. For images that already fill
+  // the column (large naturals or no natural width), the auto margins
+  // collapse and alignment has no visible effect — which matches the
+  // web, where a column-wide image can't be "right aligned" either.
+  const margin =
+    align === "left"
+      ? `${BLOCK_MARGIN_TOP}px auto ${BLOCK_MARGIN_BOTTOM}px 0`
+      : align === "right"
+        ? `${BLOCK_MARGIN_TOP}px 0 ${BLOCK_MARGIN_BOTTOM}px auto`
+        : IMAGE_MARGIN;
+  return (
+    <Img
+      src={src}
+      alt={alt ?? ""}
+      style={{
+        display: "block",
+        height: "auto",
+        margin,
+        maxWidth: naturalWidth ? `${naturalWidth}px` : "100%",
+        width: "100%",
+      }}
+    />
   );
 };
 
