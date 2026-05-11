@@ -39,13 +39,9 @@ export function Sidebar(props: {
         }}
       >
         <div
-          style={
-            props.alwaysOpen
-              ? { height: "-webkit-fill-available" }
-              : { height: "fit-content" }
-          }
           className={`
           actionSidebar
+          ${props.alwaysOpen ? "h-fill" : "h-fit"}
           ${
             !props.alwaysOpen
               ? ` w-max hover:w-48 absolute top-0 left-0 z-10 opaque-container`

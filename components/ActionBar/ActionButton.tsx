@@ -77,8 +77,7 @@ export const ActionButton = forwardRef<
         {icon}
       </div>
       <div
-        className={`flex flex-col ${subtext && "leading-snug"}  sm:max-w-full min-w-0 mr-1  ${sidebar.open ? "block" : labelOnMobile ? "sm:hidden block" : "hidden"}`}
-        style={{ width: "-webkit-fill-available" }}
+        className={`w-fill flex flex-col ${subtext && "leading-snug"}  sm:max-w-full min-w-0 mr-1  ${sidebar.open ? "block" : labelOnMobile ? "sm:hidden block" : "hidden"}`}
       >
         <div className="truncate text-left">{label}</div>
         {subtext && (

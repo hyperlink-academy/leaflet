@@ -66,6 +66,18 @@
   --font-serif: Garamond;
 }
 
+@utility w-fill {
+  width: -webkit-fill-available;
+  width: -moz-available;
+  width: stretch;
+}
+
+@utility h-fill {
+  height: -webkit-fill-available;
+  height: -moz-available;
+  height: stretch;
+}
+
 /*
   The default border color has changed to `currentcolor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -151,6 +163,8 @@
     @apply p-0;
     @apply overscroll-y-none;
     min-height: -webkit-fill-available;
+    min-height: stretch;
+    min-height: -moz-available;
     @apply font-sans;
     font-synthesis: none;
   }

@@ -12,7 +12,7 @@ export function FooterLayout(props: {
         leafletFooter touch-none shrink-0 z-10
         px-2 pt-1 pb-2
         flex justify-between
-        [width:-webkit-fill-available]
+        w-fill
         pwa-padding-x
         h-[calc(38px+(max(var(--safe-padding-bottom),16px))]
        ${props.noBackground ? "bg-bg-page" : "bg-[rgba(var(--bg-page),0.5)] border-top border-bg-page"} `}
