@@ -112,7 +112,6 @@ export const NavigationContent = (props: NavigationProps) => {
       <div className="flex gap-1 items-center">
         {identity ? (
           <>
-            <hr className="border-border-light my-1" />
             <div className="grow min-w-0">
               <ProfileButton />
             </div>
