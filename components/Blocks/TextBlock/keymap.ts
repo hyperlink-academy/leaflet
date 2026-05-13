@@ -113,6 +113,19 @@ export const TextBlockKeymap = (
     ArrowDown: moveCursorDown(propsRef, repRef),
     ArrowLeft: (state, dispatch, view) => {
       if (state.selection.content().size > 0) return false;
+      let nodeBefore = state.selection.$from.nodeBefore;
+      if (nodeBefore?.type === schema.nodes.footnote) {
+        if (dispatch)
+          dispatch(
+            state.tr.setSelection(
+              TextSelection.create(
+                state.doc,
+                state.selection.from - nodeBefore.nodeSize,
+              ),
+            ),
+          );
+        return true;
+      }
       if (state.selection.anchor > 1) return false;
       let marks = state.storedMarks ?? state.selection.$from.marks();
       if (marks.length > 0) {
@@ -128,6 +141,19 @@ export const TextBlockKeymap = (
     },
     ArrowRight: (state, dispatch, view) => {
       if (state.selection.content().size > 0) return false;
+      let nodeAfter = state.selection.$from.nodeAfter;
+      if (nodeAfter?.type === schema.nodes.footnote) {
+        if (dispatch)
+          dispatch(
+            state.tr.setSelection(
+              TextSelection.create(
+                state.doc,
+                state.selection.from + nodeAfter.nodeSize,
+              ),
+            ),
+          );
+        return true;
+      }
       if (state.doc.content.size - state.selection.anchor > 1) return false;
       let marks = state.storedMarks ?? state.selection.$from.marks();
       if (marks.length > 0) {
