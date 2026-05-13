@@ -70,12 +70,7 @@
   width: -webkit-fill-available;
   width: -moz-available;
   width: stretch;
-}
-
-@utility h-fill {
-  height: -webkit-fill-available;
-  height: -moz-available;
-  height: stretch;
+  width: 100%;
 }
 
 /*

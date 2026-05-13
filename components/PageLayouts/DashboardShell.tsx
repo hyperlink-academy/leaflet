@@ -44,11 +44,7 @@ export function DashboardShell(props: DashboardShellProps) {
               }}
             >
               <Dialog.Title className="sr-only">Navigation</Dialog.Title>
-              <Sidebar
-                mobile
-                alwaysOpen
-                className="my-2! ml-2 h-full bg-bg-page!"
-              >
+              <Sidebar mobile alwaysOpen className="bg-bg-page!">
                 <NavigationContent {...navigationProps} />
               </Sidebar>
             </Dialog.Content>

@@ -144,7 +144,7 @@ const HelpPopover = () => {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="w-xs max-sw-full z-[60]!"
+      className="w-xs max-sw-full pt-3 z-[60]!"
       trigger={
         <button
           type="button"
@@ -155,60 +155,66 @@ const HelpPopover = () => {
         </button>
       }
     >
-      <div className="flex flex-col text-secondary text-center pt-2 ">
-        <h3>Welcome to Leaflet!</h3>
-        <div className="pb-3">
-          An expressive tool for publishing blogs and newsletters
-        </div>
-        <div className="flex flex-col gap-1 ">
-          <a
-            href="https://bsky.app/profile/leaflet.pub"
-            target="_blank"
-            rel="noreferrer"
-            className="no-underline!"
-          >
-            <ButtonPrimary
-              compact
-              fullWidth
-              className="bg-[#1281F6]! border-[#1281F6]!  hover:outline-[#1281F6]! text-white!"
-            >
-              <BlueskyTiny className="shrink-0" />
-              Follow us on Bluesky
-            </ButtonPrimary>
-          </a>
-
-          <a
-            href="https://lab.leaflet.pub"
-            target="_blank"
-            rel="noreferrer"
-            className="no-underline!"
-          >
-            <ButtonPrimary
-              compact
-              fullWidth
-              className="bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white!"
-            >
-              <LeafletTiny className="shrink-0" /> Sign up for our Newsletter
-            </ButtonPrimary>
-          </a>
-        </div>
-        <hr className="mt-3 mb-1  border-border-light" />
-        <div className="text-sm flex gap-4  mx-auto pb-1">
-          <SpeedyLink href="/legal" target="_blank">
-            Terms
-          </SpeedyLink>
-          {/*
-            THIS SHOULD GO TO THE LANDING PAGE
-            <SpeedyLink href="/about" target="_blank">
-            Learn More
-            </SpeedyLink>
-          */}
-          <a href="mailto:contact@leaflet.pub" target="_blank" rel="noreferrer">
-            Contact
-          </a>
-        </div>
-      </div>
+      <HelpContent />
     </Popover>
+  );
+};
+
+export const HelpContent = () => {
+  return (
+    <div className="flex flex-col text-secondary text-center ">
+      <h3>Welcome to Leaflet!</h3>
+      <div className="pb-3">
+        An expressive tool for publishing blogs and newsletters
+      </div>
+      <div className="flex flex-col gap-1 ">
+        <a
+          href="https://bsky.app/profile/leaflet.pub"
+          target="_blank"
+          rel="noreferrer"
+          className="no-underline!"
+        >
+          <ButtonPrimary
+            compact
+            fullWidth
+            className="bg-[#1281F6]! border-[#1281F6]!  hover:outline-[#1281F6]!  focus:outline-[#1281F6]! text-white! outline-transparent!"
+          >
+            <BlueskyTiny className="shrink-0" />
+            Follow us on Bluesky
+          </ButtonPrimary>
+        </a>
+
+        <a
+          href="https://lab.leaflet.pub"
+          target="_blank"
+          rel="noreferrer"
+          className="no-underline!"
+        >
+          <ButtonPrimary
+            compact
+            fullWidth
+            className="bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white!"
+          >
+            <LeafletTiny className="shrink-0" /> Sign up for our Newsletter
+          </ButtonPrimary>
+        </a>
+      </div>
+      {/*<hr className="mt-3 mb-1  border-border-light" />*/}
+      <div className="text-sm flex gap-4  mt-3 mx-auto pb-1">
+        <SpeedyLink href="/legal" target="_blank">
+          Terms
+        </SpeedyLink>
+        {/*
+          THIS SHOULD GO TO THE LANDING PAGE
+          <SpeedyLink href="/about" target="_blank">
+          Learn More
+          </SpeedyLink>
+        */}
+        <a href="mailto:contact@leaflet.pub" target="_blank" rel="noreferrer">
+          Email
+        </a>
+      </div>
+    </div>
   );
 };
 

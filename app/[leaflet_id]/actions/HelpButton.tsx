@@ -9,6 +9,7 @@ import { ActionButton } from "components/ActionBar/ActionButton";
 import { HelpSmall } from "../../../components/Icons/HelpSmall";
 import { isMac } from "src/utils/isDevice";
 import { useIsMobile } from "src/hooks/isMobile";
+import { HelpContent } from "components/ActionBar/DesktopNavigation";
 
 export const HelpButton = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();
@@ -25,22 +26,7 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
       <div
         className={`flex flex-col text-sm gap-2 p-3  text-secondary max-h-[70vh] overflow-y-auto p-2" : ""}`}
       >
-        {/* about links */}
-        <HelpLink text="📖 Leaflet Manual" url="https://about.leaflet.pub" />
-        <HelpLink text="💡 Make with Leaflet" url="https://make.leaflet.pub" />
-        <HelpLink
-          text="✨ Explore Publications"
-          url="https://leaflet.pub/reader"
-        />
-        <HelpLink text="📣 Newsletter" url="https://lab.leaflet.pub" />
-        {/* contact links */}
-        <div className="columns-2 gap-2">
-          <HelpLink
-            text="🦋 Bluesky"
-            url="https://bsky.app/profile/leaflet.pub"
-          />
-          <HelpLink text="💌 Email" url="mailto:contact@leaflet.pub" />
-        </div>
+        <HelpContent />
         {/* keyboard shortcuts: desktop only */}
         <Media mobile={false}>
           {!props.noShortcuts && (
