@@ -112,6 +112,18 @@ const presetThemes: PresetTheme[] = [
     bodyFont: "sometype-mono",
     pageWidth: 768,
   },
+  {
+    name: "Noir",
+    bgLeaflet: "#1A1818",
+    bgPage: "1A1818",
+    showPageBackground: false,
+    primary: "#DBDBDB",
+    accent1: "#DEAA00",
+    accent2: "#1A1818",
+    headingFont: undefined,
+    bodyFont: undefined,
+    pageWidth: 768,
+  },
 ];
 
 export function PresetThemePicker(props: { state: PubThemeEditorState }) {
@@ -152,7 +164,7 @@ export function PresetThemePicker(props: { state: PubThemeEditorState }) {
   return (
     <div className="pubPresetPicker flex flex-col pb-2">
       <div className="text-sm  text-[#969696] -mb-0.5">PRESETS</div>
-      <div className="flex gap-2   items-center px-2 py-2 border border-[#CCCCCC] rounded-md bg-white mb-1">
+      <div className="flex gap-1.5 items-center px-2 py-2 border border-[#CCCCCC] rounded-md bg-white mb-1">
         {presetThemes.map((preset) => (
           <button
             key={preset.name}
