@@ -115,7 +115,7 @@ const presetThemes: PresetTheme[] = [
   {
     name: "Noir",
     bgLeaflet: "#1A1818",
-    bgPage: "1A1818",
+    bgPage: "#1A1818",
     showPageBackground: false,
     primary: "#DBDBDB",
     accent1: "#DEAA00",
