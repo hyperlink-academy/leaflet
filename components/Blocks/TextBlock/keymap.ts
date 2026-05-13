@@ -111,9 +111,14 @@ export const TextBlockKeymap = (
     ArrowUp: moveCursorUp(propsRef, repRef),
     "Ctrl-j": moveCursorDown(propsRef, repRef, true),
     ArrowDown: moveCursorDown(propsRef, repRef),
-    ArrowLeft: (state, tr, view) => {
+    ArrowLeft: (state, dispatch, view) => {
       if (state.selection.content().size > 0) return false;
       if (state.selection.anchor > 1) return false;
+      let marks = state.storedMarks ?? state.selection.$from.marks();
+      if (marks.length > 0) {
+        if (dispatch) dispatch(state.tr.setStoredMarks([]));
+        return true;
+      }
       let block = propsRef.current.previousBlock;
       if (block) {
         view?.dom.blur();
@@ -121,9 +126,14 @@ export const TextBlockKeymap = (
       }
       return true;
     },
-    ArrowRight: (state, tr, view) => {
+    ArrowRight: (state, dispatch, view) => {
       if (state.selection.content().size > 0) return false;
       if (state.doc.content.size - state.selection.anchor > 1) return false;
+      let marks = state.storedMarks ?? state.selection.$from.marks();
+      if (marks.length > 0) {
+        if (dispatch) dispatch(state.tr.setStoredMarks([]));
+        return true;
+      }
       let block = propsRef.current.nextBlock;
       if (block) {
         view?.dom.blur();
