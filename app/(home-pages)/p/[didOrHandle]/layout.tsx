@@ -13,6 +13,9 @@ import { Metadata } from "next";
 import { cache } from "react";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
 import { Avatar } from "components/Avatar";
+import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
+import { TrendingSmall } from "components/Icons/TrendingSmall";
+import { NewSmall } from "components/Icons/NewSmall";
 
 // Cache the profile data call to prevent concurrent OAuth restores
 const getCachedProfileData = cache(async (did: string) => {
@@ -87,9 +90,9 @@ export default async function ProfilePageLayout(props: {
       id="profile"
       pageTitle={<PageTitle pageTitle={displayName} />}
       tabs={{
-        Inbox: { href: "/reader" },
-        Trending: { href: "/reader/trending" },
-        New: { href: "/reader/new" },
+        Inbox: { icon: <BlockMailboxSmall />, href: "/reader" },
+        Trending: { icon: <TrendingSmall />, href: "/reader/trending" },
+        New: { icon: <NewSmall />, href: "/reader/new" },
       }}
     >
       <DashboardPageLayout

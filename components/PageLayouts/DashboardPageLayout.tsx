@@ -16,7 +16,13 @@ export function DashboardPageLayout(props: {
 
   return (
     <div
-      className={`dashboardPage w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-[calc(var(--safe-padding-bottom)+56px)] px-3 sm:pt-6 sm:pb-6 sm:pl-8 sm:pr-4`}
+      className={`dashboardPageContent
+        relative w-full h-full
+        flex flex-col gap-2
+         pt-3 pb-[calc(var(--safe-padding-bottom)+56px)] px-3
+         sm:pt-6 sm:pb-6 sm:pl-8 sm:pr-4
+         overflow-y-auto
+         `}
       ref={ref}
       id="home-content"
     >
