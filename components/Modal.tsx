@@ -54,7 +54,7 @@ export const Modal = ({
           overflow-y-scroll no-scrollbar max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] p-3 flex flex-col w-full sm:w-max text-primary
           `}
         >
-          <Dialog.Close className="bg-bg-page rounded-full -mb-3 mr-2  z-10 w-fit p-1 place-self-end border border-border-light text-tertiary">
+          <Dialog.Close className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit p-0.5 place-self-end border border-border-light text-tertiary">
             <CloseTiny />
           </Dialog.Close>
           <div

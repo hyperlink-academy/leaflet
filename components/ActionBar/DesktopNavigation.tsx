@@ -146,13 +146,9 @@ const HelpPopover = () => {
       align={isMobile ? "center" : "start"}
       className="w-xs max-sw-full pt-3 z-[60]!"
       trigger={
-        <button
-          type="button"
-          aria-label="About Leaflet"
-          className="shrink-0 pr-2 text-tertiary"
-        >
+        <div aria-label="About Leaflet" className="shrink-0 pr-2 text-tertiary">
           <HelpSmall />
-        </button>
+        </div>
       }
     >
       <HelpContent />
