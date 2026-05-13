@@ -112,26 +112,10 @@ export const TextBlockKeymap = (
     "Ctrl-j": moveCursorDown(propsRef, repRef, true),
     ArrowDown: moveCursorDown(propsRef, repRef),
     ArrowLeft: (state, dispatch, view) => {
-      if (state.selection.content().size > 0) return false;
-      let nodeBefore = state.selection.$from.nodeBefore;
-      if (nodeBefore?.type === schema.nodes.footnote) {
-        if (dispatch)
-          dispatch(
-            state.tr.setSelection(
-              TextSelection.create(
-                state.doc,
-                state.selection.from - nodeBefore.nodeSize,
-              ),
-            ),
-          );
-        return true;
-      }
+      if (!state.selection.empty) return false;
+      if (skipFootnote(state, dispatch, "before")) return true;
       if (state.selection.anchor > 1) return false;
-      let marks = state.storedMarks ?? state.selection.$from.marks();
-      if (marks.length > 0) {
-        if (dispatch) dispatch(state.tr.setStoredMarks([]));
-        return true;
-      }
+      if (clearStoredMarks(state, dispatch)) return true;
       let block = propsRef.current.previousBlock;
       if (block) {
         view?.dom.blur();
@@ -140,26 +124,10 @@ export const TextBlockKeymap = (
       return true;
     },
     ArrowRight: (state, dispatch, view) => {
-      if (state.selection.content().size > 0) return false;
-      let nodeAfter = state.selection.$from.nodeAfter;
-      if (nodeAfter?.type === schema.nodes.footnote) {
-        if (dispatch)
-          dispatch(
-            state.tr.setSelection(
-              TextSelection.create(
-                state.doc,
-                state.selection.from + nodeAfter.nodeSize,
-              ),
-            ),
-          );
-        return true;
-      }
+      if (!state.selection.empty) return false;
+      if (skipFootnote(state, dispatch, "after")) return true;
       if (state.doc.content.size - state.selection.anchor > 1) return false;
-      let marks = state.storedMarks ?? state.selection.$from.marks();
-      if (marks.length > 0) {
-        if (dispatch) dispatch(state.tr.setStoredMarks([]));
-        return true;
-      }
+      if (clearStoredMarks(state, dispatch)) return true;
       let block = propsRef.current.nextBlock;
       if (block) {
         view?.dom.blur();
@@ -188,6 +156,36 @@ export const TextBlockKeymap = (
     "Ctrl-Enter": CtrlEnter(propsRef, repRef),
     "Meta-Enter": CtrlEnter(propsRef, repRef),
   }) as { [key: string]: Command };
+
+const skipFootnote = (
+  state: EditorState,
+  dispatch: ((tr: Transaction) => void) | undefined,
+  side: "before" | "after",
+) => {
+  let node =
+    side === "before"
+      ? state.selection.$from.nodeBefore
+      : state.selection.$from.nodeAfter;
+  if (node?.type !== schema.nodes.footnote) return false;
+  let delta = side === "before" ? -node.nodeSize : node.nodeSize;
+  if (dispatch)
+    dispatch(
+      state.tr.setSelection(
+        TextSelection.create(state.doc, state.selection.from + delta),
+      ),
+    );
+  return true;
+};
+
+const clearStoredMarks = (
+  state: EditorState,
+  dispatch: ((tr: Transaction) => void) | undefined,
+) => {
+  let marks = state.storedMarks ?? state.selection.$from.marks();
+  if (marks.length === 0) return false;
+  if (dispatch) dispatch(state.tr.setStoredMarks([]));
+  return true;
+};
 
 const moveCursorDown =
   (
