@@ -30,7 +30,7 @@ export function Sidebar(props: {
   return (
     <Media
       mobile={props.mobile ?? false}
-      className={`pwa-padding pwa-padding-bottom sm:h-auto h-[100dvh] ${props.alwaysOpen ? "sm:flex sm:items-stretch" : "h-fit"}`}
+      className={`pwa-padding pwa-padding-bottom sm:h-auto h-[calc(100dvh-16px)] ${props.alwaysOpen ? "flex items-stretch sm:flex sm:items-stretch" : "h-fit"}`}
     >
       <SidebarContext
         value={{
@@ -43,7 +43,7 @@ export function Sidebar(props: {
           actionSidebar
           ${
             props.alwaysOpen
-              ? `sm:my-6 my-2 sm:ml-0 ml-2 w-56 ${cardBorderHidden ? "light-container" : "frosted-container"}`
+              ? `sm:my-6 sm:h-auto h-full my-2 sm:ml-0 ml-2 w-56 ${cardBorderHidden ? "light-container" : "frosted-container"}`
               : `w-max absolute top-0 left-0 z-10 opaque-container`
           }
           p-[6px]

@@ -84,6 +84,7 @@ export const ProfilePostsContent = (props: {
           Loading more posts...
         </div>
       )}
+      <div className="spacer h-4" />
     </div>
   );
 };
