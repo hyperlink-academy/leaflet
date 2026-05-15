@@ -17,7 +17,7 @@ import {
   getWebpageImage,
 } from "src/utils/getMicroLinkOgImage";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
-import { sanitizeDocumentRecord } from "lexicons/src/sanitizeIntegers";
+import { sanitizeIntegers } from "lexicons/src/sanitizeIntegers";
 
 type PublishBskyResult =
   | { success: true }
@@ -112,7 +112,7 @@ export async function publishPostToBsky(args: {
       },
     },
   );
-  let record = sanitizeDocumentRecord({
+  let record = sanitizeIntegers({
     ...args.document_record,
     bskyPostRef: post,
   });

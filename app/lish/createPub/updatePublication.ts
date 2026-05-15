@@ -16,7 +16,7 @@ import {
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { getPublicationType } from "src/utils/collectionHelpers";
-import { sanitizePublicationRecord } from "lexicons/src/sanitizeIntegers";
+import { sanitizeIntegers } from "lexicons/src/sanitizeIntegers";
 
 type UpdatePublicationResult =
   | { success: true; publication: any }
@@ -89,7 +89,7 @@ async function withPublicationUpdate(
     : undefined;
 
   // Build the updated record
-  const record = sanitizePublicationRecord(
+  const record = sanitizeIntegers(
     await recordBuilder({
       normalizedPub,
       existingBasePath,

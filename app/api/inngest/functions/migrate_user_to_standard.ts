@@ -13,10 +13,7 @@ import {
   normalizePublicationRecord,
   normalizeDocumentRecord,
 } from "src/utils/normalizeRecords";
-import {
-  sanitizeDocumentRecord,
-  sanitizePublicationRecord,
-} from "lexicons/src/sanitizeIntegers";
+import { sanitizeIntegers } from "lexicons/src/sanitizeIntegers";
 
 type MigrationResult =
   | { success: true; oldUri: string; newUri: string; skipped?: boolean }
@@ -118,7 +115,7 @@ export const migrate_user_to_standard = inngest.createFunction(
           return null;
         }
 
-        const newRecord: SiteStandardPublication.Record = sanitizePublicationRecord({
+        const newRecord: SiteStandardPublication.Record = sanitizeIntegers({
           $type: "site.standard.publication",
           name: normalized.name,
           url: normalized.url,
@@ -253,7 +250,7 @@ export const migrate_user_to_standard = inngest.createFunction(
         }
 
         // Build site.standard.document record
-        const newRecord: SiteStandardDocument.Record = sanitizeDocumentRecord({
+        const newRecord: SiteStandardDocument.Record = sanitizeIntegers({
           $type: "site.standard.document",
           title: normalized.title || "Untitled",
           site: siteValue,
@@ -371,7 +368,7 @@ export const migrate_user_to_standard = inngest.createFunction(
             Object.values(publicationUriMap).includes(newPubUri)
           ) {
             const docAturi = new AtUri(doc.uri);
-            const updatedRecord: SiteStandardDocument.Record = sanitizeDocumentRecord({
+            const updatedRecord: SiteStandardDocument.Record = sanitizeIntegers({
               ...data,
               site: newPubUri,
             });

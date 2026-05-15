@@ -4,7 +4,7 @@ import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
-import { sanitizeDocumentRecord } from "lexicons/src/sanitizeIntegers";
+import { sanitizeIntegers } from "lexicons/src/sanitizeIntegers";
 
 async function createAuthenticatedAgent(did: string): Promise<AtpBaseClient> {
   const result = await restoreOAuthSession(did);
@@ -240,7 +240,7 @@ export const fix_incorrect_site_values = inngest.createFunction(
               const docAturi = new AtUri(docToFix.uri);
 
               // Build updated record
-              const updatedRecord: SiteStandardDocument.Record = sanitizeDocumentRecord({
+              const updatedRecord: SiteStandardDocument.Record = sanitizeIntegers({
                 ...docToFix.docData,
                 site: docToFix.correctSite,
               });

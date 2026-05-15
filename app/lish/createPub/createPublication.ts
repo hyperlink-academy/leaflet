@@ -14,7 +14,7 @@ import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { string } from "zod";
 import { getPublicationType } from "src/utils/collectionHelpers";
 import { PubThemeDefaultsRGB } from "components/ThemeManager/themeDefaults";
-import { sanitizePublicationRecord } from "lexicons/src/sanitizeIntegers";
+import { sanitizeIntegers } from "lexicons/src/sanitizeIntegers";
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const vercel = new Vercel({
@@ -135,7 +135,7 @@ export async function createPublication({
     } satisfies PubLeafletPublication.Record;
   }
 
-  record = sanitizePublicationRecord(record);
+  record = sanitizeIntegers(record);
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
     repo: credentialSession.did!,

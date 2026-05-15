@@ -4,7 +4,7 @@ import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
-import { sanitizeDocumentRecord } from "lexicons/src/sanitizeIntegers";
+import { sanitizeIntegers } from "lexicons/src/sanitizeIntegers";
 
 async function createAuthenticatedAgent(did: string): Promise<AtpBaseClient> {
   const result = await restoreOAuthSession(did);
@@ -103,7 +103,7 @@ export const fix_standard_document_publications = inngest.createFunction(
             const newSite = `at://${oldPubAturi.hostname}/site.standard.publication/${oldPubAturi.rkey}`;
 
             // Update the record
-            const updatedRecord: SiteStandardDocument.Record = sanitizeDocumentRecord({
+            const updatedRecord: SiteStandardDocument.Record = sanitizeIntegers({
               ...data,
               site: newSite,
             });

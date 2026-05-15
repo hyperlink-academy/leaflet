@@ -8,7 +8,7 @@ import {
 } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
-import { sanitizeDocumentRecord } from "lexicons/src/sanitizeIntegers";
+import { sanitizeIntegers } from "lexicons/src/sanitizeIntegers";
 
 async function createAuthenticatedAgent(did: string): Promise<AtpBaseClient> {
   const result = await restoreOAuthSession(did);
@@ -141,7 +141,7 @@ export const fix_standard_document_postref = inngest.createFunction(
 
             // Build updated record: move postRef to bskyPostRef
             const { postRef: _, ...restData } = data;
-            let updatedRecord: SiteStandardDocument.Record = sanitizeDocumentRecord({
+            let updatedRecord: SiteStandardDocument.Record = sanitizeIntegers({
               ...(restData as SiteStandardDocument.Record),
             });
 

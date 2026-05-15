@@ -28,7 +28,7 @@ import {
   normalizeDocumentRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
-import { sanitizeDocumentRecord } from "lexicons/src/sanitizeIntegers";
+import { sanitizeIntegers } from "lexicons/src/sanitizeIntegers";
 import {
   ColorToRGB,
   ColorToRGBA,
@@ -331,7 +331,7 @@ export async function publishToPublication({
     } satisfies PubLeafletDocument.Record;
   }
 
-  record = sanitizeDocumentRecord(record);
+  record = sanitizeIntegers(record);
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey,
