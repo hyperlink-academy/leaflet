@@ -16,6 +16,7 @@ import {
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { getPublicationType } from "src/utils/collectionHelpers";
+import { sanitizePublicationRecord } from "lexicons/src/sanitizeIntegers";
 
 type UpdatePublicationResult =
   | { success: true; publication: any }
@@ -88,12 +89,14 @@ async function withPublicationUpdate(
     : undefined;
 
   // Build the updated record
-  const record = await recordBuilder({
-    normalizedPub,
-    existingBasePath,
-    publicationType,
-    agent,
-  });
+  const record = sanitizePublicationRecord(
+    await recordBuilder({
+      normalizedPub,
+      existingBasePath,
+      publicationType,
+      agent,
+    }),
+  );
 
   // Write to PDS
   await agent.com.atproto.repo.putRecord({
@@ -349,7 +352,10 @@ export async function updatePublicationTheme({
               ...theme.backgroundColor,
             }
           : undefined,
-        pageWidth: theme.pageWidth,
+        pageWidth:
+          typeof theme.pageWidth === "number"
+            ? Math.round(theme.pageWidth)
+            : undefined,
         primary: {
           ...theme.primary,
         },

@@ -28,6 +28,7 @@ import {
   normalizeDocumentRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
+import { sanitizeDocumentRecord } from "lexicons/src/sanitizeIntegers";
 import {
   ColorToRGB,
   ColorToRGBA,
@@ -330,6 +331,8 @@ export async function publishToPublication({
     } satisfies PubLeafletDocument.Record;
   }
 
+  record = sanitizeDocumentRecord(record);
+
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey,
     repo: credentialSession.did!,
@@ -459,7 +462,8 @@ async function extractThemeFromFacts(
     showPageBackground: showPageBackground ?? true,
   };
 
-  if (pageWidth) theme.pageWidth = pageWidth.data.value;
+  if (pageWidth && typeof pageWidth.data.value === "number")
+    theme.pageWidth = Math.round(pageWidth.data.value);
   if (pageBackground)
     theme.backgroundColor = ColorToRGBA(parseColor(`hsba(${pageBackground})`));
   if (cardBackground)

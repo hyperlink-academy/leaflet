@@ -17,6 +17,7 @@ import {
   getWebpageImage,
 } from "src/utils/getMicroLinkOgImage";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
+import { sanitizeDocumentRecord } from "lexicons/src/sanitizeIntegers";
 
 type PublishBskyResult =
   | { success: true }
@@ -111,8 +112,10 @@ export async function publishPostToBsky(args: {
       },
     },
   );
-  let record = args.document_record;
-  record.bskyPostRef = post;
+  let record = sanitizeDocumentRecord({
+    ...args.document_record,
+    bskyPostRef: post,
+  });
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey: args.rkey,
@@ -124,7 +127,7 @@ export async function publishPostToBsky(args: {
   await supabaseServerClient
     .from("documents")
     .update({
-      data: record as Json,
+      data: record as unknown as Json,
     })
     .eq("uri", result.uri);
   return { success: true };

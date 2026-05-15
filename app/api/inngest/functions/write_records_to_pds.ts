@@ -1,6 +1,7 @@
 import { inngest, events } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient } from "lexicons/api";
+import { sanitizeRecordForCollection } from "lexicons/src/sanitizeIntegers";
 
 // Batch size to avoid Inngest payload limits and PDS rate limits
 const BATCH_SIZE = 50;
@@ -52,7 +53,10 @@ export const write_records_to_pds = inngest.createFunction(
               repo: did,
               collection: rec.collection,
               rkey: rec.rkey,
-              record: rec.record as Record<string, unknown>,
+              record: sanitizeRecordForCollection(
+                rec.collection,
+                rec.record as Record<string, unknown>,
+              ),
               validate: false,
             });
             written++;
