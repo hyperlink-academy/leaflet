@@ -19,7 +19,7 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const bgColor = searchParams.get("bg") || "#0000E1";
+  const bgColor = searchParams.get("bg") || "#57822B";
   const fgColor = searchParams.get("fg") || "#FFFFFF";
 
   try {

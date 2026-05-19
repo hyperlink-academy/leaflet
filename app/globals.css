@@ -99,9 +99,9 @@
 
     --primary: 39, 39, 39;
 
-    --accent-1: 0, 0, 225;
+    --accent-1: 87, 130, 43;
     --accent-2: 255, 255, 255;
-    --accent-contrast: 0, 0, 225;
+    --accent-contrast: 87, 130, 43;
     --accent-1-is-contrast: "true";
     --accent-contrast-similar-to-text: 0;
     --link-underline: none;

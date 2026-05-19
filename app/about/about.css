@@ -1,0 +1,33 @@
+.aboutPage h1 {
+  font-family: var(--font-ibm-plex-serif);
+  font-weight: 700;
+  font-style: italic;
+  font-size: 180px;
+}
+
+.aboutPage h2 {
+  font-family: var(--font-ibm-plex-serif);
+  font-weight: 600;
+  font-size: 4rem;
+}
+
+.aboutPage h3 {
+  font-family: var(--font-ibm-plex-serif);
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+.aboutPage h4 {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.aboutPage p {
+  font-size: 1.5rem;
+}
+
+.aboutCover {
+}
+
+.aboutSpotlightFeatures {
+}
