@@ -3,6 +3,8 @@
 import { DraftList } from "./DraftList";
 import { GetPublicationDataReturnType } from "app/api/rpc/[command]/get_publication_data";
 import { Actions } from "./Actions";
+import { EditPagesNavLink } from "./EditPagesNavLink";
+import { AtUri } from "@atproto/syntax";
 import React, { useState } from "react";
 import { PublishedPostsList } from "./PublishedPostsLists";
 import { PublicationSubscribers } from "./PublicationSubscribers";
@@ -31,6 +33,7 @@ export default function PublicationDashboard({
   let canSeePro = useCanSeePro();
   let [searchValue, setSearchValue] = useState("");
   let [debouncedSearchValue, setDebouncedSearchValue] = useState("");
+  let pubUri = new AtUri(publication.uri);
 
   useDebouncedEffect(
     () => {
@@ -100,7 +103,16 @@ export default function PublicationDashboard({
           controls: null,
         },
       }}
-      actions={<Actions publication={publication.uri} />}
+      actions={
+        <>
+          <Actions publication={publication.uri} />
+          <EditPagesNavLink
+            publication={publication.uri}
+            did={pubUri.host}
+            publicationName={pubUri.rkey}
+          />
+        </>
+      }
       currentPage="pub"
       publication={publication.uri}
       pageTitle={record.name}

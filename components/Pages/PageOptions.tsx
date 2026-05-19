@@ -16,7 +16,10 @@ import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { useCardBorderHidden } from "./useCardBorderHidden";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "components/PageSWRDataProvider";
 
 export const PageOptionButton = ({
   children,
@@ -57,6 +60,8 @@ export const PageOptions = (props: {
   first: boolean | undefined;
   isFocused: boolean;
 }) => {
+  let publicationPage = useLeafletPublicationPage();
+  if (publicationPage) return null;
   return (
     <div
       className={`pageOptions w-fit z-10

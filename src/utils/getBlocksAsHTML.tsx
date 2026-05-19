@@ -207,6 +207,7 @@ const BlockTypeToHTML: {
       />
     );
   },
+  "posts-list": async () => null,
 };
 
 async function renderBlock(b: Block, tx: ReadTransaction) {
