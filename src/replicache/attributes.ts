@@ -210,6 +210,17 @@ const PollBlockAttributes = {
   },
 } as const;
 
+const PostsListBlockAttributes = {
+  "posts-list/view": {
+    type: "posts-list-view-union",
+    cardinality: "one",
+  },
+  "posts-list/highlight-first-post": {
+    type: "boolean",
+    cardinality: "one",
+  },
+} as const;
+
 export const ThemeAttributes = {
   "theme/heading-font": {
     type: "string",
@@ -301,6 +312,7 @@ export const Attributes = {
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
   ...PollBlockAttributes,
+  ...PostsListBlockAttributes,
 };
 export type Attributes = typeof Attributes;
 export type Attribute = keyof Attributes;
@@ -378,7 +390,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "math"
       | "code"
       | "blockquote"
-      | "horizontal-rule";
+      | "horizontal-rule"
+      | "posts-list";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
@@ -387,6 +400,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "list-style-union": {
     type: "list-style-union";
     value: "ordered" | "unordered";
+  };
+  "posts-list-view-union": {
+    type: "posts-list-view-union";
+    value: "compact" | "full";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

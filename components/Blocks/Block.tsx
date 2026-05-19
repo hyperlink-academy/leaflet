@@ -31,6 +31,7 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
+import { PostsListBlock } from "./PostsListBlock";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
@@ -365,6 +366,7 @@ const BlockTypeComponents: {
   "bluesky-post": BlueskyPostBlock,
   "standard-site-post": StandardSitePostBlock,
   "horizontal-rule": HorizontalRule,
+  "posts-list": PostsListBlock,
 };
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {
@@ -414,6 +416,7 @@ export const BlockLayout = (props: {
   hasAlignment?: boolean;
   areYouSure?: boolean;
   setAreYouSure?: (value: boolean) => void;
+  extraOptions?: React.ReactNode;
 }) => {
   // this is used to wrap non-text blocks in consistent selected styling, spacing, and top level options like delete
   return (
@@ -441,6 +444,7 @@ export const BlockLayout = (props: {
           optionsClassName={props.optionsClassName}
           areYouSure={props.areYouSure}
           setAreYouSure={props.setAreYouSure}
+          extraOptions={props.extraOptions}
         />
       )}
     </div>
@@ -453,6 +457,7 @@ const NonTextBlockOptions = (props: {
   areYouSure?: boolean;
   setAreYouSure?: (value: boolean) => void;
   optionsClassName?: string;
+  extraOptions?: React.ReactNode;
 }) => {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
@@ -499,6 +504,7 @@ const NonTextBlockOptions = (props: {
           <Separator classname="border-bg-page! h-4! mx-0.5" />
         </>
       )}
+      {props.extraOptions}
       <button
         onClick={async (e) => {
           e.stopPropagation();
