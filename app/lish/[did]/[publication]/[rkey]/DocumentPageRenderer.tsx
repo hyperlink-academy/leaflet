@@ -30,6 +30,7 @@ import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { FontLoader } from "components/FontLoader";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { PublicationNav } from "../PublicationNav";
 
 export async function DocumentPageRenderer({
   did,
@@ -167,6 +168,14 @@ export async function DocumentPageRenderer({
             pub_creator={pub_creator}
           >
             <LeafletLayout>
+              {document.publication?.pages?.length ? (
+                <PublicationNav
+                  did={did}
+                  publicationName={document.publication.name}
+                  pages={document.publication.pages}
+                  activePath={null}
+                />
+              ) : null}
               <PostPages
                 document_uri={document.uri}
                 preferences={mergePreferences(

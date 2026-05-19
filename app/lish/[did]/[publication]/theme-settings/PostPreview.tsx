@@ -96,6 +96,7 @@ export function PostPreview(props: {
         })),
         newsletterMode:
           !!publication.publication_newsletter_settings?.enabled,
+        pages: [],
       }
     : null;
 

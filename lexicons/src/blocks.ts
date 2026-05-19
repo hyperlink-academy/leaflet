@@ -364,6 +364,21 @@ export const PubLeafletBlocksButton: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksPostsList: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.postsList",
+  defs: {
+    main: {
+      type: "object",
+      required: [],
+      properties: {
+        view: { type: "string", knownValues: ["compact", "full"] },
+        highlightFirstPost: { type: "boolean" },
+      },
+    },
+  },
+};
+
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksText,
@@ -381,6 +396,7 @@ export const BlockLexicons = [
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
   PubLeafletBlocksButton,
+  PubLeafletBlocksPostsList,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

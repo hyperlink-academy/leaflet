@@ -2,6 +2,7 @@ import React from "react";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
 import { PublicationAuthor } from "./PublicationAuthor";
 import { PublicationHeader } from "./PublicationHeader";
+import { PublicationNav } from "./PublicationNav";
 import {
   normalizePublicationRecord,
   normalizeDocumentRecord,
@@ -33,6 +34,12 @@ export const PublicationContent = ({
     record: unknown;
     publication_subscriptions: { identity: string }[];
     publication_newsletter_settings: { enabled: boolean } | null;
+    publication_pages?: {
+      id: number;
+      path: string | null;
+      title: string | null;
+      record_uri: string | null;
+    }[];
     documents_in_publications: {
       documents: {
         uri: string;
@@ -105,6 +112,14 @@ export const PublicationContent = ({
               />
             </div>
           }
+        />
+        <PublicationNav
+          did={did}
+          publicationName={publication.name}
+          pages={(publication.publication_pages ?? []).filter(
+            (p) => p.record_uri,
+          )}
+          activePath="/"
         />
         <PublicationPostsList
           publication={publication}

@@ -353,6 +353,7 @@ export const publication_email_subscribers = pgTable("publication_email_subscrib
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	confirmed_at: timestamp("confirmed_at", { withTimezone: true, mode: 'string' }),
 	unsubscribed_at: timestamp("unsubscribed_at", { withTimezone: true, mode: 'string' }),
+	metadata: jsonb("metadata"),
 },
 (table) => {
 	return {

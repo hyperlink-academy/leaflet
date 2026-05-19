@@ -126,6 +126,8 @@ export const get_publication_data = makeRoute({
       path: p.path,
       document: p.document,
       metadata: p.metadata,
+      record: p.record,
+      record_uri: p.record_uri,
       leaflet_src: p.leaflet_src,
       created_at: p.created_at,
       permission_tokens: p.permission_tokens,

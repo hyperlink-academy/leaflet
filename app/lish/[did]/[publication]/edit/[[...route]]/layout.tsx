@@ -11,6 +11,7 @@ import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvid
 import { PublicationPagesNav } from "./PublicationPagesNav";
 import { PublicationEditHeader } from "./PublicationEditHeader";
 import { PublicationHeaderEditor } from "../../PublicationHeaderEditor";
+import { PublicationCollapsibleHeader } from "./PublicationCollapsibleHeader";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -93,13 +94,13 @@ export default async function PublicationEditLayout(props: {
             publicationName={params.publication}
           />
           <div className="flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
-            <div className="px-3 sm:px-4 pt-5 w-full sm:max-w-(--page-width-units) mx-auto">
+            <PublicationCollapsibleHeader>
               <PublicationHeaderEditor
                 iconUrl={iconUrl}
                 publicationName={publication.name}
                 description={record?.description}
               />
-            </div>
+            </PublicationCollapsibleHeader>
             <PublicationPagesNav
               did={params.did}
               publicationName={params.publication}

@@ -17,6 +17,7 @@ import {
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
+  PubLeafletBlocksPostsList,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -501,6 +502,19 @@ export async function processBlocksToPages(opts: {
         $type: "pub.leaflet.blocks.button",
         text: text.data.value,
         url: url.data.value,
+      };
+      return block;
+    }
+    if (b.type === "posts-list") {
+      const [viewFact] = scan.eav(b.value, "posts-list/view");
+      const [highlightFact] = scan.eav(
+        b.value,
+        "posts-list/highlight-first-post",
+      );
+      const block: $Typed<PubLeafletBlocksPostsList.Main> = {
+        $type: "pub.leaflet.blocks.postsList",
+        ...(viewFact && { view: viewFact.data.value }),
+        ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
       };
       return block;
     }

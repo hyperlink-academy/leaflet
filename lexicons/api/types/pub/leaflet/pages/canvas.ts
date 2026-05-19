@@ -25,6 +25,7 @@ import type * as PubLeafletBlocksStandardSitePost from '../blocks/standardSitePo
 import type * as PubLeafletBlocksPage from '../blocks/page'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
+import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -65,6 +66,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksPage.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
     | $Typed<PubLeafletBlocksButton.Main>
+    | $Typed<PubLeafletBlocksPostsList.Main>
     | { $type: string }
   x: number
   y: number

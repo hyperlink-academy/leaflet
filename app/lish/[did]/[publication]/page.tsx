@@ -9,6 +9,8 @@ import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { PublicationContent } from "./PublicationContent";
+import { PublicationPageRenderer } from "./[rkey]/PublicationPageRenderer";
+import { PubLeafletPublicationPage } from "lexicons/api";
 import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
@@ -29,6 +31,7 @@ export default async function Publication(props: {
         `*,
         publication_subscriptions(*),
         publication_newsletter_settings(enabled),
+        publication_pages(id, path, title, record, record_uri),
         documents_in_publications(documents(
           *,
           comments_on_documents(count),
@@ -50,7 +53,27 @@ export default async function Publication(props: {
   const showPageBackground = record?.theme?.showPageBackground;
 
   if (!publication) return <PubNotFound />;
+
+  let homePage = publication.publication_pages?.find(
+    (p) => p.path === "/" && p.record_uri && p.record,
+  );
+
   try {
+    if (homePage && homePage.record) {
+      let pageRecord = homePage.record as unknown as PubLeafletPublicationPage.Record;
+      return (
+        <PublicationPageRenderer
+          did={did}
+          page={{
+            id: homePage.id,
+            path: "/",
+            title: homePage.title,
+            record: pageRecord,
+          }}
+          publication={publication}
+        />
+      );
+    }
     return (
       <PublicationThemeProvider
         theme={record?.theme}

@@ -18,8 +18,14 @@ import {
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
+  PubLeafletBlocksPostsList,
   PubLeafletBlocksButton,
 } from "lexicons/api";
+import {
+  PublicationPostsList,
+  type PublicationPostsListPost,
+} from "../PublicationPostsList";
+import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./Blocks/TextBlock";
@@ -46,6 +52,12 @@ import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 
+export type PostsListData = {
+  publication: { uri: string; record: unknown };
+  publicationRecord: NormalizedPublication | null;
+  posts: PublicationPostsListPost[];
+};
+
 export function PostContent({
   blocks,
   did,
@@ -58,6 +70,7 @@ export function PostContent({
   pages,
   pollData,
   footnoteIndexMap,
+  postsListData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -70,6 +83,7 @@ export function PostContent({
   pollData: PollData[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   footnoteIndexMap?: Map<string, number>;
+  postsListData?: PostsListData;
 }) {
   return (
     <div
@@ -93,6 +107,7 @@ export function PostContent({
             prerenderedCodeBlocks={prerenderedCodeBlocks}
             pollData={pollData}
             footnoteIndexMap={footnoteIndexMap}
+            postsListData={postsListData}
             isFirst={index === 0}
             isLast={index === blocks.length - 1}
           />
@@ -117,6 +132,7 @@ export let Block = ({
   pages,
   pollData,
   footnoteIndexMap,
+  postsListData,
   isFirst,
   isLast,
 }: {
@@ -134,6 +150,7 @@ export let Block = ({
   standardSitePostData: StandardSitePostData[];
   pollData: PollData[];
   footnoteIndexMap?: Map<string, number>;
+  postsListData?: PostsListData;
   isFirst?: boolean;
   isLast?: boolean;
 }) => {
@@ -243,6 +260,22 @@ export let Block = ({
     }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
+    }
+    case PubLeafletBlocksPostsList.isMain(b.block): {
+      if (!postsListData) return null;
+      const view: "compact" | "full" =
+        b.block.view === "compact" ? "compact" : "full";
+      return (
+        <div className={className} {...blockProps}>
+          <PublicationPostsList
+            publication={postsListData.publication}
+            publicationRecord={postsListData.publicationRecord}
+            posts={postsListData.posts}
+            view={view}
+            highlightFirstPost={!!b.block.highlightFirstPost}
+          />
+        </div>
+      );
     }
     case PubLeafletBlocksPoll.isMain(b.block): {
       let { cid, uri } = b.block.pollRef;

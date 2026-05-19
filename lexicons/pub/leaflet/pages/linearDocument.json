@@ -44,7 +44,8 @@
             "pub.leaflet.blocks.standardSitePost",
             "pub.leaflet.blocks.page",
             "pub.leaflet.blocks.poll",
-            "pub.leaflet.blocks.button"
+            "pub.leaflet.blocks.button",
+            "pub.leaflet.blocks.postsList"
           ]
         },
         "alignment": {

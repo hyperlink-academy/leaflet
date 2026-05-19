@@ -12,6 +12,7 @@ import { PubLeafletRichTextFacet } from "./src/facet";
 import { PubLeafletComment } from "./src/comment";
 import { PubLeafletAuthFullPermissions } from "./src/authFullPermissions";
 import { PubLeafletContent } from "./src/content";
+import { PubLeafletPublicationPage } from "./src/publicationPage";
 import * as MentionServiceLexicons from "./src/mentionService";
 
 const outdir = path.join("lexicons", "pub", "leaflet");
@@ -24,6 +25,7 @@ fs.mkdirSync(outdir, { recursive: true });
 const lexicons = [
   PubLeafletDocument,
   PubLeafletContent,
+  PubLeafletPublicationPage,
   PubLeafletComment,
   PubLeafletRichTextFacet,
   PubLeafletAuthFullPermissions,

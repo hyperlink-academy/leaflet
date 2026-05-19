@@ -39,6 +39,7 @@ import * as PubLeafletBlocksMath from './types/pub/leaflet/blocks/math'
 import * as PubLeafletBlocksOrderedList from './types/pub/leaflet/blocks/orderedList'
 import * as PubLeafletBlocksPage from './types/pub/leaflet/blocks/page'
 import * as PubLeafletBlocksPoll from './types/pub/leaflet/blocks/poll'
+import * as PubLeafletBlocksPostsList from './types/pub/leaflet/blocks/postsList'
 import * as PubLeafletBlocksStandardSitePost from './types/pub/leaflet/blocks/standardSitePost'
 import * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 import * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
@@ -53,6 +54,7 @@ import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linear
 import * as PubLeafletPollDefinition from './types/pub/leaflet/poll/definition'
 import * as PubLeafletPollVote from './types/pub/leaflet/poll/vote'
 import * as PubLeafletPublication from './types/pub/leaflet/publication'
+import * as PubLeafletPublicationPage from './types/pub/leaflet/publicationPage'
 import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 import * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
 import * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
@@ -93,6 +95,7 @@ export * as PubLeafletBlocksMath from './types/pub/leaflet/blocks/math'
 export * as PubLeafletBlocksOrderedList from './types/pub/leaflet/blocks/orderedList'
 export * as PubLeafletBlocksPage from './types/pub/leaflet/blocks/page'
 export * as PubLeafletBlocksPoll from './types/pub/leaflet/blocks/poll'
+export * as PubLeafletBlocksPostsList from './types/pub/leaflet/blocks/postsList'
 export * as PubLeafletBlocksStandardSitePost from './types/pub/leaflet/blocks/standardSitePost'
 export * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 export * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
@@ -107,6 +110,7 @@ export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linear
 export * as PubLeafletPollDefinition from './types/pub/leaflet/poll/definition'
 export * as PubLeafletPollVote from './types/pub/leaflet/poll/vote'
 export * as PubLeafletPublication from './types/pub/leaflet/publication'
+export * as PubLeafletPublicationPage from './types/pub/leaflet/publicationPage'
 export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 export * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
 export * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
@@ -639,6 +643,7 @@ export class PubLeafletNS {
   comment: PubLeafletCommentRecord
   document: PubLeafletDocumentRecord
   publication: PubLeafletPublicationRecord
+  publicationPage: PubLeafletPublicationPageRecord
   blocks: PubLeafletBlocksNS
   graph: PubLeafletGraphNS
   interactions: PubLeafletInteractionsNS
@@ -659,6 +664,7 @@ export class PubLeafletNS {
     this.comment = new PubLeafletCommentRecord(client)
     this.document = new PubLeafletDocumentRecord(client)
     this.publication = new PubLeafletPublicationRecord(client)
+    this.publicationPage = new PubLeafletPublicationPageRecord(client)
   }
 }
 
@@ -1290,6 +1296,89 @@ export class PubLeafletPublicationRecord {
       'com.atproto.repo.deleteRecord',
       undefined,
       { collection: 'pub.leaflet.publication', ...params },
+      { headers },
+    )
+  }
+}
+
+export class PubLeafletPublicationPageRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletPublicationPage.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.publicationPage',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PubLeafletPublicationPage.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.publicationPage',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPublicationPage.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.publicationPage'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPublicationPage.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.publicationPage'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.publicationPage', ...params },
       { headers },
     )
   }

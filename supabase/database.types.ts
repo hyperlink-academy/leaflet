@@ -1209,6 +1209,8 @@ export type Database = {
           metadata: Json
           path: string | null
           publication: string
+          record: Json | null
+          record_uri: string | null
           title: string
         }
         Insert: {
@@ -1219,6 +1221,8 @@ export type Database = {
           metadata?: Json
           path?: string | null
           publication: string
+          record?: Json | null
+          record_uri?: string | null
           title?: string
         }
         Update: {
@@ -1229,6 +1233,8 @@ export type Database = {
           metadata?: Json
           path?: string | null
           publication?: string
+          record?: Json | null
+          record_uri?: string | null
           title?: string
         }
         Relationships: [
