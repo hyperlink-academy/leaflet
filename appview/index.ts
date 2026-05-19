@@ -118,6 +118,7 @@ async function handleEvent(evt: Event) {
         data: {
           document_uri: evt.uri.toString(),
           bsky_post_uri: record.value.postRef?.uri,
+          event_type: evt.event,
         },
       });
       if (record.value.publication) {
@@ -285,6 +286,7 @@ async function handleEvent(evt: Event) {
         data: {
           document_uri: evt.uri.toString(),
           bsky_post_uri: record.value.bskyPostRef?.uri,
+          event_type: evt.event,
         },
       });
 
