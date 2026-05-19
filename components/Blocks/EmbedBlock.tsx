@@ -268,6 +268,22 @@ const BlockLinkInput = (props: BlockProps) => {
 
       if (res.status === 200) {
         let data = await (res.json() as LinkPreviewMetadataResult);
+        if (data.leafletPost) {
+          await rep.mutate.assertFact([
+            {
+              entity,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "standard-site-post" },
+            },
+            {
+              entity,
+              attribute: "block/standard-site-post",
+              data: { type: "string", value: data.leafletPost.uri },
+            },
+          ]);
+          setLoading(false);
+          return;
+        }
         if (data.success && data.data.links?.player?.[0]) {
           let embed = data.data.links.player[0];
           embedUrl = embed.href;

@@ -11,6 +11,7 @@ import {
 } from "./domain_routes";
 import { get_leaflet_data } from "./get_leaflet_data";
 import { get_publication_data } from "./get_publication_data";
+import { get_standard_site_posts } from "./get_standard_site_posts";
 import { search_publication_names } from "./search_publication_names";
 import { search_publication_documents } from "./search_publication_documents";
 import { get_profile_data } from "./get_profile_data";
@@ -45,6 +46,7 @@ let Routes = [
   get_leaflet_subdomain_status,
   get_leaflet_data,
   get_publication_data,
+  get_standard_site_posts,
   search_publication_names,
   search_publication_documents,
   get_profile_data,

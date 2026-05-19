@@ -40,6 +40,23 @@ export async function addLinkBlock(
     return;
   }
   let data = await (res.json() as LinkPreviewMetadataResult);
+
+  if (data.leafletPost) {
+    await rep.mutate.assertFact([
+      {
+        entity: entityID,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "standard-site-post" },
+      },
+      {
+        entity: entityID,
+        attribute: "block/standard-site-post",
+        data: { type: "string", value: data.leafletPost.uri },
+      },
+    ]);
+    return;
+  }
+
   if (!data.success) {
     await rep?.mutate.assertFact([
       {

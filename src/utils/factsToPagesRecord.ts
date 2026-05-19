@@ -6,6 +6,7 @@ import { BlobRef } from "@atproto/lexicon";
 import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
@@ -332,6 +333,15 @@ export async function processBlocksToPages(opts: {
           cid: post.data.value.post.cid,
         },
         clientHost: hostFact?.data.value,
+      };
+      return block;
+    }
+    if (b.type === "standard-site-post") {
+      const [uri] = scan.eav(b.value, "block/standard-site-post");
+      if (!uri) return;
+      const block: $Typed<PubLeafletBlocksStandardSitePost.Main> = {
+        $type: ids.PubLeafletBlocksStandardSitePost,
+        uri: uri.data.value,
       };
       return block;
     }

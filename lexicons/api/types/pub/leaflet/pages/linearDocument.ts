@@ -21,6 +21,7 @@ import type * as PubLeafletBlocksMath from '../blocks/math'
 import type * as PubLeafletBlocksCode from '../blocks/code'
 import type * as PubLeafletBlocksHorizontalRule from '../blocks/horizontalRule'
 import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
+import type * as PubLeafletBlocksStandardSitePost from '../blocks/standardSitePost'
 import type * as PubLeafletBlocksPage from '../blocks/page'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
@@ -60,6 +61,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksCode.Main>
     | $Typed<PubLeafletBlocksHorizontalRule.Main>
     | $Typed<PubLeafletBlocksBskyPost.Main>
+    | $Typed<PubLeafletBlocksStandardSitePost.Main>
     | $Typed<PubLeafletBlocksPage.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
     | $Typed<PubLeafletBlocksButton.Main>

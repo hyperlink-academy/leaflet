@@ -25,6 +25,7 @@ import { elementId } from "src/utils/elementId";
 import { ButtonBlock } from "./ButtonBlock";
 import { PollBlock } from "./PollBlock";
 import { BlueskyPostBlock } from "./BlueskyPostBlock";
+import { StandardSitePostBlock } from "./StandardSitePostBlock";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MathBlock } from "./MathBlock";
@@ -362,6 +363,7 @@ const BlockTypeComponents: {
   button: ButtonBlock,
   poll: PollBlock,
   "bluesky-post": BlueskyPostBlock,
+  "standard-site-post": StandardSitePostBlock,
   "horizontal-rule": HorizontalRule,
 };
 

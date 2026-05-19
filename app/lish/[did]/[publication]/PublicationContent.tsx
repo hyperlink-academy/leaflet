@@ -218,6 +218,7 @@ export function PublicationPostItem(props: {
   href?: string;
   title?: string;
   description?: string;
+  author?: React.ReactNode;
   date?: React.ReactNode;
   interactions?: React.ReactNode;
 }) {
@@ -227,6 +228,9 @@ export function PublicationPostItem(props: {
       <p className="italic text-secondary line-clamp-3">{props.description}</p>
     </>
   );
+
+  const hasAuthor = props.author !== undefined && props.author !== null;
+  const hasDate = props.date !== undefined && props.date !== null;
 
   return (
     <>
@@ -245,7 +249,11 @@ export function PublicationPostItem(props: {
         )}
 
         <div className="justify-between w-full text-sm text-tertiary flex gap-1 flex-wrap pt-2 items-center">
-          <p className="text-sm text-tertiary ">{props.date} </p>
+          <p className="text-sm text-tertiary flex gap-1 items-center">
+            {hasAuthor && <span>{props.author}</span>}
+            {hasAuthor && hasDate && <span>|</span>}
+            {hasDate && <span>{props.date}</span>}
+          </p>
           {props.interactions}
         </div>
       </div>

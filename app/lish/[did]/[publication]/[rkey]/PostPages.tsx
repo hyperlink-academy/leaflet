@@ -19,6 +19,7 @@ import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { Fragment } from "react";
 import { PollData } from "./fetchPollData";
+import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { ThreadPage as ThreadPageComponent } from "./ThreadPage";
@@ -62,6 +63,7 @@ export type SharedPageProps = {
   theme?: PubLeafletPublication.Theme | null;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
   pollData: PollData[];
   document_uri: string;
   fullPageScroll: boolean;
@@ -107,6 +109,7 @@ export function PostPages({
   pubRecord,
   prerenderedCodeBlocks,
   bskyPostData,
+  standardSitePostData,
   document_uri,
   pollData,
 }: {
@@ -117,6 +120,7 @@ export function PostPages({
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
@@ -153,6 +157,7 @@ export function PostPages({
     theme,
     prerenderedCodeBlocks,
     bskyPostData,
+    standardSitePostData,
     pollData,
     document_uri,
     hasPageBackground,

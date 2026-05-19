@@ -98,6 +98,11 @@ const BlockTypeToHTML: {
       />
     );
   },
+  "standard-site-post": async (b, tx) => {
+    let [uri] = await scanIndex(tx).eav(b.value, "block/standard-site-post");
+    if (!uri) return null;
+    return <div data-type="standard-site-post" data-uri={uri.data.value} />;
+  },
   math: async (b, tx, a) => {
     let [math] = await scanIndex(tx).eav(b.value, "block/math");
     const html = Katex.renderToString(math?.data.value || "", {

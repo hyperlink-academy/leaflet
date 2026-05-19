@@ -87,6 +87,10 @@ const BlockAttributes = {
     type: "bluesky-post",
     cardinality: "one",
   },
+  "block/standard-site-post": {
+    type: "string",
+    cardinality: "one",
+  },
   "block/math": {
     type: "string",
     cardinality: "one",
@@ -370,6 +374,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "button"
       | "poll"
       | "bluesky-post"
+      | "standard-site-post"
       | "math"
       | "code"
       | "blockquote"

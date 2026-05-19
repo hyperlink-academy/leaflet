@@ -2,6 +2,7 @@ import { AtpAgent } from "@atproto/api";
 import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksUnorderedList,
   PubLeafletPagesLinearDocument,
@@ -9,6 +10,8 @@ import {
   PubLeafletBlocksPoll,
 } from "lexicons/api";
 import { type $Typed } from "lexicons/api/util";
+import { get_standard_site_posts } from "app/api/rpc/[command]/get_standard_site_posts";
+import { supabaseServerClient } from "supabase/serverClient";
 import { QuoteHandler } from "./QuoteHandler";
 import {
   PublicationBackgroundProvider,
@@ -103,6 +106,25 @@ export async function DocumentPageRenderer({
       ? bskyPostResponses.flatMap((response) => response.data.posts)
       : [];
 
+  let standardSitePostBlocks = pages.flatMap((p) => {
+    let page = p as PubLeafletPagesLinearDocument.Main;
+    return extractBlocksByType<$Typed<PubLeafletBlocksStandardSitePost.Main>>(
+      page.blocks || [],
+      ids.PubLeafletBlocksStandardSitePost,
+    );
+  });
+  let standardSitePostUris = Array.from(
+    new Set(standardSitePostBlocks.map((b) => b.block.uri)),
+  );
+  let standardSitePostsResult =
+    standardSitePostUris.length > 0
+      ? await get_standard_site_posts.handler(
+          { uris: standardSitePostUris },
+          { supabase: supabaseServerClient },
+        )
+      : { result: { posts: [] } };
+  let standardSitePosts = standardSitePostsResult.result.posts;
+
   // Extract poll blocks and fetch vote data
   let pollBlocks = pages.flatMap((p) => {
     let page = p as PubLeafletPagesLinearDocument.Main;
@@ -152,9 +174,14 @@ export async function DocumentPageRenderer({
                   pubRecord?.preferences,
                 )}
                 pubRecord={pubRecord}
-                profile={profile ? JSON.parse(JSON.stringify(profile)) : undefined}
+                profile={
+                  profile ? JSON.parse(JSON.stringify(profile)) : undefined
+                }
                 document={document}
                 bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
+                standardSitePostData={JSON.parse(
+                  JSON.stringify(standardSitePosts),
+                )}
                 did={did}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 pollData={pollData}

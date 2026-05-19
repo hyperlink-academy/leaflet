@@ -281,6 +281,7 @@ export const QuoteContent = (props: {
             pollData={[]}
             pages={[]}
             bskyPostData={[]}
+            standardSitePostData={[]}
             blocks={content}
             did={props.did}
             preview

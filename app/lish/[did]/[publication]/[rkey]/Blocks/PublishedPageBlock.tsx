@@ -14,6 +14,7 @@ import {
   PubLeafletPublication,
 } from "lexicons/api";
 import { AppBskyFeedDefs } from "@atproto/api";
+import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
 import { openPage, useOpenPages } from "../postPageState";
@@ -35,6 +36,7 @@ export function PublishedPageLinkBlock(props: {
   className?: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
   isCanvas?: boolean;
   pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
@@ -70,6 +72,7 @@ export function PublishedPageLinkBlock(props: {
           did={props.did}
           pageId={props.pageId}
           bskyPostData={props.bskyPostData}
+          standardSitePostData={props.standardSitePostData}
           pages={props.pages || []}
         />
       ) : (
@@ -197,6 +200,7 @@ export function PagePreview(props: {
           blocks={props.blocks}
           preview
           bskyPostData={[]}
+          standardSitePostData={[]}
         />
       </div>
     </div>
@@ -269,6 +273,7 @@ const CanvasLinkBlock = (props: {
   did: string;
   pageId: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) => {
   let pageWidth = `var(--page-width-unitless)`;
@@ -332,6 +337,7 @@ const CanvasLinkBlock = (props: {
                       pageId={props.pageId}
                       pages={props.pages}
                       bskyPostData={props.bskyPostData}
+                      standardSitePostData={props.standardSitePostData}
                       block={linearBlock}
                       did={props.did}
                       index={[index]}
