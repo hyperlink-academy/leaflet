@@ -1,13 +1,12 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { DocumentPageRenderer } from "./DocumentPageRenderer";
-import { PublicationPageRenderer } from "./PublicationPageRenderer";
+import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import {
   documentUriFilter,
   publicationNameOrUriFilter,
 } from "src/utils/uriHelpers";
-import { PubLeafletPublicationPage } from "lexicons/api";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -108,23 +107,13 @@ export default async function Post(props: {
     .limit(1);
   let publication = publications?.[0];
 
-  let matchingPage = publication?.publication_pages?.find(
-    (p) => p.path === "/" + rkey && p.record_uri && p.record,
-  );
-  if (publication && matchingPage && matchingPage.record) {
-    let pageRecord = matchingPage.record as unknown as PubLeafletPublicationPage.Record;
-    return (
-      <PublicationPageRenderer
-        did={did}
-        page={{
-          id: matchingPage.id,
-          path: matchingPage.path ?? "/",
-          title: matchingPage.title,
-          record: pageRecord,
-        }}
-        publication={publication}
-      />
-    );
+  if (publication) {
+    const pageRender = tryRenderPublicationPage({
+      did,
+      publication,
+      path: "/" + rkey,
+    });
+    if (pageRender) return pageRender;
   }
 
   return <DocumentPageRenderer did={did} rkey={rkey} />;

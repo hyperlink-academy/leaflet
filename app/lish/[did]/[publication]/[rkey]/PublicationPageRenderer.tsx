@@ -1,24 +1,15 @@
-import { ids } from "lexicons/api/lexicons";
 import {
-  PubLeafletBlocksBskyPost,
-  PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
-  PubLeafletBlocksStandardSitePost,
-  PubLeafletBlocksOrderedList,
-  PubLeafletBlocksUnorderedList,
   PubLeafletPagesLinearDocument,
   PubLeafletPublicationPage,
 } from "lexicons/api";
-import { type $Typed } from "lexicons/api/util";
 import { AtpAgent } from "@atproto/api";
 
-import { supabaseServerClient } from "supabase/serverClient";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
-import { get_standard_site_posts } from "app/api/rpc/[command]/get_standard_site_posts";
 
 import {
   PublicationBackgroundProvider,
@@ -38,8 +29,7 @@ import { PublicationStickyHeader } from "../PublicationStickyHeader";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
-import { extractCodeBlocks } from "./extractCodeBlocks";
-import { fetchPollData } from "./fetchPollData";
+import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { PostContent } from "./PostContent";
 
 export type PublicationPageRecord = PubLeafletPublicationPage.Record;
@@ -93,47 +83,17 @@ export async function PublicationPageRenderer({
       }),
   });
 
-  const bskyPostBlocks = extractBlocksByType<
-    $Typed<PubLeafletBlocksBskyPost.Main>
-  >(allBlocks, ids.PubLeafletBlocksBskyPost);
-  const bskyPostBatches: typeof bskyPostBlocks[] = [];
-  for (let i = 0; i < bskyPostBlocks.length; i += 25) {
-    bskyPostBatches.push(bskyPostBlocks.slice(i, i + 25));
-  }
-  const bskyPostResponses = await Promise.all(
-    bskyPostBatches.map((batch) =>
-      agent.getPosts(
-        { uris: batch.map((p) => p.block.postRef.uri) },
-        { headers: {} },
-      ),
-    ),
-  );
-  const bskyPostData = bskyPostResponses.flatMap((r) => r.data.posts);
+  const resourcePages =
+    firstPage && firstPage.$type === "pub.leaflet.pages.linearDocument"
+      ? [firstPage as PubLeafletPagesLinearDocument.Main]
+      : [];
 
-  const standardSitePostUris = Array.from(
-    new Set(
-      extractBlocksByType<$Typed<PubLeafletBlocksStandardSitePost.Main>>(
-        allBlocks,
-        ids.PubLeafletBlocksStandardSitePost,
-      ).map((b) => b.block.uri),
-    ),
-  );
-  const standardSitePostsResult =
-    standardSitePostUris.length > 0
-      ? await get_standard_site_posts.handler(
-          { uris: standardSitePostUris },
-          { supabase: supabaseServerClient },
-        )
-      : { result: { posts: [] } };
-  const standardSitePosts = standardSitePostsResult.result.posts;
-
-  const pollBlocks = extractBlocksByType<$Typed<PubLeafletBlocksPoll.Main>>(
-    allBlocks,
-    ids.PubLeafletBlocksPoll,
-  );
-  const pollData = await fetchPollData(
-    pollBlocks.map((b) => b.block.pollRef.uri),
-  );
+  const {
+    bskyPostData,
+    standardSitePostData: standardSitePosts,
+    pollData,
+    prerenderedCodeBlocks,
+  } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
 
   const hasPostsList = allBlocks.some((b) =>
     PubLeafletBlocksPostsList.isMain(b.block),
@@ -167,8 +127,6 @@ export async function PublicationPageRenderer({
         posts: postsListPosts,
       }
     : undefined;
-
-  const prerenderedCodeBlocks = await extractCodeBlocks(allBlocks);
 
   const theme = normalizedPublication?.theme;
   const showPageBackground = !!theme?.showPageBackground;
@@ -259,53 +217,4 @@ export async function PublicationPageRenderer({
       </LeafletContentProvider>
     </DocumentProvider>
   );
-}
-
-function extractBlocksByType<T extends { $type: string }>(
-  blocks: PubLeafletPagesLinearDocument.Block[],
-  type: string,
-): { block: T }[] {
-  const results: { block: T }[] = [];
-  for (const b of blocks) {
-    if (b.block.$type === type) {
-      results.push(b as unknown as { block: T });
-    }
-    if (
-      b.block.$type === ids.PubLeafletBlocksOrderedList ||
-      b.block.$type === ids.PubLeafletBlocksUnorderedList
-    ) {
-      const list = b.block as
-        | PubLeafletBlocksOrderedList.Main
-        | PubLeafletBlocksUnorderedList.Main;
-      extractFromListItems(list.children, type, results);
-    }
-  }
-  return results;
-}
-
-function extractFromListItems<T extends { $type: string }>(
-  items:
-    | PubLeafletBlocksOrderedList.ListItem[]
-    | PubLeafletBlocksUnorderedList.ListItem[],
-  type: string,
-  results: { block: T }[],
-) {
-  for (const item of items) {
-    if ((item.content as { $type?: string })?.$type === type) {
-      results.push({ block: item.content as unknown as T });
-    }
-    if (item.children) {
-      extractFromListItems(item.children, type, results);
-    }
-    const orderedChildren = (item as PubLeafletBlocksUnorderedList.ListItem)
-      .orderedListChildren;
-    if (orderedChildren) {
-      extractFromListItems(orderedChildren.children, type, results);
-    }
-    const unorderedChildren = (item as PubLeafletBlocksOrderedList.ListItem)
-      .unorderedListChildren;
-    if (unorderedChildren) {
-      extractFromListItems(unorderedChildren.children, type, results);
-    }
-  }
 }

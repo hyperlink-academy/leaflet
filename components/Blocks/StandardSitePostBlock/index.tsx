@@ -1,10 +1,9 @@
-import { forwardRef } from "react";
 import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { Popover } from "components/Popover";
 import { ToggleGroup } from "components/ToggleGroup";
-import { SettingsTiny } from "components/Icons/SettingsTiny";
+import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
   type StandardSitePostSize,
@@ -37,22 +36,6 @@ export const StandardSitePostBlock = (
   );
 };
 
-const SettingsTriggerButton = forwardRef<
-  HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->((props, ref) => (
-  <button
-    {...props}
-    ref={ref}
-    onMouseDown={(e) => e.preventDefault()}
-    aria-label="Standard Site Post Settings"
-    className="flex items-center"
-  >
-    <SettingsTiny />
-  </button>
-));
-SettingsTriggerButton.displayName = "SettingsTriggerButton";
-
 function StandardSitePostSettingsButton(props: { entityID: string }) {
   let { rep } = useReplicache();
   let sizeFact = useEntity(props.entityID, "standard-site-post/size");
@@ -64,7 +47,9 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
       side="top"
       align="end"
       sideOffset={6}
-      trigger={<SettingsTriggerButton />}
+      trigger={
+        <SettingsTriggerButton aria-label="Standard Site Post Settings" />
+      }
     >
       <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
         <div className="flex flex-col gap-1">

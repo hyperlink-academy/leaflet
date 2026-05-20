@@ -9,6 +9,25 @@ import { AtpAgent } from "@atproto/api";
 import { v7 } from "uuid";
 import { getAspectRatio } from "src/utils/aspectRatio";
 
+export async function assertStandardSitePostFacts(
+  rep: Replicache<ReplicacheMutators>,
+  entityID: string,
+  uri: string,
+) {
+  await rep.mutate.assertFact([
+    {
+      entity: entityID,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "standard-site-post" },
+    },
+    {
+      entity: entityID,
+      attribute: "block/standard-site-post",
+      data: { type: "string", value: uri },
+    },
+  ]);
+}
+
 export async function addLinkBlock(
   url: string,
   entityID: string,
@@ -42,18 +61,7 @@ export async function addLinkBlock(
   let data = await (res.json() as LinkPreviewMetadataResult);
 
   if (data.leafletPost) {
-    await rep.mutate.assertFact([
-      {
-        entity: entityID,
-        attribute: "block/type",
-        data: { type: "block-type-union", value: "standard-site-post" },
-      },
-      {
-        entity: entityID,
-        attribute: "block/standard-site-post",
-        data: { type: "string", value: data.leafletPost.uri },
-      },
-    ]);
+    await assertStandardSitePostFacts(rep, entityID, data.leafletPost.uri);
     return;
   }
 

@@ -6,6 +6,7 @@ import { ButtonSecondary } from "components/Buttons";
 import { AddTiny } from "components/Icons/AddTiny";
 import { createPublicationPage } from "actions/createPublicationPage";
 import { usePublicationData } from "../../dashboard/PublicationSWRProvider";
+import { sortPublicationPages } from "../../sortPublicationPages";
 
 export function PublicationPagesNav(props: {
   did: string;
@@ -42,12 +43,7 @@ export function PublicationPagesNav(props: {
     router.push(hrefForPath(created.path));
   }
 
-  let sortedPages = [...pages].sort((a, b) => {
-    let ap = a.path === "/" ? 0 : 1;
-    let bp = b.path === "/" ? 0 : 1;
-    if (ap !== bp) return ap - bp;
-    return (a.path ?? "").localeCompare(b.path ?? "");
-  });
+  let sortedPages = sortPublicationPages(pages);
 
   return (
     <nav className="publicationPagesNav border-t border-b border-border-light shrink-0 w-full sm:max-w-[calc(var(--page-width-units)*1.25)] mx-auto">

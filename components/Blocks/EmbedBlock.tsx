@@ -24,6 +24,7 @@ import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { EmbedBlockData } from "src/partsPageChannel";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
+import { assertStandardSitePostFacts } from "src/utils/addLinkBlock";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let entity_set = useEntitySetContext();
@@ -269,18 +270,7 @@ const BlockLinkInput = (props: BlockProps) => {
       if (res.status === 200) {
         let data = await (res.json() as LinkPreviewMetadataResult);
         if (data.leafletPost) {
-          await rep.mutate.assertFact([
-            {
-              entity,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "standard-site-post" },
-            },
-            {
-              entity,
-              attribute: "block/standard-site-post",
-              data: { type: "string", value: data.leafletPost.uri },
-            },
-          ]);
+          await assertStandardSitePostFacts(rep, entity, data.leafletPost.uri);
           setLoading(false);
           return;
         }

@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { useMemo } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
@@ -10,7 +10,7 @@ import { PublicationPostsList } from "app/lish/[did]/[publication]/PublicationPo
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { ToggleGroup } from "components/ToggleGroup";
-import { SettingsTiny } from "components/Icons/SettingsTiny";
+import { SettingsTriggerButton } from "./SettingsTriggerButton";
 
 type PostsListView = "compact" | "full";
 
@@ -93,22 +93,6 @@ function PostsListPlaceholder() {
   );
 }
 
-const SettingsTriggerButton = forwardRef<
-  HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->((props, ref) => (
-  <button
-    {...props}
-    ref={ref}
-    onMouseDown={(e) => e.preventDefault()}
-    aria-label="Posts List Settings"
-    className="flex items-center"
-  >
-    <SettingsTiny />
-  </button>
-));
-SettingsTriggerButton.displayName = "SettingsTriggerButton";
-
 function PostsListSettingsButton(props: { entityID: string }) {
   let { rep } = useReplicache();
   let { data } = usePublicationData();
@@ -141,7 +125,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
       side="top"
       align="end"
       sideOffset={6}
-      trigger={<SettingsTriggerButton />}
+      trigger={<SettingsTriggerButton aria-label="Posts List Settings" />}
     >
       <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
         <div className="flex flex-col gap-1">
