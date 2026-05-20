@@ -12,7 +12,7 @@ export function Demo() {
         fullWidth
         className="bg-[#F1EDE5]! w-fill max-w-md mx-auto "
         selectedOptionClassName="bg-[#686153]! text-white!"
-        optionClassName="text-[#969696]! text-[1rem] sm:text-[1.25rem]  md:text-[1.5rem]"
+        optionClassName="text-[#969696]! text-[1rem] sm:text-[1.25rem]  "
         value={value}
         onChange={setValue}
         options={[
