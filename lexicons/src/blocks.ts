@@ -59,6 +59,7 @@ export const PubLeafletBlocksStandardSitePost: LexiconDoc = {
       properties: {
         uri: { type: "string", format: "at-uri" },
         cid: { type: "string" },
+        size: { type: "string", knownValues: ["large", "medium", "small"] },
       },
     },
   },

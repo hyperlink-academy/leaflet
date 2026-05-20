@@ -1,12 +1,24 @@
 "use client";
-import { PublicationPostItem } from "app/lish/[did]/[publication]/PublicationContent";
+import {
+  PublicationPostItemSmall,
+  PublicationPostItemMedium,
+  PublicationPostItemLarge,
+} from "app/lish/[did]/[publication]/PublicationPostItem";
 import { LocalizedDate } from "app/lish/[did]/[publication]/LocalizedDate";
 import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 
-export function StandardSitePostItem({ uri }: { uri: string }) {
+export type StandardSitePostSize = "large" | "medium" | "small";
+
+export function StandardSitePostItem({
+  uri,
+  size = "small",
+}: {
+  uri: string;
+  size?: StandardSitePostSize;
+}) {
   const { data, isLoading } = useStandardSitePost(uri);
 
   if (isLoading) {
@@ -31,13 +43,15 @@ export function StandardSitePostItem({ uri }: { uri: string }) {
     );
   }
 
-  return <StandardSitePostItemView post={data} />;
+  return <StandardSitePostItemView post={data} size={size} />;
 }
 
 export function StandardSitePostItemView({
   post,
+  size = "small",
 }: {
   post: StandardSitePostData;
+  size?: StandardSitePostSize;
 }) {
   const docUrl = getDocumentURL(
     post.record,
@@ -47,21 +61,26 @@ export function StandardSitePostItemView({
   const authorLabel =
     post.author?.displayName ||
     (post.author?.handle ? `@${post.author.handle}` : undefined);
-
-  return (
-    <PublicationPostItem
-      href={docUrl}
-      title={post.record.title}
-      description={post.record.description || getFirstParagraph(post.record)}
-      author={authorLabel}
-      date={
-        post.record.publishedAt ? (
-          <LocalizedDate
-            dateString={post.record.publishedAt}
-            options={{ year: "numeric", month: "long", day: "2-digit" }}
-          />
-        ) : undefined
-      }
+  const date = post.record.publishedAt ? (
+    <LocalizedDate
+      dateString={post.record.publishedAt}
+      options={{ year: "numeric", month: "long", day: "2-digit" }}
     />
-  );
+  ) : undefined;
+  const description = post.record.description || getFirstParagraph(post.record);
+
+  const commonProps = {
+    href: docUrl,
+    title: post.record.title,
+    author: authorLabel,
+    date,
+  };
+
+  if (size === "large") {
+    return <PublicationPostItemLarge {...commonProps} description={description} />;
+  }
+  if (size === "medium") {
+    return <PublicationPostItemMedium {...commonProps} description={description} />;
+  }
+  return <PublicationPostItemSmall {...commonProps} />;
 }

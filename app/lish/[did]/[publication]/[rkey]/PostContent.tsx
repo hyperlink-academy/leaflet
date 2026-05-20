@@ -242,9 +242,15 @@ export let Block = ({
           </div>
         );
       }
+      let size: "large" | "medium" | "small" =
+        b.block.size === "large"
+          ? "large"
+          : b.block.size === "medium"
+            ? "medium"
+            : "small";
       return (
         <div className={className} {...blockProps}>
-          <StandardSitePostItemView post={post} />
+          <StandardSitePostItemView post={post} size={size} />
         </div>
       );
     }

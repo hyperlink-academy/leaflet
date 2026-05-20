@@ -91,6 +91,10 @@ const BlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "standard-site-post/size": {
+    type: "standard-site-post-size-union",
+    cardinality: "one",
+  },
   "block/math": {
     type: "string",
     cardinality: "one",
@@ -404,6 +408,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "posts-list-view-union": {
     type: "posts-list-view-union";
     value: "compact" | "full";
+  };
+  "standard-site-post-size-union": {
+    type: "standard-site-post-size-union";
+    value: "large" | "medium" | "small";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

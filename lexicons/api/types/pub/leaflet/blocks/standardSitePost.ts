@@ -18,6 +18,7 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.standardSitePost'
   uri: string
   cid?: string
+  size?: 'large' | 'medium' | 'small' | (string & {})
 }
 
 const hashMain = 'main'

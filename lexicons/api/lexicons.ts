@@ -1602,6 +1602,10 @@ export const schemaDict = {
           cid: {
             type: 'string',
           },
+          size: {
+            type: 'string',
+            knownValues: ['large', 'medium', 'small'],
+          },
         },
       },
     },
