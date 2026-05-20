@@ -126,11 +126,7 @@ export const Block = memo(function Block(
   const bindSwipe = useDrag(
     ({ last, movement: [mx], event }) => {
       if (!last) return;
-      if (
-        event &&
-        "pointerType" in event &&
-        event.pointerType !== "touch"
-      )
+      if (event && "pointerType" in event && event.pointerType !== "touch")
         return;
       if (!rep || !props.listData || !entity_set.permissions.write) return;
       if (Math.abs(mx) < SWIPE_THRESHOLD) return;
@@ -504,7 +500,12 @@ const NonTextBlockOptions = (props: {
           <Separator classname="border-bg-page! h-4! mx-0.5" />
         </>
       )}
-      {props.extraOptions}
+      {props.extraOptions && (
+        <>
+          {props.extraOptions}{" "}
+          <Separator classname="border-bg-page! h-4! mx-0.5" />
+        </>
+      )}
       <button
         onClick={async (e) => {
           e.stopPropagation();
@@ -648,7 +649,9 @@ export const ListMarker = (
               onClick={(e) => {
                 e.stopPropagation();
                 if (permissions.write && listStyle?.data.value === "ordered") {
-                  setNumberInputValue(String(props.listData?.displayNumber || 1));
+                  setNumberInputValue(
+                    String(props.listData?.displayNumber || 1),
+                  );
                   setEditingNumber(true);
                 }
               }}

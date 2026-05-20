@@ -2,7 +2,7 @@ import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { Popover } from "components/Popover";
-import { ToggleGroup } from "components/ToggleGroup";
+import { Radio } from "components/Checkbox";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
@@ -47,32 +47,117 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
       side="top"
       align="end"
       sideOffset={6}
+      className="flex flex-col gap-1 w-md"
       trigger={
         <SettingsTriggerButton aria-label="Standard Site Post Settings" />
       }
     >
-      <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
-        <div className="flex flex-col gap-1">
-          <div className="font-bold text-sm">Post Size</div>
-          <ToggleGroup<StandardSitePostSize>
-            fullWidth
-            value={size}
-            onChange={(value) => {
+      <h4>Post Size</h4>
+
+      <div className="flex flex-row gap-1 w-full">
+        <div className="flex flex-col gap-1 flex-1">
+          {(
+            [
+              { value: "small", label: "Small" },
+              { value: "medium", label: "Medium" },
+            ] as { value: StandardSitePostSize; label: string }[]
+          ).map((option) => (
+            <Radio
+              key={option.value}
+              id={`standard-site-post-size-${props.entityID}-${option.value}`}
+              name={`standard-site-post-size-${props.entityID}`}
+              value={option.value}
+              checked={size === option.value}
+              onChange={(e) => {
+                if (!e.currentTarget.checked) return;
+                if (!rep) return;
+                rep.mutate.assertFact({
+                  entity: props.entityID,
+                  attribute: "standard-site-post/size",
+                  data: {
+                    type: "standard-site-post-size-union",
+                    value: option.value,
+                  },
+                });
+              }}
+            >
+              {option.label === "Small" ? <SmallIcon /> : <MedIcon />}
+            </Radio>
+          ))}
+        </div>
+        <div className="flex-1">
+          <Radio
+            id={`standard-site-post-size-${props.entityID}-large`}
+            name={`standard-site-post-size-${props.entityID}`}
+            value="large"
+            checked={size === "large"}
+            onChange={(e) => {
+              if (!e.currentTarget.checked) return;
               if (!rep) return;
               rep.mutate.assertFact({
                 entity: props.entityID,
                 attribute: "standard-site-post/size",
-                data: { type: "standard-site-post-size-union", value },
+                data: {
+                  type: "standard-site-post-size-union",
+                  value: "large",
+                },
               });
             }}
-            options={[
-              { value: "small", label: "Small" },
-              { value: "medium", label: "Medium" },
-              { value: "large", label: "Large" },
-            ]}
-          />
+          >
+            <LargeIcon />
+          </Radio>
         </div>
       </div>
     </Popover>
   );
 }
+
+const SmallIcon = () => {
+  return (
+    <div className="flex gap-2 p-2 w-full light-container">
+      <div className="flex flex-col gap-1 grow min-w-0">
+        <div className="w-full h-5 bg-tertiary rounded-[2px]" />
+
+        <div className="flex justify-between mt-1 w-full">
+          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
+          <div className="w-6 h-2 bg-border rounded-[2px]" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MedIcon = () => {
+  return (
+    <div className="flex gap-2 p-2 w-full light-container">
+      <div className="flex flex-col gap-1 grow min-w-0">
+        <div className="w-full h-5 bg-tertiary rounded-[2px]" />
+        <div className="w-full h-3 bg-tertiary mt-1 rounded-[2px]" />
+        <div className="w-full h-3 bg-tertiary rounded-[2px]" />
+        <div className="flex justify-between mt-2 w-full">
+          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
+          <div className="w-6 h-2 bg-border rounded-[2px]" />
+        </div>
+      </div>
+      <div className="aspect-square h-full bg-test shrink-0" />
+    </div>
+  );
+};
+
+const LargeIcon = () => {
+  return (
+    <div className="flex flex-col gap-2 w-full light-container">
+      <div className="w-full aspect-video bg-test rounded-t[2px]" />
+
+      <div className="flex flex-col gap-1 p-2 pt-0.5!">
+        <div className="w-full h-5 bg-tertiary rounded-[2px]" />
+        <div className="w-full h-3 bg-tertiary mt-1 rounded-[2px]" />
+        <div className="w-full h-3 bg-tertiary rounded-[2px]" />
+        <div className="flex justify-between mt-2 w-full">
+          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
+          <div className="w-6 h-2 bg-border rounded-[2px]" />
+        </div>
+      </div>
+    </div>
+  );
+};
