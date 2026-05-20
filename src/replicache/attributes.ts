@@ -223,6 +223,10 @@ const PostsListBlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "posts-list/filter-tag": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 export const ThemeAttributes = {

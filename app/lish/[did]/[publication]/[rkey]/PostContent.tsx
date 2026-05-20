@@ -271,12 +271,18 @@ export let Block = ({
       if (!postsListData) return null;
       const view: "compact" | "full" =
         b.block.view === "compact" ? "compact" : "full";
+      const filterByTag = b.block.filterByTag;
+      const posts = filterByTag
+        ? postsListData.posts.filter((p) =>
+            p.record.tags?.includes(filterByTag),
+          )
+        : postsListData.posts;
       return (
         <div className={className} {...blockProps}>
           <PublicationPostsList
             publication={postsListData.publication}
             publicationRecord={postsListData.publicationRecord}
-            posts={postsListData.posts}
+            posts={posts}
             view={view}
             highlightFirstPost={!!b.block.highlightFirstPost}
           />

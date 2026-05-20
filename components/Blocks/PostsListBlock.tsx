@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useMemo } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
@@ -51,6 +51,15 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
   );
   let highlightFirst = highlightFirstFact?.data.value ?? false;
 
+  let filterTagFact = useEntity(entityID, "posts-list/filter-tag");
+  let filterTag = filterTagFact?.data.value;
+
+  let filteredPosts = useMemo(() => {
+    if (!data?.documents) return data?.documents;
+    if (!filterTag) return data.documents;
+    return data.documents.filter((d) => d.record.tags?.includes(filterTag));
+  }, [data?.documents, filterTag]);
+
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
 
@@ -58,7 +67,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
     <PublicationPostsList
       publication={data.publication}
       publicationRecord={publicationRecord}
-      posts={data.documents}
+      posts={filteredPosts}
       view={view}
       highlightFirstPost={highlightFirst}
     />
@@ -102,6 +111,7 @@ SettingsTriggerButton.displayName = "SettingsTriggerButton";
 
 function PostsListSettingsButton(props: { entityID: string }) {
   let { rep } = useReplicache();
+  let { data } = usePublicationData();
 
   let viewFact = useEntity(props.entityID, "posts-list/view");
   let view: PostsListView = viewFact?.data.value ?? "full";
@@ -111,6 +121,19 @@ function PostsListSettingsButton(props: { entityID: string }) {
     "posts-list/highlight-first-post",
   );
   let highlightFirst = highlightFirstFact?.data.value ?? false;
+
+  let filterTagFact = useEntity(props.entityID, "posts-list/filter-tag");
+  let filterTag = filterTagFact?.data.value;
+
+  let allTags = useMemo(() => {
+    let tagSet = new Set<string>();
+    for (let doc of data?.documents ?? []) {
+      for (let tag of doc.record.tags ?? []) tagSet.add(tag);
+    }
+    return Array.from(tagSet).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
+  }, [data?.documents]);
 
   return (
     <Popover
@@ -153,6 +176,45 @@ function PostsListSettingsButton(props: { entityID: string }) {
         >
           <div className="font-bold">Highlight First Post</div>
         </Toggle>
+        <div className="flex flex-col gap-1">
+          <div className="font-bold text-sm">Filter by Tag</div>
+          {allTags.length === 0 ? (
+            <div className="text-tertiary italic text-sm">no tags yet</div>
+          ) : (
+            <div className="flex flex-col max-h-40 overflow-y-auto border border-border-light rounded-md">
+              {allTags.map((tag) => {
+                let isSelected = filterTag === tag;
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      if (!rep) return;
+                      if (isSelected) {
+                        if (filterTagFact)
+                          rep.mutate.retractFact({
+                            factID: filterTagFact.id,
+                          });
+                      } else {
+                        rep.mutate.assertFact({
+                          entity: props.entityID,
+                          attribute: "posts-list/filter-tag",
+                          data: { type: "string", value: tag },
+                        });
+                      }
+                    }}
+                    className={`text-left px-2 py-1 text-sm hover:bg-border-light ${
+                      isSelected ? "bg-accent-1 text-accent-2 font-bold" : ""
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </Popover>
   );

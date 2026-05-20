@@ -18,6 +18,7 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.postsList'
   view?: 'compact' | 'full' | (string & {})
   highlightFirstPost?: boolean
+  filterByTag?: string
 }
 
 const hashMain = 'main'

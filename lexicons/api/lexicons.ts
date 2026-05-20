@@ -1583,6 +1583,9 @@ export const schemaDict = {
           highlightFirstPost: {
             type: 'boolean',
           },
+          filterByTag: {
+            type: 'string',
+          },
         },
       },
     },
