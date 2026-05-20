@@ -140,6 +140,7 @@ export function PublicationPostsList({
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}
                     coverImageAlt={doc_record.title}
+                    pageWidth={publicationRecord?.theme?.pageWidth}
                   />
                 );
               }

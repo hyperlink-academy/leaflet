@@ -10,13 +10,14 @@ import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
+import { useEntity, useReplicache } from "src/replicache";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 
 export type StandardSitePostSize = "large" | "medium" | "small";
 
 export function StandardSitePostItem({
   uri,
-  size = "small",
+  size = "medium",
 }: {
   uri: string;
   size?: StandardSitePostSize;
@@ -50,7 +51,7 @@ export function StandardSitePostItem({
 
 export function StandardSitePostItemView({
   post,
-  size = "small",
+  size = "medium",
 }: {
   post: StandardSitePostData;
   size?: StandardSitePostSize;
@@ -82,6 +83,9 @@ export function StandardSitePostItemView({
       ? blobRefToSrc(post.record.coverImage.ref, postDid)
       : undefined;
 
+  const { rootEntity } = useReplicache();
+  const pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
+
   const commonProps = {
     href: docUrl,
     title: post.record.title,
@@ -96,6 +100,7 @@ export function StandardSitePostItemView({
         description={description}
         coverImageSrc={coverImageSrc}
         coverImageAlt={post.record.title}
+        pageWidth={pageWidth}
       />
     );
   }
