@@ -34,21 +34,21 @@ export const LandingCTABottom = () => {
     <>
       <div className="bg-[#D3DDC6] text-center flex flex-col justify-center mt-24 pt-8 pb-10 rounded-lg!">
         <h3>Write with Leaflet!</h3>
-        <ButtonPrimary className="rounded-lg! text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-1 ! px-4! mx-auto mt-3">
+        <ButtonPrimary className="rounded-lg! text-lg! md:text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-0.5! px-2! sm:py-1 ! sm:px-4! mx-auto mt-2 md:mt-4">
           Get Started!
         </ButtonPrimary>
       </div>
       <h4 className="pt-6 text-center">Pssst… Are you stuck on Substack?</h4>
-      <p className="text-[1.25rem]! text-center text-secondary">
+      <p className=" text-center text-secondary">
         Join the waitlist for our migration tools!
       </p>
       <div className="w-fit relative mx-auto">
         <Input
           type="email"
           placeholder="your@email.com"
-          className="mx-auto mt-3 px-2! input-with-border text-[1.25rem]! max-w-full w-md"
+          className="mx-auto mt-3 pl-2! pr-14! input-with-border text-[1rem] sm:text-[1.25rem]! w-full sm:w-[1000px] sm:max-w-md "
         />
-        <ButtonSecondary className="absolute top-[17px] right-1.5 py-0! border-[#57822B]!  text-[#57822B]!  hover:outline-[#57822B]!">
+        <ButtonSecondary className="absolute top-[15px]  text-[.9rem]! sm:text-[1.125rem]! right-1 py-0! border-[#57822B]!  text-[#57822B]!  hover:outline-[#57822B]!">
           Join
         </ButtonSecondary>
       </div>

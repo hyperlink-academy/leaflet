@@ -28,6 +28,38 @@
 .aboutPage p {
   @apply text-[1rem] sm:text-[1.25rem] md:text-[1.5rem];
 }
+
+.pubAndPostCarousel p {
+  @apply text-[1rem];
+}
+.pubAndPostCarousel h4 {
+  font-weight: 700;
+
+  @apply text-[1.25rem];
+}
+
+.pubAndPostCarouselTrack {
+  animation: pubAndPostCarouselScroll 100s linear infinite;
+}
+
+.pubAndPostCarousel:hover .pubAndPostCarouselTrack {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pubAndPostCarouselTrack {
+    animation: none;
+  }
+}
+
+@keyframes pubAndPostCarouselScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
 .aboutCover {
 }
 

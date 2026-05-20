@@ -1,7 +1,7 @@
 export const Footer = () => {
   return (
     <div className="aboutFooter flex w-full mt-24 text-center">
-      <div className="w-screen  bg-[#57822B] -mx-12 text-white pt-3 pb-8 ">
+      <div className="w-screen  bg-[#57822B] -mx-4 sm:-mx-12 text-white pt-3 pb-8 ">
         <div className="w-fit mx-auto flex gap-16">
           <div className="flex flex-col gap-1">
             <strong>Explore</strong>

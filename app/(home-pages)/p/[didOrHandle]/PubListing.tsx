@@ -8,7 +8,20 @@ import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { timeAgo } from "src/utils/timeAgo";
 
-export const PubListing = (props: PublicationSubscription) => {
+type PubListingProps = Omit<
+  PublicationSubscription,
+  | "publication_subscriptions"
+  | "publication_newsletter_settings"
+  | "documents_in_publications"
+> & {
+  publication_subscriptions?: PublicationSubscription["publication_subscriptions"];
+  publication_newsletter_settings?: PublicationSubscription["publication_newsletter_settings"];
+  documents_in_publications?: PublicationSubscription["documents_in_publications"];
+  showSubscribeButton?: boolean;
+  constrainHeight?: boolean;
+};
+
+export const PubListing = (props: PubListingProps) => {
   let record = props.record;
   let theme = usePubTheme(record?.theme);
   let backgroundImage = record?.theme?.backgroundImage?.image?.ref
@@ -39,15 +52,21 @@ export const PubListing = (props: PublicationSubscription) => {
       >
         <a href={record.url} className="absolute inset-0" />
         <div
-          className={`flex w-full flex-col justify-center text-center pt-4 pb-3 px-3 rounded-lg relative z-10  sm:h-[200px] h-full ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
+          className={`flex w-full flex-col justify-center text-center pt-4 pb-3 px-3 rounded-lg relative z-10  ${props.constrainHeight ? "sm:h-[200px] h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
         >
           <div className="mx-auto pb-1">
             <PubIcon record={record} uri={props.uri} large />
           </div>
 
-          <h4 className="truncate shrink-0 ">{record.name}</h4>
+          <h4
+            className={`${props.constrainHeight ? "truncate" : ""} shrink-0 `}
+          >
+            {record.name}
+          </h4>
           {record.description && (
-            <p className="text-secondary line-clamp-1 min-h-[16px] text-sm overflow-hidden ">
+            <p
+              className={`text-secondary ${props.constrainHeight ? "line-clamp-1" : ""} min-h-[16px] text-sm overflow-hidden `}
+            >
               {record.description}
             </p>
           )}
@@ -55,26 +74,29 @@ export const PubListing = (props: PublicationSubscription) => {
             <div className="flex flex-row gap-2 items-center">
               {props.authorProfile?.handle}
             </div>
-            <p>
-              Updated{" "}
-              {timeAgo(
-                props.documents_in_publications?.[0]?.documents?.sort_date ||
-                  "",
-              )}
-            </p>
+            {props.documents_in_publications?.[0]?.documents?.sort_date && (
+              <p>
+                Updated{" "}
+                {timeAgo(
+                  props.documents_in_publications[0].documents.sort_date,
+                )}
+              </p>
+            )}
           </div>
-          <div className="mt-3 mx-auto">
-            <SubscribeButton
-              autoFocus
-              publicationUri={props.uri}
-              publicationUrl={record.url}
-              publicationName={record.name}
-              publicationDescription={record.description}
-              newsletterMode={
-                props.publication_newsletter_settings?.enabled ?? false
-              }
-            />
-          </div>
+          {props.showSubscribeButton && (
+            <div className="mt-3 mx-auto">
+              <SubscribeButton
+                autoFocus
+                publicationUri={props.uri}
+                publicationUrl={record.url}
+                publicationName={record.name}
+                publicationDescription={record.description}
+                newsletterMode={
+                  props.publication_newsletter_settings?.enabled ?? false
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
     </BaseThemeProvider>
