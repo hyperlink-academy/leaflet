@@ -45,7 +45,7 @@ export function EditPagesNavLink(props: {
     <ActionButton
       id="edit-pages-button"
       icon={<BlockDocPageSmall />}
-      label={loading ? "Creating..." : "Editing Pages"}
+      label={loading ? "Creating..." : "Edit Pages"}
       onClick={handleClick}
       className="w-full"
     />
