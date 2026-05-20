@@ -29,6 +29,7 @@ export function EditPagesNavLink(props: {
         publication_uri: props.publication,
         path: "/",
         title: "home",
+        includePostsList: true,
       });
       setLoading(false);
       if (!created) return;

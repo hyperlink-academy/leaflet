@@ -5,6 +5,7 @@ export type PublicationNavPage = {
   id: number;
   path: string | null;
   title: string | null;
+  sort_order: string;
 };
 
 export function PublicationNav(props: {

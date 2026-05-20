@@ -15,6 +15,7 @@ type PublicationForRenderer = Omit<
     title: string;
     record: unknown;
     record_uri: string | null;
+    sort_order: string;
   }[];
 };
 

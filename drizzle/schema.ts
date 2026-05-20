@@ -528,23 +528,6 @@ export const publication_post_sends = pgTable("publication_post_sends", {
 	}
 });
 
-export const publication_pages = pgTable("publication_pages", {
-	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
-	id: bigint("id", { mode: "number" }).notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	leaflet_src: uuid("leaflet_src").notNull().references(() => permission_tokens.id),
-	document: text("document").references(() => documents.uri),
-	path: text("path"),
-	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
-	title: text("title").default('').notNull(),
-	metadata: jsonb("metadata").default({}).notNull(),
-},
-(table) => {
-	return {
-		publication_pages_pkey: primaryKey({ columns: [table.id, table.publication], name: "publication_pages_pkey"}),
-	}
-});
-
 export const leaflets_to_documents = pgTable("leaflets_to_documents", {
 	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
@@ -582,5 +565,25 @@ export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 		publication_idx: index("leaflets_in_publications_publication_idx").on(table.publication),
 		doc_idx: index("leaflets_in_publications_doc_idx").on(table.doc),
 		leaflets_in_publications_pkey: primaryKey({ columns: [table.publication, table.leaflet], name: "leaflets_in_publications_pkey"}),
+	}
+});
+
+export const publication_pages = pgTable("publication_pages", {
+	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
+	id: bigint("id", { mode: "number" }).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	leaflet_src: uuid("leaflet_src").notNull().references(() => permission_tokens.id),
+	document: text("document").references(() => documents.uri),
+	path: text("path"),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	title: text("title").default('').notNull(),
+	metadata: jsonb("metadata").default({}).notNull(),
+	record: jsonb("record"),
+	record_uri: text("record_uri"),
+	sort_order: text("sort_order").notNull(),
+},
+(table) => {
+	return {
+		publication_pages_pkey: primaryKey({ columns: [table.id, table.publication], name: "publication_pages_pkey"}),
 	}
 });

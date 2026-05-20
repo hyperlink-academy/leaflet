@@ -1116,6 +1116,7 @@ export type Database = {
           email: string
           id: string
           identity_id: string | null
+          metadata: Json | null
           publication: string
           state: string
           unsubscribe_token: string
@@ -1128,6 +1129,7 @@ export type Database = {
           email: string
           id?: string
           identity_id?: string | null
+          metadata?: Json | null
           publication: string
           state?: string
           unsubscribe_token?: string
@@ -1140,6 +1142,7 @@ export type Database = {
           email?: string
           id?: string
           identity_id?: string | null
+          metadata?: Json | null
           publication?: string
           state?: string
           unsubscribe_token?: string
@@ -1211,6 +1214,7 @@ export type Database = {
           publication: string
           record: Json | null
           record_uri: string | null
+          sort_order: string
           title: string
         }
         Insert: {
@@ -1223,6 +1227,7 @@ export type Database = {
           publication: string
           record?: Json | null
           record_uri?: string | null
+          sort_order: string
           title?: string
         }
         Update: {
@@ -1235,6 +1240,7 @@ export type Database = {
           publication?: string
           record?: Json | null
           record_uri?: string | null
+          sort_order?: string
           title?: string
         }
         Relationships: [

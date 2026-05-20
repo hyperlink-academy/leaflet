@@ -42,6 +42,7 @@ export const PublicationContent = ({
       path: string | null;
       title: string | null;
       record_uri: string | null;
+      sort_order: string;
     }[];
     documents_in_publications: {
       documents: {

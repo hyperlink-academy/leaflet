@@ -95,7 +95,7 @@ export default async function Post(props: {
     .from("publications")
     .select(
       `uri, name, identity_did, record,
-       publication_pages(id, path, title, record, record_uri),
+       publication_pages(id, path, title, record, record_uri, sort_order),
        documents_in_publications(documents(uri, data,
          comments_on_documents(count),
          document_mentions_in_bsky(count),

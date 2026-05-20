@@ -1,21 +1,52 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  MeasuringStrategy,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+import { CSS } from "@dnd-kit/utilities";
+import { generateKeyBetween } from "fractional-indexing";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
 import { AddTiny } from "components/Icons/AddTiny";
 import { createPublicationPage } from "actions/createPublicationPage";
-import { usePublicationData } from "../../dashboard/PublicationSWRProvider";
+import { reorderPublicationPages } from "actions/reorderPublicationPages";
+import {
+  usePublicationData,
+  mutatePublicationData,
+} from "../../dashboard/PublicationSWRProvider";
 import { sortPublicationPages } from "../../sortPublicationPages";
+
+type SortablePage = {
+  id: number;
+  path: string | null;
+  title: string;
+  sort_order: string;
+};
 
 export function PublicationPagesNav(props: {
   did: string;
   publicationName: string;
 }) {
   let router = useRouter();
-  let pathname = usePathname();
+  let pathname = usePathname() ?? "";
   let { data, mutate } = usePublicationData();
   let [creating, setCreating] = useState(false);
   let [open, setOpen] = useState(false);
@@ -53,30 +84,77 @@ export function PublicationPagesNav(props: {
     router.push(hrefForPath(created.path));
   }
 
-  let sortedPages = sortPublicationPages(pages);
+  let sortedPages = useMemo(() => sortPublicationPages(pages), [pages]);
+  let sortableIds = useMemo(() => sortedPages.map((p) => p.id), [sortedPages]);
+
+  let sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    let { active, over } = event;
+    if (!over || active.id === over.id || !publicationUri) return;
+
+    let activeId = Number(active.id);
+    let overId = Number(over.id);
+    let oldIndex = sortedPages.findIndex((p) => p.id === activeId);
+    let newIndex = sortedPages.findIndex((p) => p.id === overId);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    let reordered = arrayMove(sortedPages, oldIndex, newIndex);
+    let before = reordered[newIndex - 1]?.sort_order ?? null;
+    let after = reordered[newIndex + 1]?.sort_order ?? null;
+    let newSortOrder = generateKeyBetween(before, after);
+
+    mutatePublicationData(mutate, (draft) => {
+      let page = draft.publication?.publication_pages.find(
+        (p) => p.id === activeId,
+      );
+      if (page) page.sort_order = newSortOrder;
+    });
+
+    reorderPublicationPages({
+      publication_uri: publicationUri,
+      page_id: activeId,
+      sort_order: newSortOrder,
+    }).then((result) => {
+      if (!result.success) mutate();
+    });
+  }
 
   return (
     <nav className="publicationPagesNav border-t border-b border-border-light shrink-0 w-full sm:max-w-[calc(var(--page-width-units)*1.25)] mx-auto">
       <div className="flex items-center gap-2 px-3 sm:px-4 py-2 overflow-x-auto w-full sm:max-w-(--page-width-units) mx-auto">
         <div className="flex items-center gap-1 grow min-w-0 overflow-x-auto">
-          {sortedPages.map((page) => {
-            let href = hrefForPath(page.path);
-            let active =
-              decodeURIComponent(pathname) === decodeURIComponent(href);
-            return (
-              <SpeedyLink
-                key={page.id}
-                href={href}
-                className={`shrink-0 px-2 py-1 rounded-md text-sm hover:no-underline! ${
-                  active
-                    ? "bg-accent-1 text-accent-2"
-                    : "text-secondary hover:bg-border-light"
-                }`}
-              >
-                {page.title || page.path || "/"}
-              </SpeedyLink>
-            );
-          })}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            measuring={{
+              droppable: { strategy: MeasuringStrategy.Always },
+            }}
+            modifiers={[restrictToHorizontalAxis]}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={sortableIds}
+              strategy={horizontalListSortingStrategy}
+            >
+              {sortedPages.map((page) => (
+                <SortableTab
+                  key={page.id}
+                  page={page}
+                  href={hrefForPath(page.path)}
+                  active={
+                    decodeURIComponent(pathname) ===
+                    decodeURIComponent(hrefForPath(page.path))
+                  }
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
         <Popover
           asChild
@@ -113,5 +191,61 @@ export function PublicationPagesNav(props: {
         </Popover>
       </div>
     </nav>
+  );
+}
+
+function SortableTab(props: {
+  page: SortablePage;
+  href: string;
+  active: boolean;
+}) {
+  let {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.page.id });
+
+  let style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group/sortable-tab flex items-center shrink-0 rounded-md ${
+        isDragging ? "opacity-50" : ""
+      } ${
+        props.active
+          ? "bg-accent-1 text-accent-2"
+          : "text-secondary hover:bg-border-light"
+      }`}
+    >
+      <button
+        ref={setActivatorNodeRef}
+        type="button"
+        aria-label="Drag to reorder"
+        className="shrink-0 w-[9px] h-4 ml-1 cursor-grab touch-none opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100"
+        style={{
+          maskImage: "var(--gripperSVG)",
+          maskRepeat: "repeat",
+          backgroundColor: "currentColor",
+        }}
+        {...attributes}
+        {...listeners}
+      />
+      <SpeedyLink
+        href={props.href}
+        className="block pr-2 pl-1 py-1 rounded-md text-sm text-inherit hover:no-underline! select-none"
+      >
+        {props.page.title || props.page.path || "/"}
+      </SpeedyLink>
+    </div>
   );
 }

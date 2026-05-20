@@ -130,6 +130,7 @@ export const get_publication_data = makeRoute({
       record_uri: p.record_uri,
       leaflet_src: p.leaflet_src,
       created_at: p.created_at,
+      sort_order: p.sort_order,
       permission_tokens: p.permission_tokens,
     }));
 

@@ -11,6 +11,7 @@ import { SettingsSmall } from "components/Icons/SettingsSmall";
 import { DashboardShell } from "components/PageLayouts/DashboardShell";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { Actions } from "./Actions";
+import { EditPagesNavLink } from "./EditPagesNavLink";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
 import { SubscribersSmall } from "components/Icons/SubscribersSmall";
@@ -98,7 +99,16 @@ export default async function PublicationDashboardLayout(props: {
           id={publication.uri}
           publication={publication.uri}
           pageTitle={<PageTitle pageTitle={record.name} showBackButton />}
-          actions={<Actions publication={publication.uri} />}
+          actions={
+            <>
+              <Actions publication={publication.uri} />
+              <EditPagesNavLink
+                publication={publication.uri}
+                did={uri.host}
+                publicationName={uri.rkey}
+              />
+            </>
+          }
           tabs={{
             Drafts: { href: baseHref, icon: <ArchiveSmall /> },
             Posts: { href: `${baseHref}/posts`, icon: <PublishSmall /> },

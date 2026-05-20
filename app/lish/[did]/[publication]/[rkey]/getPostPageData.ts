@@ -20,7 +20,7 @@ export async function getPostPageData(did: string, rkey: string) {
           documents_in_publications(documents(uri, data)),
           publication_subscriptions(*),
           publication_newsletter_settings(enabled),
-          publication_pages(id, path, title, record_uri))
+          publication_pages(id, path, title, record_uri, sort_order))
         ),
         document_mentions_in_bsky(*),
         leaflets_in_publications(*),
