@@ -60,7 +60,8 @@ export default async function Publication(props: {
 
   try {
     if (homePage && homePage.record) {
-      let pageRecord = homePage.record as unknown as PubLeafletPublicationPage.Record;
+      let pageRecord =
+        homePage.record as unknown as PubLeafletPublicationPage.Record;
       return (
         <PublicationPageRenderer
           did={did}

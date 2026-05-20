@@ -31,6 +31,7 @@ import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { FontLoader } from "components/FontLoader";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { PublicationNav } from "../PublicationNav";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 
 export async function DocumentPageRenderer({
   did,
@@ -170,8 +171,7 @@ export async function DocumentPageRenderer({
             <LeafletLayout>
               {document.publication?.pages?.length ? (
                 <PublicationNav
-                  did={did}
-                  publicationName={document.publication.name}
+                  publicationUrl={getPublicationURL(document.publication)}
                   pages={document.publication.pages}
                   activePath={null}
                 />

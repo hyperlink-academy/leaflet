@@ -16,7 +16,10 @@ import { supabaseServerClient } from "supabase/serverClient";
 
 type PublishPagesResult =
   | { success: true; published: { id: number; uri: string }[] }
-  | { success: false; error: OAuthSessionError | { type: "other"; message: string } };
+  | {
+      success: false;
+      error: OAuthSessionError | { type: "other"; message: string };
+    };
 
 export async function publishPublicationPages({
   publication_uri,

@@ -7,11 +7,12 @@ import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { LoginModal } from "components/LoginButton";
 import { AtUri } from "@atproto/syntax";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
 import { PublicationPagesNav } from "./PublicationPagesNav";
 import { PublicationEditHeader } from "./PublicationEditHeader";
-import { PublicationHeaderEditor } from "../../PublicationHeaderEditor";
-import { PublicationCollapsibleHeader } from "./PublicationCollapsibleHeader";
+import { PublicationHeader } from "../../PublicationHeader";
+import { PublicationStickyHeader } from "../../PublicationStickyHeader";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -77,9 +78,7 @@ export default async function PublicationEditLayout(props: {
   }
 
   let uri = new AtUri(publication.uri);
-  const iconUrl = record?.icon
-    ? `/api/atproto_images?did=${did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]}`
-    : undefined;
+  const iconUrl = record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined;
 
   return (
     <PublicationSWRDataProvider
@@ -93,14 +92,18 @@ export default async function PublicationEditLayout(props: {
             did={params.did}
             publicationName={params.publication}
           />
-          <div className="flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
-            <PublicationCollapsibleHeader>
-              <PublicationHeaderEditor
+          <div className="pubWrapper flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
+            <PublicationStickyHeader
+              sticky={false}
+              scrollContainerSelector=".pageScrollWrapper"
+            >
+              <PublicationHeader
+                variant="inline"
                 iconUrl={iconUrl}
                 publicationName={publication.name}
                 description={record?.description}
               />
-            </PublicationCollapsibleHeader>
+            </PublicationStickyHeader>
             <PublicationPagesNav
               did={params.did}
               publicationName={params.publication}

@@ -122,11 +122,12 @@ export function PublicationPostsList({
                   ? "small"
                   : "medium";
 
+              const postDid = new AtUri(post.uri).host;
+              const coverImageSrc = doc_record.coverImage
+                ? blobRefToSrc(doc_record.coverImage.ref, postDid)
+                : undefined;
+
               if (Variant === "large") {
-                const postDid = new AtUri(post.uri).host;
-                const coverImageSrc = doc_record.coverImage
-                  ? blobRefToSrc(doc_record.coverImage.ref, postDid)
-                  : undefined;
                 return (
                   <PublicationPostItemLarge
                     key={post.uri}
@@ -165,6 +166,8 @@ export function PublicationPostsList({
                   }
                   date={date}
                   interactions={interactions}
+                  coverImageSrc={coverImageSrc}
+                  coverImageAlt={doc_record.title}
                 />
               );
             })}

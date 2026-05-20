@@ -15,6 +15,11 @@ type LargeProps = CommonProps & {
   coverImageAlt?: string;
 };
 
+type MediumProps = CommonProps & {
+  coverImageSrc?: string;
+  coverImageAlt?: string;
+};
+
 function MetaRow({
   author,
   date,
@@ -83,22 +88,34 @@ export function PublicationPostItemSmall(props: CommonProps) {
   );
 }
 
-export function PublicationPostItemMedium(props: CommonProps) {
+export function PublicationPostItemMedium(props: MediumProps) {
+  const hasCoverImage = !!props.coverImageSrc;
   return (
     <>
-      <div className="flex w-full grow flex-col">
-        <PostLink href={props.href}>
-          {props.title && <h3 className="text-primary">{props.title}</h3>}
-          <p className="italic text-secondary line-clamp-3">
-            {props.description}
-          </p>
-        </PostLink>
-        <MetaRow
-          author={props.author}
-          date={props.date}
-          interactions={props.interactions}
-          textClassName="text-sm"
-        />
+      <div className="flex w-full gap-3 items-stretch">
+        <div className="flex w-full grow flex-col min-w-0">
+          <PostLink href={props.href}>
+            {props.title && <h3 className="text-primary">{props.title}</h3>}
+            <p className="italic text-secondary line-clamp-3">
+              {props.description}
+            </p>
+          </PostLink>
+          <MetaRow
+            author={props.author}
+            date={props.date}
+            interactions={props.interactions}
+            textClassName="text-sm"
+          />
+        </div>
+        {hasCoverImage && (
+          <div className="self-stretch shrink-0 max-w-24">
+            <img
+              src={props.coverImageSrc}
+              alt={props.coverImageAlt || props.title || ""}
+              className="h-full w-auto object-cover rounded"
+            />
+          </div>
+        )}
       </div>
       <hr className="last:hidden border-border-light" />
     </>

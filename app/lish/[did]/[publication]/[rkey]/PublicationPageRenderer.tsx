@@ -34,6 +34,9 @@ import {
 import { PublicationNav } from "../PublicationNav";
 import { PublicationHeader } from "../PublicationHeader";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
+import { PublicationStickyHeader } from "../PublicationStickyHeader";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { fetchPollData } from "./fetchPollData";
@@ -169,10 +172,6 @@ export async function PublicationPageRenderer({
 
   const theme = normalizedPublication?.theme;
   const showPageBackground = !!theme?.showPageBackground;
-  const profileResp = await agent.getProfile({ actor: did }).then(
-    (res) => res.data,
-    () => undefined,
-  );
 
   const documentContextValue: DocumentContextValue = {
     uri: page.record.publication,
@@ -216,31 +215,30 @@ export async function PublicationPageRenderer({
             <PublicationHomeLayout
               uri={publication.uri}
               showPageBackground={showPageBackground}
+              stickyHeader={
+                <PublicationStickyHeader
+                  nav={
+                    <PublicationNav
+                      publicationUrl={getPublicationURL(publication)}
+                      pages={(publication.publication_pages ?? []).filter(
+                        (p) => p.record_uri,
+                      )}
+                      activePath={page.path}
+                    />
+                  }
+                >
+                  <PublicationHeader
+                    iconUrl={
+                      normalizedPublication?.icon
+                        ? blobRefToSrc(normalizedPublication.icon.ref, did)
+                        : undefined
+                    }
+                    publicationName={publication.name}
+                    description={normalizedPublication?.description}
+                  />
+                </PublicationStickyHeader>
+              }
             >
-              <PublicationHeader
-                iconUrl={
-                  normalizedPublication?.icon
-                    ? `/api/atproto_images?did=${did}&cid=${(normalizedPublication.icon.ref as unknown as { $link: string })["$link"]}`
-                    : undefined
-                }
-                publicationName={publication.name}
-                description={normalizedPublication?.description}
-                author={
-                  profileResp ? (
-                    <span className="text-sm text-secondary">
-                      by {profileResp.displayName || profileResp.handle}
-                    </span>
-                  ) : undefined
-                }
-              />
-              <PublicationNav
-                did={did}
-                publicationName={publication.name}
-                pages={(publication.publication_pages ?? []).filter(
-                  (p) => p.record_uri,
-                )}
-                activePath={page.path}
-              />
               <div className="pubPageContent pt-6">
                 <PostContent
                   blocks={allBlocks}

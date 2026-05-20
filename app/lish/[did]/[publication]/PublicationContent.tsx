@@ -3,12 +3,15 @@ import { PublicationHomeLayout } from "./PublicationHomeLayout";
 import { PublicationAuthor } from "./PublicationAuthor";
 import { PublicationHeader } from "./PublicationHeader";
 import { PublicationNav } from "./PublicationNav";
+import { PublicationStickyHeader } from "./PublicationStickyHeader";
 import {
   normalizePublicationRecord,
   normalizeDocumentRecord,
 } from "src/utils/normalizeRecords";
 import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import {
   PublicationPostsList,
@@ -83,44 +86,48 @@ export const PublicationContent = ({
       <PublicationHomeLayout
         uri={publication.uri}
         showPageBackground={!!showPageBackground}
+        stickyHeader={
+          <PublicationStickyHeader
+            nav={
+              <PublicationNav
+                publicationUrl={getPublicationURL(publication)}
+                pages={(publication.publication_pages ?? []).filter(
+                  (p) => p.record_uri,
+                )}
+                activePath="/"
+              />
+            }
+          >
+            <PublicationHeader
+              iconUrl={
+                record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined
+              }
+              publicationName={publication.name}
+              description={record?.description}
+              author={
+                profile ? (
+                  <PublicationAuthor
+                    did={profile.did}
+                    displayName={profile.displayName}
+                    handle={profile.handle}
+                  />
+                ) : undefined
+              }
+              subscribeButton={
+                <div className="max-w-sm mx-auto">
+                  <SubscribeInput
+                    publicationUri={publication.uri}
+                    publicationUrl={record?.url}
+                    publicationName={record?.name ?? publication.name}
+                    publicationDescription={record?.description}
+                    newsletterMode={newsletterMode}
+                  />
+                </div>
+              }
+            />
+          </PublicationStickyHeader>
+        }
       >
-        <PublicationHeader
-          iconUrl={
-            record?.icon
-              ? `/api/atproto_images?did=${did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]}`
-              : undefined
-          }
-          publicationName={publication.name}
-          description={record?.description}
-          author={
-            profile ? (
-              <PublicationAuthor
-                did={profile.did}
-                displayName={profile.displayName}
-                handle={profile.handle}
-              />
-            ) : undefined
-          }
-          subscribeButton={
-            <div className="max-w-sm mx-auto">
-              <SubscribeInput
-                publicationUri={publication.uri}
-                publicationUrl={record?.url}
-                publicationName={record?.name ?? publication.name}
-                publicationDescription={record?.description}
-                newsletterMode={newsletterMode}
-              />
-            </div>
-          }
-        />
-        <PublicationNav
-          did={did}
-          publicationName={publication.name}
-          pages={(publication.publication_pages ?? []).filter(
-            (p) => p.record_uri,
-          )}
-          activePath="/"
-        />
         <PublicationPostsList
           publication={publication}
           publicationRecord={record}
