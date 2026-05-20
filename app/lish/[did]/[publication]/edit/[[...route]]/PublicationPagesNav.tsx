@@ -2,7 +2,9 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
-import { ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { InputWithLabel } from "components/Input";
+import { Popover } from "components/Popover";
 import { AddTiny } from "components/Icons/AddTiny";
 import { createPublicationPage } from "actions/createPublicationPage";
 import { usePublicationData } from "../../dashboard/PublicationSWRProvider";
@@ -16,6 +18,9 @@ export function PublicationPagesNav(props: {
   let pathname = usePathname();
   let { data, mutate } = usePublicationData();
   let [creating, setCreating] = useState(false);
+  let [open, setOpen] = useState(false);
+  let [name, setName] = useState("");
+  let [path, setPath] = useState("/");
 
   let pages = data?.publication?.publication_pages ?? [];
   let publicationUri = data?.publication?.uri;
@@ -27,18 +32,23 @@ export function PublicationPagesNav(props: {
     return `${baseHref}/edit${segment}`;
   }
 
-  async function handleCreate() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     if (creating || !publicationUri) return;
-    let path = window.prompt("New page path (e.g. /about):", "/");
-    if (!path) return;
-    if (!path.startsWith("/")) path = "/" + path;
+    let trimmedPath = path.trim();
+    if (!trimmedPath) return;
+    if (!trimmedPath.startsWith("/")) trimmedPath = "/" + trimmedPath;
     setCreating(true);
     let created = await createPublicationPage({
       publication_uri: publicationUri,
-      path,
+      path: trimmedPath,
+      title: name.trim() || undefined,
     });
     setCreating(false);
     if (!created) return;
+    setOpen(false);
+    setName("");
+    setPath("/");
     await mutate();
     router.push(hrefForPath(created.path));
   }
@@ -68,10 +78,39 @@ export function PublicationPagesNav(props: {
             );
           })}
         </div>
-        <ButtonSecondary compact onClick={handleCreate} disabled={creating}>
-          <AddTiny className="scale-90" />
-          {creating ? "Creating..." : "Page"}
-        </ButtonSecondary>
+        <Popover
+          asChild
+          align="end"
+          open={open}
+          onOpenChange={setOpen}
+          className="w-64"
+          trigger={
+            <ButtonSecondary compact>
+              <AddTiny className="scale-90" />
+              Page
+            </ButtonSecondary>
+          }
+        >
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+            <InputWithLabel
+              label="Name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+              autoFocus
+            />
+            <InputWithLabel
+              label="Path"
+              type="text"
+              value={path}
+              onChange={(e) => setPath(e.currentTarget.value)}
+              placeholder="/about"
+            />
+            <ButtonPrimary type="submit" disabled={creating}>
+              {creating ? "Creating..." : "Create Page"}
+            </ButtonPrimary>
+          </form>
+        </Popover>
       </div>
     </nav>
   );
