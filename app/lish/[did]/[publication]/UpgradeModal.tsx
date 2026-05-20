@@ -1,3 +1,4 @@
+"use client";
 import { ButtonPrimary } from "components/Buttons";
 import { Modal } from "components/Modal";
 import { useState } from "react";
@@ -32,8 +33,12 @@ export const UpgradeContent = () => {
           <div className="">Subscriber Counts</div>
           <div className="">Top Referrers</div>
           <hr className="my-4 border-border-light" />
+          <div className="font-bold text-primary">Emails</div>
+          <div className="text-sm italic">
+            First 1,000 subscribers included, $5/1K after that
+          </div>
+          <hr className="my-4 border-border-light" />
           <div className="font-bold text-primary">Coming ASAP</div>
-          <div className="">Emails</div>
           <div className="">Paid Membership</div>
         </div>
         <div className="sm:w-64  w-full accent-container flex justify-center items-center">
@@ -93,7 +98,7 @@ export const InlineUpgradeToPro = (props: { compact?: boolean }) => {
       <div
         className={`${props.compact ? `text-sm` : "text-base"} leading-snug text-tertiary pt-2`}
       >
-        Analytics for all your pubs! <br /> Emails and membership coming soon.
+        Analytics and Emails for all your pubs! <br /> Membership coming soon.
       </div>
     </div>
   );

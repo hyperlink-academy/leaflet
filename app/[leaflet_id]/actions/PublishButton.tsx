@@ -52,6 +52,8 @@ export const PublishButton = (props: { entityID: string }) => {
     return (
       <ActionButton
         primary
+        labelOnMobile
+        className="sm:w-full! w-fit!"
         icon={<PublishSmall className="shrink-0" />}
         label={"Publish!"}
         onClick={() => {
@@ -116,6 +118,8 @@ const UpdateButton = () => {
   return (
     <ActionButton
       primary
+      className="w-fit!"
+      labelOnMobile
       icon={<PublishSmall className="shrink-0" />}
       label={isLoading ? <DotLoader /> : "Update!"}
       onClick={async () => {
@@ -140,7 +144,7 @@ const UpdateButton = () => {
             content: isOAuthSessionError(result.error) ? (
               <OAuthErrorMessage error={result.error} />
             ) : (
-              "Failed to publish"
+              "We couldn't publish this. Please try again!"
             ),
             type: "error",
           });
@@ -192,8 +196,10 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
       trigger={
         <ActionButton
           primary
+          className="sm:w-full! w-fit!"
+          labelOnMobile
           icon={<PublishSmall className="shrink-0" />}
-          label={"Publish"}
+          label={"Publish!"}
         />
       }
     >

@@ -11,6 +11,7 @@ import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
 import { sendConfirmationEmail } from "src/utils/confirmationEmail";
+import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 
 async function sendAuthCode(email: string, code: string) {
   await sendConfirmationEmail({
@@ -112,6 +113,8 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
   } else {
     identityID = identity.id;
   }
+
+  await linkOrphanedEmailSubscribers(identityID, token.email);
 
   const [confirmedToken] = await db
     .update(email_auth_tokens)

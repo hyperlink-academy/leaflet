@@ -15,34 +15,34 @@ import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { LinkIdentityModal } from "./LinkIdentityModal";
 const apps = [
-  { name: "Leaflet", logo: "/logos/leaflet.svg" },
-  { name: "Bluesky", logo: "/logos/bluesky.svg" },
-  { name: "Blacksky", logo: "/logos/blacksky.svg" },
-  { name: "Eurosky", logo: "/logos/eurosky.svg" },
-  { name: "Tangled", logo: "/logos/tangled.svg" },
-  { name: "Semble", logo: "/logos/semble.svg" },
-  { name: "Surf", logo: "/logos/surf.svg" },
-  { name: "Spark", logo: "/logos/spark.svg" },
-  { name: "Pckt", logo: "/logos/pckt.svg" },
-  { name: "pdsls", logo: "/logos/pdsls.svg" },
-  { name: "plyr.fm", logo: "/logos/plyr.fm.svg" },
-  { name: "Popfeed", logo: "/logos/popfeed.svg" },
-  { name: "Roomy", logo: "/logos/roomy.svg" },
-  { name: "Sill", logo: "/logos/sill.svg" },
-  { name: "Offprint", logo: "/logos/offprint.svg" },
-  { name: "Margin", logo: "/logos/margin.svg" },
-  { name: "Anisota", logo: "/logos/anisota.svg" },
-  { name: "Blento", logo: "/logos/blento.svg" },
-  { name: "Cartridge", logo: "/logos/cartridge.svg" },
-  { name: "Graze", logo: "/logos/graze.svg" },
+  { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
+  { name: "Bluesky", logo: "https://leaflet.pub/logos/bluesky.svg" },
+  { name: "Blacksky", logo: "https://leaflet.pub/logos/blacksky.svg" },
+  { name: "Eurosky", logo: "https://leaflet.pub/logos/eurosky.svg" },
+  { name: "Tangled", logo: "https://leaflet.pub/logos/tangled.svg" },
+  { name: "Semble", logo: "https://leaflet.pub/logos/semble.svg" },
+  { name: "Surf", logo: "https://leaflet.pub/logos/surf.svg" },
+  { name: "Spark", logo: "https://leaflet.pub/logos/spark.svg" },
+  { name: "Pckt", logo: "https://leaflet.pub/logos/pckt.svg" },
+  { name: "pdsls", logo: "https://leaflet.pub/logos/pdsls.svg" },
+  { name: "plyr.fm", logo: "https://leaflet.pub/logos/plyr.fm.svg" },
+  { name: "Popfeed", logo: "https://leaflet.pub/logos/popfeed.svg" },
+  { name: "Roomy", logo: "https://leaflet.pub/logos/roomy.svg" },
+  { name: "Sill", logo: "https://leaflet.pub/logos/sill.svg" },
+  { name: "Offprint", logo: "https://leaflet.pub/logos/offprint.svg" },
+  { name: "Margin", logo: "https://leaflet.pub/logos/margin.svg" },
+  { name: "Anisota", logo: "https://leaflet.pub/logos/anisota.svg" },
+  { name: "Blento", logo: "https://leaflet.pub/logos/blento.svg" },
+  { name: "Cartridge", logo: "https://leaflet.pub/logos/cartridge.svg" },
+  { name: "Graze", logo: "https://leaflet.pub/logos/graze.svg" },
 ];
-
-import { Separator } from "components/Layout";
 
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
   publicationUri: string;
   onSubscribed?: () => void;
+  onAtSuccess?: () => void;
+  leading?: React.ReactNode;
   user: {
     loggedIn: boolean;
     email: string | undefined;
@@ -61,8 +61,7 @@ export const SubscribeWithHandle = (props: {
   let [pendingLinkHandle, setPendingLinkHandle] = useState<string | null>(null);
   const viewerEmail = identity?.email;
   const viewerAtpDid = identity?.atp_did;
-  const needsLinkConfirmation =
-    !!viewerEmail && !viewerAtpDid;
+  const needsLinkConfirmation = !!viewerEmail && !viewerAtpDid;
 
   const redirectToOauthForSubscribe = (handle: string, link: boolean) => {
     let action = encodeActionToSearchParam({
@@ -78,51 +77,58 @@ export const SubscribeWithHandle = (props: {
 
   if (props.user.loggedIn && props.user.handle) {
     return (
-      <div className="flex flex-col gap-2">
-        <ButtonPrimary
-          className="mx-auto max-w-full"
-          disabled={subscribing}
-          onClick={async () => {
-            if (subscribing) return;
-            setSubscribing(true);
-            setOauthError(null);
-            let url = new URL(window.location.href);
-            url.searchParams.set("refreshAuth", "");
-            let result = await subscribeToPublication(
-              props.publicationUri,
-              url.toString(),
-            );
-            if (!result.success) {
-              if (isOAuthSessionError(result.error))
-                setOauthError(result.error);
+      <div className="flex flex-col gap-2 w-max max-w-full mx-auto">
+        <div className="flex items-center gap-2">
+          <ButtonPrimary
+            className="mx-auto max-w-full grow"
+            disabled={subscribing}
+            onClick={async () => {
+              if (subscribing) return;
+              setSubscribing(true);
+              setOauthError(null);
+              let url = new URL(window.location.href);
+              url.searchParams.set("refreshAuth", "");
+              let result = await subscribeToPublication(
+                props.publicationUri,
+                url.toString(),
+              );
+              if (!result.success) {
+                if (isOAuthSessionError(result.error))
+                  setOauthError(result.error);
+                setSubscribing(false);
+                return;
+              }
+              if (props.onAtSuccess) {
+                props.onAtSuccess();
+              } else {
+                toaster({
+                  content: <div>You're Subscribed!</div>,
+                  type: "success",
+                });
+              }
+              props.onSubscribed?.();
               setSubscribing(false);
-              return;
-            }
-            toaster({
-              content: <div>You're Subscribed!</div>,
-              type: "success",
-            });
-            props.onSubscribed?.();
-            setSubscribing(false);
-          }}
-        >
-          {subscribing ? (
-            <DotLoader />
-          ) : (
-            <>
-              <span className="shrink-0">Subscribe as</span>
-              <span className="flex gap-1 items-center max-w-full grow min-w-0">
-                <Avatar
-                  size="tiny"
-                  src={record?.avatar}
-                  displayName={record?.displayName || record?.handle}
-                />
+            }}
+          >
+            {subscribing ? (
+              <DotLoader />
+            ) : (
+              <>
+                {props.leading}
+                <span className="shrink-0">Subscribe as</span>
+                <span className="flex gap-1 items-center max-w-full grow min-w-0">
+                  <Avatar
+                    size="tiny"
+                    src={record?.avatar}
+                    displayName={record?.displayName || record?.handle}
+                  />
 
-                <div className="grow truncate">{props.user.handle}</div>
-              </span>
-            </>
-          )}
-        </ButtonPrimary>
+                  <div className="grow truncate">{props.user.handle}</div>
+                </span>
+              </>
+            )}
+          </ButtonPrimary>
+        </div>
         {oauthError && (
           <OAuthErrorMessage
             error={oauthError}
@@ -137,6 +143,7 @@ export const SubscribeWithHandle = (props: {
         <HandleInput
           autoFocus={props.autoFocus}
           loading={loading}
+          leading={props.leading}
           onSubmit={(handle) => {
             let trimmed = handle.trim();
             if (!trimmed) return;
@@ -185,7 +192,7 @@ export const LinkHandle = (props: { compact?: boolean }) => {
         className={`text-secondary flex flex-col ${props.compact && "text-sm leading-snug"}`}
       >
         <h4 className={`${props.compact && "text-sm"}`}>
-          Link your universal handle
+          Link your Atmosphere account
         </h4>
         <div className="text-tertiary">
           to comment, recommend, and see what your friends are reading
@@ -238,7 +245,7 @@ export const AtSubscribeSuccess = (props: {}) => {
 export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
   return (
     <Popover
-      className="z-100! max-w-sm flex flex-col"
+      className="z-100! w-[min(24rem,var(--radix-popover-content-available-width))] flex flex-col"
       trigger={
         props.trigger ? (
           props.trigger
@@ -249,12 +256,12 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
         )
       }
     >
-      <div className="font-bold text-secondary pb-1">
+      <div className="font-bold text-secondary pb-1 ">
         The Atmosphere is a growing ecosystem of social apps, like Leaflet and
         Bluesky.
         <br />
       </div>
-      <div className="pb-3  font-bold text-secondary">
+      <div className="pb-3 font-bold text-secondary">
         One account gets you into <em>all</em> of them.
       </div>
 

@@ -1,3 +1,4 @@
+"use client";
 import { Avatar } from "components/Avatar";
 import { ActionButton } from "./ActionButton";
 import { useIdentityData } from "components/IdentityProvider";
@@ -29,10 +30,9 @@ export const ProfileButton = () => {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="w-xs py-1!"
+      className="w-xs py-1! z-[60]!"
       trigger={
         <ActionButton
-          nav
           labelOnMobile={false}
           icon={
             record ? (
@@ -49,7 +49,7 @@ export const ProfileButton = () => {
               ? record.displayName || record.handle
               : identity?.email || "Account"
           }
-          className={`w-full`}
+          className={`font-bold`}
         />
       }
     >

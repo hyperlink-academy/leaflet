@@ -42,7 +42,11 @@ export const events = {
     schema: staticSchema<{ documentUris?: string[] }>(),
   }),
   appviewSyncDocumentMetadata: eventType("appview/sync-document-metadata", {
-    schema: staticSchema<{ document_uri: string; bsky_post_uri?: string }>(),
+    schema: staticSchema<{
+      document_uri: string;
+      bsky_post_uri?: string;
+      event_type?: "create" | "update";
+    }>(),
   }),
   userWriteRecordsToPds: eventType("user/write-records-to-pds", {
     schema: staticSchema<{
@@ -87,7 +91,7 @@ export const events = {
     schema: staticSchema<{
       publication_uri: string;
       document_uri: string;
-      root_entity: string;
+      root_entity?: string;
     }>(),
   }),
 };

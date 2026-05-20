@@ -81,6 +81,7 @@ export const RadioMenuGroup = (props: {
 }) => {
   return (
     <DropdownMenu.RadioGroup
+      className="flex flex-col gap-0.5"
       value={props.value}
       onValueChange={props.onValueChange}
     >

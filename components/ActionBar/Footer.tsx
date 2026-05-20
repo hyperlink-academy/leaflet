@@ -1,18 +1,23 @@
 import { Media } from "components/Media";
 
-export function Footer(props: { children?: React.ReactNode }) {
+export function FooterLayout(props: {
+  children?: React.ReactNode;
+  onMouseDown?: (e: React.MouseEvent) => void;
+  noBackground?: boolean;
+}) {
   return (
-    <Media
-      mobile
+    <div
+      onMouseDown={props.onMouseDown}
       className={`
-        actionFooter touch-none shrink-0
-        w-full z-10
-        px-2 pt-1 pwa-padding-bottom
+        leafletFooter touch-none shrink-0 z-10
+        px-2 pt-1 pb-2
         flex justify-between
-        h-[calc(38px+var(--safe-padding-bottom))]
-        bg-[rgba(var(--bg-page),0.5)] border-top border-bg-page`}
+        w-fill
+        pwa-padding-x
+        h-[calc(38px+(max(var(--safe-padding-bottom),16px))]
+       ${props.noBackground ? "bg-bg-page" : "bg-[rgba(var(--bg-page),0.5)] border-top border-bg-page"} `}
     >
       {props.children}
-    </Media>
+    </div>
   );
 }

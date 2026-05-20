@@ -22,7 +22,9 @@ import {
   publishAtprotoSubscriptionForDid,
   unsubscribeToPublication,
 } from "app/lish/subscribeToPublication";
+import type { OAuthSessionError } from "src/atproto-oauth";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 
 type RequestError =
   | "invalid_email"
@@ -36,7 +38,11 @@ type ConfirmError =
   | "link_invalid_state"
   | "email_belongs_to_other_account"
   | ConfirmationError;
-type UnsubscribeError = "unauthorized" | "not_subscribed" | "database_error";
+type UnsubscribeError =
+  | "unauthorized"
+  | "not_subscribed"
+  | "database_error"
+  | OAuthSessionError;
 
 export async function requestPublicationEmailSubscription(
   publicationUri: string,
@@ -315,7 +321,8 @@ export async function unsubscribeFromPublication(
   }
 
   if (atprotoSub) {
-    await unsubscribeToPublication(publicationUri);
+    const atprotoResult = await unsubscribeToPublication(publicationUri);
+    if (!atprotoResult.success) return Err(atprotoResult.error);
   }
 
   // NOTE: Postmark Suppressions API is deliberately NOT called here. Per spec,
@@ -361,6 +368,7 @@ async function linkEmailToCurrentIdentity(
       console.error("[subscribeEmail] attach email failed:", error);
       return Err("database_error");
     }
+    await linkOrphanedEmailSubscribers(current.id, email);
     await backfillAtprotoSubscriptionsForIdentity(current.id, current.atp_did);
     return Ok(current.id);
   }
@@ -391,6 +399,10 @@ async function ensureAuthTokenForEmail(email: string): Promise<string | null> {
     console.error("[subscribeEmail] identity upsert failed:", identityError);
     return null;
   }
+
+  // Cover any sibling subscriber rows (e.g. CSV-imported entries on other
+  // publications) so this confirmation also adopts them under the new identity.
+  await linkOrphanedEmailSubscribers(identity.id, email);
 
   const { data: token, error: tokenError } = await supabaseServerClient
     .from("email_auth_tokens")

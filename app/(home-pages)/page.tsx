@@ -1,31 +1,15 @@
 import { cookies } from "next/headers";
-import ReaderLayout from "./reader/layout";
-import ReaderPage from "./reader/page";
-import HomePage from "./home/page";
+import { redirect } from "next/navigation";
 
 export default async function RootPage() {
   const cookieStore = await cookies();
   const hasAuth =
-    cookieStore.has("auth_token") ||
-    cookieStore.has("external_auth_token");
+    cookieStore.has("auth_token") || cookieStore.has("external_auth_token");
 
-  if (!hasAuth) {
-    return (
-      <ReaderLayout>
-        <ReaderPage />
-      </ReaderLayout>
-    );
-  }
+  if (!hasAuth) redirect("/reader");
 
   const navState = cookieStore.get("nav-state")?.value;
+  if (navState === "reader") redirect("/reader");
 
-  if (navState === "reader") {
-    return (
-      <ReaderLayout>
-        <ReaderPage />
-      </ReaderLayout>
-    );
-  }
-
-  return <HomePage />;
+  redirect("/home");
 }

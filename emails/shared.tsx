@@ -13,6 +13,7 @@ export type EmailTheme = {
   // post at the same column width in their inbox as on the live page.
   // Default 624 mirrors `ThemeProvider.tsx`'s fallback.
   pageWidth: number;
+  showPageBackground: boolean;
 };
 
 export const defaultEmailTheme: EmailTheme = {
@@ -24,6 +25,7 @@ export const defaultEmailTheme: EmailTheme = {
   headingFont: "Georgia, serif",
   bodyFont: "Verdana, sans-serif",
   pageWidth: 624,
+  showPageBackground: true,
 };
 
 // Parse rgb()/rgba()/#hex into [r, g, b]. Returns black on parse failure —
@@ -76,13 +78,25 @@ export type ResolvedColors = {
   borderLight: string;
 };
 
-export const resolveColors = (theme: EmailTheme): ResolvedColors => ({
-  primary: theme.primary,
-  secondary: mixRgb(theme.primary, theme.pageBackground, 25),
-  tertiary: mixRgb(theme.primary, theme.pageBackground, 55),
-  border: mixRgb(theme.primary, theme.pageBackground, 75),
-  borderLight: mixRgb(theme.primary, theme.pageBackground, 85),
-});
+export const resolveColors = (theme: EmailTheme): ResolvedColors => {
+  // When the card background is hidden, the surface visible behind every
+  // block is the outer page bg, not the publication's pageBackground.
+  // Mix tints against that visible surface so block fills (e.g. the
+  // unsupported-block fallback) sit on a tone derived from what's
+  // actually behind them — mirroring `BaseThemeProvider`'s web behavior
+  // where `bgPage` collapses to `bgLeaflet` when showPageBackground is
+  // false.
+  const effectiveBg = theme.showPageBackground
+    ? theme.pageBackground
+    : theme.backgroundColor;
+  return {
+    primary: theme.primary,
+    secondary: mixRgb(theme.primary, effectiveBg, 25),
+    tertiary: mixRgb(theme.primary, effectiveBg, 55),
+    border: mixRgb(theme.primary, effectiveBg, 75),
+    borderLight: mixRgb(theme.primary, effectiveBg, 85),
+  };
+};
 
 // Postmark fetches `<img src>` and link `href` values verbatim from the
 // rendered HTML — relative paths break. Templates accept an `assetsBaseUrl`
@@ -90,6 +104,22 @@ export const resolveColors = (theme: EmailTheme): ResolvedColors => ({
 export const makeStaticUrl = (assetsBaseUrl: string) => {
   const base = assetsBaseUrl.replace(/\/$/, "");
   return (filename: string): string => `${base}/email-assets/${filename}`;
+};
+
+// Build a URL for the dynamic icon endpoint that bakes the theme color
+// into a PNG at request time. We render PNG (not SVG) because Gmail's
+// image proxy strips SVG for @gmail.com inboxes, and Microsoft removed
+// SVG support across new Outlook + Outlook.com in late 2025.
+export const makeEmailIconUrl = (
+  assetsBaseUrl: string,
+  name: "quote" | "comment",
+  color: string,
+  size = 16,
+): string => {
+  const base = assetsBaseUrl.replace(/\/$/, "");
+  const params = new URLSearchParams({ color });
+  if (size !== 16) params.set("size", String(size));
+  return `${base}/api/email-assets/${name}.png?${params.toString()}`;
 };
 
 // React's TypeScript types don't include the deprecated `bgcolor` HTML

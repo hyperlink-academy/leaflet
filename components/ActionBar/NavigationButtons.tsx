@@ -1,14 +1,14 @@
+"use client";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import { ActionButton } from "./ActionButton";
 import { useIdentityData } from "components/IdentityProvider";
-import { PublicationButtons } from "./Publications";
 import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
 import {
   NotificationsReadSmall,
   NotificationsUnreadSmall,
 } from "components/Icons/NotificationSmall";
 import { SpeedyLink } from "components/SpeedyLink";
-import { Popover } from "components/Popover";
 import { WriterSmall } from "components/Icons/WriterSmall";
 export type navPages =
   | "home"
@@ -20,82 +20,106 @@ export type navPages =
   | "profile"
   | "discover";
 
-export const HomeButton = (props: {
-  current?: boolean;
-  className?: string;
-}) => {
+function useIsActive(href: string) {
+  let pathname = usePathname();
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+export const WRITER_PATHS = ["/home", "/looseleafs", "/notifications"] as const;
+
+export function useIsOnWriterPage() {
+  let pathname = usePathname();
+  return WRITER_PATHS.some((p) => pathname.startsWith(p));
+}
+
+export const HomeButton = (props: { className?: string }) => {
+  let current = useIsActive("/home");
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
       <ActionButton
-        nav
         icon={<HomeSmall />}
         label="Home"
-        className={`${props.current ? "bg-bg-page! border-border-light!" : ""} w-full! ${props.className}`}
+        active={current}
+        className={`w-full! ${props.className}`}
       />
     </SpeedyLink>
   );
 };
 
-export const WriterButton = (props: {
-  currentPage: navPages;
-  currentPubUri?: string;
-  compactOnMobile?: boolean;
-}) => {
-  let current =
-    props.currentPage === "home" ||
-    props.currentPage === "looseleafs" ||
-    props.currentPage === "pub";
-
+export const WriterButton = () => {
+  let current = useIsOnWriterPage();
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
       <ActionButton
-        nav
-        labelOnMobile={!props.compactOnMobile}
+        className={"w-full!"}
         icon={<WriterSmall />}
         label="Write"
-        className={`${current ? "bg-bg-page! border-border-light!" : ""}`}
+        active={current}
       />
     </SpeedyLink>
   );
 };
 
-export const ReaderButton = (props: {
-  current?: boolean;
-  subs: boolean;
-  compactOnMobile?: boolean;
-}) => {
+export const ReaderButton = (props: { subs: boolean }) => {
+  let current = useIsActive("/reader");
   return (
     <SpeedyLink href={"/reader"} className="hover:no-underline!">
       <ActionButton
-        nav
-        labelOnMobile={!props.compactOnMobile}
+        className="w-full!"
         icon={<ReaderUnreadSmall />}
         label="Read"
-        className={props.current ? "bg-bg-page! border-border-light!" : ""}
+        active={current}
       />
     </SpeedyLink>
   );
 };
 
-export function NotificationButton(props: { current?: boolean }) {
+export function NotificationButton() {
   let { identity } = useIdentityData();
   let unreads = identity?.notifications[0]?.count;
 
+  let pathname = usePathname();
+  let searchParams = useSearchParams();
+  let router = useRouter();
+
+  let isOnPage =
+    pathname === "/notifications" || pathname.startsWith("/notifications/");
+  let isOpen = searchParams.get("notifications") === "open";
+  let active = isOnPage || isOpen;
+
+  function handleClick() {
+    if (isOnPage || isOpen) return;
+    let params = new URLSearchParams(searchParams.toString());
+    params.set("notifications", "open");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
   return (
-    <SpeedyLink href={"/notifications"} className="hover:no-underline!">
-      <ActionButton
-        nav
-        labelOnMobile={false}
-        icon={
-          unreads ? (
-            <NotificationsUnreadSmall className="text-accent-contrast" />
-          ) : (
-            <NotificationsReadSmall />
-          )
-        }
-        label="Notifications"
-        className={`${props.current ? "bg-bg-page! border-border-light!" : ""} ${unreads ? "text-accent-contrast!" : ""}`}
-      />
-    </SpeedyLink>
+    <ActionButton
+      type="button"
+      onClick={handleClick}
+      labelOnMobile={false}
+      icon={
+        unreads ? (
+          <NotificationsUnreadSmall className="text-accent-contrast" />
+        ) : (
+          <NotificationsReadSmall />
+        )
+      }
+      label={
+        unreads ? (
+          <span className="flex items-center justify-between gap-1.5">
+            Notifications
+            <span className="min-w-6 h-fit px-1 py-0.5 rounded-full bg-accent-1 text-accent-2 text-sm leading-none font-bold flex items-center justify-center max-w-full truncate">
+              {unreads}
+            </span>
+          </span>
+        ) : (
+          "Notifications"
+        )
+      }
+      active={active}
+      className={unreads ? "text-accent-contrast! font-bold w-full!" : "w-full"}
+    />
   );
 }

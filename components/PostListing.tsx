@@ -138,10 +138,11 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
                 {postRecord.title}
               </h3>
             )}
-
-            <p className="postListingDescription text-secondary line-clamp-3 leading-snug sm:text-base text-sm">
-              {postRecord.description || getFirstParagraph(postRecord)}
-            </p>
+            {postRecord.description && postRecord.description !== "" && (
+              <p className="postListingDescription text-secondary line-clamp-3 leading-snug sm:text-base text-sm">
+                {postRecord.description || getFirstParagraph(postRecord)}
+              </p>
+            )}
             <div className="flex flex-col-reverse gap-2 text-sm text-tertiary items-center justify-start pt-1.5 w-full">
               {props.publication && pubRecord && (
                 <PubInfo

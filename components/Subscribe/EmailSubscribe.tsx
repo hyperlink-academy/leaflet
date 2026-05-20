@@ -3,10 +3,12 @@ import * as OneTimePasswordField from "@radix-ui/react-one-time-password-field";
 import { ButtonPrimary } from "components/Buttons";
 import { Input } from "components/Input";
 import { DotLoader } from "components/utils/DotLoader";
+import { onMouseDown as iosOnPointerDown } from "src/utils/iosInputMouseDown";
 import { theme } from "tailwind.config";
 
 export const EmailInput = (props: {
   action: React.ReactNode;
+  leading?: React.ReactNode;
   autoFocus?: boolean;
   large?: boolean;
   value: string;
@@ -29,10 +31,15 @@ export const EmailInput = (props: {
             }
       }
     >
+      {props.leading && (
+        <div className="text-tertiary shrink-0 flex items-center">
+          {props.leading}
+        </div>
+      )}
       <Input
         type="email"
         autoFocus={props.autoFocus}
-        className={`appearance-none! outline-none! grow ${props.large ? "py-1!" : "py-0.5 disabled:text-tertiary disabled:italic disabled:border-border-light"}`}
+        className={`appearance-none! outline-none! grow min-w-0 ${props.large ? "py-1!" : "py-0.5 disabled:text-tertiary disabled:italic disabled:border-border-light"}`}
         disabled={props.disabled || props.loading}
         placeholder="email@example.com"
         size={0}
@@ -68,12 +75,30 @@ export const EmailConfirm = (props: {
         }}
       >
         <div className="flex gap-1 pt-4 w-full justify-center">
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
-          <OneTimePasswordField.Input className={inputClassName} />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
+          <OneTimePasswordField.Input
+            className={inputClassName}
+            onPointerDown={iosOnPointerDown}
+          />
         </div>
         <OneTimePasswordField.HiddenInput />
       </OneTimePasswordField.Root>

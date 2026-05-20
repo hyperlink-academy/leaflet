@@ -7,10 +7,6 @@ import useSWRInfinite from "swr/infinite";
 import { getNewFeed } from "./getNewFeed";
 import { useEffect, useRef } from "react";
 import { PostListing } from "components/PostListing";
-import {
-  DesktopInteractionPreviewDrawer,
-  MobileInteractionPreviewDrawer,
-} from "./InteractionDrawers";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 
 export const NewContent = (props: {
@@ -70,28 +66,24 @@ export const NewContent = (props: {
   }
 
   return (
-    <div className="flex flex-row gap-6 w-full">
-      <div className="flex flex-col gap-6 w-full grow min-w-0 relative">
-        {allPosts.map((p) => (
-          <PostListing
-            {...p}
-            key={p.documents.uri}
-            selected={selectedPost?.document_uri === p.documents.uri}
-          />
-        ))}
-        <div
-          ref={loadMoreRef}
-          className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
-          aria-hidden="true"
+    <>
+      {allPosts.map((p) => (
+        <PostListing
+          {...p}
+          key={p.documents.uri}
+          selected={selectedPost?.document_uri === p.documents.uri}
         />
-        {isValidating && allPosts.length > 0 && (
-          <div className="text-center text-tertiary py-4">
-            Loading more posts...
-          </div>
-        )}
-      </div>
-      <DesktopInteractionPreviewDrawer />
-      <MobileInteractionPreviewDrawer />
-    </div>
+      ))}
+      <div
+        ref={loadMoreRef}
+        className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
+        aria-hidden="true"
+      />
+      {isValidating && allPosts.length > 0 && (
+        <div className="text-center text-tertiary py-4">
+          Loading more posts...
+        </div>
+      )}
+    </>
   );
 };

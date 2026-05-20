@@ -34,7 +34,7 @@ import {
   PublicationBackgroundProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
 import { useEntity } from "src/replicache";
-import { LeafletContent } from "app/(home-pages)/home/LeafletList/LeafletContent";
+import { LeafletContent } from "app/(home-pages)/(writer)/home/LeafletList/LeafletContent";
 
 type Props = {
   title: string;
@@ -250,7 +250,7 @@ const PublishPostForm = (
                   <SocialPreviewImage
                     rootEntity={props.root_entity}
                     did={props.profile.did}
-                    coverImageCid={replicacheCoverImage ?? null}
+                    coverImageEntity={replicacheCoverImage ?? null}
                     publication_uri={props.publication_uri}
                     record={props.record}
                   />
@@ -351,17 +351,18 @@ const PublishPostForm = (
 const SocialPreviewImage = (props: {
   rootEntity: string;
   did: string;
-  coverImageCid: string | null;
+  coverImageEntity: string | null;
   publication_uri?: string;
   record?: NormalizedPublication | null;
 }) => {
   const firstPage = useEntity(props.rootEntity, "root/page")[0];
   const page = firstPage?.data.value || props.rootEntity;
+  const coverImage = useEntity(props.coverImageEntity, "block/image");
 
-  if (props.coverImageCid) {
+  if (props.coverImageEntity && coverImage) {
     return (
       <img
-        src={`/api/atproto_images?did=${props.did}&cid=${props.coverImageCid}`}
+        src={coverImage.data.src}
         className="w-full object-cover aspect-video"
         alt=""
       />

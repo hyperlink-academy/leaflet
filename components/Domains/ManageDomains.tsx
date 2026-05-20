@@ -16,7 +16,7 @@ export function ManageDomains() {
   let [state, setState] = useState<State>("list");
   return (
     <Modal
-      className="w-md"
+      className="w-fill max-w-md"
       trigger={
         <div className="menuItem -mx-[8px] ">
           <WebSmall />

@@ -13,7 +13,8 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 type FootnoteToolbarState = "default" | "link";
 
 export const FootnoteToolbar = (props: { pageID: string }) => {
-  let [toolbarState, setToolbarState] = useState<FootnoteToolbarState>("default");
+  let [toolbarState, setToolbarState] =
+    useState<FootnoteToolbarState>("default");
   let focusedEntity = useUIState((s) => s.focusedEntity);
   let activeEditor = useEditorStates((s) =>
     focusedEntity ? s.editorStates[focusedEntity.entityID] : null,
@@ -38,7 +39,7 @@ export const FootnoteToolbar = (props: { pageID: string }) => {
     <Tooltip.Provider>
       <div
         className={`toolbar flex gap-2 items-center justify-between w-full
-        ${isMobile ? "h-[calc(15px+var(--safe-padding-bottom))]" : "h-[26px]"}`}
+        ${isMobile ? "" : "h-[26px]"}`}
       >
         <div className="toolbarOptions flex gap-1 sm:gap-[6px] items-center grow">
           {toolbarState === "default" ? (

@@ -12,78 +12,88 @@ import {
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { SpeedyLink } from "components/SpeedyLink";
-import { PublishSmall } from "components/Icons/PublishSmall";
-import { Popover } from "components/Popover";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
-import { useIsMobile } from "src/hooks/isMobile";
-import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
-import { type navPages } from "./NavigationButtons";
 import { LoginModal } from "components/LoginButton";
+import useSWR from "swr";
+import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
 
-export const PublicationButtons = (props: {
-  currentPage: navPages;
-  currentPubUri: string | undefined;
-  className?: string;
-  optionClassName?: string;
-}) => {
+export const PublicationButtons = (props: { className?: string }) => {
   let { identity } = useIdentityData();
   let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
     (f) =>
       f.permission_tokens.leaflets_to_documents &&
       f.permission_tokens.leaflets_to_documents[0]?.document,
   );
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
+    fallbackData: [],
+  });
+  let hasDocs = identity
+    ? identity.permission_token_on_homepage.length > 0
+    : localLeaflets.filter((d) => !d.hidden).length > 0;
 
-  // don't show pub list button if not logged in or no pub list
+  // don't show pub list button if
+  // no pubs or looseleafs but has docs
+  // if they don't have docs, the empty state of the homepage prompts them to make publications
   // we show a "start a pub" banner instead
-  if (!identity || !identity.atp_did || identity.publications.length === 0)
-    return <PubListEmpty />;
+  console.log(hasDocs);
+  if (
+    !hasLooseleafs &&
+    hasDocs &&
+    (!identity || identity.publications.length === 0)
+  )
+    return <PubListEmptyContent />;
+
+  if (
+    !hasLooseleafs &&
+    !hasDocs &&
+    (!identity || identity.publications.length === 0)
+  )
+    return null;
 
   return (
-    <div
-      className={`pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0 ${props.className}`}
-    >
-      {hasLooseleafs && (
-        <>
-          <SpeedyLink
-            href={`/looseleafs`}
-            className={`flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full `}
-          >
-            {/*TODO How should i get if this is the current page or not?
-              theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
-            <ActionButton
-              label="Looseleafs"
-              icon={<LooseLeafSmall />}
-              nav
-              className={`w-full! ${
-                props.currentPage === "looseleafs"
-                  ? "bg-bg-page! border-border!"
-                  : ""
-              }
-                ${props.optionClassName}`}
-            />
-          </SpeedyLink>
-        </>
-      )}
+    <>
+      <hr className="border-border-light mt-2" />
 
-      {identity.publications?.map((d) => {
-        return (
-          <PublicationOption
-            {...d}
-            key={d.uri}
-            record={d.record}
-            current={d.uri === props.currentPubUri}
-          />
-        );
-      })}
-      <Link
-        href={"/lish/createPub"}
-        className={`pubListCreateNew group/new-pub text-tertiary hover:text-accent-contrast flex gap-2 items-center p-1 no-underline! ${props.optionClassName}`}
+      <div
+        className={`pubListWrapper w-full flex flex-col gap-1 -mt-1 sm:bg-transparent grow overflow-y-auto min-h-0 py-2
+          ${props.className}`}
       >
-        <div className="group-hover/new-pub:border-accent-contrast w-6 h-6 border-border-light border-2 border-dashed rounded-full" />
-        New Publication
-      </Link>
-    </div>
+        <div className="text-tertiary uppercase text-sm px-1">PUBLICATIONS</div>
+        {hasLooseleafs && (
+          <>
+            <SpeedyLink
+              href={`/looseleafs`}
+              className={` hover:no-underline!  `}
+            >
+              {/*TODO How should i get if this is the current page or not?
+              theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
+              <ActionButton
+                labelOnMobile
+                label="Looseleafs"
+                icon={<LooseLeafSmall />}
+              />
+            </SpeedyLink>
+            <hr className="border-border-light border-dashed my-1" />
+          </>
+        )}
+        {identity?.publications?.map((d) => {
+          return <PublicationOption {...d} key={d.uri} record={d.record} />;
+        })}
+
+        <SpeedyLink
+          href={"/lish/createPub"}
+          className={`pubListCreateNew  no-underline!`}
+        >
+          <ActionButton
+            labelOnMobile
+            icon=<div className="group-hover/new-pub:border-accent-contrast m-0.5 w-5 h-5 border-border border-2 border-dashed rounded-full" />
+            label="New Publication"
+            className="text-tertiary!"
+          />
+        </SpeedyLink>
+      </div>
+    </>
   );
 };
 
@@ -91,7 +101,6 @@ export const PublicationOption = (props: {
   uri: string;
   name: string;
   record: Json;
-  current?: boolean;
   className?: string;
 }) => {
   let record = normalizePublicationRecord(props.record);
@@ -100,55 +109,16 @@ export const PublicationOption = (props: {
   return (
     <SpeedyLink
       href={`${getBasePublicationURL(props)}/dashboard`}
-      className={`flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full `}
+      className={`hover:no-underline! `}
     >
       <ActionButton
+        labelOnMobile
         label={record.name}
         icon={<PubIcon record={record} uri={props.uri} />}
-        nav
-        className={`w-full! ${props.current ? "bg-bg-page! border-border!" : ""} ${props.className}`}
+        className={` ${props.className}`}
       />
     </SpeedyLink>
   );
-};
-
-const PubListEmpty = () => {
-  let isMobile = useIsMobile();
-
-  let [state, setState] = useState<"default" | "info">("default");
-  if (isMobile && state == "default")
-    return (
-      <ActionButton
-        label="Publish"
-        icon={<PublishSmall />}
-        nav
-        subtext="Start a blog on ATProto!"
-        onClick={() => {
-          setState("info");
-        }}
-      />
-    );
-
-  if (isMobile && state === "info") return <PubListEmptyContent />;
-  else
-    return (
-      <Popover
-        side="right"
-        align="start"
-        className="p-1! max-w-full sm:max-w-xs w-[1000px] "
-        asChild
-        trigger={
-          <ActionButton
-            label="Publish"
-            icon={<PublishSmall />}
-            nav
-            subtext="Start a blog on ATProto!"
-          />
-        }
-      >
-        <PubListEmptyContent />
-      </Popover>
-    );
 };
 
 export const PubListEmptyContent = (props: { compact?: boolean }) => {
@@ -156,7 +126,7 @@ export const PubListEmptyContent = (props: { compact?: boolean }) => {
 
   return (
     <div
-      className={`accent-container w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4`}
+      className={`accent-container w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 mt-2`}
     >
       <div className="mx-auto pt-2 scale-90">
         <PubListEmptyIllo />
@@ -185,7 +155,7 @@ export const PubListEmptyContent = (props: { compact?: boolean }) => {
             noEmailLogin
             asChild
             trigger={
-              <ButtonPrimary compact className="mx-auto">
+              <ButtonPrimary compact className="mx-auto text-sm!">
                 {identity ? "Link to" : "Log in with"} Atmosphere
               </ButtonPrimary>
             }

@@ -2,7 +2,10 @@
 import { Sidebar } from "components/ActionBar/Sidebar";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { HelpButton } from "app/[leaflet_id]/actions/HelpButton";
-import { HomeButton } from "app/[leaflet_id]/actions/HomeButton";
+import {
+  AddToHomeButton,
+  HomeButton,
+} from "app/[leaflet_id]/actions/HomeButton";
 import { Media } from "components/Media";
 import {
   useLeafletPublicationData,
@@ -16,6 +19,8 @@ import { Watermark } from "components/Watermark";
 import { BackToPubButton } from "./actions/BackToPubButton";
 import { useIdentityData } from "components/IdentityProvider";
 import { useReplicache } from "src/replicache";
+import useSWR from "swr";
+import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
 
 export function LeafletSidebar() {
   let entity_set = useEntitySetContext();
@@ -23,6 +28,19 @@ export function LeafletSidebar() {
   let { data: pub } = useLeafletPublicationData();
   let { identity } = useIdentityData();
   let publicationPage = useLeafletPublicationPage();
+  let { permission_token } = useReplicache();
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
+    fallbackData: [],
+  });
+  let isOnHome = identity
+    ? !!identity.permission_token_on_homepage.find(
+        (pth) => pth.permission_tokens.id === permission_token.id,
+      )
+    : !!localLeaflets.find((f) => f.token.id === permission_token.id);
+  let isOwnerOfPub =
+    !!pub?.publications &&
+    !!identity?.atp_did &&
+    pub.publications.identity_did === identity.atp_did;
   if (publicationPage) return null;
 
   return (
@@ -33,16 +51,19 @@ export function LeafletSidebar() {
       >
         <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
           {entity_set.permissions.write && (
-            <Sidebar>
-              <PublishButton entityID={rootEntity} />
+            <Sidebar className="my-0!">
+              {isOwnerOfPub || isOnHome ? (
+                <PublishButton entityID={rootEntity} />
+              ) : (
+                <AddToHomeButton />
+              )}
+
               <ShareOptions />
               <PostSettings />
               <ThemePopover entityID={rootEntity} />
               <HelpButton />
               <hr className="text-border" />
-              {pub?.publications &&
-              identity?.atp_did &&
-              pub.publications.identity_did === identity.atp_did ? (
+              {isOwnerOfPub && pub?.publications ? (
                 <BackToPubButton publication={pub.publications} />
               ) : (
                 <HomeButton />

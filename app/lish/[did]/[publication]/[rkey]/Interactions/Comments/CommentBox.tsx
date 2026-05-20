@@ -192,7 +192,7 @@ export function CommentBox(props: {
         content: isOAuthSessionError(result.error) ? (
           <OAuthErrorMessage error={result.error} />
         ) : (
-          "Failed to post comment"
+          "We couldn't post this. Please try again!"
         ),
         type: "error",
       });

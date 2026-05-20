@@ -20,7 +20,7 @@ export const sync_document_metadata = inngest.createFunction(
     triggers: [events.appviewSyncDocumentMetadata],
   },
   async ({ event, step }) => {
-    const { document_uri, bsky_post_uri } = event.data;
+    const { document_uri, bsky_post_uri, event_type } = event.data;
 
     const did = new AtUri(document_uri).host;
 
@@ -56,6 +56,60 @@ export const sync_document_metadata = inngest.createFunction(
         .eq("uri", document_uri)
         .select();
     });
+
+    // Only fire newsletter broadcasts on first-time document creation. An
+    // update to an existing post must never trigger a send — otherwise editing
+    // an old post after newsletters were enabled would mail subscribers a post
+    // they never signed up for.
+    if (event_type === "create") {
+      const broadcast = await step.run(
+        "maybe-claim-newsletter-broadcast",
+        async () => {
+          const { data: docInPub } = await supabaseServerClient
+            .from("documents_in_publications")
+            .select("publication")
+            .eq("document", document_uri)
+            .maybeSingle();
+          const publication_uri = docInPub?.publication;
+          if (!publication_uri) return { skipped: "no_publication" as const };
+
+          const { data: settings } = await supabaseServerClient
+            .from("publication_newsletter_settings")
+            .select("enabled")
+            .eq("publication", publication_uri)
+            .maybeSingle();
+          if (!settings?.enabled) {
+            return { skipped: "newsletter_not_enabled" as const };
+          }
+
+          const { data: inserted } = await supabaseServerClient
+            .from("publication_post_sends")
+            .upsert(
+              {
+                publication: publication_uri,
+                document: document_uri,
+                status: "pending",
+              },
+              { onConflict: "publication,document", ignoreDuplicates: true },
+            )
+            .select();
+          if (!inserted || inserted.length === 0) {
+            return { skipped: "already_sent_or_pending" as const };
+          }
+          return { claimed: true as const, publication_uri };
+        },
+      );
+
+      if ("claimed" in broadcast) {
+        await step.sendEvent("send-newsletter-broadcast", {
+          name: "newsletter/post.send.requested",
+          data: {
+            publication_uri: broadcast.publication_uri,
+            document_uri,
+          },
+        });
+      }
+    }
 
     if (!bsky_post_uri) {
       return { handle: handleResult.handle };

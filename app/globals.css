@@ -66,6 +66,13 @@
   --font-serif: Garamond;
 }
 
+@utility w-fill {
+  width: -webkit-fill-available;
+  width: -moz-available;
+  width: stretch;
+  width: 100%;
+}
+
 /*
   The default border color has changed to `currentcolor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -123,7 +130,7 @@
     --hatchSVG: url("/hatchPattern.svg");
     --wavySVG: (url("/RSVPBackground/wavy.svg"));
 
-    --safe-padding-bottom: max(calc(env(safe-area-inset-bottom) - 8px), 16px);
+    --safe-padding-bottom: calc(env(safe-area-inset-bottom) - 8px);
   }
   @media (max-width: 640px) {
     :root {
@@ -151,6 +158,8 @@
     @apply p-0;
     @apply overscroll-y-none;
     min-height: -webkit-fill-available;
+    min-height: stretch;
+    min-height: -moz-available;
     @apply font-sans;
     font-synthesis: none;
   }
@@ -486,6 +495,13 @@ pre.shiki {
   @apply rounded-md;
 }
 
+.light-container {
+  background: color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 95%);
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
+}
+
 .frosted-container {
   background: rgba(var(--bg-page), 0.75);
   @apply border;
@@ -532,10 +548,17 @@ pre.shiki {
 }
 
 .pwa-padding {
-  padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
+  padding-top: calc(env(safe-area-inset-top) - 8px) !important;
 }
 .pwa-padding-bottom {
-  padding-bottom: var(--safe-padding-bottom);
+  padding-bottom: var(--safe-padding-bottom) !important;
+}
+
+.pwa-padding-x {
+  @media (display-mode: standalone) {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }
 }
 
 /* animation for atmosphere logo carousel */
@@ -619,6 +642,29 @@ pre.shiki {
   }
 }
 
+@keyframes mobile-sidebar-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes mobile-sidebar-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+.mobile-sidebar-content[data-state="open"] {
+  animation: mobile-sidebar-slide-in 80ms ease-out;
+}
+.mobile-sidebar-content[data-state="closed"] {
+  animation: mobile-sidebar-slide-out 80ms ease-in;
+}
+
 .footnote-side-item {
   overflow: hidden;
   transition:
@@ -650,4 +696,8 @@ pre.shiki {
   opacity: var(--bg-page-alpha);
   z-index: 1;
   background: rgba(var(--bg-page), 1);
+}
+
+.toastError a {
+  color: var(--color-white);
 }
