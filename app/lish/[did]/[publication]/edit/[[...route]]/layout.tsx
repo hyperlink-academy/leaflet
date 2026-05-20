@@ -93,10 +93,7 @@ export default async function PublicationEditLayout(props: {
             publicationName={params.publication}
           />
           <div className="pubWrapper flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
-            <PublicationStickyHeader
-              sticky={false}
-              scrollContainerSelector=".pageScrollWrapper"
-            >
+            <PublicationStickyHeader sticky={false}>
               <PublicationHeader
                 variant="inline"
                 iconUrl={iconUrl}

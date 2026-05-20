@@ -4,14 +4,12 @@ import { usePathname } from "next/navigation";
 
 export function PublicationStickyHeader(props: {
   sticky?: boolean;
-  scrollContainerSelector?: string;
   nav?: React.ReactNode;
   children: React.ReactNode;
 }) {
   let ref = useRef<HTMLDivElement>(null);
   let pathname = usePathname();
   let sticky = props.sticky ?? true;
-  let selector = props.scrollContainerSelector;
 
   useEffect(() => {
     let el = ref.current;
@@ -31,41 +29,29 @@ export function PublicationStickyHeader(props: {
       });
     };
 
-    if (selector) {
-      let onScroll = (e: Event) => {
-        let t = e.target;
-        if (!(t instanceof HTMLElement)) return;
-        if (!t.matches(selector)) return;
-        schedule(t);
-      };
-      parent.addEventListener("scroll", onScroll, {
-        passive: true,
-        capture: true,
-      });
-      let initial = parent.querySelector(selector) as HTMLElement | null;
-      if (initial) writeProgress(initial);
-      return () => {
-        if (rafId !== null) cancelAnimationFrame(rafId);
-        parent.removeEventListener("scroll", onScroll, true);
-      };
-    }
+    let onScroll = (e: Event) => {
+      let t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      if (!t.matches(".publicationScrollContainer")) return;
+      schedule(t);
+    };
+    parent.addEventListener("scroll", onScroll, {
+      passive: true,
+      capture: true,
+    });
 
-    let p: HTMLElement | null = parent;
-    while (p && p !== document.body) {
-      let s = getComputedStyle(p);
-      if (s.overflowY === "auto" || s.overflowY === "scroll") break;
-      p = p.parentElement;
-    }
-    if (!p || p === document.body) return;
-    let target = p;
-    let onScroll = () => schedule(target);
-    target.addEventListener("scroll", onScroll, { passive: true });
-    writeProgress(target);
+    let initial = (
+      parent.matches(".publicationScrollContainer")
+        ? parent
+        : parent.querySelector(".publicationScrollContainer")
+    ) as HTMLElement | null;
+    if (initial) writeProgress(initial);
+
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
-      target.removeEventListener("scroll", onScroll);
+      parent.removeEventListener("scroll", onScroll, true);
     };
-  }, [selector]);
+  }, []);
 
   useEffect(() => {
     ref.current?.style.setProperty("--header-shrink", "0");

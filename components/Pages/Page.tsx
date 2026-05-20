@@ -129,6 +129,7 @@ export const PageWrapper = (props: {
         id={props.id}
         className={`
       pageScrollWrapper
+      publicationScrollContainer
       grow
       shrink-0 snap-center
       ${props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
