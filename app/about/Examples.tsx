@@ -8,7 +8,7 @@ export const Examples = () => {
         <p>Explore More</p>
         <GoToArrow className="scale-110" />
       </div>
-      <div className="flex gap-8 overflow-x-scroll pt-8 max-w-full">
+      <div className="flex gap-8 overflow-x-scroll pt-8 w-screen sm:w-full -mx-4 px-6 sm:mx-auto">
         <div className="h-48 aspect-5/4 bg-test" />
         <div className="h-48 aspect-5/4 bg-test" />
         <div className="h-48 aspect-5/4 bg-test" />

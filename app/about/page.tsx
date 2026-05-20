@@ -24,12 +24,12 @@ export const metadata = {
 export default async function About() {
   return (
     <main
-      className={`${ibmPlexSerif.variable} aboutPage w-full bg-[#FDFCFA] flex flex-col justify-center px-12 mx-auto`}
+      className={`${ibmPlexSerif.variable} aboutPage w-full bg-[#FDFCFA] flex flex-col justify-center sm:px-12 px-4 mx-auto overflow-x-hidden`}
     >
-      <div className="spacer h-[160px]" />
-      <div className="aboutCover relative aspect-3/2 max-w-full mx-auto w-[800px] flex flex-col gap-4">
+      <div className="spacer h-[96px] sm:h-[160px]" />
+      <div className="aboutCover relative  max-w-full mx-auto w-[800px] flex flex-col gap-3 sm:gap-4">
         <h1
-          className={` text-[#57822B] text-[180px] leading-none absolute sm:-top-28 sm:-left-16 z-10`}
+          className={` text-[#57822B] leading-none absolute -top-16 left-4 sm:-top-28 md:-left-16 sm:left-6 z-10`}
           style={{
             textShadow: "3px 7px 0 #D9EA72",
             WebkitTextStroke: "0.5px #D9EA72",
@@ -41,13 +41,12 @@ export default async function About() {
         <img
           src="/about/hero.png"
           alt=""
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover aspect-3/2"
         />
-
         <LandingCTA />
       </div>
 
-      <p className=" pt-6 text-tertiary text-center text-lg sm:text-xl leading-snug mx-auto">
+      <p className=" pt-6 text-tertiary text-center leading-snug mx-auto text-lg sm:text-xl!">
         A simple and powerful platform for social publishing <br />— blogs,
         newsletters, and more!
       </p>

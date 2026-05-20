@@ -4,8 +4,8 @@ export const Pricing = () => {
   return (
     <div className="aboutPricing mx-auto w-full text-center pt-24">
       <h2>Pricing</h2>
-      <div className="flex w-fit gap-8 justify-center mx-auto pt-3">
-        <div className="relative flex-1 w-sm">
+      <div className="flex sm:flex-row flex-col w-fit gap-8 justify-center mx-auto pt-3">
+        <div className="relative flex-1 w-fill max-w-sm">
           <div className="absolute -top-28 -left-14 z-0">
             <img src="/about/free.png" alt="" className="w-[280px]" />
           </div>{" "}
@@ -33,8 +33,8 @@ export const Pricing = () => {
             </ul>
           </div>
         </div>
-        <div className="relative flex-1 w-sm">
-          <div className="absolute -bottom-28 -right-24">
+        <div className="relative flex-1 w-fill max-w-sm">
+          <div className="absolute -bottom-34 -right-24">
             <img src="/about/paid.png" alt="" className="w-[240px]" />
           </div>
           <div

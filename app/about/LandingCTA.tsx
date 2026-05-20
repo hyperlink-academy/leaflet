@@ -8,10 +8,10 @@ import { Input } from "components/Input";
 export function LandingCTA() {
   let [loginOpen, setLoginOpen] = useState(false);
   return (
-    <div className="flex items-center justify-end gap-6 ">
+    <div className="flex items-center justify-end gap-4 sm:gap-6">
       <button
         onClick={() => setLoginOpen(true)}
-        className="text-[#57822B] font-bold text-xl"
+        className="text-[#57822B] font-bold text-lg! sm:text-xl!"
       >
         Log in
       </button>
@@ -21,7 +21,7 @@ export function LandingCTA() {
         redirectRoute="/home"
       />
       <Link href="/new" className="no-underline!">
-        <ButtonPrimary className="rounded-lg! text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-1 ! px-4!">
+        <ButtonPrimary className="rounded-lg! text-lg! sm:text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-0.5! px-2! sm:py-1 ! sm:px-4!">
           Start Writing
         </ButtonPrimary>
       </Link>

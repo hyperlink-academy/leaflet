@@ -10,9 +10,9 @@ export function Demo() {
     <div className="mx-auto pt-12 flex flex-col gap-4 w-full justify-center">
       <ToggleGroup
         fullWidth
-        className="bg-[#F1EDE5]! text-lg! w-md mx-auto"
+        className="bg-[#F1EDE5]! w-fill max-w-md mx-auto "
         selectedOptionClassName="bg-[#686153]! text-white!"
-        optionClassName="text-[#969696]! "
+        optionClassName="text-[#969696]! text-[1rem] sm:text-[1.25rem]  md:text-[1.5rem]"
         value={value}
         onChange={setValue}
         options={[
