@@ -1,4 +1,5 @@
 "use client";
+import { AtUri } from "@atproto/api";
 import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,
@@ -7,6 +8,7 @@ import {
 import { LocalizedDate } from "app/lish/[did]/[publication]/LocalizedDate";
 import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 
@@ -69,6 +71,17 @@ export function StandardSitePostItemView({
   ) : undefined;
   const description = post.record.description || getFirstParagraph(post.record);
 
+  let postDid: string | undefined;
+  try {
+    postDid = new AtUri(post.uri).host;
+  } catch {
+    postDid = undefined;
+  }
+  const coverImageSrc =
+    post.record.coverImage && postDid
+      ? blobRefToSrc(post.record.coverImage.ref, postDid)
+      : undefined;
+
   const commonProps = {
     href: docUrl,
     title: post.record.title,
@@ -77,10 +90,24 @@ export function StandardSitePostItemView({
   };
 
   if (size === "large") {
-    return <PublicationPostItemLarge {...commonProps} description={description} />;
+    return (
+      <PublicationPostItemLarge
+        {...commonProps}
+        description={description}
+        coverImageSrc={coverImageSrc}
+        coverImageAlt={post.record.title}
+      />
+    );
   }
   if (size === "medium") {
-    return <PublicationPostItemMedium {...commonProps} description={description} />;
+    return (
+      <PublicationPostItemMedium
+        {...commonProps}
+        description={description}
+        coverImageSrc={coverImageSrc}
+        coverImageAlt={post.record.title}
+      />
+    );
   }
   return <PublicationPostItemSmall {...commonProps} />;
 }
