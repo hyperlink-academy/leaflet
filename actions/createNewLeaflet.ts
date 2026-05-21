@@ -21,10 +21,14 @@ export async function createNewLeaflet({
   pageType,
   redirectUser,
   firstBlockType,
+  welcomeModal,
+  addToHome,
 }: {
   pageType: "canvas" | "doc";
   redirectUser: boolean;
   firstBlockType?: "h1" | "text";
+  welcomeModal?: boolean;
+  addToHome?: boolean;
 }) {
   let auth_token = (await cookies()).get("auth_token")?.value;
   const client = await pool.connect();
@@ -157,6 +161,9 @@ export async function createNewLeaflet({
   });
 
   client.release();
-  if (redirectUser) redirect(`/${permissionToken.id}?focusFirstBlock`);
+  if (redirectUser)
+    redirect(
+      `/${permissionToken.id}?focusFirstBlock${welcomeModal ? "&welcomeModal" : ""}${addToHome ? "&addToHome" : ""}`,
+    );
   return permissionToken.id;
 }

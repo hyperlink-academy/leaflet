@@ -18,6 +18,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { useReplicache } from "src/replicache";
 import useSWR from "swr";
 import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
+import { useAddToHomeParam } from "./AddToHomeEffect";
 
 export function LeafletSidebar() {
   let entity_set = useEntitySetContext();
@@ -28,11 +29,14 @@ export function LeafletSidebar() {
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
     fallbackData: [],
   });
-  let isOnHome = identity
-    ? !!identity.permission_token_on_homepage.find(
-        (pth) => pth.permission_tokens.id === permission_token.id,
-      )
-    : !!localLeaflets.find((f) => f.token.id === permission_token.id);
+  let addingToHome = useAddToHomeParam();
+  let isOnHome =
+    addingToHome ||
+    (identity
+      ? !!identity.permission_token_on_homepage.find(
+          (pth) => pth.permission_tokens.id === permission_token.id,
+        )
+      : !!localLeaflets.find((f) => f.token.id === permission_token.id));
   let isOwnerOfPub =
     !!pub?.publications &&
     !!identity?.atp_did &&
