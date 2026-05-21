@@ -11,10 +11,8 @@ export function PublicationHeader(props: {
   let variant = props.variant ?? "stacked";
   let icon = props.iconUrl ? (
     <div
-      className={`shrink-0 rounded-full${variant === "stacked" ? " mx-auto" : ""}`}
+      className={`pubHeaderIcon shrink-0 rounded-full${variant === "stacked" ? " mx-auto" : ""}`}
       style={{
-        width: "calc(40px - 16px * var(--header-shrink, 0))",
-        height: "calc(40px - 16px * var(--header-shrink, 0))",
         backgroundImage: `url(${props.iconUrl})`,
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
@@ -24,8 +22,7 @@ export function PublicationHeader(props: {
   ) : null;
   let title = (
     <h2
-      className={`text-accent-contrast${variant === "stacked" ? " pt-1" : ""}`}
-      style={{ fontSize: "calc(22px - 6px * var(--header-shrink, 0))" }}
+      className={`pubHeaderTitle text-accent-contrast${variant === "stacked" ? " pt-1" : ""}`}
     >
       {props.publicationName}
     </h2>
@@ -42,10 +39,7 @@ export function PublicationHeader(props: {
       }}
     >
       {variant === "inline" ? (
-        <div
-          className="flex items-center justify-center"
-          style={{ gap: "calc(12px - 6px * var(--header-shrink, 0))" }}
-        >
+        <div className="flex items-center justify-center gap-3">
           {icon}
           {title}
         </div>

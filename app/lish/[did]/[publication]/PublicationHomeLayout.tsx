@@ -12,7 +12,7 @@ export function PublicationHomeLayout(props: {
   let inner = (
     <>
       {props.stickyHeader}
-      <div className="pubContent sm:max-w-(--page-width-units) sm:min-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pb-5">
+      <div className="pubContent sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pb-5">
         {props.children}
       </div>
     </>

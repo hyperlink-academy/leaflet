@@ -60,6 +60,9 @@ export const PublicationContent = ({
   fakePosts?: FakePost[];
 }) => {
   const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
+  const navPages = (publication.publication_pages ?? []).filter(
+    (p) => p.record_uri,
+  );
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
     : publication.documents_in_publications
@@ -90,13 +93,13 @@ export const PublicationContent = ({
         stickyHeader={
           <PublicationStickyHeader
             nav={
-              <PublicationNav
-                publicationUrl={getPublicationURL(publication)}
-                pages={(publication.publication_pages ?? []).filter(
-                  (p) => p.record_uri,
-                )}
-                activePath="/"
-              />
+              navPages.length > 0 ? (
+                <PublicationNav
+                  publicationUrl={getPublicationURL(publication)}
+                  pages={navPages}
+                  activePath="/"
+                />
+              ) : undefined
             }
           >
             <PublicationHeader

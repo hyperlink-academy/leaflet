@@ -10,8 +10,10 @@ export function PublicationStickyHeader(props: {
   let ref = useRef<HTMLDivElement>(null);
   let pathname = usePathname();
   let sticky = props.sticky ?? true;
+  let hasNav = !!props.nav;
 
   useEffect(() => {
+    if (!hasNav) return;
     let el = ref.current;
     let parent = el?.parentElement;
     if (!el || !parent) return;
@@ -20,6 +22,7 @@ export function PublicationStickyHeader(props: {
     let writeProgress = (target: HTMLElement) => {
       let p = Math.min(Math.max(target.scrollTop / 100, 0), 1);
       el!.style.setProperty("--header-shrink", String(p));
+      el!.classList.toggle("header-shrunk", target.scrollTop > 32);
     };
     let schedule = (target: HTMLElement) => {
       if (rafId !== null) return;
@@ -51,10 +54,11 @@ export function PublicationStickyHeader(props: {
       if (rafId !== null) cancelAnimationFrame(rafId);
       parent.removeEventListener("scroll", onScroll, true);
     };
-  }, []);
+  }, [hasNav]);
 
   useEffect(() => {
     ref.current?.style.setProperty("--header-shrink", "0");
+    ref.current?.classList.remove("header-shrunk");
   }, [pathname]);
 
   return (

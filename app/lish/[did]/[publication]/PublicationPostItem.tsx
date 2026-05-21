@@ -99,7 +99,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
   const hasCoverImage = !!props.coverImageSrc;
   return (
     <>
-      <div className="flex w-full gap-3 items-stretch sm:h-36">
+      <div className="flex w-full gap-3 items-stretch sm:min-h-36">
         <div className="flex w-full gap-2 grow flex-col justify-between min-w-0  pl-3 py-2">
           <PostLink href={props.href}>
             {props.title && (
@@ -117,11 +117,11 @@ export function PublicationPostItemMedium(props: MediumProps) {
           />
         </div>
         {hasCoverImage && (
-          <div className="self-stretch shrink-0 aspect-square  w-16 sm:w-36">
+          <div className="self-start shrink-0 w-16 sm:w-36">
             <img
               src={props.coverImageSrc}
               alt={props.coverImageAlt || props.title || ""}
-              className="h-full aspect-square object-cover rounded"
+              className="w-full aspect-square object-cover rounded"
             />
           </div>
         )}

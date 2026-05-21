@@ -156,6 +156,10 @@ export async function PublicationPageRenderer({
     recommendsCount: 0,
   };
 
+  const navPages = (publication.publication_pages ?? []).filter(
+    (p) => p.record_uri,
+  );
+
   return (
     <DocumentProvider value={documentContextValue}>
       <LeafletContentProvider value={{ pages }}>
@@ -177,13 +181,13 @@ export async function PublicationPageRenderer({
               stickyHeader={
                 <PublicationStickyHeader
                   nav={
-                    <PublicationNav
-                      publicationUrl={getPublicationURL(publication)}
-                      pages={(publication.publication_pages ?? []).filter(
-                        (p) => p.record_uri,
-                      )}
-                      activePath={page.path}
-                    />
+                    navPages.length > 0 ? (
+                      <PublicationNav
+                        publicationUrl={getPublicationURL(publication)}
+                        pages={navPages}
+                        activePath={page.path}
+                      />
+                    ) : undefined
                   }
                 >
                   <PublicationHeader
