@@ -1,3 +1,5 @@
+import { SpeedyLink } from "components/SpeedyLink";
+
 export const Footer = () => {
   return (
     <div className="aboutFooter flex w-full mt-24 text-center">
@@ -5,17 +7,24 @@ export const Footer = () => {
         <div className="w-fit mx-auto flex gap-16">
           <div className="flex flex-col gap-1">
             <strong>Explore</strong>
-            <div>Reader</div>
-            <div>Manual</div>
+            <SpeedyLink href="/reader">Reader</SpeedyLink>
           </div>
           <div className="flex flex-col gap-1">
             <strong>Contact</strong>
-            <div>Email</div>
-            <div>Bluesky</div>
+            <a href="mailto:contact@leaflet.pub">Email</a>
+            <a
+              href="https://bsky.app/profile/leaflet.pub"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Bluesky
+            </a>
           </div>
           <div className="flex flex-col gap-1">
             <strong>Other</strong>
-            <div>Terms</div>
+            <SpeedyLink href="/legal" target="_blank">
+              Terms
+            </SpeedyLink>
           </div>
         </div>
       </div>
