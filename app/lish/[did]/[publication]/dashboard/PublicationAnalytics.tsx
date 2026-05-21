@@ -24,7 +24,56 @@ import {
 type ReferrerType = { referrer_host: string; pageviews: number };
 type TrafficMetric = "pageviews" | "visitors";
 type DatePreset = "Last Week" | "Last Month" | "All Time";
-type DateSelection = { range: DateRange; preset: DatePreset | null };
+export type DateSelection = { range: DateRange; preset: DatePreset | null };
+
+// URL params:
+//   ?date=all        → All Time (no from/to bounds)
+//   ?date=month      → Last Month preset
+//   ?from=YYYY-MM-DD&to=YYYY-MM-DD → custom range
+//   (none)           → default: Last Week
+export function useAnalyticsDateState() {
+  return useQueryState<DateSelection>({
+    fromParams: (get) => {
+      let preset = get("date");
+      if (preset === "all")
+        return {
+          range: { from: undefined, to: undefined },
+          preset: "All Time",
+        };
+      if (preset === "month") {
+        let from = new Date();
+        from.setMonth(from.getMonth() - 1);
+        return { range: { from, to: new Date() }, preset: "Last Month" };
+      }
+      let fromParam = get("from");
+      let toParam = get("to");
+      if (fromParam || toParam) {
+        return {
+          range: {
+            from: fromParam ? new Date(fromParam) : undefined,
+            to: toParam ? new Date(toParam) : new Date(),
+          },
+          preset: null,
+        };
+      }
+      let from = new Date();
+      from.setDate(from.getDate() - 7);
+      return { range: { from, to: new Date() }, preset: "Last Week" };
+    },
+    toParams: ({ preset, range }) => {
+      if (preset === "All Time")
+        return { date: "all", from: null, to: null };
+      if (preset === "Last Month")
+        return { date: "month", from: null, to: null };
+      if (preset === "Last Week") return { date: null, from: null, to: null };
+      return {
+        date: null,
+        from: range.from?.toISOString().slice(0, 10) ?? null,
+        to: range.to?.toISOString().slice(0, 10) ?? null,
+      };
+    },
+  });
+}
 
 const dayTickFormatter = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -87,59 +136,15 @@ function fillDailyGaps<T extends { day: string }>(
 
 export const PublicationAnalytics = (props: {
   showPageBackground: boolean;
+  dateState: DateSelection;
 }) => {
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
 
   let { data: publication } = usePublicationData();
 
-  // URL params:
-  //   ?date=all        → All Time (no from/to bounds)
-  //   ?date=month      → Last Month preset
-  //   ?from=YYYY-MM-DD&to=YYYY-MM-DD → custom range
-  //   (none)           → default: Last Week
-  let [dateState, setDateState] = useQueryState<DateSelection>({
-    fromParams: (get) => {
-      let preset = get("date");
-      if (preset === "all")
-        return {
-          range: { from: undefined, to: undefined },
-          preset: "All Time",
-        };
-      if (preset === "month") {
-        let from = new Date();
-        from.setMonth(from.getMonth() - 1);
-        return { range: { from, to: new Date() }, preset: "Last Month" };
-      }
-      let fromParam = get("from");
-      let toParam = get("to");
-      if (fromParam || toParam) {
-        return {
-          range: {
-            from: fromParam ? new Date(fromParam) : undefined,
-            to: toParam ? new Date(toParam) : new Date(),
-          },
-          preset: null,
-        };
-      }
-      let from = new Date();
-      from.setDate(from.getDate() - 7);
-      return { range: { from, to: new Date() }, preset: "Last Week" };
-    },
-    toParams: ({ preset, range }) => {
-      if (preset === "All Time")
-        return { date: "all", from: null, to: null };
-      if (preset === "Last Month")
-        return { date: "month", from: null, to: null };
-      if (preset === "Last Week") return { date: null, from: null, to: null };
-      return {
-        date: null,
-        from: range.from?.toISOString().slice(0, 10) ?? null,
-        to: range.to?.toISOString().slice(0, 10) ?? null,
-      };
-    },
-  });
-  let { range: dateRange, preset: datePreset } = dateState;
+  let { dateState } = props;
+  let { range: dateRange } = dateState;
 
   // ?post=<path> — filter traffic to a single published post (path is the stable ID)
   let [selectedPostPath, setSelectedPostPath] = useQueryState<
@@ -258,14 +263,6 @@ export const PublicationAnalytics = (props: {
 
   return (
     <div className="analytics flex flex-col gap-6">
-      <div className="flex justify-end gap-2">
-        <DateRangeSelector
-          dateState={dateState}
-          setDateState={setDateState}
-          pubStartDate={publication?.publication?.indexed_at}
-          showBackground={props.showPageBackground}
-        />
-      </div>
       <div
         className={`analyticsViewCount rounded-lg border ${
           props.showPageBackground
@@ -646,7 +643,7 @@ const PostSelector = (props: {
   );
 };
 
-const DateRangeSelector = (props: {
+export const DateRangeSelector = (props: {
   pubStartDate: string | undefined;
   dateState: DateSelection;
   setDateState: (state: DateSelection) => void;

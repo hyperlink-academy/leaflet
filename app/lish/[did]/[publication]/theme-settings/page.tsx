@@ -6,6 +6,7 @@ import { AtUri } from "@atproto/syntax";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { ThemeSettingsContent } from "./ThemeSettingsContent";
+import { LoginModal } from "components/LoginButton";
 
 export default async function ThemeSettingsPage(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -15,13 +16,23 @@ export default async function ThemeSettingsPage(props: {
   if (!identity || !identity.atp_did)
     return (
       <NotFoundLayout>
-        <p>Looks like you&apos;re not logged in.</p>
+        <p>
+          Looks like you&apos;re not logged in.{" "}
+          <LoginModal
+            redirectRoute={`/lish/${params.did}/${params.publication}/dashboard`}
+            trigger={
+              <div className="text-accent-contrast font-bold">Log in here</div>
+            }
+          />
+          !
+        </p>
         <p>
           If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
       </NotFoundLayout>
     );
+
   let did = decodeURIComponent(params.did);
   if (!did) return <ThemeNotFound />;
   let { result: publication_data } = await get_publication_data.handler(

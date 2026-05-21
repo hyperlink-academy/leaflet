@@ -11,7 +11,8 @@ import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { useIdentityData } from "components/IdentityProvider";
 
 export const MobileNavigation = (props: {
-  search?: React.ReactNode;
+  controls?: React.ReactNode;
+  hasSearch?: boolean;
   mobileActions?: React.ReactNode;
   pageTitle: string;
   hiddenOnScroll?: boolean;
@@ -113,7 +114,7 @@ export const MobileNavigation = (props: {
               <MobileSidebarTrigger pageTitle={props.pageTitle} />
               <div className="flex-1" />
 
-              {props.search && (
+              {props.controls && props.hasSearch && (
                 <button
                   onClick={() => {
                     setState("search");
@@ -128,7 +129,7 @@ export const MobileNavigation = (props: {
             </>
           ) : (
             <>
-              {props.search}
+              {props.controls}
               <Separator classname="h-6!" />
               <button
                 className="text-secondary"

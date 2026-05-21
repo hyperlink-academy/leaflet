@@ -18,11 +18,9 @@ export function DraftsTab() {
 
   let [searchValue, setSearchValue] = useState("");
   let [debouncedSearchValue, setDebouncedSearchValue] = useState("");
-  useDebouncedEffect(
-    () => setDebouncedSearchValue(searchValue),
-    200,
-    [searchValue],
-  );
+  useDebouncedEffect(() => setDebouncedSearchValue(searchValue), 200, [
+    searchValue,
+  ]);
 
   const showPageBackground = !!record?.theme?.showPageBackground;
 
@@ -31,7 +29,7 @@ export function DraftsTab() {
       scrollKey={`dashboard-${pubUri}-Drafts`}
       pageTitle="Drafts"
       mobileActions={<NewDraftActionButton publication={pubUri} compact />}
-      search={
+      controls={
         <PageSearch
           defaultDisplay="list"
           hasBackgroundImage={!!record?.theme?.backgroundImage}
@@ -39,6 +37,7 @@ export function DraftsTab() {
           setSearchValueAction={setSearchValue}
         />
       }
+      hasSearch
       publication={pubUri}
       showHeader={true}
     >

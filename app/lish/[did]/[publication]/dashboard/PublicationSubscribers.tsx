@@ -8,6 +8,8 @@ import { Separator } from "components/Layout";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useDashboardState } from "components/PageLayouts/dashboardState";
+import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
+import { EmailTiny } from "components/Icons/EmailTiny";
 
 type subscriber = { email: string | undefined; did: string | undefined };
 
@@ -22,14 +24,11 @@ type MergedSubscriber = {
   status: SubscriberStatus;
 };
 
-export function PublicationSubscribers(props: {
-  showPageBackground?: boolean;
-}) {
-  let smoker = useSmoker();
+export function useMergedSubscribers(): MergedSubscriber[] | null {
   let { data: publication } = usePublicationData();
   let { subscriberStatus } = useDashboardState();
 
-  if (!publication) return <div>null</div>;
+  if (!publication) return null;
   // ATProto subscribers have no email lifecycle state — they're just present
   // or absent, so they only count under the "subscribed" status filter.
   let atprotoSubs = subscriberStatus.subscribed
@@ -84,7 +83,18 @@ export function PublicationSubscribers(props: {
       status,
     });
   }
-  let subscribers: MergedSubscriber[] = [...byDid.values(), ...emailOnly];
+  return [...byDid.values(), ...emailOnly];
+}
+
+export function PublicationSubscribers(props: {
+  showPageBackground?: boolean;
+}) {
+  let smoker = useSmoker();
+  let { data: publication } = usePublicationData();
+  let { subscriberStatus } = useDashboardState();
+  let subscribers = useMergedSubscribers();
+
+  if (!publication || !subscribers) return <div>null</div>;
 
   // useEffect(() => {
   //   const allSubscribersSelected = subscribers.every((subscriber) =>
@@ -118,7 +128,8 @@ export function PublicationSubscribers(props: {
               .join(", ");
       return (
         <div
-          className={`italic text-tertiary flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
+          className={`italic text-tertiary
+            flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
           style={
             props.showPageBackground
               ? {
@@ -128,14 +139,13 @@ export function PublicationSubscribers(props: {
               : { backgroundColor: "transparent" }
           }
         >
-          <p className="font-bold">No subscribers match this filter</p>
-          <p>Showing: {label}</p>
+          <p className="font-bold">No subscribers match your filters!</p>
         </div>
       );
     }
     return (
       <div
-        className={`italic text-tertiary  flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
+        className={`italic text-tertiary flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
         style={
           props.showPageBackground
             ? {
@@ -180,47 +190,21 @@ export function PublicationSubscribers(props: {
           : { backgroundColor: "transparent" }
       }
     >
-      {/*<div className="subscriberListHeader flex gap-2 ">
-        <Checkbox
-          checked={checkAll}
-          onChange={() => {
-            if (checkAll === false) {
-              const allSubscribers = subscribers.map((subscriber) => ({
-                email: "dummyemail@email.com",
-                did: subscriber.identities?.bsky_profiles?.did,
-              }));
-              setCheckedSubscribers(allSubscribers);
-            } else {
-              setCheckedSubscribers([]);
-            }
-          }}
-          className="!font-bold text-secondary mb-1"
-        >
-          {subscribers.length} Subscriber{subscribers.length !== 1 && "s"}
-        </Checkbox>
-        {checkedSubscribers.length !== 0 && (
-          <SubscriberOptions
-            checkedSubscribers={checkedSubscribers}
-            allSelected={checkedSubscribers.length === subscribers.length}
-          />
-        )}
-      </div>*/}
-      <div className="!font-bold text-secondary mb-1">
-        {subscribers.length} Subscriber{subscribers.length !== 1 && "s"}
-      </div>
-      <hr className="mb-2 border-border " />
-      <div className="subscriberListContent flex gap-3 flex-col ">
+      <div className="subscriberListContent flex gap-2 flex-col ">
         {subscribers
           .sort((a, b) => b.created_at.localeCompare(a.created_at))
           .map((subscriber) => (
-            <SubscriberListItem
-              key={subscriber.key}
-              handle={subscriber.handle}
-              did={subscriber.did}
-              email={subscriber.email}
-              createdAt={subscriber.created_at}
-              status={subscriber.status}
-            />
+            <>
+              <SubscriberListItem
+                key={subscriber.key}
+                handle={subscriber.handle}
+                did={subscriber.did}
+                email={subscriber.email}
+                createdAt={subscriber.created_at}
+                status={subscriber.status}
+              />
+              <hr className="border-border-light last:hidden" />
+            </>
           ))}
       </div>
     </div>
@@ -234,35 +218,47 @@ const SubscriberListItem = (props: {
   createdAt: string;
   status: SubscriberStatus;
 }) => {
+  let contactClassName =
+    "flex flex-row gap-2 items-center border rounded-md px-1 text-sm w-full max-w-fit no-underline! hover:bg-[var(--accent-light)] hover:border-accent-contrast ";
+  let subscribedClassName = " border-transparent font-bold text-secondary";
+  let mutedClassName = "border-border bg-border-light text-tertiary";
+  let unconfirmedClassName = "border-border-light animate-pulse text-tertiary";
+
   return (
-    <div className="flex items-end flex-row gap-2 w-full">
-      {props.handle && (
-        <a
-          target="_blank"
-          href={`https://bsky.app/profile/${props.did}`}
-          className="font-bold"
-        >
-          @{props.handle}
-        </a>
-      )}
-      {props.handle && props.email && (
-        <Separator classname="sm:block hidden" />
-      )}
-      {props.email && (
-        <a
-          target="_blank"
-          href={`mailto:${props.email}`}
-          className={`font-bold ${props.status === "subscribed" ? "text-primary" : "text-tertiary line-through"}`}
-        >
-          {props.email}
-        </a>
-      )}
-      {props.status !== "subscribed" && (
-        <span className="text-sm italic text-tertiary">
-          {props.status === "unconfirmed" ? "unconfirmed" : "unsubscribed"}
-        </span>
-      )}
-      <SubscriberDate createdAt={props.createdAt} />
+    <div className="flex flex-row justify-between gap-2 w-full">
+      <div className="flex flex-col gap-0.5 grow min-w-0 w-full">
+        {props.handle && (
+          <a
+            target="_blank"
+            href={`https://bsky.app/profile/${props.did}`}
+            className={`${contactClassName} ${props.status === "subscribed" ? subscribedClassName : props.status === "unconfirmed" ? unconfirmedClassName : mutedClassName}`}
+          >
+            <AtmosphereAccount className="text-tertiary shrink-0" />
+            {props.handle}
+          </a>
+        )}
+        {props.handle && props.email && (
+          <Separator classname="sm:block hidden" />
+        )}
+        {props.email && (
+          <a
+            target="_blank"
+            href={`mailto:${props.email}`}
+            className={`${contactClassName} ${props.status === "subscribed" ? subscribedClassName : props.status === "unconfirmed" ? unconfirmedClassName : mutedClassName}`}
+          >
+            <EmailTiny className="text-tertiary shrink-0" />{" "}
+            <div className="truncate min-w-0 ">{props.email}</div>
+          </a>
+        )}
+      </div>
+      <div className="flex flex-row gap-2 shrink-0">
+        {props.status !== "subscribed" && (
+          <span className="text-sm italic text-tertiary">
+            {props.status === "unconfirmed" ? "unconfirmed" : "unsubscribed"}
+          </span>
+        )}
+        <SubscriberDate createdAt={props.createdAt} />
+      </div>
     </div>
   );
 };

@@ -167,62 +167,6 @@ const FilterCheckboxes = (props: {
   );
 };
 
-export const SubscriberStatusFilter = () => {
-  let { subscriberStatus } = useDashboardState();
-  let setState = useSetDashboardState();
-  let count = Object.values(subscriberStatus).filter(Boolean).length;
-
-  return (
-    <Popover
-      className="text-sm px-2! py-1!"
-      trigger={<div>Status {count > 0 && `(${count})`}</div>}
-    >
-      <Checkbox
-        small
-        checked={subscriberStatus.subscribed}
-        onChange={(e) =>
-          setState({
-            subscriberStatus: {
-              ...subscriberStatus,
-              subscribed: !!e.target.checked,
-            },
-          })
-        }
-      >
-        Subscribed
-      </Checkbox>
-      <Checkbox
-        small
-        checked={subscriberStatus.unconfirmed}
-        onChange={(e) =>
-          setState({
-            subscriberStatus: {
-              ...subscriberStatus,
-              unconfirmed: !!e.target.checked,
-            },
-          })
-        }
-      >
-        Unconfirmed
-      </Checkbox>
-      <Checkbox
-        small
-        checked={subscriberStatus.unsubscribed}
-        onChange={(e) =>
-          setState({
-            subscriberStatus: {
-              ...subscriberStatus,
-              unsubscribed: !!e.target.checked,
-            },
-          })
-        }
-      >
-        Unsubscribed
-      </Checkbox>
-    </Popover>
-  );
-};
-
 const FilterOptions = (props: { hasPubs: boolean; hasArchived: boolean }) => {
   let { filter } = useDashboardState();
   let filterCount = Object.values(filter).filter(Boolean).length;

@@ -7,7 +7,8 @@ export function DashboardPageLayout(props: {
   scrollKey: string;
   pageTitle: string;
   mobileActions?: React.ReactNode;
-  search?: React.ReactNode;
+  controls?: React.ReactNode;
+  hasSearch?: boolean;
   publication?: string;
   showHeader?: boolean;
   children: React.ReactNode;
@@ -29,7 +30,7 @@ export function DashboardPageLayout(props: {
       {props.showHeader && (
         <PageHeader>
           <div className={`sm:block ${props.publication && "hidden"} grow`}>
-            {props.search}
+            {props.controls}
           </div>
         </PageHeader>
       )}
@@ -38,7 +39,8 @@ export function DashboardPageLayout(props: {
       <MobileNavigation
         pageTitle={props.pageTitle}
         mobileActions={props.mobileActions}
-        search={props.search}
+        controls={props.controls}
+        hasSearch={props.hasSearch}
       />
     </div>
   );

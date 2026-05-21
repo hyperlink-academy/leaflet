@@ -77,7 +77,7 @@ export const HomeContent = (props: {
       scrollKey="dashboard-home"
       pageTitle="Home"
       mobileActions={<CreateNewLeafletButton compact />}
-      search={
+      controls={
         <PageSearch
           defaultDisplay={"grid"}
           searchValue={searchValue}
@@ -87,6 +87,7 @@ export const HomeContent = (props: {
           hasArchived={!!hasArchived}
         />
       }
+      hasSearch
       showHeader={true}
     >
       <HomeLeafletList
