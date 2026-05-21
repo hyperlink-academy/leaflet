@@ -4,22 +4,36 @@ import { useState } from "react";
 import { LoginModal } from "components/LoginButton";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Input } from "components/Input";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function LandingCTA() {
   let [loginOpen, setLoginOpen] = useState(false);
+  let { identity } = useIdentityData();
+  let signedIn = !!identity?.atp_did;
   return (
     <div className="flex items-center justify-end gap-4 sm:gap-6">
-      <button
-        onClick={() => setLoginOpen(true)}
-        className="text-[#57822B] font-bold text-lg! sm:text-xl!"
-      >
-        Log in
-      </button>
-      <LoginModal
-        open={loginOpen}
-        onOpenChange={setLoginOpen}
-        redirectRoute="/home"
-      />
+      {signedIn ? (
+        <Link
+          href="/home"
+          className="text-[#57822B] font-bold text-lg! sm:text-xl! no-underline!"
+        >
+          Log in
+        </Link>
+      ) : (
+        <>
+          <button
+            onClick={() => setLoginOpen(true)}
+            className="text-[#57822B] font-bold text-lg! sm:text-xl!"
+          >
+            Log in
+          </button>
+          <LoginModal
+            open={loginOpen}
+            onOpenChange={setLoginOpen}
+            redirectRoute="/home"
+          />
+        </>
+      )}
       <Link href="/new?welcomeModal" className="no-underline!">
         <ButtonPrimary className="rounded-lg! text-lg! sm:text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-0.5! px-2! sm:py-1 ! sm:px-4!">
           Start Writing
