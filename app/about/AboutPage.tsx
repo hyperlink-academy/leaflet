@@ -41,8 +41,9 @@ export function AboutPage() {
       </div>
 
       <p className=" pt-6 text-tertiary text-center leading-snug mx-auto text-lg sm:text-xl!">
-        A simple and powerful platform for social publishing <br />— blogs,
-        newsletters, and more!
+        Delightful writing and effortless publishing, to connect with your
+        community — whether you're writing a blog, newsletter, or secret third
+        thing.
       </p>
       {/*<Demo />*/}
       <Features />
