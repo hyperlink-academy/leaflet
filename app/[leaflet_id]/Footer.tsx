@@ -21,6 +21,7 @@ import { block } from "sharp";
 import { PostSettings } from "components/PostSettings";
 import useSWR from "swr";
 import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
+import { useAddToHomeParam } from "./AddToHomeEffect";
 
 export function hasBlockToolbar(blockType: string | null | undefined) {
   return (
@@ -43,11 +44,14 @@ export function LeafletFooter(props: { entityID: string }) {
   });
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
-  let isOnHome = identity
-    ? !!identity.permission_token_on_homepage.find(
-        (pth) => pth.permission_tokens.id === permission_token.id,
-      )
-    : !!localLeaflets.find((f) => f.token.id === permission_token.id);
+  let addingToHome = useAddToHomeParam();
+  let isOnHome =
+    addingToHome ||
+    (identity
+      ? !!identity.permission_token_on_homepage.find(
+          (pth) => pth.permission_tokens.id === permission_token.id,
+        )
+      : !!localLeaflets.find((f) => f.token.id === permission_token.id));
   let isOwnerOfPub =
     !!pub?.publications &&
     !!identity?.atp_did &&

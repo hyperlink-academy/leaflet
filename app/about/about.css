@@ -1,0 +1,67 @@
+@reference "../globals.css";
+
+.aboutPage h1 {
+  font-family: var(--font-ibm-plex-serif);
+  font-weight: 700;
+  font-style: italic;
+  @apply text-[96px] sm:text-[180px];
+}
+
+.aboutPage h2 {
+  font-family: var(--font-ibm-plex-serif);
+  font-weight: 600;
+  @apply leading-tight;
+  @apply text-[2.25rem] md:text-[4rem];
+}
+
+.aboutPage h3 {
+  font-family: var(--font-ibm-plex-serif);
+  font-weight: 700;
+  @apply text-[1.25rem] sm:text-[1.5rem] md:text-[2rem];
+}
+
+.aboutPage h4 {
+  font-weight: 700;
+  @apply text-[1rem] sm:text-[1.25rem]  md:text-[1.5rem];
+}
+
+.aboutPage p {
+  @apply text-[1rem] sm:text-[1.25rem] md:text-[1.5rem];
+}
+
+.pubAndPostCarousel p {
+  @apply text-[1rem];
+}
+.pubAndPostCarousel h4 {
+  font-weight: 700;
+
+  @apply text-[1.25rem];
+}
+
+.pubAndPostCarouselTrack {
+  animation: pubAndPostCarouselScroll 100s linear infinite;
+}
+
+.pubAndPostCarousel:hover .pubAndPostCarouselTrack {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pubAndPostCarouselTrack {
+    animation: none;
+  }
+}
+
+@keyframes pubAndPostCarouselScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.aboutCover {
+}
+
+.aboutSpotlightFeatures {
+}

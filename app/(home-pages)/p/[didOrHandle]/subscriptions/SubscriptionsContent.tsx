@@ -83,7 +83,12 @@ export const ProfileSubscriptionsContent = (props: {
     <div className="relative">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-4">
         {allSubscriptions.map((sub) => (
-          <PubListing key={sub.uri} {...sub} />
+          <PubListing
+            constrainHeight
+            showSubscribeButton
+            key={sub.uri}
+            {...sub}
+          />
         ))}
       </div>
       {/* Trigger element for loading more subscriptions */}

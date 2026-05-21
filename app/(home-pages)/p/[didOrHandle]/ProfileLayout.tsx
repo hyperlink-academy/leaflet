@@ -14,7 +14,7 @@ export function ProfileLayout(props: { children: React.ReactNode }) {
               : "overflow-y-auto h-full border border-border-light rounded-lg! container px-3 sm:px-4 "
           }
           max-w-prose w-full
-          flex flex-col mb-3
+          flex flex-col
           text-center
     `}
     >
