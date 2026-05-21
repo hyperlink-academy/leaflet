@@ -59,6 +59,10 @@ export default async function PublicationEditLayout(props: {
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
 
+  if (!identity.entitlements?.["edit-pub-pages"]) {
+    return <PubNotFound />;
+  }
+
   let { result: publication_data } = await get_publication_data.handler(
     {
       did,

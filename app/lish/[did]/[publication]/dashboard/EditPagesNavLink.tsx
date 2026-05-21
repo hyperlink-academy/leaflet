@@ -4,6 +4,7 @@ import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createPublicationPage } from "actions/createPublicationPage";
+import { useHasEntitlement } from "src/hooks/useEntitlement";
 import { usePublicationData } from "./PublicationSWRProvider";
 
 export function EditPagesNavLink(props: {
@@ -14,6 +15,7 @@ export function EditPagesNavLink(props: {
   let router = useRouter();
   let { data, mutate } = usePublicationData();
   let [loading, setLoading] = useState(false);
+  let editPubPagesEnabled = useHasEntitlement("edit-pub-pages");
 
   let pages = data?.publication?.publication_pages || [];
 
@@ -41,6 +43,8 @@ export function EditPagesNavLink(props: {
       `/lish/${props.did}/${props.publicationName}/edit${routeSegment}`,
     );
   }
+
+  if (!editPubPagesEnabled) return null;
 
   return (
     <ActionButton
