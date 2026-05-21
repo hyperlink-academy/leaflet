@@ -7,22 +7,27 @@ export const Footer = () => {
         <div className="w-fit mx-auto flex gap-16">
           <div className="flex flex-col gap-1">
             <strong>Explore</strong>
-            <SpeedyLink href="/reader">Reader</SpeedyLink>
+            <SpeedyLink href="/reader" className="text-white">
+              Reader
+            </SpeedyLink>
           </div>
           <div className="flex flex-col gap-1">
             <strong>Contact</strong>
-            <a href="mailto:contact@leaflet.pub">Email</a>
+            <a className="text-white" href="mailto:contact@leaflet.pub">
+              Email
+            </a>
             <a
               href="https://bsky.app/profile/leaflet.pub"
               target="_blank"
               rel="noreferrer"
+              className="text-white"
             >
               Bluesky
             </a>
           </div>
           <div className="flex flex-col gap-1">
             <strong>Other</strong>
-            <SpeedyLink href="/legal" target="_blank">
+            <SpeedyLink href="/legal" target="_blank" className="text-white">
               Terms
             </SpeedyLink>
           </div>
