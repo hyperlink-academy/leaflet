@@ -4,16 +4,14 @@ import { usePathname } from "next/navigation";
 
 export function PublicationStickyHeader(props: {
   sticky?: boolean;
-  nav?: React.ReactNode;
+  nav: React.ReactNode;
   children: React.ReactNode;
 }) {
   let ref = useRef<HTMLDivElement>(null);
   let pathname = usePathname();
   let sticky = props.sticky ?? true;
-  let hasNav = !!props.nav;
 
   useEffect(() => {
-    if (!hasNav) return;
     let el = ref.current;
     let parent = el?.parentElement;
     if (!el || !parent) return;
@@ -54,7 +52,7 @@ export function PublicationStickyHeader(props: {
       if (rafId !== null) cancelAnimationFrame(rafId);
       parent.removeEventListener("scroll", onScroll, true);
     };
-  }, [hasNav]);
+  }, []);
 
   useEffect(() => {
     ref.current?.style.setProperty("--header-shrink", "0");

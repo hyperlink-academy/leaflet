@@ -97,7 +97,15 @@ export default async function PublicationEditLayout(props: {
             publicationName={params.publication}
           />
           <div className="pubWrapper flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
-            <PublicationStickyHeader sticky={false}>
+            <PublicationStickyHeader
+              sticky={false}
+              nav={
+                <PublicationPagesNav
+                  did={params.did}
+                  publicationName={params.publication}
+                />
+              }
+            >
               <PublicationHeader
                 variant="inline"
                 iconUrl={iconUrl}
@@ -105,10 +113,6 @@ export default async function PublicationEditLayout(props: {
                 description={record?.description}
               />
             </PublicationStickyHeader>
-            <PublicationPagesNav
-              did={params.did}
-              publicationName={params.publication}
-            />
             <div className="grow min-h-0 flex flex-col">{props.children}</div>
           </div>
         </div>
