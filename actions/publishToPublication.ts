@@ -24,6 +24,7 @@ import { Json } from "supabase/database.types";
 import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
 import { processBlocksToPages } from "src/utils/factsToPagesRecord";
+import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import {
   normalizeDocumentRecord,
   type NormalizedDocument,
@@ -271,6 +272,9 @@ export async function publishToPublication({
 
   // Create record based on the document type
   let record: PubLeafletDocument.Record | SiteStandardDocument.Record;
+  // The record we persist locally always holds the fully-inflated content; when
+  // we offload pages to a blob, recordForPDS gets a shrunk copy below.
+  let recordForPDS: PubLeafletDocument.Record | SiteStandardDocument.Record;
 
   if (documentType === "site.standard.document") {
     // site.standard.document format
@@ -278,7 +282,7 @@ export async function publishToPublication({
     const siteUri =
       publication_uri || `https://leaflet.pub/p/${credentialSession.did}`;
 
-    record = {
+    const siteRecord: SiteStandardDocument.Record = {
       $type: "site.standard.document",
       title: title || "",
       site: siteUri,
@@ -304,7 +308,10 @@ export async function publishToPublication({
         $type: "pub.leaflet.content" as const,
         pages: pagesArray,
       },
-    } satisfies SiteStandardDocument.Record;
+    };
+    record = siteRecord;
+
+    recordForPDS = await maybeOffloadPagesToBlob(siteRecord, agent);
   } else {
     // pub.leaflet.document format (legacy)
     record = {
@@ -328,13 +335,14 @@ export async function publishToPublication({
       pages: pagesArray,
       publishedAt: resolvedPublishedAt,
     } satisfies PubLeafletDocument.Record;
+    recordForPDS = record;
   }
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey,
     repo: credentialSession.did!,
-    collection: record.$type,
-    record,
+    collection: recordForPDS.$type,
+    record: recordForPDS,
     validate: false, //TODO publish the lexicon so we can validate!
   });
 
@@ -428,7 +436,6 @@ export async function publishToPublication({
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
 }
-
 
 async function extractThemeFromFacts(
   facts: Fact<any>[],

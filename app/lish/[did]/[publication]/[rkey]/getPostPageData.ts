@@ -19,7 +19,8 @@ export async function getPostPageData(did: string, rkey: string) {
         documents_in_publications(publications(*,
           documents_in_publications(documents(uri, data)),
           publication_subscriptions(*),
-          publication_newsletter_settings(enabled))
+          publication_newsletter_settings(enabled),
+          publication_pages(id, path, title, record_uri, sort_order))
         ),
         document_mentions_in_bsky(*),
         leaflets_in_publications(*),
@@ -143,6 +144,7 @@ export async function getPostPageData(did: string, rkey: string) {
           | null,
         publication_subscriptions: rawPub.publication_subscriptions || [],
         newsletterMode: !!rawPub.publication_newsletter_settings?.enabled,
+        pages: (rawPub.publication_pages || []).filter((p) => p.record_uri),
       }
     : null;
   const recommendsCount = document.recommends_on_documents?.[0]?.count ?? 0;

@@ -17,6 +17,7 @@ import {
   getWebpageImage,
 } from "src/utils/getMicroLinkOgImage";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
+import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 
 type PublishBskyResult =
   | { success: true }
@@ -114,11 +115,16 @@ export async function publishPostToBsky(args: {
   let record = args.document_record;
   record.bskyPostRef = post;
 
+  // The caller hands us the fully inflated record. Large docs would 413 on
+  // putRecord without first offloading pages to a blob (the same offload
+  // publishToPublication did on the initial publish).
+  const recordForPDS = await maybeOffloadPagesToBlob(record, agent);
+
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey: args.rkey,
     repo: credentialSession.did!,
     collection: args.document_record.$type,
-    record,
+    record: recordForPDS,
     validate: false, //TODO publish the lexicon so we can validate!
   });
   await supabaseServerClient

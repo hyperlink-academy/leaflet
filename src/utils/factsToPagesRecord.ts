@@ -6,6 +6,7 @@ import { BlobRef } from "@atproto/lexicon";
 import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
@@ -16,6 +17,7 @@ import {
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
+  PubLeafletBlocksPostsList,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -33,6 +35,9 @@ import { scanIndexLocal } from "src/replicache/utils";
 import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
+import { ColorToRGB } from "components/ThemeManager/colorToLexicons";
+import { ThemeDefaults } from "components/ThemeManager/themeUtils";
+import { parseColor } from "@react-stately/color";
 
 type ExcludeString<T> = T extends string
   ? string extends T
@@ -73,6 +78,35 @@ export type ProcessBlocksToPagesResult = {
   }[];
 };
 
+function resolveHighlightColors(
+  scan: ReturnType<typeof scanIndexLocal>,
+  root_entity: string,
+): HighlightColors {
+  const result: HighlightColors = {};
+  const slots: Array<{
+    slot: "2" | "3";
+    attribute: "theme/highlight-2" | "theme/highlight-3";
+  }> = [
+    { slot: "2", attribute: "theme/highlight-2" },
+    { slot: "3", attribute: "theme/highlight-3" },
+  ];
+  for (const { slot, attribute } of slots) {
+    const stored = scan.eav(root_entity, attribute)?.[0]?.data.value;
+    // Mirror useColorAttribute's fallback: theme/highlight-2 and -3 facts are
+    // only written when the user opens the color picker, so an uncustomized
+    // leaflet has no fact and the editor shows the JS default. Without this
+    // fallback, slot-2 and slot-3 highlights would publish without a color
+    // and collapse to slot-1 styling on render.
+    const colorString = stored ? `hsba(${stored})` : ThemeDefaults[attribute];
+    try {
+      result[slot] = ColorToRGB(parseColor(colorString));
+    } catch {
+      // ignore unparseable color values
+    }
+  }
+  return result;
+}
+
 export async function processBlocksToPages(opts: {
   facts: Fact<Attribute>[];
   root_entity: string;
@@ -81,6 +115,8 @@ export async function processBlocksToPages(opts: {
   const { facts, root_entity, hooks } = opts;
   const scan = scanIndexLocal(facts);
   const pages: ProcessBlocksToPagesResult["pages"] = [];
+
+  const highlightColors = resolveHighlightColors(scan, root_entity);
 
   const firstEntity = scan.eav(root_entity, "root/page")?.[0];
   if (!firstEntity) throw new Error("No root page");
@@ -274,7 +310,12 @@ export async function processBlocksToPages(opts: {
       Y.applyUpdate(doc, update);
       const nodes = doc.getXmlElement("prosemirror").toArray();
       const plaintext = YJSFragmentToString(nodes[0]);
-      const { facets } = YJSFragmentToFacets(nodes[0]);
+      const { facets } = YJSFragmentToFacets(
+        nodes[0],
+        0,
+        undefined,
+        highlightColors,
+      );
       return { plaintext, facets };
     };
     const getBlockContent = (b: string) => {
@@ -290,6 +331,7 @@ export async function processBlocksToPages(opts: {
         nodes[0],
         0,
         footnoteContentResolver,
+        highlightColors,
       );
       return [stringValue, facets] as const;
     };
@@ -332,6 +374,17 @@ export async function processBlocksToPages(opts: {
           cid: post.data.value.post.cid,
         },
         clientHost: hostFact?.data.value,
+      };
+      return block;
+    }
+    if (b.type === "standard-site-post") {
+      const [uri] = scan.eav(b.value, "block/standard-site-post");
+      if (!uri) return;
+      const [sizeFact] = scan.eav(b.value, "standard-site-post/size");
+      const block: $Typed<PubLeafletBlocksStandardSitePost.Main> = {
+        $type: ids.PubLeafletBlocksStandardSitePost,
+        uri: uri.data.value,
+        ...(sizeFact && { size: sizeFact.data.value }),
       };
       return block;
     }
@@ -494,6 +547,21 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     }
+    if (b.type === "posts-list") {
+      const [viewFact] = scan.eav(b.value, "posts-list/view");
+      const [highlightFact] = scan.eav(
+        b.value,
+        "posts-list/highlight-first-post",
+      );
+      const [filterTagFact] = scan.eav(b.value, "posts-list/filter-tag");
+      const block: $Typed<PubLeafletBlocksPostsList.Main> = {
+        $type: "pub.leaflet.blocks.postsList",
+        ...(viewFact && { view: viewFact.data.value }),
+        ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
+        ...(filterTagFact && { filterByTag: filterTagFact.data.value }),
+      };
+      return block;
+    }
     return;
   }
 
@@ -542,6 +610,10 @@ export async function processBlocksToPages(opts: {
   }
 }
 
+export type HighlightColors = Partial<
+  Record<"1" | "2" | "3", PubLeafletRichtextFacet.Highlight["color"]>
+>;
+
 export function YJSFragmentToFacets(
   node: Y.XmlElement | Y.XmlText | Y.XmlHook,
   byteOffset: number = 0,
@@ -549,6 +621,7 @@ export function YJSFragmentToFacets(
     plaintext: string;
     facets: PubLeafletRichtextFacet.Main[];
   },
+  highlightColors?: HighlightColors,
 ): { facets: PubLeafletRichtextFacet.Main[]; byteLength: number } {
   if (node.constructor === Y.XmlElement) {
     if (node.nodeName === "footnote") {
@@ -626,6 +699,7 @@ export function YJSFragmentToFacets(
         child,
         currentOffset,
         footnoteContentResolver,
+        highlightColors,
       );
       allFacets.push(...result.facets);
       currentOffset += result.byteLength;
@@ -655,8 +729,15 @@ export function YJSFragmentToFacets(
 
       if (d.attributes?.code)
         facet.features.push({ $type: "pub.leaflet.richtext.facet#code" });
-      if (d.attributes?.highlight)
-        facet.features.push({ $type: "pub.leaflet.richtext.facet#highlight" });
+      if (d.attributes?.highlight) {
+        const slot = d.attributes.highlight.color as "1" | "2" | "3";
+        const resolvedColor =
+          slot && slot !== "1" ? highlightColors?.[slot] : undefined;
+        facet.features.push({
+          $type: "pub.leaflet.richtext.facet#highlight",
+          ...(resolvedColor ? { color: resolvedColor } : {}),
+        });
+      }
       if (d.attributes?.underline)
         facet.features.push({ $type: "pub.leaflet.richtext.facet#underline" });
       if (d.attributes?.strong)

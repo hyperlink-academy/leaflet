@@ -14,11 +14,18 @@ import {
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
+  PubLeafletBlocksPostsList,
   PubLeafletBlocksButton,
 } from "lexicons/api";
+import {
+  PublicationPostsList,
+  type PublicationPostsListPost,
+} from "../PublicationPostsList";
+import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./Blocks/TextBlock";
@@ -29,6 +36,8 @@ import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
+import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
+import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
@@ -43,6 +52,12 @@ import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 
+export type PostsListData = {
+  publication: { uri: string; record: unknown };
+  publicationRecord: NormalizedPublication | null;
+  posts: PublicationPostsListPost[];
+};
+
 export function PostContent({
   blocks,
   did,
@@ -50,10 +65,12 @@ export function PostContent({
   className,
   prerenderedCodeBlocks,
   bskyPostData,
+  standardSitePostData,
   pageId,
   pages,
   pollData,
   footnoteIndexMap,
+  postsListData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -62,9 +79,11 @@ export function PostContent({
   className?: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
   pollData: PollData[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   footnoteIndexMap?: Map<string, number>;
+  postsListData?: PostsListData;
 }) {
   return (
     <div
@@ -77,6 +96,7 @@ export function PostContent({
             pageId={pageId}
             pages={pages}
             bskyPostData={bskyPostData}
+            standardSitePostData={standardSitePostData}
             block={b}
             did={did}
             key={index}
@@ -87,6 +107,7 @@ export function PostContent({
             prerenderedCodeBlocks={prerenderedCodeBlocks}
             pollData={pollData}
             footnoteIndexMap={footnoteIndexMap}
+            postsListData={postsListData}
             isFirst={index === 0}
             isLast={index === blocks.length - 1}
           />
@@ -106,10 +127,12 @@ export let Block = ({
   nextBlock,
   prerenderedCodeBlocks,
   bskyPostData,
+  standardSitePostData,
   pageId,
   pages,
   pollData,
   footnoteIndexMap,
+  postsListData,
   isFirst,
   isLast,
 }: {
@@ -124,8 +147,10 @@ export let Block = ({
   nextBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
   pollData: PollData[];
   footnoteIndexMap?: Map<string, number>;
+  postsListData?: PostsListData;
   isFirst?: boolean;
   isLast?: boolean;
 }) => {
@@ -187,6 +212,7 @@ export let Block = ({
           parentPageId={pageId}
           did={did}
           bskyPostData={bskyPostData}
+          standardSitePostData={standardSitePostData}
           isCanvas={isCanvas}
           pages={pages}
           className={className}
@@ -206,6 +232,28 @@ export let Block = ({
         />
       );
     }
+    case PubLeafletBlocksStandardSitePost.isMain(b.block): {
+      let uri = b.block.uri;
+      let post = standardSitePostData.find((p) => p.uri === uri);
+      if (!post) {
+        return (
+          <div className={className} {...blockProps}>
+            <p className="text-sm italic text-tertiary">Post not found.</p>
+          </div>
+        );
+      }
+      let size: "large" | "medium" | "small" =
+        b.block.size === "large"
+          ? "large"
+          : b.block.size === "medium"
+            ? "medium"
+            : "small";
+      return (
+        <div className={className} {...blockProps}>
+          <StandardSitePostItemView post={post} size={size} />
+        </div>
+      );
+    }
     case PubLeafletBlocksIframe.isMain(b.block): {
       return (
         <PublishedIframeBlock
@@ -218,6 +266,28 @@ export let Block = ({
     }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
+    }
+    case PubLeafletBlocksPostsList.isMain(b.block): {
+      if (!postsListData) return null;
+      const view: "compact" | "full" =
+        b.block.view === "compact" ? "compact" : "full";
+      const filterByTag = b.block.filterByTag;
+      const posts = filterByTag
+        ? postsListData.posts.filter((p) =>
+            p.record.tags?.includes(filterByTag),
+          )
+        : postsListData.posts;
+      return (
+        <div className={className} {...blockProps}>
+          <PublicationPostsList
+            publication={postsListData.publication}
+            publicationRecord={postsListData.publicationRecord}
+            posts={posts}
+            view={view}
+            highlightFirstPost={!!b.block.highlightFirstPost}
+          />
+        </div>
+      );
     }
     case PubLeafletBlocksPoll.isMain(b.block): {
       let { cid, uri } = b.block.pollRef;
@@ -250,6 +320,7 @@ export let Block = ({
               pollData={pollData}
               pages={pages}
               bskyPostData={bskyPostData}
+              standardSitePostData={standardSitePostData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -271,6 +342,7 @@ export let Block = ({
               pollData={pollData}
               pages={pages}
               bskyPostData={bskyPostData}
+              standardSitePostData={standardSitePostData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -547,6 +619,7 @@ function ListItem(props: {
   did: string;
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
   pollData: PollData[];
   pageId?: string;
   footnoteIndexMap?: Map<string, number>;
@@ -558,6 +631,7 @@ function ListItem(props: {
           pages={props.pages}
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
+          standardSitePostData={props.standardSitePostData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -576,6 +650,7 @@ function ListItem(props: {
           pages={props.pages}
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
+          standardSitePostData={props.standardSitePostData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -606,6 +681,7 @@ function ListItem(props: {
           pollData={props.pollData}
           pages={props.pages}
           bskyPostData={props.bskyPostData}
+          standardSitePostData={props.standardSitePostData}
           block={{ block: props.item.content }}
           did={props.did}
           isList
@@ -627,6 +703,7 @@ function OrderedListItem(props: {
   did: string;
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
   pollData: PollData[];
   pageId?: string;
   startIndex?: number;
@@ -641,6 +718,7 @@ function OrderedListItem(props: {
           pages={props.pages}
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
+          standardSitePostData={props.standardSitePostData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -660,6 +738,7 @@ function OrderedListItem(props: {
           pages={props.pages}
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
+          standardSitePostData={props.standardSitePostData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -689,6 +768,7 @@ function OrderedListItem(props: {
           pollData={props.pollData}
           pages={props.pages}
           bskyPostData={props.bskyPostData}
+          standardSitePostData={props.standardSitePostData}
           block={{ block: props.item.content }}
           did={props.did}
           isList

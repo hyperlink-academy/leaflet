@@ -96,6 +96,7 @@ export function PostPreview(props: {
         })),
         newsletterMode:
           !!publication.publication_newsletter_settings?.enabled,
+        pages: [],
       }
     : null;
 
@@ -139,6 +140,7 @@ export function PostPreview(props: {
             }}
             prerenderedCodeBlocks={new Map()}
             bskyPostData={[]}
+            standardSitePostData={[]}
             pollData={[]}
             document_uri={FAKE_DOC_URI}
             fullPageScroll={!props.showPageBackground}

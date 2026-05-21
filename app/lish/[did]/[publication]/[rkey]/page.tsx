@@ -1,15 +1,37 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { DocumentPageRenderer } from "./DocumentPageRenderer";
+import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
-import { documentUriFilter } from "src/utils/uriHelpers";
+import {
+  documentUriFilter,
+  publicationNameOrUriFilter,
+} from "src/utils/uriHelpers";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }): Promise<Metadata> {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
+  let publication_name = decodeURIComponent(params.publication);
+  let rkey = decodeURIComponent(params.rkey);
   if (!did) return { title: "Publication 404" };
+
+  let { data: pubs } = await supabaseServerClient
+    .from("publications")
+    .select("name, publication_pages(path, title, record_uri)")
+    .eq("identity_did", did)
+    .or(publicationNameOrUriFilter(did, publication_name))
+    .order("uri", { ascending: false })
+    .limit(1);
+  let matchingPage = pubs?.[0]?.publication_pages?.find(
+    (p) => p.path === "/" + rkey && p.record_uri,
+  );
+  if (matchingPage) {
+    return {
+      title: `${matchingPage.title || matchingPage.path} - ${pubs?.[0]?.name}`,
+    };
+  }
 
   let [{ data: documents }] = await Promise.all([
     supabaseServerClient
@@ -55,6 +77,8 @@ export default async function Post(props: {
 }) {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
+  let publication_name = decodeURIComponent(params.publication);
+  let rkey = decodeURIComponent(params.rkey);
 
   if (!did)
     return (
@@ -67,5 +91,30 @@ export default async function Post(props: {
       </div>
     );
 
-  return <DocumentPageRenderer did={did} rkey={params.rkey} />;
+  let { data: publications } = await supabaseServerClient
+    .from("publications")
+    .select(
+      `uri, name, identity_did, record,
+       publication_pages(id, path, title, record, record_uri, sort_order),
+       documents_in_publications(documents(uri, data,
+         comments_on_documents(count),
+         document_mentions_in_bsky(count),
+         recommends_on_documents(count)))`,
+    )
+    .eq("identity_did", did)
+    .or(publicationNameOrUriFilter(did, publication_name))
+    .order("uri", { ascending: false })
+    .limit(1);
+  let publication = publications?.[0];
+
+  if (publication) {
+    const pageRender = tryRenderPublicationPage({
+      did,
+      publication,
+      path: "/" + rkey,
+    });
+    if (pageRender) return pageRender;
+  }
+
+  return <DocumentPageRenderer did={did} rkey={rkey} />;
 }

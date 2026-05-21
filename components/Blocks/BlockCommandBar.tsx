@@ -2,7 +2,10 @@ import { useState } from "react";
 import { blockCommands } from "./BlockCommands";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "components/PageSWRDataProvider";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { Combobox, ComboboxResult } from "components/Combobox";
 
@@ -28,6 +31,8 @@ export const BlockCommandBar = ({
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pub } = useLeafletPublicationData();
+  let publicationPage = useLeafletPublicationPage();
+  let inPublicationEdit = !!publicationPage;
 
   // This clears '/' AND anything typed after it
   const clearCommandSearchText = () => {
@@ -53,7 +58,8 @@ export const BlockCommandBar = ({
       ) ?? false;
     const matchesSearch = matchesName || matchesAlternate;
     const isVisible = !pub || !command.hiddenInPublication;
-    return matchesSearch && isVisible;
+    const allowedInContext = !command.publicationOnly || inPublicationEdit;
+    return matchesSearch && isVisible && allowedInContext;
   });
 
   return (

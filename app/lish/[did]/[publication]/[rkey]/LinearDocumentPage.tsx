@@ -38,6 +38,7 @@ export function LinearDocumentPage({
     preferences,
     prerenderedCodeBlocks,
     bskyPostData,
+    standardSitePostData,
     pollData,
     document_uri,
     pageId,
@@ -85,6 +86,7 @@ export function LinearDocumentPage({
           pages={pages as PubLeafletPagesLinearDocument.Main[]}
           pageId={pageId}
           bskyPostData={bskyPostData}
+          standardSitePostData={standardSitePostData}
           blocks={blocks}
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}

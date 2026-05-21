@@ -1568,6 +1568,51 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksPostsList: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.postsList',
+    defs: {
+      main: {
+        type: 'object',
+        required: [],
+        properties: {
+          view: {
+            type: 'string',
+            knownValues: ['compact', 'full'],
+          },
+          highlightFirstPost: {
+            type: 'boolean',
+          },
+          filterByTag: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksStandardSitePost: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.standardSitePost',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['uri'],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+          },
+          size: {
+            type: 'string',
+            knownValues: ['large', 'medium', 'small'],
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksText: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.text',
@@ -1767,6 +1812,23 @@ export const schemaDict = {
               ],
             },
           },
+          blobPages: {
+            type: 'blob',
+            accept: ['application/json'],
+            maxSize: 5000000,
+            description:
+              'JSON-encoded array of pages. When the inline pages array would be too large to store on the PDS, the pages are uploaded as a blob and referenced here. When set, consumers MUST ignore `pages` and use the decoded blob contents as the page array; the inline `pages` field will be empty or a stub.',
+          },
+          blobs: {
+            type: 'array',
+            description:
+              'Blobs referenced inside `blobPages`. Load-bearing when `blobPages` is set: the PDS only scans the top level of a record for blob references when deciding what to garbage-collect, so any image/etc. blob now living inside the opaque JSON blob must be mirrored here to remain referenced.',
+            items: {
+              type: 'blob',
+              accept: ['*/*'],
+              maxSize: 10000000,
+            },
+          },
         },
       },
     },
@@ -1931,9 +1993,11 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.code',
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
+              'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.page',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
+              'lex:pub.leaflet.blocks.postsList',
             ],
           },
           x: {
@@ -2033,9 +2097,11 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.code',
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
+              'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.page',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
+              'lex:pub.leaflet.blocks.postsList',
             ],
           },
           alignment: {
@@ -2289,6 +2355,43 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletPublicationPage: {
+    lexicon: 1,
+    id: 'pub.leaflet.publicationPage',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'any',
+        description:
+          'A static page belonging to a publication (e.g. about / contact). The rkey is derived from the page path slug.',
+        record: {
+          type: 'object',
+          required: ['publication', 'path', 'content'],
+          properties: {
+            publication: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            path: {
+              type: 'string',
+            },
+            title: {
+              type: 'string',
+              maxLength: 2000,
+            },
+            publishedAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            content: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.content',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletRichtextFacet: {
     lexicon: 1,
     id: 'pub.leaflet.richtext.facet',
@@ -2386,7 +2489,15 @@ export const schemaDict = {
         type: 'object',
         description: 'Facet feature for highlighted text.',
         required: [],
-        properties: {},
+        properties: {
+          color: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+        },
       },
       underline: {
         type: 'object',
@@ -2866,6 +2977,8 @@ export const ids = {
   PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
+  PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
+  PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
@@ -2879,6 +2992,7 @@ export const ids = {
   PubLeafletPollDefinition: 'pub.leaflet.poll.definition',
   PubLeafletPollVote: 'pub.leaflet.poll.vote',
   PubLeafletPublication: 'pub.leaflet.publication',
+  PubLeafletPublicationPage: 'pub.leaflet.publicationPage',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
   PubLeafletThemeColor: 'pub.leaflet.theme.color',

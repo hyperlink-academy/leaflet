@@ -40,6 +40,7 @@ import {
   MailHead,
   makeEmailIconUrl,
   makeStaticUrl,
+  mixRgb,
   resolveColors,
   type EmailTheme,
   type ResolvedColors,
@@ -1388,6 +1389,27 @@ const resolveAtMentionHref = (
   }
 };
 
+function highlightFacetBackground(
+  highlight: PubLeafletRichtextFacet.Highlight | undefined,
+): string | undefined {
+  const color = highlight?.color;
+  if (!color || typeof color !== "object") return undefined;
+  const { r, g, b } = color as { r?: number; g?: number; b?: number };
+  if (typeof r !== "number" || typeof g !== "number" || typeof b !== "number") {
+    return undefined;
+  }
+  const a = (color as { a?: number }).a;
+  return typeof a === "number"
+    ? `rgba(${r}, ${g}, ${b}, ${a / 100})`
+    : `rgb(${r}, ${g}, ${b})`;
+}
+
+// Mirrors the web's default --highlight-1:
+//   color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)
+// Gmail strips color-mix(), so we resolve it to a literal rgb() at render time.
+const defaultHighlightBackground = (theme: EmailTheme): string =>
+  mixRgb(theme.accentBackground, theme.pageBackground, 75);
+
 export const RichTextSpans = ({
   plaintext,
   facets,
@@ -1414,7 +1436,10 @@ export const RichTextSpans = ({
       PubLeafletRichtextFacet.isStrikethrough,
     );
     const isCode = !!features?.find(PubLeafletRichtextFacet.isCode);
-    const isHighlight = !!features?.find(PubLeafletRichtextFacet.isHighlight);
+    const highlight = features?.find(PubLeafletRichtextFacet.isHighlight);
+    const isHighlight = !!highlight;
+    const highlightBackground =
+      highlightFacetBackground(highlight) ?? defaultHighlightBackground(theme);
 
     const decorations: string[] = [];
     if (isUnderline) decorations.push("underline");
@@ -1427,7 +1452,7 @@ export const RichTextSpans = ({
       backgroundColor: isCode
         ? "rgba(0,0,0,0.06)"
         : isHighlight
-          ? "#fff3a3"
+          ? highlightBackground
           : undefined,
       fontFamily: isCode ? "monospace" : undefined,
       padding: isCode ? "1px 4px" : undefined,

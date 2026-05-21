@@ -5,6 +5,7 @@ const idResolver = new IdResolver();
 import { Firehose, MemoryRunner, Event } from "@atproto/sync";
 import { ids } from "lexicons/api/lexicons";
 import {
+  PubLeafletContent,
   PubLeafletDocument,
   PubLeafletGraphSubscription,
   PubLeafletPublication,
@@ -118,6 +119,7 @@ async function handleEvent(evt: Event) {
         data: {
           document_uri: evt.uri.toString(),
           bsky_post_uri: record.value.postRef?.uri,
+          event_type: evt.event,
         },
       });
       if (record.value.publication) {
@@ -275,16 +277,26 @@ async function handleEvent(evt: Event) {
         console.log(record.error);
         return;
       }
-      let docResult = await supabase.from("documents").upsert({
-        uri: evt.uri.toString(),
-        data: record.value as Json,
-      });
-      if (docResult.error) console.log(docResult.error);
+      // When the record offloads pages to a blob, skip the documents upsert —
+      // the firehose record has `pages: []` and would clobber the fully
+      // inflated copy that publishToPublication wrote optimistically. The
+      // inngest sync_document_metadata function is the writer in that case.
+      const hasBlobPages =
+        PubLeafletContent.isMain(record.value.content) &&
+        !!record.value.content.blobPages;
+      if (!hasBlobPages) {
+        let docResult = await supabase.from("documents").upsert({
+          uri: evt.uri.toString(),
+          data: record.value as Json,
+        });
+        if (docResult.error) console.log(docResult.error);
+      }
       await inngest.send({
         name: "appview/sync-document-metadata",
         data: {
           document_uri: evt.uri.toString(),
           bsky_post_uri: record.value.bskyPostRef?.uri,
+          event_type: evt.event,
         },
       });
 

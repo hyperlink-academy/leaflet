@@ -1,4 +1,5 @@
 import { LexiconDoc } from "@atproto/lexicon";
+import { ColorUnion } from "./theme";
 const FacetItems: LexiconDoc["defs"] = {
   link: {
     type: "object",
@@ -34,7 +35,9 @@ const FacetItems: LexiconDoc["defs"] = {
     type: "object",
     description: "Facet feature for highlighted text.",
     required: [],
-    properties: {},
+    properties: {
+      color: ColorUnion,
+    },
   },
   underline: {
     type: "object",

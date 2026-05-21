@@ -108,6 +108,7 @@ type Command = {
   type: string;
   alternateNames?: string[];
   hiddenInPublication?: boolean;
+  publicationOnly?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
     props: Props & { entity_set: string },
@@ -438,6 +439,30 @@ export const blockCommands: Command[] = [
           focusPage(newPage, rep, "focusFirstBlock");
         },
       });
+    },
+  },
+
+  // PUBLICATION BLOCKS — only shown when editing a publication page
+  {
+    name: "Posts List",
+    icon: <BlockDocPageSmall />,
+    type: "publication",
+    alternateNames: ["posts", "archive", "feed", "listing"],
+    publicationOnly: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "posts-list");
+    },
+  },
+  {
+    name: "Subscribe Form",
+    icon: <BlockMailboxSmall />,
+    type: "publication",
+    alternateNames: ["subscribe", "newsletter", "email"],
+    publicationOnly: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "text");
     },
   },
 ];

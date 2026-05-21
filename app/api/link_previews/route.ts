@@ -9,6 +9,7 @@ import {
   getMicroLinkOgImage,
   getWebpageImage,
 } from "src/utils/getMicroLinkOgImage";
+import { resolveStandardSitePostUrl } from "src/utils/resolveStandardSitePostUrl";
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
@@ -19,15 +20,25 @@ export async function POST(req: NextRequest) {
   let body = (await req.json()) as LinkPreviewBody;
   let url = encodeURIComponent(body.url);
   if (body.type === "meta") {
-    let result = await get_link_metadata(url);
-    return Response.json(result);
+    let [iframely, leafletPost] = await Promise.all([
+      get_link_metadata(url),
+      resolveStandardSitePostUrl(body.url, supabase).catch(() => null),
+    ]);
+    return Response.json({
+      ...iframely,
+      leafletPost: leafletPost ? { uri: leafletPost } : null,
+    });
   } else {
     let result = await get_link_image_preview(body.url);
     return Response.json(result);
   }
 }
 
-export type LinkPreviewMetadataResult = ReturnType<typeof get_link_metadata>;
+export type LinkPreviewMetadataResult = Promise<
+  Awaited<ReturnType<typeof get_link_metadata>> & {
+    leafletPost: { uri: string } | null;
+  }
+>;
 export type LinkPreviewImageResult = ReturnType<typeof get_link_image_preview>;
 
 async function get_link_image_preview(url: string) {

@@ -49,6 +49,22 @@ export const PubLeafletBlocksBskyPost: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksStandardSitePost: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.standardSitePost",
+  defs: {
+    main: {
+      type: "object",
+      required: ["uri"],
+      properties: {
+        uri: { type: "string", format: "at-uri" },
+        cid: { type: "string" },
+        size: { type: "string", knownValues: ["large", "medium", "small"] },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksBlockQuote: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.blockquote",
@@ -349,6 +365,22 @@ export const PubLeafletBlocksButton: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksPostsList: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.postsList",
+  defs: {
+    main: {
+      type: "object",
+      required: [],
+      properties: {
+        view: { type: "string", knownValues: ["compact", "full"] },
+        highlightFirstPost: { type: "boolean" },
+        filterByTag: { type: "string" },
+      },
+    },
+  },
+};
+
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksText,
@@ -362,9 +394,11 @@ export const BlockLexicons = [
   PubLeafletBlocksCode,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
   PubLeafletBlocksButton,
+  PubLeafletBlocksPostsList,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

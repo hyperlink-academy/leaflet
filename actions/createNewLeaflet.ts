@@ -14,8 +14,11 @@ import {
 import { redirect } from "next/navigation";
 import { v7 } from "uuid";
 import { sql, eq, and } from "drizzle-orm";
+import { generateKeyBetween } from "fractional-indexing";
 import { cookies } from "next/headers";
 import { pool } from "supabase/pool";
+
+type DefaultBlockType = "h1" | "text" | "posts-list";
 
 export async function createNewLeaflet({
   pageType,
@@ -23,12 +26,16 @@ export async function createNewLeaflet({
   firstBlockType,
   welcomeModal,
   addToHome,
+  firstBlocks,
+  addToHomepage = true,
 }: {
   pageType: "canvas" | "doc";
   redirectUser: boolean;
   firstBlockType?: "h1" | "text";
   welcomeModal?: boolean;
   addToHome?: boolean;
+  firstBlocks?: DefaultBlockType[];
+  addToHomepage?: boolean;
 }) {
   let auth_token = (await cookies()).get("auth_token")?.value;
   const client = await pool.connect();
@@ -109,39 +116,66 @@ export async function createNewLeaflet({
         },
       ]);
     } else {
-      await tx.insert(facts).values([
-        {
+      let blockSpecs: DefaultBlockType[] =
+        firstBlocks ?? [firstBlockType === "text" ? "text" : "h1"];
+
+      // Reuse the pre-created blockEntity for the first block so the rest of
+      // the flow (e.g. focusFirstBlock) still has an entity to target.
+      let blockEntities = blockSpecs.map((_, i) =>
+        i === 0 ? blockEntity.id : v7(),
+      );
+
+      if (blockEntities.length > 1) {
+        await tx
+          .insert(entities)
+          .values(blockEntities.slice(1).map((id) => ({ set: entity_set.id, id })));
+      }
+
+      let blockFacts: Array<{
+        id: string;
+        entity: string;
+        attribute: string;
+        data: ReturnType<typeof sql>;
+      }> = [];
+      let prevPosition: string | null = null;
+      blockSpecs.forEach((spec, i) => {
+        let entity = blockEntities[i];
+        let position = generateKeyBetween(prevPosition, null);
+        prevPosition = position;
+        blockFacts.push({
           id: v7(),
           entity: first_page.id,
           attribute: "card/block",
-          data: sql`${{ type: "ordered-reference", value: blockEntity.id, position: "a0" }}::jsonb`,
-        },
-        ...(firstBlockType === "text"
-          ? [
-              {
-                id: v7(),
-                entity: blockEntity.id,
-                attribute: "block/type",
-                data: sql`${{ type: "block-type-union", value: "text" }}::jsonb`,
-              },
-            ]
-          : [
-              {
-                id: v7(),
-                entity: blockEntity.id,
-                attribute: "block/type",
-                data: sql`${{ type: "block-type-union", value: "heading" }}::jsonb`,
-              },
-              {
-                id: v7(),
-                entity: blockEntity.id,
-                attribute: "block/heading-level",
-                data: sql`${{ type: "number", value: 1 }}::jsonb`,
-              },
-            ]),
-      ]);
+          data: sql`${{ type: "ordered-reference", value: entity, position }}::jsonb`,
+        });
+        if (spec === "h1") {
+          blockFacts.push(
+            {
+              id: v7(),
+              entity,
+              attribute: "block/type",
+              data: sql`${{ type: "block-type-union", value: "heading" }}::jsonb`,
+            },
+            {
+              id: v7(),
+              entity,
+              attribute: "block/heading-level",
+              data: sql`${{ type: "number", value: 1 }}::jsonb`,
+            },
+          );
+        } else {
+          blockFacts.push({
+            id: v7(),
+            entity,
+            attribute: "block/type",
+            data: sql`${{ type: "block-type-union", value: spec }}::jsonb`,
+          });
+        }
+      });
+
+      await tx.insert(facts).values(blockFacts);
     }
-    if (auth_token) {
+    if (auth_token && addToHomepage) {
       await tx.execute(sql`
         WITH auth_token AS (
           SELECT identities.id as identity_id

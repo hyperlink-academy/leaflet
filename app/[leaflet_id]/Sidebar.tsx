@@ -7,7 +7,10 @@ import {
   HomeButton,
 } from "app/[leaflet_id]/actions/HomeButton";
 import { Media } from "components/Media";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "components/PageSWRDataProvider";
 import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { PublishButton } from "./actions/PublishButton";
@@ -25,6 +28,7 @@ export function LeafletSidebar() {
   let { rootEntity } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let { identity } = useIdentityData();
+  let publicationPage = useLeafletPublicationPage();
   let { permission_token } = useReplicache();
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
     fallbackData: [],
@@ -41,6 +45,7 @@ export function LeafletSidebar() {
     !!pub?.publications &&
     !!identity?.atp_did &&
     pub.publications.identity_did === identity.atp_did;
+  if (publicationPage) return null;
 
   return (
     <Media mobile={false} className="w-0 h-full relative">
