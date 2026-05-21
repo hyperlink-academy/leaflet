@@ -1,7 +1,22 @@
 import { UnicodeString } from "@atproto/api";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { AtMentionLink } from "components/AtMentionLink";
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
+
+function highlightFacetToStyle(
+  highlight: PubLeafletRichtextFacet.Highlight | undefined,
+): CSSProperties | undefined {
+  const color = highlight?.color;
+  if (!color || typeof color !== "object") return undefined;
+  const { r, g, b } = color as { r?: number; g?: number; b?: number };
+  if (typeof r !== "number" || typeof g !== "number" || typeof b !== "number") {
+    return undefined;
+  }
+  const a = (color as { a?: number }).a;
+  const backgroundColor =
+    typeof a === "number" ? `rgba(${r}, ${g}, ${b}, ${a / 100})` : `rgb(${r}, ${g}, ${b})`;
+  return { backgroundColor };
+}
 
 type Facet = PubLeafletRichtextFacet.Main;
 
@@ -48,6 +63,7 @@ export function TextBlockCore(props: TextBlockCoreProps) {
     let isHighlighted = segment.facet?.find(
       PubLeafletRichtextFacet.isHighlight,
     );
+    let highlightStyle = highlightFacetToStyle(isHighlighted);
 
     if (isFootnote) {
       let fnIndex = props.footnoteIndexMap?.get(isFootnote.footnoteId) ?? 0;
@@ -91,7 +107,7 @@ export function TextBlockCore(props: TextBlockCoreProps) {
       ${isItalic ? "italic" : ""}
       ${isUnderline ? "underline" : ""}
       ${isStrikethrough ? "line-through decoration-tertiary" : ""}
-      ${isHighlighted ? "highlight bg-highlight-1" : ""}`.replaceAll("\n", " ");
+      ${isHighlighted ? (highlightStyle ? "highlight" : "highlight bg-highlight-1") : ""}`.replaceAll("\n", " ");
 
     // Split text by newlines and insert <br> tags
     const textParts = segment.text.split("\n");
@@ -103,7 +119,12 @@ export function TextBlockCore(props: TextBlockCoreProps) {
 
     if (isCode) {
       children.push(
-        <code key={counter} className={className} id={id?.id}>
+        <code
+          key={counter}
+          className={className}
+          id={id?.id}
+          style={highlightStyle}
+        >
           {renderedText}
         </code>,
       );
@@ -112,7 +133,9 @@ export function TextBlockCore(props: TextBlockCoreProps) {
       if (DidMentionRenderer) {
         children.push(
           <DidMentionRenderer key={counter} did={isDidMention.did}>
-            <span className="mention">{renderedText}</span>
+            <span className="mention" style={highlightStyle}>
+              {renderedText}
+            </span>
           </DidMentionRenderer>,
         );
       } else {
@@ -124,7 +147,9 @@ export function TextBlockCore(props: TextBlockCoreProps) {
             target="_blank"
             className="no-underline"
           >
-            <span className="mention">{renderedText}</span>
+            <span className="mention" style={highlightStyle}>
+              {renderedText}
+            </span>
           </a>,
         );
       }
@@ -146,13 +171,19 @@ export function TextBlockCore(props: TextBlockCoreProps) {
           href={link.uri.trim()}
           className={`text-accent-contrast hover:underline ${className}`}
           target="_blank"
+          style={highlightStyle}
         >
           {renderedText}
         </a>,
       );
     } else {
       children.push(
-        <span key={counter} className={className} id={id?.id}>
+        <span
+          key={counter}
+          className={className}
+          id={id?.id}
+          style={highlightStyle}
+        >
           {renderedText}
         </span>,
       );

@@ -2489,7 +2489,15 @@ export const schemaDict = {
         type: 'object',
         description: 'Facet feature for highlighted text.',
         required: [],
-        properties: {},
+        properties: {
+          color: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+        },
       },
       underline: {
         type: 'object',

@@ -9,6 +9,7 @@ import {
   is$typed as _is$typed,
   type OmitKey,
 } from '../../../../util'
+import type * as PubLeafletThemeColor from '../theme/color'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -128,6 +129,10 @@ export function validateCode<V>(v: V) {
 /** Facet feature for highlighted text. */
 export interface Highlight {
   $type?: 'pub.leaflet.richtext.facet#highlight'
+  color?:
+    | $Typed<PubLeafletThemeColor.Rgba>
+    | $Typed<PubLeafletThemeColor.Rgb>
+    | { $type: string }
 }
 
 const hashHighlight = 'highlight'
