@@ -23,19 +23,11 @@ export function StandardSitePostItem({
   size?: StandardSitePostSize;
 }) {
   const { data, isLoading } = useStandardSitePost(uri);
+  const { rootEntity } = useReplicache();
+  const pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
 
   if (isLoading) {
-    return (
-      <div className="flex w-full grow flex-col">
-        <div className="flex flex-col gap-2">
-          <div className="h-5 w-2/3 bg-border-light rounded animate-pulse" />
-          <div className="h-4 w-full bg-border-light rounded animate-pulse" />
-        </div>
-        <div className="pt-2">
-          <div className="h-3 w-24 bg-border-light rounded animate-pulse" />
-        </div>
-      </div>
-    );
+    return <StandardSitePostItemPlaceholder size={size} pageWidth={pageWidth} />;
   }
 
   if (!data) {
@@ -47,6 +39,77 @@ export function StandardSitePostItem({
   }
 
   return <StandardSitePostItemView post={data} size={size} />;
+}
+
+function StandardSitePostItemPlaceholder({
+  size,
+  pageWidth,
+}: {
+  size: StandardSitePostSize;
+  pageWidth?: number;
+}) {
+  if (size === "small") {
+    return (
+      <>
+        <div className="flex w-full grow flex-col gap-1 px-3 py-2">
+          <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
+          <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
+        </div>
+        <hr className="last:hidden border-border-light" />
+      </>
+    );
+  }
+
+  if (size === "medium") {
+    return (
+      <>
+        <div className="flex w-full gap-3 items-stretch sm:h-36">
+          <div className="flex w-full gap-2 grow flex-col justify-between min-w-0 pl-3 py-2">
+            <div className="flex flex-col gap-1.5">
+              <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
+              <div className="h-4 w-full bg-border-light rounded animate-pulse" />
+              <div className="h-4 w-5/6 bg-border-light rounded animate-pulse" />
+            </div>
+            <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
+          </div>
+          <div className="self-stretch shrink-0 aspect-square w-16 sm:w-36 bg-border-light rounded animate-pulse" />
+        </div>
+        <hr className="last:hidden border-border-light" />
+      </>
+    );
+  }
+
+  const widePage = (pageWidth ?? 0) >= 768;
+  return (
+    <>
+      <div
+        className={`flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full items-start`}
+      >
+        <div
+          className={`bg-border-light rounded animate-pulse aspect-[1.91/1] ${widePage ? "w-full sm:w-2/5 shrink-0" : "w-full"}`}
+        />
+        <div
+          className={`flex w-full grow flex-col gap-2 justify-between ${widePage ? "px-3 py-2 sm:pb-3" : "px-3 py-2"}`}
+        >
+          <div className="flex flex-col gap-1.5">
+            <div
+              className={`h-7 w-2/3 bg-border-light rounded animate-pulse ${widePage ? "sm:h-8" : ""}`}
+            />
+            <div
+              className={`h-5 w-full bg-border-light rounded animate-pulse ${widePage ? "sm:h-6" : ""}`}
+            />
+            <div
+              className={`h-5 w-5/6 bg-border-light rounded animate-pulse ${widePage ? "sm:h-6" : ""}`}
+            />
+          </div>
+          <div
+            className={`h-4 w-32 bg-border-light rounded animate-pulse ${widePage ? "sm:h-5" : ""}`}
+          />
+        </div>
+      </div>
+      <hr className="last:hidden border-border-light" />
+    </>
+  );
 }
 
 export function StandardSitePostItemView({
