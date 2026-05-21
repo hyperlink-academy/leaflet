@@ -271,6 +271,9 @@ export async function publishToPublication({
 
   // Create record based on the document type
   let record: PubLeafletDocument.Record | SiteStandardDocument.Record;
+  // The record we persist locally always holds the fully-inflated content; when
+  // we offload pages to a blob, recordForPDS gets a shrunk copy below.
+  let recordForPDS: PubLeafletDocument.Record | SiteStandardDocument.Record;
 
   if (documentType === "site.standard.document") {
     // site.standard.document format
@@ -305,6 +308,34 @@ export async function publishToPublication({
         pages: pagesArray,
       },
     } satisfies SiteStandardDocument.Record;
+
+    // If the inline pages would push the record past the PDS's per-record size
+    // limits, offload them to a JSON blob and reference it via blobPages. We
+    // also lift every BlobRef found inside the pages onto a top-level `blobs`
+    // array — the PDS only scans the record itself for blob references when
+    // deciding what to garbage-collect, so any image/etc. blob that now lives
+    // inside the opaque JSON blob would otherwise look orphaned.
+    const CONTENT_BLOB_THRESHOLD = 100 * 1024;
+    const inlinePagesJson = JSON.stringify(pagesArray);
+    const inlinePagesBytes = Buffer.byteLength(inlinePagesJson, "utf8");
+    if (inlinePagesBytes > CONTENT_BLOB_THRESHOLD) {
+      const pagesBlob = await agent.com.atproto.repo.uploadBlob(
+        new Blob([inlinePagesJson], { type: "application/json" }),
+        { headers: { "Content-Type": "application/json" } },
+      );
+      const referencedBlobs = collectBlobRefs(pagesArray);
+      recordForPDS = {
+        ...record,
+        content: {
+          $type: "pub.leaflet.content" as const,
+          pages: [],
+          blobPages: pagesBlob.data.blob,
+          ...(referencedBlobs.length > 0 && { blobs: referencedBlobs }),
+        },
+      };
+    } else {
+      recordForPDS = record;
+    }
   } else {
     // pub.leaflet.document format (legacy)
     record = {
@@ -328,13 +359,14 @@ export async function publishToPublication({
       pages: pagesArray,
       publishedAt: resolvedPublishedAt,
     } satisfies PubLeafletDocument.Record;
+    recordForPDS = record;
   }
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey,
     repo: credentialSession.did!,
-    collection: record.$type,
-    record,
+    collection: recordForPDS.$type,
+    record: recordForPDS,
     validate: false, //TODO publish the lexicon so we can validate!
   });
 
@@ -429,6 +461,27 @@ export async function publishToPublication({
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
 }
 
+// Walks an arbitrary value and returns every BlobRef instance reachable from
+// it. Used to hoist image/etc. blob refs out of pages content so they remain
+// referenced by the record after pages are offloaded to a JSON blob.
+function collectBlobRefs(value: unknown): BlobRef[] {
+  const out: BlobRef[] = [];
+  const visit = (v: unknown) => {
+    if (v instanceof BlobRef) {
+      out.push(v);
+      return;
+    }
+    if (Array.isArray(v)) {
+      for (const item of v) visit(item);
+      return;
+    }
+    if (v && typeof v === "object") {
+      for (const item of Object.values(v)) visit(item);
+    }
+  };
+  visit(value);
+  return out;
+}
 
 async function extractThemeFromFacts(
   facts: Fact<any>[],
