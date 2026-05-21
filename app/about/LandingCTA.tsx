@@ -57,20 +57,6 @@ export const LandingCTABottom = () => {
           </ButtonPrimary>
         </Link>
       </div>
-      <h4 className="pt-6 text-center">Pssst… Are you stuck on Substack?</h4>
-      <p className=" text-center text-secondary">
-        Join the waitlist for our migration tools!
-      </p>
-      <div className="w-fit relative mx-auto">
-        <Input
-          type="email"
-          placeholder="your@email.com"
-          className="mx-auto mt-3 pl-2! pr-14! input-with-border text-[1rem] sm:text-[1.25rem]! w-full sm:w-[1000px] sm:max-w-md "
-        />
-        <ButtonSecondary className="absolute top-[15px]  text-[.9rem]! sm:text-[1.125rem]! right-1 py-0! border-[#57822B]!  text-[#57822B]!  hover:outline-[#57822B]!">
-          Join
-        </ButtonSecondary>
-      </div>
     </>
   );
 };
