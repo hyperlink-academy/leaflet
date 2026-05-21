@@ -33,7 +33,7 @@ export function AboutPage() {
         </h1>
 
         <img
-          src="/about/hero.png"
+          src="/about/hero.webp"
           alt=""
           className="w-full h-full object-cover aspect-3/2"
         />

@@ -27,7 +27,7 @@ export const Pricing = () => {
         <div className="relative flex-1 sm:w-[1000px] w-full sm:max-w-sm">
           <div className="absolute -top-22 sm:-top-24 md:-top-28 -left-14 sm:-left-16 md:-left-10 z-0">
             <img
-              src="/about/free.png"
+              src="/about/free.webp"
               alt=""
               className="w-[240px] sm:w-[280px]"
             />
@@ -72,7 +72,7 @@ export const Pricing = () => {
         <div className="relative flex-1 sm:w-[1000px] w-full sm:max-w-sm">
           <div className="absolute -bottom-32 -right-10 sm:-bottom-22 sm:-right-38">
             <img
-              src="/about/paid.png"
+              src="/about/paid.webp"
               alt=""
               className="w-[180px] sm:w-[240px] "
             />
