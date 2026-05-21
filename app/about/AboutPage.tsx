@@ -44,7 +44,7 @@ export function AboutPage() {
         A simple and powerful platform for social publishing <br />— blogs,
         newsletters, and more!
       </p>
-      <Demo />
+      {/*<Demo />*/}
       <Features />
       <Examples />
       <Pricing />

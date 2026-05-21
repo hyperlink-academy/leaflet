@@ -52,35 +52,6 @@ export const SubscribePanel = (props: SubscribeProps) => {
   );
 };
 
-export const SubscribeButton = (props: SubscribeProps) => {
-  const user = useViewerSubscription(props.publicationUri);
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
-  return (
-    <Modal
-      className="px-0! py-3! sm:py-4! w-[1000px] sm:max-w-md max-w-full"
-      asChild
-      trigger={
-        showManage ? (
-          <ManageSubscription
-            publicationUri={props.publicationUri}
-            publicationUrl={props.publicationUrl}
-            newsletterMode={props.newsletterMode}
-            user={user}
-          />
-        ) : (
-          <ButtonPrimary compact className="text-sm">
-            Subscribe
-          </ButtonPrimary>
-        )
-      }
-    >
-      <SubscribePanel {...props} autoFocus />
-    </Modal>
-  );
-};
-
 export const SubscribeInput = (props: SubscribeProps) => {
   let toaster = useToaster();
   let router = useRouter();

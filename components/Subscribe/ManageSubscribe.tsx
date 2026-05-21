@@ -126,7 +126,7 @@ export const ManageSubscription = (props: {
   return (
     <Modal
       title={
-        <div className="text-secondary border-b border-border mb-2">
+        <div className="relative text-secondary border-b border-border mb-2">
           Manage Subscription
         </div>
       }

@@ -2,7 +2,7 @@
 import { AtUri } from "@atproto/syntax";
 import { PublicationSubscription } from "app/(home-pages)/reader/getSubscriptions";
 import { PubIcon } from "components/ActionBar/Publications";
-import { SubscribeButton } from "components/Subscribe/SubscribeButton";
+import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -50,9 +50,9 @@ export const PubListing = (props: PubListingProps) => {
           backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
         }}
       >
-        <a href={record.url} className="absolute inset-0" />
+        <a href={record.url} className="absolute inset-0 z-[1]" />
         <div
-          className={`flex w-full flex-col justify-center text-center pt-4 pb-3 px-3 rounded-lg relative z-10  ${props.constrainHeight ? "sm:h-[200px] h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
+          className={`flex w-full flex-col justify-center text-center pt-4 pb-3 px-3 rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
         >
           <div className="mx-auto pb-1">
             <PubIcon record={record} uri={props.uri} large />
@@ -84,9 +84,8 @@ export const PubListing = (props: PubListingProps) => {
             )}
           </div>
           {props.showSubscribeButton && (
-            <div className="mt-3 mx-auto">
-              <SubscribeButton
-                autoFocus
+            <div className="mt-3 max-w-sm mx-auto relative z-[2] w-full">
+              <SubscribeInput
                 publicationUri={props.uri}
                 publicationUrl={record.url}
                 publicationName={record.name}
