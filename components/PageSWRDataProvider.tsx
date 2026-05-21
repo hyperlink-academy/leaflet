@@ -94,6 +94,16 @@ export function useLeafletDomains() {
   return { data: data?.custom_domain_routes, mutate: mutate };
 }
 
+/**
+ * Returns the publication_pages row this leaflet is the source of, if any.
+ * Mirrors `draftInPublication` from useLeafletPublicationStatus, but for
+ * leaflets that back a publication page rather than a draft post.
+ */
+export function useLeafletPublicationPage() {
+  let { data } = useLeafletData();
+  return data?.publication_pages?.[0] ?? null;
+}
+
 export function useLeafletPublicationStatus() {
   const data = useContext(StaticLeafletDataContext);
   if (!data) return null;

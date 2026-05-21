@@ -1,0 +1,149 @@
+import { BlockProps, BlockLayout } from "../Block";
+import { useEntity, useReplicache } from "src/replicache";
+import { useUIState } from "src/useUIState";
+import { Popover } from "components/Popover";
+import { SettingsTriggerButton } from "../SettingsTriggerButton";
+import {
+  StandardSitePostItem,
+  type StandardSitePostSize,
+} from "./StandardSitePostItem";
+
+export const StandardSitePostBlock = (
+  props: BlockProps & { preview?: boolean },
+) => {
+  let isSelected = useUIState((s) =>
+    s.selectedBlocks.find((b) => b.value === props.entityID),
+  );
+  let uri = useEntity(props.entityID, "block/standard-site-post")?.data.value;
+  let sizeFact = useEntity(props.entityID, "standard-site-post/size");
+  let size: StandardSitePostSize = sizeFact?.data.value ?? "medium";
+
+  if (!uri) return null;
+
+  return (
+    <BlockLayout
+      isSelected={!!isSelected}
+      hasBackground="page"
+      borderOnHover
+      className="standardSitePostBlock p-0!"
+      extraOptions={
+        <StandardSitePostSettingsButton entityID={props.entityID} />
+      }
+    >
+      <StandardSitePostItem uri={uri} size={size} />
+    </BlockLayout>
+  );
+};
+
+function StandardSitePostSettingsButton(props: { entityID: string }) {
+  let { rep } = useReplicache();
+  let sizeFact = useEntity(props.entityID, "standard-site-post/size");
+  let size: StandardSitePostSize = sizeFact?.data.value ?? "medium";
+
+  return (
+    <Popover
+      asChild
+      side="top"
+      align="end"
+      className="flex flex-col gap-2 w-xs pb-3!"
+      onOpenAutoFocus={(e) => e.preventDefault()}
+      trigger={
+        <SettingsTriggerButton aria-label="Standard Site Post Settings" />
+      }
+    >
+      <h4>Post Size</h4>
+      <div className="flex flex-col gap-3 w-full">
+        {(
+          [
+            { value: "small", Icon: SmallIcon },
+            { value: "medium", Icon: MedIcon },
+            { value: "large", Icon: LargeIcon },
+          ] as {
+            value: StandardSitePostSize;
+            Icon: (props: { selected: boolean }) => React.ReactNode;
+          }[]
+        ).map((option) => {
+          let selected =
+            size === option.value ||
+            (option.value === "medium" && size !== "small" && size !== "large");
+          return (
+            <button
+              className="text-left"
+              key={option.value}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => {
+                if (!rep) return;
+                rep.mutate.assertFact({
+                  entity: props.entityID,
+                  attribute: "standard-site-post/size",
+                  data: {
+                    type: "standard-site-post-size-union",
+                    value: option.value,
+                  },
+                });
+              }}
+            >
+              <option.Icon selected={selected} />
+            </button>
+          );
+        })}
+      </div>
+    </Popover>
+  );
+}
+
+const SmallIcon = ({ selected }: { selected: boolean }) => {
+  return (
+    <div
+      className={`flex gap-2 p-2 w-full light-container outline-2 outline-offset-1 ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent"}`}
+    >
+      <div className="flex flex-col gap-1 grow min-w-0">
+        <div className="w-full h-4 bg-tertiary rounded-[2px]" />
+
+        <div className="flex justify-between mt-1 w-full">
+          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
+          <div className="w-6 h-2 bg-border rounded-[2px]" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MedIcon = ({ selected }: { selected: boolean }) => {
+  return (
+    <div
+      className={`flex gap-2  w-full light-container outline-2 outline-offset-1 ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent "}`}
+    >
+      <div className="flex flex-col gap-1 p-2 grow min-w-0">
+        <div className="w-full h-4 bg-tertiary rounded-[2px]" />
+        <div className="w-full h-2 bg-tertiary mt-1 rounded-[2px]" />
+        <div className="w-full h-2 bg-tertiary rounded-[2px]" />
+        <div className="flex justify-between mt-2 w-full">
+          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
+          <div className="w-6 h-2 bg-border rounded-[2px]" />
+        </div>
+      </div>
+      <div className="aspect-square h-[82px] bg-test shrink-0" />
+    </div>
+  );
+};
+
+const LargeIcon = ({ selected }: { selected: boolean }) => {
+  return (
+    <div
+      className={`flex flex-col gap-2 w-full outline-2 outline-offset-1 light-container ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent"}`}
+    >
+      <div className="w-full aspect-video bg-test rounded-t-[2px]" />
+
+      <div className="flex flex-col gap-1 p-2 pt-0.5!">
+        <div className="w-full h-4 bg-tertiary rounded-[2px]" />
+        <div className="w-full h-2 bg-tertiary mt-1 rounded-[2px]" />
+        <div className="flex justify-between mt-2 w-full">
+          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
+          <div className="w-6 h-2 bg-border rounded-[2px]" />
+        </div>
+      </div>
+    </div>
+  );
+};

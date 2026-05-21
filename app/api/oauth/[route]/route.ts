@@ -86,7 +86,9 @@ export async function GET(
           .eq("atp_did", session.did)
           .single();
 
-        const currentAuthToken = (await cookies()).get(AUTH_TOKEN_COOKIE)?.value;
+        const currentAuthToken = (await cookies()).get(
+          AUTH_TOKEN_COOKIE,
+        )?.value;
         let currentIdentity: {
           id: string;
           email: string | null;
@@ -183,10 +185,7 @@ export async function GET(
               targetId: identity.id,
             });
             if (!merged.ok) {
-              console.error(
-                "[oauth/callback] autoMerge failed:",
-                merged.error,
-              );
+              console.error("[oauth/callback] autoMerge failed:", merged.error);
               await stagePendingMerge(identity.id, redirectPath);
             }
           } else {
@@ -247,10 +246,7 @@ export async function GET(
 // success (via `redirect()`), so callers only reach the line after the call
 // when the token insert failed — at which point they should fall through to
 // the normal sign-in flow rather than blocking the user.
-const stagePendingMerge = async (
-  identityId: string,
-  redirectPath: string,
-) => {
+const stagePendingMerge = async (identityId: string, redirectPath: string) => {
   const { data: targetToken, error } = await supabaseServerClient
     .from("email_auth_tokens")
     .insert({
@@ -261,10 +257,7 @@ const stagePendingMerge = async (
     .select("id")
     .single();
   if (error)
-    console.error(
-      "[oauth/callback] pending merge token insert failed:",
-      error,
-    );
+    console.error("[oauth/callback] pending merge token insert failed:", error);
   if (!targetToken) return;
   await setPendingMergeToken(targetToken.id);
   redirect(`/merge-accounts?redirect=${encodeURIComponent(redirectPath)}`);

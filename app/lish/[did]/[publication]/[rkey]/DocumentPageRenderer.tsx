@@ -1,14 +1,8 @@
 import { AtpAgent } from "@atproto/api";
-import { ids } from "lexicons/api/lexicons";
 import {
-  PubLeafletBlocksBskyPost,
-  PubLeafletBlocksOrderedList,
-  PubLeafletBlocksUnorderedList,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
-  PubLeafletBlocksPoll,
 } from "lexicons/api";
-import { type $Typed } from "lexicons/api/util";
 import { QuoteHandler } from "./QuoteHandler";
 import {
   PublicationBackgroundProvider,
@@ -16,17 +10,15 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { getPostPageData } from "./getPostPageData";
 import { PostPages } from "./PostPages";
-import { extractCodeBlocks } from "./extractCodeBlocks";
+import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { LeafletLayout } from "components/LeafletLayout";
-import { fetchPollData } from "./fetchPollData";
-import {
-  getDocumentPages,
-  hasLeafletContent,
-} from "src/utils/normalizeRecords";
+import { getDocumentPages } from "src/utils/normalizeRecords";
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { FontLoader } from "components/FontLoader";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { PublicationNav } from "../PublicationNav";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 
 export async function DocumentPageRenderer({
   did,
@@ -69,64 +61,23 @@ export async function DocumentPageRenderer({
         </div>
       </div>
     );
-  let bskyPosts =
-    pages.flatMap((p) => {
-      let page = p as PubLeafletPagesLinearDocument.Main;
-      return extractBlocksByType<$Typed<PubLeafletBlocksBskyPost.Main>>(
-        page.blocks || [],
-        ids.PubLeafletBlocksBskyPost,
-      );
-    }) || [];
 
-  // Batch bsky posts into groups of 25 and fetch in parallel
-  let bskyPostBatches = [];
-  for (let i = 0; i < bskyPosts.length; i += 25) {
-    bskyPostBatches.push(bskyPosts.slice(i, i + 25));
-  }
-
-  let bskyPostResponses = await Promise.all(
-    bskyPostBatches.map((batch) =>
-      agent.getPosts(
-        {
-          uris: batch.map((p) => {
-            let block = p?.block as unknown as PubLeafletBlocksBskyPost.Main;
-            return block.postRef.uri;
-          }),
-        },
-        { headers: {} },
-      ),
-    ),
-  );
-
-  let bskyPostData =
-    bskyPostResponses.length > 0
-      ? bskyPostResponses.flatMap((response) => response.data.posts)
-      : [];
-
-  // Extract poll blocks and fetch vote data
-  let pollBlocks = pages.flatMap((p) => {
-    let page = p as PubLeafletPagesLinearDocument.Main;
-    return extractBlocksByType<$Typed<PubLeafletBlocksPoll.Main>>(
-      page.blocks || [],
-      ids.PubLeafletBlocksPoll,
-    );
+  const {
+    bskyPostData,
+    standardSitePostData: standardSitePosts,
+    pollData,
+    prerenderedCodeBlocks,
+  } = await collectAndFetchBlockResources({
+    agent,
+    pages: pages as (
+      | PubLeafletPagesLinearDocument.Main
+      | PubLeafletPagesCanvas.Main
+    )[],
   });
-  let pollData = await fetchPollData(
-    pollBlocks.map((b) => b.block.pollRef.uri),
-  );
 
   const pubRecord = document.normalizedPublication;
   let pub_creator = document.publication?.identity_did || did;
   let isStandalone = !pubRecord;
-
-  let firstPage = pages[0];
-  let firstPageBlocks =
-    (
-      firstPage as
-        | PubLeafletPagesLinearDocument.Main
-        | PubLeafletPagesCanvas.Main
-    ).blocks || [];
-  let prerenderedCodeBlocks = await extractCodeBlocks(firstPageBlocks);
 
   return (
     <DocumentProvider value={document}>
@@ -145,6 +96,13 @@ export async function DocumentPageRenderer({
             pub_creator={pub_creator}
           >
             <LeafletLayout>
+              {document.publication?.pages?.length ? (
+                <PublicationNav
+                  publicationUrl={getPublicationURL(document.publication)}
+                  pages={document.publication.pages}
+                  activePath={null}
+                />
+              ) : null}
               <PostPages
                 document_uri={document.uri}
                 preferences={mergePreferences(
@@ -152,9 +110,14 @@ export async function DocumentPageRenderer({
                   pubRecord?.preferences,
                 )}
                 pubRecord={pubRecord}
-                profile={profile ? JSON.parse(JSON.stringify(profile)) : undefined}
+                profile={
+                  profile ? JSON.parse(JSON.stringify(profile)) : undefined
+                }
                 document={document}
                 bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
+                standardSitePostData={JSON.parse(
+                  JSON.stringify(standardSitePosts),
+                )}
                 did={did}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 pollData={pollData}
@@ -167,55 +130,4 @@ export async function DocumentPageRenderer({
       </LeafletContentProvider>
     </DocumentProvider>
   );
-}
-
-function extractBlocksByType<T extends { $type: string }>(
-  blocks: PubLeafletPagesLinearDocument.Block[],
-  type: string,
-): { block: T }[] {
-  let results: { block: T }[] = [];
-  for (let b of blocks) {
-    if (b.block.$type === type) {
-      results.push(b as unknown as { block: T });
-    }
-    if (
-      b.block.$type === ids.PubLeafletBlocksOrderedList ||
-      b.block.$type === ids.PubLeafletBlocksUnorderedList
-    ) {
-      let list = b.block as
-        | PubLeafletBlocksOrderedList.Main
-        | PubLeafletBlocksUnorderedList.Main;
-      extractFromListItems(list.children, type, results);
-    }
-  }
-  return results;
-}
-
-function extractFromListItems<T extends { $type: string }>(
-  items:
-    | PubLeafletBlocksOrderedList.ListItem[]
-    | PubLeafletBlocksUnorderedList.ListItem[],
-  type: string,
-  results: { block: T }[],
-) {
-  for (let item of items) {
-    if ((item.content as { $type?: string })?.$type === type) {
-      results.push({
-        block: item.content as unknown as T,
-      });
-    }
-    if (item.children) {
-      extractFromListItems(item.children, type, results);
-    }
-    let orderedChildren = (item as PubLeafletBlocksUnorderedList.ListItem)
-      .orderedListChildren;
-    if (orderedChildren) {
-      extractFromListItems(orderedChildren.children, type, results);
-    }
-    let unorderedChildren = (item as PubLeafletBlocksOrderedList.ListItem)
-      .unorderedListChildren;
-    if (unorderedChildren) {
-      extractFromListItems(unorderedChildren.children, type, results);
-    }
-  }
 }

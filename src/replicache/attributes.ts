@@ -87,6 +87,14 @@ const BlockAttributes = {
     type: "bluesky-post",
     cardinality: "one",
   },
+  "block/standard-site-post": {
+    type: "string",
+    cardinality: "one",
+  },
+  "standard-site-post/size": {
+    type: "standard-site-post-size-union",
+    cardinality: "one",
+  },
   "block/math": {
     type: "string",
     cardinality: "one",
@@ -206,6 +214,21 @@ const PollBlockAttributes = {
   },
 } as const;
 
+const PostsListBlockAttributes = {
+  "posts-list/view": {
+    type: "posts-list-view-union",
+    cardinality: "one",
+  },
+  "posts-list/highlight-first-post": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/filter-tag": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
 export const ThemeAttributes = {
   "theme/heading-font": {
     type: "string",
@@ -297,6 +320,7 @@ export const Attributes = {
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
   ...PollBlockAttributes,
+  ...PostsListBlockAttributes,
 };
 export type Attributes = typeof Attributes;
 export type Attribute = keyof Attributes;
@@ -370,10 +394,12 @@ export type Data<A extends keyof typeof Attributes> = {
       | "button"
       | "poll"
       | "bluesky-post"
+      | "standard-site-post"
       | "math"
       | "code"
       | "blockquote"
-      | "horizontal-rule";
+      | "horizontal-rule"
+      | "posts-list";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
@@ -382,6 +408,14 @@ export type Data<A extends keyof typeof Attributes> = {
   "list-style-union": {
     type: "list-style-union";
     value: "ordered" | "unordered";
+  };
+  "posts-list-view-union": {
+    type: "posts-list-view-union";
+    value: "compact" | "full";
+  };
+  "standard-site-post-size-union": {
+    type: "standard-site-post-size-union";
+    value: "large" | "medium" | "small";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

@@ -13,9 +13,9 @@ export const GoToArrowLined = (props: Props) => {
       <path
         d="M8.59574 3L13.8041 8M13.8041 8L8.59574 13M13.8041 8H2.19589"
         stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

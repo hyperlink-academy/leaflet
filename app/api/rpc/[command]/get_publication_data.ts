@@ -54,6 +54,11 @@ export const get_publication_data = makeRoute({
             permission_token_rights(*),
             custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*)
          )
+        ),
+        publication_pages(*,
+          permission_tokens!publication_pages_leaflet_src_fkey(*,
+            permission_token_rights(*)
+          )
         )`,
       )
       .or(
@@ -66,10 +71,14 @@ export const get_publication_data = makeRoute({
 
     let leaflet_data = await getFactsFromHomeLeaflets.handler(
       {
-        tokens:
-          publication?.leaflets_in_publications.map(
+        tokens: [
+          ...(publication?.leaflets_in_publications.map(
             (l) => l.permission_tokens?.root_entity!,
-          ) || [],
+          ) || []),
+          ...(publication?.publication_pages.map(
+            (p) => p.permission_tokens?.root_entity!,
+          ) || []),
+        ].filter(Boolean),
       },
       { supabase },
     );
@@ -111,11 +120,26 @@ export const get_publication_data = makeRoute({
         _raw: l,
       }));
 
+    const pages = (publication?.publication_pages || []).map((p) => ({
+      id: p.id,
+      title: p.title,
+      path: p.path,
+      document: p.document,
+      metadata: p.metadata,
+      record: p.record,
+      record_uri: p.record_uri,
+      leaflet_src: p.leaflet_src,
+      created_at: p.created_at,
+      sort_order: p.sort_order,
+      permission_tokens: p.permission_tokens,
+    }));
+
     return {
       result: {
         publication,
         documents,
         drafts,
+        pages,
         leaflet_data: leaflet_data.result,
       },
     };

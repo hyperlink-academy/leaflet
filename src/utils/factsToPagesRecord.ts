@@ -6,6 +6,7 @@ import { BlobRef } from "@atproto/lexicon";
 import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
@@ -16,6 +17,7 @@ import {
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
+  PubLeafletBlocksPostsList,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -335,6 +337,17 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     }
+    if (b.type === "standard-site-post") {
+      const [uri] = scan.eav(b.value, "block/standard-site-post");
+      if (!uri) return;
+      const [sizeFact] = scan.eav(b.value, "standard-site-post/size");
+      const block: $Typed<PubLeafletBlocksStandardSitePost.Main> = {
+        $type: ids.PubLeafletBlocksStandardSitePost,
+        uri: uri.data.value,
+        ...(sizeFact && { size: sizeFact.data.value }),
+      };
+      return block;
+    }
     if (b.type === "horizontal-rule") {
       const block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
         $type: ids.PubLeafletBlocksHorizontalRule,
@@ -491,6 +504,21 @@ export async function processBlocksToPages(opts: {
         $type: "pub.leaflet.blocks.button",
         text: text.data.value,
         url: url.data.value,
+      };
+      return block;
+    }
+    if (b.type === "posts-list") {
+      const [viewFact] = scan.eav(b.value, "posts-list/view");
+      const [highlightFact] = scan.eav(
+        b.value,
+        "posts-list/highlight-first-post",
+      );
+      const [filterTagFact] = scan.eav(b.value, "posts-list/filter-tag");
+      const block: $Typed<PubLeafletBlocksPostsList.Main> = {
+        $type: "pub.leaflet.blocks.postsList",
+        ...(viewFact && { view: viewFact.data.value }),
+        ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
+        ...(filterTagFact && { filterByTag: filterTagFact.data.value }),
       };
       return block;
     }

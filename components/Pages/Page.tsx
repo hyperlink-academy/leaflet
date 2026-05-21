@@ -11,6 +11,7 @@ import { DesktopPageFooter } from "../DesktopFooter";
 import { Canvas } from "../Canvas";
 import { Blocks } from "components/Blocks";
 import { PublicationMetadata } from "./PublicationMetadata";
+import { useLeafletPublicationPage } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "./useCardBorderHidden";
 import { focusPage } from "src/utils/focusPage";
 import { PageOptions } from "./PageOptions";
@@ -30,6 +31,7 @@ export function Page(props: {
   fullPageScroll: boolean;
 }) {
   let { rep } = useReplicache();
+  let publicationPage = useLeafletPublicationPage();
 
   let isFocused = useUIState((s) => {
     let focusedElement = s.focusedEntity;
@@ -81,10 +83,8 @@ export function Page(props: {
             />
           }
         >
-          {props.first && pageType === "doc" && (
-            <>
-              <PublicationMetadata />
-            </>
+          {props.first && pageType === "doc" && !publicationPage && (
+            <PublicationMetadata />
           )}
           <PageContent entityID={props.entityID} first={props.first} />
         </PageWrapper>
@@ -129,6 +129,7 @@ export const PageWrapper = (props: {
         id={props.id}
         className={`
       pageScrollWrapper
+      publicationScrollContainer
       grow
       shrink-0 snap-center
       ${props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}

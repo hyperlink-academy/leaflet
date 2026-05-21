@@ -7,6 +7,14 @@ import { Json } from "supabase/database.types";
  * Consumers should use `normalizePublicationRecord()` and `normalizeDocumentRecord()`
  * from `src/utils/normalizeRecords` to get properly typed data.
  */
+export type PublicationPageMetadataEntry = {
+  id: number;
+  title: string;
+  path: string | null;
+  document: string | null;
+  metadata: Json;
+};
+
 export type PublicationMetadata = {
   description: string;
   title: string;
@@ -26,6 +34,8 @@ export type PublicationMetadata = {
     indexed_at: string;
     uri: string;
   } | null;
+  /** Set when this leaflet is the source of a publication_pages row. */
+  page?: PublicationPageMetadataEntry;
 } | null;
 
 export function getPublicationMetadataFromLeafletData(
@@ -33,28 +43,60 @@ export function getPublicationMetadataFromLeafletData(
 ): PublicationMetadata {
   if (!data) return null;
 
-  let pubData:
-    | NonNullable<PublicationMetadata>
-    | undefined
-    | null =
-    data?.leaflets_in_publications?.[0] ||
-    data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
-      (p) => p.leaflets_in_publications?.length,
-    )?.leaflets_in_publications?.[0];
+  // Look across the leaflet's own associations and any sibling tokens that share
+  // its entity set. Each association is checked in a single pass.
+  let leafletInPub = data.leaflets_in_publications?.[0];
+  let standaloneDoc = data.leaflets_to_documents?.[0];
+  let pageRow = data.publication_pages?.[0];
 
-  // If not found, check for standalone documents
-  let standaloneDoc =
-    data?.leaflets_to_documents?.[0] ||
-    data?.permission_token_rights[0].entity_sets?.permission_tokens.find(
-      (p) => p.leaflets_to_documents?.length,
-    )?.leaflets_to_documents?.[0];
-  if (!pubData && standaloneDoc) {
-    // Transform standalone document data to match the expected format
+  if (!leafletInPub || !standaloneDoc || !pageRow) {
+    let siblingTokens =
+      data.permission_token_rights[0].entity_sets?.permission_tokens || [];
+    for (let token of siblingTokens) {
+      if (!leafletInPub && token.leaflets_in_publications?.length)
+        leafletInPub = token.leaflets_in_publications[0];
+      if (!standaloneDoc && token.leaflets_to_documents?.length)
+        standaloneDoc = token.leaflets_to_documents[0];
+      if (!pageRow && token.publication_pages?.length)
+        pageRow = token.publication_pages[0];
+      if (leafletInPub && standaloneDoc && pageRow) break;
+    }
+  }
+
+  let pubData: NonNullable<PublicationMetadata> | null = null;
+
+  if (leafletInPub) {
+    pubData = leafletInPub;
+  } else if (standaloneDoc) {
     pubData = {
       ...standaloneDoc,
-      publications: null, // No publication for standalone docs
+      publications: null,
       doc: standaloneDoc.document,
     };
+  } else if (pageRow && pageRow.publications) {
+    pubData = {
+      title: pageRow.title || "",
+      description: "",
+      leaflet: data.id,
+      doc: pageRow.document,
+      publications: pageRow.publications,
+      documents: null,
+    };
   }
-  return pubData || null;
+
+  if (pageRow) {
+    if (!pubData) return null;
+    pubData = {
+      ...pubData,
+      page: {
+        id: pageRow.id,
+        title: pageRow.title,
+        path: pageRow.path,
+        document: pageRow.document,
+        metadata: pageRow.metadata,
+      },
+    };
+  }
+
+  return pubData;
 }

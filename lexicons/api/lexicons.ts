@@ -1568,6 +1568,51 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksPostsList: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.postsList',
+    defs: {
+      main: {
+        type: 'object',
+        required: [],
+        properties: {
+          view: {
+            type: 'string',
+            knownValues: ['compact', 'full'],
+          },
+          highlightFirstPost: {
+            type: 'boolean',
+          },
+          filterByTag: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksStandardSitePost: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.standardSitePost',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['uri'],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+          },
+          size: {
+            type: 'string',
+            knownValues: ['large', 'medium', 'small'],
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksText: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.text',
@@ -1948,9 +1993,11 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.code',
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
+              'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.page',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
+              'lex:pub.leaflet.blocks.postsList',
             ],
           },
           x: {
@@ -2050,9 +2097,11 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.code',
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
+              'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.page',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
+              'lex:pub.leaflet.blocks.postsList',
             ],
           },
           alignment: {
@@ -2301,6 +2350,43 @@ export const schemaDict = {
           bodyFont: {
             type: 'string',
             maxLength: 100,
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPublicationPage: {
+    lexicon: 1,
+    id: 'pub.leaflet.publicationPage',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'any',
+        description:
+          'A static page belonging to a publication (e.g. about / contact). The rkey is derived from the page path slug.',
+        record: {
+          type: 'object',
+          required: ['publication', 'path', 'content'],
+          properties: {
+            publication: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            path: {
+              type: 'string',
+            },
+            title: {
+              type: 'string',
+              maxLength: 2000,
+            },
+            publishedAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            content: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.content',
+            },
           },
         },
       },
@@ -2883,6 +2969,8 @@ export const ids = {
   PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
+  PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
+  PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
@@ -2896,6 +2984,7 @@ export const ids = {
   PubLeafletPollDefinition: 'pub.leaflet.poll.definition',
   PubLeafletPollVote: 'pub.leaflet.poll.vote',
   PubLeafletPublication: 'pub.leaflet.publication',
+  PubLeafletPublicationPage: 'pub.leaflet.publicationPage',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
   PubLeafletThemeColor: 'pub.leaflet.theme.color',
