@@ -171,7 +171,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
             <img
               src={props.coverImageSrc}
               alt={props.coverImageAlt || props.title || ""}
-              className="h-full aspect-[1.91:1] object-cover rounded"
+              className="h-full aspect-[1.91/1] object-cover rounded"
             />
           </div>
         )}
