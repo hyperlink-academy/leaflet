@@ -100,7 +100,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
   return (
     <>
       <div className="flex w-full gap-3 items-stretch sm:min-h-36">
-        <div className="flex w-full gap-2 grow flex-col justify-between min-w-0  pl-3 py-2">
+        <div className="flex w-full gap-2 grow flex-col justify-between min-w-0  pl-3 pr-3 py-2">
           <PostLink href={props.href}>
             {props.title && (
               <h3 className="text-primary line-clamp-2">{props.title}</h3>

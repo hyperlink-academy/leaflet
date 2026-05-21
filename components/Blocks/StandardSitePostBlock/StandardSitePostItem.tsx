@@ -11,6 +11,7 @@ import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
+import { InteractionPreview } from "components/InteractionsPreview";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 
 export type StandardSitePostSize = "large" | "medium" | "small";
@@ -149,11 +150,32 @@ export function StandardSitePostItemView({
   const { rootEntity } = useReplicache();
   const pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
 
+  const publicationPrefs = post.publication?.record?.preferences;
+  const showComments = publicationPrefs?.showComments !== false;
+  const showMentions = publicationPrefs?.showMentions !== false;
+  const showRecommends = publicationPrefs?.showRecommends !== false;
+  const commentsCount = showComments ? post.commentsCount : 0;
+
+  const interactions = (
+    <InteractionPreview
+      quotesCount={post.mentionsCount}
+      commentsCount={commentsCount}
+      recommendsCount={post.recommendsCount}
+      documentUri={post.uri}
+      tags={post.record.tags || []}
+      postUrl={docUrl}
+      showComments={showComments}
+      showMentions={showMentions}
+      showRecommends={showRecommends}
+    />
+  );
+
   const commonProps = {
     href: docUrl,
     title: post.record.title,
     author: authorLabel,
     date,
+    interactions,
   };
 
   if (size === "large") {
