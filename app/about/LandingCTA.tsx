@@ -48,9 +48,14 @@ export const LandingCTABottom = () => {
     <>
       <div className="bg-[#D3DDC6] text-center flex flex-col justify-center mt-24 pt-8 pb-10 rounded-lg!">
         <h3>Write with Leaflet!</h3>
-        <ButtonPrimary className="rounded-lg! text-lg! md:text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-0.5! px-2! sm:py-1 ! sm:px-4! mx-auto mt-2 md:mt-4">
-          Get Started!
-        </ButtonPrimary>
+        <Link
+          href="/new?welcomeModal"
+          className="no-underline! mx-auto mt-2 md:mt-4"
+        >
+          <ButtonPrimary className="rounded-lg! text-lg! md:text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-0.5! px-2! sm:py-1 ! sm:px-4!">
+            Get Started!
+          </ButtonPrimary>
+        </Link>
       </div>
       <h4 className="pt-6 text-center">Pssst… Are you stuck on Substack?</h4>
       <p className=" text-center text-secondary">
