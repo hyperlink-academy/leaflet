@@ -2,6 +2,7 @@
 
 import { ButtonPrimary } from "components/Buttons";
 import { ToggleGroup } from "components/ToggleGroup";
+import Link from "next/link";
 import { useState } from "react";
 
 export const Pricing = () => {
@@ -84,12 +85,17 @@ export const Pricing = () => {
             <p className="text-[1rem]! text-center text-tertiary text-snug pb-3">
               Serious publishers, serious tools
             </p>
-            <ButtonPrimary
-              fullWidth
-              className=" bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! text-[1rem] sm:text-[1.25rem]!"
+            <Link
+              href={`/checkout/pro?cadence=${cadence === "yearly" ? "year" : "month"}`}
+              className="no-underline!"
             >
-              Get Pro
-            </ButtonPrimary>
+              <ButtonPrimary
+                fullWidth
+                className=" bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! text-[1rem] sm:text-[1.25rem]!"
+              >
+                Get Pro
+              </ButtonPrimary>
+            </Link>
 
             <hr className="border-border-light" />
 
