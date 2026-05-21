@@ -65,3 +65,7 @@
 
 .aboutSpotlightFeatures {
 }
+
+.aboutFooter a {
+  @apply text-white hover:underline;
+}
