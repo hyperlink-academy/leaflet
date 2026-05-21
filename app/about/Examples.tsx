@@ -3,6 +3,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { PubListing } from "app/(home-pages)/p/[didOrHandle]/PubListing";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
+import { SpeedyLink } from "components/SpeedyLink";
 
 const pubs = [
   "at://did:plc:e27b62phtzr3sjgs3zwdbctq/site.standard.publication/3lyevoglvs224", // zjsm.fm
@@ -70,11 +71,14 @@ export const Examples = async () => {
   return (
     <div className="aboutExamples mx-auto pt-32 sm:pt-48 text-center w-full">
       <h2>Loved by thousands of writers</h2>
-      <div className="flex gap-2 w-fit items-center font-bold text-[#57822B] mx-auto">
+      <SpeedyLink
+        href="/reader"
+        className="no-underline! flex gap-2 w-fit items-center font-bold text-[#57822B] mx-auto"
+      >
         <p>Explore More</p>
         <GoToArrow className="scale-110" />
-      </div>
-      <div className="pubAndPostCarousel overflow-hidden pt-6 w-screen sm:-mx-12 -mx-4">
+      </SpeedyLink>
+      <div className="pubAndPostCarousel overflow-hidden pt-12 w-screen sm:-mx-12 -mx-4">
         <div className="pubAndPostCarouselTrack flex w-max">
           {pubsWithMargins.map((pub) => renderPub(pub, "orig"))}
           {pubsWithMargins.map((pub) => renderPub(pub, "dup"))}

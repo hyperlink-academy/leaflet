@@ -9,7 +9,7 @@ export const Pricing = () => {
   let [cadence, setCadence] = useState<"monthly" | "yearly">("yearly");
 
   return (
-    <div className="aboutPricing mx-auto w-full text-center pt-24 sm:pt-48">
+    <div className="aboutPricing mx-auto w-full text-center pt-24 sm:pt-32">
       <h2 className="pb-4">Pricing</h2>
       <ToggleGroup
         fullWidth
