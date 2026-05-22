@@ -60,6 +60,7 @@ export const PubLeafletBlocksStandardSitePost: LexiconDoc = {
         uri: { type: "string", format: "at-uri" },
         cid: { type: "string" },
         size: { type: "string", knownValues: ["large", "medium", "small"] },
+        showPublicationTheme: { type: "boolean" },
       },
     },
   },

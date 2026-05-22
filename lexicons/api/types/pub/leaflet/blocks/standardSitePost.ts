@@ -19,6 +19,7 @@ export interface Main {
   uri: string
   cid?: string
   size?: 'large' | 'medium' | 'small' | (string & {})
+  showPublicationTheme?: boolean
 }
 
 const hashMain = 'main'

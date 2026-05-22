@@ -243,6 +243,7 @@ export const BaseThemeProvider = ({
 
   // Dynamically load Google Fonts when fonts change
   useEffect(() => {
+    if (local) return;
     const loadGoogleFont = (url: string | null, fontFamily: string) => {
       if (!url) return;
 
@@ -281,6 +282,7 @@ export const BaseThemeProvider = ({
     loadGoogleFont(headingGoogleFontsUrl, headingFontConfig.fontFamily);
     loadGoogleFont(bodyGoogleFontsUrl, bodyFontConfig.fontFamily);
   }, [
+    local,
     headingGoogleFontsUrl,
     bodyGoogleFontsUrl,
     headingFontConfig.fontFamily,

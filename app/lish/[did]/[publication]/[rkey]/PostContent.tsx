@@ -8,7 +8,6 @@ import {
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksWebsite,
-  PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletBlocksHorizontalRule,
@@ -47,7 +46,7 @@ import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
-import { useDocument } from "contexts/DocumentContext";
+import { useDocument, useDocumentOptional } from "contexts/DocumentContext";
 import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
@@ -155,6 +154,8 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
+  let currentPublicationUri =
+    useDocumentOptional()?.publication?.uri ?? null;
   let blockProps = {
     style: {
       scrollMarginTop: "4rem",
@@ -250,7 +251,12 @@ export let Block = ({
             : "small";
       return (
         <div className={className} {...blockProps}>
-          <StandardSitePostItemView post={post} size={size} />
+          <StandardSitePostItemView
+            post={post}
+            size={size}
+            showPubTheme={b.block.showPublicationTheme !== false}
+            currentPublicationUri={currentPublicationUri}
+          />
         </div>
       );
     }

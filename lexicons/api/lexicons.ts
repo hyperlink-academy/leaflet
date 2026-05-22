@@ -1609,6 +1609,9 @@ export const schemaDict = {
             type: 'string',
             knownValues: ['large', 'medium', 'small'],
           },
+          showPublicationTheme: {
+            type: 'boolean',
+          },
         },
       },
     },

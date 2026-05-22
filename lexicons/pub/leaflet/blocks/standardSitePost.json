@@ -22,6 +22,9 @@
             "medium",
             "small"
           ]
+        },
+        "showPublicationTheme": {
+          "type": "boolean"
         }
       }
     }

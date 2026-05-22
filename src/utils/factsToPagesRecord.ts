@@ -381,10 +381,17 @@ export async function processBlocksToPages(opts: {
       const [uri] = scan.eav(b.value, "block/standard-site-post");
       if (!uri) return;
       const [sizeFact] = scan.eav(b.value, "standard-site-post/size");
+      const [showPubThemeFact] = scan.eav(
+        b.value,
+        "standard-site-post/show-publication-theme",
+      );
       const block: $Typed<PubLeafletBlocksStandardSitePost.Main> = {
         $type: ids.PubLeafletBlocksStandardSitePost,
         uri: uri.data.value,
         ...(sizeFact && { size: sizeFact.data.value }),
+        ...(showPubThemeFact?.data.value === false && {
+          showPublicationTheme: false,
+        }),
       };
       return block;
     }

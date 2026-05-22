@@ -1,17 +1,23 @@
 "use client";
 import { AtUri } from "@atproto/api";
+import Link from "next/link";
 import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,
   PublicationPostItemLarge,
 } from "app/lish/[did]/[publication]/PublicationPostItem";
 import { LocalizedDate } from "app/lish/[did]/[publication]/LocalizedDate";
-import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getDocumentURL,
+  getPublicationURL,
+} from "app/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { InteractionPreview } from "components/InteractionsPreview";
+import { PubIcon } from "components/ActionBar/Publications";
+import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 
 export type StandardSitePostSize = "large" | "medium" | "small";
@@ -19,9 +25,13 @@ export type StandardSitePostSize = "large" | "medium" | "small";
 export function StandardSitePostItem({
   uri,
   size = "medium",
+  showPubTheme = true,
+  currentPublicationUri,
 }: {
   uri: string;
   size?: StandardSitePostSize;
+  showPubTheme?: boolean;
+  currentPublicationUri?: string | null;
 }) {
   const { data, isLoading } = useStandardSitePost(uri);
   const { rootEntity } = useReplicache();
@@ -39,7 +49,41 @@ export function StandardSitePostItem({
     );
   }
 
-  return <StandardSitePostItemView post={data} size={size} />;
+  return (
+    <StandardSitePostItemView
+      post={data}
+      size={size}
+      showPubTheme={showPubTheme}
+      currentPublicationUri={currentPublicationUri}
+    />
+  );
+}
+
+export function WithStandardSitePostPublicationTheme({
+  post,
+  enabled,
+  children,
+}: {
+  post: StandardSitePostData;
+  enabled: boolean;
+  children: React.ReactNode;
+}) {
+  if (!enabled || !post.publication?.record?.theme) return <>{children}</>;
+  let pubCreator: string;
+  try {
+    pubCreator = new AtUri(post.publication.uri).host;
+  } catch {
+    return <>{children}</>;
+  }
+  return (
+    <PublicationThemeProvider
+      local
+      theme={post.publication.record.theme}
+      pub_creator={pubCreator}
+    >
+      {children}
+    </PublicationThemeProvider>
+  );
 }
 
 function StandardSitePostItemPlaceholder({
@@ -116,9 +160,13 @@ function StandardSitePostItemPlaceholder({
 export function StandardSitePostItemView({
   post,
   size = "medium",
+  showPubTheme = true,
+  currentPublicationUri,
 }: {
   post: StandardSitePostData;
   size?: StandardSitePostSize;
+  showPubTheme?: boolean;
+  currentPublicationUri?: string | null;
 }) {
   const docUrl = getDocumentURL(
     post.record,
@@ -170,16 +218,26 @@ export function StandardSitePostItemView({
     />
   );
 
+  const showPubFooter =
+    !!post.publication?.record &&
+    (!currentPublicationUri || post.publication.uri !== currentPublicationUri);
+
+  const pubFooter = showPubFooter && post.publication ? (
+    <PubFooter publication={post.publication} />
+  ) : null;
+
   const commonProps = {
     href: docUrl,
     title: post.record.title,
     author: authorLabel,
     date,
     interactions,
+    footer: pubFooter,
   };
 
+  let item: React.ReactNode;
   if (size === "large") {
-    return (
+    item = (
       <PublicationPostItemLarge
         {...commonProps}
         description={description}
@@ -188,9 +246,8 @@ export function StandardSitePostItemView({
         pageWidth={pageWidth}
       />
     );
-  }
-  if (size === "medium") {
-    return (
+  } else if (size === "medium") {
+    item = (
       <PublicationPostItemMedium
         {...commonProps}
         description={description}
@@ -198,6 +255,31 @@ export function StandardSitePostItemView({
         coverImageAlt={post.record.title}
       />
     );
+  } else {
+    item = <PublicationPostItemSmall {...commonProps} />;
   }
-  return <PublicationPostItemSmall {...commonProps} />;
+
+  return (
+    <WithStandardSitePostPublicationTheme post={post} enabled={showPubTheme}>
+      {item}
+    </WithStandardSitePostPublicationTheme>
+  );
+}
+
+function PubFooter({
+  publication,
+}: {
+  publication: NonNullable<StandardSitePostData["publication"]>;
+}) {
+  if (!publication.record) return null;
+  const pubUrl = getPublicationURL(publication);
+  return (
+    <Link
+      href={pubUrl}
+      className="flex items-center gap-1.5 px-3 pt-1.5 pb-2 text-accent-contrast font-bold no-underline! text-sm"
+    >
+      <PubIcon tiny record={publication.record} uri={publication.uri} />
+      <span className="min-w-0 truncate">{publication.record.name}</span>
+    </Link>
+  );
 }

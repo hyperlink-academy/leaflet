@@ -95,6 +95,10 @@ const BlockAttributes = {
     type: "standard-site-post-size-union",
     cardinality: "one",
   },
+  "standard-site-post/show-publication-theme": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "block/math": {
     type: "string",
     cardinality: "one",

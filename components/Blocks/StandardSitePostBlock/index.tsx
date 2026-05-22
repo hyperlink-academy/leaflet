@@ -2,11 +2,13 @@ import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { Popover } from "components/Popover";
+import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
   type StandardSitePostSize,
 } from "./StandardSitePostItem";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export const StandardSitePostBlock = (
   props: BlockProps & { preview?: boolean },
@@ -17,6 +19,13 @@ export const StandardSitePostBlock = (
   let uri = useEntity(props.entityID, "block/standard-site-post")?.data.value;
   let sizeFact = useEntity(props.entityID, "standard-site-post/size");
   let size: StandardSitePostSize = sizeFact?.data.value ?? "medium";
+  let showPubThemeFact = useEntity(
+    props.entityID,
+    "standard-site-post/show-publication-theme",
+  );
+  let showPubTheme = showPubThemeFact?.data.value !== false;
+  let editorPub = useLeafletPublicationData();
+  let currentPublicationUri = editorPub.data?.publications?.uri ?? null;
 
   if (!uri) return null;
 
@@ -30,7 +39,12 @@ export const StandardSitePostBlock = (
         <StandardSitePostSettingsButton entityID={props.entityID} />
       }
     >
-      <StandardSitePostItem uri={uri} size={size} />
+      <StandardSitePostItem
+        uri={uri}
+        size={size}
+        showPubTheme={showPubTheme}
+        currentPublicationUri={currentPublicationUri}
+      />
     </BlockLayout>
   );
 };
@@ -39,6 +53,11 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
   let { rep } = useReplicache();
   let sizeFact = useEntity(props.entityID, "standard-site-post/size");
   let size: StandardSitePostSize = sizeFact?.data.value ?? "medium";
+  let showPubThemeFact = useEntity(
+    props.entityID,
+    "standard-site-post/show-publication-theme",
+  );
+  let showPubTheme = showPubThemeFact?.data.value !== false;
 
   return (
     <Popover
@@ -89,6 +108,20 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
           );
         })}
       </div>
+      <hr className="border-border-light my-1" />
+      <Toggle
+        toggle={showPubTheme}
+        onToggle={() => {
+          if (!rep) return;
+          rep.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "standard-site-post/show-publication-theme",
+            data: { type: "boolean", value: !showPubTheme },
+          });
+        }}
+      >
+        <div className="font-bold">Use Publication Theme</div>
+      </Toggle>
     </Popover>
   );
 }

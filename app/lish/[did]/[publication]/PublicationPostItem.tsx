@@ -8,6 +8,7 @@ type CommonProps = {
   author?: React.ReactNode;
   date?: React.ReactNode;
   interactions?: React.ReactNode;
+  footer?: React.ReactNode;
 };
 
 type LargeProps = CommonProps & {
@@ -90,6 +91,7 @@ export function PublicationPostItemSmall(props: CommonProps) {
           textClassName="text-sm"
         />
       </div>
+      {props.footer}
       <hr className="last:hidden border-border-light" />
     </>
   );
@@ -126,6 +128,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
           </div>
         )}
       </div>
+      {props.footer}
       <hr className="last:hidden border-border-light" />
     </>
   );
@@ -177,6 +180,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
         )}
         {body}
       </div>
+      {props.footer}
       <hr className="last:hidden border-border-light" />
     </>
   );
