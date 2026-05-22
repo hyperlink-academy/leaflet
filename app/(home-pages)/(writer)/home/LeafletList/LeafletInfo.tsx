@@ -1,8 +1,6 @@
 "use client";
-import { useEntity } from "src/replicache";
 import { LeafletOptions } from "./LeafletOptions";
 import { timeAgo } from "src/utils/timeAgo";
-import { usePageTitle } from "components/utils/UpdateLeafletTitle";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 
 export const LeafletInfo = (props: {
@@ -19,12 +17,7 @@ export const LeafletInfo = (props: {
     ? timeAgo(pubStatus.publishedAt)
     : "";
 
-  // Look up root page first, like UpdateLeafletTitle does
-  let firstPage = useEntity(pubStatus?.leafletId ?? "", "root/page")[0];
-  let entityID = firstPage?.data.value || pubStatus?.leafletId || "";
-  let titleFromDb = usePageTitle(entityID);
-
-  let title = props.title ?? titleFromDb ?? "Untitled";
+  let title = props.title ?? "Untitled";
 
   return (
     <div

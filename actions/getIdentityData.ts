@@ -33,9 +33,11 @@ export async function uncachedGetIdentityData() {
               permission_tokens!inner(
                 id,
                 root_entity,
+                title,
+                description,
                 permission_token_rights(*),
-                leaflets_to_documents(*, documents(*)),
-                leaflets_in_publications(*, publications(*), documents(*))
+                leaflets_to_documents(*),
+                leaflets_in_publications(*, publications(*))
               )
             ),
             user_subscriptions(plan, status, current_period_end),

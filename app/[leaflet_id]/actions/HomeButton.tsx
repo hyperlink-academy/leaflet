@@ -52,6 +52,8 @@ export const AddToHomeButton = (props: { primary?: boolean }) => {
                 archived: null,
                 permission_tokens: {
                   ...permission_token,
+                  title: null,
+                  description: null,
                   leaflets_to_documents: [],
                   leaflets_in_publications: [],
                 },

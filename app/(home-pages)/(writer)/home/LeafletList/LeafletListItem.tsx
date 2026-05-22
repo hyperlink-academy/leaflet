@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
+import { useReportCardVisible } from "./LeafletCardReplicache";
 
 export const LeafletListItem = (props: {
   archived?: boolean | null;
@@ -18,6 +19,7 @@ export const LeafletListItem = (props: {
 }) => {
   const cardBorderHidden = useCardBorderHidden();
   const pubStatus = useLeafletPublicationStatus();
+  const visibilityReporter = useReportCardVisible();
   let [isOnScreen, setIsOnScreen] = useState(props.index < 16 ? true : false);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
@@ -28,6 +30,7 @@ export const LeafletListItem = (props: {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setIsOnScreen(true);
+            visibilityReporter?.notifyVisible();
           } else {
             setIsOnScreen(false);
           }
@@ -37,7 +40,7 @@ export const LeafletListItem = (props: {
     );
     observer.observe(previewRef.current);
     return () => observer.disconnect();
-  }, [previewRef]);
+  }, [previewRef, visibilityReporter]);
 
   const tokenId = pubStatus?.shareLink ?? "";
 

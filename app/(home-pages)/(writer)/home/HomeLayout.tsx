@@ -2,16 +2,9 @@
 
 import { getHomeDocs } from "./storage";
 import useSWR from "swr";
-import {
-  Fact,
-  PermissionToken,
-  ReplicacheProvider,
-  useEntity,
-} from "src/replicache";
+import { PermissionToken, useEntity } from "src/replicache";
 import { LeafletListItem } from "./LeafletList/LeafletListItem";
 import { useIdentityData } from "components/IdentityProvider";
-import type { Attribute } from "src/replicache/attributes";
-import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import {
   type DashboardState,
@@ -24,11 +17,14 @@ import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
 import { CreateNewLeafletButton } from "./Actions/CreateNewButton";
+import { LeafletCardReplicache } from "./LeafletList/LeafletCardReplicache";
 
 export type Leaflet = {
   added_at: string;
   archived?: boolean | null;
   token: PermissionToken & {
+    title?: string | null;
+    description?: string | null;
     leaflets_in_publications?: Exclude<
       GetLeafletDataReturnType["result"]["data"],
       null
@@ -43,9 +39,6 @@ export type Leaflet = {
 export const HomeContent = (props: {
   entityID: string | null;
   titles: { [root_entity: string]: string };
-  initialFacts: {
-    [root_entity: string]: Fact<Attribute>[];
-  };
 }) => {
   let hasBackgroundImage = !!useEntity(
     props.entityID,
@@ -92,7 +85,6 @@ export const HomeContent = (props: {
     >
       <HomeLeafletList
         titles={props.titles}
-        initialFacts={props.initialFacts}
         searchValue={debouncedSearchValue}
       />
     </DashboardPageLayout>
@@ -101,43 +93,9 @@ export const HomeContent = (props: {
 
 export function HomeLeafletList(props: {
   titles: { [root_entity: string]: string };
-  initialFacts: {
-    [root_entity: string]: Fact<Attribute>[];
-  };
   searchValue: string;
 }) {
   let { identity } = useIdentityData();
-  let { data: initialFacts } = useSWR(
-    "home-leaflet-data",
-    async () => {
-      if (identity) {
-        let { result } = await callRPC("getFactsFromHomeLeaflets", {
-          tokens: identity.permission_token_on_homepage.map(
-            (ptrh) => ptrh.permission_tokens.root_entity,
-          ),
-        });
-        let titles = {
-          ...result.titles,
-          ...identity.permission_token_on_homepage.reduce(
-            (acc, tok) => {
-              let title =
-                tok.permission_tokens.leaflets_in_publications[0]?.title ||
-                tok.permission_tokens.leaflets_to_documents[0]?.title;
-              if (title) acc[tok.permission_tokens.root_entity] = title;
-              return acc;
-            },
-            {} as { [k: string]: string },
-          ),
-        };
-        return { ...result, titles };
-      }
-    },
-    {
-      fallbackData: { facts: props.initialFacts, titles: props.titles },
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    },
-  );
 
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
     fallbackData: [],
@@ -161,8 +119,7 @@ export function HomeLeafletList(props: {
         defaultDisplay="grid"
         searchValue={props.searchValue}
         leaflets={leaflets}
-        titles={initialFacts?.titles || {}}
-        initialFacts={initialFacts?.facts || {}}
+        titles={props.titles}
         showPreview
       />
       <div className="spacer sm:block hidden h-4 w-full bg-transparent shrink-0 " />
@@ -174,9 +131,6 @@ export function LeafletList(props: {
   leaflets: Leaflet[];
   titles: { [root_entity: string]: string };
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
-  initialFacts: {
-    [root_entity: string]: Fact<Attribute>[];
-  };
   searchValue: string;
   showPreview?: boolean;
 }) {
@@ -199,18 +153,17 @@ export function LeafletList(props: {
         ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2"} `}
     >
       {props.leaflets.map(({ token: leaflet, added_at, archived }, index) => (
-        <ReplicacheProvider
-          disablePull
-          initialFactsOnly={!!identity}
+        <LeafletCardReplicache
           key={leaflet.id}
-          rootEntity={leaflet.root_entity}
-          token={leaflet}
-          name={leaflet.root_entity}
-          initialFacts={props.initialFacts?.[leaflet.root_entity] || []}
+          leaflet={leaflet}
+          loggedIn={!!identity}
+          eagerLoadFacts={index < 12}
         >
           <StaticLeafletDataContext
             value={{
               ...leaflet,
+              title: leaflet.title ?? null,
+              description: leaflet.description ?? null,
               leaflets_in_publications: leaflet.leaflets_in_publications || [],
               leaflets_to_documents: leaflet.leaflets_to_documents || [],
               publication_pages: [],
@@ -233,7 +186,7 @@ export function LeafletList(props: {
               }
             />
           </StaticLeafletDataContext>
-        </ReplicacheProvider>
+        </LeafletCardReplicache>
       ))}
     </div>
   );

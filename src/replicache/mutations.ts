@@ -720,6 +720,32 @@ const updatePublicationDraft: Mutation<{
   });
 };
 
+const updateLeafletMetadata: Mutation<{
+  title?: string;
+  description?: string | null;
+}> = async (args, ctx) => {
+  await ctx.runOnServer(async (serverCtx) => {
+    const updates: { title?: string; description?: string | null } = {};
+    if (args.title !== undefined) updates.title = args.title;
+    if (args.description !== undefined) updates.description = args.description;
+    if (Object.keys(updates).length === 0) return;
+
+    const { data: writerToken } = await serverCtx.supabase
+      .from("permission_tokens")
+      .select("root_entity, permission_token_rights(write)")
+      .eq("id", ctx.permission_token_id)
+      .single();
+    if (!writerToken) return;
+    const hasWrite = writerToken.permission_token_rights.some((r) => r.write);
+    if (!hasWrite) return;
+
+    await serverCtx.supabase
+      .from("permission_tokens")
+      .update(updates)
+      .eq("root_entity", writerToken.root_entity);
+  });
+};
+
 const createFootnote: Mutation<{
   footnoteEntityID: string;
   blockID: string;
@@ -774,6 +800,7 @@ export const mutations = {
   addPollOption,
   removePollOption,
   updatePublicationDraft,
+  updateLeafletMetadata,
   createFootnote,
   deleteFootnote,
 };

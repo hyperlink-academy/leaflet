@@ -2,20 +2,14 @@
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
-import { Fact, PermissionToken } from "src/replicache";
-import { Attribute } from "src/replicache/attributes";
-import { callRPC } from "app/api/rpc/client";
+import { PermissionToken } from "src/replicache";
 import { useIdentityData } from "components/IdentityProvider";
-import useSWR from "swr";
 import { Leaflet, LeafletList } from "../home/HomeLayout";
 import { CreateNewLeafletButton } from "../home/Actions/CreateNewButton";
 
 export const LooseleafsContent = (props: {
   entityID: string | null;
   titles: { [root_entity: string]: string };
-  initialFacts: {
-    [root_entity: string]: Fact<Attribute>[];
-  };
 }) => {
   let [searchValue, setSearchValue] = useState("");
   let [debouncedSearchValue, setDebouncedSearchValue] = useState("");
@@ -37,7 +31,6 @@ export const LooseleafsContent = (props: {
     >
       <LooseleafList
         titles={props.titles}
-        initialFacts={props.initialFacts}
         searchValue={debouncedSearchValue}
       />
     </DashboardPageLayout>
@@ -46,39 +39,9 @@ export const LooseleafsContent = (props: {
 
 export const LooseleafList = (props: {
   titles: { [root_entity: string]: string };
-  initialFacts: {
-    [root_entity: string]: Fact<Attribute>[];
-  };
   searchValue: string;
 }) => {
   let { identity } = useIdentityData();
-  let { data: initialFacts } = useSWR(
-    "home-leaflet-data",
-    async () => {
-      if (identity) {
-        let { result } = await callRPC("getFactsFromHomeLeaflets", {
-          tokens: identity.permission_token_on_homepage.map(
-            (ptrh) => ptrh.permission_tokens.root_entity,
-          ),
-        });
-        let titles = {
-          ...result.titles,
-          ...identity.permission_token_on_homepage.reduce(
-            (acc, tok) => {
-              let title =
-                tok.permission_tokens.leaflets_in_publications[0]?.title ||
-                tok.permission_tokens.leaflets_to_documents[0]?.title;
-              if (title) acc[tok.permission_tokens.root_entity] = title;
-              return acc;
-            },
-            {} as { [k: string]: string },
-          ),
-        };
-        return { ...result, titles };
-      }
-    },
-    { fallbackData: { facts: props.initialFacts, titles: props.titles } },
-  );
 
   let leaflets: Leaflet[] = identity
     ? identity.permission_token_on_homepage
@@ -95,8 +58,7 @@ export const LooseleafList = (props: {
       defaultDisplay="list"
       searchValue={props.searchValue}
       leaflets={leaflets}
-      titles={initialFacts?.titles || {}}
-      initialFacts={initialFacts?.facts || {}}
+      titles={props.titles}
       showPreview
     />
   );

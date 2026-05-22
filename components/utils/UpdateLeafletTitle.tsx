@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useBlocks,
   useCanvasBlocksWithType,
@@ -13,6 +13,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { focusBlock } from "src/utils/focusBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 
 export function UpdateLeafletTitle(props: { entityID: string }) {
   let { data: pub } = useLeafletPublicationData();
@@ -24,6 +25,21 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   );
   let firstBlock = blocks[0];
   let title = usePageTitle(entityID);
+  let { rep, permission_token } = useReplicache();
+  let hasWrite = permission_token?.permission_token_rights?.some(
+    (r) => r.write,
+  );
+  let lastSentTitleRef = useRef<string | null>(null);
+  useDebouncedEffect(
+    () => {
+      if (!rep || !hasWrite || !title) return;
+      if (lastSentTitleRef.current === title) return;
+      lastSentTitleRef.current = title;
+      rep.mutate.updateLeafletMetadata({ title });
+    },
+    500,
+    [rep, hasWrite, title],
+  );
   useEffect(() => {
     if (pub?.title) {
       document.title = pub.title;

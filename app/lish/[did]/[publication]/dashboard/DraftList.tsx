@@ -15,7 +15,7 @@ export function DraftList(props: {
   // Normalize the publication record - skip rendering if unrecognized format
   const normalizedPubRecord = useNormalizedPublicationRecord();
   if (!pub_data?.publication) return null;
-  const { drafts, leaflet_data } = pub_data;
+  const { drafts } = pub_data;
   const { leaflets_in_publications, ...publication } = pub_data.publication;
 
   if (!normalizedPubRecord) return null;
@@ -41,7 +41,6 @@ export function DraftList(props: {
               ],
             },
           }))}
-        initialFacts={leaflet_data.facts || {}}
         titles={{
           ...drafts.reduce(
             (acc, draft) => {
