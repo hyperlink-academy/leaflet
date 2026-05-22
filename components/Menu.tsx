@@ -5,6 +5,7 @@ import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
 import { PopoverArrow } from "./Icons/PopoverArrow";
 import { PopoverOpenContext } from "./Popover/PopoverContext";
 import { useState } from "react";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export const Menu = (props: {
   open?: boolean;
@@ -20,6 +21,7 @@ export const Menu = (props: {
   asChild?: boolean;
 }) => {
   let [open, setOpen] = useState(props.open || false);
+  let cardBorderHidden = useCardBorderHidden();
 
   return (
     <DropdownMenu.Root
@@ -44,9 +46,9 @@ export const Menu = (props: {
               className={`
                 dropdownMenu z-20 p-1
                 flex flex-col gap-0.5
-                bg-bg-page
                 border border-border rounded-md shadow-md
-                ${props.className}`}
+                ${props.className}
+                ${cardBorderHidden ? "light-container" : "bg-bg-page"}`}
             >
               {props.children}
               <DropdownMenu.Arrow
@@ -59,7 +61,9 @@ export const Menu = (props: {
                   arrowFill={
                     props.background
                       ? props.background
-                      : theme.colors["bg-page"]
+                      : cardBorderHidden
+                        ? "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 95%)"
+                        : theme.colors["bg-page"]
                   }
                   arrowStroke={
                     props.border ? props.border : theme.colors["border"]

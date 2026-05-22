@@ -81,7 +81,9 @@ export const Popover = (props: {
                         ? props.arrowFill
                         : props.background
                           ? props.background
-                          : theme.colors["bg-page"]
+                          : cardBorderHidden
+                            ? "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 95%)"
+                            : theme.colors["bg-page"]
                     }
                     arrowStroke={
                       props.border ? props.border : theme.colors["border"]

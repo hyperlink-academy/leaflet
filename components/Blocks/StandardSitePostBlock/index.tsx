@@ -129,7 +129,7 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
 const SmallIcon = ({ selected }: { selected: boolean }) => {
   return (
     <div
-      className={`flex gap-2 p-2 w-full light-container outline-2 outline-offset-1 ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent"}`}
+      className={`flex gap-2 p-2 w-full opaque-container outline-2 outline-offset-1 border-border! ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent"}`}
     >
       <div className="flex flex-col gap-1 grow min-w-0">
         <div className="w-full h-4 bg-tertiary rounded-[2px]" />
@@ -146,7 +146,7 @@ const SmallIcon = ({ selected }: { selected: boolean }) => {
 const MedIcon = ({ selected }: { selected: boolean }) => {
   return (
     <div
-      className={`flex gap-2  w-full light-container outline-2 outline-offset-1 ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent "}`}
+      className={`flex gap-2  w-full opaque-container outline-2 outline-offset-1 bg-bg-page overflow-hidden border-border! ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent "}`}
     >
       <div className="flex flex-col gap-1 p-2 grow min-w-0">
         <div className="w-full h-4 bg-tertiary rounded-[2px]" />
@@ -157,7 +157,13 @@ const MedIcon = ({ selected }: { selected: boolean }) => {
           <div className="w-6 h-2 bg-border rounded-[2px]" />
         </div>
       </div>
-      <div className="aspect-square h-[82px] bg-test shrink-0" />
+      <div
+        className="aspect-square h-[82px] bg-border border-l border-border shrink-0 bg-cover bg-center"
+        style={{
+          backgroundImage: "url(/imagePlaceholder.png)",
+          backgroundBlendMode: "hard-light",
+        }}
+      />
     </div>
   );
 };
@@ -165,9 +171,15 @@ const MedIcon = ({ selected }: { selected: boolean }) => {
 const LargeIcon = ({ selected }: { selected: boolean }) => {
   return (
     <div
-      className={`flex flex-col gap-2 w-full outline-2 outline-offset-1 light-container ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent"}`}
+      className={`flex flex-col gap-2 w-full outline-2 outline-offset-1 opaque-container overflow-hidden border-border! ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent"}`}
     >
-      <div className="w-full aspect-video bg-test rounded-t-[2px]" />
+      <div
+        className="w-full aspect-video bg-border bg-cover bg-center border-b border-border"
+        style={{
+          backgroundImage: "url(/imagePlaceholder.png)",
+          backgroundBlendMode: "hard-light",
+        }}
+      />
 
       <div className="flex flex-col gap-1 p-2 pt-0.5!">
         <div className="w-full h-4 bg-tertiary rounded-[2px]" />

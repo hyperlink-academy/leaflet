@@ -38,15 +38,13 @@ export function StandardSitePostItem({
   const pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
 
   if (isLoading) {
-    return <StandardSitePostItemPlaceholder size={size} pageWidth={pageWidth} />;
+    return (
+      <StandardSitePostItemPlaceholder size={size} pageWidth={pageWidth} />
+    );
   }
 
   if (!data) {
-    return (
-      <p className="text-sm italic text-tertiary">
-        Post not found.
-      </p>
-    );
+    return <p className="text-sm italic text-tertiary">Post not found.</p>;
   }
 
   return (
@@ -96,7 +94,7 @@ function StandardSitePostItemPlaceholder({
   if (size === "small") {
     return (
       <>
-        <div className="flex w-full grow flex-col gap-1 px-3 py-2">
+        <div className="flex w-full grow flex-col gap-1 px-3 py-3">
           <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
           <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
         </div>
@@ -134,7 +132,7 @@ function StandardSitePostItemPlaceholder({
           className={`bg-border-light rounded animate-pulse aspect-[1.91/1] ${widePage ? "w-full sm:w-2/5 shrink-0" : "w-full"}`}
         />
         <div
-          className={`flex w-full grow flex-col gap-2 justify-between ${widePage ? "px-3 py-2 sm:pb-3" : "px-3 py-2"}`}
+          className={`flex w-full grow flex-col gap-2 justify-between ${widePage ? "px-3 py-3 " : "px-3 py-3"}`}
         >
           <div className="flex flex-col gap-1.5">
             <div
@@ -222,9 +220,10 @@ export function StandardSitePostItemView({
     !!post.publication?.record &&
     (!currentPublicationUri || post.publication.uri !== currentPublicationUri);
 
-  const pubFooter = showPubFooter && post.publication ? (
-    <PubFooter publication={post.publication} />
-  ) : null;
+  const pubFooter =
+    showPubFooter && post.publication ? (
+      <PubFooter publication={post.publication} />
+    ) : null;
 
   const commonProps = {
     href: docUrl,
@@ -276,7 +275,7 @@ function PubFooter({
   return (
     <Link
       href={pubUrl}
-      className="flex items-center gap-1.5 px-3 pt-1.5 pb-2 text-accent-contrast font-bold no-underline! text-sm"
+      className="flex items-center gap-1.5  text-accent-contrast font-bold no-underline! text-sm -mb-0.5"
     >
       <PubIcon tiny record={publication.record} uri={publication.uri} />
       <span className="min-w-0 truncate">{publication.record.name}</span>

@@ -60,7 +60,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   return (
     <>
       <Popover
-        className="w-80 bg-white py-3!"
+        className="w-80 bg-white! py-3!"
         arrowFill="#FFFFFF"
         asChild
         side={isMobile ? "top" : "right"}
