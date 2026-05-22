@@ -94,7 +94,7 @@ function StandardSitePostItemPlaceholder({
   if (size === "small") {
     return (
       <>
-        <div className="flex w-full grow flex-col gap-1 px-3 py-3">
+        <div className="flex w-full grow flex-col gap-1 px-3 py-2">
           <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
           <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
         </div>
@@ -106,16 +106,16 @@ function StandardSitePostItemPlaceholder({
   if (size === "medium") {
     return (
       <>
-        <div className="flex w-full gap-3 items-stretch sm:h-36">
-          <div className="flex w-full gap-2 grow flex-col justify-between min-w-0 pl-3 py-2">
-            <div className="flex flex-col gap-1.5">
+        <div className="flex w-full gap-3 items-stretch sm:min-h-36">
+          <div className="flex w-full gap-2 grow flex-col justify-between min-w-0 pl-3 pr-3 py-2">
+            <div className="flex flex-col gap-2">
               <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
               <div className="h-4 w-full bg-border-light rounded animate-pulse" />
               <div className="h-4 w-5/6 bg-border-light rounded animate-pulse" />
             </div>
             <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
           </div>
-          <div className="self-stretch shrink-0 aspect-square w-16 sm:w-36 bg-border-light rounded animate-pulse" />
+          <div className="self-start shrink-0 aspect-square w-16 sm:w-36 bg-border-light rounded animate-pulse" />
         </div>
         <hr className="last:hidden border-border-light" />
       </>
@@ -129,12 +129,12 @@ function StandardSitePostItemPlaceholder({
         className={`flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full items-start`}
       >
         <div
-          className={`bg-border-light rounded animate-pulse aspect-[1.91/1] ${widePage ? "w-full sm:w-2/5 shrink-0" : "w-full"}`}
+          className={`bg-border-light rounded animate-pulse shrink-0 ${widePage ? "w-full sm:w-auto sm:h-[244px] aspect-[1.91/1]" : "w-full aspect-[1.91/1]"}`}
         />
         <div
-          className={`flex w-full grow flex-col gap-2 justify-between ${widePage ? "px-3 py-3 " : "px-3 py-3"}`}
+          className={`flex w-full grow flex-col gap-2 justify-between px-3 py-2 ${widePage ? "sm:pb-3" : ""}`}
         >
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <div
               className={`h-7 w-2/3 bg-border-light rounded animate-pulse ${widePage ? "sm:h-8" : ""}`}
             />
