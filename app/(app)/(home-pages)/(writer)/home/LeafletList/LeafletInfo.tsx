@@ -17,6 +17,7 @@ export const LeafletInfo = (props: {
     ? timeAgo(pubStatus.publishedAt)
     : "";
 
+  let showTitle = props.loggedIn || !!props.title;
   let title = props.title ?? "Untitled";
 
   return (
@@ -24,10 +25,12 @@ export const LeafletInfo = (props: {
       className={`leafletInfo w-full min-w-0 flex flex-col ${props.className}`}
     >
       <div className="flex justify-between items-center shrink-0 max-w-full gap-2 leading-tight overflow-hidden">
-        <h3 className="sm:text-lg text-base truncate w-full min-w-0">
-          {title}
-        </h3>
-        <div className="flex gap-1 shrink-0">
+        {showTitle && (
+          <h3 className="sm:text-lg text-base truncate w-full min-w-0">
+            {title}
+          </h3>
+        )}
+        <div className="flex gap-1 shrink-0 ml-auto">
           <LeafletOptions archived={props.archived} loggedIn={props.loggedIn} />
         </div>
       </div>
