@@ -3,7 +3,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Tables, TablesInsert } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
-import { idResolver } from "app/(home-pages)/reader/idResolver";
+import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,

@@ -5,8 +5,8 @@ import { BlockProps, BlockLayout } from "./Block";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
-import { PublicationPostsList } from "app/lish/[did]/[publication]/PublicationPostsList";
+} from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { PublicationPostsList } from "app/(app)/lish/[did]/[publication]/PublicationPostsList";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { ToggleGroup } from "components/ToggleGroup";

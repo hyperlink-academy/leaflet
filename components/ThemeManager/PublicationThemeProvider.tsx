@@ -8,7 +8,7 @@ import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PubThemeDefaults } from "./themeDefaults";
 

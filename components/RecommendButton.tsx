@@ -7,7 +7,7 @@ import { RecommendTinyEmpty, RecommendTinyFilled } from "./Icons/RecommendTiny";
 import {
   recommendAction,
   unrecommendAction,
-} from "app/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
+} from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
 import { callRPC } from "app/api/rpc/client";
 import { useSmoker, useToaster } from "./Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "./OAuthError";

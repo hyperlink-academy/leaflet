@@ -5,12 +5,12 @@ import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,
   PublicationPostItemLarge,
-} from "app/lish/[did]/[publication]/PublicationPostItem";
-import { LocalizedDate } from "app/lish/[did]/[publication]/LocalizedDate";
+} from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
+import { LocalizedDate } from "app/(app)/lish/[did]/[publication]/LocalizedDate";
 import {
   getDocumentURL,
   getPublicationURL,
-} from "app/lish/createPub/getPublicationURL";
+} from "app/(app)/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";

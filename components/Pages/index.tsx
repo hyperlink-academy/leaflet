@@ -8,7 +8,7 @@ import { useEntity } from "src/replicache";
 
 import { useCardBorderHidden } from "./useCardBorderHidden";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
-import { LeafletSidebar } from "app/[leaflet_id]/Sidebar";
+import { LeafletSidebar } from "app/(app)/[leaflet_id]/Sidebar";
 import { Page } from "./Page";
 import { IframePageView } from "./IframePageView";
 import { PageOptionButton } from "./PageOptions";

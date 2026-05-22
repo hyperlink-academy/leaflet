@@ -9,7 +9,7 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { PostNotAvailable } from "./BlueskyEmbed";
 import { BlueskyPostEmpty } from "./BlueskyEmpty";
 
-import { BskyPostContent } from "app/lish/[did]/[publication]/[rkey]/BskyPostContent";
+import { BskyPostContent } from "app/(app)/lish/[did]/[publication]/[rkey]/BskyPostContent";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {

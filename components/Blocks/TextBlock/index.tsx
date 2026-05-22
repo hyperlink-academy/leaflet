@@ -30,7 +30,7 @@ import { blockTextSize } from "src/utils/blockTextSize";
 import { getAspectRatio } from "src/utils/aspectRatio";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
-import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
+import { addMentionToEditor } from "app/(app)/[leaflet_id]/publish/BskyPostEditorProsemirror";
 import { v7 } from "uuid";
 import { generateKeyBetween } from "fractional-indexing";
 
