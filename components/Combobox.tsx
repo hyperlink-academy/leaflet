@@ -100,7 +100,7 @@ export const Combobox = ({
         onOpenChange?.(newOpen);
       }}
     >
-      <Popover.Trigger asChild className={`${triggerClassName}`}>
+      <Popover.Trigger asChild className={`min-w-0 ${triggerClassName}`}>
         <div>{trigger}</div>
       </Popover.Trigger>
       <Popover.Portal>

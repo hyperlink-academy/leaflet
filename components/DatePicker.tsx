@@ -36,7 +36,7 @@ export const DatePicker = (props: DayPickerProps) => {
       month_grid: "border-separate [border-spacing:2px]",
       weekdays: "text-secondary text-sm",
       selected: "bg-accent-1 text-accent-2 rounded-md font-bold",
-      range_middle: "bg-[var(--accent-light)]!",
+      range_middle: "bg-[var(--accent-light)]! text-accent-contrast",
       day: "h-8! w-8! text-center rounded-md sm:hover:bg-border-light",
       outside: "text-tertiary",
       today: "font-bold",

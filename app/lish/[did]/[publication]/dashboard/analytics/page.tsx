@@ -3,11 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
-import {
-  PublicationAnalytics,
-  DateRangeSelector,
-  useAnalyticsDateState,
-} from "../PublicationAnalytics";
+import { PublicationAnalytics } from "./PublicationAnalytics";
+import { DateRangeSelector, useAnalyticsDateState } from "./dates";
 import { NewDraftActionButton } from "../NewDraftButton";
 import {
   usePublicationData,
@@ -35,7 +32,16 @@ export default function AnalyticsPage() {
     <DashboardPageLayout
       scrollKey={`dashboard-${pubUri}-Analytics`}
       pageTitle="Analytics"
-      mobileActions={<NewDraftActionButton publication={pubUri} compact />}
+      mobileActions={
+        <>
+          <DateRangeSelector
+            dateState={dateState}
+            setDateState={setDateState}
+            pubStartDate={data?.publication?.indexed_at}
+            showBackground={showPageBackground}
+          />
+        </>
+      }
       publication={pubUri}
       showHeader={true}
       controls={
