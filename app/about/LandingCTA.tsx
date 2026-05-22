@@ -34,7 +34,7 @@ export function LandingCTA() {
           />
         </>
       )}
-      <Link href="/new?welcomeModal" className="no-underline!">
+      <Link href="/new?welcomeModal" prefetch={false} className="no-underline!">
         <ButtonPrimary className="rounded-lg! text-lg! sm:text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-0.5! px-2! sm:py-1 ! sm:px-4!">
           Start Writing
         </ButtonPrimary>
@@ -50,6 +50,7 @@ export const LandingCTABottom = () => {
         <h3>Write with Leaflet!</h3>
         <Link
           href="/new?welcomeModal"
+          prefetch={false}
           className="no-underline! mx-auto mt-2 md:mt-4"
         >
           <ButtonPrimary className="rounded-lg! text-lg! md:text-xl! bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! py-0.5! px-2! sm:py-1 ! sm:px-4!">

@@ -40,7 +40,7 @@ export const Pricing = () => {
             <p className="text-[1rem]! text-center text-tertiary text-snug pb-3">
               Basic Leaflet is free for everyone
             </p>
-            <Link href="/new?welcomeModal" className="no-underline!">
+            <Link href="/new?welcomeModal" prefetch={false} className="no-underline!">
               <ButtonPrimary
                 fullWidth
                 className=" bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! text-[1rem] sm:text-[1.25rem]!"
