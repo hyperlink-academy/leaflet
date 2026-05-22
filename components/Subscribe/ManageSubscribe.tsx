@@ -125,11 +125,7 @@ export const ManageSubscription = (props: {
 
   return (
     <Modal
-      title={
-        <div className="relative text-secondary border-b border-border mb-2">
-          Manage Subscription
-        </div>
-      }
+      title={<div className="relative mb-2">Manage Subscription</div>}
       className="w-md max-w-full"
       trigger={
         <div className="manageSubPrefsTrigger flex gap-1 text-accent-contrast text-sm items-center ">
