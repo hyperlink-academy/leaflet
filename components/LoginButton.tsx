@@ -116,7 +116,10 @@ export const LoginContent = (props: {
       return;
     }
     const localLeaflets = getHomeDocs();
-    await loginWithEmailToken(localLeaflets.filter((l) => !l.hidden));
+    await loginWithEmailToken(
+      localLeaflets.filter((l) => !l.hidden),
+      props.redirectRoute,
+    );
     mutate("identity");
     toaster({
       content: <div className="font-bold">Logged in! Welcome!</div>,
