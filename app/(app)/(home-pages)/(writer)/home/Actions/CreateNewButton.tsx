@@ -13,9 +13,9 @@ export const CreateNewLeafletButton = (props: { compact?: boolean }) => {
   let isMobile = useIsMobile();
   let openNewLeaflet = (id: string) => {
     if (isMobile) {
-      window.location.href = `/${id}?focusFirstBlock`;
+      window.location.href = `/${id}?focusFirstBlock&addToHome`;
     } else {
-      window.open(`/${id}?focusFirstBlock`, "_blank");
+      window.open(`/${id}?focusFirstBlock&addToHome`, "_blank");
     }
   };
   return (
