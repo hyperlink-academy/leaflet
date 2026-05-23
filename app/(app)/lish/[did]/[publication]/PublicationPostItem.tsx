@@ -98,29 +98,21 @@ export function PublicationPostItemSmall(props: CommonProps) {
 export function PublicationPostItemMedium(props: MediumProps) {
   const hasCoverImage = !!props.coverImageSrc;
   return (
-    <>
+    <div className="flex w-full flex-col">
       <div className="flex w-full gap-3 items-stretch sm:min-h-36">
-        <div className="flex w-full grow flex-col  min-w-0  pl-3 pr-3 py-2">
-          <div className="flex flex-col grow gap-2 justify-between min-w-0">
-            <PostLink href={props.href}>
-              {props.title && (
-                <h3 className="text-primary line-clamp-2">{props.title}</h3>
-              )}
-              <p className="text-secondary line-clamp-3">
-                {props.description} {props.description}
-              </p>
-            </PostLink>
-            <MetaRow
-              author={props.author}
-              date={props.date}
-              interactions={props.interactions}
-              textClassName="text-sm place-self-end"
-            />
-          </div>
-          <div className="shrink-0">
-            <hr className=" border-border-light mt-2 mb-1" />
-            {props.footer}
-          </div>
+        <div className="flex w-full gap-2 grow flex-col justify-between min-w-0  pl-3 pr-3 py-2">
+          <PostLink href={props.href}>
+            {props.title && (
+              <h3 className="text-primary line-clamp-2">{props.title}</h3>
+            )}
+            <p className="text-secondary line-clamp-3">{props.description}</p>
+          </PostLink>
+          <MetaRow
+            author={props.author}
+            date={props.date}
+            interactions={props.interactions}
+            textClassName="text-sm place-self-end"
+          />
         </div>
         {hasCoverImage && (
           <div
@@ -134,7 +126,11 @@ export function PublicationPostItemMedium(props: MediumProps) {
           </div>
         )}
       </div>
-    </>
+      <div className="shrink-0 px-3 pb-2">
+        <hr className=" border-border-light mt-2 mb-1" />
+        {props.footer}
+      </div>
+    </div>
   );
 }
 
