@@ -1,4 +1,4 @@
-import { NodeSelection, TextSelection } from "prosemirror-state";
+import { TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
 import { Block } from "components/Blocks/Block";
 import { elementId } from "src/utils/elementId";
@@ -69,7 +69,20 @@ export function focusBlock(
   // focus the editor using the mouse position if needed
   let nextBlockID = block.value;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
-  if (!nextBlock || !nextBlock.view) return;
+  if (!nextBlock || !nextBlock.view) {
+    waitForViewAndFocus(nextBlockID, position);
+    return;
+  }
+  applyFocusToView(nextBlock, position);
+}
+
+function applyFocusToView(
+  nextBlock: NonNullable<
+    ReturnType<typeof useEditorStates.getState>["editorStates"][string]
+  >,
+  position: Position,
+) {
+  if (!nextBlock.view) return;
   let nextBlockViewClientRect = nextBlock.view.dom.getBoundingClientRect();
   let tr = nextBlock.editor.tr;
   let pos: { pos: number } | null = null;
@@ -109,6 +122,28 @@ export function focusBlock(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 1)),
   );
   nextBlock.view.focus();
+}
+
+// Used after a bulk paste, when the new block's ProseMirror view hasn't
+// finished mounting yet. Caps at 30 frames so an off-screen / never-mounted
+// block doesn't keep us polling forever.
+function waitForViewAndFocus(
+  entityID: string,
+  position: Position,
+  maxAttempts = 30,
+) {
+  let attempts = 0;
+  const tick = () => {
+    const state = useEditorStates.getState().editorStates[entityID];
+    if (state?.view) {
+      applyFocusToView(state, position);
+      return;
+    }
+    attempts++;
+    if (attempts >= maxAttempts) return;
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 type Position =

@@ -211,12 +211,14 @@ export function useMountProsemirror({
       },
     );
 
-    const unsubscribe = useEditorStates.subscribe((s) => {
-      let editorState = s.editorStates[entityID];
-      if (editorState?.initial) return;
-      if (editorState?.editor)
-        editorState.view?.updateState(editorState.editor);
-    });
+    const unsubscribe = useEditorStates.subscribe(
+      (s) => s.editorStates[entityID],
+      (editorState) => {
+        if (editorState?.initial) return;
+        if (editorState?.editor)
+          editorState.view?.updateState(editorState.editor);
+      },
+    );
 
     let editorState = useEditorStates.getState().editorStates[entityID];
     if (editorState?.editor && !editorState.initial)
