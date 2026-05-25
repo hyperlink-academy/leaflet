@@ -1,24 +1,21 @@
 "use server";
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import {
-  entities,
-  identities,
-  permission_tokens,
-  permission_token_rights,
-  entity_sets,
-  facts,
-  permission_token_on_homepage,
-  email_auth_tokens,
-} from "drizzle/schema";
 import { redirect } from "next/navigation";
 import { v7 } from "uuid";
-import { sql, eq, and } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { generateKeyBetween } from "fractional-indexing";
 import { cookies } from "next/headers";
 import { pool } from "supabase/pool";
 
 type DefaultBlockType = "h1" | "text" | "posts-list";
+
+type FactRow = {
+  id: string;
+  entity: string;
+  attribute: string;
+  data: unknown;
+};
 
 export async function createNewLeaflet({
   pageType,
@@ -38,166 +35,160 @@ export async function createNewLeaflet({
   addToHomepage?: boolean;
 }) {
   let auth_token = (await cookies()).get("auth_token")?.value;
-  const client = await pool.connect();
-  const db = drizzle(client);
-  let { permissionToken } = await db.transaction(async (tx) => {
-    // Create a new entity set
-    let [entity_set] = await tx.insert(entity_sets).values({}).returning();
-    // Create a root-entity
 
-    let [root_entity] = await tx
-      .insert(entities)
-      // And add it to that permission set
-      .values({ set: entity_set.id, id: v7() })
-      .returning();
-    let [first_page] = await tx
-      .insert(entities)
-      // And add it to that permission set
-      .values({ set: entity_set.id, id: v7() })
-      .returning();
-    //Create a new permission token
-    let [permissionToken] = await tx
-      .insert(permission_tokens)
-      .values({ root_entity: root_entity.id })
-      .returning();
-    //and give it all the permission on that entity set
-    let [rights] = await tx
-      .insert(permission_token_rights)
-      .values({
-        token: permissionToken.id,
-        entity_set: entity_set.id,
-        read: true,
-        write: true,
-        create_token: true,
-        change_entity_set: true,
-      })
-      .returning();
+  // Pre-generate every UUID so all inserts can run in one round trip with no
+  // RETURNING-driven data dependencies between statements.
+  const entitySetId = v7();
+  const permTokenId = v7();
+  const rootEntityId = v7();
+  const firstPageId = v7();
 
-    let [blockEntity] = await tx
-      .insert(entities)
-      // And add it to that permission set
-      .values({ set: entity_set.id, id: v7() })
-      .returning();
-    await tx.insert(facts).values([
+  const factRows: FactRow[] = [
+    {
+      id: v7(),
+      entity: rootEntityId,
+      attribute: "root/page",
+      data: { type: "ordered-reference", value: firstPageId, position: "a0" },
+    },
+    {
+      id: v7(),
+      entity: rootEntityId,
+      attribute: "theme/page-leaflet-watermark",
+      data: { type: "boolean", value: true },
+    },
+  ];
+
+  let blockEntityIds: string[];
+  if (pageType === "canvas") {
+    const blockId = v7();
+    blockEntityIds = [blockId];
+    factRows.push(
       {
         id: v7(),
-        entity: root_entity.id,
-        attribute: "root/page",
-        data: sql`${{ type: "ordered-reference", value: first_page.id, position: "a0" }}`,
+        entity: firstPageId,
+        attribute: "page/type",
+        data: { type: "page-type-union", value: "canvas" },
       },
-      //Set theme/page-leaflet-watermark to true by default for new leaflets
       {
         id: v7(),
-        entity: root_entity.id,
-        attribute: "theme/page-leaflet-watermark",
-        data: sql`${{ type: "boolean", value: true }}`,
+        entity: firstPageId,
+        attribute: "canvas/block",
+        data: {
+          type: "spatial-reference",
+          value: blockId,
+          position: { x: 8, y: 12 },
+        },
       },
-    ]);
-
-    if (pageType === "canvas") {
-      await tx.insert(facts).values([
-        {
-          id: v7(),
-          entity: first_page.id,
-          attribute: "page/type",
-          data: sql`${{ type: "page-type-union", value: "canvas" }}`,
-        },
-        {
-          id: v7(),
-          entity: first_page.id,
-          attribute: "canvas/block",
-          data: sql`${{ type: "spatial-reference", value: blockEntity.id, position: { x: 8, y: 12 } }}::jsonb`,
-        },
-        {
-          id: v7(),
-          entity: blockEntity.id,
-          attribute: "block/type",
-          data: sql`${{ type: "block-type-union", value: "text" }}::jsonb`,
-        },
-      ]);
-    } else {
-      let blockSpecs: DefaultBlockType[] =
-        firstBlocks ?? [firstBlockType === "text" ? "text" : "h1"];
-
-      // Reuse the pre-created blockEntity for the first block so the rest of
-      // the flow (e.g. focusFirstBlock) still has an entity to target.
-      let blockEntities = blockSpecs.map((_, i) =>
-        i === 0 ? blockEntity.id : v7(),
-      );
-
-      if (blockEntities.length > 1) {
-        await tx
-          .insert(entities)
-          .values(blockEntities.slice(1).map((id) => ({ set: entity_set.id, id })));
-      }
-
-      let blockFacts: Array<{
-        id: string;
-        entity: string;
-        attribute: string;
-        data: ReturnType<typeof sql>;
-      }> = [];
-      let prevPosition: string | null = null;
-      blockSpecs.forEach((spec, i) => {
-        let entity = blockEntities[i];
-        let position = generateKeyBetween(prevPosition, null);
-        prevPosition = position;
-        blockFacts.push({
-          id: v7(),
-          entity: first_page.id,
-          attribute: "card/block",
-          data: sql`${{ type: "ordered-reference", value: entity, position }}::jsonb`,
-        });
-        if (spec === "h1") {
-          blockFacts.push(
-            {
-              id: v7(),
-              entity,
-              attribute: "block/type",
-              data: sql`${{ type: "block-type-union", value: "heading" }}::jsonb`,
-            },
-            {
-              id: v7(),
-              entity,
-              attribute: "block/heading-level",
-              data: sql`${{ type: "number", value: 1 }}::jsonb`,
-            },
-          );
-        } else {
-          blockFacts.push({
+      {
+        id: v7(),
+        entity: blockId,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "text" },
+      },
+    );
+  } else {
+    const blockSpecs: DefaultBlockType[] =
+      firstBlocks ?? [firstBlockType === "text" ? "text" : "h1"];
+    blockEntityIds = blockSpecs.map(() => v7());
+    let prevPosition: string | null = null;
+    blockSpecs.forEach((spec, i) => {
+      const entity = blockEntityIds[i];
+      const position = generateKeyBetween(prevPosition, null);
+      prevPosition = position;
+      factRows.push({
+        id: v7(),
+        entity: firstPageId,
+        attribute: "card/block",
+        data: { type: "ordered-reference", value: entity, position },
+      });
+      if (spec === "h1") {
+        factRows.push(
+          {
             id: v7(),
             entity,
             attribute: "block/type",
-            data: sql`${{ type: "block-type-union", value: spec }}::jsonb`,
-          });
-        }
-      });
+            data: { type: "block-type-union", value: "heading" },
+          },
+          {
+            id: v7(),
+            entity,
+            attribute: "block/heading-level",
+            data: { type: "number", value: 1 },
+          },
+        );
+      } else {
+        factRows.push({
+          id: v7(),
+          entity,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: spec },
+        });
+      }
+    });
+  }
 
-      await tx.insert(facts).values(blockFacts);
-    }
-    if (auth_token && addToHomepage) {
-      await tx.execute(sql`
-        WITH auth_token AS (
-          SELECT identities.id as identity_id
+  const entityIds = [rootEntityId, firstPageId, ...blockEntityIds];
+
+  const entityValues = sql.join(
+    entityIds.map((id) => sql`(${id}, ${entitySetId})`),
+    sql`, `,
+  );
+  const factValues = sql.join(
+    factRows.map(
+      (f) =>
+        sql`(${f.id}, ${f.entity}, ${f.attribute}, ${JSON.stringify(f.data)}::jsonb)`,
+    ),
+    sql`, `,
+  );
+
+  // Optional homepage insert as a tail CTE; resolves auth_token → identity in
+  // the same round trip and inserts nothing when the token is missing/invalid.
+  const homepageCte =
+    auth_token && addToHomepage
+      ? sql`, homepage_insert AS (
+          INSERT INTO permission_token_on_homepage (token, identity)
+          SELECT ${permTokenId}, identities.id
           FROM email_auth_tokens
-          LEFT JOIN identities ON email_auth_tokens.identity = identities.id
+          JOIN identities ON email_auth_tokens.identity = identities.id
           WHERE email_auth_tokens.id = ${auth_token}
-          AND email_auth_tokens.confirmed = true
-          AND identities.id IS NOT NULL
-        )
-        INSERT INTO permission_token_on_homepage (token, identity)
-        SELECT ${permissionToken.id}, identity_id
-        FROM auth_token
-      `);
-    }
+            AND email_auth_tokens.confirmed = true
+        )`
+      : sql``;
 
-    return { permissionToken, rights, root_entity, entity_set };
-  });
+  // All inserts in a single statement. FK checks fire at end-of-statement and
+  // see rows inserted in sibling data-modifying CTEs, so ordering is safe.
+  // Atomicity comes from the statement itself — no explicit transaction needed.
+  const client = await pool.connect();
+  const db = drizzle(client);
+  try {
+    await db.execute(sql`
+      WITH new_set AS (
+        INSERT INTO entity_sets (id) VALUES (${entitySetId})
+      ),
+      new_entities AS (
+        INSERT INTO entities (id, set) VALUES ${entityValues}
+      ),
+      new_token AS (
+        INSERT INTO permission_tokens (id, root_entity)
+        VALUES (${permTokenId}, ${rootEntityId})
+      ),
+      new_rights AS (
+        INSERT INTO permission_token_rights
+          (token, entity_set, read, write, create_token, change_entity_set)
+        VALUES (${permTokenId}, ${entitySetId}, true, true, true, true)
+      ),
+      new_facts AS (
+        INSERT INTO facts (id, entity, attribute, data) VALUES ${factValues}
+      )${homepageCte}
+      SELECT 1
+    `);
+  } finally {
+    client.release();
+  }
 
-  client.release();
   if (redirectUser)
     redirect(
-      `/${permissionToken.id}?focusFirstBlock${welcomeModal ? "&welcomeModal" : ""}${addToHome ? "&addToHome" : ""}`,
+      `/${permTokenId}?focusFirstBlock${welcomeModal ? "&welcomeModal" : ""}${addToHome ? "&addToHome" : ""}`,
     );
-  return permissionToken.id;
+  return permTokenId;
 }
