@@ -1,0 +1,103 @@
+"use client";
+import { AtUri } from "@atproto/syntax";
+import { PublicationSubscription } from "app/(app)/(home-pages)/reader/getSubscriptions";
+import { PubIcon } from "components/ActionBar/Publications";
+import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
+import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { timeAgo } from "src/utils/timeAgo";
+
+type PubListingProps = Omit<
+  PublicationSubscription,
+  | "publication_subscriptions"
+  | "publication_newsletter_settings"
+  | "documents_in_publications"
+> & {
+  publication_subscriptions?: PublicationSubscription["publication_subscriptions"];
+  publication_newsletter_settings?: PublicationSubscription["publication_newsletter_settings"];
+  documents_in_publications?: PublicationSubscription["documents_in_publications"];
+  showSubscribeButton?: boolean;
+  constrainHeight?: boolean;
+};
+
+export const PubListing = (props: PubListingProps) => {
+  let record = props.record;
+  let theme = usePubTheme(record?.theme);
+  let backgroundImage = record?.theme?.backgroundImage?.image?.ref
+    ? blobRefToSrc(
+        record?.theme?.backgroundImage?.image?.ref,
+        new AtUri(props.uri).host,
+      )
+    : null;
+
+  let backgroundImageRepeat = record?.theme?.backgroundImage?.repeat;
+  let backgroundImageSize = record?.theme?.backgroundImage?.width || 500;
+  if (!record) return null;
+
+  return (
+    <BaseThemeProvider {...theme} local>
+      <div
+        className={`no-underline! flex flex-row gap-2
+          bg-bg-leaflet
+          border border-border-light rounded-lg
+          px-3 py-3 selected-outline
+          hover:outline-accent-contrast hover:border-accent-contrast
+          relative overflow-hidden`}
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+          backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
+        }}
+      >
+        <a href={record.url} className="absolute inset-0 z-[1]" />
+        <div
+          className={`flex w-full flex-col justify-center text-center pt-4 pb-3 px-3 rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
+        >
+          <div className="mx-auto pb-1">
+            <PubIcon record={record} uri={props.uri} large />
+          </div>
+
+          <h4
+            className={`${props.constrainHeight ? "truncate" : ""} shrink-0 `}
+          >
+            {record.name}
+          </h4>
+          {record.description && (
+            <p
+              className={`text-secondary ${props.constrainHeight ? "line-clamp-1" : ""} min-h-[16px] text-sm overflow-hidden `}
+            >
+              {record.description}
+            </p>
+          )}
+          <div className="flex flex-col items-center justify-center text-xs text-tertiary pt-1">
+            <div className="flex flex-row gap-2 items-center">
+              {props.authorProfile?.handle}
+            </div>
+            {props.documents_in_publications?.[0]?.documents?.sort_date && (
+              <p>
+                Updated{" "}
+                {timeAgo(
+                  props.documents_in_publications[0].documents.sort_date,
+                )}
+              </p>
+            )}
+          </div>
+          {props.showSubscribeButton && (
+            <div className="mt-3 max-w-sm mx-auto relative z-[2] w-full">
+              <SubscribeInput
+                publicationUri={props.uri}
+                publicationUrl={record.url}
+                publicationName={record.name}
+                publicationDescription={record.description}
+                newsletterMode={
+                  props.publication_newsletter_settings?.enabled ?? false
+                }
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </BaseThemeProvider>
+  );
+};

@@ -9,7 +9,7 @@ import type {
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { hasLeafletContent } from "lexicons/src/normalize";
-import type { Post } from "app/(home-pages)/reader/getReaderFeed";
+import type { Post } from "app/(app)/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +22,7 @@ import { ShareTiny } from "./Icons/ShareTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
-import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { RecommendButton } from "./RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 

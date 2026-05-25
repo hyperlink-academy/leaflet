@@ -1,15 +1,17 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LoginModal } from "components/LoginButton";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Input } from "components/Input";
-import { useIdentityData } from "components/IdentityProvider";
+import { getIdentityData } from "actions/getIdentityData";
 
 export function LandingCTA() {
   let [loginOpen, setLoginOpen] = useState(false);
-  let { identity } = useIdentityData();
-  let signedIn = !!identity?.atp_did;
+  let [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    getIdentityData().then((identity) => setSignedIn(!!identity?.atp_did));
+  }, []);
   return (
     <div className="flex items-center justify-end gap-4 sm:gap-6">
       {signedIn ? (

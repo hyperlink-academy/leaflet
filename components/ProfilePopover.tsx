@@ -3,7 +3,7 @@ import { Popover } from "./Popover";
 import useSWR from "swr";
 import { callRPC } from "app/api/rpc/client";
 import { useRef, useState } from "react";
-import { ProfileHeader } from "app/(home-pages)/p/[didOrHandle]/ProfileHeader";
+import { ProfileHeader } from "app/(app)/(home-pages)/p/[didOrHandle]/ProfileHeader";
 import { SpeedyLink } from "./SpeedyLink";
 import { Tooltip } from "./Tooltip";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";

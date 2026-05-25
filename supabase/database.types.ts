@@ -893,18 +893,24 @@ export type Database = {
       permission_tokens: {
         Row: {
           blocked_by_admin: boolean | null
+          description: string | null
           id: string
           root_entity: string
+          title: string | null
         }
         Insert: {
           blocked_by_admin?: boolean | null
+          description?: string | null
           id?: string
           root_entity: string
+          title?: string | null
         }
         Update: {
           blocked_by_admin?: boolean | null
+          description?: string | null
           id?: string
           root_entity?: string
+          title?: string | null
         }
         Relationships: [
           {

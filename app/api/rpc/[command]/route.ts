@@ -3,7 +3,7 @@ import { push } from "./push";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { pull } from "./pull";
-import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
+import { getFactsForRoots } from "./getFactsForRoots";
 import { Vercel } from "@vercel/sdk";
 import {
   get_domain_status,
@@ -41,7 +41,7 @@ export type Routes = typeof Routes;
 let Routes = [
   push,
   pull,
-  getFactsFromHomeLeaflets,
+  getFactsForRoots,
   get_domain_status,
   get_leaflet_subdomain_status,
   get_leaflet_data,

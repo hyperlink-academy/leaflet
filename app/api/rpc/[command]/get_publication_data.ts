@@ -2,7 +2,6 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { AtUri } from "@atproto/syntax";
-import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { ids } from "lexicons/api/lexicons";
 
@@ -69,20 +68,6 @@ export const get_publication_data = makeRoute({
       .limit(1)
       .single();
 
-    let leaflet_data = await getFactsFromHomeLeaflets.handler(
-      {
-        tokens: [
-          ...(publication?.leaflets_in_publications.map(
-            (l) => l.permission_tokens?.root_entity!,
-          ) || []),
-          ...(publication?.publication_pages.map(
-            (p) => p.permission_tokens?.root_entity!,
-          ) || []),
-        ].filter(Boolean),
-      },
-      { supabase },
-    );
-
     // Pre-normalize documents from documents_in_publications
     const documents = (publication?.documents_in_publications || [])
       .map((dip) => {
@@ -140,7 +125,6 @@ export const get_publication_data = makeRoute({
         documents,
         drafts,
         pages,
-        leaflet_data: leaflet_data.result,
       },
     };
   },

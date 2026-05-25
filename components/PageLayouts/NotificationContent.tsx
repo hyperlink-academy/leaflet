@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { DashboardPageLayout } from "./DashboardPageLayout";
-import { NotificationList } from "app/(home-pages)/(writer)/notifications/NotificationList";
-import { getNotifications } from "app/(home-pages)/(writer)/notifications/getNotifications";
+import { NotificationList } from "app/(app)/(home-pages)/(writer)/notifications/NotificationList";
+import { getNotifications } from "app/(app)/(home-pages)/(writer)/notifications/getNotifications";
 import { HydratedNotification } from "src/notifications";
 
 export function NotificationContent() {

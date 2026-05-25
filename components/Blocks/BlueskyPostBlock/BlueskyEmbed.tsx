@@ -14,7 +14,7 @@ import { Avatar } from "components/Avatar";
 import {
   OpenPage,
   openPage,
-} from "app/lish/[did]/[publication]/[rkey]/PostPages";
+} from "app/(app)/lish/[did]/[publication]/[rkey]/PostPages";
 import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
 
 export const BlueskyEmbed = (props: {

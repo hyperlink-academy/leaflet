@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getHotFeed } from "app/(home-pages)/reader/getHotFeed";
-import type { Post } from "app/(home-pages)/reader/getReaderFeed";
+import { getHotFeed } from "app/(app)/(home-pages)/reader/getHotFeed";
+import type { Post } from "app/(app)/(home-pages)/reader/getReaderFeed";
 
 export type GetHotFeedReturnType = Awaited<
   ReturnType<(typeof get_hot_feed)["handler"]>

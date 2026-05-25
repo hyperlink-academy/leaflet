@@ -2,7 +2,7 @@ import { AtUri } from "@atproto/api";
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getDocumentURL } from "app/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 
 export type SearchPublicationDocumentsReturnType = Awaited<

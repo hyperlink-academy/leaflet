@@ -2,7 +2,7 @@ import { useLeafletDomains } from "components/PageSWRDataProvider";
 import {
   ShareButton,
   useReadOnlyShareLink,
-} from "app/[leaflet_id]/actions/ShareOptions";
+} from "app/(app)/[leaflet_id]/actions/ShareOptions";
 import { useEffect, useState } from "react";
 
 export const PageShareMenu = (props: { entityID: string }) => {

@@ -11,8 +11,8 @@ import { ButtonPrimary } from "components/Buttons";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
-import { updatePublicationBasePath } from "app/lish/createPub/updatePublication";
+} from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { updatePublicationBasePath } from "app/(app)/lish/createPub/updatePublication";
 import {
   assignDomainToPublication,
   removeDomainAssignment,
