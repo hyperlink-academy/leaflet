@@ -18,8 +18,9 @@ export const ProfilePopover = (props: {
   let [isHovered, setIsHovered] = useState(false);
   const hoverTimeout = useRef<null | number>(null);
 
+  const shouldFetch = isHovered || isOpen;
   const { data, isLoading } = useSWR(
-    isHovered ? ["profile-data", props.didOrHandle] : null,
+    shouldFetch ? ["profile-data", props.didOrHandle] : null,
     async () => {
       const response = await callRPC("get_profile_data", {
         didOrHandle: props.didOrHandle,
@@ -56,9 +57,7 @@ export const ProfilePopover = (props: {
       }
       onOpenChange={setIsOpen}
     >
-      {isLoading ? (
-        <div className="text-secondary p-4">Loading...</div>
-      ) : data?.profile ? (
+      {data?.profile ? (
         <div>
           <ProfileHeader
             profile={data.profile}
@@ -68,6 +67,8 @@ export const ProfilePopover = (props: {
 
           <ProfileLinks handle={data.profile.handle} />
         </div>
+      ) : isLoading || !data ? (
+        <div className="text-secondary p-4">Loading...</div>
       ) : (
         <div className="text-secondary py-2 px-4">No profile found...</div>
       )}
