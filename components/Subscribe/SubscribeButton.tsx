@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { SubscribeWithHandle, AtSubscribeSuccess } from "./HandleSubscribe";
 import { EmailInput, EmailConfirm } from "./EmailSubscribe";
 import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
@@ -55,6 +55,8 @@ export const SubscribePanel = (props: SubscribeProps) => {
 export const SubscribeInput = (props: SubscribeProps) => {
   let toaster = useToaster();
   let router = useRouter();
+  let pathname = usePathname();
+  let searchParams = useSearchParams();
   const user = useViewerSubscription(props.publicationUri);
   const { identity, mutate: mutateIdentity } = useIdentityData();
   let [email, setEmail] = useState(user.email ?? "");
@@ -81,6 +83,43 @@ export const SubscribeInput = (props: SubscribeProps) => {
   // account with no email yet. The modal asks them to link the typed email
   // (or log out) before we send a confirmation code.
   const needsLinkConfirmation = !!viewerAtpDid && !viewerEmail && !!email;
+
+  // Embedded subscribe forms (see /api/subscribe_email) redirect back here
+  // with `subscribe_email=<email>` after sending the confirmation code. Open
+  // the confirm modal so the user can paste the code from their inbox without
+  // re-entering their email. `subscribe_email_confirmed=1` means the user was
+  // already verified server-side and the modal jumps straight to success.
+  useEffect(() => {
+    if (!props.newsletterMode) return;
+    const incomingEmail = searchParams.get("subscribe_email");
+    const alreadyConfirmed =
+      searchParams.get("subscribe_email_confirmed") === "1";
+    const errorCode = searchParams.get("subscribe_email_error");
+    if (!incomingEmail && !errorCode) return;
+
+    if (errorCode) {
+      const message =
+        ERROR_MESSAGES[errorCode as SubscribeError] ??
+        "We couldn't process that subscription. Try again.";
+      toaster({ type: "error", content: message });
+    } else if (incomingEmail) {
+      setEmail(incomingEmail);
+      setConfirmState(alreadyConfirmed ? "success" : "confirm");
+      setConfirmOpen(true);
+      if (alreadyConfirmed) {
+        setLocallySubscribed(true);
+        router.refresh();
+      }
+    }
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("subscribe_email");
+    next.delete("subscribe_email_confirmed");
+    next.delete("subscribe_email_error");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.newsletterMode]);
 
   const sendRequest = async (link: boolean) => {
     setRequesting(true);

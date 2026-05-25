@@ -260,6 +260,10 @@ export const NewsletterSettings = () => {
             </p>
           )}
         </div>
+
+        <hr className="border-border-light" />
+
+        <EmbedFormSnippet publicationUri={publicationUri} />
       </div>
 
       <Modal
@@ -297,6 +301,47 @@ export const NewsletterSettings = () => {
         />
       </Modal>
     </DashboardContainer>
+  );
+};
+
+const EmbedFormSnippet = (props: { publicationUri: string }) => {
+  let toaster = useToaster();
+  let appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+  let actionUrl = `${appUrl.replace(/\/$/, "")}/api/subscribe_email`;
+  let snippet = `<form action="${actionUrl}" method="post">
+  <input type="hidden" name="publication" value="${props.publicationUri}" />
+  <input type="email" name="email" placeholder="you@example.com" required />
+  <button type="submit">Subscribe</button>
+</form>`;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-secondary font-bold">Embed Subscribe Form</p>
+      <p className="text-tertiary text-sm leading-snug">
+        Paste this HTML into any webpage to let readers subscribe to your
+        publication. After submitting, they're redirected here to confirm with
+        a code we email them.
+      </p>
+      <div className="relative max-w-prose">
+        <pre className="input-with-border bg-border-light text-primary text-sm rounded-md p-2 pr-16 overflow-x-auto whitespace-pre">
+          <code>{snippet}</code>
+        </pre>
+        <ButtonSecondary
+          compact
+          className="absolute top-1.5 right-1.5 text-xs!"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(snippet);
+              toaster({ type: "success", content: "Copied!" });
+            } catch {
+              toaster({ type: "error", content: "Couldn't copy to clipboard." });
+            }
+          }}
+        >
+          Copy
+        </ButtonSecondary>
+      </div>
+    </div>
   );
 };
 
