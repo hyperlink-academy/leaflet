@@ -5,7 +5,7 @@ import { HomeContent } from "./HomeLayout";
 export default async function Home() {
   let auth_res = await getIdentityData();
 
-  let titles =
+  let titles: { [k: string]: string } =
     auth_res?.permission_token_on_homepage.reduce(
       (acc, tok) => {
         let title =
@@ -18,6 +18,17 @@ export default async function Home() {
       },
       {} as { [k: string]: string },
     ) ?? {};
+
+  // Include titles for drafts the user is a contributor on
+  for (let row of auth_res?.contributor_leaflets ?? []) {
+    let pt = row.permission_tokens;
+    let title =
+      pt.leaflets_in_publications?.[0]?.title ||
+      pt.leaflets_to_documents?.[0]?.title ||
+      pt.title ||
+      undefined;
+    if (title) titles[pt.root_entity] = title;
+  }
 
   return (
     <HomeContent

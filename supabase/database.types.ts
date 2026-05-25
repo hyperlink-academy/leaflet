@@ -593,6 +593,39 @@ export type Database = {
           },
         ]
       }
+      leaflet_contributors: {
+        Row: {
+          contributor_did: string
+          created_at: string
+          leaflet: string
+        }
+        Insert: {
+          contributor_did: string
+          created_at?: string
+          leaflet: string
+        }
+        Update: {
+          contributor_did?: string
+          created_at?: string
+          leaflet?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaflet_contributors_contributor_did_fkey"
+            columns: ["contributor_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+          {
+            foreignKeyName: "leaflet_contributors_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leaflets_in_publications: {
         Row: {
           archived: boolean | null
@@ -1026,6 +1059,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "entities"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_contributors: {
+        Row: {
+          confirmed: boolean
+          contributor_did: string
+          created_at: string
+          publication_uri: string
+        }
+        Insert: {
+          confirmed?: boolean
+          contributor_did: string
+          created_at?: string
+          publication_uri: string
+        }
+        Update: {
+          confirmed?: boolean
+          contributor_did?: string
+          created_at?: string
+          publication_uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_contributors_contributor_did_fkey"
+            columns: ["contributor_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+          {
+            foreignKeyName: "publication_contributors_publication_uri_fkey"
+            columns: ["publication_uri"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
           },
         ]
       }

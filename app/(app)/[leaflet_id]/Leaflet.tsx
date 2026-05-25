@@ -14,6 +14,7 @@ import { useUIState } from "src/useUIState";
 import { LeafletLayout } from "components/LeafletLayout";
 import { WelcomeModal } from "./WelcomeModal";
 import { AddToHomeEffect } from "./AddToHomeEffect";
+import { AutoAddDraftContributorEffect } from "./AutoAddDraftContributorEffect";
 
 export function Leaflet(props: {
   token: PermissionToken;
@@ -41,6 +42,7 @@ export function Leaflet(props: {
             <UpdateLeafletTitle entityID={props.leaflet_id} />
             <WelcomeModal />
             <AddToHomeEffect />
+            <AutoAddDraftContributorEffect leaflet_id={props.leaflet_id} />
             <SelectionManager />
             {/* we need the padding bottom here because if we don't have it the mobile footer will cut off...
             the dropshadow on the page... the padding is compensated by a negative top margin in mobile footer  */}

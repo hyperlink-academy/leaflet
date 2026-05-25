@@ -76,18 +76,53 @@ export async function uncachedGetIdentityData() {
 
   if (auth_res.data.identities.atp_did) {
     //I should create a relationship table so I can do this in the above query
-    let { data: rawPublications } = await supabaseServerClient
-      .from("publications")
-      .select("*")
-      .eq("identity_did", auth_res.data.identities.atp_did);
+    let [
+      { data: rawPublications },
+      { data: contributorLeafletRows },
+      { data: contributorPubRows },
+    ] = await Promise.all([
+      supabaseServerClient
+        .from("publications")
+        .select("*")
+        .eq("identity_did", auth_res.data.identities.atp_did),
+      supabaseServerClient
+        .from("leaflet_contributors")
+        .select(
+          `created_at,
+           permission_tokens!inner(
+             id, root_entity, title, description,
+             permission_token_rights(*),
+             leaflets_to_documents(*),
+             leaflets_in_publications(*, publications(*))
+           )`,
+        )
+        .eq("contributor_did", auth_res.data.identities.atp_did),
+      supabaseServerClient
+        .from("publication_contributors")
+        .select("created_at, publications!inner(*)")
+        .eq("contributor_did", auth_res.data.identities.atp_did)
+        .eq("confirmed", true),
+    ]);
     // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces,
     // then filter to only publications created by Leaflet
     const publications = deduplicateByUri(rawPublications || []).filter(
       isLeafletPublication,
     );
+    const contributor_leaflets = (contributorLeafletRows ?? []).filter(
+      (r): r is typeof r & { permission_tokens: NonNullable<typeof r.permission_tokens> } =>
+        !!r.permission_tokens,
+    );
+    const rawContributorPubs = (contributorPubRows ?? [])
+      .map((r) => r.publications)
+      .filter((p): p is NonNullable<typeof p> => !!p);
+    const contributor_publications = deduplicateByUri(rawContributorPubs).filter(
+      isLeafletPublication,
+    );
     return {
       ...auth_res.data.identities,
       publications,
+      contributor_publications,
+      contributor_leaflets,
       entitlements,
       subscription,
     };
@@ -96,6 +131,8 @@ export async function uncachedGetIdentityData() {
   return {
     ...auth_res.data.identities,
     publications: [],
+    contributor_publications: [],
+    contributor_leaflets: [],
     entitlements,
     subscription,
   };

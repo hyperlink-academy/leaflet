@@ -3,10 +3,17 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePath } from "next/cache";
+import { canManageDraft } from "src/contributorPermissions";
 
 export async function deleteDraft(leaflet_id: string) {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) throw new Error("No Identity");
+
+  let allowed = await canManageDraft({
+    leaflet_id,
+    current_did: identity.atp_did,
+  });
+  if (!allowed) throw new Error("Not authorized");
 
   await Promise.all([
     supabaseServerClient

@@ -10,6 +10,55 @@ import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePath } from "next/cache";
 
+// Resolve which DID owns the PDS that hosts this document and whether the
+// current user (identity_did) is authorized to mutate it. Owner-on-PDS is
+// always authorized; confirmed publication contributors are authorized to
+// act on the owner's behalf and the records are published via the owner's
+// OAuth session.
+async function resolveDocumentAuthority(
+  document_uri: string,
+  current_did: string,
+): Promise<
+  | { ok: true; ownerDid: string }
+  | { ok: false; error: OAuthSessionError }
+> {
+  let pdsOwner = new AtUri(document_uri).host;
+  if (pdsOwner === current_did) return { ok: true, ownerDid: current_did };
+
+  let { data: link } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("publication")
+    .eq("document", document_uri)
+    .maybeSingle();
+  if (!link?.publication) {
+    return {
+      ok: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authorized",
+        did: current_did,
+      },
+    };
+  }
+  let { data: contrib } = await supabaseServerClient
+    .from("publication_contributors")
+    .select("confirmed")
+    .eq("publication_uri", link.publication)
+    .eq("contributor_did", current_did)
+    .maybeSingle();
+  if (!contrib?.confirmed) {
+    return {
+      ok: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authorized",
+        did: current_did,
+      },
+    };
+  }
+  return { ok: true, ownerDid: pdsOwner };
+}
+
 export async function deletePost(
   document_uri: string
 ): Promise<{ success: true } | { success: false; error: OAuthSessionError }> {
@@ -25,7 +74,13 @@ export async function deletePost(
     };
   }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  let authority = await resolveDocumentAuthority(
+    document_uri,
+    identity.atp_did,
+  );
+  if (!authority.ok) return { success: false, error: authority.error };
+
+  const sessionResult = await restoreOAuthSession(authority.ownerDid);
   if (!sessionResult.ok) {
     return { success: false, error: sessionResult.error };
   }
@@ -34,9 +89,6 @@ export async function deletePost(
     credentialSession.fetchHandler.bind(credentialSession),
   );
   let uri = new AtUri(document_uri);
-  if (uri.host !== identity.atp_did) {
-    return { success: true };
-  }
 
   await Promise.all([
     // Delete from both PDS collections (document exists in one or the other)
@@ -74,7 +126,13 @@ export async function unpublishPost(
     };
   }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  let authority = await resolveDocumentAuthority(
+    document_uri,
+    identity.atp_did,
+  );
+  if (!authority.ok) return { success: false, error: authority.error };
+
+  const sessionResult = await restoreOAuthSession(authority.ownerDid);
   if (!sessionResult.ok) {
     return { success: false, error: sessionResult.error };
   }
@@ -83,9 +141,6 @@ export async function unpublishPost(
     credentialSession.fetchHandler.bind(credentialSession),
   );
   let uri = new AtUri(document_uri);
-  if (uri.host !== identity.atp_did) {
-    return { success: true };
-  }
 
   await Promise.all([
     // Delete from both PDS collections (document exists in one or the other)

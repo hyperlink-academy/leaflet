@@ -89,21 +89,15 @@ export async function publishToPublication({
     };
   }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
-  if (!sessionResult.ok) {
-    return { success: false, error: sessionResult.error };
-  }
-  let credentialSession = sessionResult.value;
-  let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
-  );
-
-  // Check if we're publishing to a publication or standalone
+  // Check if we're publishing to a publication or standalone, and figure out
+  // whose PDS the record will live in. For publications, the record always
+  // lives in the publication owner's PDS, so contributors publish using the
+  // owner's restored OAuth session.
   let draft: any = null;
   let existingDocUri: string | null = null;
+  let pdsDid = identity.atp_did;
 
   if (publication_uri) {
-    // Publishing to a publication - use leaflets_in_publications
     let { data, error } = await supabaseServerClient
       .from("publications")
       .select("*, leaflets_in_publications(*, documents(*))")
@@ -112,8 +106,20 @@ export async function publishToPublication({
       .single();
     console.log(error);
 
-    if (!data || identity.atp_did !== data?.identity_did)
-      throw new Error("No draft or not publisher");
+    if (!data) throw new Error("No draft or not publisher");
+
+    let isOwner = data.identity_did === identity.atp_did;
+    if (!isOwner) {
+      let { data: contrib } = await supabaseServerClient
+        .from("publication_contributors")
+        .select("confirmed")
+        .eq("publication_uri", publication_uri)
+        .eq("contributor_did", identity.atp_did)
+        .maybeSingle();
+      if (!contrib?.confirmed) throw new Error("No draft or not publisher");
+    }
+
+    pdsDid = data.identity_did!;
     draft = data.leaflets_in_publications[0];
     existingDocUri = draft?.doc;
   } else {
@@ -141,6 +147,19 @@ export async function publishToPublication({
       }
     }
   }
+
+  // Restore the OAuth session of the PDS that will host the record.
+  // For publications this is the owner; for standalone docs this is the
+  // current user. If a contributor is publishing and the owner is signed
+  // out, this surfaces a clear "owner needs to sign in again" error.
+  const sessionResult = await restoreOAuthSession(pdsDid);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
 
   // Heuristic: Remove title entities if this is the first time publishing
   // (when coming from a standalone leaflet with entitiesToDelete passed in)

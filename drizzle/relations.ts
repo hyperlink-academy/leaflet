@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, recommends_on_documents, poll_votes_on_entity, permission_tokens, user_subscriptions, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, publication_newsletter_settings, publication_email_subscribers, publication_email_subscriber_events, bsky_follows, site_standard_documents_in_publications, documents_in_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_subscriptions, site_standard_subscriptions, user_entitlements, permission_token_rights, publication_post_sends, leaflets_to_documents, leaflets_in_publications, publication_pages } from "./schema";
+import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, recommends_on_documents, poll_votes_on_entity, permission_tokens, user_subscriptions, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, publication_newsletter_settings, publication_email_subscribers, publication_email_subscriber_events, bsky_follows, site_standard_documents_in_publications, documents_in_publications, leaflet_contributors, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_contributors, publication_subscriptions, site_standard_subscriptions, user_entitlements, permission_token_rights, publication_post_sends, leaflets_to_documents, leaflets_in_publications, publication_pages } from "./schema";
 
 export const notificationsRelations = relations(notifications, ({one}) => ({
 	identity: one(identities, {
@@ -34,8 +34,10 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	bsky_follows_identity: many(bsky_follows, {
 		relationName: "bsky_follows_identity_identities_atp_did"
 	}),
+	leaflet_contributors: many(leaflet_contributors),
 	permission_token_on_homepages: many(permission_token_on_homepage),
 	publication_domains: many(publication_domains),
+	publication_contributors: many(publication_contributors),
 	publication_subscriptions: many(publication_subscriptions),
 	site_standard_subscriptions: many(site_standard_subscriptions),
 	user_entitlements: many(user_entitlements),
@@ -51,6 +53,7 @@ export const publicationsRelations = relations(publications, ({one, many}) => ({
 	publication_email_subscriber_events: many(publication_email_subscriber_events),
 	documents_in_publications: many(documents_in_publications),
 	publication_domains: many(publication_domains),
+	publication_contributors: many(publication_contributors),
 	publication_subscriptions: many(publication_subscriptions),
 	publication_post_sends: many(publication_post_sends),
 	leaflets_in_publications: many(leaflets_in_publications),
@@ -160,6 +163,7 @@ export const permission_tokensRelations = relations(permission_tokens, ({one, ma
 		relationName: "custom_domain_routes_view_permission_token_permission_tokens_id"
 	}),
 	email_subscriptions_to_entities: many(email_subscriptions_to_entity),
+	leaflet_contributors: many(leaflet_contributors),
 	permission_token_on_homepages: many(permission_token_on_homepage),
 	permission_token_rights: many(permission_token_rights),
 	leaflets_to_documents: many(leaflets_to_documents),
@@ -317,6 +321,17 @@ export const documents_in_publicationsRelations = relations(documents_in_publica
 	}),
 }));
 
+export const leaflet_contributorsRelations = relations(leaflet_contributors, ({one}) => ({
+	identity: one(identities, {
+		fields: [leaflet_contributors.contributor_did],
+		references: [identities.atp_did]
+	}),
+	permission_token: one(permission_tokens, {
+		fields: [leaflet_contributors.leaflet],
+		references: [permission_tokens.id]
+	}),
+}));
+
 export const document_mentions_in_bskyRelations = relations(document_mentions_in_bsky, ({one}) => ({
 	document: one(documents, {
 		fields: [document_mentions_in_bsky.document],
@@ -354,6 +369,17 @@ export const publication_domainsRelations = relations(publication_domains, ({one
 	}),
 	publication: one(publications, {
 		fields: [publication_domains.publication],
+		references: [publications.uri]
+	}),
+}));
+
+export const publication_contributorsRelations = relations(publication_contributors, ({one}) => ({
+	identity: one(identities, {
+		fields: [publication_contributors.contributor_did],
+		references: [identities.atp_did]
+	}),
+	publication: one(publications, {
+		fields: [publication_contributors.publication_uri],
 		references: [publications.uri]
 	}),
 }));
