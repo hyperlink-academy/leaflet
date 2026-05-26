@@ -49,10 +49,16 @@ export async function generateMetadata(props: {
         sizes: "32x32",
         type: "image/png",
       },
-      other: {
-        rel: "alternate",
-        url: publication.uri,
-      },
+      other: [
+        {
+          rel: "alternate",
+          url: publication.uri,
+        },
+        {
+          rel: "site.standard.publication",
+          url: publication.uri,
+        },
+      ],
     },
     alternates: pubRecord?.url
       ? {
