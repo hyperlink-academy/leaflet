@@ -6,8 +6,10 @@ import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
+  WithStandardSitePostPublicationTheme,
   type StandardSitePostSize,
 } from "./StandardSitePostItem";
+import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export const StandardSitePostBlock = (
@@ -26,10 +28,11 @@ export const StandardSitePostBlock = (
   let showPubTheme = showPubThemeFact?.data.value !== false;
   let editorPub = useLeafletPublicationData();
   let currentPublicationUri = editorPub.data?.publications?.uri ?? null;
+  let { data: post } = useStandardSitePost(uri);
 
   if (!uri) return null;
 
-  return (
+  let block = (
     <BlockLayout
       isSelected={!!isSelected}
       hasBackground="page"
@@ -46,6 +49,14 @@ export const StandardSitePostBlock = (
         currentPublicationUri={currentPublicationUri}
       />
     </BlockLayout>
+  );
+
+  if (!post) return block;
+
+  return (
+    <WithStandardSitePostPublicationTheme post={post} enabled={showPubTheme}>
+      {block}
+    </WithStandardSitePostPublicationTheme>
   );
 };
 
