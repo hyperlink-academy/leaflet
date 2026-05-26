@@ -64,7 +64,7 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
       asChild
       side="top"
       align="end"
-      className="flex flex-col gap-2 w-xs pb-3!"
+      className="flex flex-col gap-2 w-xs pb-3! overflow-y-auto"
       onOpenAutoFocus={(e) => e.preventDefault()}
       trigger={
         <SettingsTriggerButton aria-label="Standard Site Post Settings" />
