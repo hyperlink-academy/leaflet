@@ -126,7 +126,7 @@ function StandardSitePostItemPlaceholder({
         className={`transparent-container flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full items-start`}
       >
         <div
-          className={`bg-border-light rounded animate-pulse shrink-0 ${widePage ? "w-full sm:w-auto sm:h-[244px] aspect-[1.91/1]" : "w-full aspect-[1.91/1]"}`}
+          className={`bg-border-light rounded animate-pulse shrink-0 ${widePage ? "w-full sm:w-auto sm:h-[244px] aspect-[3/2]" : "w-full aspect-[1.91/1]"}`}
         />
         <div
           className={`flex w-full grow flex-col gap-2 justify-between p-3 pb-2 ${widePage ? "sm:pb-3" : ""}`}
@@ -261,12 +261,15 @@ function PubFooter({
   if (!publication.record) return null;
   const pubUrl = getPublicationURL(publication);
   return (
-    <Link
-      href={pubUrl}
-      className="flex items-center gap-1.5  text-accent-contrast font-bold no-underline! text-sm -mb-0.5"
-    >
-      <PubIcon tiny record={publication.record} uri={publication.uri} />
-      <span className="min-w-0 truncate">{publication.record.name}</span>
-    </Link>
+    <div className="flex flex-col">
+      <hr className=" border-border-light mt-2 mb-1" />
+      <Link
+        href={pubUrl}
+        className="flex items-center gap-1.5  text-accent-contrast font-bold no-underline! text-sm -mb-0.5"
+      >
+        <PubIcon tiny record={publication.record} uri={publication.uri} />
+        <span className="min-w-0 truncate">{publication.record.name}</span>
+      </Link>
+    </div>
   );
 }

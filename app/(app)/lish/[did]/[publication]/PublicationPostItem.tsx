@@ -81,9 +81,11 @@ function PostLink({
 
 export function PublicationPostItemSmall(props: CommonProps) {
   return (
-    <div className="flex w-full grow flex-col gap-1 px-3 py-2">
+    <div className="flex w-full grow flex-col px-3 py-2">
       <PostLink href={props.href}>
-        {props.title && <h3 className="text-primary">{props.title}</h3>}
+        {props.title && (
+          <h3 className="text-primary leading-snug pb-1">{props.title}</h3>
+        )}
       </PostLink>
       <MetaRow
         author={props.author}
@@ -91,7 +93,6 @@ export function PublicationPostItemSmall(props: CommonProps) {
         interactions={props.interactions}
         textClassName="text-sm"
       />
-      <hr className=" border-border-light mt-1" />
       {props.footer}
     </div>
   );
@@ -99,12 +100,15 @@ export function PublicationPostItemSmall(props: CommonProps) {
 
 export function PublicationPostItemMedium(props: MediumProps) {
   const hasCoverImage = !!props.coverImageSrc;
+
   return (
-    <div className="flex w-full items-stretch sm:min-h-36">
+    <div className="flex w-full items-stretch ">
       <div className="flex w-full grow flex-col justify-between min-w-0  pl-3 pr-3 py-2">
         <PostLink href={props.href}>
           {props.title && (
-            <h3 className="text-primary line-clamp-2">{props.title}</h3>
+            <h3 className="text-primary leading-snug line-clamp-2 pb-1">
+              {props.title}
+            </h3>
           )}
           <p className="text-secondary line-clamp-3 grow mb-2">
             {props.description}
@@ -116,14 +120,11 @@ export function PublicationPostItemMedium(props: MediumProps) {
           interactions={props.interactions}
           textClassName="text-sm place-self-end"
         />
-        <div className="shrink-0">
-          <hr className=" border-border-light mt-2 mb-1" />
-          {props.footer}
-        </div>
+        <div className="shrink-0">{props.footer}</div>
       </div>
       {hasCoverImage && (
         <div
-          className={`self-start shrink-0 w-16  border-l border-border-light ${props.footer ? "w-[182px]" : "sm:w-36"}`}
+          className={`self-start shrink-0 w-16  border-l border-border-light ${props.footer ? " w-[182px] h-[182px]" : "sm:h-36 sm:w-36"}`}
         >
           <img
             src={props.coverImageSrc}
@@ -141,13 +142,13 @@ export function PublicationPostItemLarge(props: LargeProps) {
   const widePage = (props.pageWidth ?? 0) >= 768;
   const body = (
     <div
-      className={`flex w-full grow flex-col ${widePage ? " px-3  py-2 sm:pb-3" : "px-3 py-2 "}`}
+      className={`min-w-0 flex w-full grow flex-col ${widePage ? " px-3 py-2 sm:pb-3" : "px-3 py-2 "}`}
     >
       <div className="flex flex-col grow w-full min-w-0 justify-between gap-2">
         <PostLink href={props.href}>
           {props.title && (
             <h3
-              className={`text-primary text-lg clamp-2 ${widePage ? "sm:text-xl " : ""}`}
+              className={`text-primary leading-snug text-lg pb-1  clamp-2 ${widePage ? "sm:text-xl " : ""}`}
             >
               {props.title}
             </h3>
@@ -165,10 +166,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
           textClassName={`${widePage ? "text-sm sm:text-base " : "text-sm "} `}
         />
       </div>
-      <div className="shrink-0 flex flex-col ">
-        <hr className=" border-border-light mt-2 mb-1" />
-        {props.footer}
-      </div>
+      <div className="shrink-0 flex flex-col ">{props.footer}</div>
     </div>
   );
 
