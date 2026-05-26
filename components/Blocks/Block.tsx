@@ -423,15 +423,15 @@ export const BlockLayout = (props: {
         className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
         ${props.hasAlignment ? "w-fit" : "w-full"}
          ${props.isSelected ? "block-border-selected " : "block-border"}
-         ${props.borderOnHover && "hover:border-accent-contrast! hover:outline-accent-contrast! focus-within:border-accent-contrast! focus-within:outline-accent-contrast!"}`}
-        style={{
-          backgroundColor:
-            props.hasBackground === "accent"
-              ? "var(--accent-light)"
-              : props.hasBackground === "page"
-                ? "rgb(var(--bg-page))"
-                : "transparent",
-        }}
+         ${props.borderOnHover && "hover:border-accent-contrast! hover:outline-accent-contrast! focus-within:border-accent-contrast! focus-within:outline-accent-contrast!"}
+        ${
+          props.hasBackground === "accent"
+            ? "bg-[var(--accent-light)]"
+            : props.hasBackground === "page"
+              ? "bg-page"
+              : "transparent"
+        }
+        `}
       >
         {props.children}
       </div>

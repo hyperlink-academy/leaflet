@@ -35,7 +35,10 @@ import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
-import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
+import {
+  StandardSitePostItemView,
+  WithStandardSitePostPublicationTheme,
+} from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
@@ -251,12 +254,16 @@ export let Block = ({
             : "small";
       return (
         <div className={className} {...blockProps}>
-          <StandardSitePostItemView
+          <WithStandardSitePostPublicationTheme
             post={post}
-            size={size}
-            showPubTheme={b.block.showPublicationTheme !== false}
-            currentPublicationUri={currentPublicationUri}
-          />
+            enabled={b.block.showPublicationTheme !== false}
+          >
+            <StandardSitePostItemView
+              post={post}
+              size={size}
+              currentPublicationUri={currentPublicationUri}
+            />
+          </WithStandardSitePostPublicationTheme>
         </div>
       );
     }

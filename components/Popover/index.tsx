@@ -65,6 +65,7 @@ export const Popover = (props: {
               sideOffset={props.sideOffset ? props.sideOffset : 4}
               collisionPadding={16}
               onOpenAutoFocus={props.onOpenAutoFocus}
+              arrowPadding={12}
             >
               {props.children}
               {!props.noArrow && (

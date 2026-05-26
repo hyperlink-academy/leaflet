@@ -66,14 +66,16 @@ function PostLink({
     return (
       <SpeedyLink
         href={href}
-        className="publishedPost no-underline! flex flex-col"
+        className="publishedPost no-underline! flex flex-col grow"
       >
         {children}
       </SpeedyLink>
     );
   }
   return (
-    <div className="publishedPost no-underline! flex flex-col">{children}</div>
+    <div className="publishedPost no-underline! flex flex-col grow">
+      {children}
+    </div>
   );
 }
 
@@ -98,38 +100,38 @@ export function PublicationPostItemSmall(props: CommonProps) {
 export function PublicationPostItemMedium(props: MediumProps) {
   const hasCoverImage = !!props.coverImageSrc;
   return (
-    <div className="flex w-full flex-col">
-      <div className="flex w-full gap-3 items-stretch sm:min-h-36">
-        <div className="flex w-full gap-2 grow flex-col justify-between min-w-0  pl-3 pr-3 py-2">
-          <PostLink href={props.href}>
-            {props.title && (
-              <h3 className="text-primary line-clamp-2">{props.title}</h3>
-            )}
-            <p className="text-secondary line-clamp-3">{props.description}</p>
-          </PostLink>
-          <MetaRow
-            author={props.author}
-            date={props.date}
-            interactions={props.interactions}
-            textClassName="text-sm place-self-end"
+    <div className="flex w-full items-stretch sm:min-h-36">
+      <div className="flex w-full grow flex-col justify-between min-w-0  pl-3 pr-3 py-2">
+        <PostLink href={props.href}>
+          {props.title && (
+            <h3 className="text-primary line-clamp-2">{props.title}</h3>
+          )}
+          <p className="text-secondary line-clamp-3 grow mb-2">
+            {props.description}
+          </p>
+        </PostLink>
+        <MetaRow
+          author={props.author}
+          date={props.date}
+          interactions={props.interactions}
+          textClassName="text-sm place-self-end"
+        />
+        <div className="shrink-0">
+          <hr className=" border-border-light mt-2 mb-1" />
+          {props.footer}
+        </div>
+      </div>
+      {hasCoverImage && (
+        <div
+          className={`self-start shrink-0 w-16  border-l border-border-light ${props.footer ? "w-[182px]" : "sm:w-36"}`}
+        >
+          <img
+            src={props.coverImageSrc}
+            alt={props.coverImageAlt || props.title || ""}
+            className="w-full aspect-square object-cover rounded"
           />
         </div>
-        {hasCoverImage && (
-          <div
-            className={`self-start shrink-0 w-16  border-l border-border-light ${props.footer ? "w-[182px]" : "sm:w-36"}`}
-          >
-            <img
-              src={props.coverImageSrc}
-              alt={props.coverImageAlt || props.title || ""}
-              className="w-full aspect-square object-cover rounded"
-            />
-          </div>
-        )}
-      </div>
-      <div className="shrink-0 px-3 pb-2">
-        <hr className=" border-border-light mt-2 mb-1" />
-        {props.footer}
-      </div>
+      )}
     </div>
   );
 }
@@ -163,7 +165,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
           textClassName={`${widePage ? "text-sm sm:text-base " : "text-sm "} `}
         />
       </div>
-      <div className="shrink-0 flex flex-col shrink-0">
+      <div className="shrink-0 flex flex-col ">
         <hr className=" border-border-light mt-2 mb-1" />
         {props.footer}
       </div>
@@ -176,13 +178,11 @@ export function PublicationPostItemLarge(props: LargeProps) {
         className={`flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full  items-start`}
       >
         {hasCoverImage && (
-          <div className="w-fit">
-            <img
-              src={props.coverImageSrc}
-              alt={props.coverImageAlt || props.title || ""}
-              className={`${widePage ? "h-[244px]" : "h-full"} aspect-[1.91/1] object-cover rounded`}
-            />
-          </div>
+          <img
+            src={props.coverImageSrc}
+            alt={props.coverImageAlt || props.title || ""}
+            className={`${widePage ? "sm:h-[244px] aspect-[3/2]" : "h-full aspect-[1.91/1]"}  object-cover rounded`}
+          />
         )}
         {body}
       </div>

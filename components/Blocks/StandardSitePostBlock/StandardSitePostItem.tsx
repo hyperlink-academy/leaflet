@@ -25,12 +25,10 @@ export type StandardSitePostSize = "large" | "medium" | "small";
 export function StandardSitePostItem({
   uri,
   size = "medium",
-  showPubTheme = true,
   currentPublicationUri,
 }: {
   uri: string;
   size?: StandardSitePostSize;
-  showPubTheme?: boolean;
   currentPublicationUri?: string | null;
 }) {
   const { data, isLoading } = useStandardSitePost(uri);
@@ -51,7 +49,6 @@ export function StandardSitePostItem({
     <StandardSitePostItemView
       post={data}
       size={size}
-      showPubTheme={showPubTheme}
       currentPublicationUri={currentPublicationUri}
     />
   );
@@ -94,7 +91,7 @@ function StandardSitePostItemPlaceholder({
   if (size === "small") {
     return (
       <>
-        <div className="flex w-full grow flex-col gap-1 px-3 py-2">
+        <div className="transparent-container flex w-full grow flex-col gap-1 p-3 ">
           <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
           <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
         </div>
@@ -106,8 +103,8 @@ function StandardSitePostItemPlaceholder({
   if (size === "medium") {
     return (
       <>
-        <div className="flex w-full gap-3 items-stretch sm:min-h-36">
-          <div className="flex w-full gap-2 grow flex-col justify-between min-w-0 pl-3 pr-3 py-2">
+        <div className="transparent-container flex w-full gap-3 items-stretch sm:min-h-36">
+          <div className="flex w-full gap-2 grow flex-col justify-between min-w-0 pl-3 p-3">
             <div className="flex flex-col gap-2">
               <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
               <div className="h-4 w-full bg-border-light rounded animate-pulse" />
@@ -126,17 +123,17 @@ function StandardSitePostItemPlaceholder({
   return (
     <>
       <div
-        className={`flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full items-start`}
+        className={`transparent-container flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full items-start`}
       >
         <div
           className={`bg-border-light rounded animate-pulse shrink-0 ${widePage ? "w-full sm:w-auto sm:h-[244px] aspect-[1.91/1]" : "w-full aspect-[1.91/1]"}`}
         />
         <div
-          className={`flex w-full grow flex-col gap-2 justify-between px-3 py-2 ${widePage ? "sm:pb-3" : ""}`}
+          className={`flex w-full grow flex-col gap-2 justify-between p-3 pb-2 ${widePage ? "sm:pb-3" : ""}`}
         >
           <div className="flex flex-col gap-2">
             <div
-              className={`h-7 w-2/3 bg-border-light rounded animate-pulse ${widePage ? "sm:h-8" : ""}`}
+              className={`h-7 w-1/3 bg-border-light rounded animate-pulse ${widePage ? "sm:h-8" : ""}`}
             />
             <div
               className={`h-5 w-full bg-border-light rounded animate-pulse ${widePage ? "sm:h-6" : ""}`}
@@ -158,12 +155,10 @@ function StandardSitePostItemPlaceholder({
 export function StandardSitePostItemView({
   post,
   size = "medium",
-  showPubTheme = true,
   currentPublicationUri,
 }: {
   post: StandardSitePostData;
   size?: StandardSitePostSize;
-  showPubTheme?: boolean;
   currentPublicationUri?: string | null;
 }) {
   const docUrl = getDocumentURL(
@@ -234,9 +229,8 @@ export function StandardSitePostItemView({
     footer: pubFooter,
   };
 
-  let item: React.ReactNode;
   if (size === "large") {
-    item = (
+    return (
       <PublicationPostItemLarge
         {...commonProps}
         description={description}
@@ -245,8 +239,9 @@ export function StandardSitePostItemView({
         pageWidth={pageWidth}
       />
     );
-  } else if (size === "medium") {
-    item = (
+  }
+  if (size === "medium") {
+    return (
       <PublicationPostItemMedium
         {...commonProps}
         description={description}
@@ -254,15 +249,8 @@ export function StandardSitePostItemView({
         coverImageAlt={post.record.title}
       />
     );
-  } else {
-    item = <PublicationPostItemSmall {...commonProps} />;
   }
-
-  return (
-    <WithStandardSitePostPublicationTheme post={post} enabled={showPubTheme}>
-      {item}
-    </WithStandardSitePostPublicationTheme>
-  );
+  return <PublicationPostItemSmall {...commonProps} />;
 }
 
 function PubFooter({
