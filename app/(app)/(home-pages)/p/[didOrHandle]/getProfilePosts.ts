@@ -8,6 +8,7 @@ import {
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
+import { idResolver } from "src/identity";
 
 export type Cursor = {
   sort_date: string;
@@ -20,18 +21,14 @@ export async function getProfilePosts(
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   const limit = 20;
 
-  let [{ data: rawFeed, error }, { data: profile }] = await Promise.all([
+  let [{ data: rawFeed, error }, resolved] = await Promise.all([
     supabaseServerClient.rpc("get_profile_posts", {
       p_did: did,
       p_cursor_sort_date: cursor?.sort_date ?? undefined,
       p_cursor_uri: cursor?.uri ?? undefined,
       p_limit: limit,
     }),
-    supabaseServerClient
-      .from("bsky_profiles")
-      .select("handle")
-      .eq("did", did)
-      .single(),
+    idResolver.did.resolve(did).catch(() => null),
   ]);
 
   if (error) {
@@ -42,7 +39,8 @@ export async function getProfilePosts(
   let feed = deduplicateByUriOrdered(rawFeed || []);
   if (feed.length === 0) return { posts: [], nextCursor: null };
 
-  let handle = profile?.handle ? `@${profile.handle}` : null;
+  let resolvedHandle = resolved?.alsoKnownAs?.[0]?.slice(5);
+  let handle = resolvedHandle ? `@${resolvedHandle}` : null;
   let posts: Post[] = [];
 
   for (let row of feed) {

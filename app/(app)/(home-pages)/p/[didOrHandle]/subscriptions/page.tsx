@@ -1,4 +1,4 @@
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 import { getSubscriptions } from "app/(app)/(home-pages)/reader/getSubscriptions";
 import { ProfileSubscriptionsContent } from "./SubscriptionsContent";
 

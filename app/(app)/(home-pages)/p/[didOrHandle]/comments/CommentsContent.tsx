@@ -3,12 +3,11 @@
 import { EmptyState } from "components/EmptyState";
 import { useEffect, useRef, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
-import { AppBskyActorProfile, AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/api";
 import { PubLeafletComment, PubLeafletDocument } from "lexicons/api";
 import { ReplyTiny } from "components/Icons/ReplyTiny";
 import { Avatar } from "components/Avatar";
 import { BaseTextBlock } from "app/(app)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import {
   getProfileComments,
   type ProfileComment,
@@ -105,14 +104,9 @@ export const ProfileCommentsContent = (props: {
 
 const CommentItem = ({ comment }: { comment: ProfileComment }) => {
   const record = comment.record as PubLeafletComment.Record;
-  const profile = comment.bsky_profiles?.record as
-    | AppBskyActorProfile.Record
-    | undefined;
+  const profile = comment.profile;
   const displayName =
-    profile?.displayName || comment.bsky_profiles?.handle || "Unknown";
-
-  // Get commenter DID from comment URI
-  const commenterDid = new AtUri(comment.uri).host;
+    profile?.displayName || profile?.handle || "Unknown";
 
   const isReply = !!record.reply;
 
@@ -126,11 +120,9 @@ const CommentItem = ({ comment }: { comment: ProfileComment }) => {
   const parentRecord = comment.parentComment?.record as
     | PubLeafletComment.Record
     | undefined;
-  const parentProfile = comment.parentComment?.bsky_profiles?.record as
-    | AppBskyActorProfile.Record
-    | undefined;
+  const parentProfile = comment.parentComment?.profile;
   const parentDisplayName =
-    parentProfile?.displayName || comment.parentComment?.bsky_profiles?.handle;
+    parentProfile?.displayName || parentProfile?.handle;
 
   // Build direct link to the comment
   const commentLink = useMemo(() => {
@@ -167,9 +159,7 @@ const CommentItem = ({ comment }: { comment: ProfileComment }) => {
   }, [comment.document, comment.publication, comment.uri, record.onPage]);
 
   // Get avatar source
-  const avatarSrc = profile?.avatar?.ref
-    ? blobRefToSrc(profile.avatar.ref, commenterDid)
-    : undefined;
+  const avatarSrc = profile?.avatar ?? undefined;
 
   return (
     <div id={comment.uri} className="w-full flex flex-col text-left mb-8">

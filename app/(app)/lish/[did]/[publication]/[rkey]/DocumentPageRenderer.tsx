@@ -3,6 +3,7 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
 } from "lexicons/api";
+import { Suspense } from "react";
 import { QuoteHandler } from "./QuoteHandler";
 import {
   PublicationBackgroundProvider,
@@ -19,6 +20,10 @@ import { FontLoader } from "components/FontLoader";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { PublicationNav } from "../PublicationNav";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import {
+  CommentsSection,
+  CommentsSkeleton,
+} from "./Interactions/Comments/CommentsSection";
 
 export async function DocumentPageRenderer({
   did,
@@ -121,6 +126,11 @@ export async function DocumentPageRenderer({
                 did={did}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 pollData={pollData}
+                commentsSlot={
+                  <Suspense fallback={<CommentsSkeleton />}>
+                    <CommentsSection document_uri={document.uri} />
+                  </Suspense>
+                }
               />
             </LeafletLayout>
 

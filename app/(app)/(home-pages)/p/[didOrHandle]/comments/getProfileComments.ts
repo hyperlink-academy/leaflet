@@ -3,17 +3,24 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
+import { AtUri } from "@atproto/syntax";
+import { getProfiles, type Profile } from "src/identity";
 
 export type Cursor = {
   indexed_at: string;
   uri: string;
 };
 
+export type CommentProfile = Pick<
+  Profile,
+  "did" | "handle" | "displayName" | "avatar"
+>;
+
 export type ProfileComment = {
   uri: string;
   record: Json;
   indexed_at: string;
-  bsky_profiles: { record: Json; handle: string | null } | null;
+  profile: CommentProfile | null;
   document: {
     uri: string;
     data: Json;
@@ -26,9 +33,19 @@ export type ProfileComment = {
   parentComment: {
     uri: string;
     record: Json;
-    bsky_profiles: { record: Json; handle: string | null } | null;
+    profile: CommentProfile | null;
   } | null;
 };
+
+function toCommentProfile(p: Profile | null | undefined): CommentProfile | null {
+  if (!p) return null;
+  return {
+    did: p.did,
+    handle: p.handle,
+    displayName: p.displayName,
+    avatar: p.avatar,
+  };
+}
 
 export async function getProfileComments(
   did: string,
@@ -40,7 +57,6 @@ export async function getProfileComments(
     .from("comments_on_documents")
     .select(
       `*,
-      bsky_profiles(record, handle),
       documents(uri, data, documents_in_publications(publications(*)))`,
     )
     .eq("profile", did)
@@ -68,41 +84,47 @@ export async function getProfileComments(
   // Fetch parent comments if there are any replies
   let parentCommentsMap = new Map<
     string,
-    {
-      uri: string;
-      record: Json;
-      bsky_profiles: { record: Json; handle: string | null } | null;
-    }
+    { uri: string; record: Json }
   >();
 
   if (parentUris.length > 0) {
     const { data: parentComments } = await supabaseServerClient
       .from("comments_on_documents")
-      .select(`uri, record, bsky_profiles(record, handle)`)
+      .select("uri, record")
       .in("uri", parentUris);
 
     if (parentComments) {
       for (const pc of parentComments) {
-        parentCommentsMap.set(pc.uri, {
-          uri: pc.uri,
-          record: pc.record,
-          bsky_profiles: pc.bsky_profiles,
-        });
+        parentCommentsMap.set(pc.uri, { uri: pc.uri, record: pc.record });
       }
     }
   }
+
+  // Gather all author DIDs from both main and parent comments
+  const allDids = new Set<string>();
+  for (const c of rawComments) allDids.add(new AtUri(c.uri).host);
+  for (const pc of parentCommentsMap.values())
+    allDids.add(new AtUri(pc.uri).host);
+
+  const profiles = await getProfiles(Array.from(allDids));
 
   // Transform to ProfileComment format
   const comments: ProfileComment[] = rawComments.map((comment) => {
     const record = comment.record as PubLeafletComment.Record;
     const doc = comment.documents;
     const pub = doc?.documents_in_publications?.[0]?.publications;
+    const commenterDid = new AtUri(comment.uri).host;
+
+    const parentRaw = record.reply?.parent
+      ? parentCommentsMap.get(record.reply.parent)
+      : undefined;
+    const parentDid = parentRaw ? new AtUri(parentRaw.uri).host : null;
 
     return {
       uri: comment.uri,
       record: comment.record,
       indexed_at: comment.indexed_at,
-      bsky_profiles: comment.bsky_profiles,
+      profile: toCommentProfile(profiles.get(commenterDid)),
       document: doc
         ? {
             uri: doc.uri,
@@ -115,8 +137,14 @@ export async function getProfileComments(
             record: pub.record,
           }
         : null,
-      parentComment: record.reply?.parent
-        ? parentCommentsMap.get(record.reply.parent) || null
+      parentComment: parentRaw
+        ? {
+            uri: parentRaw.uri,
+            record: parentRaw.record,
+            profile: parentDid
+              ? toCommentProfile(profiles.get(parentDid))
+              : null,
+          }
         : null,
     };
   });

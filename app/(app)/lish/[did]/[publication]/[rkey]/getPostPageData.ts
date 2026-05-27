@@ -16,7 +16,7 @@ export async function getPostPageData(did: string, rkey: string) {
       `
         data,
         uri,
-        comments_on_documents(*, bsky_profiles(*)),
+        comments_on_documents(count),
         documents_in_publications(publications(*,
           documents_in_publications(documents(uri, data)),
           publication_subscriptions(*),
@@ -150,6 +150,7 @@ export async function getPostPageData(did: string, rkey: string) {
       }
     : null;
   const recommendsCount = document.recommends_on_documents?.[0]?.count ?? 0;
+  const commentsCount = document.comments_on_documents?.[0]?.count ?? 0;
 
   return {
     ...document,
@@ -161,7 +162,7 @@ export async function getPostPageData(did: string, rkey: string) {
     prevNext,
     // Explicit relational data for DocumentContext
     publication,
-    comments: document.comments_on_documents,
+    commentsCount,
     mentions: document.document_mentions_in_bsky,
     leafletId: document.leaflets_in_publications[0]?.leaflet || null,
     // Recommends data

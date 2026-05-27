@@ -1,5 +1,4 @@
 "use client";
-import { CloseTiny } from "components/Icons/CloseTiny";
 import { useInteractionState, setInteractionState } from "../Interactions";
 import { useIdentityData } from "components/IdentityProvider";
 import { CommentBox } from "./CommentBox";
@@ -9,10 +8,8 @@ import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
 import { useMemo, useState } from "react";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { Separator } from "components/Layout";
-import { ButtonPrimary } from "components/Buttons";
-import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
-import { AppBskyActorProfile, AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/api";
 import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
 import { timeAgo } from "src/utils/timeAgo";
@@ -20,27 +17,36 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { ProfilePopover } from "components/ProfilePopover";
 import { LoginModal } from "components/LoginButton";
 
+export type CommentProfile = {
+  did: string;
+  handle: string | null;
+  displayName: string | null;
+  avatar: string | null;
+};
+
 export type Comment = {
   record: Json;
   uri: string;
-  bsky_profiles: { record: Json; did: string } | null;
+  profile: CommentProfile | null;
 };
 export function CommentsDrawerContent(props: {
   document_uri: string;
   comments: Comment[];
-  pageId?: string;
   noCommentBox?: boolean;
 }) {
   let { identity } = useIdentityData();
-  let { localComments } = useInteractionState(props.document_uri);
+  let { localComments, pageId } = useInteractionState(props.document_uri);
   let comments = useMemo(() => {
+    let filtered = props.comments.filter(
+      (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
+    );
     return [
       ...localComments.filter(
-        (c) => (c.record as any)?.onPage === props.pageId,
+        (c) => (c.record as any)?.onPage === pageId,
       ),
-      ...props.comments,
+      ...filtered,
     ];
-  }, [props.comments, localComments]);
+  }, [props.comments, localComments, pageId]);
   let pathname = usePathname();
   let redirectRoute = useMemo(() => {
     if (typeof window === "undefined") return;
@@ -59,7 +65,7 @@ export function CommentsDrawerContent(props: {
       {!props.noCommentBox && (
         <>
           {identity?.atp_did ? (
-            <CommentBox doc_uri={props.document_uri} pageId={props.pageId} />
+            <CommentBox doc_uri={props.document_uri} pageId={pageId} />
           ) : (
             <div className="w-full accent-container text-tertiary text-center italic p-3 gap-2">
               <span className="text-accent-contrast font-bold">
@@ -91,12 +97,10 @@ export function CommentsDrawerContent(props: {
           )
           .map((comment) => {
             let record = comment.record as PubLeafletComment.Record;
-            let profile = comment.bsky_profiles
-              ?.record as AppBskyActorProfile.Record;
             return (
               <Comment
-                pageId={props.pageId}
-                profile={profile}
+                pageId={pageId}
+                profile={comment.profile}
                 document={props.document_uri}
                 comment={comment}
                 record={record}
@@ -114,11 +118,11 @@ const Comment = (props: {
   document: string;
   comment: Comment;
   comments: Comment[];
-  profile: AppBskyActorProfile.Record;
+  profile: CommentProfile | null;
   record: PubLeafletComment.Record;
   pageId?: string;
 }) => {
-  const did = props.comment.bsky_profiles?.did;
+  const did = props.profile?.did;
 
   let timeAgoDate = timeAgo(props.record.createdAt, { compact: true });
 
@@ -130,7 +134,7 @@ const Comment = (props: {
             didOrHandle={did}
             trigger={
               <div className="text-sm text-secondary font-bold hover:underline">
-                {props.profile.displayName}
+                {props.profile?.displayName}
               </div>
             }
           />
@@ -270,10 +274,7 @@ const Replies = (props: {
                       document={props.document}
                       key={reply.uri}
                       comment={reply}
-                      profile={
-                        reply.bsky_profiles
-                          ?.record as AppBskyActorProfile.Record
-                      }
+                      profile={reply.profile}
                       record={reply.record as PubLeafletComment.Record}
                       comments={props.comments}
                     />

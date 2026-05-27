@@ -7,6 +7,8 @@ import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import { AtUri } from "@atproto/syntax";
+import { getProfiles } from "src/identity";
 
 export const get_document_interactions = makeRoute({
   route: "get_document_interactions",
@@ -23,7 +25,7 @@ export const get_document_interactions = makeRoute({
         `
         data,
         uri,
-        comments_on_documents(*, bsky_profiles(*)),
+        comments_on_documents(*),
         document_mentions_in_bsky(*),
         documents_in_publications(publications(*))
         `,
@@ -81,8 +83,28 @@ export const get_document_interactions = makeRoute({
       ...uniqueBacklinks.filter((b) => !dbMentionUris.has(b.uri)),
     ];
 
+    const commentDids = Array.from(
+      new Set(document.comments_on_documents.map((c) => new AtUri(c.uri).host)),
+    );
+    const profiles = await getProfiles(commentDids);
+    const comments = document.comments_on_documents.map((c) => {
+      const did = new AtUri(c.uri).host;
+      const p = profiles.get(did);
+      return {
+        ...c,
+        profile: p
+          ? {
+              did: p.did,
+              handle: p.handle,
+              displayName: p.displayName,
+              avatar: p.avatar,
+            }
+          : null,
+      };
+    });
+
     return {
-      comments: document.comments_on_documents,
+      comments,
       quotesAndMentions,
       totalMentionsCount: quotesAndMentions.length,
     };

@@ -1,29 +1,22 @@
-import { BaseTextBlock } from "app/(app)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
-import { AppBskyActorProfile, PubLeafletComment } from "lexicons/api";
+import { PubLeafletComment } from "lexicons/api";
 import { HydratedCommentNotification } from "src/notifications";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { Avatar } from "components/Avatar";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import {
   CommentInNotification,
   ContentLayout,
   Notification,
 } from "./Notification";
-import { AtUri } from "@atproto/api";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 export const CommentNotification = (props: HydratedCommentNotification) => {
   const docRecord = props.normalizedDocument;
   const commentRecord = props.commentData.record as PubLeafletComment.Record;
-  const profileRecord = props.commentData.bsky_profiles
-    ?.record as AppBskyActorProfile.Record;
+  const profile = props.commentData.profile;
 
   if (!docRecord) return null;
 
   const displayName =
-    profileRecord?.displayName ||
-    props.commentData.bsky_profiles?.handle ||
-    "Someone";
+    profile?.displayName || profile?.handle || "Someone";
   const pubRecord = props.normalizedPublication;
 
   const href =
@@ -40,13 +33,7 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
         <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
           <CommentInNotification
             className=""
-            avatar={
-              profileRecord?.avatar?.ref &&
-              blobRefToSrc(
-                profileRecord?.avatar?.ref,
-                props.commentData.bsky_profiles?.did || "",
-              )
-            }
+            avatar={profile?.avatar ?? undefined}
             displayName={displayName}
             index={[]}
             plaintext={commentRecord.plaintext}
