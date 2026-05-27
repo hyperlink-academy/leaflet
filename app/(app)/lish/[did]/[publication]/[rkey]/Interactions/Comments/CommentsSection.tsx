@@ -1,7 +1,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/syntax";
 import { getProfiles } from "src/identity";
 import { CommentsDrawerContent, type Comment } from "./index";
+import { AtUri } from "@atproto/syntax";
 
 export async function CommentsSection({
   document_uri,
@@ -10,29 +10,17 @@ export async function CommentsSection({
 }) {
   const { data: rows } = await supabaseServerClient
     .from("comments_on_documents")
-    .select("uri, record")
+    .select("uri, record ")
     .eq("document", document_uri);
 
-  const safeRows = rows ?? [];
-  const dids = Array.from(new Set(safeRows.map((c) => new AtUri(c.uri).host)));
-  const profiles = await getProfiles(dids);
+  const dids = (rows ?? []).map((c) => new AtUri(c.uri).host);
+  const profiles = await getProfiles([...new Set(dids)]);
 
-  const comments: Comment[] = safeRows.map((c) => {
-    const did = new AtUri(c.uri).host;
-    const p = profiles.get(did);
-    return {
-      uri: c.uri,
-      record: c.record,
-      profile: p
-        ? {
-            did: p.did,
-            handle: p.handle,
-            displayName: p.displayName,
-            avatar: p.avatar,
-          }
-        : null,
-    };
-  });
+  const comments: Comment[] = (rows ?? []).map((c) => ({
+    uri: c.uri,
+    record: c.record,
+    profile: profiles.get(new AtUri(c.uri).host) ?? null,
+  }));
 
   return (
     <CommentsDrawerContent document_uri={document_uri} comments={comments} />

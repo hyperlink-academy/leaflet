@@ -16,18 +16,12 @@ import { timeAgo } from "src/utils/timeAgo";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { ProfilePopover } from "components/ProfilePopover";
 import { LoginModal } from "components/LoginButton";
-
-export type CommentProfile = {
-  did: string;
-  handle: string | null;
-  displayName: string | null;
-  avatar: string | null;
-};
+import { type Profile } from "src/identity";
 
 export type Comment = {
   record: Json;
   uri: string;
-  profile: CommentProfile | null;
+  profile: Profile | null;
 };
 export function CommentsDrawerContent(props: {
   document_uri: string;
@@ -118,7 +112,7 @@ const Comment = (props: {
   document: string;
   comment: Comment;
   comments: Comment[];
-  profile: CommentProfile | null;
+  profile: Profile | null;
   record: PubLeafletComment.Record;
   pageId?: string;
 }) => {
