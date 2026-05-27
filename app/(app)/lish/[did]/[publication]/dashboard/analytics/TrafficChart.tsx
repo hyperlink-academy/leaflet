@@ -325,7 +325,7 @@ export const TopReferrors = (props: {
           return (
             <Fragment key={ref.referrer_host}>
               <button
-                className={`w-full flex justify-between gap-4 px-1 py-1.5 items-center text-right text-sm rounded-md ${selected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
+                className={`w-full flex justify-between gap-4 px-1 py-1.5 items-center text-sm rounded-md ${selected ? "text-accent-contrast bg-[var(--accent-light)]" : ""}`}
                 onClick={() => {
                   if (selected) {
                     props.setSelectedReferrer(undefined);
@@ -334,10 +334,12 @@ export const TopReferrors = (props: {
                   }
                 }}
               >
-                <div className="flex gap-2 items-center grow">
+                <div className="min-w-0 truncate text-left">
                   {ref.referrer_host}
                 </div>
-                {ref.pageviews.toLocaleString()}
+                <div className="shrink-0 tabular-nums">
+                  {ref.pageviews.toLocaleString()}
+                </div>
               </button>
               <hr className="border-border-light last:hidden" />
             </Fragment>
