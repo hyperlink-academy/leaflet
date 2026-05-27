@@ -59,31 +59,53 @@ async function writeCache(entries: Map<string, Profile | null>): Promise<void> {
   await pipeline.exec();
 }
 
-async function fetchProfiles(dids: string[]): Promise<Map<string, Profile | null>> {
-  const out = new Map<string, Profile | null>();
-  for (const did of dids) out.set(did, null);
-  if (dids.length === 0) return out;
+type FetchResult = {
+  results: Map<string, Profile | null>;
+  toCache: Map<string, Profile | null>;
+};
+
+async function fetchProfiles(dids: string[]): Promise<FetchResult> {
+  const results = new Map<string, Profile | null>();
+  const toCache = new Map<string, Profile | null>();
+  for (const did of dids) results.set(did, null);
+  if (dids.length === 0) return { results, toCache };
 
   const agent = await getAgent();
+  const batches: string[][] = [];
   for (let i = 0; i < dids.length; i += BATCH_SIZE) {
-    const batch = dids.slice(i, i + BATCH_SIZE);
-    try {
-      const res = await agent.app.bsky.actor.getProfiles({ actors: batch });
-      for (const p of res.data.profiles) {
-        out.set(p.did, {
-          did: p.did,
-          handle: p.handle ?? null,
-          displayName: p.displayName ?? null,
-          avatar: p.avatar ?? null,
-          description: p.description ?? null,
-        });
-      }
-    } catch (err) {
-      console.error("[profileCache] getProfiles failed:", err);
-      // Leave nulls in place — they'll be cached as negative results.
-    }
+    batches.push(dids.slice(i, i + BATCH_SIZE));
   }
-  return out;
+
+  await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const res = await agent.app.bsky.actor.getProfiles({ actors: batch });
+        const returned = new Set<string>();
+        for (const p of res.data.profiles) {
+          const profile: Profile = {
+            did: p.did,
+            handle: p.handle ?? null,
+            displayName: p.displayName ?? null,
+            avatar: p.avatar ?? null,
+            description: p.description ?? null,
+          };
+          results.set(p.did, profile);
+          toCache.set(p.did, profile);
+          returned.add(p.did);
+        }
+        // DIDs the API confirmed don't exist — safe to negative-cache.
+        for (const did of batch) {
+          if (!returned.has(did)) toCache.set(did, null);
+        }
+      } catch (err) {
+        // Transient failure — leave results as null but don't write to
+        // cache, so the next request retries instead of getting a stale miss.
+        console.error("[profileCache] getProfiles failed:", err);
+      }
+    }),
+  );
+
+  return { results, toCache };
 }
 
 export const getProfiles = cache(
@@ -98,10 +120,10 @@ export const getProfiles = cache(
     const missing = unique.filter((did) => !cached.has(did));
     if (missing.length === 0) return result;
 
-    const fetched = await fetchProfiles(missing);
+    const { results: fetched, toCache } = await fetchProfiles(missing);
     for (const [did, profile] of fetched) result.set(did, profile);
 
-    await writeCache(fetched);
+    await writeCache(toCache);
     return result;
   },
 );

@@ -58,7 +58,7 @@ async function main() {
     service: "wss://relay1.us-west.bsky.network",
     subscriptionReconnectDelay: 3000,
     excludeAccount: true,
-    excludeIdentity: true,
+    excludeIdentity: false,
     runner,
     idResolver,
     filterCollections: [
@@ -108,6 +108,13 @@ async function handleEvent(evt: Event) {
         .from("bsky_profiles")
         .update({ handle: evt.handle })
         .eq("did", evt.did);
+    if (profileCache) {
+      try {
+        await profileCache.clearEntry(evt.did);
+      } catch (err) {
+        console.error("Failed to clear profile cache for", evt.did, err);
+      }
+    }
   }
   if (
     evt.event == "account" ||
