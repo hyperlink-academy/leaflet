@@ -18,7 +18,7 @@ export default async function ProfileCommentsPage(props: {
   }
 
   return (
-    <Suspense fallback={<ProfileCommentsSkeleton />}>
+    <Suspense fallback={null}>
       <ProfileCommentsLoader did={did} />
     </Suspense>
   );
@@ -33,8 +33,4 @@ async function ProfileCommentsLoader({ did }: { did: string }) {
       nextCursor={nextCursor}
     />
   );
-}
-
-function ProfileCommentsSkeleton() {
-  return null;
 }

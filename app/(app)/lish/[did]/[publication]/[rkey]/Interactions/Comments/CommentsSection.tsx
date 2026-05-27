@@ -14,9 +14,7 @@ export async function CommentsSection({
     .eq("document", document_uri);
 
   const safeRows = rows ?? [];
-  const dids = Array.from(
-    new Set(safeRows.map((c) => new AtUri(c.uri).host)),
-  );
+  const dids = Array.from(new Set(safeRows.map((c) => new AtUri(c.uri).host)));
   const profiles = await getProfiles(dids);
 
   const comments: Comment[] = safeRows.map((c) => {
@@ -37,13 +35,6 @@ export async function CommentsSection({
   });
 
   return (
-    <CommentsDrawerContent
-      document_uri={document_uri}
-      comments={comments}
-    />
+    <CommentsDrawerContent document_uri={document_uri} comments={comments} />
   );
-}
-
-export function CommentsSkeleton() {
-  return null;
 }
