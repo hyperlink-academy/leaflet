@@ -3,7 +3,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
-import { AtUri } from "@atproto/syntax";
 import { getProfiles, type Profile } from "src/identity";
 
 export type Cursor = {
@@ -11,16 +10,11 @@ export type Cursor = {
   uri: string;
 };
 
-export type CommentProfile = Pick<
-  Profile,
-  "did" | "handle" | "displayName" | "avatar"
->;
-
 export type ProfileComment = {
   uri: string;
   record: Json;
   indexed_at: string;
-  profile: CommentProfile | null;
+  profile: Profile | null;
   document: {
     uri: string;
     data: Json;
@@ -33,19 +27,9 @@ export type ProfileComment = {
   parentComment: {
     uri: string;
     record: Json;
-    profile: CommentProfile | null;
+    profile: Profile | null;
   } | null;
 };
-
-function toCommentProfile(p: Profile | null | undefined): CommentProfile | null {
-  if (!p) return null;
-  return {
-    did: p.did,
-    handle: p.handle,
-    displayName: p.displayName,
-    avatar: p.avatar,
-  };
-}
 
 export async function getProfileComments(
   did: string,
@@ -81,70 +65,44 @@ export async function getProfileComments(
     .map((c) => (c.record as PubLeafletComment.Record).reply?.parent)
     .filter((uri): uri is string => !!uri);
 
-  // Fetch parent comments if there are any replies
-  let parentCommentsMap = new Map<
-    string,
-    { uri: string; record: Json }
-  >();
+  const { data: parentComments } = parentUris.length
+    ? await supabaseServerClient
+        .from("comments_on_documents")
+        .select("uri, record, profile")
+        .in("uri", parentUris)
+    : { data: null };
 
-  if (parentUris.length > 0) {
-    const { data: parentComments } = await supabaseServerClient
-      .from("comments_on_documents")
-      .select("uri, record")
-      .in("uri", parentUris);
-
-    if (parentComments) {
-      for (const pc of parentComments) {
-        parentCommentsMap.set(pc.uri, { uri: pc.uri, record: pc.record });
-      }
-    }
+  const allDids = new Set<string>([did]);
+  for (const pc of parentComments ?? []) {
+    if (pc.profile) allDids.add(pc.profile);
   }
+  const profiles = await getProfiles([...allDids]);
 
-  // Gather all author DIDs from both main and parent comments
-  const allDids = new Set<string>();
-  for (const c of rawComments) allDids.add(new AtUri(c.uri).host);
-  for (const pc of parentCommentsMap.values())
-    allDids.add(new AtUri(pc.uri).host);
+  const parentMap = new Map(
+    (parentComments ?? []).map((pc) => [
+      pc.uri,
+      {
+        uri: pc.uri,
+        record: pc.record,
+        profile: pc.profile ? profiles.get(pc.profile) ?? null : null,
+      },
+    ]),
+  );
 
-  const profiles = await getProfiles(Array.from(allDids));
-
-  // Transform to ProfileComment format
   const comments: ProfileComment[] = rawComments.map((comment) => {
     const record = comment.record as PubLeafletComment.Record;
     const doc = comment.documents;
     const pub = doc?.documents_in_publications?.[0]?.publications;
-    const commenterDid = new AtUri(comment.uri).host;
-
-    const parentRaw = record.reply?.parent
-      ? parentCommentsMap.get(record.reply.parent)
-      : undefined;
-    const parentDid = parentRaw ? new AtUri(parentRaw.uri).host : null;
 
     return {
       uri: comment.uri,
       record: comment.record,
       indexed_at: comment.indexed_at,
-      profile: toCommentProfile(profiles.get(commenterDid)),
-      document: doc
-        ? {
-            uri: doc.uri,
-            data: doc.data,
-          }
-        : null,
-      publication: pub
-        ? {
-            uri: pub.uri,
-            record: pub.record,
-          }
-        : null,
-      parentComment: parentRaw
-        ? {
-            uri: parentRaw.uri,
-            record: parentRaw.record,
-            profile: parentDid
-              ? toCommentProfile(profiles.get(parentDid))
-              : null,
-          }
+      profile: profiles.get(did) ?? null,
+      document: doc ? { uri: doc.uri, data: doc.data } : null,
+      publication: pub ? { uri: pub.uri, record: pub.record } : null,
+      parentComment: record.reply?.parent
+        ? parentMap.get(record.reply.parent) ?? null
         : null,
     };
   });
