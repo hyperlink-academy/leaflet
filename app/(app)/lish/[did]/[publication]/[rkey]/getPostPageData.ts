@@ -4,6 +4,7 @@ import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import { resolvePublicationTheme } from "lexicons/src/normalize";
 import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
@@ -70,7 +71,8 @@ export async function getPostPageData(did: string, rkey: string) {
     ...uniqueBacklinks,
   ];
 
-  let theme = normalizedPublication?.theme || normalizedDocument?.theme;
+  let theme =
+    resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
 
   // Calculate prev/next documents from the fetched publication documents
   let prevNext:

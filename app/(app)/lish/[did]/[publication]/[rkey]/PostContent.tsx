@@ -596,7 +596,7 @@ function PublishedIframeBlock(props: {
   });
 
   let { theme } = useDocument();
-  let pubTheme = usePubTheme(theme);
+  let pubTheme = usePubTheme({ theme });
   let iframeSrc = new URL(props.url);
   iframeSrc.searchParams.set("parts.page.embed.ctx.mode", "view");
   iframeSrc.searchParams.set(

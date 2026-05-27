@@ -446,11 +446,11 @@ const PublicationSocialPreview = (props: {
   const pub_creator = new AtUri(props.publication_uri).host;
   return (
     <PublicationThemeProvider
-      theme={props.record.theme}
+      record={props.record}
       pub_creator={pub_creator}
     >
       <PublicationBackgroundProvider
-        theme={props.record.theme}
+        record={props.record}
         pub_creator={pub_creator}
       >
         <SocialPreviewFrame

@@ -87,12 +87,12 @@ export async function DocumentPageRenderer({
           bodyFontId={document.theme?.bodyFont}
         />
         <PublicationThemeProvider
-          theme={document.theme}
+          record={{ theme: document.theme }}
           pub_creator={pub_creator}
           isStandalone={isStandalone}
         >
           <PublicationBackgroundProvider
-            theme={document.theme}
+            record={{ theme: document.theme }}
             pub_creator={pub_creator}
           >
             <LeafletLayout>

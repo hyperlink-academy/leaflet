@@ -10,6 +10,7 @@ import {
   normalizePublicationRecord,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { resolvePublicationTheme } from "lexicons/src/normalize";
 
 import {
   PublicationBackgroundProvider,
@@ -130,7 +131,7 @@ export async function PublicationPageRenderer({
       }
     : undefined;
 
-  const theme = normalizedPublication?.theme;
+  const theme = resolvePublicationTheme(normalizedPublication);
   const showPageBackground = !!theme?.showPageBackground;
 
   const documentContextValue: DocumentContextValue = {
@@ -169,11 +170,11 @@ export async function PublicationPageRenderer({
           bodyFontId={theme?.bodyFont}
         />
         <PublicationThemeProvider
-          theme={theme}
+          record={normalizedPublication}
           pub_creator={publication.identity_did}
         >
           <PublicationBackgroundProvider
-            theme={theme}
+            record={normalizedPublication}
             pub_creator={publication.identity_did}
           >
             <PublicationHomeLayout

@@ -63,19 +63,18 @@ export function WithStandardSitePostPublicationTheme({
   enabled: boolean;
   children: React.ReactNode;
 }) {
-  if (!enabled || !post.publication?.record?.theme) return <>{children}</>;
+  const record = post.publication?.record;
+  if (!enabled || !record || (!record.theme && !record.basicTheme)) {
+    return <>{children}</>;
+  }
   let pubCreator: string;
   try {
-    pubCreator = new AtUri(post.publication.uri).host;
+    pubCreator = new AtUri(post.publication!.uri).host;
   } catch {
     return <>{children}</>;
   }
   return (
-    <PublicationThemeProvider
-      local
-      theme={post.publication.record.theme}
-      pub_creator={pubCreator}
-    >
+    <PublicationThemeProvider local record={record} pub_creator={pubCreator}>
       {children}
     </PublicationThemeProvider>
   );

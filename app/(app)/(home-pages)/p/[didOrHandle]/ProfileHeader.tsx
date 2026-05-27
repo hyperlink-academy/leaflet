@@ -107,7 +107,7 @@ const PublicationCard = (props: {
   uri: string;
 }) => {
   const { record, uri } = props;
-  const { bgLeaflet, bgPage, primary } = usePubTheme(record.theme);
+  const { bgLeaflet, bgPage, primary } = usePubTheme(record);
 
   return (
     <a

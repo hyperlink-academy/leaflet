@@ -36,11 +36,11 @@ export function PublicationPageLeaflet(props: {
         set={props.token.permission_token_rights[0].entity_set}
       >
         <PublicationThemeProvider
-          theme={normalizedPub?.theme}
+          record={normalizedPub}
           pub_creator={props.publicationCreator}
         >
           <PublicationBackgroundProvider
-            theme={normalizedPub?.theme}
+            record={normalizedPub}
             pub_creator={props.publicationCreator}
           >
             <UpdateLeafletTitle entityID={props.leaflet_id} />

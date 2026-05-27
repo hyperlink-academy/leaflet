@@ -100,7 +100,7 @@ export function ThemeSettingsContent() {
           {/* Full-page Preview */}
           <PublicationBackgroundProvider
             className="rounded-t-lg grow! min-h-0 overflow-y-auto"
-            theme={record?.theme}
+            record={record}
             pub_creator={publication?.identity_did || ""}
             localBgImage={pubBGImage}
             localBgImageRepeat={leafletBGRepeat}
