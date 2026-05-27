@@ -45,15 +45,5 @@ export async function CommentsSection({
 }
 
 export function CommentsSkeleton() {
-  return (
-    <div className="flex flex-col gap-4 py-2">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="flex flex-col gap-1.5 animate-pulse">
-          <div className="h-4 w-32 bg-border-light rounded" />
-          <div className="h-3 w-full bg-border-light rounded" />
-          <div className="h-3 w-2/3 bg-border-light rounded" />
-        </div>
-      ))}
-    </div>
-  );
+  return null;
 }
