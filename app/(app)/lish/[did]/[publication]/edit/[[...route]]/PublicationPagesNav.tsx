@@ -22,11 +22,14 @@ import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { generateKeyBetween } from "fractional-indexing";
 import { SpeedyLink } from "components/SpeedyLink";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary, ButtonTertiary } from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
+import { Modal } from "components/Modal";
 import { AddTiny } from "components/Icons/AddTiny";
+import { CloseTiny } from "components/Icons/CloseTiny";
 import { createPublicationPage } from "actions/createPublicationPage";
+import { deletePublicationPage } from "actions/deletePublicationPage";
 import { reorderPublicationPages } from "actions/reorderPublicationPages";
 import {
   usePublicationData,
@@ -142,17 +145,35 @@ export function PublicationPagesNav(props: {
               items={sortableIds}
               strategy={horizontalListSortingStrategy}
             >
-              {sortedPages.map((page) => (
-                <SortableTab
-                  key={page.id}
-                  page={page}
-                  href={hrefForPath(page.path)}
-                  active={
-                    decodeURIComponent(pathname) ===
-                    decodeURIComponent(hrefForPath(page.path))
-                  }
-                />
-              ))}
+              {sortedPages.map((page, idx) => {
+                let isActive =
+                  decodeURIComponent(pathname) ===
+                  decodeURIComponent(hrefForPath(page.path));
+                let neighbor =
+                  sortedPages[idx - 1] ?? sortedPages[idx + 1];
+                let redirectHrefOnDelete =
+                  isActive && neighbor ? hrefForPath(neighbor.path) : null;
+                return (
+                  <SortableTab
+                    key={page.id}
+                    page={page}
+                    href={hrefForPath(page.path)}
+                    active={isActive}
+                    publicationUri={publicationUri}
+                    canDelete={sortedPages.length > 1}
+                    onDeleted={() => {
+                      mutatePublicationData(mutate, (draft) => {
+                        let pages = draft.publication?.publication_pages;
+                        if (!pages) return;
+                        let i = pages.findIndex((p) => p.id === page.id);
+                        if (i !== -1) pages.splice(i, 1);
+                      });
+                      if (redirectHrefOnDelete)
+                        router.push(redirectHrefOnDelete);
+                    }}
+                  />
+                );
+              })}
             </SortableContext>
           </DndContext>
         </div>
@@ -169,10 +190,18 @@ export function PublicationPagesNav(props: {
             </ButtonSecondary>
           }
         >
-          <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <form
+            onSubmit={handleSubmit}
+            onKeyDown={(e) => {
+              if (e.key === "Tab") e.stopPropagation();
+            }}
+            className="flex flex-col gap-2"
+          >
             <InputWithLabel
               label="Name"
               type="text"
+              name="page-title"
+              autoComplete="off"
               value={name}
               onChange={(e) => setName(e.currentTarget.value)}
               autoFocus
@@ -180,6 +209,8 @@ export function PublicationPagesNav(props: {
             <InputWithLabel
               label="Path"
               type="text"
+              name="page-path"
+              autoComplete="off"
               value={path}
               onChange={(e) => setPath(e.currentTarget.value)}
               placeholder="/about"
@@ -198,6 +229,9 @@ function SortableTab(props: {
   page: SortablePage;
   href: string;
   active: boolean;
+  publicationUri: string | undefined;
+  canDelete: boolean;
+  onDeleted: () => void;
 }) {
   let {
     attributes,
@@ -208,12 +242,27 @@ function SortableTab(props: {
     transition,
     isDragging,
   } = useSortable({ id: props.page.id });
+  let [confirmOpen, setConfirmOpen] = useState(false);
+  let [deleting, setDeleting] = useState(false);
 
   let style = {
     transform: CSS.Translate.toString(transform),
     transition,
     zIndex: isDragging ? 1 : undefined,
   };
+
+  async function handleDelete() {
+    if (!props.publicationUri || deleting) return;
+    setDeleting(true);
+    let result = await deletePublicationPage({
+      publication_uri: props.publicationUri,
+      page_id: props.page.id,
+    });
+    setDeleting(false);
+    if (!result.success) return;
+    setConfirmOpen(false);
+    props.onDeleted();
+  }
 
   return (
     <div
@@ -231,7 +280,11 @@ function SortableTab(props: {
         ref={setActivatorNodeRef}
         type="button"
         aria-label="Drag to reorder"
-        className="shrink-0 w-[9px] h-4 ml-1 cursor-grab touch-none opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100"
+        className={`shrink-0 w-[9px] h-[15px] ml-1 cursor-grab touch-none focus:opacity-100 ${
+          props.active
+            ? "opacity-100"
+            : "opacity-0 group-hover/sortable-tab:opacity-100"
+        }`}
         style={{
           maskImage: "var(--gripperSVG)",
           maskRepeat: "repeat",
@@ -242,10 +295,43 @@ function SortableTab(props: {
       />
       <SpeedyLink
         href={props.href}
-        className="block pr-2 pl-1 py-1 rounded-md text-sm text-inherit hover:no-underline! select-none"
+        className="block pl-1 py-1 rounded-md text-sm text-inherit hover:no-underline! select-none"
       >
         {props.page.title || props.page.path || "/"}
       </SpeedyLink>
+      {props.canDelete && (
+      <Modal
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        asChild
+        trigger={
+          <button
+            type="button"
+            aria-label="Delete page"
+            className="shrink-0 mx-1 p-0.5 rounded text-inherit opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100 hover:bg-border-light"
+          >
+            <CloseTiny className="w-3 h-3" />
+          </button>
+        }
+        title="Delete page?"
+      >
+        <div className="text-secondary text-sm pb-3">
+          This will permanently delete{" "}
+          <span className="font-bold text-primary">
+            {props.page.title || props.page.path || "/"}
+          </span>
+          .
+        </div>
+        <div className="flex gap-2 justify-end items-center">
+          <ButtonTertiary onClick={() => setConfirmOpen(false)}>
+            Nevermind
+          </ButtonTertiary>
+          <ButtonPrimary onClick={handleDelete} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete"}
+          </ButtonPrimary>
+        </div>
+      </Modal>
+      )}
     </div>
   );
 }

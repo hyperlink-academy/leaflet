@@ -129,9 +129,8 @@ export function PublicationPostsList({
 
               if (Variant === "large") {
                 return (
-                  <>
+                  <React.Fragment key={post.uri}>
                     <PublicationPostItemLarge
-                      key={post.uri}
                       href={docUrl}
                       title={doc_record.title}
                       description={
@@ -144,29 +143,27 @@ export function PublicationPostsList({
                       pageWidth={publicationRecord?.theme?.pageWidth}
                     />
                     <hr className="last:hidden border-border-light" />
-                  </>
+                  </React.Fragment>
                 );
               }
 
               if (Variant === "small") {
                 return (
-                  <>
+                  <React.Fragment key={post.uri}>
                     <PublicationPostItemSmall
-                      key={post.uri}
                       href={docUrl}
                       title={doc_record.title}
                       date={date}
                       interactions={interactions}
                     />
                     <hr className="last:hidden border-border-light" />
-                  </>
+                  </React.Fragment>
                 );
               }
 
               return (
-                <>
+                <React.Fragment key={post.uri}>
                   <PublicationPostItemMedium
-                    key={post.uri}
                     href={docUrl}
                     title={doc_record.title}
                     description={
@@ -178,7 +175,7 @@ export function PublicationPostsList({
                     coverImageAlt={doc_record.title}
                   />
                   <hr className="last:hidden border-border-light" />
-                </>
+                </React.Fragment>
               );
             })}
     </div>

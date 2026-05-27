@@ -13,6 +13,7 @@ import { PublicationPagesNav } from "./PublicationPagesNav";
 import { PublicationEditHeader } from "./PublicationEditHeader";
 import { PublicationHeader } from "../../PublicationHeader";
 import { PublicationStickyHeader } from "../../PublicationStickyHeader";
+import { PublicationEditDirtyProvider } from "./dirtyContext";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -90,33 +91,35 @@ export default async function PublicationEditLayout(props: {
       publication_rkey={uri.rkey}
       publication_data={publication_data}
     >
-      <PublicationThemeProviderDashboard>
-        <div className="flex flex-col h-full w-full bg-accent-1">
-          <PublicationEditHeader
-            did={params.did}
-            publicationName={params.publication}
-          />
-          <div className="pubWrapper flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
-            <PublicationStickyHeader
-              sticky={false}
-              nav={
-                <PublicationPagesNav
-                  did={params.did}
-                  publicationName={params.publication}
+      <PublicationEditDirtyProvider>
+        <PublicationThemeProviderDashboard>
+          <div className="flex flex-col h-full w-full bg-accent-1">
+            <PublicationEditHeader
+              did={params.did}
+              publicationName={params.publication}
+            />
+            <div className="pubWrapper flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
+              <PublicationStickyHeader
+                sticky={false}
+                nav={
+                  <PublicationPagesNav
+                    did={params.did}
+                    publicationName={params.publication}
+                  />
+                }
+              >
+                <PublicationHeader
+                  variant="inline"
+                  iconUrl={iconUrl}
+                  publicationName={publication.name}
+                  description={record?.description}
                 />
-              }
-            >
-              <PublicationHeader
-                variant="inline"
-                iconUrl={iconUrl}
-                publicationName={publication.name}
-                description={record?.description}
-              />
-            </PublicationStickyHeader>
-            <div className="grow min-h-0 flex flex-col">{props.children}</div>
+              </PublicationStickyHeader>
+              <div className="grow min-h-0 flex flex-col">{props.children}</div>
+            </div>
           </div>
-        </div>
-      </PublicationThemeProviderDashboard>
+        </PublicationThemeProviderDashboard>
+      </PublicationEditDirtyProvider>
     </PublicationSWRDataProvider>
   );
 }

@@ -71,6 +71,9 @@ export default async function PublicationEditPage(props: Props) {
           token={res.data}
           publicationRecord={publication.record}
           publicationCreator={publication.identity_did}
+          publicationUri={publication.uri}
+          pagePath={path}
+          pageTitle={page.title ?? ""}
         />
       </PageSWRDataProvider>
     </React.Fragment>

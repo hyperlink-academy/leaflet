@@ -12,6 +12,7 @@ import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
 import { LeafletLayout } from "components/LeafletLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { Json } from "supabase/database.types";
+import { LeafletDirtyReporter } from "./LeafletDirtyReporter";
 
 export function PublicationPageLeaflet(props: {
   token: PermissionToken;
@@ -19,6 +20,9 @@ export function PublicationPageLeaflet(props: {
   leaflet_id: string;
   publicationRecord: Json | null;
   publicationCreator: string;
+  publicationUri: string;
+  pagePath: string;
+  pageTitle: string;
 }) {
   let normalizedPub = normalizePublicationRecord(props.publicationRecord);
   return (
@@ -41,6 +45,12 @@ export function PublicationPageLeaflet(props: {
           >
             <UpdateLeafletTitle entityID={props.leaflet_id} />
             <SelectionManager />
+            <LeafletDirtyReporter
+              leaflet_id={props.leaflet_id}
+              publication_uri={props.publicationUri}
+              path={props.pagePath}
+              title={props.pageTitle}
+            />
             <LeafletLayout className="!pb-6">
               <Pages rootPage={props.leaflet_id} />
             </LeafletLayout>
