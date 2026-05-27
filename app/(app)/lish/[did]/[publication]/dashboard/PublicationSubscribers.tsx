@@ -1,21 +1,16 @@
 "use client";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { ButtonPrimary } from "components/Buttons";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { useSmoker } from "components/Toast";
-import { Menu, MenuItem } from "components/Menu";
 import { Separator } from "components/Layout";
-import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useDashboardState } from "components/PageLayouts/dashboardState";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
 
-type subscriber = { email: string | undefined; did: string | undefined };
+export type SubscriberStatus = "subscribed" | "unconfirmed" | "unsubscribed";
 
-type SubscriberStatus = "subscribed" | "unconfirmed" | "unsubscribed";
-
-type MergedSubscriber = {
+export type MergedSubscriber = {
   key: string;
   did: string | undefined;
   handle: string | undefined;
@@ -86,31 +81,13 @@ export function useMergedSubscribers(): MergedSubscriber[] | null {
   return [...byDid.values(), ...emailOnly];
 }
 
-export function PublicationSubscribers(props: {
+export function SubscribersListView(props: {
+  subscribers: MergedSubscriber[];
+  publicationShareUrl: string;
   showPageBackground?: boolean;
 }) {
   let smoker = useSmoker();
-  let { data: publication } = usePublicationData();
   let { subscriberStatus } = useDashboardState();
-  let subscribers = useMergedSubscribers();
-
-  if (!publication || !subscribers) return <div>null</div>;
-
-  // useEffect(() => {
-  //   const allSubscribersSelected = subscribers.every((subscriber) =>
-  //     checkedSubscribers.some(
-  //       (checked) =>
-  //         checked.email === "dummyemail@email.com" &&
-  //         checked.did === subscriber.identities?.bsky_profiles?.did,
-  //     ),
-  //   );
-
-  //   if (allSubscribersSelected && subscribers.length > 0) {
-  //     setCheckAll(true);
-  //   } else {
-  //     setCheckAll(false);
-  //   }
-  // }, [checkedSubscribers]);
 
   let activeStatuses = (
     Object.keys(subscriberStatus) as SubscriberStatus[]
@@ -118,14 +95,10 @@ export function PublicationSubscribers(props: {
   let isDefaultStatusFilter =
     activeStatuses.length === 1 && activeStatuses[0] === "subscribed";
 
-  if (subscribers.length === 0) {
+  let filtered = props.subscribers.filter((s) => subscriberStatus[s.status]);
+
+  if (filtered.length === 0) {
     if (!isDefaultStatusFilter) {
-      let label =
-        activeStatuses.length === 0
-          ? "any status"
-          : activeStatuses
-              .map((s) => (s === "unconfirmed" ? "unconfirmed" : s))
-              .join(", ");
       return (
         <div
           className={`italic text-tertiary
@@ -161,9 +134,7 @@ export function PublicationSubscribers(props: {
           onClick={(e) => {
             e.preventDefault();
             let rect = (e.currentTarget as Element)?.getBoundingClientRect();
-            navigator.clipboard.writeText(
-              getPublicationURL(publication.publication!),
-            );
+            navigator.clipboard.writeText(props.publicationShareUrl);
             smoker({
               position: {
                 x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
@@ -191,21 +162,47 @@ export function PublicationSubscribers(props: {
       }
     >
       <div className="subscriberListContent flex gap-2 flex-col ">
-        {subscribers
+        {filtered
           .sort((a, b) => b.created_at.localeCompare(a.created_at))
           .map((subscriber) => (
-            <>
+            <div key={subscriber.key}>
               <SubscriberListItem
-                key={subscriber.key}
                 handle={subscriber.handle}
                 did={subscriber.did}
                 email={subscriber.email}
                 createdAt={subscriber.created_at}
                 status={subscriber.status}
               />
-              <hr className="border-border-light last:hidden" />
-            </>
+              <hr className="border-border-light mt-2 last:hidden" />
+            </div>
           ))}
+      </div>
+    </div>
+  );
+}
+
+export function SubscribersListSkeleton(props: { showPageBackground?: boolean }) {
+  return (
+    <div
+      className={`rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
+      style={
+        props.showPageBackground
+          ? {
+              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha)) ",
+            }
+          : { backgroundColor: "transparent" }
+      }
+    >
+      <div className="flex gap-2 flex-col">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="flex flex-row justify-between gap-2 w-full animate-pulse"
+          >
+            <div className="h-5 w-40 bg-border-light rounded-md" />
+            <div className="h-5 w-16 bg-border-light rounded-md" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -260,31 +257,6 @@ const SubscriberListItem = (props: {
         <SubscriberDate createdAt={props.createdAt} />
       </div>
     </div>
-  );
-};
-
-const SubscriberOptions = (props: {
-  checkedSubscribers: subscriber[];
-  allSelected: boolean;
-}) => {
-  return (
-    <Menu
-      asChild
-      className=""
-      trigger={
-        <ButtonPrimary compact className="-mt-[1px]">
-          {props.allSelected ? "All" : props.checkedSubscribers.length} Selected{" "}
-          <MoreOptionsVerticalTiny />
-        </ButtonPrimary>
-      }
-    >
-      <MenuItem className="justify-center" onSelect={() => {}}>
-        Export {props.allSelected ? "All" : "Selected"}
-      </MenuItem>
-      <MenuItem className="justify-center" onSelect={() => {}}>
-        Remove {props.allSelected ? "All" : "Selected"}
-      </MenuItem>
-    </Menu>
   );
 };
 
