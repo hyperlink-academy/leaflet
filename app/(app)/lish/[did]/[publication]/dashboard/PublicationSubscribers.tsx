@@ -227,17 +227,17 @@ const SubscriberListItem = (props: {
   return (
     <div className="flex flex-row justify-between gap-2 w-full">
       <div className="flex flex-col gap-0.5 grow min-w-0 w-full">
-        {props.handle && (
+        {(props.handle || props.did) && (
           <a
             target="_blank"
             href={`https://bsky.app/profile/${props.did}`}
             className={`${contactClassName} ${props.status === "subscribed" ? subscribedClassName : props.status === "unconfirmed" ? unconfirmedClassName : mutedClassName}`}
           >
             <AtmosphereAccount className="text-tertiary shrink-0" />
-            {props.handle}
+            <div className="truncate min-w-0">{props.handle ?? props.did}</div>
           </a>
         )}
-        {props.handle && props.email && (
+        {(props.handle || props.did) && props.email && (
           <Separator classname="sm:block hidden" />
         )}
         {props.email && (
