@@ -45,12 +45,12 @@ export function useMergedSubscribers(): MergedSubscriber[] | null {
   let byDid = new Map<string, MergedSubscriber>();
   let emailOnly: MergedSubscriber[] = [];
   for (let s of atprotoSubs) {
-    let did = s.identities?.bsky_profiles?.did;
+    let did = s.identities?.atp_did ?? undefined;
     if (!did) continue;
     byDid.set(did, {
       key: `did:${did}`,
       did,
-      handle: s.identities?.bsky_profiles?.handle ?? undefined,
+      handle: undefined,
       email: undefined,
       created_at: s.created_at,
       status: "subscribed",
@@ -72,7 +72,7 @@ export function useMergedSubscribers(): MergedSubscriber[] | null {
     emailOnly.push({
       key: `email:${s.id}`,
       did: linkedDid,
-      handle: s.identities?.bsky_profiles?.handle ?? undefined,
+      handle: undefined,
       email: s.email,
       created_at: s.created_at,
       status,
@@ -176,33 +176,6 @@ export function SubscribersListView(props: {
               <hr className="border-border-light mt-2 last:hidden" />
             </div>
           ))}
-      </div>
-    </div>
-  );
-}
-
-export function SubscribersListSkeleton(props: { showPageBackground?: boolean }) {
-  return (
-    <div
-      className={`rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
-      style={
-        props.showPageBackground
-          ? {
-              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha)) ",
-            }
-          : { backgroundColor: "transparent" }
-      }
-    >
-      <div className="flex gap-2 flex-col">
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="flex flex-row justify-between gap-2 w-full animate-pulse"
-          >
-            <div className="h-5 w-40 bg-border-light rounded-md" />
-            <div className="h-5 w-16 bg-border-light rounded-md" />
-          </div>
-        ))}
       </div>
     </div>
   );

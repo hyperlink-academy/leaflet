@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { SubsPageShell } from "../SubsPageShell";
 import { SubscribersList } from "../SubscribersList";
-import { SubscribersListSkeleton } from "../PublicationSubscribers";
 
 export default async function SubsPage(props: {
   params: Promise<{ did: string; publication: string }>;
@@ -12,7 +11,7 @@ export default async function SubsPage(props: {
 
   return (
     <SubsPageShell>
-      <Suspense fallback={<SubscribersListSkeleton />}>
+      <Suspense fallback={null}>
         <SubscribersList did={did} publication={publication} />
       </Suspense>
     </SubsPageShell>

@@ -37,7 +37,7 @@ export async function SubscribersList({
 
   const dids = new Set<string>();
   for (const s of atprotoSubs) {
-    const d = s.identities?.bsky_profiles?.did;
+    const d = s.identities?.atp_did ?? undefined;
     if (d) dids.add(d);
   }
   for (const s of emailSubs) {
@@ -50,7 +50,7 @@ export async function SubscribersList({
   const emailOnly: MergedSubscriber[] = [];
 
   for (const s of atprotoSubs) {
-    const d = s.identities?.bsky_profiles?.did;
+    const d = s.identities?.atp_did ?? undefined;
     if (!d) continue;
     const p = profiles.get(d);
     byDid.set(d, {
