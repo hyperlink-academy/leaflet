@@ -1,7 +1,9 @@
 import "./about.css";
 import { IBM_Plex_Serif } from "next/font/google";
 import { LandingCTA, LandingCTABottom } from "./LandingCTA";
-import { Demo } from "./Demo";
+import { InteractiveAppDemo } from "./InteractiveAppDemo";
+import { InteractiveAppDemoMobile } from "./InteractiveAppDemoMobile";
+import { Media } from "components/Media";
 import { Features } from "./Features";
 import { Examples } from "./Examples";
 import { Pricing } from "./Pricing";
@@ -45,7 +47,14 @@ export function AboutPage() {
         community — whether you're writing a blog, newsletter, or secret third
         thing.
       </p>
-      {/*<Demo />*/}
+      <div className="pt-12">
+        <Media mobile={false}>
+          <InteractiveAppDemo />
+        </Media>
+        <Media mobile={true}>
+          <InteractiveAppDemoMobile />
+        </Media>
+      </div>
       <Features />
       <Examples />
       <Pricing />
