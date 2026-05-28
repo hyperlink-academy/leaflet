@@ -25,11 +25,11 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { ButtonPrimary, ButtonSecondary, ButtonTertiary } from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
-import { Modal } from "components/Modal";
 import { AddTiny } from "components/Icons/AddTiny";
-import { CloseTiny } from "components/Icons/CloseTiny";
+import { EditTiny } from "components/Icons/EditTiny";
 import { createPublicationPage } from "actions/createPublicationPage";
 import { deletePublicationPage } from "actions/deletePublicationPage";
+import { updatePublicationPage } from "actions/updatePublicationPage";
 import { reorderPublicationPages } from "actions/reorderPublicationPages";
 import {
   usePublicationData,
@@ -161,6 +161,19 @@ export function PublicationPagesNav(props: {
                     active={isActive}
                     publicationUri={publicationUri}
                     canDelete={sortedPages.length > 1}
+                    onUpdated={(updated) => {
+                      mutatePublicationData(mutate, (draft) => {
+                        let p = draft.publication?.publication_pages.find(
+                          (p) => p.id === page.id,
+                        );
+                        if (p) {
+                          p.title = updated.title;
+                          p.path = updated.path;
+                        }
+                      });
+                      if (isActive && updated.path !== page.path)
+                        router.push(hrefForPath(updated.path));
+                    }}
                     onDeleted={() => {
                       mutatePublicationData(mutate, (draft) => {
                         let pages = draft.publication?.publication_pages;
@@ -231,6 +244,7 @@ function SortableTab(props: {
   active: boolean;
   publicationUri: string | undefined;
   canDelete: boolean;
+  onUpdated: (updated: { title: string; path: string }) => void;
   onDeleted: () => void;
 }) {
   let {
@@ -242,7 +256,11 @@ function SortableTab(props: {
     transition,
     isDragging,
   } = useSortable({ id: props.page.id });
-  let [confirmOpen, setConfirmOpen] = useState(false);
+  let [popoverOpen, setPopoverOpen] = useState(false);
+  let [mode, setMode] = useState<"edit" | "confirm">("edit");
+  let [name, setName] = useState(props.page.title);
+  let [path, setPath] = useState(props.page.path ?? "/");
+  let [saving, setSaving] = useState(false);
   let [deleting, setDeleting] = useState(false);
 
   let style = {
@@ -250,6 +268,35 @@ function SortableTab(props: {
     transition,
     zIndex: isDragging ? 1 : undefined,
   };
+
+  function handleOpenChange(o: boolean) {
+    setPopoverOpen(o);
+    if (o) {
+      setName(props.page.title);
+      setPath(props.page.path ?? "/");
+      setMode("edit");
+    }
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!props.publicationUri || saving) return;
+    let trimmedPath = path.trim();
+    if (!trimmedPath) return;
+    if (!trimmedPath.startsWith("/")) trimmedPath = "/" + trimmedPath;
+    let trimmedTitle = name.trim();
+    setSaving(true);
+    let result = await updatePublicationPage({
+      publication_uri: props.publicationUri,
+      page_id: props.page.id,
+      title: trimmedTitle,
+      path: trimmedPath,
+    });
+    setSaving(false);
+    if (!result.success) return;
+    setPopoverOpen(false);
+    props.onUpdated({ title: trimmedTitle, path: trimmedPath });
+  }
 
   async function handleDelete() {
     if (!props.publicationUri || deleting) return;
@@ -260,7 +307,7 @@ function SortableTab(props: {
     });
     setDeleting(false);
     if (!result.success) return;
-    setConfirmOpen(false);
+    setPopoverOpen(false);
     props.onDeleted();
   }
 
@@ -299,39 +346,84 @@ function SortableTab(props: {
       >
         {props.page.title || props.page.path || "/"}
       </SpeedyLink>
-      {props.canDelete && (
-      <Modal
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
+      <Popover
         asChild
+        align="end"
+        open={popoverOpen}
+        onOpenChange={handleOpenChange}
+        className="w-64"
         trigger={
           <button
             type="button"
-            aria-label="Delete page"
+            aria-label="Edit page"
             className="shrink-0 mx-1 p-0.5 rounded text-inherit opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100 hover:bg-border-light"
           >
-            <CloseTiny className="w-3 h-3" />
+            <EditTiny className="w-3 h-3" />
           </button>
         }
-        title="Delete page?"
       >
-        <div className="text-secondary text-sm pb-3">
-          This will permanently delete{" "}
-          <span className="font-bold text-primary">
-            {props.page.title || props.page.path || "/"}
-          </span>
-          .
-        </div>
-        <div className="flex gap-2 justify-end items-center">
-          <ButtonTertiary onClick={() => setConfirmOpen(false)}>
-            Nevermind
-          </ButtonTertiary>
-          <ButtonPrimary onClick={handleDelete} disabled={deleting}>
-            {deleting ? "Deleting..." : "Delete"}
-          </ButtonPrimary>
-        </div>
-      </Modal>
-      )}
+        {mode === "edit" ? (
+          <form
+            onSubmit={handleSave}
+            onKeyDown={(e) => {
+              if (e.key === "Tab") e.stopPropagation();
+            }}
+            className="flex flex-col gap-2"
+          >
+            <InputWithLabel
+              label="Name"
+              type="text"
+              name="page-title"
+              autoComplete="off"
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+              autoFocus
+            />
+            <InputWithLabel
+              label="Path"
+              type="text"
+              name="page-path"
+              autoComplete="off"
+              value={path}
+              onChange={(e) => setPath(e.currentTarget.value)}
+              placeholder="/about"
+            />
+            <div className="flex gap-2 justify-between items-center">
+              {props.canDelete ? (
+                <ButtonTertiary
+                  type="button"
+                  onClick={() => setMode("confirm")}
+                >
+                  Delete
+                </ButtonTertiary>
+              ) : (
+                <div />
+              )}
+              <ButtonPrimary type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save"}
+              </ButtonPrimary>
+            </div>
+          </form>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="text-secondary text-sm pb-1">
+              This will permanently delete{" "}
+              <span className="font-bold text-primary">
+                {props.page.title || props.page.path || "/"}
+              </span>
+              .
+            </div>
+            <div className="flex gap-2 justify-end items-center">
+              <ButtonTertiary type="button" onClick={() => setMode("edit")}>
+                Cancel
+              </ButtonTertiary>
+              <ButtonPrimary onClick={handleDelete} disabled={deleting}>
+                {deleting ? "Deleting..." : "Delete"}
+              </ButtonPrimary>
+            </div>
+          </div>
+        )}
+      </Popover>
     </div>
   );
 }

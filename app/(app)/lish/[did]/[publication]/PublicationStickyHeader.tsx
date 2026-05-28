@@ -3,13 +3,11 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 export function PublicationStickyHeader(props: {
-  sticky?: boolean;
   nav: React.ReactNode;
   children: React.ReactNode;
 }) {
   let ref = useRef<HTMLDivElement>(null);
   let pathname = usePathname();
-  let sticky = props.sticky ?? true;
 
   useEffect(() => {
     let el = ref.current;
@@ -62,11 +60,7 @@ export function PublicationStickyHeader(props: {
   return (
     <div
       ref={ref}
-      className={
-        sticky
-          ? "pubStickyHeader sticky top-0 z-10 bg-bg-page shrink-0"
-          : "pubStickyHeader shrink-0"
-      }
+      className="pubStickyHeader sticky top-0 z-10 bg-bg-page shrink-0"
     >
       <div
         className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4"

@@ -23,11 +23,7 @@ import type { DocumentContextValue } from "contexts/DocumentContext";
 import {
   type PublicationPostsListPost,
 } from "../PublicationPostsList";
-import { PublicationNav } from "../PublicationNav";
-import { PublicationHeader } from "../PublicationHeader";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
-import { PublicationStickyHeader } from "../PublicationStickyHeader";
-import { PublicationFullHeader } from "../PublicationFullHeader";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
@@ -180,41 +176,16 @@ export async function PublicationPageRenderer({
             <PublicationHomeLayout
               uri={publication.uri}
               showPageBackground={showPageBackground}
-              stickyHeader={
-                navPages.length > 0 ? (
-                  <PublicationStickyHeader
-                    nav={
-                      <PublicationNav
-                        publicationUrl={getPublicationURL(publication)}
-                        pages={navPages}
-                        activePath={page.path}
-                      />
-                    }
-                  >
-                    <PublicationHeader
-                      variant="inline"
-                      iconUrl={
-                        normalizedPublication?.icon
-                          ? blobRefToSrc(normalizedPublication.icon.ref, did)
-                          : undefined
-                      }
-                      publicationName={publication.name}
-                    />
-                  </PublicationStickyHeader>
-                ) : (
-                  <PublicationFullHeader>
-                    <PublicationHeader
-                      iconUrl={
-                        normalizedPublication?.icon
-                          ? blobRefToSrc(normalizedPublication.icon.ref, did)
-                          : undefined
-                      }
-                      publicationName={publication.name}
-                      description={normalizedPublication?.description}
-                    />
-                  </PublicationFullHeader>
-                )
+              iconUrl={
+                normalizedPublication?.icon
+                  ? blobRefToSrc(normalizedPublication.icon.ref, did)
+                  : undefined
               }
+              publicationName={publication.name}
+              description={normalizedPublication?.description}
+              navPages={navPages}
+              publicationUrl={getPublicationURL(publication)}
+              activePath={page.path}
             >
               <div className="pubPageContent pt-6">
                 <PostContent

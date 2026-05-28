@@ -12,7 +12,6 @@ import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvid
 import { PublicationPagesNav } from "./PublicationPagesNav";
 import { PublicationEditHeader } from "./PublicationEditHeader";
 import { PublicationHeader } from "../../PublicationHeader";
-import { PublicationStickyHeader } from "../../PublicationStickyHeader";
 import { PublicationEditDirtyProvider } from "./dirtyContext";
 
 export async function generateMetadata(props: {
@@ -99,22 +98,20 @@ export default async function PublicationEditLayout(props: {
               publicationName={params.publication}
             />
             <div className="pubWrapper flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
-              <PublicationStickyHeader
-                sticky={false}
-                nav={
-                  <PublicationPagesNav
-                    did={params.did}
-                    publicationName={params.publication}
+              <div className="shrink-0">
+                <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pt-5">
+                  <PublicationHeader
+                    variant="inline"
+                    iconUrl={iconUrl}
+                    publicationName={publication.name}
+                    description={record?.description}
                   />
-                }
-              >
-                <PublicationHeader
-                  variant="inline"
-                  iconUrl={iconUrl}
-                  publicationName={publication.name}
-                  description={record?.description}
+                </div>
+                <PublicationPagesNav
+                  did={params.did}
+                  publicationName={params.publication}
                 />
-              </PublicationStickyHeader>
+              </div>
               <div className="grow min-h-0 flex flex-col">{props.children}</div>
             </div>
           </div>

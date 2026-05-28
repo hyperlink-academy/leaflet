@@ -2,8 +2,8 @@
 
 import type { GetPublicationDataReturnType } from "app/api/rpc/[command]/get_publication_data";
 import { callRPC } from "app/api/rpc/client";
-import { createContext, useContext, useEffect, useMemo } from "react";
-import useSWR, { SWRConfig, KeyedMutator, mutate } from "swr";
+import { createContext, useContext, useMemo } from "react";
+import useSWR, { SWRConfig, KeyedMutator } from "swr";
 import { produce, Draft as ImmerDraft } from "immer";
 import {
   normalizePublicationRecord,
@@ -24,9 +24,6 @@ export function PublicationSWRDataProvider(props: {
   children: React.ReactNode;
 }) {
   let key = `publication-data-${props.publication_did}-${props.publication_rkey}`;
-  useEffect(() => {
-    mutate(key, props.publication_data);
-  }, [props.publication_data]);
   return (
     <PublicationContext
       value={{ name: props.publication_rkey, did: props.publication_did }}

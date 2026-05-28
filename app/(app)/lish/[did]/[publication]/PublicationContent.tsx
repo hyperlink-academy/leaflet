@@ -1,10 +1,6 @@
 import React from "react";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
 import { PublicationAuthor } from "./PublicationAuthor";
-import { PublicationHeader } from "./PublicationHeader";
-import { PublicationNav } from "./PublicationNav";
-import { PublicationStickyHeader } from "./PublicationStickyHeader";
-import { PublicationFullHeader } from "./PublicationFullHeader";
 import {
   normalizePublicationRecord,
   normalizeDocumentRecord,
@@ -91,56 +87,31 @@ export const PublicationContent = ({
       <PublicationHomeLayout
         uri={publication.uri}
         showPageBackground={!!showPageBackground}
-        stickyHeader={
-          navPages.length > 0 ? (
-            <PublicationStickyHeader
-              nav={
-                <PublicationNav
-                  publicationUrl={getPublicationURL(publication)}
-                  pages={navPages}
-                  activePath="/"
-                />
-              }
-            >
-              <PublicationHeader
-                variant="inline"
-                iconUrl={
-                  record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined
-                }
-                publicationName={publication.name}
-              />
-            </PublicationStickyHeader>
-          ) : (
-            <PublicationFullHeader>
-              <PublicationHeader
-                iconUrl={
-                  record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined
-                }
-                publicationName={publication.name}
-                description={record?.description}
-                author={
-                  profile ? (
-                    <PublicationAuthor
-                      did={profile.did}
-                      displayName={profile.displayName}
-                      handle={profile.handle}
-                    />
-                  ) : undefined
-                }
-                subscribeButton={
-                  <div className="max-w-sm mx-auto">
-                    <SubscribeInput
-                      publicationUri={publication.uri}
-                      publicationUrl={record?.url}
-                      publicationName={record?.name ?? publication.name}
-                      publicationDescription={record?.description}
-                      newsletterMode={newsletterMode}
-                    />
-                  </div>
-                }
-              />
-            </PublicationFullHeader>
-          )
+        iconUrl={record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined}
+        publicationName={publication.name}
+        description={record?.description}
+        navPages={navPages}
+        publicationUrl={getPublicationURL(publication)}
+        activePath="/"
+        author={
+          profile ? (
+            <PublicationAuthor
+              did={profile.did}
+              displayName={profile.displayName}
+              handle={profile.handle}
+            />
+          ) : undefined
+        }
+        subscribeButton={
+          <div className="max-w-sm mx-auto">
+            <SubscribeInput
+              publicationUri={publication.uri}
+              publicationUrl={record?.url}
+              publicationName={record?.name ?? publication.name}
+              publicationDescription={record?.description}
+              newsletterMode={newsletterMode}
+            />
+          </div>
         }
       >
         <PublicationPostsList
