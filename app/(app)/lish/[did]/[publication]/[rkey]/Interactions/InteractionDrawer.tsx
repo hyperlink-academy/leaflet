@@ -1,13 +1,10 @@
 "use client";
-import { Media } from "components/Media";
 import { MentionsDrawerContent } from "./Quotes";
 import {
   InteractionState,
   setInteractionState,
   useInteractionState,
 } from "./Interactions";
-import { Json } from "supabase/database.types";
-import { Comment, CommentsDrawerContent } from "./Comments";
 import { useSearchParams } from "next/navigation";
 import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
@@ -17,17 +14,12 @@ export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
   document_uri: string;
   quotesAndMentions: { uri: string; link?: string }[];
-  comments: Comment[];
+  commentsSlot: React.ReactNode;
   did: string;
   pageId?: string;
 }) => {
   let drawer = useDrawerOpen(props.document_uri);
   if (!drawer) return null;
-
-  // Filter comments and quotes based on pageId
-  const filteredComments = props.comments.filter(
-    (c) => (c.record as any)?.onPage === props.pageId,
-  );
 
   const filteredQuotesAndMentions = props.quotesAndMentions.filter((q) => {
     if (!q.link) return !props.pageId; // Direct mentions without quote context go to main page
@@ -57,7 +49,7 @@ export const InteractionDrawer = (props: {
                 <CloseTiny />
               </button>
               <MentionsDrawerContent
-                {...props}
+                did={props.did}
                 quotesAndMentions={filteredQuotesAndMentions}
               />
             </>
@@ -76,11 +68,7 @@ export const InteractionDrawer = (props: {
                   <CloseTiny />
                 </button>
               </div>
-              <CommentsDrawerContent
-                document_uri={props.document_uri}
-                comments={filteredComments}
-                pageId={props.pageId}
-              />
+              {props.commentsSlot}
             </>
           )}
         </div>

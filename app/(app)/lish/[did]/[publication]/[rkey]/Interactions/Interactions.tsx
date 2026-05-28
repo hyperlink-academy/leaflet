@@ -11,8 +11,6 @@ import { scrollIntoView } from "src/utils/scrollIntoView";
 import { TagTiny } from "components/Icons/TagTiny";
 import { Tag } from "components/Tags";
 import { Popover } from "components/Popover";
-import { PubLeafletComment } from "lexicons/api";
-import { type CommentOnDocument } from "contexts/DocumentContext";
 import { prefetchQuotesData } from "./Quotes";
 import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
@@ -368,19 +366,6 @@ export function getQuoteCountFromArray(
   }
 }
 
-export function getCommentCount(
-  comments: CommentOnDocument[],
-  pageId?: string,
-) {
-  if (pageId)
-    return comments.filter(
-      (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
-    ).length;
-  else
-    return comments.filter(
-      (c) => !(c.record as PubLeafletComment.Record)?.onPage,
-    ).length;
-}
 
 const EditButton = (props: {
   publication: { identity_did: string } | null;

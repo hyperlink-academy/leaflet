@@ -1,6 +1,6 @@
 "use server";
 
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 
 export type VoterIdentity = {
   did: string;

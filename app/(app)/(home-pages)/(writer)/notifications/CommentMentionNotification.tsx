@@ -1,13 +1,11 @@
-import { AppBskyActorProfile, PubLeafletComment } from "lexicons/api";
+import { PubLeafletComment } from "lexicons/api";
 import { HydratedCommentMentionNotification } from "src/notifications";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { MentionTiny } from "components/Icons/MentionTiny";
 import {
   CommentInNotification,
   ContentLayout,
   Notification,
 } from "./Notification";
-import { AtUri } from "@atproto/api";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 export const CommentMentionNotification = (
@@ -17,8 +15,7 @@ export const CommentMentionNotification = (
   if (!docRecord) return null;
 
   const commentRecord = props.commentData.record as PubLeafletComment.Record;
-  const profileRecord = props.commentData.bsky_profiles
-    ?.record as AppBskyActorProfile.Record;
+  const profile = props.commentData.profile;
   const pubRecord = props.normalizedPublication;
 
   const href =
@@ -66,17 +63,9 @@ export const CommentMentionNotification = (
         <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
           <CommentInNotification
             className=""
-            avatar={
-              profileRecord?.avatar?.ref &&
-              blobRefToSrc(
-                profileRecord?.avatar?.ref,
-                props.commentData.bsky_profiles?.did || "",
-              )
-            }
+            avatar={profile?.avatar ?? undefined}
             displayName={
-              profileRecord?.displayName ||
-              props.commentData.bsky_profiles?.handle ||
-              "Someone"
+              profile?.displayName || profile?.handle || "Someone"
             }
             index={[]}
             plaintext={commentRecord.plaintext}

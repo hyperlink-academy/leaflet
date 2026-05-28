@@ -217,9 +217,14 @@ export function CommentBox(props: {
         {
           record: result.record,
           uri: result.uri,
-          bsky_profiles: {
-            record: result.profile as Json,
+          profile: {
             did: new AtUri(result.uri).host,
+            handle: null,
+            displayName:
+              (result.profile as { displayName?: string } | null)
+                ?.displayName ?? null,
+            avatar: null,
+            description: null,
           },
         },
       ],

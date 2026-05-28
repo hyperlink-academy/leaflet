@@ -8,6 +8,7 @@ import {
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { getProfiles } from "src/identity";
 
 export type StandardSitePostData = {
   uri: string;
@@ -66,16 +67,7 @@ export const get_standard_site_posts = makeRoute({
       ),
     );
 
-    const { data: profiles } = dids.length
-      ? await supabase
-          .from("bsky_profiles")
-          .select("did, handle, record")
-          .in("did", dids)
-      : { data: [] as { did: string; handle: string | null; record: unknown }[] };
-
-    const profileByDid = new Map(
-      (profiles || []).map((p) => [p.did, p] as const),
-    );
+    const profiles = await getProfiles(dids);
 
     const posts: StandardSitePostData[] = (documents || [])
       .map((d): StandardSitePostData | null => {
@@ -93,15 +85,12 @@ export const get_standard_site_posts = makeRoute({
         } catch {
           did = null;
         }
-        const profile = did ? profileByDid.get(did) : undefined;
-        const profileRecord = (profile?.record ?? null) as
-          | { displayName?: string }
-          | null;
+        const profile = did ? profiles.get(did) : null;
         const author = did
           ? {
               did,
               handle: profile?.handle ?? null,
-              displayName: profileRecord?.displayName ?? null,
+              displayName: profile?.displayName ?? null,
             }
           : null;
 

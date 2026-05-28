@@ -3,7 +3,6 @@ import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import {
   Interactions,
   getQuoteCount,
-  getCommentCount,
 } from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
@@ -97,9 +96,7 @@ export function PostHeader(props: {
               quotesCount={
                 getQuoteCount(document?.quotesAndMentions || []) || 0
               }
-              commentsCount={
-                getCommentCount(document?.comments_on_documents || []) || 0
-              }
+              commentsCount={document?.commentsCount || 0}
               recommendsCount={document?.recommendsCount || 0}
             />
           )}

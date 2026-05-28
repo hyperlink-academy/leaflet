@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Agent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";

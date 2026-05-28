@@ -112,6 +112,7 @@ export function PostPages({
   standardSitePostData,
   document_uri,
   pollData,
+  commentsSlot,
 }: {
   document_uri: string;
   document: PostPageData;
@@ -128,6 +129,7 @@ export function PostPages({
     showPrevNext?: boolean;
   };
   pollData: PollData[];
+  commentsSlot: React.ReactNode;
 }) {
   let drawer = useDrawerOpen(document_uri);
   useInitializeOpenPages();
@@ -188,10 +190,8 @@ export function PostPages({
         <InteractionDrawer
           showPageBackground={pubRecord?.theme?.showPageBackground}
           document_uri={document.uri}
-          comments={
-            preferences.showComments === false
-              ? []
-              : document.comments_on_documents
+          commentsSlot={
+            preferences.showComments === false ? null : commentsSlot
           }
           quotesAndMentions={
             preferences.showMentions === false ? [] : quotesAndMentions
@@ -303,10 +303,8 @@ export function PostPages({
                 showPageBackground={pubRecord?.theme?.showPageBackground}
                 pageId={page.id}
                 document_uri={document.uri}
-                comments={
-                  preferences.showComments === false
-                    ? []
-                    : document.comments_on_documents
+                commentsSlot={
+                  preferences.showComments === false ? null : commentsSlot
                 }
                 quotesAndMentions={
                   preferences.showMentions === false ? [] : quotesAndMentions

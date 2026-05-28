@@ -1,106 +1,100 @@
-"use client";
-
-import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
+import { supabaseServerClient } from "supabase/serverClient";
+import { getProfiles } from "src/identity";
+import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
+import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import {
   PublicationSubscribers,
-  useMergedSubscribers,
+  type MergedSubscriber,
+  type SubscriberStatus,
 } from "../PublicationSubscribers";
-import {
-  usePublicationData,
-  useNormalizedPublicationRecord,
-} from "../PublicationSWRProvider";
-import { Popover } from "components/Popover";
-import { Checkbox } from "components/Checkbox";
-import {
-  useDashboardState,
-  useSetDashboardState,
-} from "components/PageLayouts/dashboardState";
 
-export default function SubsPage() {
-  let { data } = usePublicationData();
-  let record = useNormalizedPublicationRecord();
-  let pubUri = data?.publication?.uri || "";
+export default async function SubsPage(props: {
+  params: Promise<{ did: string; publication: string }>;
+}) {
+  const params = await props.params;
+  const did = decodeURIComponent(params.did);
+  const publication = decodeURIComponent(params.publication);
+
+  const { result } = await get_publication_data.handler(
+    { did, publication_name: publication },
+    { supabase: supabaseServerClient },
+  );
+  const pub = result.publication;
+  if (!pub) {
+    return (
+      <PublicationSubscribers
+        subscribers={[]}
+        publicationShareUrl=""
+        publicationUri=""
+        showPageBackground={false}
+      />
+    );
+  }
+
+  const record = normalizePublicationRecord(pub.record);
   const showPageBackground = !!record?.theme?.showPageBackground;
-  let subscribers = useMergedSubscribers();
-  let count = subscribers?.length ?? 0;
+  const atprotoSubs = pub.publication_subscriptions || [];
+  const newsletterEnabled = !!pub.publication_newsletter_settings?.enabled;
+  const emailSubs = newsletterEnabled
+    ? pub.publication_email_subscribers || []
+    : [];
+
+  const dids = new Set<string>();
+  for (const s of atprotoSubs) {
+    if (s.identities?.atp_did) dids.add(s.identities.atp_did);
+  }
+  for (const s of emailSubs) {
+    if (s.identities?.atp_did) dids.add(s.identities.atp_did);
+  }
+
+  const profiles = await getProfiles(Array.from(dids));
+
+  const byDid = new Map<string, MergedSubscriber>();
+  const emailOnly: MergedSubscriber[] = [];
+
+  for (const s of atprotoSubs) {
+    const d = s.identities?.atp_did ?? undefined;
+    if (!d) continue;
+    byDid.set(d, {
+      key: `did:${d}`,
+      did: d,
+      handle: profiles.get(d)?.handle ?? undefined,
+      email: undefined,
+      created_at: s.created_at,
+      status: "subscribed",
+    });
+  }
+
+  for (const s of emailSubs) {
+    const status: SubscriberStatus =
+      s.state === "pending"
+        ? "unconfirmed"
+        : s.state === "unsubscribed"
+          ? "unsubscribed"
+          : "subscribed";
+    const linkedDid = s.identities?.atp_did ?? undefined;
+    const existing = linkedDid ? byDid.get(linkedDid) : undefined;
+    if (existing && status === "subscribed") {
+      existing.email = s.email;
+      continue;
+    }
+    emailOnly.push({
+      key: `email:${s.id}`,
+      did: linkedDid,
+      handle: linkedDid ? (profiles.get(linkedDid)?.handle ?? undefined) : undefined,
+      email: s.email,
+      created_at: s.created_at,
+      status,
+    });
+  }
 
   return (
-    <DashboardPageLayout
-      scrollKey={`dashboard-${pubUri}-Subs`}
-      pageTitle="Subscribers"
-      mobileActions={<SubscriberStatusFilter />}
-      publication={pubUri}
-      showHeader={true}
-      controls={
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <div className="font-bold text-secondary px-1">
-            {count} Subscriber{count !== 1 && "s"}
-          </div>
-          <SubscriberStatusFilter />
-        </div>
-      }
-    >
-      <PublicationSubscribers showPageBackground={showPageBackground} />
-    </DashboardPageLayout>
+    <PublicationSubscribers
+      subscribers={[...byDid.values(), ...emailOnly]}
+      publicationShareUrl={getPublicationURL(pub)}
+      publicationUri={pub.uri}
+      showPageBackground={showPageBackground}
+    />
   );
 }
-
-const SubscriberStatusFilter = () => {
-  let { subscriberStatus } = useDashboardState();
-  let setState = useSetDashboardState();
-  let count = Object.values(subscriberStatus).filter(Boolean).length;
-
-  return (
-    <Popover
-      className="text-sm px-2! py-1!"
-      trigger={
-        <div className="text-sm text-tertiary">
-          Filters {count > 0 && `(${count})`}
-        </div>
-      }
-    >
-      <Checkbox
-        small
-        checked={subscriberStatus.subscribed}
-        onChange={(e) =>
-          setState({
-            subscriberStatus: {
-              ...subscriberStatus,
-              subscribed: !!e.target.checked,
-            },
-          })
-        }
-      >
-        Subscribed
-      </Checkbox>
-      <Checkbox
-        small
-        checked={subscriberStatus.unconfirmed}
-        onChange={(e) =>
-          setState({
-            subscriberStatus: {
-              ...subscriberStatus,
-              unconfirmed: !!e.target.checked,
-            },
-          })
-        }
-      >
-        Unconfirmed
-      </Checkbox>
-      <Checkbox
-        small
-        checked={subscriberStatus.unsubscribed}
-        onChange={(e) =>
-          setState({
-            subscriberStatus: {
-              ...subscriberStatus,
-              unsubscribed: !!e.target.checked,
-            },
-          })
-        }
-      >
-        Unsubscribed
-      </Checkbox>
-    </Popover>
-  );
-};

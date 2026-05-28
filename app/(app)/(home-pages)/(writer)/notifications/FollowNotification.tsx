@@ -1,23 +1,13 @@
 import { Avatar } from "components/Avatar";
 import { Notification } from "./Notification";
 import { HydratedSubscribeNotification } from "src/notifications";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { AppBskyActorProfile } from "lexicons/api";
 
 export const FollowNotification = (props: HydratedSubscribeNotification) => {
-  const profileRecord = props.subscriptionData?.identities?.bsky_profiles
-    ?.record as AppBskyActorProfile.Record;
+  const profile = props.subscriptionData?.profile;
   const displayName =
-    profileRecord?.displayName ||
-    props.subscriptionData?.identities?.bsky_profiles?.handle ||
-    "Someone";
+    profile?.displayName || profile?.handle || "Someone";
   const pubRecord = props.normalizedPublication;
-  const avatarSrc =
-    profileRecord?.avatar?.ref &&
-    blobRefToSrc(
-      profileRecord.avatar.ref,
-      props.subscriptionData?.identity || "",
-    );
+  const avatarSrc = profile?.avatar ?? undefined;
 
   return (
     <Notification

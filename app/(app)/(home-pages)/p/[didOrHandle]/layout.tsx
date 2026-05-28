@@ -1,4 +1,4 @@
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";

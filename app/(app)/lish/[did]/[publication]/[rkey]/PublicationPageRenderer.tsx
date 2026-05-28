@@ -152,7 +152,7 @@ export async function PublicationPageRenderer({
       newsletterMode: false,
       pages: (publication.publication_pages ?? []).filter((p) => p.record_uri),
     },
-    comments: [],
+    commentsCount: 0,
     mentions: [],
     leafletId: null,
     recommendsCount: 0,

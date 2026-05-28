@@ -3,7 +3,7 @@
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/api";
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 import type { Post } from "app/(app)/(home-pages)/reader/getReaderFeed";
 import {
   normalizeDocumentRecord,
