@@ -20,7 +20,7 @@ const ibmPlexSerif = IBM_Plex_Serif({
 export function AboutPage() {
   return (
     <main
-      className={`${ibmPlexSerif.variable} aboutPage w-full bg-[#FDFCFA] flex flex-col justify-center sm:px-12 px-4 mx-auto overflow-x-none overflow-y-auto`}
+      className={`${ibmPlexSerif.variable} aboutPage w-full bg-[#FDFCFA] flex flex-col justify-center sm:px-12 px-4 mx-auto overflow-x-clip overflow-y-auto`}
     >
       <div className="spacer h-[96px] sm:h-[160px]" />
       <div className="aboutCover relative  max-w-full mx-auto w-[800px] flex flex-col gap-3 sm:gap-4">
