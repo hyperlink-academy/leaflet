@@ -28,6 +28,7 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
+import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -359,17 +360,20 @@ async function handleEvent(evt: Event) {
   // site.standard.publication records go into the main "publications" table
   if (evt.collection === ids.SiteStandardPublication) {
     if (evt.event === "create" || evt.event === "update") {
-      let record = SiteStandardPublication.validateRecord(evt.record);
+      let record = SiteStandardPublication.validateRecord(
+        stripThemeWithoutType(evt.record),
+      );
       if (!record.success) return;
       await supabase
         .from("identities")
         .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
-      await supabase.from("publications").upsert({
+      let { error } = await supabase.from("publications").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,
         name: record.value.name,
         record: record.value as Json,
       });
+      if (error) console.log(error);
     }
     if (evt.event === "delete") {
       await supabase
