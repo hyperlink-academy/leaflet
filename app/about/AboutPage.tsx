@@ -26,7 +26,7 @@ export function AboutPage() {
       <div className="aboutCover relative  max-w-full mx-auto w-[960px] flex flex-col gap-3 sm:gap-4">
         <h1 className={`hidden`}>Leaflet</h1>
         <img
-          src="/about/HeroText.png"
+          src="/about/HeroText.webp"
           alt=""
           className="absolute left-1/2 -translate-x-1/2 top-0 sm:top-[3%] z-10 w-[90%] sm:w-[75%]"
         />

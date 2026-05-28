@@ -4,7 +4,7 @@ export const Features = () => {
       <div className="aboutSpotlightFeatures pt-16 sm:pt-32 flex flex-col gap-16  sm:gap-32">
         <div className="flex md:flex-row flex-col md:gap-12 gap-4 justify-center">
           <img
-            src="/about/reach-audience.png"
+            src="/about/reach-audience.webp"
             alt=""
             className="w-fill min-w-[160px] max-w-[720px] grow mx-auto"
           />
@@ -27,7 +27,7 @@ export const Features = () => {
             </p>
           </div>
           <img
-            src="/about/customize.png"
+            src="/about/customize.webp"
             alt=""
             className="w-fill min-w-[160px] max-w-[720px] grow mx-auto"
           />
