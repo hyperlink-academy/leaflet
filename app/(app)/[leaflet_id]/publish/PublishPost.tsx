@@ -157,6 +157,7 @@ const PublishPostForm = (
       entitiesToDelete: props.entitiesToDelete,
       publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
       postPreferences,
+      sendEmail: shareState.email,
     });
 
     if (!result.success) {

@@ -61,6 +61,7 @@ export async function publishToPublication({
   entitiesToDelete,
   publishedAt,
   postPreferences,
+  sendEmail = true,
 }: {
   root_entity: string;
   publication_uri?: string;
@@ -76,6 +77,7 @@ export async function publishToPublication({
     showMentions?: boolean;
     showRecommends?: boolean;
   } | null;
+  sendEmail?: boolean;
 }): Promise<PublishResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -403,7 +405,7 @@ export async function publishToPublication({
   // Fire newsletter broadcast on first publish to a newsletter-enabled pub.
   // The composite PK on publication_post_sends is the real idempotency guard —
   // ignoreDuplicates makes re-publishes and concurrent runs a no-op.
-  if (publication_uri && !existingDocUri) {
+  if (publication_uri && !existingDocUri && sendEmail) {
     const { data: settings } = await supabaseServerClient
       .from("publication_newsletter_settings")
       .select("enabled")
