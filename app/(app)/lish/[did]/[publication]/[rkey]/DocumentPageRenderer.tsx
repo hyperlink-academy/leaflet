@@ -18,8 +18,6 @@ import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { FontLoader } from "components/FontLoader";
 import { mergePreferences } from "src/utils/mergePreferences";
-import { PublicationNav } from "../PublicationNav";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { CommentsSection } from "./Interactions/Comments/CommentsSection";
 
 export async function DocumentPageRenderer({
@@ -98,13 +96,6 @@ export async function DocumentPageRenderer({
             pub_creator={pub_creator}
           >
             <LeafletLayout>
-              {document.publication?.pages?.length ? (
-                <PublicationNav
-                  publicationUrl={getPublicationURL(document.publication)}
-                  pages={document.publication.pages}
-                  activePath={null}
-                />
-              ) : null}
               <PostPages
                 document_uri={document.uri}
                 preferences={mergePreferences(
