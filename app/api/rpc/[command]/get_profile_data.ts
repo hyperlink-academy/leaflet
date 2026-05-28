@@ -5,7 +5,7 @@ import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Agent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";
-import { createOauthClient } from "src/atproto-oauth";
+import { restoreOAuthSession } from "src/atproto-oauth";
 import {
   normalizePublicationRow,
   hasValidPublication,
@@ -35,17 +35,10 @@ export const get_profile_data = makeRoute({
     let agent;
     let authed_identity = await getIdentityData();
     if (authed_identity?.atp_did) {
-      try {
-        const oauthClient = await createOauthClient();
-        let credentialSession = await oauthClient.restore(
-          authed_identity.atp_did,
-        );
-        agent = new Agent(credentialSession);
-      } catch (e) {
-        agent = new Agent({
-          service: "https://public.api.bsky.app",
-        });
-      }
+      const restored = await restoreOAuthSession(authed_identity.atp_did);
+      agent = restored.ok
+        ? new Agent(restored.value)
+        : new Agent({ service: "https://public.api.bsky.app" });
     } else {
       agent = new Agent({
         service: "https://public.api.bsky.app",
