@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
 import { cache } from "react";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
+import { getProfiles, type Profile } from "src/identity";
 import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 export const getIdentityData = cache(uncachedGetIdentityData);
@@ -19,7 +20,6 @@ export async function uncachedGetIdentityData() {
           `*,
           identities(
             *,
-            bsky_profiles(*),
             notifications(count),
             publication_subscriptions(*),
             publication_email_subscribers(publication, state),
@@ -74,12 +74,16 @@ export async function uncachedGetIdentityData() {
 
   const subscription = auth_res.data.identities.user_subscriptions ?? null;
 
-  if (auth_res.data.identities.atp_did) {
+  const atp_did = auth_res.data.identities.atp_did;
+  if (atp_did) {
     //I should create a relationship table so I can do this in the above query
-    let { data: rawPublications } = await supabaseServerClient
-      .from("publications")
-      .select("*")
-      .eq("identity_did", auth_res.data.identities.atp_did);
+    let [{ data: rawPublications }, profiles] = await Promise.all([
+      supabaseServerClient
+        .from("publications")
+        .select("*")
+        .eq("identity_did", atp_did),
+      getProfiles([atp_did]),
+    ]);
     // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces,
     // then filter to only publications created by Leaflet
     const publications = deduplicateByUri(rawPublications || []).filter(
@@ -87,6 +91,7 @@ export async function uncachedGetIdentityData() {
     );
     return {
       ...auth_res.data.identities,
+      bsky_profiles: bskyProfileFromCache(profiles.get(atp_did) ?? null),
       publications,
       entitlements,
       subscription,
@@ -95,9 +100,28 @@ export async function uncachedGetIdentityData() {
 
   return {
     ...auth_res.data.identities,
+    bsky_profiles: null,
     publications: [],
     entitlements,
     subscription,
+  };
+}
+
+// Reshape a cached profile into the legacy `bsky_profiles` row shape that
+// consumers (SubscribeButton, PubPreview, PostPreview, …) read off the
+// identity, so swapping the table join for the cache stays transparent.
+function bskyProfileFromCache(profile: Profile | null) {
+  if (!profile) return null;
+  return {
+    did: profile.did,
+    handle: profile.handle,
+    record: {
+      did: profile.did,
+      handle: profile.handle,
+      displayName: profile.displayName ?? undefined,
+      avatar: profile.avatar ?? undefined,
+      description: profile.description ?? undefined,
+    },
   };
 }
 
