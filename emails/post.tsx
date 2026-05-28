@@ -483,6 +483,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             assetsBaseUrl={p.assetsBaseUrl}
                             theme={theme}
                             colors={c}
+                            postUrl={p.postUrl}
                           />
                         ))}
 
@@ -687,6 +688,7 @@ const BlockRenderer = ({
   assetsBaseUrl,
   theme,
   colors,
+  postUrl,
 }: {
   block: PubLeafletPagesLinearDocument.Block["block"];
   alignment?: string;
@@ -694,6 +696,7 @@ const BlockRenderer = ({
   assetsBaseUrl: string;
   theme: EmailTheme;
   colors: ResolvedColors;
+  postUrl: string;
 }) => {
   if (PubLeafletBlocksText.isMain(block)) {
     return (
@@ -862,7 +865,9 @@ const BlockRenderer = ({
       />
     );
   }
-  return <BlockNotSupported theme={theme} colors={colors} />;
+  return (
+    <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
+  );
 };
 
 // Helpers used by the confirm-email templates inside their <Tailwind>
@@ -1276,9 +1281,11 @@ export const CodeBlock = ({
 export const BlockNotSupported = ({
   theme = defaultEmailTheme,
   colors,
+  postUrl,
 }: {
   theme?: EmailTheme;
   colors?: ResolvedColors;
+  postUrl?: string;
 } = {}) => {
   const c = colors ?? resolveColors(theme);
   return (
@@ -1312,6 +1319,7 @@ export const BlockNotSupported = ({
         }}
       >
         <Link
+          href={postUrl}
           style={{
             color: theme.accentBackground,
             fontWeight: "bold",
