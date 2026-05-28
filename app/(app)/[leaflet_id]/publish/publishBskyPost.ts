@@ -7,6 +7,7 @@ import {
 } from "@atproto/api";
 import sharp from "sharp";
 import { TID } from "@atproto/common";
+import { AtUri } from "@atproto/syntax";
 import { getIdentityData } from "actions/getIdentityData";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
@@ -91,6 +92,28 @@ export async function publishPostToBsky(args: {
   let blob = await agent.com.atproto.repo.uploadBlob(resizedImage, {
     headers: { "Content-Type": "image/webp" },
   });
+
+  // Reference the document and, when it lives in a publication, the publication
+  // record on the post so the appview can index the relationship. Our DB
+  // doesn't store CIDs, so read each strong ref straight from the author's repo.
+  // (The document ref is the snapshot taken before we write bskyPostRef back to
+  // it below — the post→document→post cycle can't reference its own next CID.)
+  let did = credentialSession.did!;
+  let documentUri = `at://${did}/${args.document_record.$type}/${args.rkey}`;
+
+  let { data: docInPub } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("publication")
+    .eq("document", documentUri)
+    .maybeSingle();
+
+  let associatedRefs: { uri: string; cid: string }[] = [];
+  for (let uri of [documentUri, docInPub?.publication]) {
+    if (!uri) continue;
+    let ref = await getRecordStrongRef(agent, uri);
+    if (ref) associatedRefs.push(ref);
+  }
+
   let bsky = new BskyAgent(credentialSession);
   let post = await bsky.app.bsky.feed.post.create(
     {
@@ -110,6 +133,7 @@ export async function publishPostToBsky(args: {
           thumb: blob.data.blob,
         },
       },
+      ...(associatedRefs.length > 0 && { associatedRefs }),
     },
   );
   let record = args.document_record;
@@ -134,4 +158,25 @@ export async function publishPostToBsky(args: {
     })
     .eq("uri", result.uri);
   return { success: true };
+}
+
+// Resolve a record URI to a strong ref ({ uri, cid }) by reading its current
+// CID from the repo. Returns null if the record is missing or has no CID so a
+// failed lookup degrades to a missing associatedRef rather than blocking the post.
+async function getRecordStrongRef(
+  agent: AtpBaseClient,
+  uri: string,
+): Promise<{ uri: string; cid: string } | null> {
+  try {
+    let { host, collection, rkey } = new AtUri(uri);
+    let { data } = await agent.com.atproto.repo.getRecord({
+      repo: host,
+      collection,
+      rkey,
+    });
+    if (!data.cid) return null;
+    return { uri: data.uri, cid: data.cid };
+  } catch {
+    return null;
+  }
 }
