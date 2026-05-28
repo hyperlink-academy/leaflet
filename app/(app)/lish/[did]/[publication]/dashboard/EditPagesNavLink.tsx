@@ -32,6 +32,7 @@ export function EditPagesNavLink(props: {
         path: "/",
         title: "home",
         includePostsList: true,
+        includeSignup: true,
       });
       setLoading(false);
       if (!created) return;

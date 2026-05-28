@@ -48,7 +48,8 @@
             "pub.leaflet.blocks.page",
             "pub.leaflet.blocks.poll",
             "pub.leaflet.blocks.button",
-            "pub.leaflet.blocks.postsList"
+            "pub.leaflet.blocks.postsList",
+            "pub.leaflet.blocks.signup"
           ]
         },
         "x": {

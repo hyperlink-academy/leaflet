@@ -32,6 +32,7 @@ import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { PostsListBlock } from "./PostsListBlock";
+import { SignupBlock } from "./SignupBlock";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
@@ -363,6 +364,7 @@ const BlockTypeComponents: {
   "standard-site-post": StandardSitePostBlock,
   "horizontal-rule": HorizontalRule,
   "posts-list": PostsListBlock,
+  signup: SignupBlock,
 };
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {

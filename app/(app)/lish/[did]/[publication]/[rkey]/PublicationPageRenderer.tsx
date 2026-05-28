@@ -37,6 +37,7 @@ type PublicationRow = {
   name: string;
   identity_did: string;
   record: unknown;
+  publication_newsletter_settings?: { enabled: boolean } | null;
   publication_pages?: {
     id: number;
     path: string | null;
@@ -145,7 +146,7 @@ export async function PublicationPageRenderer({
         DocumentContextValue["publication"]
       >["record"],
       publication_subscriptions: [],
-      newsletterMode: false,
+      newsletterMode: !!publication.publication_newsletter_settings?.enabled,
       pages: (publication.publication_pages ?? []).filter((p) => p.record_uri),
     },
     commentsCount: 0,

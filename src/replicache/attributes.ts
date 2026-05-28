@@ -403,7 +403,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "code"
       | "blockquote"
       | "horizontal-rule"
-      | "posts-list";
+      | "posts-list"
+      | "signup";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

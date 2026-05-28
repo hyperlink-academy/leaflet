@@ -458,11 +458,11 @@ export const blockCommands: Command[] = [
     name: "Subscribe Form",
     icon: <BlockMailboxSmall />,
     type: "publication",
-    alternateNames: ["subscribe", "newsletter", "email"],
+    alternateNames: ["subscribe", "newsletter", "email", "signup"],
     publicationOnly: true,
     onSelect: async (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
-      await createBlockWithType(rep, props, "text");
+      await createBlockWithType(rep, props, "signup");
     },
   },
 ];

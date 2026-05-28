@@ -19,6 +19,7 @@ import {
   PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
   PubLeafletBlocksButton,
+  PubLeafletBlocksSignup,
 } from "lexicons/api";
 import {
   PublicationPostsList,
@@ -44,6 +45,7 @@ import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
+import { SubscribePanel } from "components/Subscribe/SubscribeButton";
 import { blockTextSize } from "src/utils/blockTextSize";
 import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
@@ -157,8 +159,8 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
-  let currentPublicationUri =
-    useDocumentOptional()?.publication?.uri ?? null;
+  let document = useDocumentOptional();
+  let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
       scrollMarginTop: "4rem",
@@ -279,6 +281,22 @@ export let Block = ({
     }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
+    }
+    case PubLeafletBlocksSignup.isMain(b.block): {
+      if (!document?.publication?.uri) return null;
+      return (
+        <div className={className} {...blockProps}>
+          <SubscribePanel
+            publicationUri={document.publication.uri}
+            publicationUrl={document.normalizedPublication?.url}
+            publicationName={
+              document.normalizedPublication?.name ?? document.publication.name
+            }
+            publicationDescription={document.normalizedPublication?.description}
+            newsletterMode={document.publication.newsletterMode}
+          />
+        </div>
+      );
     }
     case PubLeafletBlocksPostsList.isMain(b.block): {
       if (!postsListData) return null;
