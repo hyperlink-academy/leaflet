@@ -89,14 +89,11 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
         <SettingsTriggerButton aria-label="Standard Site Post Settings" />
       }
     >
-      <div className="flex flex-col gap-2 w-xs pt-1 p-3! overflow-y-auto">
+      <div className="flex flex-col gap-2 w-full sm:w-[1000px] sm:max-w-md pt-1 p-3! overflow-y-auto">
         <div>
           <h4>Post Size</h4>
-          <div className="text-sm text-tertiary italic">
-            This block links to a Standard Site article.
-          </div>
         </div>
-        <div className="flex flex-col gap-3 w-full">
+        <div className="flex sm:flex-row flex-col sm:gap-1 gap-2 w-full items-stretch">
           {(
             [
               { value: "small", Icon: SmallIcon },
@@ -114,7 +111,7 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
                 size !== "large");
             return (
               <button
-                className="text-left"
+                className={`PostBlockSizeSettingOption text-left flex flex-col flex-1 pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
                 key={option.value}
                 type="button"
                 aria-pressed={selected}
@@ -130,7 +127,12 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
                   });
                 }}
               >
-                <option.Icon selected={selected} />
+                <div className="text-xs font-bold text-secondary uppercase">
+                  {option.value}
+                </div>
+                <div className="flex items-center grow w-full ">
+                  <option.Icon selected={selected} />
+                </div>
               </button>
             );
           })}
@@ -154,22 +156,32 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
   );
 }
 
+function PlaceholderText(size: "sm" | "md" | "lg", width?: string) {
+  return (
+    <div
+      className={`
+        ${width ? `w-[${width}]` : "w-full"}
+        ${
+          size === "sm"
+            ? "h-1.5 bg-border-light"
+            : size === "lg"
+              ? "h-3 bg-border"
+              : "w-full h-1.5 bg-border"
+        }
+        rounded-[2px]`}
+    />
+  );
+}
+
 const SmallIcon = ({ selected }: { selected: boolean }) => {
   return (
     <div
-      className={`flex flex-col pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
+      className={`flex gap-2 p-2 w-full overflow-hidden opaque-container border-tertiary! ${selected && "border-accent-contrast!"}`}
     >
-      <div className="text-xs font-bold text-secondary">SMALL</div>
-      <div
-        className={`flex gap-2 p-2 w-full overflow-hidden opaque-container border-tertiary! ${selected && "border-accent-contrast!"}`}
-      >
-        <div className="flex flex-col gap-1 grow min-w-0">
-          <div className="w-full h-4 bg-border rounded-[2px]" />
-
-          <div className="flex justify-between mt-1 w-full">
-            <div className="w-[60%]  h-2 bg-border-light rounded-[2px]" />
-            <div className="w-6 h-2 bg-border-light rounded-[2px]" />
-          </div>
+      <div className="flex flex-col gap-1 grow min-w-0">
+        {PlaceholderText("lg")}
+        <div className="flex justify-between mt-1 w-full">
+          {PlaceholderText("sm", "60%")}
         </div>
       </div>
     </div>
@@ -179,29 +191,23 @@ const SmallIcon = ({ selected }: { selected: boolean }) => {
 const MedIcon = ({ selected }: { selected: boolean }) => {
   return (
     <div
-      className={`flex flex-col pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
+      className={`flex opaque-container border-tertiary! overflow-hidden w-full ${selected && "border-accent-contrast!"}`}
     >
-      <div className="text-xs font-bold text-secondary">MEDIUM</div>
-      <div
-        className={`flex opaque-container border-tertiary! overflow-hidden ${selected && "border-accent-contrast!"}`}
-      >
-        <div className="flex flex-col gap-1 p-2 grow min-w-0">
-          <div className="w-full h-4 bg-border rounded-[2px]" />
-          <div className="w-full h-2 bg-border mt-1 rounded-[2px]" />
-          <div className="w-full h-2 bg-border rounded-[2px]" />
-          <div className="flex justify-between mt-2 w-full">
-            <div className="w-[60%]  h-2 bg-border-light rounded-[2px]" />
-            <div className="w-6 h-2 bg-border-light rounded-[2px]" />
-          </div>
+      <div className="flex flex-col gap-1 p-2 grow min-w-0">
+        {PlaceholderText("lg")}
+        {PlaceholderText("md")}
+        {PlaceholderText("md", "80%")}
+        <div className="flex justify-between mt-2 w-full">
+          {PlaceholderText("sm", "60%")}
         </div>
-        <div
-          className="aspect-square h-[82px] bg-border border-l border-border shrink-0 bg-cover bg-center"
-          style={{
-            backgroundImage: "url(/imagePlaceholder.png)",
-            backgroundBlendMode: "hard-light",
-          }}
-        />
       </div>
+      <div
+        className="sm:aspect 1/2 aspect-square h-[68px] bg-border border-l border-border shrink-0 bg-cover bg-center"
+        style={{
+          backgroundImage: "url(/imagePlaceholder.png)",
+          backgroundBlendMode: "hard-light",
+        }}
+      />
     </div>
   );
 };
@@ -209,27 +215,22 @@ const MedIcon = ({ selected }: { selected: boolean }) => {
 const LargeIcon = ({ selected }: { selected: boolean }) => {
   return (
     <div
-      className={`flex flex-col pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
+      className={`flex flex-col w-full gap-1 opaque-container border-tertiary! overflow-hidden ${selected && "border-accent-contrast!"}`}
     >
-      <div className="text-xs font-bold text-secondary">LARGE</div>
       <div
-        className={`flex flex-col gap-1 opaque-container border-tertiary! overflow-hidden ${selected && "border-accent-contrast!"}`}
-      >
-        <div
-          className="w-full aspect-video bg-border bg-cover bg-center border-b border-border"
-          style={{
-            backgroundImage: "url(/imagePlaceholder.png)",
-            backgroundBlendMode: "hard-light",
-          }}
-        />
+        className="w-full aspect-4/1 sm:aspect-2/1 bg-border bg-cover bg-center border-b border-border"
+        style={{
+          backgroundImage: "url(/imagePlaceholder.png)",
+          backgroundBlendMode: "hard-light",
+        }}
+      />
 
-        <div className="flex flex-col gap-1 p-2 pt-0.5!">
-          <div className="w-full h-4 bg-border rounded-[2px]" />
-          <div className="w-full h-2 bg-border mt-1 rounded-[2px]" />
-          <div className="flex justify-between mt-2 w-full">
-            <div className="w-[60%]  h-2 bg-border-light rounded-[2px]" />
-            <div className="w-6 h-2 bg-border-light rounded-[2px]" />
-          </div>
+      <div className="flex flex-col gap-1 p-2 pt-0.5!">
+        {PlaceholderText("lg")}
+        {PlaceholderText("md")}
+        {PlaceholderText("md", "80%")}
+        <div className="flex justify-between mt-2 w-full">
+          {PlaceholderText("sm", "60%")}
         </div>
       </div>
     </div>
