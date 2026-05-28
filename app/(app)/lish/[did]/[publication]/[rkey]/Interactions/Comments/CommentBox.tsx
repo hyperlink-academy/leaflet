@@ -224,6 +224,7 @@ export function CommentBox(props: {
               (result.profile as { displayName?: string } | null)
                 ?.displayName ?? null,
             avatar: null,
+            description: null,
           },
         },
       ],
