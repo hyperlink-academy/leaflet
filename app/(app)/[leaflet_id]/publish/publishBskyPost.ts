@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  AppBskyEmbedExternal,
   AppBskyRichtextFacet,
   Agent as BskyAgent,
   UnicodeString,
@@ -19,6 +20,12 @@ import {
 } from "src/utils/getMicroLinkOgImage";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
+
+type StrongRef = {
+  $type: "com.atproto.repo.strongRef";
+  uri: string;
+  cid: string;
+};
 
 type PublishBskyResult =
   | { success: true }
@@ -107,12 +114,24 @@ export async function publishPostToBsky(args: {
     .eq("document", documentUri)
     .maybeSingle();
 
-  let associatedRefs: { uri: string; cid: string }[] = [];
+  let associatedRefs: StrongRef[] = [];
   for (let uri of [documentUri, docInPub?.publication]) {
     if (!uri) continue;
     let ref = await getRecordStrongRef(agent, uri);
     if (ref) associatedRefs.push(ref);
   }
+
+  // associatedRefs hangs off the external embed card alongside uri/title/etc.
+  // It isn't in the published @atproto/api types yet, so widen External here.
+  let external: AppBskyEmbedExternal.External & {
+    associatedRefs?: StrongRef[];
+  } = {
+    uri: args.url,
+    title: args.title,
+    description: args.description,
+    thumb: blob.data.blob,
+  };
+  if (associatedRefs.length > 0) external.associatedRefs = associatedRefs;
 
   let bsky = new BskyAgent(credentialSession);
   let post = await bsky.app.bsky.feed.post.create(
@@ -126,14 +145,8 @@ export async function publishPostToBsky(args: {
       facets: args.facets,
       embed: {
         $type: "app.bsky.embed.external",
-        external: {
-          uri: args.url,
-          title: args.title,
-          description: args.description,
-          thumb: blob.data.blob,
-        },
+        external,
       },
-      ...(associatedRefs.length > 0 && { associatedRefs }),
     },
   );
   let record = args.document_record;
@@ -166,7 +179,7 @@ export async function publishPostToBsky(args: {
 async function getRecordStrongRef(
   agent: AtpBaseClient,
   uri: string,
-): Promise<{ uri: string; cid: string } | null> {
+): Promise<StrongRef | null> {
   try {
     let { host, collection, rkey } = new AtUri(uri);
     let { data } = await agent.com.atproto.repo.getRecord({
@@ -175,7 +188,11 @@ async function getRecordStrongRef(
       rkey,
     });
     if (!data.cid) return null;
-    return { uri: data.uri, cid: data.cid };
+    return {
+      $type: "com.atproto.repo.strongRef",
+      uri: data.uri,
+      cid: data.cid,
+    };
   } catch {
     return null;
   }
