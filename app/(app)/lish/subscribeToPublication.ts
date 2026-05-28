@@ -1,7 +1,6 @@
 "use server";
 
 import { AtpBaseClient } from "lexicons/api";
-import { AppBskyActorDefs, Agent as BskyAgent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
@@ -10,8 +9,6 @@ import { revalidatePath } from "next/cache";
 import { AtUri } from "@atproto/syntax";
 import { redirect } from "next/navigation";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
-import { Json } from "supabase/database.types";
-import { IdResolver } from "@atproto/identity";
 import {
   Notification,
   pingIdentityToUpdateNotification,
@@ -20,7 +17,6 @@ import { v7 } from "uuid";
 
 let leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
-let idResolver = new IdResolver();
 
 type SubscribeResult =
   | { success: true; hasFeed: boolean }
@@ -87,23 +83,6 @@ export async function subscribeToPublication(
     await pingIdentityToUpdateNotification(publicationOwner);
   }
 
-  let bsky = new BskyAgent(credentialSession);
-  let [profile, resolveDid] = await Promise.all([
-    bsky.app.bsky.actor.profile
-      .get({
-        repo: credentialSession.did!,
-        rkey: "self",
-      })
-      .catch(),
-    idResolver.did.resolve(credentialSession.did!),
-  ]);
-  if (!identity.bsky_profiles && profile.value) {
-    await supabaseServerClient.from("bsky_profiles").insert({
-      did: identity.atp_did,
-      record: profile.value as Json,
-      handle: resolveDid?.alsoKnownAs?.[0]?.slice(5),
-    });
-  }
   revalidatePath("/lish/[did]/[publication]", "layout");
   return {
     success: true,
@@ -159,28 +138,6 @@ export async function publishAtprotoSubscriptionForDid(
       };
       await supabaseServerClient.from("notifications").insert(notification);
       await pingIdentityToUpdateNotification(publicationOwner);
-    }
-
-    let { data: existingProfile } = await supabaseServerClient
-      .from("bsky_profiles")
-      .select("did")
-      .eq("did", atp_did)
-      .maybeSingle();
-    if (!existingProfile) {
-      let bsky = new BskyAgent(credentialSession);
-      let [profile, resolveDid] = await Promise.all([
-        bsky.app.bsky.actor.profile
-          .get({ repo: atp_did, rkey: "self" })
-          .catch(() => null),
-        idResolver.did.resolve(atp_did).catch(() => null),
-      ]);
-      if (profile?.value) {
-        await supabaseServerClient.from("bsky_profiles").insert({
-          did: atp_did,
-          record: profile.value as Json,
-          handle: resolveDid?.alsoKnownAs?.[0]?.slice(5),
-        });
-      }
     }
   } catch (e) {
     console.error(

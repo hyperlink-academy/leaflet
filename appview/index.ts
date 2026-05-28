@@ -104,11 +104,6 @@ main();
 
 async function handleEvent(evt: Event) {
   if (evt.event === "identity") {
-    if (evt.handle)
-      await supabase
-        .from("bsky_profiles")
-        .update({ handle: evt.handle })
-        .eq("did", evt.did);
     if (profileCache) {
       try {
         await profileCache.clearEntry(evt.did);

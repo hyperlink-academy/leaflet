@@ -78,10 +78,6 @@ export async function publishComment(args: {
     ),
   ]);
 
-  await supabaseServerClient.from("bsky_profiles").upsert({
-    did: credentialSession.did!,
-    record: profile.value as Json,
-  });
   let { data, error } = await supabaseServerClient
     .from("comments_on_documents")
     .insert({

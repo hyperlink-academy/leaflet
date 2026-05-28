@@ -49,7 +49,7 @@ export const comments_on_documents = pgTable("comments_on_documents", {
 	record: jsonb("record").notNull(),
 	document: text("document").references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	profile: text("profile").references(() => bsky_profiles.did, { onDelete: "set null", onUpdate: "cascade" } ),
+	profile: text("profile"),
 },
 (table) => {
 	return {
