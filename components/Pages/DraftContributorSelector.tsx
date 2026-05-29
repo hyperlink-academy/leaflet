@@ -1,87 +1,54 @@
 "use client";
 
-import useSWR, { useSWRConfig } from "swr";
+import useSWR from "swr";
 import { Avatar } from "components/Avatar";
 import { ButtonSecondary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import {
-  listDraftContributors,
-  addDraftContributor,
-  removeDraftContributor,
-  type DraftContributorCandidate,
-  type DraftContributorsData,
-} from "actions/publications/draftContributors";
+import { useReplicache } from "src/replicache";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { listDraftContributorCandidates } from "actions/publications/draftContributors";
 import { bylineName } from "src/utils/byline";
-
-// The byline always shows the PERSON: displayName -> handle -> did fallback,
-// resolved via the profile cache like every other candidate. The owner is
-// rendered as a person too (never the publication name).
-function candidateName(c: DraftContributorCandidate) {
-  return bylineName({
-    did: c.contributor_did,
-    handle: c.handle,
-    displayName: c.display_name,
-  });
-}
 
 export function DraftContributorSelector(props: { leaflet_id: string }) {
   let { permissions } = useEntitySetContext();
-  let { cache } = useSWRConfig();
-  let swrKey = `draft-contributors-${props.leaflet_id}`;
-  let { data, mutate } = useSWR(swrKey, async () => {
-    let res = await listDraftContributors(props.leaflet_id);
-    if (!res.ok) return null;
-    return res.value;
-  });
+  let { rep } = useReplicache();
 
-  let candidates = data?.candidates ?? [];
-  let selectedDids = data?.selected_dids ?? [];
+  // Selected contributors sync live via Replicache; the candidate list (which
+  // needs Bluesky profile enrichment) is a read-only fetch.
+  let selectedDids =
+    useSubscribe(rep, (tx) => tx.get<string[]>("draft_contributors")) ?? [];
+  let { data: candidates = [] } = useSWR(
+    `draft-contributor-candidates-${props.leaflet_id}`,
+    async () => {
+      let res = await listDraftContributorCandidates(props.leaflet_id);
+      return res.ok ? res.value : [];
+    },
+  );
+
+  // The byline always shows the PERSON: displayName -> handle -> did fallback,
+  // resolved via the profile cache. The owner is rendered as a person too
+  // (never the publication name).
+  let candidateName = (c: (typeof candidates)[number]) =>
+    bylineName(
+      c.profile ?? { did: c.contributor_did, handle: null, displayName: null },
+    );
 
   // Selected contributors, in candidate order. When none are selected the
   // publication owner is the implicit default byline.
-  let selected = candidates.filter((c) => selectedDids.includes(c.contributor_did));
+  let selected = candidates.filter((c) =>
+    selectedDids.includes(c.contributor_did),
+  );
   let owner = candidates.find((c) => c.is_owner) ?? null;
 
-  let bylineEntries: DraftContributorCandidate[] =
-    selected.length > 0 ? selected : owner ? [owner] : [];
+  let bylineEntries = selected.length > 0 ? selected : owner ? [owner] : [];
 
-  let toggle = async (did: string) => {
-    // Derive the intended next state from the CURRENT cache value (not the
-    // render closure) so rapid toggles compose instead of clobbering each
-    // other. Both the optimistic update and the chosen server action key off
-    // the live cache, and SWR rolls back on error rather than restoring a
-    // captured snapshot.
-    let current =
-      (cache.get(swrKey)?.data as DraftContributorsData | undefined)
-        ?.selected_dids ?? [];
-    let willSelect = !current.includes(did);
-    await mutate(
-      async () => {
-        let res = willSelect
-          ? await addDraftContributor(props.leaflet_id, did)
-          : await removeDraftContributor(props.leaflet_id, did);
-        if (!res.ok) throw new Error(res.error);
-        // Revalidate (below) reconciles the authoritative server list.
-        return undefined;
-      },
-      {
-        optimisticData: (cur) => {
-          if (!cur) return cur as any;
-          let sel = cur.selected_dids;
-          let next = willSelect
-            ? sel.includes(did)
-              ? sel
-              : [...sel, did]
-            : sel.filter((d) => d !== did);
-          return { ...cur, selected_dids: next };
-        },
-        rollbackOnError: true,
-        populateCache: false,
-        revalidate: true,
-      },
-    );
+  let toggle = (did: string) => {
+    rep?.mutate.toggleDraftContributor({
+      contributor_did: did,
+      selected: !selectedDids.includes(did),
+    });
   };
 
   let byline = (
@@ -92,7 +59,7 @@ export function DraftContributorSelector(props: { leaflet_id: string }) {
         bylineEntries.map((c, i) => (
           <span key={c.contributor_did} className="flex gap-1 items-center">
             <Avatar
-              src={c.avatar ?? undefined}
+              src={c.profile?.avatar ?? undefined}
               displayName={candidateName(c)}
               size="tiny"
             />
@@ -136,7 +103,7 @@ export function DraftContributorSelector(props: { leaflet_id: string }) {
                     {isSelected && <CheckTiny />}
                   </div>
                   <Avatar
-                    src={c.avatar ?? undefined}
+                    src={c.profile?.avatar ?? undefined}
                     displayName={candidateName(c)}
                     size="small"
                   />

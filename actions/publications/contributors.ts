@@ -4,7 +4,8 @@ import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
 import { revalidatePath } from "next/cache";
-import { getProfiles, idResolver, type Profile } from "src/identity";
+import { idResolver } from "src/identity";
+import { withProfiles, type Contributor } from "./contributorProfiles";
 
 export type ContributorActionError =
   | "unauthorized"
@@ -15,15 +16,6 @@ export type ContributorActionError =
   | "already_contributor"
   | "not_invited"
   | "database_error";
-
-export type ContributorRow = {
-  contributor_did: string;
-  confirmed: boolean;
-  created_at: string;
-  handle: string | null;
-  display_name: string | null;
-  avatar: string | null;
-};
 
 async function loadPublication(publication_uri: string) {
   let { data } = await supabaseServerClient
@@ -57,7 +49,7 @@ async function resolveHandleToDid(handle: string): Promise<string | null> {
 
 export async function listContributors(
   publication_uri: string,
-): Promise<Result<ContributorRow[], ContributorActionError>> {
+): Promise<Result<Contributor[], ContributorActionError>> {
   let identity = await getIdentityData();
   if (!identity?.atp_did) return Err("unauthorized");
 
@@ -86,41 +78,13 @@ export async function listContributors(
     return Err("database_error");
   }
 
-  let contributors = data ?? [];
-  let profiles = await getProfiles(contributors.map((c) => c.contributor_did));
-
-  let rows: ContributorRow[] = contributors.map((c) =>
-    buildRow(
-      {
-        contributor_did: c.contributor_did,
-        confirmed: c.confirmed,
-        created_at: c.created_at,
-      },
-      profiles.get(c.contributor_did) ?? null,
-    ),
-  );
-
-  return Ok(rows);
-}
-
-export function buildRow(
-  input: { contributor_did: string; confirmed: boolean; created_at: string },
-  profile: Profile | null,
-): ContributorRow {
-  return {
-    contributor_did: input.contributor_did,
-    confirmed: input.confirmed,
-    created_at: input.created_at,
-    handle: profile?.handle ?? null,
-    display_name: profile?.displayName ?? null,
-    avatar: profile?.avatar ?? null,
-  };
+  return Ok(await withProfiles(data ?? []));
 }
 
 export async function inviteContributor(
   publication_uri: string,
   handle: string,
-): Promise<Result<ContributorRow, ContributorActionError>> {
+): Promise<Result<Contributor, ContributorActionError>> {
   let identity = await getIdentityData();
   if (!identity?.atp_did) return Err("unauthorized");
 
@@ -144,31 +108,19 @@ export async function inviteContributor(
 
   await ensureIdentity(did);
 
-  let { error } = await supabaseServerClient
+  // Insert and read the row back so created_at/confirmed come from the DB.
+  let { data: inserted, error } = await supabaseServerClient
     .from("publication_contributors")
-    .insert({
-      publication_uri,
-      contributor_did: did,
-      confirmed: false,
-    });
-  if (error) {
+    .insert({ publication_uri, contributor_did: did, confirmed: false })
+    .select("contributor_did, confirmed, created_at")
+    .single();
+  if (error || !inserted) {
     console.error("[contributors] insert failed:", error);
     return Err("database_error");
   }
 
-  // Try to enrich with profile
-  let profiles = await getProfiles([did]);
-
-  return Ok(
-    buildRow(
-      {
-        contributor_did: did,
-        confirmed: false,
-        created_at: new Date().toISOString(),
-      },
-      profiles.get(did) ?? null,
-    ),
-  );
+  let [row] = await withProfiles([inserted]);
+  return Ok(row);
 }
 
 export async function removeContributor(
@@ -239,12 +191,4 @@ export async function acceptContributorInvitation(
   }
   revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
   return Ok(null);
-}
-
-export async function leavePublication(
-  publication_uri: string,
-): Promise<Result<null, ContributorActionError>> {
-  let identity = await getIdentityData();
-  if (!identity?.atp_did) return Err("unauthorized");
-  return removeContributor(publication_uri, identity.atp_did);
 }

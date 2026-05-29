@@ -22,9 +22,8 @@ import {
   listContributors,
   removeContributor,
   type ContributorActionError,
-  type ContributorRow,
 } from "actions/publications/contributors";
-import { leavePublication } from "actions/publications/contributors";
+import type { OkValue } from "src/result";
 import { UpgradeToProButton } from "../../UpgradeModal";
 import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 
@@ -71,7 +70,10 @@ export function ContributorSettings() {
       acceptLink={acceptLink}
     />
   ) : (
-    <ContributorLeaveSettings publicationUri={publicationUri} />
+    <ContributorLeaveSettings
+      publicationUri={publicationUri}
+      myDid={identity?.atp_did}
+    />
   );
 }
 
@@ -106,13 +108,13 @@ function OwnerContributorSettings(props: {
     mutate((prev) => [...(prev ?? []), res.value], { revalidate: false });
     toaster({
       type: "success",
-      content: `Invited @${res.value.handle ?? "contributor"}`,
+      content: `Invited @${res.value.profile?.handle ?? "contributor"}`,
     });
     return true;
   };
 
   let handleRemove = async (contributor_did: string) => {
-    let removed: ContributorRow | undefined;
+    let removed: NonNullable<typeof data>[number] | undefined;
     mutate(
       (prev) => {
         let rows = prev ?? [];
@@ -168,7 +170,7 @@ function OwnerContributorSettings(props: {
 }
 
 function ContributorList(props: {
-  rows: ContributorRow[];
+  rows: OkValue<Awaited<ReturnType<typeof listContributors>>>;
   loading: boolean;
   onRemove?: (did: string) => void;
   acceptLink?: string;
@@ -204,17 +206,21 @@ function ContributorList(props: {
           className="flex items-center gap-2 border border-border-light rounded-md px-2 py-1.5"
         >
           <Avatar
-            src={row.avatar ?? undefined}
-            displayName={row.display_name ?? row.handle ?? undefined}
+            src={row.profile?.avatar ?? undefined}
+            displayName={
+              row.profile?.displayName ?? row.profile?.handle ?? undefined
+            }
             size="medium"
           />
           <div className="flex flex-col min-w-0 grow">
             <div className="truncate font-bold text-primary text-sm">
-              {row.display_name || row.handle || row.contributor_did}
+              {row.profile?.displayName ||
+                row.profile?.handle ||
+                row.contributor_did}
             </div>
-            {row.handle && (
+            {row.profile?.handle && (
               <div className="truncate text-tertiary text-xs italic">
-                @{row.handle}
+                @{row.profile.handle}
               </div>
             )}
           </div>
@@ -376,15 +382,19 @@ function InviteHandleInput(props: {
   );
 }
 
-function ContributorLeaveSettings(props: { publicationUri: string }) {
+function ContributorLeaveSettings(props: {
+  publicationUri: string;
+  myDid: string | null | undefined;
+}) {
   let toaster = useToaster();
   let [leaving, setLeaving] = useState(false);
   let [open, setOpen] = useState(false);
 
   let handleLeave = async () => {
-    if (leaving) return;
+    if (leaving || !props.myDid) return;
     setLeaving(true);
-    let res = await leavePublication(props.publicationUri);
+    // Leaving == removing yourself; removeContributor permits self-removal.
+    let res = await removeContributor(props.publicationUri, props.myDid);
     setLeaving(false);
     if (!res.ok) {
       toaster({ type: "error", content: ERROR_MESSAGES[res.error] });

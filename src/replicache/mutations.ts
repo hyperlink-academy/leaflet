@@ -746,6 +746,63 @@ const updateLeafletMetadata: Mutation<{
   });
 };
 
+// Toggle a draft contributor (the byline for this draft). The selected dids
+// live in the leaflet_contributors table and are pulled into Replicache under
+// the "draft_contributors" key, so the byline syncs live across collaborators.
+const toggleDraftContributor: Mutation<{
+  contributor_did: string;
+  selected: boolean;
+}> = async (args, ctx) => {
+  await ctx.runOnServer(async ({ supabase }) => {
+    let { contributor_did } = args;
+    let leaflet = ctx.permission_token_id;
+
+    if (!args.selected) {
+      await supabase
+        .from("leaflet_contributors")
+        .delete()
+        .eq("leaflet", leaflet)
+        .eq("contributor_did", contributor_did);
+      return;
+    }
+
+    // Adding: the target must be the publication owner or a confirmed contributor.
+    let { data: link } = await supabase
+      .from("leaflets_in_publications")
+      .select("publication, publications(identity_did)")
+      .eq("leaflet", leaflet)
+      .maybeSingle();
+    if (!link?.publication) return;
+
+    let isOwner = contributor_did === link.publications?.identity_did;
+    if (!isOwner) {
+      let { data: pubContrib } = await supabase
+        .from("publication_contributors")
+        .select("confirmed")
+        .eq("publication_uri", link.publication)
+        .eq("contributor_did", contributor_did)
+        .maybeSingle();
+      if (!pubContrib?.confirmed) return;
+    }
+
+    await supabase
+      .from("leaflet_contributors")
+      .upsert(
+        { leaflet, contributor_did },
+        { onConflict: "leaflet,contributor_did", ignoreDuplicates: true },
+      );
+  });
+  await ctx.runOnClient(async ({ tx }) => {
+    let current = ((await tx.get<string[]>("draft_contributors")) ?? []).slice();
+    let next = args.selected
+      ? current.includes(args.contributor_did)
+        ? current
+        : [...current, args.contributor_did]
+      : current.filter((d) => d !== args.contributor_did);
+    await tx.set("draft_contributors", next);
+  });
+};
+
 const createFootnote: Mutation<{
   footnoteEntityID: string;
   blockID: string;
@@ -801,6 +858,7 @@ export const mutations = {
   removePollOption,
   updatePublicationDraft,
   updateLeafletMetadata,
+  toggleDraftContributor,
   createFootnote,
   deleteFootnote,
 };

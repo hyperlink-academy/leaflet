@@ -1844,6 +1844,7 @@ export type Database = {
         client_groups: Json | null
         facts: Json | null
         publications: Json | null
+        draft_contributors: Json | null
       }
     }
   }
