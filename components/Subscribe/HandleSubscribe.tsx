@@ -119,10 +119,8 @@ export const SubscribeWithHandle = (props: {
                 <span className="flex gap-1 items-center max-w-full grow min-w-0">
                   <Avatar
                     size="tiny"
-                    src={record?.avatar ?? undefined}
-                    displayName={
-                      record?.displayName || record?.handle || undefined
-                    }
+                    src={record?.avatar}
+                    displayName={record?.displayName || record?.handle}
                   />
 
                   <div className="grow truncate">{props.user.handle}</div>

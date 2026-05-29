@@ -20,7 +20,7 @@ import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { PostEmail } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
 import { getProfiles } from "src/identity";
-import { bylineName, formatBylineNames } from "src/utils/byline";
+import { toBylineProfiles, formatBylineProfiles } from "src/utils/byline";
 
 type SendPreviewError =
   | "unauthorized"
@@ -125,17 +125,9 @@ export async function sendPostPreview(args: {
       contributorRows?.map((c) => c.contributor_did) ?? [];
     if (contributorDids.length > 0) {
       const profiles = await getProfiles(contributorDids);
-      const names = contributorDids
-        .map((did) => {
-          const p = profiles.get(did);
-          return bylineName({
-            did,
-            handle: p?.handle ?? null,
-            displayName: p?.displayName ?? null,
-          });
-        })
-        .filter((name) => !name.startsWith("did:"));
-      if (names.length > 0) authorName = formatBylineNames(names);
+      authorName =
+        formatBylineProfiles(toBylineProfiles(contributorDids, profiles)) ??
+        authorName;
     }
   }
 

@@ -8,6 +8,7 @@ import {
 } from "src/atproto-oauth";
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
+import { isConfirmedContributor } from "src/contributorPermissions";
 import { revalidatePath } from "next/cache";
 
 // Resolve which DID owns the PDS that hosts this document and whether the
@@ -25,37 +26,23 @@ async function resolveDocumentAuthority(
   let pdsOwner = new AtUri(document_uri).host;
   if (pdsOwner === current_did) return { ok: true, ownerDid: current_did };
 
+  let notAuthorized = {
+    ok: false,
+    error: {
+      type: "oauth_session_expired",
+      message: "Not authorized",
+      did: current_did,
+    },
+  } as const;
+
   let { data: link } = await supabaseServerClient
     .from("documents_in_publications")
     .select("publication")
     .eq("document", document_uri)
     .maybeSingle();
-  if (!link?.publication) {
-    return {
-      ok: false,
-      error: {
-        type: "oauth_session_expired",
-        message: "Not authorized",
-        did: current_did,
-      },
-    };
-  }
-  let { data: contrib } = await supabaseServerClient
-    .from("publication_contributors")
-    .select("confirmed")
-    .eq("publication_uri", link.publication)
-    .eq("contributor_did", current_did)
-    .maybeSingle();
-  if (!contrib?.confirmed) {
-    return {
-      ok: false,
-      error: {
-        type: "oauth_session_expired",
-        message: "Not authorized",
-        did: current_did,
-      },
-    };
-  }
+  if (!link?.publication) return notAuthorized;
+  if (!(await isConfirmedContributor(link.publication, current_did)))
+    return notAuthorized;
   return { ok: true, ownerDid: pdsOwner };
 }
 

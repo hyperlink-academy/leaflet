@@ -73,12 +73,14 @@ export async function DocumentPageRenderer({
   // single document author (the host DID of the document URI). When the byline
   // is just the author we leave `contributors` undefined so PostHeader uses its
   // existing single-`profile` render path (byte-for-byte the same as before).
-  const bylineDids = getBylineDids(record, did);
-  const contributorProfiles = hasExplicitByline(record, did)
-    ? await getProfiles(bylineDids).then((profiles) =>
-        toBylineProfiles(bylineDids, profiles),
-      )
-    : undefined;
+  let contributorProfiles;
+  if (hasExplicitByline(record, did)) {
+    const bylineDids = getBylineDids(record, did);
+    contributorProfiles = toBylineProfiles(
+      bylineDids,
+      await getProfiles(bylineDids),
+    );
+  }
 
   const {
     bskyPostData,

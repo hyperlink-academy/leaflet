@@ -25,20 +25,16 @@ export type ContributorActionError =
 async function loadPublication(publication_uri: string) {
   let { data } = await supabaseServerClient
     .from("publications")
-    .select("uri, identity_did")
+    .select("identity_did")
     .eq("uri", publication_uri)
     .single();
   return data;
 }
 
 async function ensureIdentity(did: string) {
-  let { data: existing } = await supabaseServerClient
+  await supabaseServerClient
     .from("identities")
-    .select("atp_did")
-    .eq("atp_did", did)
-    .maybeSingle();
-  if (existing) return;
-  await supabaseServerClient.from("identities").insert({ atp_did: did });
+    .upsert({ atp_did: did }, { onConflict: "atp_did", ignoreDuplicates: true });
 }
 
 async function resolveHandleToDid(handle: string): Promise<string | null> {
@@ -103,9 +99,11 @@ export async function removeContributor(
   let publication = await loadPublication(publication_uri);
   if (!publication) return Err("not_owner");
 
-  let isOwner = publication.identity_did === identity.atp_did;
-  let isSelf = contributor_did === identity.atp_did;
-  if (!isOwner && !isSelf) return Err("not_owner");
+  if (
+    publication.identity_did !== identity.atp_did &&
+    contributor_did !== identity.atp_did
+  )
+    return Err("not_owner");
 
   let { error } = await supabaseServerClient
     .from("publication_contributors")

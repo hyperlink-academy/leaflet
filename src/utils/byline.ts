@@ -99,3 +99,18 @@ export function formatBylineNames(names: string[]): string {
     "",
   );
 }
+
+/**
+ * Resolves byline profiles to a single human-friendly name string, dropping
+ * any that only resolve to a bare DID (unresolved profile). Returns undefined
+ * when nothing presentable remains. Shared by the broadcast email and preview
+ * email senders.
+ */
+export function formatBylineProfiles(
+  profiles: BylineProfile[],
+): string | undefined {
+  let names = profiles
+    .map(bylineName)
+    .filter((name) => !name.startsWith("did:"));
+  return names.length > 0 ? formatBylineNames(names) : undefined;
+}

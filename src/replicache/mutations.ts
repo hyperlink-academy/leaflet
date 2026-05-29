@@ -793,7 +793,7 @@ const toggleDraftContributor: Mutation<{
       );
   });
   await ctx.runOnClient(async ({ tx }) => {
-    let current = ((await tx.get<string[]>("draft_contributors")) ?? []).slice();
+    let current = (await tx.get<string[]>("draft_contributors")) ?? [];
     let next = args.selected
       ? current.includes(args.contributor_did)
         ? current

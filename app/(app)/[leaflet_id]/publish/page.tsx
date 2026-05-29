@@ -51,15 +51,13 @@ export default async function PublishLeafletPage(props: Props) {
   if (!publication) {
     let pub_uri = (await props.searchParams).publication_uri;
     if (pub_uri) {
-      console.log(decodeURIComponent(pub_uri));
-      let { data: pubData, error } = await supabaseServerClient
+      let { data: pubData } = await supabaseServerClient
         .from("publications")
         .select(
           "*, documents_in_publications(count), publication_newsletter_settings(enabled)",
         )
         .eq("uri", decodeURIComponent(pub_uri))
         .single();
-      console.log(error);
       publication = pubData;
     }
   }

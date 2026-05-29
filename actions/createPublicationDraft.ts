@@ -2,6 +2,7 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { createNewLeaflet } from "./createNewLeaflet";
 import { supabaseServerClient } from "supabase/serverClient";
+import { isConfirmedContributor } from "src/contributorPermissions";
 
 export async function createPublicationDraft(publication_uri: string) {
   let identity = await getIdentityData();
@@ -15,17 +16,8 @@ export async function createPublicationDraft(publication_uri: string) {
   if (!publication) return null;
 
   let isOwner = publication.identity_did === identity.atp_did;
-  let isConfirmedContributor = false;
-  if (!isOwner) {
-    let { data: contrib } = await supabaseServerClient
-      .from("publication_contributors")
-      .select("confirmed")
-      .eq("publication_uri", publication_uri)
-      .eq("contributor_did", identity.atp_did)
-      .maybeSingle();
-    isConfirmedContributor = contrib?.confirmed === true;
-  }
-  if (!isOwner && !isConfirmedContributor) return null;
+  if (!isOwner && !(await isConfirmedContributor(publication_uri, identity.atp_did)))
+    return null;
 
   let newLeaflet = await createNewLeaflet({
     pageType: "doc",

@@ -1,8 +1,8 @@
 import { AccountTiny } from "./Icons/AccountTiny";
 
 export const Avatar = (props: {
-  src: string | undefined;
-  displayName: string | undefined;
+  src: string | null | undefined;
+  displayName: string | null | undefined;
   className?: string;
   size?: "tiny" | "small" | "medium" | "large" | "giant";
 }) => {

@@ -44,7 +44,6 @@ export const PublicationButtons = (props: { className?: string }) => {
   // no pubs or looseleafs but has docs
   // if they don't have docs, the empty state of the homepage prompts them to make publications
   // we show a "start a pub" banner instead
-  console.log(hasDocs);
   if (!hasLooseleafs && hasDocs && allPubs.length === 0)
     return <PubListEmptyContent />;
 

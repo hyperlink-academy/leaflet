@@ -1,8 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
-import useSWR from "swr";
-import { Agent } from "@atproto/api";
+import { useState } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Input } from "components/Input";
 import { Combobox, ComboboxResult } from "components/Combobox";
@@ -10,14 +8,14 @@ import { Modal } from "components/Modal";
 import { DotLoader } from "components/utils/DotLoader";
 import { Avatar } from "components/Avatar";
 import { useToaster } from "components/Toast";
-import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import { useActorTypeahead } from "src/hooks/useActorTypeahead";
+import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 import { useIsPro } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 import {
   usePublicationData,
   mutatePublicationData,
 } from "../PublicationSWRProvider";
-import { callRPC } from "app/api/rpc/client";
 import type { Profile } from "src/identity";
 import { DashboardContainer } from "./SettingsContent";
 import {
@@ -27,13 +25,6 @@ import {
 } from "actions/publications/contributors";
 import { UpgradeToProButton } from "../../UpgradeModal";
 import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
-
-type ActorSuggestion = {
-  handle: string;
-  did: string;
-  displayName?: string;
-  avatar?: string;
-};
 
 const ERROR_MESSAGES: Record<ContributorActionError, string> = {
   unauthorized: "You're not signed in.",
@@ -92,15 +83,9 @@ function OwnerContributorSettings(props: {
   let dids = rows.map((r) => r.contributor_did);
 
   // Profiles (handle/displayName/avatar) are fetched asynchronously and merged
-  // in. The key is derived from the DID set so it refetches when contributors
-  // are added or removed.
-  let { data: profiles } = useSWR(
-    dids.length ? `contributor-profiles-${[...dids].sort().join(",")}` : null,
-    async () => {
-      let res = await callRPC("get_profiles", { dids });
-      return res?.result?.profiles ?? {};
-    },
-  );
+  // in. The hook keys on the DID set so it refetches when contributors are
+  // added or removed.
+  let { data: profiles } = useContributorProfiles(dids);
 
   let contributors = rows.map((r) => ({
     contributor_did: r.contributor_did,
@@ -197,13 +182,12 @@ function ContributorList(props: {
     profile: Profile | null;
   }[];
   loading: boolean;
-  onRemove?: (did: string) => void;
-  acceptLink?: string;
+  onRemove: (did: string) => void;
+  acceptLink: string;
   emptyMessage: string;
 }) {
   let toaster = useToaster();
   let copyInviteLink = async () => {
-    if (!props.acceptLink) return;
     let url = new URL(props.acceptLink, window.location.origin).toString();
     try {
       await navigator.clipboard.writeText(url);
@@ -252,19 +236,17 @@ function ContributorList(props: {
           <div className="text-xs text-tertiary mr-2">
             {row.confirmed ? "Active" : "Invited"}
           </div>
-          {!row.confirmed && props.acceptLink && (
+          {!row.confirmed && (
             <ButtonSecondary compact type="button" onClick={copyInviteLink}>
               Copy invite link
             </ButtonSecondary>
           )}
-          {props.onRemove && (
-            <ButtonSecondary
-              compact
-              onClick={() => props.onRemove?.(row.contributor_did)}
-            >
-              Remove
-            </ButtonSecondary>
-          )}
+          <ButtonSecondary
+            compact
+            onClick={() => props.onRemove(row.contributor_did)}
+          >
+            Remove
+          </ButtonSecondary>
         </div>
       ))}
     </div>
@@ -275,44 +257,19 @@ function InviteHandleInput(props: {
   onInvite: (handle: string) => Promise<boolean>;
   loading?: boolean;
 }) {
-  let [handleValue, setHandleValue] = useState("");
-  let [suggestions, setSuggestions] = useState<ActorSuggestion[]>([]);
-  let [dropdownOpen, setDropdownOpen] = useState(false);
-  let [highlighted, setHighlighted] = useState<string | undefined>(undefined);
-  let requestIdRef = useRef(0);
-
-  useDebouncedEffect(
-    async () => {
-      let query = handleValue.trim().replace(/^@/, "");
-      if (!query) {
-        setSuggestions([]);
-        setDropdownOpen(false);
-        return;
-      }
-      const requestId = ++requestIdRef.current;
-      const agent = new Agent("https://public.api.bsky.app");
-      try {
-        const result = await agent.searchActorsTypeahead({
-          q: query,
-          limit: 8,
-        });
-        if (requestId !== requestIdRef.current) return;
-        const actors = result.data.actors.map((actor) => ({
-          handle: actor.handle,
-          did: actor.did,
-          displayName: actor.displayName,
-          avatar: actor.avatar,
-        }));
-        setSuggestions(actors);
-        setDropdownOpen(actors.length > 0);
-      } catch {
-        setSuggestions([]);
-        setDropdownOpen(false);
-      }
-    },
-    250,
-    [handleValue],
-  );
+  let {
+    handleValue,
+    setHandleValue,
+    suggestions,
+    setSuggestions,
+    dropdownOpen,
+    setDropdownOpen,
+    highlighted,
+    setHighlighted,
+  } = useActorTypeahead({
+    debounceMs: 250,
+    transformQuery: (v) => v.trim().replace(/^@/, ""),
+  });
 
   let trySubmit = async (handle?: string) => {
     let value = (handle ?? handleValue).trim();

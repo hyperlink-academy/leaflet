@@ -16,11 +16,63 @@ type AcceptState =
   | "pending"
   | "already_member";
 
+// The non-pending states all render the same shape: a heading, a paragraph,
+// and a single link button. Only the copy and destination differ.
+const STATIC_STATES: Record<
+  Exclude<AcceptState, "pending">,
+  {
+    title: string;
+    body: (name: string) => React.ReactNode;
+    href: (dashboardHref: string) => string;
+    cta: string;
+    primary?: boolean;
+  }
+> = {
+  no_publication: {
+    title: "Publication not found",
+    body: () => "We couldn't find that publication.",
+    href: () => "/home",
+    cta: "Back to Home",
+  },
+  not_signed_in: {
+    title: "Sign in to accept your invitation",
+    body: (name) => (
+      <>
+        Sign in with the Bluesky account that received the invitation to
+        contribute to <span className="font-bold">{name}</span>.
+      </>
+    ),
+    href: () => "/login",
+    cta: "Sign In",
+    primary: true,
+  },
+  not_invited: {
+    title: "No invitation found",
+    body: () =>
+      "You must be invited to contribute to a publication. Contact the publication owner.",
+    href: () => "/home",
+    cta: "Back to Home",
+  },
+  already_owner: {
+    title: "You own this publication",
+    body: (name) => `You're already the owner of ${name}.`,
+    href: (dashboardHref) => dashboardHref,
+    cta: "Open Dashboard",
+    primary: true,
+  },
+  already_member: {
+    title: "You're already a contributor",
+    body: (name) => `You're already contributing to ${name}.`,
+    href: (dashboardHref) => dashboardHref,
+    cta: "Open Dashboard",
+    primary: true,
+  },
+};
+
 export function AcceptContent(props: {
   publicationUri: string | null;
   publicationName: string;
   state: AcceptState;
-  signedIn: boolean;
   dashboardHref: string;
 }) {
   let router = useRouter();
@@ -50,69 +102,7 @@ export function AcceptContent(props: {
   };
 
   let body: React.ReactNode;
-  if (props.state === "no_publication") {
-    body = (
-      <>
-        <h3 className="text-secondary">Publication not found</h3>
-        <p className="text-tertiary leading-snug">
-          We couldn't find that publication.
-        </p>
-        <Link href="/home" className="self-center">
-          <ButtonSecondary>Back to Home</ButtonSecondary>
-        </Link>
-      </>
-    );
-  } else if (props.state === "not_signed_in") {
-    body = (
-      <>
-        <h3 className="text-secondary">Sign in to accept your invitation</h3>
-        <p className="text-tertiary leading-snug">
-          Sign in with the Bluesky account that received the invitation to
-          contribute to <span className="font-bold">{props.publicationName}</span>.
-        </p>
-        <Link href="/login" className="self-center">
-          <ButtonPrimary>Sign In</ButtonPrimary>
-        </Link>
-      </>
-    );
-  } else if (props.state === "not_invited") {
-    body = (
-      <>
-        <h3 className="text-secondary">No invitation found</h3>
-        <p className="text-tertiary leading-snug">
-          You must be invited to contribute to a publication. Contact the
-          publication owner.
-        </p>
-        <Link href="/home" className="self-center">
-          <ButtonSecondary>Back to Home</ButtonSecondary>
-        </Link>
-      </>
-    );
-  } else if (props.state === "already_owner") {
-    body = (
-      <>
-        <h3 className="text-secondary">You own this publication</h3>
-        <p className="text-tertiary leading-snug">
-          You're already the owner of {props.publicationName}.
-        </p>
-        <Link href={props.dashboardHref} className="self-center">
-          <ButtonPrimary>Open Dashboard</ButtonPrimary>
-        </Link>
-      </>
-    );
-  } else if (props.state === "already_member") {
-    body = (
-      <>
-        <h3 className="text-secondary">You're already a contributor</h3>
-        <p className="text-tertiary leading-snug">
-          You're already contributing to {props.publicationName}.
-        </p>
-        <Link href={props.dashboardHref} className="self-center">
-          <ButtonPrimary>Open Dashboard</ButtonPrimary>
-        </Link>
-      </>
-    );
-  } else {
+  if (props.state === "pending") {
     body = (
       <>
         <h3 className="text-secondary">
@@ -136,6 +126,20 @@ export function AcceptContent(props: {
             {accepting ? <DotLoader /> : "Accept Invitation"}
           </ButtonPrimary>
         </div>
+      </>
+    );
+  } else {
+    let s = STATIC_STATES[props.state];
+    let Button = s.primary ? ButtonPrimary : ButtonSecondary;
+    body = (
+      <>
+        <h3 className="text-secondary">{s.title}</h3>
+        <p className="text-tertiary leading-snug">
+          {s.body(props.publicationName)}
+        </p>
+        <Link href={s.href(props.dashboardHref)} className="self-center">
+          <Button>{s.cta}</Button>
+        </Link>
       </>
     );
   }

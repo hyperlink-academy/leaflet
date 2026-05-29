@@ -465,8 +465,8 @@ export function CommentBox(props: {
         <div className="flex items-center gap-2">
           {record && (
             <Avatar
-              src={record.avatar ?? undefined}
-              displayName={record.displayName || record.handle || undefined}
+              src={record.avatar}
+              displayName={record.displayName || record.handle}
               size="small"
             />
           )}

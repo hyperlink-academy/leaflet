@@ -1,6 +1,5 @@
 "use client";
 
-import useSWR from "swr";
 import { Avatar } from "components/Avatar";
 import { ButtonSecondary } from "components/Buttons";
 import { Popover } from "components/Popover";
@@ -9,7 +8,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { callRPC } from "app/api/rpc/client";
+import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 import { bylineName } from "src/utils/byline";
 
 export function DraftContributorSelector(props: { leaflet_id: string }) {
@@ -38,17 +37,9 @@ export function DraftContributorSelector(props: { leaflet_id: string }) {
         ];
 
   // Profiles are fetched asynchronously and merged in. Until they arrive,
-  // bylineName falls back to the DID. Keyed on the DID set so it refetches when
-  // contributors change.
-  let { data: profiles } = useSWR(
-    candidateDids.length
-      ? `contributor-profiles-${[...candidateDids].sort().join(",")}`
-      : null,
-    async () => {
-      let res = await callRPC("get_profiles", { dids: candidateDids });
-      return res?.result?.profiles ?? {};
-    },
-  );
+  // bylineName falls back to the DID. The hook keys on the DID set so it
+  // refetches when contributors change.
+  let { data: profiles } = useContributorProfiles(candidateDids);
 
   let candidates = candidateDids.map((did) => ({
     contributor_did: did,

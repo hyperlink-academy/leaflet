@@ -19,8 +19,8 @@ import { getProfiles } from "src/identity";
 import {
   getBylineDids,
   hasExplicitByline,
-  bylineName,
-  formatBylineNames,
+  toBylineProfiles,
+  formatBylineProfiles,
 } from "src/utils/byline";
 import type { Json } from "supabase/database.types";
 
@@ -126,25 +126,12 @@ export const send_post_broadcast = inngest.createFunction(
     // otherwise fall back to the single document author (the URI host DID).
     const hasContributors = hasExplicitByline(docRecord, authorDid);
     const bylineDids = getBylineDids(docRecord, authorDid);
-    const bylineProfiles = await step.run("load-byline-profiles", async () => {
-      const profiles = await getProfiles(bylineDids);
-      return bylineDids.map((bylineDid) => {
-        const p = profiles.get(bylineDid);
-        return {
-          did: bylineDid,
-          handle: p?.handle ?? null,
-          displayName: p?.displayName ?? null,
-        };
-      });
-    });
+    const bylineProfiles = await step.run("load-byline-profiles", async () =>
+      toBylineProfiles(bylineDids, await getProfiles(bylineDids)),
+    );
     let authorName: string | undefined;
     if (hasContributors) {
-      const bylineNames = bylineProfiles
-        .map(bylineName)
-        // Drop bare DIDs (unresolved profiles) so we don't show a raw did:plc.
-        .filter((name) => !name.startsWith("did:"));
-      authorName =
-        bylineNames.length > 0 ? formatBylineNames(bylineNames) : undefined;
+      authorName = formatBylineProfiles(bylineProfiles);
     } else {
       // Preserve previous behavior exactly for the single-author default:
       // use the author's handle (not displayName).

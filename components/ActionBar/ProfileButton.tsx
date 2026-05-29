@@ -37,8 +37,8 @@ export const ProfileButton = () => {
           icon={
             record ? (
               <Avatar
-                src={record.avatar ?? undefined}
-                displayName={record.displayName || record.handle || undefined}
+                src={record.avatar}
+                displayName={record.displayName || record.handle}
               />
             ) : (
               <AccountSmall />

@@ -15,6 +15,7 @@ import {
 } from "lexicons/api";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
+import { isConfirmedContributor } from "src/contributorPermissions";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
@@ -111,15 +112,11 @@ export async function publishToPublication({
     if (!data) throw new Error("No draft or not publisher");
 
     let isOwner = data.identity_did === identity.atp_did;
-    if (!isOwner) {
-      let { data: contrib } = await supabaseServerClient
-        .from("publication_contributors")
-        .select("confirmed")
-        .eq("publication_uri", publication_uri)
-        .eq("contributor_did", identity.atp_did)
-        .maybeSingle();
-      if (!contrib?.confirmed) throw new Error("No draft or not publisher");
-    }
+    if (
+      !isOwner &&
+      !(await isConfirmedContributor(publication_uri, identity.atp_did))
+    )
+      throw new Error("No draft or not publisher");
 
     pdsDid = data.identity_did!;
     draft = data.leaflets_in_publications[0];

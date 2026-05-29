@@ -59,10 +59,8 @@ export const HomeContent = (props: {
   let { identity } = useIdentityData();
 
   let hasPubs =
-    !identity
-      ? false
-      : identity.publications.length > 0 ||
-        (identity.contributor_publications?.length ?? 0) > 0;
+    (identity?.publications.length ?? 0) > 0 ||
+    (identity?.contributor_publications?.length ?? 0) > 0;
   let hasArchived =
     identity &&
     identity.permission_token_on_homepage.filter(
@@ -104,28 +102,27 @@ export function HomeLeafletList(props: {
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
     fallbackData: [],
   });
-  let leaflets: Leaflet[] = identity
-    ? (() => {
-        let owned = identity.permission_token_on_homepage.map((ptoh) => ({
-          added_at: ptoh.created_at,
-          token: ptoh.permission_tokens as PermissionToken,
-          archived: ptoh.archived,
-        }));
-        let contributorRows = identity.contributor_leaflets ?? [];
-        let ownedIds = new Set(owned.map((l) => l.token.id));
-        let contributed = contributorRows
-          .filter((row) => !ownedIds.has(row.permission_tokens.id))
-          .map((row) => ({
-            added_at: row.created_at,
-            token: row.permission_tokens as unknown as PermissionToken,
-            archived: false,
-          }));
-        return [...owned, ...contributed];
-      })()
-    : localLeaflets
-        .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
-        .filter((d) => !d.hidden)
-        .map((ll) => ll);
+  let leaflets: Leaflet[];
+  if (identity) {
+    let owned = identity.permission_token_on_homepage.map((ptoh) => ({
+      added_at: ptoh.created_at,
+      token: ptoh.permission_tokens as PermissionToken,
+      archived: ptoh.archived,
+    }));
+    let ownedIds = new Set(owned.map((l) => l.token.id));
+    let contributed = (identity.contributor_leaflets ?? [])
+      .filter((row) => !ownedIds.has(row.permission_tokens.id))
+      .map((row) => ({
+        added_at: row.created_at,
+        token: row.permission_tokens as unknown as PermissionToken,
+        archived: false,
+      }));
+    leaflets = [...owned, ...contributed];
+  } else {
+    leaflets = localLeaflets
+      .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
+      .filter((d) => !d.hidden);
+  }
 
   return leaflets.length === 0 ? (
     <HomeEmptyState />

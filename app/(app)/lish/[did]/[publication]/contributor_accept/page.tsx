@@ -33,7 +33,6 @@ export default async function ContributorAcceptPage(props: {
   let pubName = pubRecord?.name || publication?.name || "this publication";
 
   let identity = await getIdentityData();
-  let signedIn = !!identity?.atp_did;
 
   let inviteState:
     | { state: "no_publication" }
@@ -72,7 +71,6 @@ export default async function ContributorAcceptPage(props: {
       publicationUri={publication?.uri ?? null}
       publicationName={pubName}
       state={inviteState.state}
-      signedIn={signedIn}
       dashboardHref={dashboardHref}
     />
   );
