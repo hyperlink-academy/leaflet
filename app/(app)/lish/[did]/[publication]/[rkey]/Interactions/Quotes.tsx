@@ -276,7 +276,11 @@ export const QuoteContent = (props: {
           });
         }}
       >
-        <div className="italic border border-border-light rounded-md px-2 pt-1">
+        <div className="flex gap-[6px] items-stretch light-container italic rounded-md px-2 pt-1 ">
+          <div className="flex flex-col gap-1 justify-center h-full pt-2 pb-3">
+            <QuoteTiny className="shrink-0 text-tertiary" />
+            <div className="w-0.5 grow border border-l border-border h-full" />
+          </div>
           <PostContent
             pollData={[]}
             pages={[]}
@@ -285,7 +289,7 @@ export const QuoteContent = (props: {
             blocks={content}
             did={props.did}
             preview
-            className="py-0! px-0! text-tertiary"
+            className="pt-2! px-0! text-tertiary"
           />
         </div>
       </div>

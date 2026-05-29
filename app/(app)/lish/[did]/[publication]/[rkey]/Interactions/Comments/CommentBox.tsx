@@ -418,6 +418,7 @@ export function CommentBox(props: {
       <div className="w-full relative group">
         <pre
           ref={mountRef}
+          style={{ fontFamily: "inherit" }}
           onFocus={() => {
             // Close mention dropdown when editor gains focus (reset stale state)
             handleMentionOpenChange(false);

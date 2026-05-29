@@ -185,6 +185,7 @@ export const BlueskyEmbed = (props: {
               <div className="flex flex-col gap-2 ">
                 {text && (
                   <pre
+                    style={{ fontFamily: "inherit" }}
                     className={`whitespace-pre-wrap text-secondary ${props.compact ? "line-clamp-6" : ""}`}
                   >
                     {text}

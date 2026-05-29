@@ -149,7 +149,7 @@ const Comment = (props: {
         )}
       <pre
         key={props.comment.uri}
-        style={{ wordBreak: "break-word" }}
+        style={{ wordBreak: "break-word", fontFamily: "inherit" }}
         className="whitespace-pre-wrap text-secondary pb-[4px] "
       >
         <BaseTextBlock
