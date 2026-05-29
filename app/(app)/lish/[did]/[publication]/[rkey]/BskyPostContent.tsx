@@ -62,7 +62,11 @@ export function BskyPostContent(props: {
         <div className="flex flex-col items-start shrink-0 w-fit pointer-events-auto">
           <Avatar
             src={post.author.avatar}
-            displayName={post.author.displayName}
+            displayName={
+              post.author.displayName
+                ? post.author.displayName
+                : post.author.handle
+            }
             size={avatarSize ? avatarSize : "medium"}
           />
         </div>
@@ -142,7 +146,14 @@ export function CompactBskyPostContent(props: {
   replyOnClick?: (e: React.MouseEvent) => void;
   clientHost?: string;
 }) {
-  const { post, parent, quoteEnabled, replyEnabled, replyOnClick, clientHost = "bsky.app" } = props;
+  const {
+    post,
+    parent,
+    quoteEnabled,
+    replyEnabled,
+    replyOnClick,
+    clientHost = "bsky.app",
+  } = props;
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
@@ -202,8 +213,8 @@ export function CompactBskyPostContent(props: {
   );
 }
 
-function PostInfo(props: {
-  displayName?: string;
+export function PostInfo(props: {
+  displayName?: string | null;
   handle: string;
   createdAt: string;
   compact?: boolean;
@@ -212,23 +223,23 @@ function PostInfo(props: {
 
   return (
     <div className="postInfo flex items-center gap-2 leading-tight w-full">
-      <div className="flex gap-2 items-center min-w-0">
-        <div className={`font-bold text-secondary  truncate`}>
-          {displayName}
-        </div>
-        <div className="truncate items-end flex pointer-events-auto">
-          <ProfilePopover
-            trigger={
+      <ProfilePopover
+        trigger={
+          <div className="flex gap-2 items-baseline min-w-0 w-full">
+            <div className={`font-bold text-secondary truncate min-w-0`}>
+              {displayName ? displayName : handle}
+            </div>
+            {displayName && (
               <div
-                className={`${compact ? "text-xs" : "text-sm"} text-tertiary hover:underline w-full truncate `}
+                className={`truncate min-w-0 shrink pointer-events-auto ${compact ? "text-xs" : "text-sm"} text-tertiary hover:underline`}
               >
                 @{handle}
               </div>
-            }
-            didOrHandle={handle}
-          />
-        </div>
-      </div>
+            )}
+          </div>
+        }
+        didOrHandle={handle}
+      />
       <div className="w-1 h-1 rounded-full bg-border shrink-0" />
       <div
         className={`${compact ? "text-xs" : "text-sm"} text-tertiary shrink-0`}

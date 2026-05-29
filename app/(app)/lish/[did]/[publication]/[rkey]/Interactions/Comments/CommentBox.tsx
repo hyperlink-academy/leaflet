@@ -219,12 +219,14 @@ export function CommentBox(props: {
           uri: result.uri,
           profile: {
             did: new AtUri(result.uri).host,
-            handle: null,
+            handle: record?.handle ?? null,
             displayName:
+              record?.displayName ??
               (result.profile as { displayName?: string } | null)
-                ?.displayName ?? null,
-            avatar: null,
-            description: null,
+                ?.displayName ??
+              null,
+            avatar: record?.avatar ?? null,
+            description: record?.description ?? null,
           },
         },
       ],

@@ -1,6 +1,5 @@
 "use client";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { flushSync } from "react-dom";
 import type { Json } from "supabase/database.types";
 import { create } from "zustand";
@@ -131,10 +130,14 @@ export const Interactions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
-  let interactionsAvailable =
-    props.showComments ||
-    (props.showMentions && props.quotesCount > 0) ||
-    props.showRecommends;
+  let commentsAvailable = props.showComments;
+  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
+  let discussionsAvailable = commentsAvailable || mentionsAvailable;
+  let defaultDiscussionTab: "comments" | "quotes" = commentsAvailable
+    ? "comments"
+    : "quotes";
+
+  let interactionsAvailable = discussionsAvailable || props.showRecommends;
 
   return (
     <div
@@ -147,34 +150,28 @@ export const Interactions = (props: {
         />
       )}
 
-      {/*MENTIONS BUTTON*/}
-      {props.quotesCount === 0 || props.showMentions === false ? null : (
+      {/*DISCUSSIONS BUTTON*/}
+      {!discussionsAvailable ? null : (
         <button
-          className="flex w-fit gap-1 items-center"
+          className="flex gap-1 items-center w-fit"
           onClick={() => {
-            if (!drawerOpen || drawer !== "quotes")
-              openInteractionDrawer("quotes", document_uri, props.pageId);
+            if (
+              !drawerOpen ||
+              (drawer !== "comments" && drawer !== "quotes") ||
+              pageId !== props.pageId
+            )
+              openInteractionDrawer(
+                defaultDiscussionTab,
+                document_uri,
+                props.pageId,
+              );
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
           onMouseEnter={handleQuotePrefetch}
           onTouchStart={handleQuotePrefetch}
-          aria-label="Post quotes"
+          aria-label="Discussions"
         >
-          <QuoteTiny aria-hidden /> {props.quotesCount}
-        </button>
-      )}
-      {/*COMMENT BUTTON*/}
-      {props.showComments === false ? null : (
-        <button
-          className="flex gap-1 items-center w-fit"
-          onClick={() => {
-            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
-              openInteractionDrawer("comments", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-          aria-label="Post comments"
-        >
-          <CommentTiny aria-hidden /> {props.commentsCount}
+          <CommentTiny aria-hidden /> {props.commentsCount + props.quotesCount}
         </button>
       )}
 
@@ -218,8 +215,14 @@ export const ExpandedInteractions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
-  let noInteractions =
-    !props.showComments && !props.showMentions && !props.showRecommends;
+  let commentsAvailable = props.showComments;
+  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
+  let discussionsAvailable = commentsAvailable || mentionsAvailable;
+  let defaultDiscussionTab: "comments" | "quotes" = commentsAvailable
+    ? "comments"
+    : "quotes";
+
+  let noInteractions = !discussionsAvailable && !props.showRecommends;
 
   return (
     <div
@@ -248,12 +251,16 @@ export const ExpandedInteractions = (props: {
                   expanded
                 />
               )}
-              {props.quotesCount === 0 || !props.showMentions ? null : (
+              {!discussionsAvailable ? null : (
                 <ButtonSecondary
                   onClick={() => {
-                    if (!drawerOpen || drawer !== "quotes")
+                    if (
+                      !drawerOpen ||
+                      (drawer !== "comments" && drawer !== "quotes") ||
+                      pageId !== props.pageId
+                    )
                       openInteractionDrawer(
-                        "quotes",
+                        defaultDiscussionTab,
                         document_uri,
                         props.pageId,
                       );
@@ -262,39 +269,16 @@ export const ExpandedInteractions = (props: {
                   }}
                   onMouseEnter={handleQuotePrefetch}
                   onTouchStart={handleQuotePrefetch}
-                  aria-label="Post quotes"
+                  aria-label="Discussions"
                 >
-                  <QuoteTiny aria-hidden /> {props.quotesCount}
-                  <Separator classname="h-4! text-accent-contrast!" />
-                  Mention{props.quotesCount > 1 ? "s" : ""}
-                </ButtonSecondary>
-              )}
-              {!props.showComments ? null : (
-                <ButtonSecondary
-                  onClick={() => {
-                    if (
-                      !drawerOpen ||
-                      drawer !== "comments" ||
-                      pageId !== props.pageId
-                    )
-                      openInteractionDrawer(
-                        "comments",
-                        document_uri,
-                        props.pageId,
-                      );
-                    else
-                      setInteractionState(document_uri, { drawerOpen: false });
-                  }}
-                  aria-label="Post comments"
-                >
-                  <CommentTiny aria-hidden />{" "}
-                  {props.commentsCount > 0 && (
+                  <CommentTiny aria-hidden />
+                  {props.quotesCount + props.commentsCount !== 0 && (
                     <>
-                      {props.commentsCount}
+                      {props.quotesCount + props.commentsCount}{" "}
                       <Separator classname="h-4! text-accent-contrast!" />
                     </>
                   )}
-                  Comment{props.commentsCount > 1 ? "s" : ""}
+                  Discussion
                 </ButtonSecondary>
               )}
             </div>
@@ -365,7 +349,6 @@ export function getQuoteCountFromArray(
     }).length;
   }
 }
-
 
 const EditButton = (props: {
   publication: { identity_did: string } | null;

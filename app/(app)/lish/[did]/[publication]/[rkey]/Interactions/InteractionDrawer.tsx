@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { ToggleGroup } from "components/ToggleGroup";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -30,6 +31,18 @@ export const InteractionDrawer = (props: {
     return quotePosition?.pageId === props.pageId;
   });
 
+  // commentsSlot is null when comments are disabled by permissions; mentions
+  // are only available when there's something to show on this page.
+  const commentsAvailable = props.commentsSlot != null;
+  const mentionsAvailable = filteredQuotesAndMentions.length > 0;
+  const bothAvailable = commentsAvailable && mentionsAvailable;
+
+  // Resolve the active tab, falling back to whichever option is available.
+  let activeTab: "comments" | "quotes" =
+    drawer.drawer === "quotes" ? "quotes" : "comments";
+  if (activeTab === "comments" && !commentsAvailable) activeTab = "quotes";
+  if (activeTab === "quotes" && !mentionsAvailable) activeTab = "comments";
+
   return (
     <>
       <SandwichSpacer noWidth />
@@ -38,38 +51,42 @@ export const InteractionDrawer = (props: {
           id="interaction-drawer"
           className={`opaque-container relative h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll flex flex-col  ${props.showPageBackground ? "rounded-l-none! rounded-r-lg! -ml-[1px]" : "rounded-lg! sm:ml-4"}`}
         >
-          {drawer.drawer === "quotes" ? (
-            <>
-              <button
-                className="text-tertiary absolute top-4 right-4"
-                onClick={() =>
-                  setInteractionState(props.document_uri, { drawerOpen: false })
-                }
-              >
-                <CloseTiny />
-              </button>
-              <MentionsDrawerContent
-                did={props.did}
-                quotesAndMentions={filteredQuotesAndMentions}
-              />
-            </>
-          ) : (
-            <>
-              <div className="w-full flex justify-between">
-                <h4> Comments</h4>
-                <button
-                  className="text-tertiary"
-                  onClick={() =>
-                    setInteractionState(props.document_uri, {
-                      drawerOpen: false,
-                    })
+          <div className="w-full flex items-center gap-2 mb-3">
+            <div className="flex-1 min-w-0">
+              {bothAvailable ? (
+                <ToggleGroup
+                  fullWidth
+                  value={activeTab}
+                  onChange={(value) =>
+                    setInteractionState(props.document_uri, { drawer: value })
                   }
-                >
-                  <CloseTiny />
-                </button>
-              </div>
-              {props.commentsSlot}
-            </>
+                  options={[
+                    { value: "comments", label: "Comments" },
+                    { value: "quotes", label: "Bluesky Mentions" },
+                  ]}
+                />
+              ) : (
+                <h4>
+                  {activeTab === "quotes" ? "Bluesky Mentions" : "Comments"}
+                </h4>
+              )}
+            </div>
+            <button
+              className="text-tertiary shrink-0"
+              onClick={() =>
+                setInteractionState(props.document_uri, { drawerOpen: false })
+              }
+            >
+              <CloseTiny />
+            </button>
+          </div>
+          {activeTab === "quotes" ? (
+            <MentionsDrawerContent
+              did={props.did}
+              quotesAndMentions={filteredQuotesAndMentions}
+            />
+          ) : (
+            props.commentsSlot
           )}
         </div>
       </div>
