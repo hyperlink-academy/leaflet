@@ -2,7 +2,6 @@ import { serve } from "inngest/next";
 import { inngest } from "app/api/inngest/client";
 import { index_post_mention } from "./functions/index_post_mention";
 import { come_online } from "./functions/come_online";
-import { batched_update_profiles } from "./functions/batched_update_profiles";
 import { index_follows } from "./functions/index_follows";
 import { migrate_user_to_standard } from "./functions/migrate_user_to_standard";
 import { fix_standard_document_publications } from "./functions/fix_standard_document_publications";
@@ -21,7 +20,6 @@ export const { GET, POST, PUT } = serve({
   functions: [
     index_post_mention,
     come_online,
-    batched_update_profiles,
     index_follows,
     migrate_user_to_standard,
     fix_standard_document_publications,

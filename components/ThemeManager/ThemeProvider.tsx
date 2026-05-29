@@ -60,7 +60,7 @@ export function ThemeProvider(props: {
   return (
     <PublicationThemeProvider
       {...props}
-      theme={normalizedPublication?.theme}
+      record={normalizedPublication}
       pub_creator={pub.publications?.identity_did}
     />
   );
@@ -474,7 +474,7 @@ export const ThemeBackgroundProvider = (props: {
     return (
       <PublicationBackgroundProvider
         pub_creator={pub?.publications.identity_did || ""}
-        theme={normalizedPublication?.theme}
+        record={normalizedPublication}
       >
         {props.children}
       </PublicationBackgroundProvider>

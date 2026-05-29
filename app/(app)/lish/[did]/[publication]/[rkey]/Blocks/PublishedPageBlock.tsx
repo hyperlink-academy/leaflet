@@ -208,10 +208,7 @@ export function PagePreview(props: {
 }
 
 const Interactions = (props: { pageId: string; parentPageId?: string }) => {
-  const { uri: document_uri, comments: allComments, mentions } = useDocument();
-  let comments = allComments.filter(
-    (c) => (c.record as PubLeafletComment.Record)?.onPage === props.pageId,
-  ).length;
+  const { uri: document_uri, commentsCount: comments, mentions } = useDocument();
   let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);

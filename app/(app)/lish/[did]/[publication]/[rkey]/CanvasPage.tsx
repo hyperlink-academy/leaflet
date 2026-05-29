@@ -10,11 +10,7 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
 import { CanvasBackgroundPattern } from "components/Canvas";
-import {
-  getCommentCount,
-  getQuoteCount,
-  Interactions,
-} from "./Interactions/Interactions";
+import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
 import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons/InfoSmall";
@@ -71,7 +67,7 @@ export function CanvasPage({
         data={document}
         profile={profile}
         preferences={preferences}
-        commentsCount={getCommentCount(document.comments_on_documents, pageId)}
+        commentsCount={document.commentsCount}
         quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
         recommendsCount={document.recommendsCount}
       />

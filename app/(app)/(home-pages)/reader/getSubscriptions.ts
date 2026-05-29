@@ -5,7 +5,7 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { getIdentityData } from "actions/getIdentityData";
 import { Json } from "supabase/database.types";
 import { supabaseServerClient } from "supabase/serverClient";
-import { idResolver } from "./idResolver";
+import { idResolver } from "src/identity";
 import { Cursor } from "./getReaderFeed";
 import {
   normalizePublicationRecord,

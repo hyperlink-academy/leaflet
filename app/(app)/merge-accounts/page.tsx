@@ -11,6 +11,7 @@ import {
   PENDING_MERGE_TOKEN_COOKIE,
   resolveAuthToken,
 } from "src/auth";
+import { getProfiles } from "src/identity";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 
@@ -59,19 +60,16 @@ export default async function MergeAccountsPage(props: {
     );
   }
 
-  const [{ data: bsky }, { count: docCount }] = await Promise.all([
-    supabaseServerClient
-      .from("bsky_profiles")
-      .select("handle")
-      .eq("did", target.identity.atp_did!)
-      .maybeSingle(),
+  const [profiles, { count: docCount }] = await Promise.all([
+    getProfiles([target.identity.atp_did!]),
     supabaseServerClient
       .from("permission_token_on_homepage")
       .select("token", { count: "exact", head: true })
       .eq("identity", source.identity.id)
       .not("archived", "is", true),
   ]);
-  const targetHandle = bsky?.handle ?? target.identity.atp_did!;
+  const targetHandle =
+    profiles.get(target.identity.atp_did!)?.handle ?? target.identity.atp_did!;
   const sourceEmail = source.identity.email!;
   const targetEmail = target.identity.email;
   const documents = docCount ?? 0;

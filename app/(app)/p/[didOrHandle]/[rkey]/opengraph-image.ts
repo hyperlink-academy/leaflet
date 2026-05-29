@@ -1,7 +1,7 @@
 import { getMicroLinkOgImage } from "src/utils/getMicroLinkOgImage";
 import { supabaseServerClient } from "supabase/serverClient";
 import { jsonToLex } from "@atproto/lexicon";
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { documentUriFilter } from "src/utils/uriHelpers";

@@ -382,6 +382,20 @@ export const PubLeafletBlocksPostsList: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksSignup: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.signup",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "A subscribe/signup form for the publication. Renders the publication's subscribe form; carries no configurable data.",
+      required: [],
+      properties: {},
+    },
+  },
+};
+
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksText,
@@ -400,6 +414,7 @@ export const BlockLexicons = [
   PubLeafletBlocksPoll,
   PubLeafletBlocksButton,
   PubLeafletBlocksPostsList,
+  PubLeafletBlocksSignup,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

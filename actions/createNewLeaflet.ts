@@ -8,7 +8,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { cookies } from "next/headers";
 import { pool } from "supabase/pool";
 
-type DefaultBlockType = "h1" | "text" | "posts-list";
+export type DefaultBlockType = "h1" | "text" | "posts-list" | "signup";
 
 type FactRow = {
   id: string;

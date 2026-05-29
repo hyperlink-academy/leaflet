@@ -62,11 +62,11 @@ export default async function Publication(props: {
     if (homePageRender) return homePageRender;
     return (
       <PublicationThemeProvider
-        theme={record?.theme}
+        record={record}
         pub_creator={publication.identity_did}
       >
         <PublicationBackgroundProvider
-          theme={record?.theme}
+          record={record}
           pub_creator={publication.identity_did}
         >
           <PublicationContent

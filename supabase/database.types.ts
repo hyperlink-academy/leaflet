@@ -200,13 +200,6 @@ export type Database = {
             referencedRelation: "documents"
             referencedColumns: ["uri"]
           },
-          {
-            foreignKeyName: "comments_on_documents_profile_fkey"
-            columns: ["profile"]
-            isOneToOne: false
-            referencedRelation: "bsky_profiles"
-            referencedColumns: ["did"]
-          },
         ]
       }
       custom_domain_routes: {

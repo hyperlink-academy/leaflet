@@ -19,6 +19,7 @@ import type * as PubLeafletContent from "../api/types/pub/leaflet/content";
 import type * as SiteStandardDocument from "../api/types/site/standard/document";
 import type * as SiteStandardPublication from "../api/types/site/standard/publication";
 import type * as SiteStandardThemeBasic from "../api/types/site/standard/theme/basic";
+import type * as SiteStandardThemeColor from "../api/types/site/standard/theme/color";
 import type * as PubLeafletThemeColor from "../api/types/pub/leaflet/theme/color";
 import type { $Typed } from "../api/util";
 import { AtUri } from "@atproto/syntax";
@@ -118,6 +119,57 @@ function extractRgb(
   ) {
     return { r: c.r, g: c.g, b: c.b };
   }
+  return undefined;
+}
+
+/**
+ * Converts a site.standard.theme.basic into a partial pub.leaflet theme,
+ * tagging colors with the pub.leaflet $type so PublicationThemeProvider can
+ * consume them. Used as a fallback when a publication record carries
+ * basicTheme but no full theme.
+ */
+export function basicThemeToLeafletTheme(
+  basic: SiteStandardThemeBasic.Main | undefined | null,
+): $Typed<PubLeafletPublication.Theme> | undefined {
+  if (!basic) return undefined;
+  const toLeafletColor = (
+    c: $Typed<SiteStandardThemeColor.Rgb> | { $type: string },
+  ): $Typed<PubLeafletThemeColor.Rgb> | undefined => {
+    const rgb = extractRgb(c);
+    if (!rgb) return undefined;
+    return { $type: "pub.leaflet.theme.color#rgb", ...rgb };
+  };
+  const backgroundColor = toLeafletColor(basic.background);
+  const primary = toLeafletColor(basic.foreground);
+  const accentBackground = toLeafletColor(basic.accent);
+  const accentText = toLeafletColor(basic.accentForeground);
+  if (!backgroundColor) return undefined;
+  return {
+    $type: "pub.leaflet.publication#theme",
+    backgroundColor,
+    primary,
+    accentBackground,
+    accentText,
+    showPageBackground: false,
+  };
+}
+
+/**
+ * Returns the effective pub.leaflet theme for a publication record, preferring
+ * the full theme when present and falling back to basicTheme otherwise.
+ */
+export function resolvePublicationTheme(
+  record:
+    | {
+        theme?: PubLeafletPublication.Theme | null;
+        basicTheme?: SiteStandardThemeBasic.Main | null;
+      }
+    | null
+    | undefined,
+): PubLeafletPublication.Theme | undefined {
+  if (!record) return undefined;
+  if (record.theme) return record.theme;
+  if (record.basicTheme) return basicThemeToLeafletTheme(record.basicTheme);
   return undefined;
 }
 

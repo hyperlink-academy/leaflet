@@ -1,12 +1,14 @@
 "use server";
 
 import {
+  AppBskyEmbedExternal,
   AppBskyRichtextFacet,
   Agent as BskyAgent,
   UnicodeString,
 } from "@atproto/api";
 import sharp from "sharp";
 import { TID } from "@atproto/common";
+import { AtUri } from "@atproto/syntax";
 import { getIdentityData } from "actions/getIdentityData";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
@@ -18,6 +20,12 @@ import {
 } from "src/utils/getMicroLinkOgImage";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
+
+type StrongRef = {
+  $type: "com.atproto.repo.strongRef";
+  uri: string;
+  cid: string;
+};
 
 type PublishBskyResult =
   | { success: true }
@@ -91,6 +99,40 @@ export async function publishPostToBsky(args: {
   let blob = await agent.com.atproto.repo.uploadBlob(resizedImage, {
     headers: { "Content-Type": "image/webp" },
   });
+
+  // Reference the document and, when it lives in a publication, the publication
+  // record on the post so the appview can index the relationship. Our DB
+  // doesn't store CIDs, so read each strong ref straight from the author's repo.
+  // (The document ref is the snapshot taken before we write bskyPostRef back to
+  // it below — the post→document→post cycle can't reference its own next CID.)
+  let did = credentialSession.did!;
+  let documentUri = `at://${did}/${args.document_record.$type}/${args.rkey}`;
+
+  let { data: docInPub } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("publication")
+    .eq("document", documentUri)
+    .maybeSingle();
+
+  let associatedRefs: StrongRef[] = [];
+  for (let uri of [documentUri, docInPub?.publication]) {
+    if (!uri) continue;
+    let ref = await getRecordStrongRef(agent, uri);
+    if (ref) associatedRefs.push(ref);
+  }
+
+  // associatedRefs hangs off the external embed card alongside uri/title/etc.
+  // It isn't in the published @atproto/api types yet, so widen External here.
+  let external: AppBskyEmbedExternal.External & {
+    associatedRefs?: StrongRef[];
+  } = {
+    uri: args.url,
+    title: args.title,
+    description: args.description,
+    thumb: blob.data.blob,
+  };
+  if (associatedRefs.length > 0) external.associatedRefs = associatedRefs;
+
   let bsky = new BskyAgent(credentialSession);
   let post = await bsky.app.bsky.feed.post.create(
     {
@@ -103,12 +145,7 @@ export async function publishPostToBsky(args: {
       facets: args.facets,
       embed: {
         $type: "app.bsky.embed.external",
-        external: {
-          uri: args.url,
-          title: args.title,
-          description: args.description,
-          thumb: blob.data.blob,
-        },
+        external,
       },
     },
   );
@@ -134,4 +171,29 @@ export async function publishPostToBsky(args: {
     })
     .eq("uri", result.uri);
   return { success: true };
+}
+
+// Resolve a record URI to a strong ref ({ uri, cid }) by reading its current
+// CID from the repo. Returns null if the record is missing or has no CID so a
+// failed lookup degrades to a missing associatedRef rather than blocking the post.
+async function getRecordStrongRef(
+  agent: AtpBaseClient,
+  uri: string,
+): Promise<StrongRef | null> {
+  try {
+    let { host, collection, rkey } = new AtUri(uri);
+    let { data } = await agent.com.atproto.repo.getRecord({
+      repo: host,
+      collection,
+      rkey,
+    });
+    if (!data.cid) return null;
+    return {
+      $type: "com.atproto.repo.strongRef",
+      uri: data.uri,
+      cid: data.cid,
+    };
+  } catch {
+    return null;
+  }
 }

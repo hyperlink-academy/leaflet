@@ -122,6 +122,9 @@ export const NavigationContent = (props: NavigationProps) => {
               asChild
               trigger={
                 <ActionButton
+                  onClick={() => {
+                    console.log("hello");
+                  }}
                   className="w-full! grow"
                   secondary
                   icon={<AccountSmall />}

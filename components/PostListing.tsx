@@ -42,7 +42,9 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
 
   // For standalone documents (no publication), pass isStandalone to get correct defaults
   let isStandalone = !pubRecord;
-  let theme = usePubTheme(pubRecord?.theme || postRecord?.theme, isStandalone);
+  let themeSource =
+    pubRecord?.theme || pubRecord?.basicTheme ? pubRecord : postRecord;
+  let theme = usePubTheme(themeSource, isStandalone);
   let themeRecord = pubRecord?.theme || postRecord?.theme;
   let elRef = useRef<HTMLDivElement>(null);
   let [hasBackgroundImage, setHasBackgroundImage] = useState(false);

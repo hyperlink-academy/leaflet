@@ -1,7 +1,9 @@
 import "./about.css";
 import { IBM_Plex_Serif } from "next/font/google";
 import { LandingCTA, LandingCTABottom } from "./LandingCTA";
-import { Demo } from "./Demo";
+import { InteractiveAppDemo } from "./InteractiveAppDemo";
+import { InteractiveAppDemoMobile } from "./InteractiveAppDemoMobile";
+import { Media } from "components/Media";
 import { Features } from "./Features";
 import { Examples } from "./Examples";
 import { Pricing } from "./Pricing";
@@ -18,7 +20,7 @@ const ibmPlexSerif = IBM_Plex_Serif({
 export function AboutPage() {
   return (
     <main
-      className={`${ibmPlexSerif.variable} aboutPage w-full bg-[#FDFCFA] flex flex-col justify-center sm:px-12 px-4 mx-auto`}
+      className={`${ibmPlexSerif.variable} aboutPage w-full bg-[#FDFCFA] flex flex-col justify-center sm:px-12 px-4 mx-auto overflow-x-clip overflow-y-auto`}
     >
       <div className="spacer h-[96px] sm:h-[160px]" />
       <div className="aboutCover relative  max-w-full mx-auto w-[800px] flex flex-col gap-3 sm:gap-4">
@@ -45,7 +47,14 @@ export function AboutPage() {
         community — whether you're writing a blog, newsletter, or secret third
         thing.
       </p>
-      {/*<Demo />*/}
+      <div className="pt-12">
+        <Media mobile={false}>
+          <InteractiveAppDemo />
+        </Media>
+        <Media mobile={true}>
+          <InteractiveAppDemoMobile />
+        </Media>
+      </div>
       <Features />
       <Examples />
       <Pricing />

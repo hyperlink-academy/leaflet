@@ -32,7 +32,7 @@ export const get_publication_data = makeRoute({
         publication_name,
       ).toString();
     }
-    let { data: publication, error } = await supabase
+    let { data: publication } = await supabase
       .from("publications")
       .select(
         `*,
@@ -43,8 +43,8 @@ export const get_publication_data = makeRoute({
           recommends_on_documents(count),
           publication_post_sends(status, subscriber_count)
         )),
-        publication_subscriptions(*, identities(bsky_profiles(*))),
-        publication_email_subscribers(*, identities(atp_did, bsky_profiles(*))),
+        publication_subscriptions(*, identities(atp_did)),
+        publication_email_subscribers(*, identities(atp_did)),
         publication_domains(*),
         publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at),
         leaflets_in_publications(*,

@@ -3,6 +3,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
+import { getProfiles, type Profile } from "src/identity";
 
 export type Cursor = {
   indexed_at: string;
@@ -13,7 +14,7 @@ export type ProfileComment = {
   uri: string;
   record: Json;
   indexed_at: string;
-  bsky_profiles: { record: Json; handle: string | null } | null;
+  profile: Profile | null;
   document: {
     uri: string;
     data: Json;
@@ -26,7 +27,7 @@ export type ProfileComment = {
   parentComment: {
     uri: string;
     record: Json;
-    bsky_profiles: { record: Json; handle: string | null } | null;
+    profile: Profile | null;
   } | null;
 };
 
@@ -40,7 +41,6 @@ export async function getProfileComments(
     .from("comments_on_documents")
     .select(
       `*,
-      bsky_profiles(record, handle),
       documents(uri, data, documents_in_publications(publications(*)))`,
     )
     .eq("profile", did)
@@ -65,34 +65,30 @@ export async function getProfileComments(
     .map((c) => (c.record as PubLeafletComment.Record).reply?.parent)
     .filter((uri): uri is string => !!uri);
 
-  // Fetch parent comments if there are any replies
-  let parentCommentsMap = new Map<
-    string,
-    {
-      uri: string;
-      record: Json;
-      bsky_profiles: { record: Json; handle: string | null } | null;
-    }
-  >();
+  const { data: parentComments } = parentUris.length
+    ? await supabaseServerClient
+        .from("comments_on_documents")
+        .select("uri, record, profile")
+        .in("uri", parentUris)
+    : { data: null };
 
-  if (parentUris.length > 0) {
-    const { data: parentComments } = await supabaseServerClient
-      .from("comments_on_documents")
-      .select(`uri, record, bsky_profiles(record, handle)`)
-      .in("uri", parentUris);
-
-    if (parentComments) {
-      for (const pc of parentComments) {
-        parentCommentsMap.set(pc.uri, {
-          uri: pc.uri,
-          record: pc.record,
-          bsky_profiles: pc.bsky_profiles,
-        });
-      }
-    }
+  const allDids = new Set<string>([did]);
+  for (const pc of parentComments ?? []) {
+    if (pc.profile) allDids.add(pc.profile);
   }
+  const profiles = await getProfiles([...allDids]);
 
-  // Transform to ProfileComment format
+  const parentMap = new Map(
+    (parentComments ?? []).map((pc) => [
+      pc.uri,
+      {
+        uri: pc.uri,
+        record: pc.record,
+        profile: pc.profile ? profiles.get(pc.profile) ?? null : null,
+      },
+    ]),
+  );
+
   const comments: ProfileComment[] = rawComments.map((comment) => {
     const record = comment.record as PubLeafletComment.Record;
     const doc = comment.documents;
@@ -102,21 +98,11 @@ export async function getProfileComments(
       uri: comment.uri,
       record: comment.record,
       indexed_at: comment.indexed_at,
-      bsky_profiles: comment.bsky_profiles,
-      document: doc
-        ? {
-            uri: doc.uri,
-            data: doc.data,
-          }
-        : null,
-      publication: pub
-        ? {
-            uri: pub.uri,
-            record: pub.record,
-          }
-        : null,
+      profile: profiles.get(did) ?? null,
+      document: doc ? { uri: doc.uri, data: doc.data } : null,
+      publication: pub ? { uri: pub.uri, record: pub.record } : null,
       parentComment: record.reply?.parent
-        ? parentCommentsMap.get(record.reply.parent) || null
+        ? parentMap.get(record.reply.parent) ?? null
         : null,
     };
   });

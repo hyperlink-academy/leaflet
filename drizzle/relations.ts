@@ -65,10 +65,6 @@ export const comments_on_documentsRelations = relations(comments_on_documents, (
 		fields: [comments_on_documents.document],
 		references: [documents.uri]
 	}),
-	bsky_profile: one(bsky_profiles, {
-		fields: [comments_on_documents.profile],
-		references: [bsky_profiles.did]
-	}),
 }));
 
 export const documentsRelations = relations(documents, ({many}) => ({
@@ -80,14 +76,6 @@ export const documentsRelations = relations(documents, ({many}) => ({
 	leaflets_to_documents: many(leaflets_to_documents),
 	leaflets_in_publications: many(leaflets_in_publications),
 	publication_pages: many(publication_pages),
-}));
-
-export const bsky_profilesRelations = relations(bsky_profiles, ({one, many}) => ({
-	comments_on_documents: many(comments_on_documents),
-	identity: one(identities, {
-		fields: [bsky_profiles.did],
-		references: [identities.atp_did]
-	}),
 }));
 
 export const entitiesRelations = relations(entities, ({one, many}) => ({
@@ -133,6 +121,13 @@ export const recommends_on_documentsRelations = relations(recommends_on_document
 	}),
 	identity: one(identities, {
 		fields: [recommends_on_documents.recommender_did],
+		references: [identities.atp_did]
+	}),
+}));
+
+export const bsky_profilesRelations = relations(bsky_profiles, ({one}) => ({
+	identity: one(identities, {
+		fields: [bsky_profiles.did],
 		references: [identities.atp_did]
 	}),
 }));

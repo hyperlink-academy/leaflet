@@ -47,7 +47,7 @@ export const get_publication_subscribers_timeseries = makeRoute({
     const [{ data: atprotoSubs }, { data: emailSubs }] = await Promise.all([
       supabase
         .from("publication_subscriptions")
-        .select("created_at, identities(bsky_profiles(did))")
+        .select("created_at, identities(atp_did)")
         .eq("publication", publication_uri),
       newsletterEnabled
         ? supabase
@@ -63,7 +63,7 @@ export const get_publication_subscribers_timeseries = makeRoute({
     // matching the UI merge in PublicationSubscribers.tsx.
     const subscribers = new Map<string, string>();
     for (const s of atprotoSubs || []) {
-      const did = s.identities?.bsky_profiles?.did;
+      const did = s.identities?.atp_did;
       if (!did) continue;
       subscribers.set(`did:${did}`, s.created_at);
     }

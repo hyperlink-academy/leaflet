@@ -19,6 +19,7 @@ import {
   PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
   PubLeafletBlocksButton,
+  PubLeafletBlocksSignup,
 } from "lexicons/api";
 import {
   PublicationPostsList,
@@ -35,12 +36,16 @@ import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
-import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
+import {
+  StandardSitePostItemView,
+  WithStandardSitePostPublicationTheme,
+} from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
+import { SubscribePanel } from "components/Subscribe/SubscribeButton";
 import { blockTextSize } from "src/utils/blockTextSize";
 import { slugify } from "src/utils/slugify";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
@@ -154,8 +159,8 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
-  let currentPublicationUri =
-    useDocumentOptional()?.publication?.uri ?? null;
+  let document = useDocumentOptional();
+  let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
       scrollMarginTop: "4rem",
@@ -251,12 +256,16 @@ export let Block = ({
             : "small";
       return (
         <div className={className} {...blockProps}>
-          <StandardSitePostItemView
+          <WithStandardSitePostPublicationTheme
             post={post}
-            size={size}
-            showPubTheme={b.block.showPublicationTheme !== false}
-            currentPublicationUri={currentPublicationUri}
-          />
+            enabled={b.block.showPublicationTheme !== false}
+          >
+            <StandardSitePostItemView
+              post={post}
+              size={size}
+              currentPublicationUri={currentPublicationUri}
+            />
+          </WithStandardSitePostPublicationTheme>
         </div>
       );
     }
@@ -272,6 +281,22 @@ export let Block = ({
     }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
+    }
+    case PubLeafletBlocksSignup.isMain(b.block): {
+      if (!document?.publication?.uri) return null;
+      return (
+        <div className={className} {...blockProps}>
+          <SubscribePanel
+            publicationUri={document.publication.uri}
+            publicationUrl={document.normalizedPublication?.url}
+            publicationName={
+              document.normalizedPublication?.name ?? document.publication.name
+            }
+            publicationDescription={document.normalizedPublication?.description}
+            newsletterMode={document.publication.newsletterMode}
+          />
+        </div>
+      );
     }
     case PubLeafletBlocksPostsList.isMain(b.block): {
       if (!postsListData) return null;
@@ -589,7 +614,7 @@ function PublishedIframeBlock(props: {
   });
 
   let { theme } = useDocument();
-  let pubTheme = usePubTheme(theme);
+  let pubTheme = usePubTheme({ theme });
   let iframeSrc = new URL(props.url);
   iframeSrc.searchParams.set("parts.page.embed.ctx.mode", "view");
   iframeSrc.searchParams.set(

@@ -12,7 +12,23 @@ import { supabaseServerClient } from "supabase/serverClient";
 import Client from "ioredis";
 import Redlock from "redlock";
 import { Result, Ok, Err } from "./result";
-export async function createOauthClient() {
+
+// Module-scoped singleton: NodeOAuthClient, ioredis connection, and Redlock
+// have no per-request state — keys/stores live above the user — so building
+// them once per Node instance avoids reconnect + keyset re-import on every call.
+// Stashed on globalThis so Next.js dev hot-reload doesn't leak Redis sockets.
+const globalForOauth = globalThis as unknown as {
+  __oauthClient?: Promise<NodeOAuthClient>;
+};
+
+export function createOauthClient(): Promise<NodeOAuthClient> {
+  if (!globalForOauth.__oauthClient) {
+    globalForOauth.__oauthClient = buildOauthClient();
+  }
+  return globalForOauth.__oauthClient;
+}
+
+async function buildOauthClient(): Promise<NodeOAuthClient> {
   let keyset =
     process.env.NODE_ENV === "production"
       ? await Promise.all([
@@ -99,12 +115,47 @@ export type OAuthSessionError = {
   did: string;
 };
 
+// In-process dedupe: collapse concurrent restore() calls for the same DID into
+// one underlying restore + Redlock acquisition. Successful entries linger
+// briefly so a burst of requests (e.g. hover-fired ProfilePopovers) share one
+// result; rejected promises evict immediately so a transient failure doesn't
+// stick around poisoning subsequent calls.
+const RESTORE_DEDUPE_TTL_MS = 5_000;
+const inFlightRestores = new Map<string, Promise<OAuthSession>>();
+
+function dedupedRestore(did: string): Promise<OAuthSession> {
+  let existing = inFlightRestores.get(did);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const oauthClient = await createOauthClient();
+    return oauthClient.restore(did);
+  })();
+  inFlightRestores.set(did, promise);
+
+  promise.then(
+    () => {
+      setTimeout(() => {
+        if (inFlightRestores.get(did) === promise) {
+          inFlightRestores.delete(did);
+        }
+      }, RESTORE_DEDUPE_TTL_MS);
+    },
+    () => {
+      if (inFlightRestores.get(did) === promise) {
+        inFlightRestores.delete(did);
+      }
+    },
+  );
+
+  return promise;
+}
+
 export async function restoreOAuthSession(
   did: string
 ): Promise<Result<OAuthSession, OAuthSessionError>> {
   try {
-    const oauthClient = await createOauthClient();
-    const session = await oauthClient.restore(did);
+    const session = await dedupedRestore(did);
     return Ok(session);
   } catch (error) {
     return Err({

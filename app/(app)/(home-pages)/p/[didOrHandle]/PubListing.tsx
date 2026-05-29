@@ -23,7 +23,7 @@ type PubListingProps = Omit<
 
 export const PubListing = (props: PubListingProps) => {
   let record = props.record;
-  let theme = usePubTheme(record?.theme);
+  let theme = usePubTheme(record);
   let backgroundImage = record?.theme?.backgroundImage?.image?.ref
     ? blobRefToSrc(
         record?.theme?.backgroundImage?.image?.ref,

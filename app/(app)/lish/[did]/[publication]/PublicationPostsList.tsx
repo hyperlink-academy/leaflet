@@ -53,7 +53,7 @@ export function PublicationPostsList({
   highlightFirstPost?: boolean;
 }) {
   return (
-    <div className="publicationPostList w-full flex flex-col gap-4">
+    <div className="publicationPostList w-full flex flex-col gap-2">
       {fakePosts
         ? fakePosts.map((post, i) => (
             <PublicationPostItem
@@ -129,8 +129,41 @@ export function PublicationPostsList({
 
               if (Variant === "large") {
                 return (
-                  <PublicationPostItemLarge
-                    key={post.uri}
+                  <React.Fragment key={post.uri}>
+                    <PublicationPostItemLarge
+                      href={docUrl}
+                      title={doc_record.title}
+                      description={
+                        doc_record.description || getFirstParagraph(doc_record)
+                      }
+                      date={date}
+                      interactions={interactions}
+                      coverImageSrc={coverImageSrc}
+                      coverImageAlt={doc_record.title}
+                      pageWidth={publicationRecord?.theme?.pageWidth}
+                    />
+                    <hr className="last:hidden border-border-light" />
+                  </React.Fragment>
+                );
+              }
+
+              if (Variant === "small") {
+                return (
+                  <React.Fragment key={post.uri}>
+                    <PublicationPostItemSmall
+                      href={docUrl}
+                      title={doc_record.title}
+                      date={date}
+                      interactions={interactions}
+                    />
+                    <hr className="last:hidden border-border-light" />
+                  </React.Fragment>
+                );
+              }
+
+              return (
+                <React.Fragment key={post.uri}>
+                  <PublicationPostItemMedium
                     href={docUrl}
                     title={doc_record.title}
                     description={
@@ -140,36 +173,9 @@ export function PublicationPostsList({
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}
                     coverImageAlt={doc_record.title}
-                    pageWidth={publicationRecord?.theme?.pageWidth}
                   />
-                );
-              }
-
-              if (Variant === "small") {
-                return (
-                  <PublicationPostItemSmall
-                    key={post.uri}
-                    href={docUrl}
-                    title={doc_record.title}
-                    date={date}
-                    interactions={interactions}
-                  />
-                );
-              }
-
-              return (
-                <PublicationPostItemMedium
-                  key={post.uri}
-                  href={docUrl}
-                  title={doc_record.title}
-                  description={
-                    doc_record.description || getFirstParagraph(doc_record)
-                  }
-                  date={date}
-                  interactions={interactions}
-                  coverImageSrc={coverImageSrc}
-                  coverImageAlt={doc_record.title}
-                />
+                  <hr className="last:hidden border-border-light" />
+                </React.Fragment>
               );
             })}
     </div>

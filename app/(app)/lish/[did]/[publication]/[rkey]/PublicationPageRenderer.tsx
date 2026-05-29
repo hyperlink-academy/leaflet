@@ -10,6 +10,7 @@ import {
   normalizePublicationRecord,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { resolvePublicationTheme } from "lexicons/src/normalize";
 
 import {
   PublicationBackgroundProvider,
@@ -22,11 +23,7 @@ import type { DocumentContextValue } from "contexts/DocumentContext";
 import {
   type PublicationPostsListPost,
 } from "../PublicationPostsList";
-import { PublicationNav } from "../PublicationNav";
-import { PublicationHeader } from "../PublicationHeader";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
-import { PublicationStickyHeader } from "../PublicationStickyHeader";
-import { PublicationFullHeader } from "../PublicationFullHeader";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
@@ -40,6 +37,7 @@ type PublicationRow = {
   name: string;
   identity_did: string;
   record: unknown;
+  publication_newsletter_settings?: { enabled: boolean } | null;
   publication_pages?: {
     id: number;
     path: string | null;
@@ -130,7 +128,7 @@ export async function PublicationPageRenderer({
       }
     : undefined;
 
-  const theme = normalizedPublication?.theme;
+  const theme = resolvePublicationTheme(normalizedPublication);
   const showPageBackground = !!theme?.showPageBackground;
 
   const documentContextValue: DocumentContextValue = {
@@ -148,10 +146,10 @@ export async function PublicationPageRenderer({
         DocumentContextValue["publication"]
       >["record"],
       publication_subscriptions: [],
-      newsletterMode: false,
+      newsletterMode: !!publication.publication_newsletter_settings?.enabled,
       pages: (publication.publication_pages ?? []).filter((p) => p.record_uri),
     },
-    comments: [],
+    commentsCount: 0,
     mentions: [],
     leafletId: null,
     recommendsCount: 0,
@@ -169,51 +167,26 @@ export async function PublicationPageRenderer({
           bodyFontId={theme?.bodyFont}
         />
         <PublicationThemeProvider
-          theme={theme}
+          record={normalizedPublication}
           pub_creator={publication.identity_did}
         >
           <PublicationBackgroundProvider
-            theme={theme}
+            record={normalizedPublication}
             pub_creator={publication.identity_did}
           >
             <PublicationHomeLayout
               uri={publication.uri}
               showPageBackground={showPageBackground}
-              stickyHeader={
-                navPages.length > 0 ? (
-                  <PublicationStickyHeader
-                    nav={
-                      <PublicationNav
-                        publicationUrl={getPublicationURL(publication)}
-                        pages={navPages}
-                        activePath={page.path}
-                      />
-                    }
-                  >
-                    <PublicationHeader
-                      variant="inline"
-                      iconUrl={
-                        normalizedPublication?.icon
-                          ? blobRefToSrc(normalizedPublication.icon.ref, did)
-                          : undefined
-                      }
-                      publicationName={publication.name}
-                    />
-                  </PublicationStickyHeader>
-                ) : (
-                  <PublicationFullHeader>
-                    <PublicationHeader
-                      iconUrl={
-                        normalizedPublication?.icon
-                          ? blobRefToSrc(normalizedPublication.icon.ref, did)
-                          : undefined
-                      }
-                      publicationName={publication.name}
-                      description={normalizedPublication?.description}
-                    />
-                  </PublicationFullHeader>
-                )
+              iconUrl={
+                normalizedPublication?.icon
+                  ? blobRefToSrc(normalizedPublication.icon.ref, did)
+                  : undefined
               }
+              publicationName={publication.name}
+              description={normalizedPublication?.description}
+              navPages={navPages}
+              publicationUrl={getPublicationURL(publication)}
+              activePath={page.path}
             >
               <div className="pubPageContent pt-6">
                 <PostContent

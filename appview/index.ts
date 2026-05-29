@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database, Json } from "supabase/database.types";
 import { IdResolver } from "@atproto/identity";
+import Client from "ioredis";
 const idResolver = new IdResolver();
 import { Firehose, MemoryRunner, Event } from "@atproto/sync";
 import { ids } from "lexicons/api/lexicons";
@@ -27,6 +28,7 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
+import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -34,6 +36,22 @@ let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
+
+const redisClient: Client | null = process.env.REDIS_URL
+  ? new Client(process.env.REDIS_URL)
+  : null;
+
+class RedisProfileCache {
+  constructor(private client: Client) {}
+  async clearEntry(did: string): Promise<void> {
+    await this.client.del(`bsky-profile:${did}`);
+  }
+}
+
+const profileCache: RedisProfileCache | null = redisClient
+  ? new RedisProfileCache(redisClient)
+  : null;
+
 const QUOTE_PARAM = "/l-quote/";
 async function main() {
   const runner = new MemoryRunner({});
@@ -41,7 +59,7 @@ async function main() {
     service: "wss://relay1.us-west.bsky.network",
     subscriptionReconnectDelay: 3000,
     excludeAccount: true,
-    excludeIdentity: true,
+    excludeIdentity: false,
     runner,
     idResolver,
     filterCollections: [
@@ -52,7 +70,7 @@ async function main() {
       ids.PubLeafletPollVote,
       ids.PubLeafletPollDefinition,
       ids.PubLeafletInteractionsRecommend,
-      // ids.AppBskyActorProfile,
+      ids.AppBskyActorProfile,
       "app.bsky.feed.post",
       ids.SiteStandardDocument,
       ids.SiteStandardPublication,
@@ -86,11 +104,13 @@ main();
 
 async function handleEvent(evt: Event) {
   if (evt.event === "identity") {
-    if (evt.handle)
-      await supabase
-        .from("bsky_profiles")
-        .update({ handle: evt.handle })
-        .eq("did", evt.did);
+    if (profileCache) {
+      try {
+        await profileCache.clearEntry(evt.did);
+      } catch (err) {
+        console.error("Failed to clear profile cache for", evt.did, err);
+      }
+    }
   }
   if (
     evt.event == "account" ||
@@ -335,17 +355,20 @@ async function handleEvent(evt: Event) {
   // site.standard.publication records go into the main "publications" table
   if (evt.collection === ids.SiteStandardPublication) {
     if (evt.event === "create" || evt.event === "update") {
-      let record = SiteStandardPublication.validateRecord(evt.record);
+      let record = SiteStandardPublication.validateRecord(
+        stripThemeWithoutType(evt.record),
+      );
       if (!record.success) return;
       await supabase
         .from("identities")
         .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
-      await supabase.from("publications").upsert({
+      let { error } = await supabase.from("publications").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,
         name: record.value.name,
         record: record.value as Json,
       });
+      if (error) console.log(error);
     }
     if (evt.event === "delete") {
       await supabase
@@ -401,15 +424,15 @@ async function handleEvent(evt: Event) {
         .eq("uri", evt.uri.toString());
     }
   }
-  // if (evt.collection === ids.AppBskyActorProfile) {
-  //   //only listen to updates because we should fetch it for the first time when they subscribe!
-  //   if (evt.event === "update") {
-  //     await supabaseServerClient
-  //       .from("bsky_profiles")
-  //       .update({ record: evt.record as Json })
-  //       .eq("did", evt.did);
-  //   }
-  // }
+  if (evt.collection === ids.AppBskyActorProfile) {
+    if (profileCache) {
+      try {
+        await profileCache.clearEntry(evt.did);
+      } catch (err) {
+        console.error("Failed to clear profile cache for", evt.did, err);
+      }
+    }
+  }
   if (evt.collection === "parts.page.mention.service") {
     if (evt.event === "create" || evt.event === "update") {
       let { error } = await supabase.from("mention_services").upsert({

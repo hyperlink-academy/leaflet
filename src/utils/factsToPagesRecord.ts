@@ -18,6 +18,7 @@ import {
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
+  PubLeafletBlocksSignup,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -566,6 +567,12 @@ export async function processBlocksToPages(opts: {
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
         ...(filterTagFact && { filterByTag: filterTagFact.data.value }),
+      };
+      return block;
+    }
+    if (b.type === "signup") {
+      const block: $Typed<PubLeafletBlocksSignup.Main> = {
+        $type: ids.PubLeafletBlocksSignup,
       };
       return block;
     }

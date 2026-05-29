@@ -3,6 +3,6 @@ export function sortPublicationPages<
 >(pages: T[]): T[] {
   return [...pages].sort((a, b) => {
     if (a.sort_order === b.sort_order) return a.id - b.id;
-    return a.sort_order.localeCompare(b.sort_order);
+    return a.sort_order > b.sort_order ? 1 : -1;
   });
 }

@@ -3,6 +3,7 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
 } from "lexicons/api";
+import { Suspense } from "react";
 import { QuoteHandler } from "./QuoteHandler";
 import {
   PublicationBackgroundProvider,
@@ -17,8 +18,7 @@ import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { FontLoader } from "components/FontLoader";
 import { mergePreferences } from "src/utils/mergePreferences";
-import { PublicationNav } from "../PublicationNav";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { CommentsSection } from "./Interactions/Comments/CommentsSection";
 
 export async function DocumentPageRenderer({
   did,
@@ -87,22 +87,15 @@ export async function DocumentPageRenderer({
           bodyFontId={document.theme?.bodyFont}
         />
         <PublicationThemeProvider
-          theme={document.theme}
+          record={{ theme: document.theme }}
           pub_creator={pub_creator}
           isStandalone={isStandalone}
         >
           <PublicationBackgroundProvider
-            theme={document.theme}
+            record={{ theme: document.theme }}
             pub_creator={pub_creator}
           >
             <LeafletLayout>
-              {document.publication?.pages?.length ? (
-                <PublicationNav
-                  publicationUrl={getPublicationURL(document.publication)}
-                  pages={document.publication.pages}
-                  activePath={null}
-                />
-              ) : null}
               <PostPages
                 document_uri={document.uri}
                 preferences={mergePreferences(
@@ -121,6 +114,11 @@ export async function DocumentPageRenderer({
                 did={did}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 pollData={pollData}
+                commentsSlot={
+                  <Suspense fallback={null}>
+                    <CommentsSection document_uri={document.uri} />
+                  </Suspense>
+                }
               />
             </LeafletLayout>
 

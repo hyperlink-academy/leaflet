@@ -1,4 +1,5 @@
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
+import { Suspense } from "react";
+import { idResolver } from "src/identity";
 import { getProfileComments } from "./getProfileComments";
 import { ProfileCommentsContent } from "./CommentsContent";
 
@@ -16,8 +17,15 @@ export default async function ProfileCommentsPage(props: {
     did = resolved;
   }
 
-  const { comments, nextCursor } = await getProfileComments(did);
+  return (
+    <Suspense fallback={null}>
+      <ProfileCommentsLoader did={did} />
+    </Suspense>
+  );
+}
 
+async function ProfileCommentsLoader({ did }: { did: string }) {
+  const { comments, nextCursor } = await getProfileComments(did);
   return (
     <ProfileCommentsContent
       did={did}

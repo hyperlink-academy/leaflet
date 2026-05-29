@@ -22,11 +22,14 @@ import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { generateKeyBetween } from "fractional-indexing";
 import { SpeedyLink } from "components/SpeedyLink";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary, ButtonTertiary } from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
 import { AddTiny } from "components/Icons/AddTiny";
+import { EditTiny } from "components/Icons/EditTiny";
 import { createPublicationPage } from "actions/createPublicationPage";
+import { deletePublicationPage } from "actions/deletePublicationPage";
+import { updatePublicationPage } from "actions/updatePublicationPage";
 import { reorderPublicationPages } from "actions/reorderPublicationPages";
 import {
   usePublicationData,
@@ -142,17 +145,48 @@ export function PublicationPagesNav(props: {
               items={sortableIds}
               strategy={horizontalListSortingStrategy}
             >
-              {sortedPages.map((page) => (
-                <SortableTab
-                  key={page.id}
-                  page={page}
-                  href={hrefForPath(page.path)}
-                  active={
-                    decodeURIComponent(pathname) ===
-                    decodeURIComponent(hrefForPath(page.path))
-                  }
-                />
-              ))}
+              {sortedPages.map((page, idx) => {
+                let isActive =
+                  decodeURIComponent(pathname) ===
+                  decodeURIComponent(hrefForPath(page.path));
+                let neighbor =
+                  sortedPages[idx - 1] ?? sortedPages[idx + 1];
+                let redirectHrefOnDelete =
+                  isActive && neighbor ? hrefForPath(neighbor.path) : null;
+                return (
+                  <SortableTab
+                    key={page.id}
+                    page={page}
+                    href={hrefForPath(page.path)}
+                    active={isActive}
+                    publicationUri={publicationUri}
+                    canDelete={sortedPages.length > 1}
+                    onUpdated={(updated) => {
+                      mutatePublicationData(mutate, (draft) => {
+                        let p = draft.publication?.publication_pages.find(
+                          (p) => p.id === page.id,
+                        );
+                        if (p) {
+                          p.title = updated.title;
+                          p.path = updated.path;
+                        }
+                      });
+                      if (isActive && updated.path !== page.path)
+                        router.push(hrefForPath(updated.path));
+                    }}
+                    onDeleted={() => {
+                      mutatePublicationData(mutate, (draft) => {
+                        let pages = draft.publication?.publication_pages;
+                        if (!pages) return;
+                        let i = pages.findIndex((p) => p.id === page.id);
+                        if (i !== -1) pages.splice(i, 1);
+                      });
+                      if (redirectHrefOnDelete)
+                        router.push(redirectHrefOnDelete);
+                    }}
+                  />
+                );
+              })}
             </SortableContext>
           </DndContext>
         </div>
@@ -169,10 +203,18 @@ export function PublicationPagesNav(props: {
             </ButtonSecondary>
           }
         >
-          <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <form
+            onSubmit={handleSubmit}
+            onKeyDown={(e) => {
+              if (e.key === "Tab") e.stopPropagation();
+            }}
+            className="flex flex-col gap-2"
+          >
             <InputWithLabel
               label="Name"
               type="text"
+              name="page-title"
+              autoComplete="off"
               value={name}
               onChange={(e) => setName(e.currentTarget.value)}
               autoFocus
@@ -180,6 +222,8 @@ export function PublicationPagesNav(props: {
             <InputWithLabel
               label="Path"
               type="text"
+              name="page-path"
+              autoComplete="off"
               value={path}
               onChange={(e) => setPath(e.currentTarget.value)}
               placeholder="/about"
@@ -198,6 +242,10 @@ function SortableTab(props: {
   page: SortablePage;
   href: string;
   active: boolean;
+  publicationUri: string | undefined;
+  canDelete: boolean;
+  onUpdated: (updated: { title: string; path: string }) => void;
+  onDeleted: () => void;
 }) {
   let {
     attributes,
@@ -208,12 +256,60 @@ function SortableTab(props: {
     transition,
     isDragging,
   } = useSortable({ id: props.page.id });
+  let [popoverOpen, setPopoverOpen] = useState(false);
+  let [mode, setMode] = useState<"edit" | "confirm">("edit");
+  let [name, setName] = useState(props.page.title);
+  let [path, setPath] = useState(props.page.path ?? "/");
+  let [saving, setSaving] = useState(false);
+  let [deleting, setDeleting] = useState(false);
 
   let style = {
     transform: CSS.Translate.toString(transform),
     transition,
     zIndex: isDragging ? 1 : undefined,
   };
+
+  function handleOpenChange(o: boolean) {
+    setPopoverOpen(o);
+    if (o) {
+      setName(props.page.title);
+      setPath(props.page.path ?? "/");
+      setMode("edit");
+    }
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!props.publicationUri || saving) return;
+    let trimmedPath = path.trim();
+    if (!trimmedPath) return;
+    if (!trimmedPath.startsWith("/")) trimmedPath = "/" + trimmedPath;
+    let trimmedTitle = name.trim();
+    setSaving(true);
+    let result = await updatePublicationPage({
+      publication_uri: props.publicationUri,
+      page_id: props.page.id,
+      title: trimmedTitle,
+      path: trimmedPath,
+    });
+    setSaving(false);
+    if (!result.success) return;
+    setPopoverOpen(false);
+    props.onUpdated({ title: trimmedTitle, path: trimmedPath });
+  }
+
+  async function handleDelete() {
+    if (!props.publicationUri || deleting) return;
+    setDeleting(true);
+    let result = await deletePublicationPage({
+      publication_uri: props.publicationUri,
+      page_id: props.page.id,
+    });
+    setDeleting(false);
+    if (!result.success) return;
+    setPopoverOpen(false);
+    props.onDeleted();
+  }
 
   return (
     <div
@@ -231,7 +327,11 @@ function SortableTab(props: {
         ref={setActivatorNodeRef}
         type="button"
         aria-label="Drag to reorder"
-        className="shrink-0 w-[9px] h-4 ml-1 cursor-grab touch-none opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100"
+        className={`shrink-0 w-[9px] h-[15px] ml-1 cursor-grab touch-none focus:opacity-100 ${
+          props.active
+            ? "opacity-100"
+            : "opacity-0 group-hover/sortable-tab:opacity-100"
+        }`}
         style={{
           maskImage: "var(--gripperSVG)",
           maskRepeat: "repeat",
@@ -242,10 +342,88 @@ function SortableTab(props: {
       />
       <SpeedyLink
         href={props.href}
-        className="block pr-2 pl-1 py-1 rounded-md text-sm text-inherit hover:no-underline! select-none"
+        className="block pl-1 py-1 rounded-md text-sm text-inherit hover:no-underline! select-none"
       >
         {props.page.title || props.page.path || "/"}
       </SpeedyLink>
+      <Popover
+        asChild
+        align="end"
+        open={popoverOpen}
+        onOpenChange={handleOpenChange}
+        className="w-64"
+        trigger={
+          <button
+            type="button"
+            aria-label="Edit page"
+            className="shrink-0 mx-1 p-0.5 rounded text-inherit opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100 hover:bg-border-light"
+          >
+            <EditTiny className="w-3 h-3" />
+          </button>
+        }
+      >
+        {mode === "edit" ? (
+          <form
+            onSubmit={handleSave}
+            onKeyDown={(e) => {
+              if (e.key === "Tab") e.stopPropagation();
+            }}
+            className="flex flex-col gap-2"
+          >
+            <InputWithLabel
+              label="Name"
+              type="text"
+              name="page-title"
+              autoComplete="off"
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+              autoFocus
+            />
+            <InputWithLabel
+              label="Path"
+              type="text"
+              name="page-path"
+              autoComplete="off"
+              value={path}
+              onChange={(e) => setPath(e.currentTarget.value)}
+              placeholder="/about"
+            />
+            <div className="flex gap-2 justify-between items-center">
+              {props.canDelete ? (
+                <ButtonTertiary
+                  type="button"
+                  onClick={() => setMode("confirm")}
+                >
+                  Delete
+                </ButtonTertiary>
+              ) : (
+                <div />
+              )}
+              <ButtonPrimary type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save"}
+              </ButtonPrimary>
+            </div>
+          </form>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="text-secondary text-sm pb-1">
+              This will permanently delete{" "}
+              <span className="font-bold text-primary">
+                {props.page.title || props.page.path || "/"}
+              </span>
+              .
+            </div>
+            <div className="flex gap-2 justify-end items-center">
+              <ButtonTertiary type="button" onClick={() => setMode("edit")}>
+                Cancel
+              </ButtonTertiary>
+              <ButtonPrimary onClick={handleDelete} disabled={deleting}>
+                {deleting ? "Deleting..." : "Delete"}
+              </ButtonPrimary>
+            </div>
+          </div>
+        )}
+      </Popover>
     </div>
   );
 }

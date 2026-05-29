@@ -1590,6 +1590,19 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksSignup: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.signup',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "A subscribe/signup form for the publication. Renders the publication's subscribe form; carries no configurable data.",
+        required: [],
+        properties: {},
+      },
+    },
+  },
   PubLeafletBlocksStandardSitePost: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.standardSitePost',
@@ -2001,6 +2014,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
+              'lex:pub.leaflet.blocks.signup',
             ],
           },
           x: {
@@ -2105,6 +2119,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
+              'lex:pub.leaflet.blocks.signup',
             ],
           },
           alignment: {
@@ -2981,6 +2996,7 @@ export const ids = {
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
+  PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',
   PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',

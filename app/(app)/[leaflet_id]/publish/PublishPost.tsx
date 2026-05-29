@@ -157,6 +157,7 @@ const PublishPostForm = (
       entitiesToDelete: props.entitiesToDelete,
       publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
       postPreferences,
+      sendEmail: shareState.email,
     });
 
     if (!result.success) {
@@ -446,11 +447,11 @@ const PublicationSocialPreview = (props: {
   const pub_creator = new AtUri(props.publication_uri).host;
   return (
     <PublicationThemeProvider
-      theme={props.record.theme}
+      record={props.record}
       pub_creator={pub_creator}
     >
       <PublicationBackgroundProvider
-        theme={props.record.theme}
+        record={props.record}
         pub_creator={pub_creator}
       >
         <SocialPreviewFrame

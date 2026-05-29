@@ -6,7 +6,7 @@ import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
-import { idResolver } from "./idResolver";
+import { idResolver } from "src/identity";
 import type { Post } from "./getReaderFeed";
 
 type RawDocument = {

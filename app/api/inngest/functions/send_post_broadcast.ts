@@ -15,6 +15,7 @@ import {
   resolveReplyToEmail,
 } from "src/utils/newsletterSender";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import { getProfiles } from "src/identity";
 import type { Json } from "supabase/database.types";
 
 const BATCH_SIZE = 500;
@@ -48,7 +49,7 @@ export const send_post_broadcast = inngest.createFunction(
     const authorDid = new AtUri(document_uri).host;
 
     const loaded = await step.run("load-pub-and-doc", async () => {
-      const [pubRes, docRes, profileRes] = await Promise.all([
+      const [pubRes, docRes, profiles] = await Promise.all([
         supabaseServerClient
           .from("publications")
           .select(
@@ -61,16 +62,12 @@ export const send_post_broadcast = inngest.createFunction(
           .select("data")
           .eq("uri", document_uri)
           .maybeSingle(),
-        supabaseServerClient
-          .from("bsky_profiles")
-          .select("handle")
-          .eq("did", authorDid)
-          .maybeSingle(),
+        getProfiles([authorDid]),
       ]);
       return {
         pub: pubRes.data,
         doc: docRes.data,
-        profile: profileRes.data,
+        profile: profiles.get(authorDid) ?? null,
       };
     });
 

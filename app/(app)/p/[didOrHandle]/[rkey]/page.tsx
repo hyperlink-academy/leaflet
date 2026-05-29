@@ -1,6 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 import { DocumentPageRenderer } from "app/(app)/lish/[did]/[publication]/[rkey]/DocumentPageRenderer";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";

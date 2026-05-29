@@ -4,7 +4,9 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 import { publishPublicationPages } from "actions/publishPublicationPages";
 import { useToaster } from "components/Toast";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { usePublicationData } from "../../dashboard/PublicationSWRProvider";
+import { usePublicationEditDirtyState } from "./dirtyContext";
 
 type Status = "idle" | "publishing" | "success";
 
@@ -12,10 +14,11 @@ export function PublicationEditHeader(props: {
   did: string;
   publicationName: string;
 }) {
-  let { data } = usePublicationData();
+  let { data, mutate } = usePublicationData();
   let publicationUri = data?.publication?.uri;
   let [status, setStatus] = useState<Status>("idle");
   let toaster = useToaster();
+  let dirtyState = usePublicationEditDirtyState();
 
   let dashboardHref = `/lish/${props.did}/${props.publicationName}/dashboard`;
 
@@ -28,15 +31,17 @@ export function PublicationEditHeader(props: {
       });
       if (result.success) {
         setStatus("success");
+        mutate();
         setTimeout(() => setStatus("idle"), 2000);
       } else {
         setStatus("idle");
         toaster({
           type: "error",
-          content:
-            result.error.type === "oauth_session_expired"
-              ? "Sign in again to publish"
-              : result.error.message,
+          content: isOAuthSessionError(result.error) ? (
+            <OAuthErrorMessage error={result.error} />
+          ) : (
+            result.error.message
+          ),
         });
       }
     } catch (e) {
@@ -68,7 +73,11 @@ export function PublicationEditHeader(props: {
       <button
         type="button"
         onClick={handlePublish}
-        disabled={status === "publishing" || !publicationUri}
+        disabled={
+          status === "publishing" ||
+          !publicationUri ||
+          dirtyState === "clean"
+        }
         className="bg-accent-2 text-accent-1 font-bold px-3 py-1 rounded-md text-sm shrink-0 disabled:opacity-60"
       >
         {label}
