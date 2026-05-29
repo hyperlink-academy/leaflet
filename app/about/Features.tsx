@@ -23,7 +23,7 @@ export const Features = () => {
             <h3>Express yourself</h3>
             <p className="text-secondary">
               Free custom themes <br />
-              and domains
+              and custom domains
             </p>
           </div>
           <img
@@ -46,7 +46,7 @@ export const Features = () => {
           <h4>Build your community</h4>
           <p className="text-secondary">
             Newsletters, events, <br />
-            conversations and more
+            conversations
           </p>
         </div>
       </div>

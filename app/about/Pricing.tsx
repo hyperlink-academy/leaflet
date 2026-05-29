@@ -33,7 +33,7 @@ export const Pricing = () => {
             />
           </div>
           <div
-            className="relative z-10 bg-white border  border-[#57822B]! rounded-lg py-3 px-5 flex-1 max-w-sm text-left"
+            className="relative z-10 bg-white border  border-[#57822B]! rounded-lg py-4 px-5 flex-1 max-w-sm text-left"
             style={{ boxShadow: "8px 12px 0 0 #D9EA72" }}
           >
             <h3 className="leading-tight text-center">Free</h3>
@@ -108,7 +108,7 @@ export const Pricing = () => {
               <li>
                 <div>Analytics</div>
                 <div className="text-tertiary text-base">
-                  Subscriber count, page views, referrers
+                  Subscribers, page views, referrers
                 </div>
               </li>
               <hr className="border-border-light" />
@@ -124,8 +124,8 @@ export const Pricing = () => {
               <li>
                 <div>Coming soon!</div>
                 <div className="text-tertiary text-base">
-                  Memberships, group publication, <br />
-                  social reader, and more
+                  Memberships, group publications, <br />
+                  and more
                 </div>
               </li>
             </ul>

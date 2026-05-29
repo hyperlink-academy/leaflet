@@ -39,15 +39,15 @@ export function AboutPage() {
         <LandingCTA />
       </div>
 
-      <p className=" pt-6 sm:pt-12 text-tertiary text-center leading-snug mx-auto text-lg sm:text-xl!">
-        Delightful connection to your community <br />
-        with a blog, newsletter, or secret third thing.
+      <p className="max-w-4xl pt-6 sm:pt-12 text-tertiary text-center leading-snug mx-auto text-lg sm:text-xl!">
+        Delightful publishing to connect with your community, whether you're
+        writing a blog, newsletter, or secret third thing.
       </p>
       <div className="mt-12 sm:mt-24 py-6 sm:p-12 bg-[#F1EDE5] rounded-[12px] sm:rounded-[24px]">
         <div className="text-center mx-auto pb-3 sm:pb-6">
           <h3>Powerful Publishing Tools</h3>
           <p className="text-secondary">
-            Easily write and manage posts, and track subscriptions
+            Easily write, manage posts, and track subscriptions
           </p>
         </div>
         <Media mobile={false}>
