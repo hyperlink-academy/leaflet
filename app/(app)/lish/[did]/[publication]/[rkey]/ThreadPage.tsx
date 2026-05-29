@@ -25,10 +25,11 @@ import {
   prefetchThread,
 } from "./PostLinks";
 import { useDocument } from "contexts/DocumentContext";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { QuoteContent } from "./Interactions/Quotes";
 import {
   decodeQuotePosition,
+  getDocumentUrls,
+  matchDocumentUrl,
   type QuotePosition,
 } from "./quotePosition";
 
@@ -69,39 +70,6 @@ function flattenSameAuthorChain(
   return chain;
 }
 
-// Check if a URL matches any of the document's known URLs,
-// and extract the quote position if present
-function matchDocumentUrl(
-  uri: string,
-  documentUrls: string[],
-): { url: string; quotePosition: QuotePosition | null } | null {
-  try {
-    const url = new URL(uri);
-    const parts = url.pathname.split("/l-quote/");
-    const pathWithoutQuote = parts[0];
-    const quoteParam = parts[1];
-    const fullUrlWithoutQuote = (url.origin + pathWithoutQuote).replace(
-      /\/$/,
-      "",
-    );
-
-    for (const docUrl of documentUrls) {
-      const normalized = docUrl.replace(/\/$/, "");
-      if (fullUrlWithoutQuote === normalized) {
-        return {
-          url: uri,
-          quotePosition: quoteParam
-            ? decodeQuotePosition(quoteParam)
-            : null,
-        };
-      }
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
 // Scan a post's facets and embed for links to the current document
 function findDocumentQuoteLink(
   post: AppBskyFeedDefs.PostView,
@@ -129,10 +97,7 @@ function findDocumentQuoteLink(
 
   // Check external embed URI
   if (post.embed && AppBskyEmbedExternal.isView(post.embed)) {
-    const match = matchDocumentUrl(
-      post.embed.external.uri,
-      documentUrls,
-    );
+    const match = matchDocumentUrl(post.embed.external.uri, documentUrls);
     if (match) return { ...match, isEmbed: true };
   }
 
@@ -196,28 +161,10 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
   const docAtUri = useMemo(() => new AtUri(docUri), [docUri]);
   const docDid = docAtUri.host;
 
-  const documentUrls = useMemo(() => {
-    const urls: string[] = [];
-    const canonicalUrl = getDocumentURL(
-      normalizedDocument,
-      docUri,
-      normalizedPublication,
-    );
-    if (canonicalUrl.startsWith("http")) {
-      urls.push(canonicalUrl);
-    } else {
-      urls.push(`https://leaflet.pub${canonicalUrl}`);
-    }
-    urls.push(`https://leaflet.pub/p/${docAtUri.host}/${docAtUri.rkey}`);
-    if (
-      normalizedDocument.site &&
-      normalizedDocument.site.startsWith("http")
-    ) {
-      const path = normalizedDocument.path || "/" + docAtUri.rkey;
-      urls.push(normalizedDocument.site + path);
-    }
-    return urls;
-  }, [docUri, docAtUri, normalizedDocument, normalizedPublication]);
+  const documentUrls = useMemo(
+    () => getDocumentUrls(normalizedDocument, docUri, normalizedPublication),
+    [docUri, normalizedDocument, normalizedPublication],
+  );
 
   // Scroll the main post into view when the thread loads
   useEffect(() => {
@@ -439,7 +386,8 @@ const ReplyPost = (props: {
   documentUrls: string[];
   docDid: string;
 }) => {
-  const { post, pageUri, parentPostUri, rootAuthorDid, documentUrls, docDid } = props;
+  const { post, pageUri, parentPostUri, rootAuthorDid, documentUrls, docDid } =
+    props;
 
   // Flatten same-author chains
   const chain = flattenSameAuthorChain(post, rootAuthorDid);
@@ -583,7 +531,7 @@ function ReplyPostContent(props: {
 
   if (compact) {
     return (
-      <div className="flex flex-col w-full">
+      <div className="bskyPostReplyCompact flex flex-col w-full">
         {quoteBlock}
         <CompactBskyPostContent
           post={post}
@@ -604,7 +552,7 @@ function ReplyPostContent(props: {
   }
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="bskyPostReply flex flex-col w-full ">
       {quoteBlock}
       <BskyPostContent
         post={post}
@@ -621,7 +569,7 @@ function ReplyPostContent(props: {
               }
             : undefined
         }
-        className="text-sm"
+        className=" text-sm pt-4"
       />
     </div>
   );
@@ -636,9 +584,8 @@ function SubThread(props: {
   documentUrls: string[];
   docDid: string;
 }) {
-  const { data: thread, isLoading } = useSWR(
-    getThreadKey(props.postUri),
-    () => fetchThread(props.postUri),
+  const { data: thread, isLoading } = useSWR(getThreadKey(props.postUri), () =>
+    fetchThread(props.postUri),
   );
 
   if (isLoading) {

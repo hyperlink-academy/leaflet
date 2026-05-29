@@ -4,8 +4,7 @@ import useSWR from "swr";
 import { PageWrapper } from "components/Pages/Page";
 import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 import { DotLoader } from "components/utils/DotLoader";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { openPage } from "./postPageState";
+
 import { BskyPostContent } from "./BskyPostContent";
 import {
   QuotesLink,
@@ -73,32 +72,26 @@ function QuotesContent(props: { posts: PostView[]; postUri: string }) {
 
   return (
     <div className="flex flex-col gap-0">
-      {posts.map((post, index) => (
-        <>
-          <QuotePost key={post.uri} post={post} quotesUri={postUri} />
-          {posts.length !== index + 1 && (
-            <hr className="border-border-light my-4" />
-          )}
-        </>
-      ))}
+      {posts.map((post, index) => {
+        const parent = { type: "quotes" as const, uri: postUri };
+        return (
+          <>
+            <BskyPostContent
+              post={post}
+              parent={parent}
+              showEmbed={true}
+              compactEmbed
+              showBlueskyLink={true}
+              quoteEnabled
+              replyEnabled
+              className="relative rounded text-sm"
+            />{" "}
+            {posts.length !== index + 1 && (
+              <hr className="border-border-light my-4" />
+            )}
+          </>
+        );
+      })}
     </div>
-  );
-}
-
-function QuotePost(props: { post: PostView; quotesUri: string }) {
-  const { post, quotesUri } = props;
-  const parent = { type: "quotes" as const, uri: quotesUri };
-
-  return (
-    <BskyPostContent
-      post={post}
-      parent={parent}
-      showEmbed={true}
-      compactEmbed
-      showBlueskyLink={true}
-      quoteEnabled
-      replyEnabled
-      className="relative rounded text-sm"
-    />
   );
 }

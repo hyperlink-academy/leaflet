@@ -3,7 +3,7 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { useIsMobile } from "src/hooks/isMobile";
 import { setInteractionState } from "./Interactions";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { AtUri, AppBskyFeedPost } from "@atproto/api";
+import { AtUri, AppBskyFeedPost, AppBskyEmbedExternal } from "@atproto/api";
 import {
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
@@ -13,7 +13,12 @@ import {
 } from "lexicons/api";
 import { useDocument } from "contexts/DocumentContext";
 import { useLeafletContent } from "contexts/LeafletContentContext";
-import { decodeQuotePosition, QuotePosition } from "../quotePosition";
+import {
+  decodeQuotePosition,
+  getDocumentUrls,
+  matchDocumentUrl,
+  QuotePosition,
+} from "../quotePosition";
 import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
@@ -25,6 +30,7 @@ import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { ThreadLink, QuotesLink } from "../PostLinks";
 import { BskyPostContent } from "../BskyPostContent";
+import { EmptyState } from "components/EmptyState";
 
 function engagementScore(post: PostView | undefined): number {
   if (!post) return 0;
@@ -75,7 +81,19 @@ export const MentionsDrawerContent = (props: {
   quotesAndMentions: { uri: string; link?: string }[];
   did: string;
 }) => {
-  const { uri: document_uri } = useDocument();
+  const {
+    uri: document_uri,
+    normalizedDocument,
+    normalizedPublication,
+  } = useDocument();
+
+  // URLs that point to this document, used to detect when a post's embed is
+  // just a link card back to this leaflet (redundant with the quote we render)
+  const documentUrls = getDocumentUrls(
+    normalizedDocument,
+    document_uri,
+    normalizedPublication,
+  );
 
   // Fetch Bluesky post data for all URIs
   const uris = props.quotesAndMentions.map((q) => q.uri);
@@ -85,8 +103,8 @@ export const MentionsDrawerContent = (props: {
   );
 
   // Separate quotes with links (quoted content) from direct mentions
-  const quotesWithLinks = props.quotesAndMentions.filter((q) => q.link);
-  const directMentions = props.quotesAndMentions.filter((q) => !q.link);
+  // const quotesWithLinks = props.quotesAndMentions.filter((q) => q.link);
+  // const directMentions = props.quotesAndMentions.filter((q) => !q.link);
 
   // Create a map of URIs to post views for easy lookup
   const postViewMap = new Map<string, PostView>();
@@ -100,120 +118,74 @@ export const MentionsDrawerContent = (props: {
     const scoreB = engagementScore(postViewMap.get(b.uri));
     return scoreB - scoreA;
   };
-  quotesWithLinks.sort(byEngagement);
-  directMentions.sort(byEngagement);
+  let sortedBskyMentions = props.quotesAndMentions.sort(byEngagement);
 
   return (
     <>
       {props.quotesAndMentions.length === 0 ? (
-        <div className="opaque-container flex flex-col gap-0.5 p-[6px] text-tertiary italic text-sm text-center">
+        <EmptyState container="opaque" title="It's quiet… for now.">
           <div className="font-bold">no quotes yet!</div>
           <div>highlight any part of this post to quote it</div>
-        </div>
+        </EmptyState>
       ) : isLoading ? (
         <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm mt-8">
           <span>loading</span>
           <DotLoader />
         </div>
       ) : (
-        <div className="flex flex-col gap-8 w-full">
-          {quotesWithLinks.length > 0 && (
-            <div className="flex flex-col  w-full">
-              <h4 className="mb-2">Quotes on Bluesky</h4>
-              {/* Quotes with links (quoted content) */}
-              {quotesWithLinks.map((q, index) => {
-                return (
-                  <>
-                    <Quote
-                      key={q.uri}
-                      q={q}
-                      index={index}
-                      did={props.did}
-                      postViewMap={postViewMap}
-                    />
-                    {quotesWithLinks.length !== index + 1 && (
-                      <hr className="border-border-light my-4" />
-                    )}
-                  </>
-                );
-              })}
-            </div>
-          )}
-          {/* Direct post mentions (without quoted content) */}
-          {directMentions.length > 0 && (
-            <div className="flex flex-col">
-              <h4 className="mb-2">Mentions on Bluesky</h4>
-              {directMentions.map((q, index) => {
-                const post = postViewMap.get(q.uri);
-                if (!post) return null;
+        sortedBskyMentions.length > 0 && (
+          <div className="flex flex-col gap-6">
+            {sortedBskyMentions.map((q, index) => {
+              const post = postViewMap.get(q.uri);
+              if (!post) return null;
+              const parent = { type: "thread" as const, uri: q.uri };
+              let quotePosition: QuotePosition | null = null;
+              if (q.link) {
+                const url = new URL(q.link);
+                const quoteParam = url.pathname.split("/l-quote/")[1];
+                if (quoteParam) {
+                  quotePosition = decodeQuotePosition(quoteParam) ?? null;
+                }
+              }
 
-                const parent = { type: "thread" as const, uri: q.uri };
-                return (
-                  <>
-                    <BskyPostContent
-                      key={`mention-${index}`}
-                      post={post}
-                      parent={parent}
-                      showBlueskyLink={true}
-                      showEmbed={true}
-                      avatarSize="medium"
-                      quoteEnabled
-                      replyEnabled
-                      className="text-sm"
-                      compactEmbed
-                    />
-                    {directMentions.length !== index + 1 && (
-                      <hr className="border-border-light my-4" />
-                    )}
-                  </>
-                );
-              })}
-            </div>
-          )}
-        </div>
+              // Hide the embed when it's just a link card pointing back to this
+              // document; show it for any other embed (image, link, quoted post)
+              const showEmbed = !(
+                AppBskyEmbedExternal.isView(post.embed) &&
+                matchDocumentUrl(post.embed.external.uri, documentUrls)
+              );
+
+              return (
+                <>
+                  <BskyPostContent
+                    key={`mention-${index}`}
+                    post={post}
+                    parent={parent}
+                    showBlueskyLink={true}
+                    showEmbed={showEmbed}
+                    avatarSize="medium"
+                    quoteEnabled
+                    replyEnabled
+                    className="text-sm"
+                    compactEmbed
+                    hasQuote={
+                      quotePosition
+                        ? {
+                            index: index,
+                            did: props.did,
+                            position: quotePosition,
+                          }
+                        : undefined
+                    }
+                  />
+                  <hr className="border-border-light last:hidden" />
+                </>
+              );
+            })}
+          </div>
+        )
       )}
     </>
-  );
-};
-
-const Quote = (props: {
-  q: {
-    uri: string;
-    link?: string;
-  };
-  index: number;
-  did: string;
-  postViewMap: Map<string, PostView>;
-}) => {
-  const post = props.postViewMap.get(props.q.uri);
-  if (!post || !props.q.link) return null;
-  const parent = { type: "thread" as const, uri: props.q.uri };
-  const url = new URL(props.q.link);
-  const quoteParam = url.pathname.split("/l-quote/")[1];
-  if (!quoteParam) return null;
-  const quotePosition = decodeQuotePosition(quoteParam);
-  if (!quotePosition) return null;
-
-  return (
-    <div key={`quote-${props.index}`} className="flex flex-col w-full">
-      <QuoteContent
-        index={props.index}
-        did={props.did}
-        position={quotePosition}
-      />
-
-      <div className="h-3 w-1 ml-[11px] border-l border-border-light" />
-      <BskyPostContent
-        post={post}
-        parent={parent}
-        showBlueskyLink={true}
-        showEmbed={false}
-        avatarSize="medium"
-        quoteEnabled
-        replyEnabled
-        className="text-sm"
-      />
-    </div>
   );
 };
 
@@ -276,10 +248,10 @@ export const QuoteContent = (props: {
           });
         }}
       >
-        <div className="flex gap-[6px] items-stretch light-container italic rounded-md px-2 pt-1 ">
-          <div className="flex flex-col gap-1 justify-center h-full pt-2 pb-3">
-            <QuoteTiny className="shrink-0 text-tertiary" />
-            <div className="w-0.5 grow border border-l border-border h-full" />
+        <div className="flex gap-3 items-stretch italic rounded-md pt-1 ">
+          <div className="relative flex">
+            <QuoteTiny className="shrink-0 text-tertiary bg-bg-page absolute -left-2 top-3" />
+            <div className="w-0.5 grow border border-border mx-auto my-2" />
           </div>
           <PostContent
             pollData={[]}
@@ -289,7 +261,7 @@ export const QuoteContent = (props: {
             blocks={content}
             did={props.did}
             preview
-            className="pt-2! px-0! text-tertiary"
+            className="pt-3! px-0! text-tertiary"
           />
         </div>
       </div>

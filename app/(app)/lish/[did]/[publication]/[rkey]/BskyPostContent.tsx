@@ -14,6 +14,8 @@ import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { Avatar } from "components/Avatar";
 import { timeAgo } from "src/utils/timeAgo";
 import { ProfilePopover } from "components/ProfilePopover";
+import { QuotePosition } from "./quotePosition";
+import { QuoteContent } from "./Interactions/Quotes";
 
 type PostView = AppBskyFeedDefs.PostView;
 
@@ -29,6 +31,11 @@ export function BskyPostContent(props: {
   replyEnabled?: boolean;
   replyOnClick?: (e: React.MouseEvent) => void;
   clientHost?: string;
+  hasQuote?: {
+    position: QuotePosition;
+    index: number;
+    did: string;
+  };
 }) {
   const {
     post,
@@ -41,6 +48,7 @@ export function BskyPostContent(props: {
     replyEnabled,
     replyOnClick,
     clientHost = "bsky.app",
+    hasQuote,
   } = props;
 
   const record = post.record as AppBskyFeedPost.Record;
@@ -55,6 +63,18 @@ export function BskyPostContent(props: {
           openPage(parent, { type: "thread", uri: post.uri });
         }}
       />
+      {/*{props.parent?.type === "thread" && props.parent.uri && (
+        <div className="text-xs  flex  gap-2 px-1  text-tertiary">
+          <div className="flex flex-col shrink-0">
+            <div className="h-4 w-4  mx-0.5 bg-test rounded-full shrink-0" />
+            <div className="w-0.5 h-3 bg-border mx-auto" />
+          </div>
+          <strong> Replying to Eileen </strong>
+          <span className="font-normal text-tertiary">
+            This is a one-liner of content
+          </span>
+        </div>
+      )}*/}
 
       <div
         className={`flex gap-2 text-left w-full pointer-events-none ${props.className}`}
@@ -70,41 +90,47 @@ export function BskyPostContent(props: {
             size={avatarSize ? avatarSize : "medium"}
           />
         </div>
-        <div className={`flex flex-col min-w-0 w-full mb-2`}>
-          <div
-            className={`bskyPostTextContent flex flex-col grow text-left w-full ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
-          >
-            <PostInfo
-              displayName={post.author.displayName}
-              handle={post.author.handle}
-              createdAt={record.createdAt}
-            />
 
-            <div className={`postContent flex flex-col gap-2 mt-0.5`}>
-              <div className="text-secondary">
-                <BlueskyRichText record={record} />
-              </div>
-              {showEmbed && post.embed && (
-                <div
-                  className="pointer-events-auto relative"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <BlueskyEmbed
-                    parent={parent}
-                    embed={post.embed}
-                    compact={compactEmbed}
-                    postUrl={url}
-                    className="text-sm"
-                  />
-                </div>
-              )}
+        <div
+          className={`bskyPostContent flex flex-col grow text-left w-full min-w-0 ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
+        >
+          <PostInfo
+            displayName={post.author.displayName}
+            handle={post.author.handle}
+            createdAt={record.createdAt}
+          />
+
+          <div className={`bskyPostBody flex flex-col min-w-0 w-full pb-1`}>
+            {props.hasQuote && (
+              <QuoteContent
+                index={props.hasQuote?.index}
+                did={props.hasQuote?.did}
+                position={props.hasQuote?.position}
+              />
+            )}
+            <div className="bskyPostTextContent text-secondary mt-0.5">
+              <BlueskyRichText record={record} />
             </div>
+            {showEmbed && post.embed && (
+              <div
+                className="bskyPostEmbedWrapper pointer-events-auto relative mt-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <BlueskyEmbed
+                  parent={parent}
+                  embed={post.embed}
+                  compact={compactEmbed}
+                  postUrl={url}
+                  className="text-sm"
+                />
+              </div>
+            )}
           </div>
           {props.showBlueskyLink ||
           (props.post.quoteCount && props.post.quoteCount > 0) ||
           (props.post.replyCount && props.post.replyCount > 0) ? (
             <div
-              className={`postCountsAndLink flex gap-2 items-center justify-between mt-2 pointer-events-auto`}
+              className={`postCountsAndLink flex gap-2 items-center justify-between  pointer-events-auto`}
             >
               <PostCounts
                 post={post}
@@ -276,7 +302,7 @@ function PostCounts(props: {
     );
 
   return (
-    <div className="postCounts flex gap-2 items-center w-full text-tertiary">
+    <div className="postCounts flex gap-2 items-center w-full text-tertiary mb-1">
       {replyContent &&
         (props.replyEnabled ? (
           <ThreadLink

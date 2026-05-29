@@ -145,11 +145,10 @@ const Comment = (props: {
           createdAt={props.record.createdAt}
           compact
         />
-        <div className="spacer w-full h-0.5" />
 
         {props.record.attachment &&
           PubLeafletComment.isLinearDocumentQuote(props.record.attachment) && (
-            <div className="mt-1 mb-2">
+            <div className="my-2 ">
               <QuoteContent
                 index={-1}
                 position={props.record.attachment.quote}
