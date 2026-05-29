@@ -19,6 +19,12 @@ import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { FontLoader } from "components/FontLoader";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { CommentsSection } from "./Interactions/Comments/CommentsSection";
+import { getProfiles } from "src/identity/profileCache";
+import {
+  getBylineDids,
+  hasExplicitByline,
+  toBylineProfiles,
+} from "src/utils/byline";
 
 export async function DocumentPageRenderer({
   did,
@@ -61,6 +67,18 @@ export async function DocumentPageRenderer({
         </div>
       </div>
     );
+
+  // Resolve byline contributors. When the document has a non-empty
+  // `contributors` array, render those profiles; otherwise fall back to the
+  // single document author (the host DID of the document URI). When the byline
+  // is just the author we leave `contributors` undefined so PostHeader uses its
+  // existing single-`profile` render path (byte-for-byte the same as before).
+  const bylineDids = getBylineDids(record, did);
+  const contributorProfiles = hasExplicitByline(record, did)
+    ? await getProfiles(bylineDids).then((profiles) =>
+        toBylineProfiles(bylineDids, profiles),
+      )
+    : undefined;
 
   const {
     bskyPostData,
@@ -106,6 +124,7 @@ export async function DocumentPageRenderer({
                 profile={
                   profile ? JSON.parse(JSON.stringify(profile)) : undefined
                 }
+                contributors={contributorProfiles}
                 document={document}
                 bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                 standardSitePostData={JSON.parse(

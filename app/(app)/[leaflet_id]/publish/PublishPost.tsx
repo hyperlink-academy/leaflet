@@ -41,6 +41,10 @@ type Props = {
   leaflet_id: string;
   root_entity: string;
   profile: ProfileViewDetailed;
+  publicationProfile?: ProfileViewDetailed;
+  // DID of the publication owner whose PDS hosts the record / Bluesky post.
+  // Undefined for standalone publishes (post is authored by the viewer).
+  publicationOwnerDid?: string;
   description: string;
   publication_uri?: string;
   record?: NormalizedPublication | null;
@@ -185,6 +189,11 @@ const PublishPostForm = (
         description: props.description,
         document_record: result.record,
         rkey: result.rkey,
+        // For publications the post must be authored by the owner's PDS (where
+        // the record lives); standalone publishes leave this undefined.
+        ownerDid: props.publication_uri
+          ? props.publicationOwnerDid
+          : undefined,
       });
       if (!bskyResult.success && isOAuthSessionError(bskyResult.error)) {
         setIsLoading(false);
@@ -304,12 +313,14 @@ const PublishPostForm = (
                 editorStateRef={editorStateRef}
                 title={props.title}
                 profile={props.profile}
+                publicationProfile={props.publicationProfile}
                 description={props.description}
                 record={props.record}
                 newsletter_enabled={props.newsletter_enabled}
                 subscriberCount={props.subscriberCount}
                 publication_uri={props.publication_uri}
                 root_entity={props.root_entity}
+                leaflet_id={props.leaflet_id}
               />
               <hr className="border-border mb-2" />
 

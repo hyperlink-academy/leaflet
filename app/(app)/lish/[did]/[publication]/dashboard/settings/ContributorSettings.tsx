@@ -26,6 +26,7 @@ import {
 } from "actions/publications/contributors";
 import { leavePublication } from "actions/publications/contributors";
 import { UpgradeToProButton } from "../../UpgradeModal";
+import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 type ActorSuggestion = {
   handle: string;
@@ -48,15 +49,27 @@ const ERROR_MESSAGES: Record<ContributorActionError, string> = {
 export function ContributorSettings() {
   let { data: pubData } = usePublicationData();
   let { identity } = useIdentityData();
-  let publicationUri = pubData?.publication?.uri;
-  let ownerDid = pubData?.publication?.identity_did;
+  let publication = pubData?.publication;
+  let publicationUri = publication?.uri;
+  let ownerDid = publication?.identity_did;
   let isOwner = !!identity?.atp_did && identity.atp_did === ownerDid;
   let isPro = useIsPro();
 
-  if (!publicationUri) return null;
+  if (!publicationUri || !publication) return null;
+
+  // The accept-invitation page lives at the publication's base path.
+  let acceptLink =
+    getBasePublicationURL({
+      uri: publication.uri,
+      record: publication.record,
+    }) + "/contributor_accept";
 
   return isOwner ? (
-    <OwnerContributorSettings publicationUri={publicationUri} isPro={isPro} />
+    <OwnerContributorSettings
+      publicationUri={publicationUri}
+      isPro={isPro}
+      acceptLink={acceptLink}
+    />
   ) : (
     <ContributorLeaveSettings publicationUri={publicationUri} />
   );
@@ -65,6 +78,7 @@ export function ContributorSettings() {
 function OwnerContributorSettings(props: {
   publicationUri: string;
   isPro: boolean;
+  acceptLink: string;
 }) {
   let toaster = useToaster();
   let { data, mutate, isLoading } = useSWR(
@@ -81,29 +95,15 @@ function OwnerContributorSettings(props: {
   let handleInvite = async (handle: string): Promise<boolean> => {
     if (adding) return false;
     setAdding(true);
-    // Optimistic placeholder
-    let placeholder: ContributorRow = {
-      contributor_did: `pending:${handle}`,
-      confirmed: false,
-      created_at: new Date().toISOString(),
-      handle,
-      display_name: null,
-      avatar: null,
-    };
-    let current = data ?? [];
-    mutate([...current, placeholder], { revalidate: false });
 
     let res = await inviteContributor(props.publicationUri, handle);
     setAdding(false);
     if (!res.ok) {
-      mutate(current, { revalidate: false });
       toaster({ type: "error", content: ERROR_MESSAGES[res.error] });
       return false;
     }
-    mutate(
-      [...current, res.value],
-      { revalidate: false },
-    );
+    // Add the real returned row to the cache.
+    mutate((prev) => [...(prev ?? []), res.value], { revalidate: false });
     toaster({
       type: "success",
       content: `Invited @${res.value.handle ?? "contributor"}`,
@@ -112,14 +112,26 @@ function OwnerContributorSettings(props: {
   };
 
   let handleRemove = async (contributor_did: string) => {
-    let current = data ?? [];
+    let removed: ContributorRow | undefined;
     mutate(
-      current.filter((c) => c.contributor_did !== contributor_did),
+      (prev) => {
+        let rows = prev ?? [];
+        removed = rows.find((c) => c.contributor_did === contributor_did);
+        return rows.filter((c) => c.contributor_did !== contributor_did);
+      },
       { revalidate: false },
     );
     let res = await removeContributor(props.publicationUri, contributor_did);
     if (!res.ok) {
-      mutate(current, { revalidate: false });
+      mutate(
+        (prev) => {
+          let rows = prev ?? [];
+          if (!removed || rows.some((c) => c.contributor_did === contributor_did))
+            return rows;
+          return [...rows, removed];
+        },
+        { revalidate: false },
+      );
       toaster({ type: "error", content: ERROR_MESSAGES[res.error] });
     }
   };
@@ -148,6 +160,7 @@ function OwnerContributorSettings(props: {
         rows={data ?? []}
         loading={isLoading}
         onRemove={handleRemove}
+        acceptLink={props.acceptLink}
         emptyMessage="No contributors yet."
       />
     </DashboardContainer>
@@ -158,8 +171,21 @@ function ContributorList(props: {
   rows: ContributorRow[];
   loading: boolean;
   onRemove?: (did: string) => void;
+  acceptLink?: string;
   emptyMessage: string;
 }) {
+  let toaster = useToaster();
+  let copyInviteLink = async () => {
+    if (!props.acceptLink) return;
+    let url = new URL(props.acceptLink, window.location.origin).toString();
+    try {
+      await navigator.clipboard.writeText(url);
+      toaster({ type: "success", content: "Link copied" });
+    } catch {
+      toaster({ type: "error", content: "Couldn't copy link" });
+    }
+  };
+
   if (props.loading)
     return (
       <div className="text-tertiary text-sm py-2">
@@ -195,6 +221,11 @@ function ContributorList(props: {
           <div className="text-xs text-tertiary mr-2">
             {row.confirmed ? "Active" : "Invited"}
           </div>
+          {!row.confirmed && props.acceptLink && (
+            <ButtonSecondary compact type="button" onClick={copyInviteLink}>
+              Copy invite link
+            </ButtonSecondary>
+          )}
           {props.onRemove && (
             <ButtonSecondary
               compact
@@ -280,9 +311,10 @@ function InviteHandleInput(props: {
       onSelect={() => trySubmit(highlighted)}
       zIndex={60}
       sideOffset={4}
+      triggerClassName="w-full"
       className="w-(--radix-popover-trigger-width)!"
       trigger={
-        <div className="input-with-border relative py-0! flex items-center gap-2 w-full max-w-prose">
+        <div className="input-with-border relative py-0! flex items-center gap-2 w-full">
           <Input
             className="appearance-none! grow outline-none! min-w-0 py-1!"
             placeholder="handle.bsky.social"

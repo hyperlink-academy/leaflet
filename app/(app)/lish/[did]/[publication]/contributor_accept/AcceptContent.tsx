@@ -141,7 +141,7 @@ export function AcceptContent(props: {
   }
 
   return (
-    <div className="h-full w-screen bg-bg-leaflet flex place-items-center text-center">
+    <div className="h-full w-full flex place-items-center text-center">
       <div className="frosted-container p-4 max-w-md mx-auto justify-center place-items-center flex flex-col gap-2">
         {body}
       </div>

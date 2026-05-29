@@ -19,6 +19,8 @@ import {
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { PostEmail } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
+import { getProfiles } from "src/identity";
+import { bylineName, formatBylineNames } from "src/utils/byline";
 
 type SendPreviewError =
   | "unauthorized"
@@ -32,6 +34,9 @@ type SendPreviewError =
 export async function sendPostPreview(args: {
   publication_uri: string;
   root_entity: string;
+  // The leaflet (permission_token id) the draft belongs to. Used to resolve
+  // the draft's contributors for the byline. Optional for backwards-compat.
+  leaflet_id?: string;
   title: string;
   description?: string;
   to: string;
@@ -94,6 +99,46 @@ export async function sendPostPreview(args: {
 
   const assetsBaseUrl = await getCurrentDeploymentDomain();
 
+  // Resolve the draft's contributors (if any) for the byline. The published
+  // `contributors` field doesn't exist yet at preview time, so we read the
+  // draft's `leaflet_contributors`. Fall back to the current user's handle
+  // (previous behavior) when there are no contributors.
+  let authorName: string | undefined = identity.bsky_profiles?.handle ?? undefined;
+  if (args.leaflet_id) {
+    // Verify the leaflet actually belongs to this publication before reading
+    // its contributors, so a client can't pass an arbitrary leaflet_id and
+    // leak another draft's contributor list.
+    const { data: leafletInPub } = await supabaseServerClient
+      .from("leaflets_in_publications")
+      .select("leaflet")
+      .eq("publication", args.publication_uri)
+      .eq("leaflet", args.leaflet_id)
+      .maybeSingle();
+    const { data: contributorRows } = leafletInPub
+      ? await supabaseServerClient
+          .from("leaflet_contributors")
+          .select("contributor_did")
+          .eq("leaflet", args.leaflet_id)
+          .order("created_at", { ascending: true })
+      : { data: [] };
+    const contributorDids =
+      contributorRows?.map((c) => c.contributor_did) ?? [];
+    if (contributorDids.length > 0) {
+      const profiles = await getProfiles(contributorDids);
+      const names = contributorDids
+        .map((did) => {
+          const p = profiles.get(did);
+          return bylineName({
+            did,
+            handle: p?.handle ?? null,
+            displayName: p?.displayName ?? null,
+          });
+        })
+        .filter((name) => !name.startsWith("did:"));
+      if (names.length > 0) authorName = formatBylineNames(names);
+    }
+  }
+
   let html: string;
   try {
     html = await render(
@@ -102,7 +147,7 @@ export async function sendPostPreview(args: {
         postTitle: args.title || "(untitled)",
         postDescription: args.description,
         postUrl: pubProps.publicationUrl,
-        authorName: identity.bsky_profiles?.handle ?? undefined,
+        authorName,
         publishedAtLabel: new Date().toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",

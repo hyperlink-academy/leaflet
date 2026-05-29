@@ -89,8 +89,23 @@ export default async function PublishLeafletPage(props: Props) {
   let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
   let newsletterEnabled =
     !!publication?.uri && !!publication.publication_newsletter_settings?.enabled;
-  let [profile, subscriberCount] = await Promise.all([
+  // When publishing to a publication, the Bluesky post is created in the
+  // publication owner's PDS, so the preview should show the owner's identity.
+  let publicationOwnerDid = publication?.identity_did;
+  // Only fetch the owner profile separately when the owner is someone other
+  // than the viewer; when they're the same DID we reuse the viewer profile
+  // (ShareOptions' `previewProfile = publicationProfile ?? profile` handles the
+  // undefined case).
+  let shouldFetchOwnerProfile =
+    !!publicationOwnerDid && publicationOwnerDid !== identity.atp_did;
+  let [profile, publicationProfile, subscriberCount] = await Promise.all([
     agent.getProfile({ actor: identity.atp_did }),
+    shouldFetchOwnerProfile
+      ? agent
+          .getProfile({ actor: publicationOwnerDid! })
+          .then((res) => res.data)
+          .catch(() => undefined)
+      : Promise.resolve(undefined),
     newsletterEnabled
       ? supabaseServerClient
           .from("publication_email_subscribers")
@@ -130,6 +145,8 @@ export default async function PublishLeafletPage(props: Props) {
         leaflet_id={leaflet_id}
         root_entity={rootEntity}
         profile={profile.data}
+        publicationProfile={publicationProfile}
+        publicationOwnerDid={publicationOwnerDid ?? undefined}
         title={title}
         description={description}
         publication_uri={publication?.uri}

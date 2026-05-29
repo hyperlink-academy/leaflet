@@ -24,16 +24,21 @@ type Props = {
   editorStateRef: React.MutableRefObject<EditorState | null>;
   title: string;
   profile: ProfileViewDetailed;
+  publicationProfile?: ProfileViewDetailed;
   description: string;
   record?: NormalizedPublication | null;
   subscriberCount?: number;
   newsletter_enabled?: boolean;
   publication_uri?: string;
   root_entity: string;
+  leaflet_id: string;
 };
 
 export function ShareOptions(props: Props) {
   const { shareState, setShareState } = props;
+  // When publishing to a publication, the Bluesky post lives in the
+  // publication owner's PDS, so the preview should show their identity.
+  const previewProfile = props.publicationProfile ?? props.profile;
   const handleChange = (
     key: keyof Omit<ShareState, "quiet">,
     checked: boolean,
@@ -77,6 +82,7 @@ export function ShareOptions(props: Props) {
             <EmailPreview
               publication_uri={props.publication_uri}
               root_entity={props.root_entity}
+              leaflet_id={props.leaflet_id}
               title={props.title}
               description={props.description}
             />
@@ -117,12 +123,12 @@ export function ShareOptions(props: Props) {
           <div className="flex gap-2">
             <img
               className="rounded-full w-6 h-6 sm:w-[42px] sm:h-[42px] shrink-0"
-              src={props.profile.avatar}
+              src={previewProfile.avatar}
             />
             <div className="flex flex-col min-w-0 w-full">
               <div className="flex gap-2">
-                <p className="font-bold">{props.profile.displayName}</p>
-                <p className="text-tertiary">@{props.profile.handle}</p>
+                <p className="font-bold">{previewProfile.displayName}</p>
+                <p className="text-tertiary">@{previewProfile.handle}</p>
               </div>
               <div className="flex flex-col">
                 <BlueskyPostEditorProsemirror
@@ -173,6 +179,7 @@ export function ShareOptions(props: Props) {
 function EmailPreview(props: {
   publication_uri: string;
   root_entity: string;
+  leaflet_id: string;
   title: string;
   description: string;
 }) {
@@ -209,6 +216,7 @@ function EmailPreview(props: {
     const res = await sendPostPreview({
       publication_uri: props.publication_uri,
       root_entity: props.root_entity,
+      leaflet_id: props.leaflet_id,
       title: props.title,
       description: props.description,
       to: email,

@@ -43,7 +43,6 @@ export default async function PublicationDashboardLayout(props: {
 }) {
   let params = await props.params;
   let identity = await getIdentityData();
-  console.log("This running?");
   if (!identity || !identity.atp_did) {
     return (
       <NotFoundLayout>

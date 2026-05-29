@@ -3,9 +3,8 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
-import { idResolver } from "app/(app)/(home-pages)/reader/idResolver";
 import { revalidatePath } from "next/cache";
-import type { AppBskyActorProfile } from "@atproto/api";
+import { getProfiles, idResolver, type Profile } from "src/identity";
 
 export type ContributorActionError =
   | "unauthorized"
@@ -78,9 +77,7 @@ export async function listContributors(
 
   let { data, error } = await supabaseServerClient
     .from("publication_contributors")
-    .select(
-      "contributor_did, confirmed, created_at, identities(bsky_profiles(did, handle, record))",
-    )
+    .select("contributor_did, confirmed, created_at")
     .eq("publication_uri", publication_uri)
     .order("created_at", { ascending: true });
 
@@ -89,40 +86,34 @@ export async function listContributors(
     return Err("database_error");
   }
 
-  let rows: ContributorRow[] = (data ?? []).map((r) =>
-    formatRow({
-      contributor_did: r.contributor_did,
-      confirmed: r.confirmed,
-      created_at: r.created_at,
-      profile: (r.identities as any)?.bsky_profiles ?? null,
-    }),
+  let contributors = data ?? [];
+  let profiles = await getProfiles(contributors.map((c) => c.contributor_did));
+
+  let rows: ContributorRow[] = contributors.map((c) =>
+    buildRow(
+      {
+        contributor_did: c.contributor_did,
+        confirmed: c.confirmed,
+        created_at: c.created_at,
+      },
+      profiles.get(c.contributor_did) ?? null,
+    ),
   );
 
   return Ok(rows);
 }
 
-function formatRow(input: {
-  contributor_did: string;
-  confirmed: boolean;
-  created_at: string;
-  profile: { did: string; handle: string | null; record: unknown } | null;
-}): ContributorRow {
-  let record = input.profile?.record as
-    | AppBskyActorProfile.Record
-    | undefined;
-  let avatarCid =
-    record?.avatar && typeof record.avatar === "object"
-      ? (record.avatar.ref as unknown as { $link?: string } | undefined)?.$link
-      : undefined;
+export function buildRow(
+  input: { contributor_did: string; confirmed: boolean; created_at: string },
+  profile: Profile | null,
+): ContributorRow {
   return {
     contributor_did: input.contributor_did,
     confirmed: input.confirmed,
     created_at: input.created_at,
-    handle: input.profile?.handle ?? null,
-    display_name: record?.displayName ?? null,
-    avatar: avatarCid
-      ? `/api/atproto_images?did=${input.contributor_did}&cid=${avatarCid}`
-      : null,
+    handle: profile?.handle ?? null,
+    display_name: profile?.displayName ?? null,
+    avatar: profile?.avatar ?? null,
   };
 }
 
@@ -166,19 +157,17 @@ export async function inviteContributor(
   }
 
   // Try to enrich with profile
-  let { data: profileRow } = await supabaseServerClient
-    .from("bsky_profiles")
-    .select("did, handle, record")
-    .eq("did", did)
-    .maybeSingle();
+  let profiles = await getProfiles([did]);
 
   return Ok(
-    formatRow({
-      contributor_did: did,
-      confirmed: false,
-      created_at: new Date().toISOString(),
-      profile: profileRow ?? null,
-    }),
+    buildRow(
+      {
+        contributor_did: did,
+        confirmed: false,
+        created_at: new Date().toISOString(),
+      },
+      profiles.get(did) ?? null,
+    ),
   );
 }
 

@@ -34,6 +34,7 @@ export function LinearDocumentPage({
     document,
     did,
     profile,
+    contributors,
     preferences,
     prerenderedCodeBlocks,
     bskyPostData,
@@ -77,6 +78,7 @@ export function LinearDocumentPage({
           <PostHeader
             data={document}
             profile={profile}
+            contributors={contributors}
             preferences={preferences}
           />
         )}

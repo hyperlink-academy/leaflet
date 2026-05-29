@@ -17,6 +17,7 @@ export interface Record {
   $type: 'site.standard.document'
   bskyPostRef?: ComAtprotoRepoStrongRef.Main
   content?: $Typed<PubLeafletContent.Main> | { $type: string }
+  contributors?: Contributor[]
   coverImage?: BlobRef
   description?: string
   /** combine with the publication url or the document site to construct a full url to the document */
@@ -41,4 +42,21 @@ export function isRecord<V>(v: V) {
 
 export function validateRecord<V>(v: V) {
   return validate<Record & V>(v, id, hashRecord, true)
+}
+
+export interface Contributor {
+  $type?: 'site.standard.document#contributor'
+  did: string
+  role?: string
+  displayName?: string
+}
+
+const hashContributor = 'contributor'
+
+export function isContributor<V>(v: V) {
+  return is$typed(v, id, hashContributor)
+}
+
+export function validateContributor<V>(v: V) {
+  return validate<Contributor & V>(v, id, hashContributor)
 }

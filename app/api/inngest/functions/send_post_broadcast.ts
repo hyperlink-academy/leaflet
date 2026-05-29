@@ -16,6 +16,12 @@ import {
 } from "src/utils/newsletterSender";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { getProfiles } from "src/identity";
+import {
+  getBylineDids,
+  hasExplicitByline,
+  bylineName,
+  formatBylineNames,
+} from "src/utils/byline";
 import type { Json } from "supabase/database.types";
 
 const BATCH_SIZE = 500;
@@ -49,7 +55,7 @@ export const send_post_broadcast = inngest.createFunction(
     const authorDid = new AtUri(document_uri).host;
 
     const loaded = await step.run("load-pub-and-doc", async () => {
-      const [pubRes, docRes, profiles] = await Promise.all([
+      const [pubRes, docRes] = await Promise.all([
         supabaseServerClient
           .from("publications")
           .select(
@@ -62,12 +68,10 @@ export const send_post_broadcast = inngest.createFunction(
           .select("data")
           .eq("uri", document_uri)
           .maybeSingle(),
-        getProfiles([authorDid]),
       ]);
       return {
         pub: pubRes.data,
         doc: docRes.data,
-        profile: profiles.get(authorDid) ?? null,
       };
     });
 
@@ -117,7 +121,35 @@ export const send_post_broadcast = inngest.createFunction(
     const fromHeader = buildFromHeader(pubRecord?.name, fromDomain);
     const replyToEmail = resolveReplyToEmail(settings);
     const did = authorDid;
-    const authorName = loaded.profile?.handle ?? undefined;
+
+    // Byline: render contributor names when the doc has an explicit byline,
+    // otherwise fall back to the single document author (the URI host DID).
+    const hasContributors = hasExplicitByline(docRecord, authorDid);
+    const bylineDids = getBylineDids(docRecord, authorDid);
+    const bylineProfiles = await step.run("load-byline-profiles", async () => {
+      const profiles = await getProfiles(bylineDids);
+      return bylineDids.map((bylineDid) => {
+        const p = profiles.get(bylineDid);
+        return {
+          did: bylineDid,
+          handle: p?.handle ?? null,
+          displayName: p?.displayName ?? null,
+        };
+      });
+    });
+    let authorName: string | undefined;
+    if (hasContributors) {
+      const bylineNames = bylineProfiles
+        .map(bylineName)
+        // Drop bare DIDs (unresolved profiles) so we don't show a raw did:plc.
+        .filter((name) => !name.startsWith("did:"));
+      authorName =
+        bylineNames.length > 0 ? formatBylineNames(bylineNames) : undefined;
+    } else {
+      // Preserve previous behavior exactly for the single-author default:
+      // use the author's handle (not displayName).
+      authorName = bylineProfiles[0]?.handle ?? undefined;
+    }
     const publishedAtLabel = docRecord?.publishedAt
       ? new Date(docRecord.publishedAt).toLocaleDateString("en-US", {
           month: "short",

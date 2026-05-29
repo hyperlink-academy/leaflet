@@ -22,9 +22,11 @@ import { PostHeaderLayout } from "app/(app)/lish/[did]/[publication]/[rkey]/Post
 import { Backdater } from "./Backdater";
 import { RecommendTinyEmpty } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { DraftContributorSelector } from "./DraftContributorSelector";
 
 export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
-  let { rep } = useReplicache();
+  let { rep, permission_token } = useReplicache();
+  let leaflet_id = permission_token.id;
   let {
     data: pub,
     normalizedDocument,
@@ -77,6 +79,9 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
           <div className="font-bold text-tertiary px-1 h-[20px] text-sm flex place-items-center bg-border-light rounded-md ">
             DRAFT
           </div>
+          {pub.publications && leaflet_id && (
+            <DraftContributorSelector leaflet_id={leaflet_id} />
+          )}
         </div>
       }
       postTitle={

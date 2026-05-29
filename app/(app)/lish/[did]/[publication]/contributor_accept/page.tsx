@@ -2,6 +2,11 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { getIdentityData } from "actions/getIdentityData";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import {
+  PublicationThemeProvider,
+  PublicationBackgroundProvider,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { FontLoader } from "components/FontLoader";
 import { AcceptContent } from "./AcceptContent";
 
 type Params = { did: string; publication: string };
@@ -62,7 +67,7 @@ export default async function ContributorAcceptPage(props: {
       )}/dashboard`
     : "/home";
 
-  return (
+  let acceptContent = (
     <AcceptContent
       publicationUri={publication?.uri ?? null}
       publicationName={pubName}
@@ -70,5 +75,36 @@ export default async function ContributorAcceptPage(props: {
       signedIn={signedIn}
       dashboardHref={dashboardHref}
     />
+  );
+
+  // No publication (no theme available) — fall back to default appearance.
+  if (!publication || !pubRecord) {
+    return (
+      <div className="h-full w-full bg-bg-leaflet flex flex-col">
+        {acceptContent}
+      </div>
+    );
+  }
+
+  // Inherit the publication's theme (colors, background, fonts) exactly the way
+  // the published publication home page does.
+  return (
+    <>
+      <FontLoader
+        headingFontId={pubRecord.theme?.headingFont}
+        bodyFontId={pubRecord.theme?.bodyFont}
+      />
+      <PublicationThemeProvider
+        record={pubRecord}
+        pub_creator={publication.identity_did}
+      >
+        <PublicationBackgroundProvider
+          record={pubRecord}
+          pub_creator={publication.identity_did}
+        >
+          {acceptContent}
+        </PublicationBackgroundProvider>
+      </PublicationThemeProvider>
+    </>
   );
 }

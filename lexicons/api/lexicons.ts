@@ -2665,6 +2665,13 @@ export const schemaDict = {
               refs: ['lex:pub.leaflet.content'],
               type: 'union',
             },
+            contributors: {
+              type: 'array',
+              items: {
+                ref: 'lex:site.standard.document#contributor',
+                type: 'ref',
+              },
+            },
             coverImage: {
               accept: ['image/*'],
               maxSize: 1000000,
@@ -2726,6 +2733,26 @@ export const schemaDict = {
           type: 'object',
         },
         type: 'record',
+      },
+      contributor: {
+        type: 'object',
+        required: ['did'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          role: {
+            type: 'string',
+            maxLength: 1000,
+            maxGraphemes: 100,
+          },
+          displayName: {
+            type: 'string',
+            maxLength: 1000,
+            maxGraphemes: 100,
+          },
+        },
       },
     },
     id: 'site.standard.document',

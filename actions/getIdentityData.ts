@@ -41,10 +41,25 @@ export async function uncachedGetIdentityData() {
               )
             ),
             user_subscriptions(plan, status, current_period_end),
-            user_entitlements(entitlement_key, granted_at, expires_at, source, metadata)
+            user_entitlements(entitlement_key, granted_at, expires_at, source, metadata),
+            publications!publications_identity_did_fkey(*),
+            leaflet_contributors!leaflet_contributors_contributor_did_fkey(
+              created_at,
+              permission_tokens!leaflet_contributors_leaflet_fkey!inner(
+                id, root_entity, title, description,
+                permission_token_rights(*),
+                leaflets_to_documents(*),
+                leaflets_in_publications(*, publications(*))
+              )
+            ),
+            publication_contributors!publication_contributors_contributor_did_fkey(
+              created_at,
+              publications!publication_contributors_publication_uri_fkey!inner(*)
+            )
           )`,
         )
         .eq("identities.notifications.read", false)
+        .eq("identities.publication_contributors.confirmed", true)
         .eq("id", auth_token)
         .eq("confirmed", true)
         .single()
@@ -74,38 +89,25 @@ export async function uncachedGetIdentityData() {
 
   const subscription = auth_res.data.identities.user_subscriptions ?? null;
 
-  const atp_did = auth_res.data.identities.atp_did;
+  // Pull the embedded raw rows off the identity. Spreading `identity` below
+  // must not leak these raw embeds as extra top-level keys (the public return
+  // shape exposes them only as the processed `publications`,
+  // `contributor_publications`, and `contributor_leaflets`).
+  const {
+    publications: rawPublications,
+    leaflet_contributors: contributorLeafletRows,
+    publication_contributors: contributorPubRows,
+    ...identity
+  } = auth_res.data.identities;
+
+  const atp_did = identity.atp_did;
   if (atp_did) {
-    //I should create a relationship table so I can do this in the above query
-    let [
-      { data: rawPublications },
-      { data: contributorLeafletRows },
-      { data: contributorPubRows },
-      profiles,
-    ] = await Promise.all([
-      supabaseServerClient
-        .from("publications")
-        .select("*")
-        .eq("identity_did", atp_did),
-      supabaseServerClient
-        .from("leaflet_contributors")
-        .select(
-          `created_at,
-           permission_tokens!inner(
-             id, root_entity, title, description,
-             permission_token_rights(*),
-             leaflets_to_documents(*),
-             leaflets_in_publications(*, publications(*))
-           )`,
-        )
-        .eq("contributor_did", atp_did),
-      supabaseServerClient
-        .from("publication_contributors")
-        .select("created_at, publications!inner(*)")
-        .eq("contributor_did", atp_did)
-        .eq("confirmed", true),
-      getProfiles([atp_did]),
-    ]);
+    // Publications, leaflet_contributors, and publication_contributors are
+    // folded into the main identities query above as embedded resources
+    // (via the *_contributor_did_fkey / *_identity_did_fkey FKs to
+    // identities.atp_did). getProfiles stays separate because it's an
+    // external Redis/bsky profile cache, not a DB table.
+    const profiles = await getProfiles([atp_did]);
     // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces,
     // then filter to only publications created by Leaflet
     const publications = deduplicateByUri(rawPublications || []).filter(
@@ -124,7 +126,7 @@ export async function uncachedGetIdentityData() {
     const contributor_publications =
       deduplicateByUri(rawContributorPubs).filter(isLeafletPublication);
     return {
-      ...auth_res.data.identities,
+      ...identity,
       bsky_profiles: bskyProfileFromCache(profiles.get(atp_did) ?? null),
       publications,
       contributor_publications,
@@ -135,7 +137,7 @@ export async function uncachedGetIdentityData() {
   }
 
   return {
-    ...auth_res.data.identities,
+    ...identity,
     bsky_profiles: null,
     publications: [],
     contributor_publications: [],

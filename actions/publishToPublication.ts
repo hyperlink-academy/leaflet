@@ -234,6 +234,20 @@ export async function publishToPublication({
   // Resolve preferences: explicit param > draft DB value
   const preferences = postPreferences ?? draft?.preferences;
 
+  // Gather contributors from the draft so the published record records its
+  // multi-contributor byline. Only relevant for publication documents, and only
+  // written to the site.standard.document record.
+  let contributors: SiteStandardDocument.Contributor[] = [];
+  if (publication_uri) {
+    let { data: contributorRows } = await supabaseServerClient
+      .from("leaflet_contributors")
+      .select("contributor_did")
+      .eq("leaflet", leaflet_id)
+      .order("created_at", { ascending: true });
+    contributors =
+      contributorRows?.map((c) => ({ did: c.contributor_did })) ?? [];
+  }
+
   // Extract theme for standalone documents (not for publications)
   let theme: PubLeafletPublication.Theme | undefined;
   if (!publication_uri) {
@@ -319,6 +333,7 @@ export async function publishToPublication({
       }),
       // Include theme for standalone documents (not for publication documents)
       ...(!publication_uri && theme && { theme }),
+      ...(contributors.length > 0 && { contributors }),
       ...(preferences && {
         preferences: {
           $type: "pub.leaflet.publication#preferences" as const,
