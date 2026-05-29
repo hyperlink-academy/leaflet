@@ -174,7 +174,7 @@ export function PublicationPostsList({
                     coverImageSrc={coverImageSrc}
                     coverImageAlt={doc_record.title}
                   />
-                  <hr className="last:hidden border-border-light" />
+                  <hr className="last:hidden border-border-light mx-3" />
                 </React.Fragment>
               );
             })}

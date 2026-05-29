@@ -55,7 +55,7 @@ export function PublicationHomeLayout(props: {
   let inner = (
     <>
       {header}
-      <div className="pubContent sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pb-5">
+      <div className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
         {props.children}
       </div>
     </>

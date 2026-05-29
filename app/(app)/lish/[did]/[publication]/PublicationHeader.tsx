@@ -61,7 +61,7 @@ export function PublicationHeader(props: {
         )}
         {props.author}
         {props.subscribeButton && (
-          <div className="sm:pt-4 pt-4">{props.subscribeButton}</div>
+          <div className="pt-4 pb-1 px-3">{props.subscribeButton}</div>
         )}
       </div>
     </div>
