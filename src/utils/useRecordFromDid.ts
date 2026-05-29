@@ -1,12 +1,12 @@
 import { callRPC } from "app/api/rpc/client";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import useSWR from "swr";
 
+// Basic profile (avatar/handle/displayName) for a DID, from the cached
+// get_profiles route. Callers only need those fields, so this avoids the
+// heavier get_profile_data (handle resolution + OAuth agent + publications).
 export function useRecordFromDid(did: string | undefined | null) {
-  return useSWR(did ? ["profile-data", did] : null, async () => {
-    const response = await callRPC("get_profile_data", {
-      didOrHandle: did!,
-    });
-    return response.result.profile as ProfileViewDetailed | undefined;
+  return useSWR(did ? ["basic-profile", did] : null, async () => {
+    const response = await callRPC("get_profiles", { dids: [did!] });
+    return response.result.profiles[did!] ?? undefined;
   });
 }

@@ -8,24 +8,53 @@ import { CheckTiny } from "components/Icons/CheckTiny";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
-import { listDraftContributorCandidates } from "actions/publications/draftContributors";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { callRPC } from "app/api/rpc/client";
 import { bylineName } from "src/utils/byline";
 
 export function DraftContributorSelector(props: { leaflet_id: string }) {
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
+  let { data: pub } = useLeafletPublicationData();
 
-  // Selected contributors sync live via Replicache; the candidate list (which
-  // needs Bluesky profile enrichment) is a read-only fetch.
+  // Selected contributors sync live via Replicache. The candidate list (owner +
+  // confirmed publication contributors) is already part of the leaflet's
+  // publication data, so we read it from there rather than re-querying.
   let selectedDids =
     useSubscribe(rep, (tx) => tx.get<string[]>("draft_contributors")) ?? [];
-  let { data: candidates = [] } = useSWR(
-    `draft-contributor-candidates-${props.leaflet_id}`,
+
+  let ownerDid = pub?.publications?.identity_did;
+  // Owner first (synthesized — they have no publication_contributors row), then
+  // confirmed contributors in invite order, deduped against the owner.
+  let candidateDids =
+    ownerDid === undefined
+      ? []
+      : [
+          ownerDid,
+          ...(pub?.publications?.publication_contributors ?? [])
+            .filter((c) => c.confirmed && c.contributor_did !== ownerDid)
+            .sort((a, b) => a.created_at.localeCompare(b.created_at))
+            .map((c) => c.contributor_did),
+        ];
+
+  // Profiles are fetched asynchronously and merged in. Until they arrive,
+  // bylineName falls back to the DID. Keyed on the DID set so it refetches when
+  // contributors change.
+  let { data: profiles } = useSWR(
+    candidateDids.length
+      ? `contributor-profiles-${[...candidateDids].sort().join(",")}`
+      : null,
     async () => {
-      let res = await listDraftContributorCandidates(props.leaflet_id);
-      return res.ok ? res.value : [];
+      let res = await callRPC("get_profiles", { dids: candidateDids });
+      return res?.result?.profiles ?? {};
     },
   );
+
+  let candidates = candidateDids.map((did) => ({
+    contributor_did: did,
+    is_owner: did === ownerDid,
+    profile: profiles?.[did] ?? null,
+  }));
 
   // The byline always shows the PERSON: displayName -> handle -> did fallback,
   // resolved via the profile cache. The owner is rendered as a person too

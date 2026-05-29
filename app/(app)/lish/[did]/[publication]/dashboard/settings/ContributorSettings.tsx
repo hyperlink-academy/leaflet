@@ -15,15 +15,16 @@ import { useIsPro } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 import {
   usePublicationData,
+  mutatePublicationData,
 } from "../PublicationSWRProvider";
+import { callRPC } from "app/api/rpc/client";
+import type { Profile } from "src/identity";
 import { DashboardContainer } from "./SettingsContent";
 import {
   inviteContributor,
-  listContributors,
   removeContributor,
   type ContributorActionError,
 } from "actions/publications/contributors";
-import type { OkValue } from "src/result";
 import { UpgradeToProButton } from "../../UpgradeModal";
 import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 
@@ -83,14 +84,31 @@ function OwnerContributorSettings(props: {
   acceptLink: string;
 }) {
   let toaster = useToaster();
-  let { data, mutate, isLoading } = useSWR(
-    `publication-contributors-${props.publicationUri}`,
+  let { data: pubData, mutate } = usePublicationData();
+
+  // The contributor rows already arrive with the publication data, so we read
+  // them straight from that cache instead of re-querying the table.
+  let rows = pubData?.publication?.publication_contributors ?? [];
+  let dids = rows.map((r) => r.contributor_did);
+
+  // Profiles (handle/displayName/avatar) are fetched asynchronously and merged
+  // in. The key is derived from the DID set so it refetches when contributors
+  // are added or removed.
+  let { data: profiles } = useSWR(
+    dids.length ? `contributor-profiles-${[...dids].sort().join(",")}` : null,
     async () => {
-      let res = await listContributors(props.publicationUri);
-      if (!res.ok) return [];
-      return res.value;
+      let res = await callRPC("get_profiles", { dids });
+      return res?.result?.profiles ?? {};
     },
   );
+
+  let contributors = rows.map((r) => ({
+    contributor_did: r.contributor_did,
+    confirmed: !!r.confirmed,
+    profile: profiles?.[r.contributor_did] ?? null,
+  }));
+  // Rows are present immediately; only the async profile fetch can be pending.
+  let loading = dids.length > 0 && !profiles;
 
   let [adding, setAdding] = useState(false);
 
@@ -104,36 +122,39 @@ function OwnerContributorSettings(props: {
       toaster({ type: "error", content: ERROR_MESSAGES[res.error] });
       return false;
     }
-    // Add the real returned row to the cache.
-    mutate((prev) => [...(prev ?? []), res.value], { revalidate: false });
+    let added = res.value;
+    // Add the row to the publication cache; the profiles SWR key changes with
+    // the new DID and fetches its profile.
+    mutatePublicationData(mutate, (draft) => {
+      let list = draft.publication?.publication_contributors;
+      if (
+        list &&
+        !list.some((c) => c.contributor_did === added.contributor_did)
+      )
+        list.push({
+          contributor_did: added.contributor_did,
+          confirmed: added.confirmed,
+          created_at: added.created_at,
+        });
+    });
     toaster({
       type: "success",
-      content: `Invited @${res.value.profile?.handle ?? "contributor"}`,
+      content: `Invited @${handle.trim().replace(/^@/, "")}`,
     });
     return true;
   };
 
   let handleRemove = async (contributor_did: string) => {
-    let removed: NonNullable<typeof data>[number] | undefined;
-    mutate(
-      (prev) => {
-        let rows = prev ?? [];
-        removed = rows.find((c) => c.contributor_did === contributor_did);
-        return rows.filter((c) => c.contributor_did !== contributor_did);
-      },
-      { revalidate: false },
-    );
+    mutatePublicationData(mutate, (draft) => {
+      let list = draft.publication?.publication_contributors;
+      if (!list) return;
+      let idx = list.findIndex((c) => c.contributor_did === contributor_did);
+      if (idx >= 0) list.splice(idx, 1);
+    });
     let res = await removeContributor(props.publicationUri, contributor_did);
     if (!res.ok) {
-      mutate(
-        (prev) => {
-          let rows = prev ?? [];
-          if (!removed || rows.some((c) => c.contributor_did === contributor_did))
-            return rows;
-          return [...rows, removed];
-        },
-        { revalidate: false },
-      );
+      // Restore the optimistic removal by revalidating from the server.
+      mutate();
       toaster({ type: "error", content: ERROR_MESSAGES[res.error] });
     }
   };
@@ -159,8 +180,8 @@ function OwnerContributorSettings(props: {
       )}
 
       <ContributorList
-        rows={data ?? []}
-        loading={isLoading}
+        rows={contributors}
+        loading={loading}
         onRemove={handleRemove}
         acceptLink={props.acceptLink}
         emptyMessage="No contributors yet."
@@ -170,7 +191,11 @@ function OwnerContributorSettings(props: {
 }
 
 function ContributorList(props: {
-  rows: OkValue<Awaited<ReturnType<typeof listContributors>>>;
+  rows: {
+    contributor_did: string;
+    confirmed: boolean;
+    profile: Profile | null;
+  }[];
   loading: boolean;
   onRemove?: (did: string) => void;
   acceptLink?: string;

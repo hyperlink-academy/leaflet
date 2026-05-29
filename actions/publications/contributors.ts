@@ -5,7 +5,12 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
 import { revalidatePath } from "next/cache";
 import { idResolver } from "src/identity";
-import { withProfiles, type Contributor } from "./contributorProfiles";
+
+export type ContributorRow = {
+  contributor_did: string;
+  confirmed: boolean;
+  created_at: string;
+};
 
 export type ContributorActionError =
   | "unauthorized"
@@ -47,44 +52,10 @@ async function resolveHandleToDid(handle: string): Promise<string | null> {
   }
 }
 
-export async function listContributors(
-  publication_uri: string,
-): Promise<Result<Contributor[], ContributorActionError>> {
-  let identity = await getIdentityData();
-  if (!identity?.atp_did) return Err("unauthorized");
-
-  let publication = await loadPublication(publication_uri);
-  if (!publication) return Err("not_owner");
-
-  // Owners and confirmed contributors can both see the list
-  let { data: selfRow } = await supabaseServerClient
-    .from("publication_contributors")
-    .select("confirmed")
-    .eq("publication_uri", publication_uri)
-    .eq("contributor_did", identity.atp_did)
-    .maybeSingle();
-  let isOwner = publication.identity_did === identity.atp_did;
-  let isConfirmedContributor = selfRow?.confirmed === true;
-  if (!isOwner && !isConfirmedContributor) return Err("not_owner");
-
-  let { data, error } = await supabaseServerClient
-    .from("publication_contributors")
-    .select("contributor_did, confirmed, created_at")
-    .eq("publication_uri", publication_uri)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("[contributors] listContributors failed:", error);
-    return Err("database_error");
-  }
-
-  return Ok(await withProfiles(data ?? []));
-}
-
 export async function inviteContributor(
   publication_uri: string,
   handle: string,
-): Promise<Result<Contributor, ContributorActionError>> {
+): Promise<Result<ContributorRow, ContributorActionError>> {
   let identity = await getIdentityData();
   if (!identity?.atp_did) return Err("unauthorized");
 
@@ -119,8 +90,7 @@ export async function inviteContributor(
     return Err("database_error");
   }
 
-  let [row] = await withProfiles([inserted]);
-  return Ok(row);
+  return Ok(inserted);
 }
 
 export async function removeContributor(

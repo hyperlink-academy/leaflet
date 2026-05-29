@@ -37,8 +37,8 @@ export const ProfileButton = () => {
           icon={
             record ? (
               <Avatar
-                src={record.avatar}
-                displayName={record.displayName || record.handle}
+                src={record.avatar ?? undefined}
+                displayName={record.displayName || record.handle || undefined}
               />
             ) : (
               <AccountSmall />
@@ -54,7 +54,7 @@ export const ProfileButton = () => {
       }
     >
       <div className="flex flex-col gap-0.5">
-        {record && (
+        {record?.handle && (
           <>
             <SpeedyLink
               className="no-underline! menuItem -mx-[8px]"

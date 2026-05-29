@@ -15,6 +15,7 @@ import { get_standard_site_posts } from "./get_standard_site_posts";
 import { search_publication_names } from "./search_publication_names";
 import { search_publication_documents } from "./search_publication_documents";
 import { get_profile_data } from "./get_profile_data";
+import { get_profiles } from "./get_profiles";
 import { get_user_recommendations } from "./get_user_recommendations";
 import { get_hot_feed } from "./get_hot_feed";
 import { get_document_interactions } from "./get_document_interactions";
@@ -50,6 +51,7 @@ let Routes = [
   search_publication_names,
   search_publication_documents,
   get_profile_data,
+  get_profiles,
   get_user_recommendations,
   get_hot_feed,
   get_document_interactions,
