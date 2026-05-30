@@ -184,7 +184,9 @@ export function StandardSitePostItemView({
   }
   const coverImageSrc =
     post.record.coverImage && postDid
-      ? blobRefToSrc(post.record.coverImage.ref, postDid)
+      ? blobRefToSrc(post.record.coverImage.ref, postDid, undefined, {
+          width: size === "large" ? 800 : 360,
+        })
       : undefined;
 
   const { rootEntity } = useReplicache();

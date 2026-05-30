@@ -128,7 +128,12 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
           {postRecord.coverImage && (
             <div className="postListingImage">
               <img
-                src={blobRefToSrc(postRecord.coverImage.ref, postUri.host)}
+                src={blobRefToSrc(
+                  postRecord.coverImage.ref,
+                  postUri.host,
+                  undefined,
+                  { width: 800 },
+                )}
                 alt={postRecord.title || ""}
                 className="w-full h-auto aspect-video object-cover object-top-left rounded"
               />
