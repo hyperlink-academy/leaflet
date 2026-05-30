@@ -223,7 +223,7 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
 
       {/* Replies */}
       {post.replies && post.replies.length > 0 && (
-        <div className="threadReplies flex flex-col mt-4 pt-4  border-t border-border-light w-full">
+        <div className="threadReplies flex flex-col mt-4 pt-2  border-t border-border-light w-full">
           <Replies
             replies={post.replies as any[]}
             pageUri={post.post.uri}

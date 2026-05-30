@@ -24,7 +24,6 @@ import {
   useInteractionState,
 } from "../Interactions/Interactions";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CanvasBackgroundPattern } from "components/Canvas";
 
 export function PublishedPageLinkBlock(props: {
@@ -213,11 +212,13 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
+  let defaultDrawer: "comments" | "quotes" = comments > 0 ? "comments" : "quotes";
+
   return (
     <div
       className={`flex gap-2 text-tertiary text-sm absolute bottom-2 bg-bg-page`}
     >
-      {quotes > 0 && (
+      {quotes + comments > 0 && (
         <button
           className={`flex gap-1 items-center`}
           onClick={(e) => {
@@ -230,35 +231,17 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
               { type: "doc", id: props.pageId },
               { scrollIntoView: false },
             );
-            if (!drawerOpen || drawer !== "quotes")
-              openInteractionDrawer("quotes", document_uri, props.pageId);
+            if (
+              !drawerOpen ||
+              drawer !== defaultDrawer ||
+              pageId !== props.pageId
+            )
+              openInteractionDrawer(defaultDrawer, document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
         >
-          <span className="sr-only">Page quotes</span>
-          <QuoteTiny aria-hidden /> {quotes}{" "}
-        </button>
-      )}
-      {comments > 0 && (
-        <button
-          className={`flex gap-1 items-center`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openPage(
-              props.parentPageId
-                ? { type: "doc", id: props.parentPageId }
-                : undefined,
-              { type: "doc", id: props.pageId },
-              { scrollIntoView: false },
-            );
-            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
-              openInteractionDrawer("comments", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-        >
-          <span className="sr-only">Page comments</span>
-          <CommentTiny aria-hidden /> {comments}{" "}
+          <span className="sr-only">Page discussions</span>
+          <CommentTiny aria-hidden /> {comments + quotes}{" "}
         </button>
       )}
     </div>

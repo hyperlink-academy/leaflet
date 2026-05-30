@@ -138,7 +138,7 @@ const Comment = (props: {
         size={"medium"}
       />
 
-      <div className="grow flex flex-col pt-1">
+      <div className="min-w-0 w-full grow flex flex-col pt-1">
         <PostInfo
           displayName={props.profile?.displayName}
           handle={props.profile?.handle || ""}

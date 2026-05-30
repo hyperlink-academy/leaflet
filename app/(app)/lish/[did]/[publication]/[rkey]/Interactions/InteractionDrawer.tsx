@@ -10,6 +10,7 @@ import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { ToggleGroup } from "components/ToggleGroup";
+import { useDocument } from "contexts/DocumentContext";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -20,6 +21,7 @@ export const InteractionDrawer = (props: {
   pageId?: string;
 }) => {
   let drawer = useDrawerOpen(props.document_uri);
+  let { commentsCount } = useDocument();
   if (!drawer) return null;
 
   const filteredQuotesAndMentions = props.quotesAndMentions.filter((q) => {
@@ -57,12 +59,29 @@ export const InteractionDrawer = (props: {
                 <ToggleGroup
                   fullWidth
                   value={activeTab}
-                  onChange={(value) =>
-                    setInteractionState(props.document_uri, { drawer: value })
-                  }
+                  onChange={(value, e) => {
+                    e?.preventDefault();
+                    setInteractionState(props.document_uri, { drawer: value });
+                  }}
                   options={[
-                    { value: "comments", label: "Comments" },
-                    { value: "quotes", label: "Bluesky Mentions" },
+                    {
+                      value: "comments",
+                      label:
+                        commentsCount > 0
+                          ? `Comments (${commentsCount})`
+                          : "Comments",
+                    },
+                    {
+                      value: "quotes",
+                      label: (
+                        <div>
+                          Bluesky{" "}
+                          <span className="hidden sm:inline">Mentions</span>{" "}
+                          {filteredQuotesAndMentions.length > 0 &&
+                            `(${filteredQuotesAndMentions.length})`}
+                        </div>
+                      ),
+                    },
                   ]}
                 />
               ) : (

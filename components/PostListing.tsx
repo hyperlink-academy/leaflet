@@ -17,7 +17,6 @@ import { TagPopover } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSmoker } from "./Toast";
 import { CommentTiny } from "./Icons/CommentTiny";
-import { QuoteTiny } from "./Icons/QuoteTiny";
 import { ShareTiny } from "./Icons/ShareTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
@@ -249,6 +248,13 @@ const Interactions = (props: {
     });
   };
 
+  let commentsAvailable = props.showComments && props.commentsCount > 0;
+  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
+  let discussionsAvailable = commentsAvailable || mentionsAvailable;
+  let defaultDrawer: "comments" | "quotes" = commentsAvailable
+    ? "comments"
+    : "quotes";
+
   return (
     <div
       className={`flex gap-2 text-tertiary text-sm  items-center justify-between px-1`}
@@ -258,22 +264,13 @@ const Interactions = (props: {
           documentUri={props.documentUri}
           recommendsCount={props.recommendsCount}
         />
-        {!props.showMentions || props.quotesCount === 0 ? null : (
+        {!discussionsAvailable ? null : (
           <button
-            aria-label="Post quotes"
-            onClick={() => selectPostListing("quotes")}
+            aria-label="Post discussions"
+            onClick={() => selectPostListing(defaultDrawer)}
             className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
           >
-            <QuoteTiny /> {props.quotesCount}
-          </button>
-        )}
-        {!props.showComments || props.commentsCount === 0 ? null : (
-          <button
-            aria-label="Post comments"
-            onClick={() => selectPostListing("comments")}
-            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
-          >
-            <CommentTiny /> {props.commentsCount}
+            <CommentTiny /> {props.commentsCount + props.quotesCount}
           </button>
         )}
       </div>

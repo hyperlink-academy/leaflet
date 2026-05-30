@@ -33,7 +33,7 @@ export const PubBlueskyPostBlock = (props: {
           avatarSize="large"
           quoteEnabled
           replyEnabled
-          className="text-sm text-secondary block-border sm:px-3 sm:py-2 px-2 py-1 bg-bg-page mb-2 hover:border-accent-contrast!"
+          className="publishedBskyPostBlock text-sm text-secondary block-border sm:px-3 sm:py-2 px-2 py-1 bg-bg-page mb-2 hover:border-accent-contrast!"
           clientHost={props.clientHost}
         />
       );

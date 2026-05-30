@@ -4,12 +4,11 @@ import { BlueskyEmbed } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { OpenPage, openPage } from "./postPageState";
-import { ThreadLink, QuotesLink } from "./PostLinks";
+import { ThreadLink } from "./PostLinks";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { Avatar } from "components/Avatar";
 import { timeAgo } from "src/utils/timeAgo";
@@ -285,48 +284,29 @@ function PostCounts(props: {
   showBlueskyLink: boolean;
   url: string;
 }) {
-  const replyContent = props.post.replyCount != null &&
-    props.post.replyCount > 0 && (
-      <div className="postRepliesCount flex items-center gap-1 text-xs">
-        <CommentTiny />
-        {props.post.replyCount}
-      </div>
-    );
+  const total = (props.post.replyCount ?? 0) + (props.post.quoteCount ?? 0);
 
-  const quoteContent = props.post.quoteCount != null &&
-    props.post.quoteCount > 0 && (
-      <div className="postQuoteCount flex items-center gap-1  text-xs">
-        <QuoteTiny />
-        {props.post.quoteCount}
-      </div>
-    );
+  const countContent = total > 0 && (
+    <div className="postDiscussionsCount flex items-center gap-1 text-xs">
+      <CommentTiny />
+      {total}
+    </div>
+  );
 
   return (
     <div className="postCounts flex gap-2 items-center w-full text-tertiary mb-1">
-      {replyContent &&
-        (props.replyEnabled ? (
+      {countContent &&
+        (props.replyEnabled || props.quoteEnabled ? (
           <ThreadLink
             postUri={props.post.uri}
             parent={props.parent}
-            className="relative postRepliesLink hover:text-accent-contrast"
+            className="relative postDiscussionsLink hover:text-accent-contrast"
             onClick={props.replyOnClick}
           >
-            {replyContent}
+            {countContent}
           </ThreadLink>
         ) : (
-          replyContent
-        ))}
-      {quoteContent &&
-        (props.quoteEnabled ? (
-          <QuotesLink
-            postUri={props.post.uri}
-            parent={props.parent}
-            className="relative hover:text-accent-contrast"
-          >
-            {quoteContent}
-          </QuotesLink>
-        ) : (
-          quoteContent
+          countContent
         ))}
     </div>
   );

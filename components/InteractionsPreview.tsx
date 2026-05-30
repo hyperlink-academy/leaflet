@@ -1,7 +1,6 @@
 "use client";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
-import { QuoteTiny } from "./Icons/QuoteTiny";
 import { useSmoker } from "./Toast";
 import { Tag } from "./Tags";
 import { Popover } from "./Popover";
@@ -23,9 +22,14 @@ export const InteractionPreview = (props: {
   share?: boolean;
 }) => {
   let smoker = useSmoker();
+  let commentsAvailable = props.showComments !== false && props.commentsCount > 0;
+  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
+  let discussionsAvailable = commentsAvailable || mentionsAvailable;
+  let defaultDrawer: "comments" | "quotes" = commentsAvailable
+    ? "comments"
+    : "quotes";
   let interactionsAvailable =
-    (props.quotesCount > 0 && props.showMentions) ||
-    (props.showComments !== false && props.commentsCount > 0) ||
+    discussionsAvailable ||
     (props.showRecommends !== false && props.recommendsCount > 0);
 
   const tagsCount = props.tags?.length || 0;
@@ -39,22 +43,13 @@ export const InteractionPreview = (props: {
         />
       )}
 
-      {!props.showMentions || props.quotesCount === 0 ? null : (
+      {!discussionsAvailable ? null : (
         <SpeedyLink
-          aria-label="Post quotes"
-          href={`${props.postUrl}?interactionDrawer=quotes`}
+          aria-label="Post discussions"
+          href={`${props.postUrl}?interactionDrawer=${defaultDrawer}`}
           className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
         >
-          <QuoteTiny /> {props.quotesCount}
-        </SpeedyLink>
-      )}
-      {!props.showComments || props.commentsCount === 0 ? null : (
-        <SpeedyLink
-          aria-label="Post comments"
-          href={`${props.postUrl}?interactionDrawer=comments`}
-          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
-        >
-          <CommentTiny /> {props.commentsCount}
+          <CommentTiny /> {props.commentsCount + props.quotesCount}
         </SpeedyLink>
       )}
       {tagsCount === 0 ? null : (
