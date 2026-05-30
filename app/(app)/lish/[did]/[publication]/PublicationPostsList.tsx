@@ -123,8 +123,13 @@ export function PublicationPostsList({
                   : "medium";
 
               const postDid = new AtUri(post.uri).host;
+              // Request a downscaled thumbnail (via Supabase image transform)
+              // sized for how the cover image is displayed in each variant,
+              // rather than shipping the full-resolution blob.
               const coverImageSrc = doc_record.coverImage
-                ? blobRefToSrc(doc_record.coverImage.ref, postDid)
+                ? blobRefToSrc(doc_record.coverImage.ref, postDid, undefined, {
+                    width: Variant === "large" ? 800 : 360,
+                  })
                 : undefined;
 
               if (Variant === "large") {
