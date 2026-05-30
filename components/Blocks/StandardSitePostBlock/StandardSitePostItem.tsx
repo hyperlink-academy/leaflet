@@ -204,6 +204,7 @@ export function StandardSitePostItemView({
       documentUri={post.uri}
       tags={post.record.tags || []}
       postUrl={docUrl}
+      title={post.record.title}
       showComments={showComments}
       showMentions={showMentions}
       showRecommends={showRecommends}

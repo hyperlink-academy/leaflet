@@ -2,7 +2,7 @@
 
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { CSSProperties, useRef } from "react";
+import { CSSProperties, useRef, useState } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { PostContent, Block } from "../PostContent";
 import {
@@ -18,13 +18,10 @@ import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_si
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
 import { openPage, useOpenPages } from "../postPageState";
-import {
-  openInteractionDrawer,
-  setInteractionState,
-  useInteractionState,
-} from "../Interactions/Interactions";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { CanvasBackgroundPattern } from "components/Canvas";
+import { DiscussionModal } from "components/DiscussionModal";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 export function PublishedPageLinkBlock(props: {
   blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
@@ -207,42 +204,52 @@ export function PagePreview(props: {
 }
 
 const Interactions = (props: { pageId: string; parentPageId?: string }) => {
-  const { uri: document_uri, commentsCount: comments, mentions } = useDocument();
+  const {
+    uri: document_uri,
+    commentsCount: comments,
+    mentions,
+    normalizedDocument,
+    normalizedPublication,
+  } = useDocument();
   let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 
-  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
-
-  let defaultDrawer: "comments" | "quotes" = comments > 0 ? "comments" : "quotes";
+  let [discussionsOpen, setDiscussionsOpen] = useState(false);
+  let postUrl = `${getDocumentURL(
+    normalizedDocument,
+    document_uri,
+    normalizedPublication,
+  )}?page=${props.pageId}`;
 
   return (
     <div
       className={`flex gap-2 text-tertiary text-sm absolute bottom-2 bg-bg-page`}
     >
       {quotes + comments > 0 && (
-        <button
-          className={`flex gap-1 items-center`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openPage(
-              props.parentPageId
-                ? { type: "doc", id: props.parentPageId }
-                : undefined,
-              { type: "doc", id: props.pageId },
-              { scrollIntoView: false },
-            );
-            if (
-              !drawerOpen ||
-              drawer !== defaultDrawer ||
-              pageId !== props.pageId
-            )
-              openInteractionDrawer(defaultDrawer, document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-        >
-          <span className="sr-only">Page discussions</span>
-          <CommentTiny aria-hidden /> {comments + quotes}{" "}
-        </button>
+        <>
+          <button
+            className={`flex gap-1 items-center`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDiscussionsOpen(true);
+            }}
+          >
+            <span className="sr-only">Page discussions</span>
+            <CommentTiny aria-hidden /> {comments + quotes}{" "}
+          </button>
+          <DiscussionModal
+            open={discussionsOpen}
+            onOpenChange={setDiscussionsOpen}
+            document_uri={document_uri}
+            postUrl={postUrl}
+            title={normalizedDocument.title}
+            commentsCount={comments}
+            quotesCount={quotes}
+            showComments
+            showMentions
+            pageId={props.pageId}
+          />
+        </>
       )}
     </div>
   );

@@ -35,7 +35,13 @@ export const get_document_interactions = makeRoute({
       .single();
 
     if (!document) {
-      return { comments: [], quotesAndMentions: [], totalMentionsCount: 0 };
+      return {
+        comments: [],
+        quotesAndMentions: [],
+        totalMentionsCount: 0,
+        document: null,
+        publication: null,
+      };
     }
 
     const normalizedData = normalizeDocumentRecord(
@@ -107,6 +113,8 @@ export const get_document_interactions = makeRoute({
       comments,
       quotesAndMentions,
       totalMentionsCount: quotesAndMentions.length,
+      document: normalizedData,
+      publication: normalizedPubRecord,
     };
   },
 });

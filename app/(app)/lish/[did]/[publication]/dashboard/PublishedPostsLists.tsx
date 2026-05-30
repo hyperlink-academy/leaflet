@@ -143,6 +143,7 @@ function PublishedPostItem(props: {
               recommendsCount={doc.recommendsCount}
               documentUri={doc.uri}
               tags={doc.record.tags || []}
+              title={doc.record.title}
               showComments={pubRecord?.preferences?.showComments !== false}
               showMentions={pubRecord?.preferences?.showMentions !== false}
               showRecommends={pubRecord?.preferences?.showRecommends !== false}

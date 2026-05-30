@@ -31,9 +31,15 @@ export function CommentsDrawerContent(props: {
   document_uri: string;
   comments: Comment[];
   noCommentBox?: boolean;
+  pageId?: string;
 }) {
   let { identity } = useIdentityData();
-  let { localComments, pageId } = useInteractionState(props.document_uri);
+  let { localComments, pageId: statePageId } = useInteractionState(
+    props.document_uri,
+  );
+  // Callers (e.g. the discussion modal) can pin the page explicitly; otherwise
+  // fall back to the page tracked in the shared interaction state.
+  let pageId = props.pageId ?? statePageId;
   let comments = useMemo(() => {
     let filtered = props.comments.filter(
       (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,

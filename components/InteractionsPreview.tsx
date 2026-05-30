@@ -1,12 +1,13 @@
 "use client";
+import { useState } from "react";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { useSmoker } from "./Toast";
 import { Tag } from "./Tags";
 import { Popover } from "./Popover";
 import { TagTiny } from "./Icons/TagTiny";
-import { SpeedyLink } from "./SpeedyLink";
 import { RecommendButton } from "./RecommendButton";
+import { DiscussionModal } from "./DiscussionModal";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
@@ -15,6 +16,7 @@ export const InteractionPreview = (props: {
   documentUri: string;
   tags?: string[];
   postUrl: string;
+  title?: string;
   showComments: boolean;
   showMentions: boolean;
   showRecommends: boolean;
@@ -22,12 +24,10 @@ export const InteractionPreview = (props: {
   share?: boolean;
 }) => {
   let smoker = useSmoker();
+  let [discussionsOpen, setDiscussionsOpen] = useState(false);
   let commentsAvailable = props.showComments !== false && props.commentsCount > 0;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
   let discussionsAvailable = commentsAvailable || mentionsAvailable;
-  let defaultDrawer: "comments" | "quotes" = commentsAvailable
-    ? "comments"
-    : "quotes";
   let interactionsAvailable =
     discussionsAvailable ||
     (props.showRecommends !== false && props.recommendsCount > 0);
@@ -44,13 +44,30 @@ export const InteractionPreview = (props: {
       )}
 
       {!discussionsAvailable ? null : (
-        <SpeedyLink
+        <button
           aria-label="Post discussions"
-          href={`${props.postUrl}?interactionDrawer=${defaultDrawer}`}
-          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDiscussionsOpen(true);
+          }}
+          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
         >
           <CommentTiny /> {props.commentsCount + props.quotesCount}
-        </SpeedyLink>
+        </button>
+      )}
+      {discussionsAvailable && (
+        <DiscussionModal
+          open={discussionsOpen}
+          onOpenChange={setDiscussionsOpen}
+          document_uri={props.documentUri}
+          postUrl={props.postUrl}
+          title={props.title}
+          commentsCount={props.commentsCount}
+          quotesCount={props.quotesCount}
+          showComments={props.showComments}
+          showMentions={props.showMentions}
+        />
       )}
       {tagsCount === 0 ? null : (
         <>
