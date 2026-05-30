@@ -71,7 +71,7 @@ function QuotesContent(props: { posts: PostView[]; postUri: string }) {
   const { posts, postUri } = props;
 
   return (
-    <div className="flex flex-col gap-0">
+    <div className="flex flex-col gap-0 pt-3">
       {posts.map((post, index) => {
         const parent = { type: "quotes" as const, uri: postUri };
         return (

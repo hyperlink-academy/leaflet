@@ -5,9 +5,8 @@ import { CommentBox } from "./CommentBox";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useSpring, animated } from "@react-spring/web";
-import useMeasure from "react-use-measure";
+import { useMemo, useState } from "react";
+import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { Separator } from "components/Layout";
 import { Popover } from "components/Popover";
@@ -294,33 +293,6 @@ const Replies = (props: {
         </CollapsibleReplies>
       )}
     </>
-  );
-};
-
-// Animates the replies list height when it opens/closes instead of snapping
-// it in and out of the DOM.
-const CollapsibleReplies = (props: {
-  open: boolean;
-  children: React.ReactNode;
-}) => {
-  let [ref, { height }] = useMeasure();
-  // Skip the spring on the first render with a real height so replies that
-  // are open by default don't animate in on page load.
-  let measured = useRef(false);
-  let style = useSpring({
-    height: props.open ? height : 0,
-    opacity: props.open ? 1 : 0,
-    immediate: !measured.current,
-    config: { tension: 280, friction: 30 },
-  });
-  useEffect(() => {
-    if (height > 0) measured.current = true;
-  }, [height]);
-
-  return (
-    <animated.div style={{ ...style }}>
-      <div ref={ref}>{props.children}</div>
-    </animated.div>
   );
 };
 

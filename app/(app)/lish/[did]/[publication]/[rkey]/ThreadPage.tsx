@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppBskyFeedDefs,
   AppBskyFeedPost,
@@ -23,7 +23,11 @@ import {
   getThreadKey,
   fetchThread,
   prefetchThread,
+  getQuotesKey,
+  fetchQuotes,
 } from "./PostLinks";
+import { Tabs } from "components/Tabs";
+import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { useDocument } from "contexts/DocumentContext";
 import { QuoteContent } from "./Interactions/Quotes";
 import {
@@ -221,21 +225,137 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
         <ThreadPost post={post} isMainPost={true} pageUri={parentUri} />
       </div>
 
-      {/* Replies */}
-      {post.replies && post.replies.length > 0 && (
-        <div className="threadReplies flex flex-col mt-4 pt-2  border-t border-border-light w-full">
-          <Replies
-            replies={post.replies as any[]}
-            pageUri={post.post.uri}
-            parentPostUri={post.post.uri}
-            depth={0}
-            parentAuthorDid={post.post.author.did}
-            rootAuthorDid={rootAuthorDid}
-            documentUrls={documentUrls}
-            docDid={docDid}
-          />
+      {/* Replies and quote posts */}
+      <ThreadInteractions
+        post={post}
+        rootAuthorDid={rootAuthorDid}
+        documentUrls={documentUrls}
+        docDid={docDid}
+      />
+    </div>
+  );
+}
+
+// Tabbed section under the main post showing its replies and quote posts.
+// When only one of the two has content, a header is shown instead of tabs.
+function ThreadInteractions(props: {
+  post: ThreadViewPost;
+  rootAuthorDid: string;
+  documentUrls: string[];
+  docDid: string;
+}) {
+  const { post, rootAuthorDid, documentUrls, docDid } = props;
+
+  const replies = (post.replies as any[]) ?? [];
+  const replyCount = post.post.replyCount ?? replies.length;
+  const quoteCount = post.post.quoteCount ?? 0;
+  const hasReplies = replies.length > 0;
+  const hasQuotes = quoteCount > 0;
+  const showTabs = hasReplies && hasQuotes;
+
+  const [activeTab, setActiveTab] = useState<"replies" | "quotes">(
+    hasReplies ? "replies" : "quotes",
+  );
+
+  if (!hasReplies && !hasQuotes) return null;
+
+  // Default to whichever tab actually has content
+  const tab = !hasReplies ? "quotes" : !hasQuotes ? "replies" : activeTab;
+
+  return (
+    <div className="threadInteractions flex flex-col mt-4  w-full">
+      {showTabs ? (
+        <Tabs
+          value={tab}
+          onChange={(value) => setActiveTab(value)}
+          options={[
+            { value: "replies", label: `Replies (${replyCount})` },
+            { value: "quotes", label: `Quote Posts (${quoteCount})` },
+          ]}
+        />
+      ) : (
+        <div className="text-tertiary text-sm font-bold">
+          {hasReplies
+            ? `Replies (${replyCount})`
+            : `Quote Posts (${quoteCount})`}
+          <hr className="border-border-light mt-[6px]" />
         </div>
       )}
+
+      {tab === "replies" ? (
+        <Replies
+          replies={replies}
+          pageUri={post.post.uri}
+          parentPostUri={post.post.uri}
+          depth={0}
+          parentAuthorDid={post.post.author.did}
+          rootAuthorDid={rootAuthorDid}
+          documentUrls={documentUrls}
+          docDid={docDid}
+        />
+      ) : (
+        <ThreadQuotes postUri={post.post.uri} pageUri={post.post.uri} />
+      )}
+    </div>
+  );
+}
+
+// Fetches and renders the posts that quote the main post
+function ThreadQuotes(props: { postUri: string; pageUri: string }) {
+  const {
+    data: quotesData,
+    isLoading,
+    error,
+  } = useSWR(getQuotesKey(props.postUri), () => fetchQuotes(props.postUri));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
+        <span>loading quotes</span>
+        <DotLoader />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-tertiary italic text-sm text-center py-8">
+        Failed to load quotes
+      </div>
+    );
+  }
+
+  if (!quotesData || quotesData.posts.length === 0) {
+    return (
+      <div className="text-tertiary italic text-sm text-center py-8">
+        No quotes yet
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-0 pt-4">
+      {quotesData.posts.map((post, index) => {
+        const parent = { type: "thread" as const, uri: props.pageUri };
+        // let isPinnedPost = post.uri ===
+        return (
+          <>
+            <BskyPostContent
+              key={post.uri}
+              post={post}
+              parent={parent}
+              showEmbed
+              compactEmbed
+              showBlueskyLink
+              quoteEnabled
+              replyEnabled
+              className="relative rounded text-sm"
+            />
+
+            <hr className="last:hidden border-border-light my-4" />
+          </>
+        );
+      })}
     </div>
   );
 }
@@ -257,6 +377,7 @@ function ThreadPost(props: {
           parent={page}
           avatarSize="large"
           showBlueskyLink={true}
+          showInteractions={false}
           showEmbed={true}
           compactEmbed
           quoteEnabled
@@ -300,9 +421,6 @@ function Replies(props: {
     documentUrls,
     docDid,
   } = props;
-  const collapsedThreads = useThreadState((s) => s.collapsedThreads);
-  const toggleCollapsed = useThreadState((s) => s.toggleCollapsed);
-
   // Sort replies so that replies from the parent author come first
   const sortedReplies = useMemo(
     () =>
@@ -323,7 +441,11 @@ function Replies(props: {
   );
 
   return (
-    <div className="replies flex flex-col gap-0 w-full">
+    <div
+      className={`replies flex flex-col w-full pt-4 ${
+        props.depth === 0 ? "gap-0" : "gap-8"
+      }`}
+    >
       {sortedReplies.map((reply, index) => {
         if (AppBskyFeedDefs.isNotFoundPost(reply)) {
           return (
@@ -352,25 +474,58 @@ function Replies(props: {
         }
 
         const hasReplies = reply.replies && reply.replies.length > 0;
-        const isCollapsed = collapsedThreads.has(reply.post.uri);
 
         return (
-          <ReplyPost
-            key={reply.post.uri}
-            post={reply}
-            isLast={index === replies.length - 1 && !hasReplies}
-            pageUri={pageUri}
-            parentPostUri={parentPostUri}
-            toggleCollapsed={toggleCollapsed}
-            isCollapsed={isCollapsed}
-            depth={props.depth}
-            rootAuthorDid={rootAuthorDid}
-            documentUrls={documentUrls}
-            docDid={docDid}
-          />
+          <>
+            <ReplyPost
+              key={reply.post.uri}
+              post={reply}
+              isLast={index === replies.length - 1 && !hasReplies}
+              pageUri={pageUri}
+              depth={props.depth}
+              rootAuthorDid={rootAuthorDid}
+              documentUrls={documentUrls}
+              docDid={docDid}
+            />
+            {props.depth === 0 && (
+              <hr className="border-border-light my-4 last:hidden" />
+            )}
+          </>
         );
       })}
     </div>
+  );
+}
+
+// Wraps a nested reply list in the same indented thread-line + collapse
+// affordance used by document comment replies (Interactions/Comments), and
+// animates its height when it opens/closes so threads collapse with the same
+// motion as comments.
+function NestedReplies(props: {
+  open: boolean;
+  onCollapse: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <CollapsibleReplies open={props.open}>
+      <div className="repliesWrapper relative pt-1 pl-[26px] ">
+        {/* the thread line itself is non-interactive; a transparent button is
+            overlaid on top of it (z-10) so clicking the line collapses the
+            thread. The button has to sit over the line (left-[28px]) rather
+            than in the empty gutter, otherwise clicks land on the post's
+            absolute-inset overlay underneath and open the thread instead. */}
+        <div className="absolute top-0 bottom-0 left-[38px] w-[2px] bg-border-light pointer-events-none" />
+        <button
+          className="repliesCollapse absolute top-0 bottom-0 left-[28px] w-[20px] z-10"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            props.onCollapse();
+          }}
+        />
+        {props.children}
+      </div>
+    </CollapsibleReplies>
   );
 }
 
@@ -378,21 +533,20 @@ const ReplyPost = (props: {
   post: ThreadViewPost;
   isLast: boolean;
   pageUri: string;
-  parentPostUri: string;
-  toggleCollapsed: (uri: string) => void;
-  isCollapsed: boolean;
   depth: number;
   rootAuthorDid: string;
   documentUrls: string[];
   docDid: string;
 }) => {
-  const { post, pageUri, parentPostUri, rootAuthorDid, documentUrls, docDid } =
-    props;
+  const { post, pageUri, rootAuthorDid, documentUrls, docDid } = props;
+  const collapsedThreads = useThreadState((s) => s.collapsedThreads);
+  const toggleCollapsed = useThreadState((s) => s.toggleCollapsed);
 
   // Flatten same-author chains
   const chain = flattenSameAuthorChain(post, rootAuthorDid);
   const lastInChain = chain[chain.length - 1];
   const hasReplies = lastInChain.replies && lastInChain.replies.length > 0;
+  const isCollapsed = collapsedThreads.has(lastInChain.post.uri);
   const isTruncated =
     !hasReplies &&
     lastInChain.post.replyCount != null &&
@@ -400,95 +554,51 @@ const ReplyPost = (props: {
 
   return (
     <div className="flex h-fit relative">
-      {props.depth > 0 && (
-        <>
-          <div className="absolute replyLine top-0 bottom-0 left-0 w-6 pointer-events-none ">
-            <div className="bg-border-light w-[2px] h-full mx-auto" />
-          </div>
-          <button
-            className="absolute top-0 bottom-0 left-0 w-6 z-10"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              props.toggleCollapsed(parentPostUri);
-            }}
-          />
-        </>
-      )}
-      <div
-        className={`reply relative flex flex-col w-full ${props.depth === 0 && "mb-3"}`}
-      >
-        {/* Render chain: intermediate posts compact, last post full */}
-        {chain.length > 1 ? (
-          <>
-            {chain.slice(0, -1).map((chainPost) => (
-              <div
-                key={chainPost.post.uri}
-                className="flex gap-2 relative w-full pl-[6px] pb-2"
-              >
-                <div className="absolute top-0 bottom-0 left-[6px] w-5">
-                  <div className="bg-border-light w-[2px] h-full mx-auto" />
-                </div>
-                <ReplyPostContent
-                  post={chainPost.post}
-                  pageUri={pageUri}
-                  documentUrls={documentUrls}
-                  docDid={docDid}
-                  compact
-                />
-              </div>
-            ))}
-            <ReplyPostContent
-              post={lastInChain.post}
+      <div className={`reply relative flex flex-col w-full `}>
+        <ReplyPostContent
+          post={post.post}
+          pageUri={pageUri}
+          documentUrls={documentUrls}
+          docDid={docDid}
+          toggleCollapsed={() => toggleCollapsed(post.post.uri)}
+        />
+
+        {/* Render child replies, styled like replies to a comment */}
+        {hasReplies && props.depth < 10 && (
+          <NestedReplies
+            open={!isCollapsed}
+            onCollapse={() => toggleCollapsed(lastInChain.post.uri)}
+          >
+            <Replies
               pageUri={pageUri}
+              parentPostUri={lastInChain.post.uri}
+              replies={lastInChain.replies as any[]}
+              depth={props.depth + 1}
+              parentAuthorDid={lastInChain.post.author.did}
+              rootAuthorDid={rootAuthorDid}
               documentUrls={documentUrls}
               docDid={docDid}
-              compact
-              toggleCollapsed={() =>
-                props.toggleCollapsed(lastInChain.post.uri)
-              }
             />
-          </>
-        ) : (
-          <ReplyPostContent
-            post={post.post}
-            pageUri={pageUri}
-            documentUrls={documentUrls}
-            docDid={docDid}
-            toggleCollapsed={() => props.toggleCollapsed(post.post.uri)}
-          />
+          </NestedReplies>
         )}
 
-        {/* Render child replies */}
-        {hasReplies && props.depth < 10 && (
-          <div className="ml-[28px] flex grow">
-            {!props.isCollapsed && (
-              <Replies
+        {/* Auto-load truncated replies */}
+        {isTruncated && props.depth < 10 && (
+          <NestedReplies
+            open={!isCollapsed}
+            onCollapse={() => toggleCollapsed(lastInChain.post.uri)}
+          >
+            {!isCollapsed && (
+              <SubThread
+                postUri={lastInChain.post.uri}
                 pageUri={pageUri}
-                parentPostUri={lastInChain.post.uri}
-                replies={lastInChain.replies as any[]}
-                depth={props.depth + 1}
-                parentAuthorDid={lastInChain.post.author.did}
+                depth={props.depth}
                 rootAuthorDid={rootAuthorDid}
                 documentUrls={documentUrls}
                 docDid={docDid}
               />
             )}
-          </div>
-        )}
-
-        {/* Auto-load truncated replies */}
-        {isTruncated && props.depth < 10 && !props.isCollapsed && (
-          <div className="ml-[28px] flex grow">
-            <SubThread
-              postUri={lastInChain.post.uri}
-              pageUri={pageUri}
-              depth={props.depth}
-              rootAuthorDid={rootAuthorDid}
-              documentUrls={documentUrls}
-              docDid={docDid}
-            />
-          </div>
+          </NestedReplies>
         )}
 
         {/* Safety fallback at extreme depth */}
@@ -569,7 +679,7 @@ function ReplyPostContent(props: {
               }
             : undefined
         }
-        className=" text-sm pt-4"
+        className=" text-sm"
       />
     </div>
   );

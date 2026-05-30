@@ -4,11 +4,12 @@ import { BlueskyEmbed } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { OpenPage, openPage } from "./postPageState";
-import { ThreadLink } from "./PostLinks";
+import { ThreadLink, QuotesLink } from "./PostLinks";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { Avatar } from "components/Avatar";
 import { timeAgo } from "src/utils/timeAgo";
@@ -26,6 +27,7 @@ export function BskyPostContent(props: {
   showEmbed?: boolean;
   compactEmbed?: boolean;
   showBlueskyLink?: boolean;
+  showInteractions?: boolean;
   quoteEnabled?: boolean;
   replyEnabled?: boolean;
   replyOnClick?: (e: React.MouseEvent) => void;
@@ -43,6 +45,7 @@ export function BskyPostContent(props: {
     showEmbed = true,
     compactEmbed = false,
     showBlueskyLink = true,
+    showInteractions = true,
     quoteEnabled,
     replyEnabled,
     replyOnClick,
@@ -54,14 +57,20 @@ export function BskyPostContent(props: {
   const postId = post.uri.split("/")[4];
   const url = `https://${clientHost}/profile/${post.author.handle}/post/${postId}`;
 
+  // Only allow opening the thread page when there's a discussion to show
+  const hasThreadContent =
+    (post.replyCount ?? 0) > 0 || (post.quoteCount ?? 0) > 0;
+
   return (
     <div className={`bskyPost relative flex flex-col w-full `}>
-      <button
-        className="absolute inset-0"
-        onClick={() => {
-          openPage(parent, { type: "thread", uri: post.uri });
-        }}
-      />
+      {hasThreadContent && (
+        <button
+          className="absolute inset-0"
+          onClick={() => {
+            openPage(parent, { type: "thread", uri: post.uri });
+          }}
+        />
+      )}
       {/*{props.parent?.type === "thread" && props.parent.uri && (
         <div className="text-xs  flex  gap-2 px-1  text-tertiary">
           <div className="flex flex-col shrink-0">
@@ -126,20 +135,25 @@ export function BskyPostContent(props: {
             )}
           </div>
           {props.showBlueskyLink ||
-          (props.post.quoteCount && props.post.quoteCount > 0) ||
-          (props.post.replyCount && props.post.replyCount > 0) ? (
+          (showInteractions &&
+            ((props.post.quoteCount && props.post.quoteCount > 0) ||
+              (props.post.replyCount && props.post.replyCount > 0))) ? (
             <div
               className={`postCountsAndLink flex gap-2 items-center justify-between  pointer-events-auto`}
             >
-              <PostCounts
-                post={post}
-                parent={parent}
-                replyEnabled={replyEnabled}
-                replyOnClick={replyOnClick}
-                quoteEnabled={quoteEnabled}
-                showBlueskyLink={showBlueskyLink}
-                url={url}
-              />
+              {showInteractions ? (
+                <PostCounts
+                  post={post}
+                  parent={parent}
+                  replyEnabled={replyEnabled}
+                  replyOnClick={replyOnClick}
+                  quoteEnabled={quoteEnabled}
+                  showBlueskyLink={showBlueskyLink}
+                  url={url}
+                />
+              ) : (
+                <div />
+              )}
 
               <div className="flex gap-3 items-center">
                 {showBlueskyLink && (
@@ -184,14 +198,20 @@ export function CompactBskyPostContent(props: {
   const postId = post.uri.split("/")[4];
   const url = `https://${clientHost}/profile/${post.author.handle}/post/${postId}`;
 
+  // Only allow opening the thread page when there's a discussion to show
+  const hasThreadContent =
+    (post.replyCount ?? 0) > 0 || (post.quoteCount ?? 0) > 0;
+
   return (
     <div className="bskyPost relative flex flex-col w-full">
-      <button
-        className="absolute inset-0 "
-        onClick={() => {
-          openPage(parent, { type: "thread", uri: post.uri });
-        }}
-      />
+      {hasThreadContent && (
+        <button
+          className="absolute inset-0 "
+          onClick={() => {
+            openPage(parent, { type: "thread", uri: post.uri });
+          }}
+        />
+      )}
       <div className={`flex gap-2 text-left w-full ${props.className}`}>
         <Avatar
           src={post.author.avatar}
@@ -200,10 +220,14 @@ export function CompactBskyPostContent(props: {
         />
         <div className={`flex flex-col min-w-0 w-full`}>
           <button
-            className="bskyPostTextContent flex flex-col grow mt-0.5 text-left text-xs text-tertiary"
-            onClick={() => {
-              openPage(parent, { type: "thread", uri: post.uri });
-            }}
+            className={`bskyPostTextContent flex flex-col grow mt-0.5 text-left text-xs text-tertiary ${hasThreadContent ? "" : "cursor-default"}`}
+            onClick={
+              hasThreadContent
+                ? () => {
+                    openPage(parent, { type: "thread", uri: post.uri });
+                  }
+                : undefined
+            }
           >
             <PostInfo
               displayName={post.author.displayName}
@@ -284,29 +308,48 @@ function PostCounts(props: {
   showBlueskyLink: boolean;
   url: string;
 }) {
-  const total = (props.post.replyCount ?? 0) + (props.post.quoteCount ?? 0);
+  const replyContent = props.post.replyCount != null &&
+    props.post.replyCount > 0 && (
+      <div className="postRepliesCount flex items-center gap-1 text-xs">
+        <CommentTiny />
+        {props.post.replyCount}
+      </div>
+    );
 
-  const countContent = total > 0 && (
-    <div className="postDiscussionsCount flex items-center gap-1 text-xs">
-      <CommentTiny />
-      {total}
-    </div>
-  );
+  const quoteContent = props.post.quoteCount != null &&
+    props.post.quoteCount > 0 && (
+      <div className="postQuoteCount flex items-center gap-1  text-xs">
+        <QuoteTiny />
+        {props.post.quoteCount}
+      </div>
+    );
 
   return (
     <div className="postCounts flex gap-2 items-center w-full text-tertiary mb-1">
-      {countContent &&
-        (props.replyEnabled || props.quoteEnabled ? (
+      {replyContent &&
+        (props.replyEnabled ? (
           <ThreadLink
             postUri={props.post.uri}
             parent={props.parent}
-            className="relative postDiscussionsLink hover:text-accent-contrast"
+            className="relative postRepliesLink hover:text-accent-contrast"
             onClick={props.replyOnClick}
           >
-            {countContent}
+            {replyContent}
           </ThreadLink>
         ) : (
-          countContent
+          replyContent
+        ))}
+      {quoteContent &&
+        (props.quoteEnabled ? (
+          <QuotesLink
+            postUri={props.post.uri}
+            parent={props.parent}
+            className="relative hover:text-accent-contrast"
+          >
+            {quoteContent}
+          </QuotesLink>
+        ) : (
+          quoteContent
         ))}
     </div>
   );
