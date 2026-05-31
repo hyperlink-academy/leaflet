@@ -58,14 +58,16 @@ function parseDimension(value: string | null): number | undefined {
 
 /**
  * Caches the PDS blob in Supabase storage (CIDs are content-addressed, so the
- * cache is immutable) and returns a Supabase image-transform URL that serves a
- * downscaled version of it. Returns null if the blob can't be cached.
+ * cache is immutable) and returns a downscaled version of it via Supabase's
+ * image transform. We stream the bytes back ourselves (rather than redirecting
+ * to the public transform URL) so the thumbnail is a single round trip served
+ * with our own immutable cache headers. Returns null if it can't be produced.
  */
-async function getTransformedBlobUrl(
+async function getTransformedBlob(
   did: string,
   cid: string,
   transform: { width?: number; height?: number },
-): Promise<string | null> {
+): Promise<Blob | null> {
   if (!did || !cid) return null;
 
   const path = `${COVER_IMAGE_PREFIX}/${cid}`;
@@ -92,13 +94,20 @@ async function getTransformedBlobUrl(
     }
   }
 
-  return supabase.storage.from(COVER_IMAGE_BUCKET).getPublicUrl(path, {
-    transform: {
-      width: transform.width,
-      height: transform.height,
-      resize: "cover",
-    },
-  }).data.publicUrl;
+  const { data, error } = await supabase.storage
+    .from(COVER_IMAGE_BUCKET)
+    .download(path, {
+      transform: {
+        width: transform.width,
+        height: transform.height,
+        resize: "cover",
+      },
+    });
+  if (error || !data) {
+    console.log("failed to fetch transformed cover image", error);
+    return null;
+  }
+  return data;
 }
 
 export async function GET(req: NextRequest) {
@@ -111,17 +120,20 @@ export async function GET(req: NextRequest) {
   const width = parseDimension(url.searchParams.get("width"));
   const height = parseDimension(url.searchParams.get("height"));
 
-  // When thumbnail dimensions are requested, serve a downscaled version via
-  // Supabase's image transform instead of the full-resolution blob.
+  // When thumbnail dimensions are requested, stream back a downscaled version
+  // (via Supabase's image transform) instead of the full-resolution blob.
   if (width || height) {
-    const transformedUrl = await getTransformedBlobUrl(params.did, params.cid, {
+    const transformed = await getTransformedBlob(params.did, params.cid, {
       width,
       height,
     });
-    if (transformedUrl) {
-      return NextResponse.redirect(transformedUrl, {
-        status: 307,
-        headers: { "Cache-Control": CACHE_CONTROL },
+    if (transformed) {
+      return new NextResponse(transformed, {
+        headers: {
+          "Content-Type": transformed.type || "image/jpeg",
+          "Cache-Control": CACHE_CONTROL,
+          "CDN-Cache-Control": "s-maxage=86400, stale-while-revalidate=86400",
+        },
       });
     }
     // Fall through to the original blob if the transform couldn't be produced.
