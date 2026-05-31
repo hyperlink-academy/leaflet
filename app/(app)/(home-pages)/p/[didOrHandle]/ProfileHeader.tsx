@@ -182,7 +182,7 @@ function parseDescription(description: string): ReactNode[] {
       start: mention.start,
       end: mention.end,
       value: mention.value,
-      href: `/p/${mention.value.slice(1)}`,
+      href: `https://bsky.app/profile/${mention.value.slice(1)}`,
       type: "mention" as const,
     })),
   ].sort((a, b) => a.start - b.start);
@@ -199,9 +199,14 @@ function parseDescription(description: string): ReactNode[] {
 
     if (match.type === "mention") {
       parts.push(
-        <SpeedyLink key={key++} href={match.href}>
+        <a
+          key={key++}
+          href={match.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {match.value}
-        </SpeedyLink>,
+        </a>,
       );
     } else {
       // It's a URL
