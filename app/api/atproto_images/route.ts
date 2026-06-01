@@ -18,9 +18,9 @@ const COVER_IMAGE_BUCKET = "url-previews";
 const COVER_IMAGE_PREFIX = "post-cover";
 const CACHE_CONTROL =
   "public, max-age=31536000, immutable, s-maxage=86400, stale-while-revalidate=604800";
-// Transformed thumbnails are derived from a content-addressed (immutable) CID
-// at a fixed size, so they never change — cache them at the edge for a year.
-const THUMBNAIL_CDN_CACHE_CONTROL =
+// Blobs (and transformed thumbnails) are addressed by content-addressed
+// (immutable) CIDs, so they never change — cache them at the edge for a year.
+const CDN_CACHE_CONTROL =
   "public, s-maxage=31536000, immutable, stale-while-revalidate=604800";
 
 /**
@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
         headers: {
           "Content-Type": transformed.type || "image/jpeg",
           "Cache-Control": CACHE_CONTROL,
-          "CDN-Cache-Control": THUMBNAIL_CDN_CACHE_CONTROL,
+          "CDN-Cache-Control": CDN_CACHE_CONTROL,
         },
       });
     }
@@ -151,10 +151,7 @@ export async function GET(req: NextRequest) {
 
   // Set cache-control header to cache indefinitely
   cachedResponse.headers.set("Cache-Control", CACHE_CONTROL);
-  cachedResponse.headers.set(
-    "CDN-Cache-Control",
-    "s-maxage=86400, stale-while-revalidate=86400",
-  );
+  cachedResponse.headers.set("CDN-Cache-Control", CDN_CACHE_CONTROL);
 
   return cachedResponse;
 }
