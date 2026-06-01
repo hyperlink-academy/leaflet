@@ -215,16 +215,18 @@ const Replies = (props: {
   return (
     <>
       <div className="flex gap-2 items-center">
-        <button
-          className="flex gap-1 items-center text-sm text-tertiary"
-          onClick={() => {
-            setRepliesOpen(!repliesOpen);
-            setReplyBoxOpen(false);
-          }}
-        >
-          <CommentTiny className="text-border" />{" "}
-          {replies.length !== 0 && replies.length}
-        </button>
+        {(replies.length !== 0 || identity?.atp_did) && (
+          <button
+            className="flex gap-1 items-center text-sm text-tertiary"
+            onClick={() => {
+              setRepliesOpen(!repliesOpen);
+              setReplyBoxOpen(false);
+            }}
+          >
+            <CommentTiny className="text-border" />{" "}
+            {replies.length !== 0 && replies.length}
+          </button>
+        )}
         {identity?.atp_did && (
           <button
             className="text-accent-contrast text-sm"

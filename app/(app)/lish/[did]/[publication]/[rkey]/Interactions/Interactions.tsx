@@ -85,7 +85,16 @@ export function setInteractionState(
       const url = new URL(window.location.href);
       const newDocState = newState[document_uri];
 
-      if (newDocState.drawerOpen && newDocState.drawer) {
+      // The drawer counts as open if drawerOpen is explicitly true, or if it
+      // was opened via the URL (drawerOpen still undefined but the param is
+      // present). This mirrors useDrawerOpen — otherwise updating just the tab
+      // while the drawer is param-opened would delete the param and close it.
+      const drawerCurrentlyOpen =
+        newDocState.drawerOpen === true ||
+        (newDocState.drawerOpen === undefined &&
+          url.searchParams.has("interactionDrawer"));
+
+      if (drawerCurrentlyOpen && newDocState.drawer) {
         url.searchParams.set("interactionDrawer", newDocState.drawer);
       } else {
         url.searchParams.delete("interactionDrawer");

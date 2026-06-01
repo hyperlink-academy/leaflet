@@ -61,7 +61,7 @@ export function DiscussionModal(props: {
     <Modal
       open={props.open}
       onOpenChange={props.onOpenChange}
-      className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]!"
+      className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]! max-h-full h-[1000px]!"
     >
       <div className="standardSitePostBlock block-border overflow-hidden w-full bg-bg-page my-3">
         <StandardSitePostItem
