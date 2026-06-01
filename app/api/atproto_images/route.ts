@@ -18,8 +18,7 @@ const COVER_IMAGE_BUCKET = "url-previews";
 const COVER_IMAGE_PREFIX = "post-cover";
 const CACHE_CONTROL =
   "public, max-age=31536000, immutable, s-maxage=86400, stale-while-revalidate=604800";
-// Blobs (and transformed thumbnails) are addressed by content-addressed
-// (immutable) CIDs, so they never change — cache them at the edge for a year.
+// CID-addressed content never changes, so cache it at the edge for a year.
 const CDN_CACHE_CONTROL =
   "public, s-maxage=31536000, immutable, stale-while-revalidate=604800";
 
