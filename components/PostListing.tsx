@@ -3,7 +3,7 @@ import { AtUri } from "@atproto/api";
 import { PubIcon } from "components/ActionBar/Publications";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import type {
   NormalizedDocument,
   NormalizedPublication,
@@ -128,7 +128,12 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
           {postRecord.coverImage && (
             <div className="postListingImage">
               <img
-                src={blobRefToSrc(postRecord.coverImage.ref, postUri.host)}
+                src={blobRefToSrc(
+                  postRecord.coverImage.ref,
+                  postUri.host,
+                  undefined,
+                  { width: COVER_THUMBNAIL_WIDTH.large },
+                )}
                 alt={postRecord.title || ""}
                 className="w-full h-auto aspect-video object-cover object-top-left rounded"
               />

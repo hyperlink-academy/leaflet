@@ -12,7 +12,7 @@ import {
   getPublicationURL,
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { InteractionPreview } from "components/InteractionsPreview";
@@ -184,7 +184,12 @@ export function StandardSitePostItemView({
   }
   const coverImageSrc =
     post.record.coverImage && postDid
-      ? blobRefToSrc(post.record.coverImage.ref, postDid)
+      ? blobRefToSrc(post.record.coverImage.ref, postDid, undefined, {
+          width:
+            size === "large"
+              ? COVER_THUMBNAIL_WIDTH.large
+              : COVER_THUMBNAIL_WIDTH.medium,
+        })
       : undefined;
 
   const { rootEntity } = useReplicache();
