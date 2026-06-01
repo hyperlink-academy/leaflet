@@ -14,7 +14,7 @@ import {
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 
 export type PublicationPostsListPost = {
   uri: string;
@@ -128,7 +128,10 @@ export function PublicationPostsList({
               // rather than shipping the full-resolution blob.
               const coverImageSrc = doc_record.coverImage
                 ? blobRefToSrc(doc_record.coverImage.ref, postDid, undefined, {
-                    width: Variant === "large" ? 800 : 360,
+                    width:
+                      Variant === "large"
+                        ? COVER_THUMBNAIL_WIDTH.large
+                        : COVER_THUMBNAIL_WIDTH.medium,
                   })
                 : undefined;
 

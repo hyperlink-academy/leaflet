@@ -23,3 +23,7 @@ export const blobRefToSrc = (
   if (transform?.height) src += `&height=${transform.height}`;
   return src;
 };
+
+// Display widths (px) for cover-image thumbnails, used to request a right-sized
+// transform instead of shipping the full-resolution blob.
+export const COVER_THUMBNAIL_WIDTH = { large: 800, medium: 360 };

@@ -2,15 +2,9 @@ export const runtime = "nodejs";
 
 import { IdResolver } from "@atproto/identity";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "supabase/database.types";
+import { supabaseServerClient } from "supabase/serverClient";
 
 let idResolver = new IdResolver();
-
-let supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-);
 
 // Reuse the existing image-cache bucket (it already has Supabase image
 // transformations enabled — see app/api/link_previews/route.ts).
@@ -76,7 +70,7 @@ async function getTransformedBlob(
   const path = `${COVER_IMAGE_PREFIX}/${cid}`;
 
   // Only fetch + upload the full blob if it isn't already cached.
-  const { data: existing } = await supabase.storage
+  const { data: existing } = await supabaseServerClient.storage
     .from(COVER_IMAGE_BUCKET)
     .list(COVER_IMAGE_PREFIX, { limit: 1, search: cid });
 
@@ -84,7 +78,7 @@ async function getTransformedBlob(
     const response = await fetchAtprotoBlob(did, cid);
     if (!response) return null;
 
-    const { error } = await supabase.storage
+    const { error } = await supabaseServerClient.storage
       .from(COVER_IMAGE_BUCKET)
       .upload(path, await response.arrayBuffer(), {
         contentType: response.headers.get("content-type") || undefined,
@@ -97,7 +91,7 @@ async function getTransformedBlob(
     }
   }
 
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabaseServerClient.storage
     .from(COVER_IMAGE_BUCKET)
     .download(path, {
       transform: {
