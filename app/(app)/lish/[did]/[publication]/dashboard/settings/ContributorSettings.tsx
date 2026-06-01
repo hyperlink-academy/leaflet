@@ -10,7 +10,7 @@ import { Avatar } from "components/Avatar";
 import { useToaster } from "components/Toast";
 import { useActorTypeahead } from "src/hooks/useActorTypeahead";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
-import { useIsPro } from "src/hooks/useEntitlement";
+import { useHasEntitlement, useIsPro } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 import {
   usePublicationData,
@@ -45,8 +45,14 @@ export function ContributorSettings() {
   let ownerDid = publication?.identity_did;
   let isOwner = !!identity?.atp_did && identity.atp_did === ownerDid;
   let isPro = useIsPro();
+  let multiContributorEnabled = useHasEntitlement("multi_contributor");
 
   if (!publicationUri || !publication) return null;
+
+  // The owner invite UI is gated behind the multi_contributor flag, but
+  // existing contributors should always be able to see (and leave) the
+  // publication regardless of the flag.
+  if (isOwner && !multiContributorEnabled) return null;
 
   // The accept-invitation page lives at the publication's base path.
   let acceptLink =
