@@ -37,11 +37,9 @@ function MetaRow({
   const hasDate = date !== undefined && date !== null;
   return (
     <div
-      className={`sm:justify-between place-items-start! sm:place-items-center! w-full ${textClassName} text-tertiary flex sm:flex-row flex-col gap-1 flex-wrap items-center`}
+      className={`justify-between  w-full ${textClassName} text-tertiary flex gap-1 flex-wrap items-center`}
     >
-      <p
-        className={`${textClassName} text-tertiary flex gap-1 items-center flex-wrap`}
-      >
+      <p className={`text-tertiary flex gap-1 items-center flex-wrap`}>
         {hasAuthor && (
           <span className="whitespace-nowrap">
             {author}
@@ -119,7 +117,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
             author={props.author}
             date={props.date}
             interactions={props.interactions}
-            textClassName="text-sm place-self-end"
+            textClassName="text-sm place-self-end sm:block hidden"
           />
           {props.footer && (
             <div className="shrink-0 hidden sm:block">{props.footer}</div>
@@ -137,6 +135,12 @@ export function PublicationPostItemMedium(props: MediumProps) {
           </div>
         )}
       </div>
+      <MetaRow
+        author={props.author}
+        date={props.date}
+        interactions={props.interactions}
+        textClassName="text-sm place-self-end shrink-0 sm:hidden px-3 "
+      />
       {props.footer && (
         <div className="shrink-0 sm:hidden px-3 pb-2">{props.footer}</div>
       )}
