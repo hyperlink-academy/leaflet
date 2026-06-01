@@ -14,10 +14,12 @@ import { GoBackTiny } from "components/Icons/GoBackTiny";
 import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
 import { ToggleGroup } from "components/ToggleGroup";
 import { useDocument } from "contexts/DocumentContext";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
 import { useDrawerOpen } from "./useDrawerOpen";
 import { ThreadView } from "../ThreadPage";
+import { StandardSitePostDrawerView } from "./StandardSitePostDrawerView";
+import { useDocumentDiscussionData } from "./useDocumentDiscussionData";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -37,6 +39,24 @@ export const InteractionDrawer = (props: {
     }),
     [props.document_uri],
   );
+
+  // The innermost thread/quotes view opened within the drawer, if any. When
+  // present it replaces the comments/mentions tabs.
+  const activeThread = threadStack[threadStack.length - 1];
+
+  // A standard-site-post thread shows another post's own discussion. It's always
+  // at the root of the stack (Bluesky threads opened from its mentions become
+  // the active thread instead), so its comments/mentions toggle lives in the
+  // drawer header in place of a Back button. Its data is fetched here too (SWR
+  // dedupes with the view below) to drive that toggle.
+  const sspUri =
+    activeThread?.type === "standardSitePost" ? activeThread.uri : null;
+  const ssp = useDocumentDiscussionData(sspUri ?? "", !!sspUri);
+  const [sspTab, setSspTab] = useState<"comments" | "quotes">("comments");
+  useEffect(() => {
+    setSspTab("comments");
+  }, [sspUri]);
+
   // Reset the drawer's scroll to the top whenever we navigate between views, so
   // a pushed thread (or a back navigation) doesn't start scrolled partway down.
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -44,6 +64,16 @@ export const InteractionDrawer = (props: {
     scrollRef.current?.scrollTo({ top: 0 });
   }, [threadStack.length]);
   if (!drawer) return null;
+
+  const sspCommentsAvailable = ssp.showComments && ssp.comments.length > 0;
+  const sspMentionsAvailable =
+    ssp.showMentions && ssp.quotesAndMentions.length > 0;
+  const sspBothAvailable = sspCommentsAvailable && sspMentionsAvailable;
+  let sspActiveTab: "comments" | "quotes" = sspTab;
+  if (sspActiveTab === "comments" && !sspCommentsAvailable)
+    sspActiveTab = "quotes";
+  if (sspActiveTab === "quotes" && !sspMentionsAvailable)
+    sspActiveTab = "comments";
 
   const filteredQuotesAndMentions = props.quotesAndMentions.filter((q) => {
     if (!q.link) return !props.pageId; // Direct mentions without quote context go to main page
@@ -66,10 +96,6 @@ export const InteractionDrawer = (props: {
   if (activeTab === "comments" && !commentsAvailable) activeTab = "quotes";
   if (activeTab === "quotes" && !mentionsAvailable) activeTab = "comments";
 
-  // The innermost thread/quotes view opened within the drawer, if any. When
-  // present it replaces the comments/mentions tabs.
-  const activeThread = threadStack[threadStack.length - 1];
-
   return (
     <>
       <SandwichSpacer noWidth />
@@ -81,7 +107,44 @@ export const InteractionDrawer = (props: {
         >
           <div className="w-full flex items-center gap-2 mb-3">
             <div className="flex-1 min-w-0">
-              {activeThread ? (
+              {sspUri ? (
+                sspBothAvailable ? (
+                  <ToggleGroup
+                    fullWidth
+                    value={sspActiveTab}
+                    onChange={(value, e) => {
+                      e?.preventDefault();
+                      setSspTab(value);
+                    }}
+                    options={[
+                      {
+                        value: "comments",
+                        label:
+                          ssp.comments.length > 0
+                            ? `Comments (${ssp.comments.length})`
+                            : "Comments",
+                      },
+                      {
+                        value: "quotes",
+                        label: (
+                          <div>
+                            Bluesky{" "}
+                            <span className="hidden sm:inline">Mentions</span>{" "}
+                            {ssp.quotesAndMentions.length > 0 &&
+                              `(${ssp.quotesAndMentions.length})`}
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
+                ) : (
+                  <h4>
+                    {sspActiveTab === "quotes"
+                      ? `Bluesky Mentions${ssp.quotesAndMentions.length > 0 ? ` (${ssp.quotesAndMentions.length})` : ""}`
+                      : `Comments${ssp.comments.length > 0 ? ` (${ssp.comments.length})` : ""}`}
+                  </h4>
+                )
+              ) : activeThread ? (
                 <div className="flex items-center gap-2">
                   {threadStack.length >= 2 && (
                     <button
@@ -144,7 +207,9 @@ export const InteractionDrawer = (props: {
             </button>
           </div>
           <DrawerThreadContext.Provider value={drawerNav}>
-            {activeThread ? (
+            {sspUri ? (
+              <StandardSitePostDrawerView uri={sspUri} tab={sspActiveTab} />
+            ) : activeThread ? (
               <ThreadView
                 parentUri={activeThread.uri}
                 initialTab={

@@ -29,7 +29,7 @@ export const BlueskyEmbed = (props: {
     case AppBskyEmbedImages.isView(props.embed):
       let imageEmbed = props.embed;
       return (
-        <div className="imageEmbed flex flex-wrap rounded-md w-full overflow-hidden">
+        <div className="imageEmbed flex flex-wrap rounded-lg w-full overflow-hidden">
           {imageEmbed.images.map(
             (
               image: {

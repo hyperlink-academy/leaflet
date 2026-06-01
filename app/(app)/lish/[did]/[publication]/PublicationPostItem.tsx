@@ -129,7 +129,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
           <img
             src={props.coverImageSrc}
             alt={props.coverImageAlt || props.title || ""}
-            className="w-full aspect-square object-cover rounded"
+            className="w-full h-full aspect-square object-cover rounded"
           />
         </div>
       )}

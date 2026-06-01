@@ -4,9 +4,12 @@ import { OpenPage, openPage } from "../postPageState";
 import { openDrawerThread } from "./Interactions";
 
 // A thread or quotes view that can be shown inside the interaction drawer.
+// `standardSitePost` shows a referenced post's own discussion (the post itself
+// plus its comments / Bluesky mentions) rather than a Bluesky thread.
 export type DrawerThread =
   | { type: "thread"; uri: string }
-  | { type: "quotes"; uri: string };
+  | { type: "quotes"; uri: string }
+  | { type: "standardSitePost"; uri: string };
 
 type DrawerThreadNav = {
   push: (thread: DrawerThread) => void;
@@ -24,7 +27,9 @@ export function useOpenThread() {
   const drawerNav = useContext(DrawerThreadContext);
   return (parent: OpenPage | undefined, thread: DrawerThread) => {
     if (drawerNav) drawerNav.push(thread);
-    else openPage(parent, thread);
+    // standardSitePost only exists inside the drawer; it has no page form, so
+    // it's never reached here without a drawer-aware provider in scope.
+    else if (thread.type !== "standardSitePost") openPage(parent, thread);
   };
 }
 

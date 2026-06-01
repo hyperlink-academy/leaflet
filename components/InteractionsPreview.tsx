@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { useSmoker } from "./Toast";
@@ -8,6 +8,7 @@ import { Popover } from "./Popover";
 import { TagTiny } from "./Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionModal } from "./DiscussionModal";
+import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
@@ -24,6 +25,10 @@ export const InteractionPreview = (props: {
   share?: boolean;
 }) => {
   let smoker = useSmoker();
+  // Inside a published post body a DrawerThreadContext is in scope; there we
+  // open this post's discussion in the interaction drawer (like a Bluesky post's
+  // thread) instead of the standalone modal used in listings/feeds.
+  let drawerNav = useContext(DrawerThreadContext);
   let [discussionsOpen, setDiscussionsOpen] = useState(false);
   let commentsAvailable = props.showComments !== false && props.commentsCount > 0;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
@@ -49,14 +54,19 @@ export const InteractionPreview = (props: {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            setDiscussionsOpen(true);
+            if (drawerNav)
+              drawerNav.push({
+                type: "standardSitePost",
+                uri: props.documentUri,
+              });
+            else setDiscussionsOpen(true);
           }}
           className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
         >
           <CommentTiny /> {props.commentsCount + props.quotesCount}
         </button>
       )}
-      {discussionsAvailable && (
+      {discussionsAvailable && !drawerNav && (
         <DiscussionModal
           open={discussionsOpen}
           onOpenChange={setDiscussionsOpen}

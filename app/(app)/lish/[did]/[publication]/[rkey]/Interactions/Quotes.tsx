@@ -249,9 +249,10 @@ export const QuoteContent = (props: {
         }}
       >
         <div className="flex gap-3 items-stretch italic rounded-md pt-1 ">
-          <div className="relative flex">
-            <QuoteTiny className="shrink-0 text-tertiary bg-bg-page absolute -left-2 top-3" />
-            <div className="w-0.5 grow border border-border mx-auto my-2" />
+          <div className="flex flex-col w-4">
+            <div className="shrink-0 h-1 w-0.5 border border-border mx-auto mt-2" />
+            <QuoteTiny className="shrink-0 text-tertiary " />
+            <div className="w-0.5 grow border border-border mx-auto mb-2" />
           </div>
           <PostContent
             pollData={[]}
