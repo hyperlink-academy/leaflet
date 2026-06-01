@@ -196,9 +196,10 @@ export const Interactions = (props: {
   let commentsAvailable = props.showComments;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
   let discussionsAvailable = commentsAvailable || mentionsAvailable;
-  let defaultDiscussionTab: "comments" | "quotes" = commentsAvailable
-    ? "comments"
-    : "quotes";
+  let defaultDiscussionTab: "comments" | "quotes" =
+    commentsAvailable && (props.commentsCount > 0 || !mentionsAvailable)
+      ? "comments"
+      : "quotes";
 
   let interactionsAvailable = discussionsAvailable || props.showRecommends;
 
@@ -281,9 +282,10 @@ export const ExpandedInteractions = (props: {
   let commentsAvailable = props.showComments;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
   let discussionsAvailable = commentsAvailable || mentionsAvailable;
-  let defaultDiscussionTab: "comments" | "quotes" = commentsAvailable
-    ? "comments"
-    : "quotes";
+  let defaultDiscussionTab: "comments" | "quotes" =
+    commentsAvailable && (props.commentsCount > 0 || !mentionsAvailable)
+      ? "comments"
+      : "quotes";
 
   let noInteractions = !discussionsAvailable && !props.showRecommends;
 
