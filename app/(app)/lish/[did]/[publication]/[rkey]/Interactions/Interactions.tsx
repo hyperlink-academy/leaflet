@@ -18,6 +18,7 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { RecommendButton } from "components/RecommendButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
+import type { DrawerThread } from "./drawerThreadContext";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -25,6 +26,10 @@ export type InteractionState = {
   drawer: undefined | "comments" | "quotes";
   localComments: Comment[];
   commentBox: { quote: QuotePosition | null };
+  // Thread/quotes views opened within the drawer, innermost last. When
+  // non-empty the drawer shows the top entry instead of the comments/mentions
+  // tabs, with a back button to work up the tree.
+  threadStack: DrawerThread[];
 };
 
 const defaultInteractionState: InteractionState = {
@@ -32,6 +37,7 @@ const defaultInteractionState: InteractionState = {
   drawer: undefined,
   localComments: [],
   commentBox: { quote: null },
+  threadStack: [],
 };
 
 export let useInteractionStateStore = create<{
@@ -97,9 +103,57 @@ export function openInteractionDrawer(
   pageId?: string,
 ) {
   flushSync(() => {
-    setInteractionState(document_uri, { drawerOpen: true, drawer, pageId });
+    setInteractionState(document_uri, {
+      drawerOpen: true,
+      drawer,
+      pageId,
+      threadStack: [],
+    });
   });
   scrollIntoView("interaction-drawer");
+}
+
+// Open the drawer straight onto a thread/quotes view. Used when a Bluesky post
+// in the document body is clicked, so its thread opens in the drawer instead of
+// a new page (mirroring how the post's own comments/mentions open the drawer).
+export function openDrawerThread(
+  document_uri: string,
+  thread: DrawerThread,
+  pageId?: string,
+) {
+  flushSync(() => {
+    setInteractionState(document_uri, (s) => ({
+      drawerOpen: true,
+      drawer: s.drawer ?? "comments",
+      pageId,
+      threadStack: [thread],
+    }));
+  });
+  scrollIntoView("interaction-drawer");
+}
+
+// Open a thread/quotes view inside the drawer, replacing its content. Clicking
+// the view you're already on (e.g. the main post of the current thread) is a
+// no-op rather than stacking a duplicate.
+export function pushDrawerThread(document_uri: string, thread: DrawerThread) {
+  setInteractionState(document_uri, (s) => {
+    const top = s.threadStack[s.threadStack.length - 1];
+    if (top && top.type === thread.type && top.uri === thread.uri) return {};
+    return { threadStack: [...s.threadStack, thread] };
+  });
+}
+
+// Step back up the drawer's thread navigation tree.
+export function popDrawerThread(document_uri: string) {
+  setInteractionState(document_uri, (s) => ({
+    threadStack: s.threadStack.slice(0, -1),
+  }));
+}
+
+// Jump all the way back out of the thread navigation, to the drawer's top
+// level (the comments/mentions tabs).
+export function popDrawerThreadToRoot(document_uri: string) {
+  setInteractionState(document_uri, { threadStack: [] });
 }
 
 export const Interactions = (props: {

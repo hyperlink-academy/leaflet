@@ -37,6 +37,11 @@
     rgb(var(--primary)),
     rgb(var(--bg-page)) 85%
   );
+  --color-bg-light: color-mix(
+    in oklab,
+    rgb(var(--primary)),
+    rgb(var(--bg-page)) 95%
+  );
   --color-white: #ffffff;
   --color-accent-1: rgb(var(--accent-1));
   --color-accent-2: rgb(var(--accent-2));
@@ -497,7 +502,7 @@ pre.shiki {
 }
 
 .light-container {
-  background: color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 95%);
+  background: var(--color-bg-light);
   @apply border;
   @apply border-border-light;
   @apply rounded-md;

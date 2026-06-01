@@ -20,6 +20,7 @@ import { LoginModal } from "components/LoginButton";
 import { type Profile } from "src/identity";
 import { PostInfo } from "../../BskyPostContent";
 import { Avatar } from "components/Avatar";
+import { EmptyState } from "components/EmptyState";
 
 export type Comment = {
   record: Json;
@@ -84,35 +85,37 @@ export function CommentsDrawerContent(props: {
         </>
       )}
       <div className="comments flex flex-col gap-6 py-2">
-        {comments
-          .sort((a, b) => {
-            let aRecord = a.record as PubLeafletComment.Record;
-            let bRecord = b.record as PubLeafletComment.Record;
-            return (
-              new Date(bRecord.createdAt).getTime() -
-              new Date(aRecord.createdAt).getTime()
-            );
-          })
-          .filter(
-            (comment) => !(comment.record as PubLeafletComment.Record).reply,
-          )
-          .map((comment) => {
-            let record = comment.record as PubLeafletComment.Record;
-            return (
-              <>
-                <Comment
-                  pageId={pageId}
-                  profile={comment.profile}
-                  document={props.document_uri}
-                  comment={comment}
-                  record={record}
-                  comments={comments}
-                  key={comment.uri}
-                />
-                <hr className="border-border last:hidden" />
-              </>
-            );
-          })}
+        {comments.length === 0 && <EmptyState>No comments yet…</EmptyState>}
+        {comments.length > 0 &&
+          comments
+            .sort((a, b) => {
+              let aRecord = a.record as PubLeafletComment.Record;
+              let bRecord = b.record as PubLeafletComment.Record;
+              return (
+                new Date(bRecord.createdAt).getTime() -
+                new Date(aRecord.createdAt).getTime()
+              );
+            })
+            .filter(
+              (comment) => !(comment.record as PubLeafletComment.Record).reply,
+            )
+            .map((comment) => {
+              let record = comment.record as PubLeafletComment.Record;
+              return (
+                <>
+                  <Comment
+                    pageId={pageId}
+                    profile={comment.profile}
+                    document={props.document_uri}
+                    comment={comment}
+                    record={record}
+                    comments={comments}
+                    key={comment.uri}
+                  />
+                  <hr className="border-border last:hidden" />
+                </>
+              );
+            })}
       </div>
     </div>
   );

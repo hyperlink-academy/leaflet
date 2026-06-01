@@ -8,7 +8,8 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
-import { OpenPage, openPage } from "./postPageState";
+import { OpenPage } from "./postPageState";
+import { useOpenThread } from "./Interactions/drawerThreadContext";
 import { ThreadLink, QuotesLink } from "./PostLinks";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { Avatar } from "components/Avatar";
@@ -52,6 +53,7 @@ export function BskyPostContent(props: {
     clientHost = "bsky.app",
     hasQuote,
   } = props;
+  const openThread = useOpenThread();
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
@@ -67,7 +69,7 @@ export function BskyPostContent(props: {
         <button
           className="absolute inset-0"
           onClick={() => {
-            openPage(parent, { type: "thread", uri: post.uri });
+            openThread(parent, { type: "thread", uri: post.uri });
           }}
         />
       )}
@@ -108,7 +110,7 @@ export function BskyPostContent(props: {
             createdAt={record.createdAt}
           />
 
-          <div className={`bskyPostBody flex flex-col min-w-0 w-full pb-1`}>
+          <div className={`bskyPostBody flex flex-col min-w-0 w-full`}>
             {props.hasQuote && (
               <QuoteContent
                 index={props.hasQuote?.index}
@@ -139,7 +141,7 @@ export function BskyPostContent(props: {
             ((props.post.quoteCount && props.post.quoteCount > 0) ||
               (props.post.replyCount && props.post.replyCount > 0))) ? (
             <div
-              className={`postCountsAndLink flex gap-2 items-center justify-between  pointer-events-auto`}
+              className={`postCountsAndLink flex gap-2 items-center justify-between  pointer-events-auto mt-2`}
             >
               {showInteractions ? (
                 <PostCounts
@@ -193,6 +195,7 @@ export function CompactBskyPostContent(props: {
     replyOnClick,
     clientHost = "bsky.app",
   } = props;
+  const openThread = useOpenThread();
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
@@ -208,7 +211,7 @@ export function CompactBskyPostContent(props: {
         <button
           className="absolute inset-0 "
           onClick={() => {
-            openPage(parent, { type: "thread", uri: post.uri });
+            openThread(parent, { type: "thread", uri: post.uri });
           }}
         />
       )}
@@ -224,7 +227,7 @@ export function CompactBskyPostContent(props: {
             onClick={
               hasThreadContent
                 ? () => {
-                    openPage(parent, { type: "thread", uri: post.uri });
+                    openThread(parent, { type: "thread", uri: post.uri });
                   }
                 : undefined
             }

@@ -1,16 +1,23 @@
 "use client";
 import { MentionsDrawerContent } from "./Quotes";
 import {
-  InteractionState,
   setInteractionState,
   useInteractionState,
+  pushDrawerThread,
+  popDrawerThread,
+  popDrawerThreadToRoot,
 } from "./Interactions";
-import { useSearchParams } from "next/navigation";
 import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { GoBackTiny } from "components/Icons/GoBackTiny";
+import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
 import { ToggleGroup } from "components/ToggleGroup";
 import { useDocument } from "contexts/DocumentContext";
+import { useEffect, useMemo, useRef } from "react";
+import { DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
+import { useDrawerOpen } from "./useDrawerOpen";
+import { ThreadView } from "../ThreadPage";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -22,6 +29,20 @@ export const InteractionDrawer = (props: {
 }) => {
   let drawer = useDrawerOpen(props.document_uri);
   let { commentsCount } = useDocument();
+  let { threadStack } = useInteractionState(props.document_uri);
+  const drawerNav = useMemo(
+    () => ({
+      push: (thread: DrawerThread) =>
+        pushDrawerThread(props.document_uri, thread),
+    }),
+    [props.document_uri],
+  );
+  // Reset the drawer's scroll to the top whenever we navigate between views, so
+  // a pushed thread (or a back navigation) doesn't start scrolled partway down.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [threadStack.length]);
   if (!drawer) return null;
 
   const filteredQuotesAndMentions = props.quotesAndMentions.filter((q) => {
@@ -45,17 +66,40 @@ export const InteractionDrawer = (props: {
   if (activeTab === "comments" && !commentsAvailable) activeTab = "quotes";
   if (activeTab === "quotes" && !mentionsAvailable) activeTab = "comments";
 
+  // The innermost thread/quotes view opened within the drawer, if any. When
+  // present it replaces the comments/mentions tabs.
+  const activeThread = threadStack[threadStack.length - 1];
+
   return (
     <>
       <SandwichSpacer noWidth />
       <div className="snap-center h-full  flex z-10 shrink-0 sm:max-w-prose sm:w-full w-[calc(100vw-12px)]">
         <div
+          ref={scrollRef}
           id="interaction-drawer"
-          className={`opaque-container relative h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll flex flex-col  ${props.showPageBackground ? "rounded-l-none! rounded-r-lg! -ml-[1px]" : "rounded-lg! sm:ml-4"}`}
+          className={` relative h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll flex flex-col  ${props.showPageBackground ? "light-container rounded-l-none! rounded-r-lg! -ml-[1px]" : " opaque-container rounded-lg! sm:ml-4"}`}
         >
           <div className="w-full flex items-center gap-2 mb-3">
             <div className="flex-1 min-w-0">
-              {bothAvailable ? (
+              {activeThread ? (
+                <div className="flex items-center gap-2">
+                  {threadStack.length >= 2 && (
+                    <button
+                      className="text-tertiary hover:text-secondary shrink-0"
+                      aria-label="Back to the top of the thread"
+                      onClick={() => popDrawerThreadToRoot(props.document_uri)}
+                    >
+                      <DoubleArrowRightTiny className="rotate-180" />
+                    </button>
+                  )}
+                  <button
+                    className="flex items-center gap-1 text-tertiary hover:text-secondary font-bold text-sm"
+                    onClick={() => popDrawerThread(props.document_uri)}
+                  >
+                    <GoBackTiny /> Back
+                  </button>
+                </div>
+              ) : bothAvailable ? (
                 <ToggleGroup
                   fullWidth
                   value={activeTab}
@@ -99,30 +143,25 @@ export const InteractionDrawer = (props: {
               <CloseTiny />
             </button>
           </div>
-          {activeTab === "quotes" ? (
-            <MentionsDrawerContent
-              did={props.did}
-              quotesAndMentions={filteredQuotesAndMentions}
-            />
-          ) : (
-            props.commentsSlot
-          )}
+          <DrawerThreadContext.Provider value={drawerNav}>
+            {activeThread ? (
+              <ThreadView
+                parentUri={activeThread.uri}
+                initialTab={
+                  activeThread.type === "quotes" ? "quotes" : "replies"
+                }
+              />
+            ) : activeTab === "quotes" ? (
+              <MentionsDrawerContent
+                did={props.did}
+                quotesAndMentions={filteredQuotesAndMentions}
+              />
+            ) : (
+              props.commentsSlot
+            )}
+          </DrawerThreadContext.Provider>
         </div>
       </div>
     </>
   );
-};
-
-export const useDrawerOpen = (uri: string) => {
-  let params = useSearchParams();
-  let interactionDrawerSearchParam = params.get("interactionDrawer");
-  let pageParam = params.get("page");
-  let { drawerOpen: open, drawer, pageId } = useInteractionState(uri);
-  if (open === false || (open === undefined && !interactionDrawerSearchParam))
-    return null;
-  drawer =
-    drawer || (interactionDrawerSearchParam as InteractionState["drawer"]);
-  // Use pageId from state, or fall back to page search param
-  const resolvedPageId = pageId ?? pageParam ?? undefined;
-  return { drawer, pageId: resolvedPageId };
 };

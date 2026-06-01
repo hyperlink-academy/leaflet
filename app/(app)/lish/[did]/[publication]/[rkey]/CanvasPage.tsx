@@ -15,7 +15,8 @@ import { Separator } from "components/Layout";
 import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons/InfoSmall";
 import { PostHeader } from "./PostHeader/PostHeader";
-import { useDrawerOpen } from "./Interactions/InteractionDrawer";
+import { useDrawerOpen } from "./Interactions/useDrawerOpen";
+import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
@@ -71,16 +72,18 @@ export function CanvasPage({
         quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
         recommendsCount={document.recommendsCount}
       />
-      <CanvasContent
-        blocks={blocks}
-        did={did}
-        prerenderedCodeBlocks={prerenderedCodeBlocks}
-        bskyPostData={bskyPostData}
-        standardSitePostData={standardSitePostData}
-        pollData={pollData}
-        pageId={pageId}
-        pages={pages}
-      />
+      <DrawerThreadPageProvider document_uri={document_uri} pageId={pageId}>
+        <CanvasContent
+          blocks={blocks}
+          did={did}
+          prerenderedCodeBlocks={prerenderedCodeBlocks}
+          bskyPostData={bskyPostData}
+          standardSitePostData={standardSitePostData}
+          pollData={pollData}
+          pageId={pageId}
+          pages={pages}
+        />
+      </DrawerThreadPageProvider>
     </PageWrapper>
   );
 }

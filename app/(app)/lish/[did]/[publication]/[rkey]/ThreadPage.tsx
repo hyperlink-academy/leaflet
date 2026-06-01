@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppBskyFeedDefs,
   AppBskyFeedPost,
@@ -8,21 +8,15 @@ import {
 } from "@atproto/api";
 import { AtUri } from "@atproto/syntax";
 import useSWR from "swr";
-import { PageWrapper } from "components/Pages/Page";
-import { useDrawerOpen } from "./Interactions/InteractionDrawer";
+import { DrawerThreadContext } from "./Interactions/drawerThreadContext";
 import { DotLoader } from "components/utils/DotLoader";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { useThreadState } from "src/useThreadState";
-import {
-  BskyPostContent,
-  CompactBskyPostContent,
-  ClientDate,
-} from "./BskyPostContent";
+import { BskyPostContent, CompactBskyPostContent } from "./BskyPostContent";
 import {
   ThreadLink,
   getThreadKey,
   fetchThread,
-  prefetchThread,
   getQuotesKey,
   fetchQuotes,
 } from "./PostLinks";
@@ -36,9 +30,6 @@ import {
   matchDocumentUrl,
   type QuotePosition,
 } from "./quotePosition";
-
-// Re-export for backwards compatibility
-export { ThreadLink, getThreadKey, fetchThread, prefetchThread, ClientDate };
 
 type ThreadViewPost = AppBskyFeedDefs.ThreadViewPost;
 type NotFoundPost = AppBskyFeedDefs.NotFoundPost;
@@ -108,15 +99,14 @@ function findDocumentQuoteLink(
   return null;
 }
 
-export function ThreadPage(props: {
+// Fetches a thread and renders its content (loading/error states included).
+// Used both as a standalone page and inside the interaction drawer. `initialTab`
+// selects whether replies or quote posts are shown first (defaults to replies).
+export function ThreadView(props: {
   parentUri: string;
-  pageId: string;
-  pageOptions?: React.ReactNode;
-  hasPageBackground: boolean;
+  initialTab?: "replies" | "quotes";
 }) {
-  const { parentUri, pageId, pageOptions } = props;
-  const drawer = useDrawerOpen(parentUri);
-
+  const { parentUri, initialTab } = props;
   const {
     data: thread,
     isLoading,
@@ -125,36 +115,38 @@ export function ThreadPage(props: {
     fetchThread(parentUri),
   );
 
-  return (
-    <PageWrapper
-      pageType="doc"
-      fullPageScroll={false}
-      id={`post-page-${pageId}`}
-      drawerOpen={false}
-      pageOptions={pageOptions}
-      fixedWidth
-    >
-      <div className="flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-4 w-full">
-        {isLoading ? (
-          <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
-            <span>loading thread</span>
-            <DotLoader />
-          </div>
-        ) : error ? (
-          <div className="text-tertiary italic text-sm text-center py-8">
-            Failed to load thread
-          </div>
-        ) : thread ? (
-          <ThreadContent post={thread} parentUri={parentUri} />
-        ) : null}
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
+        <span>loading thread</span>
+        <DotLoader />
       </div>
-    </PageWrapper>
+    );
+  }
+  if (error) {
+    return (
+      <div className="text-tertiary italic text-sm text-center py-8">
+        Failed to load thread
+      </div>
+    );
+  }
+  if (!thread) return null;
+  return (
+    <ThreadContent post={thread} parentUri={parentUri} initialTab={initialTab} />
   );
 }
 
-function ThreadContent(props: { post: ThreadType; parentUri: string }) {
+function ThreadContent(props: {
+  post: ThreadType;
+  parentUri: string;
+  initialTab?: "replies" | "quotes";
+}) {
   const { post, parentUri } = props;
   const mainPostRef = useRef<HTMLDivElement>(null);
+  // Inside the interaction drawer the header (back/close) shares the scroll
+  // container, so we let the drawer handle scroll position instead of pulling
+  // the main post to the top (which would hide the header).
+  const inDrawer = useContext(DrawerThreadContext) !== null;
 
   // Compute document URLs for leaflet link detection
   const {
@@ -172,13 +164,14 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
 
   // Scroll the main post into view when the thread loads
   useEffect(() => {
+    if (inDrawer) return;
     if (mainPostRef.current) {
       mainPostRef.current.scrollIntoView({
         behavior: "instant",
         block: "start",
       });
     }
-  }, []);
+  }, [inDrawer]);
 
   if (AppBskyFeedDefs.isNotFoundPost(post)) {
     return <PostNotAvailable />;
@@ -231,6 +224,7 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
         rootAuthorDid={rootAuthorDid}
         documentUrls={documentUrls}
         docDid={docDid}
+        initialTab={props.initialTab}
       />
     </div>
   );
@@ -243,6 +237,7 @@ function ThreadInteractions(props: {
   rootAuthorDid: string;
   documentUrls: string[];
   docDid: string;
+  initialTab?: "replies" | "quotes";
 }) {
   const { post, rootAuthorDid, documentUrls, docDid } = props;
 
@@ -254,7 +249,7 @@ function ThreadInteractions(props: {
   const showTabs = hasReplies && hasQuotes;
 
   const [activeTab, setActiveTab] = useState<"replies" | "quotes">(
-    hasReplies ? "replies" : "quotes",
+    props.initialTab ?? (hasReplies ? "replies" : "quotes"),
   );
 
   if (!hasReplies && !hasQuotes) return null;
