@@ -134,7 +134,7 @@ export const MentionsDrawerContent = (props: {
         </div>
       ) : (
         sortedBskyMentions.length > 0 && (
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4 sm:gap-6">
             {sortedBskyMentions.map((q, index) => {
               const post = postViewMap.get(q.uri);
               if (!post) return null;

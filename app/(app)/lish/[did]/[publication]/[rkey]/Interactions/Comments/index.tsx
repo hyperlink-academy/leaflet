@@ -84,7 +84,7 @@ export function CommentsDrawerContent(props: {
           <hr className="border-border-light" />
         </>
       )}
-      <div className="comments flex flex-col gap-6 py-2">
+      <div className="comments flex flex-col gap-4 sm:gap-6 py-2">
         {comments.length === 0 && <EmptyState>No comments yet…</EmptyState>}
         {comments.length > 0 &&
           comments
