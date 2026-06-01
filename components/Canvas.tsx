@@ -18,7 +18,6 @@ import { InfoSmall } from "./Icons/InfoSmall";
 import { Popover } from "./Popover";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
-import { QuoteTiny } from "./Icons/QuoteTiny";
 import { AddTags, PublicationMetadata } from "./Pages/PublicationMetadata";
 import { useLeafletPublicationData } from "./PageSWRDataProvider";
 import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
@@ -192,14 +191,9 @@ const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
           <RecommendTinyEmpty className="text-border" /> —
         </div>
       )}
-      {showComments && (
+      {(showComments || showMentions) && (
         <div className="flex gap-1 text-tertiary items-center">
           <CommentTiny className="text-border" /> —
-        </div>
-      )}
-      {showMentions && (
-        <div className="flex gap-1 text-tertiary items-center">
-          <QuoteTiny className="text-border" /> —
         </div>
       )}
 

@@ -8,12 +8,15 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
-import { OpenPage, openPage } from "./postPageState";
+import { OpenPage } from "./postPageState";
+import { useOpenThread } from "./Interactions/drawerThreadContext";
 import { ThreadLink, QuotesLink } from "./PostLinks";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { Avatar } from "components/Avatar";
 import { timeAgo } from "src/utils/timeAgo";
 import { ProfilePopover } from "components/ProfilePopover";
+import { QuotePosition } from "./quotePosition";
+import { QuoteContent } from "./Interactions/Quotes";
 
 type PostView = AppBskyFeedDefs.PostView;
 
@@ -25,10 +28,16 @@ export function BskyPostContent(props: {
   showEmbed?: boolean;
   compactEmbed?: boolean;
   showBlueskyLink?: boolean;
+  showInteractions?: boolean;
   quoteEnabled?: boolean;
   replyEnabled?: boolean;
   replyOnClick?: (e: React.MouseEvent) => void;
   clientHost?: string;
+  hasQuote?: {
+    position: QuotePosition;
+    index: number;
+    did: string;
+  };
 }) {
   const {
     post,
@@ -37,24 +46,45 @@ export function BskyPostContent(props: {
     showEmbed = true,
     compactEmbed = false,
     showBlueskyLink = true,
+    showInteractions = true,
     quoteEnabled,
     replyEnabled,
     replyOnClick,
     clientHost = "bsky.app",
+    hasQuote,
   } = props;
+  const openThread = useOpenThread();
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
   const url = `https://${clientHost}/profile/${post.author.handle}/post/${postId}`;
 
+  // Only allow opening the thread page when there's a discussion to show
+  const hasThreadContent =
+    (post.replyCount ?? 0) > 0 || (post.quoteCount ?? 0) > 0;
+
   return (
     <div className={`bskyPost relative flex flex-col w-full `}>
-      <button
-        className="absolute inset-0"
-        onClick={() => {
-          openPage(parent, { type: "thread", uri: post.uri });
-        }}
-      />
+      {hasThreadContent && (
+        <button
+          className="absolute inset-0"
+          onClick={() => {
+            openThread(parent, { type: "thread", uri: post.uri });
+          }}
+        />
+      )}
+      {/*{props.parent?.type === "thread" && props.parent.uri && (
+        <div className="text-xs  flex  gap-2 px-1  text-tertiary">
+          <div className="flex flex-col shrink-0">
+            <div className="h-4 w-4  mx-0.5 bg-test rounded-full shrink-0" />
+            <div className="w-0.5 h-3 bg-border mx-auto" />
+          </div>
+          <strong> Replying to Eileen </strong>
+          <span className="font-normal text-tertiary">
+            This is a one-liner of content
+          </span>
+        </div>
+      )}*/}
 
       <div
         className={`flex gap-2 text-left w-full pointer-events-none ${props.className}`}
@@ -62,55 +92,70 @@ export function BskyPostContent(props: {
         <div className="flex flex-col items-start shrink-0 w-fit pointer-events-auto">
           <Avatar
             src={post.author.avatar}
-            displayName={post.author.displayName}
+            displayName={
+              post.author.displayName
+                ? post.author.displayName
+                : post.author.handle
+            }
             size={avatarSize ? avatarSize : "medium"}
           />
         </div>
-        <div className={`flex flex-col min-w-0 w-full mb-2`}>
-          <div
-            className={`bskyPostTextContent flex flex-col grow text-left w-full ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
-          >
-            <PostInfo
-              displayName={post.author.displayName}
-              handle={post.author.handle}
-              createdAt={record.createdAt}
-            />
 
-            <div className={`postContent flex flex-col gap-2 mt-0.5`}>
-              <div className="text-secondary">
-                <BlueskyRichText record={record} />
-              </div>
-              {showEmbed && post.embed && (
-                <div
-                  className="pointer-events-auto relative"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <BlueskyEmbed
-                    parent={parent}
-                    embed={post.embed}
-                    compact={compactEmbed}
-                    postUrl={url}
-                    className="text-sm"
-                  />
-                </div>
-              )}
+        <div
+          className={`bskyPostContent flex flex-col grow text-left w-full min-w-0 ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
+        >
+          <PostInfo
+            displayName={post.author.displayName}
+            handle={post.author.handle}
+            createdAt={record.createdAt}
+          />
+
+          <div className={`bskyPostBody flex flex-col min-w-0 w-full`}>
+            {props.hasQuote && (
+              <QuoteContent
+                index={props.hasQuote?.index}
+                did={props.hasQuote?.did}
+                position={props.hasQuote?.position}
+              />
+            )}
+            <div className="bskyPostTextContent text-secondary mt-0.5">
+              <BlueskyRichText record={record} />
             </div>
+            {showEmbed && post.embed && (
+              <div
+                className="bskyPostEmbedWrapper pointer-events-auto relative mt-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <BlueskyEmbed
+                  parent={parent}
+                  embed={post.embed}
+                  compact={compactEmbed}
+                  postUrl={url}
+                  className="text-sm"
+                />
+              </div>
+            )}
           </div>
           {props.showBlueskyLink ||
-          (props.post.quoteCount && props.post.quoteCount > 0) ||
-          (props.post.replyCount && props.post.replyCount > 0) ? (
+          (showInteractions &&
+            ((props.post.quoteCount && props.post.quoteCount > 0) ||
+              (props.post.replyCount && props.post.replyCount > 0))) ? (
             <div
-              className={`postCountsAndLink flex gap-2 items-center justify-between mt-2 pointer-events-auto`}
+              className={`postCountsAndLink flex gap-2 items-center justify-between  pointer-events-auto mt-2`}
             >
-              <PostCounts
-                post={post}
-                parent={parent}
-                replyEnabled={replyEnabled}
-                replyOnClick={replyOnClick}
-                quoteEnabled={quoteEnabled}
-                showBlueskyLink={showBlueskyLink}
-                url={url}
-              />
+              {showInteractions ? (
+                <PostCounts
+                  post={post}
+                  parent={parent}
+                  replyEnabled={replyEnabled}
+                  replyOnClick={replyOnClick}
+                  quoteEnabled={quoteEnabled}
+                  showBlueskyLink={showBlueskyLink}
+                  url={url}
+                />
+              ) : (
+                <div />
+              )}
 
               <div className="flex gap-3 items-center">
                 {showBlueskyLink && (
@@ -142,20 +187,34 @@ export function CompactBskyPostContent(props: {
   replyOnClick?: (e: React.MouseEvent) => void;
   clientHost?: string;
 }) {
-  const { post, parent, quoteEnabled, replyEnabled, replyOnClick, clientHost = "bsky.app" } = props;
+  const {
+    post,
+    parent,
+    quoteEnabled,
+    replyEnabled,
+    replyOnClick,
+    clientHost = "bsky.app",
+  } = props;
+  const openThread = useOpenThread();
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
   const url = `https://${clientHost}/profile/${post.author.handle}/post/${postId}`;
 
+  // Only allow opening the thread page when there's a discussion to show
+  const hasThreadContent =
+    (post.replyCount ?? 0) > 0 || (post.quoteCount ?? 0) > 0;
+
   return (
     <div className="bskyPost relative flex flex-col w-full">
-      <button
-        className="absolute inset-0 "
-        onClick={() => {
-          openPage(parent, { type: "thread", uri: post.uri });
-        }}
-      />
+      {hasThreadContent && (
+        <button
+          className="absolute inset-0 "
+          onClick={() => {
+            openThread(parent, { type: "thread", uri: post.uri });
+          }}
+        />
+      )}
       <div className={`flex gap-2 text-left w-full ${props.className}`}>
         <Avatar
           src={post.author.avatar}
@@ -164,10 +223,14 @@ export function CompactBskyPostContent(props: {
         />
         <div className={`flex flex-col min-w-0 w-full`}>
           <button
-            className="bskyPostTextContent flex flex-col grow mt-0.5 text-left text-xs text-tertiary"
-            onClick={() => {
-              openPage(parent, { type: "thread", uri: post.uri });
-            }}
+            className={`bskyPostTextContent flex flex-col grow mt-0.5 text-left text-xs text-tertiary ${hasThreadContent ? "" : "cursor-default"}`}
+            onClick={
+              hasThreadContent
+                ? () => {
+                    openThread(parent, { type: "thread", uri: post.uri });
+                  }
+                : undefined
+            }
           >
             <PostInfo
               displayName={post.author.displayName}
@@ -202,8 +265,8 @@ export function CompactBskyPostContent(props: {
   );
 }
 
-function PostInfo(props: {
-  displayName?: string;
+export function PostInfo(props: {
+  displayName?: string | null;
   handle: string;
   createdAt: string;
   compact?: boolean;
@@ -212,23 +275,23 @@ function PostInfo(props: {
 
   return (
     <div className="postInfo flex items-center gap-2 leading-tight w-full">
-      <div className="flex gap-2 items-center min-w-0">
-        <div className={`font-bold text-secondary  truncate`}>
-          {displayName}
-        </div>
-        <div className="truncate items-end flex pointer-events-auto">
-          <ProfilePopover
-            trigger={
+      <ProfilePopover
+        trigger={
+          <div className="flex gap-2 items-baseline min-w-0 w-full">
+            <div className={`font-bold text-secondary truncate min-w-0`}>
+              {displayName ? displayName : handle}
+            </div>
+            {displayName && (
               <div
-                className={`${compact ? "text-xs" : "text-sm"} text-tertiary hover:underline w-full truncate `}
+                className={`truncate min-w-0 shrink pointer-events-auto ${compact ? "text-xs" : "text-sm"} text-tertiary hover:underline`}
               >
                 @{handle}
               </div>
-            }
-            didOrHandle={handle}
-          />
-        </div>
-      </div>
+            )}
+          </div>
+        }
+        didOrHandle={handle}
+      />
       <div className="w-1 h-1 rounded-full bg-border shrink-0" />
       <div
         className={`${compact ? "text-xs" : "text-sm"} text-tertiary shrink-0`}
@@ -265,7 +328,7 @@ function PostCounts(props: {
     );
 
   return (
-    <div className="postCounts flex gap-2 items-center w-full text-tertiary">
+    <div className="postCounts flex gap-2 items-center w-full text-tertiary mb-1">
       {replyContent &&
         (props.replyEnabled ? (
           <ThreadLink

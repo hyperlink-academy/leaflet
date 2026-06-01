@@ -1,7 +1,8 @@
 "use client";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { preload } from "swr";
-import { openPage, OpenPage } from "./postPageState";
+import { OpenPage } from "./postPageState";
+import { useOpenThread } from "./Interactions/drawerThreadContext";
 
 type ThreadViewPost = AppBskyFeedDefs.ThreadViewPost;
 type NotFoundPost = AppBskyFeedDefs.NotFoundPost;
@@ -62,12 +63,13 @@ export function ThreadLink(props: {
   onClick?: (e: React.MouseEvent) => void;
 }) {
   const { postUri, parent, children, className, onClick } = props;
+  const openThread = useOpenThread();
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClick?.(e);
     if (e.defaultPrevented) return;
-    openPage(parent, { type: "thread", uri: postUri });
+    openThread(parent, { type: "thread", uri: postUri });
   };
 
   const handlePrefetch = () => {
@@ -95,12 +97,13 @@ export function QuotesLink(props: {
   onClick?: (e: React.MouseEvent) => void;
 }) {
   const { postUri, parent, children, className, onClick } = props;
+  const openThread = useOpenThread();
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClick?.(e);
     if (e.defaultPrevented) return;
-    openPage(parent, { type: "quotes", uri: postUri });
+    openThread(parent, { type: "quotes", uri: postUri });
   };
 
   const handlePrefetch = () => {

@@ -11,10 +11,8 @@ import {
   AppBskyLabelerDefs,
 } from "@atproto/api";
 import { Avatar } from "components/Avatar";
-import {
-  OpenPage,
-  openPage,
-} from "app/(app)/lish/[did]/[publication]/[rkey]/PostPages";
+import { OpenPage } from "app/(app)/lish/[did]/[publication]/[rkey]/PostPages";
+import { useOpenThread } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
 
 export const BlueskyEmbed = (props: {
@@ -24,13 +22,14 @@ export const BlueskyEmbed = (props: {
   compact?: boolean;
   parent?: OpenPage;
 }) => {
+  const openThread = useOpenThread();
   // check this file from bluesky for ref
   // https://github.com/bluesky-social/social-app/blob/main/bskyembed/src/components/embed.tsx
   switch (true) {
     case AppBskyEmbedImages.isView(props.embed):
       let imageEmbed = props.embed;
       return (
-        <div className="imageEmbed flex flex-wrap rounded-md w-full overflow-hidden">
+        <div className="imageEmbed flex flex-wrap rounded-lg w-full overflow-hidden">
           {imageEmbed.images.map(
             (
               image: {
@@ -161,7 +160,7 @@ export const BlueskyEmbed = (props: {
               e.preventDefault();
               e.stopPropagation();
 
-              openPage(props.parent, { type: "thread", uri: record.uri });
+              openThread(props.parent, { type: "thread", uri: record.uri });
             }}
           >
             <Avatar
@@ -185,6 +184,7 @@ export const BlueskyEmbed = (props: {
               <div className="flex flex-col gap-2 ">
                 {text && (
                   <pre
+                    style={{ fontFamily: "inherit" }}
                     className={`whitespace-pre-wrap text-secondary ${props.compact ? "line-clamp-6" : ""}`}
                   >
                     {text}

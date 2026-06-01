@@ -1,6 +1,5 @@
 "use client";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { flushSync } from "react-dom";
 import type { Json } from "supabase/database.types";
 import { create } from "zustand";
@@ -19,6 +18,7 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { RecommendButton } from "components/RecommendButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
+import type { DrawerThread } from "./drawerThreadContext";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -26,6 +26,10 @@ export type InteractionState = {
   drawer: undefined | "comments" | "quotes";
   localComments: Comment[];
   commentBox: { quote: QuotePosition | null };
+  // Thread/quotes views opened within the drawer, innermost last. When
+  // non-empty the drawer shows the top entry instead of the comments/mentions
+  // tabs, with a back button to work up the tree.
+  threadStack: DrawerThread[];
 };
 
 const defaultInteractionState: InteractionState = {
@@ -33,6 +37,7 @@ const defaultInteractionState: InteractionState = {
   drawer: undefined,
   localComments: [],
   commentBox: { quote: null },
+  threadStack: [],
 };
 
 export let useInteractionStateStore = create<{
@@ -80,7 +85,16 @@ export function setInteractionState(
       const url = new URL(window.location.href);
       const newDocState = newState[document_uri];
 
-      if (newDocState.drawerOpen && newDocState.drawer) {
+      // The drawer counts as open if drawerOpen is explicitly true, or if it
+      // was opened via the URL (drawerOpen still undefined but the param is
+      // present). This mirrors useDrawerOpen — otherwise updating just the tab
+      // while the drawer is param-opened would delete the param and close it.
+      const drawerCurrentlyOpen =
+        newDocState.drawerOpen === true ||
+        (newDocState.drawerOpen === undefined &&
+          url.searchParams.has("interactionDrawer"));
+
+      if (drawerCurrentlyOpen && newDocState.drawer) {
         url.searchParams.set("interactionDrawer", newDocState.drawer);
       } else {
         url.searchParams.delete("interactionDrawer");
@@ -98,9 +112,57 @@ export function openInteractionDrawer(
   pageId?: string,
 ) {
   flushSync(() => {
-    setInteractionState(document_uri, { drawerOpen: true, drawer, pageId });
+    setInteractionState(document_uri, {
+      drawerOpen: true,
+      drawer,
+      pageId,
+      threadStack: [],
+    });
   });
   scrollIntoView("interaction-drawer");
+}
+
+// Open the drawer straight onto a thread/quotes view. Used when a Bluesky post
+// in the document body is clicked, so its thread opens in the drawer instead of
+// a new page (mirroring how the post's own comments/mentions open the drawer).
+export function openDrawerThread(
+  document_uri: string,
+  thread: DrawerThread,
+  pageId?: string,
+) {
+  flushSync(() => {
+    setInteractionState(document_uri, (s) => ({
+      drawerOpen: true,
+      drawer: s.drawer ?? "comments",
+      pageId,
+      threadStack: [thread],
+    }));
+  });
+  scrollIntoView("interaction-drawer");
+}
+
+// Open a thread/quotes view inside the drawer, replacing its content. Clicking
+// the view you're already on (e.g. the main post of the current thread) is a
+// no-op rather than stacking a duplicate.
+export function pushDrawerThread(document_uri: string, thread: DrawerThread) {
+  setInteractionState(document_uri, (s) => {
+    const top = s.threadStack[s.threadStack.length - 1];
+    if (top && top.type === thread.type && top.uri === thread.uri) return {};
+    return { threadStack: [...s.threadStack, thread] };
+  });
+}
+
+// Step back up the drawer's thread navigation tree.
+export function popDrawerThread(document_uri: string) {
+  setInteractionState(document_uri, (s) => ({
+    threadStack: s.threadStack.slice(0, -1),
+  }));
+}
+
+// Jump all the way back out of the thread navigation, to the drawer's top
+// level (the comments/mentions tabs).
+export function popDrawerThreadToRoot(document_uri: string) {
+  setInteractionState(document_uri, { threadStack: [] });
 }
 
 export const Interactions = (props: {
@@ -131,10 +193,15 @@ export const Interactions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
-  let interactionsAvailable =
-    props.showComments ||
-    (props.showMentions && props.quotesCount > 0) ||
-    props.showRecommends;
+  let commentsAvailable = props.showComments;
+  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
+  let discussionsAvailable = commentsAvailable || mentionsAvailable;
+  let defaultDiscussionTab: "comments" | "quotes" =
+    commentsAvailable && (props.commentsCount > 0 || !mentionsAvailable)
+      ? "comments"
+      : "quotes";
+
+  let interactionsAvailable = discussionsAvailable || props.showRecommends;
 
   return (
     <div
@@ -147,34 +214,28 @@ export const Interactions = (props: {
         />
       )}
 
-      {/*MENTIONS BUTTON*/}
-      {props.quotesCount === 0 || props.showMentions === false ? null : (
+      {/*DISCUSSIONS BUTTON*/}
+      {!discussionsAvailable ? null : (
         <button
-          className="flex w-fit gap-1 items-center"
+          className="flex gap-1 items-center w-fit"
           onClick={() => {
-            if (!drawerOpen || drawer !== "quotes")
-              openInteractionDrawer("quotes", document_uri, props.pageId);
+            if (
+              !drawerOpen ||
+              (drawer !== "comments" && drawer !== "quotes") ||
+              pageId !== props.pageId
+            )
+              openInteractionDrawer(
+                defaultDiscussionTab,
+                document_uri,
+                props.pageId,
+              );
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
           onMouseEnter={handleQuotePrefetch}
           onTouchStart={handleQuotePrefetch}
-          aria-label="Post quotes"
+          aria-label="Discussions"
         >
-          <QuoteTiny aria-hidden /> {props.quotesCount}
-        </button>
-      )}
-      {/*COMMENT BUTTON*/}
-      {props.showComments === false ? null : (
-        <button
-          className="flex gap-1 items-center w-fit"
-          onClick={() => {
-            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
-              openInteractionDrawer("comments", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-          aria-label="Post comments"
-        >
-          <CommentTiny aria-hidden /> {props.commentsCount}
+          <CommentTiny aria-hidden /> {props.commentsCount + props.quotesCount}
         </button>
       )}
 
@@ -218,8 +279,15 @@ export const ExpandedInteractions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
-  let noInteractions =
-    !props.showComments && !props.showMentions && !props.showRecommends;
+  let commentsAvailable = props.showComments;
+  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
+  let discussionsAvailable = commentsAvailable || mentionsAvailable;
+  let defaultDiscussionTab: "comments" | "quotes" =
+    commentsAvailable && (props.commentsCount > 0 || !mentionsAvailable)
+      ? "comments"
+      : "quotes";
+
+  let noInteractions = !discussionsAvailable && !props.showRecommends;
 
   return (
     <div
@@ -248,12 +316,16 @@ export const ExpandedInteractions = (props: {
                   expanded
                 />
               )}
-              {props.quotesCount === 0 || !props.showMentions ? null : (
+              {!discussionsAvailable ? null : (
                 <ButtonSecondary
                   onClick={() => {
-                    if (!drawerOpen || drawer !== "quotes")
+                    if (
+                      !drawerOpen ||
+                      (drawer !== "comments" && drawer !== "quotes") ||
+                      pageId !== props.pageId
+                    )
                       openInteractionDrawer(
-                        "quotes",
+                        defaultDiscussionTab,
                         document_uri,
                         props.pageId,
                       );
@@ -262,39 +334,16 @@ export const ExpandedInteractions = (props: {
                   }}
                   onMouseEnter={handleQuotePrefetch}
                   onTouchStart={handleQuotePrefetch}
-                  aria-label="Post quotes"
+                  aria-label="Discussions"
                 >
-                  <QuoteTiny aria-hidden /> {props.quotesCount}
-                  <Separator classname="h-4! text-accent-contrast!" />
-                  Mention{props.quotesCount > 1 ? "s" : ""}
-                </ButtonSecondary>
-              )}
-              {!props.showComments ? null : (
-                <ButtonSecondary
-                  onClick={() => {
-                    if (
-                      !drawerOpen ||
-                      drawer !== "comments" ||
-                      pageId !== props.pageId
-                    )
-                      openInteractionDrawer(
-                        "comments",
-                        document_uri,
-                        props.pageId,
-                      );
-                    else
-                      setInteractionState(document_uri, { drawerOpen: false });
-                  }}
-                  aria-label="Post comments"
-                >
-                  <CommentTiny aria-hidden />{" "}
-                  {props.commentsCount > 0 && (
+                  <CommentTiny aria-hidden />
+                  {props.quotesCount + props.commentsCount !== 0 && (
                     <>
-                      {props.commentsCount}
+                      {props.quotesCount + props.commentsCount}{" "}
                       <Separator classname="h-4! text-accent-contrast!" />
                     </>
                   )}
-                  Comment{props.commentsCount > 1 ? "s" : ""}
+                  Discussion
                 </ButtonSecondary>
               )}
             </div>
@@ -365,7 +414,6 @@ export function getQuoteCountFromArray(
     }).length;
   }
 }
-
 
 const EditButton = (props: {
   publication: { identity_did: string } | null;

@@ -16,7 +16,7 @@ import { useCardBorderHidden } from "./useCardBorderHidden";
 import { focusPage } from "src/utils/focusPage";
 import { PageOptions } from "./PageOptions";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { useDrawerOpen } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/InteractionDrawer";
+import { useDrawerOpen } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/useDrawerOpen";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 import { usePageFootnotes } from "components/Footnotes/usePageFootnotes";
 import { FootnoteContext } from "components/Footnotes/FootnoteContext";

@@ -5,7 +5,11 @@ import {
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
 import { resolvePublicationTheme } from "lexicons/src/normalize";
-import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
+import {
+  PubLeafletComment,
+  PubLeafletPublication,
+  SiteStandardPublication,
+} from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
@@ -16,7 +20,7 @@ export async function getPostPageData(did: string, rkey: string) {
       `
         data,
         uri,
-        comments_on_documents(count),
+        comments_on_documents(record),
         documents_in_publications(publications(*,
           documents_in_publications(documents(uri, data)),
           publication_subscriptions(*),
@@ -150,7 +154,17 @@ export async function getPostPageData(did: string, rkey: string) {
       }
     : null;
   const recommendsCount = document.recommends_on_documents?.[0]?.count ?? 0;
-  const commentsCount = document.comments_on_documents?.[0]?.count ?? 0;
+
+  // Comments are counted per-page so subpages (and the main page) each show only
+  // their own discussion. Comments on the main page have no `onPage`, so they're
+  // keyed under "". `commentsCount` remains the document-wide total.
+  const commentRecords = document.comments_on_documents ?? [];
+  const commentsCountByPage: Record<string, number> = {};
+  for (const c of commentRecords) {
+    const onPage = (c.record as PubLeafletComment.Record)?.onPage ?? "";
+    commentsCountByPage[onPage] = (commentsCountByPage[onPage] ?? 0) + 1;
+  }
+  const commentsCount = commentRecords.length;
 
   return {
     ...document,
@@ -163,6 +177,7 @@ export async function getPostPageData(did: string, rkey: string) {
     // Explicit relational data for DocumentContext
     publication,
     commentsCount,
+    commentsCountByPage,
     mentions: document.document_mentions_in_bsky,
     leafletId: document.leaflets_in_publications[0]?.leaflet || null,
     // Recommends data

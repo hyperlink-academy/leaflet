@@ -37,11 +37,9 @@ function MetaRow({
   const hasDate = date !== undefined && date !== null;
   return (
     <div
-      className={`justify-between w-full ${textClassName} text-tertiary flex gap-1 flex-wrap items-center`}
+      className={`justify-between  w-full ${textClassName} text-tertiary flex gap-1 flex-wrap items-center`}
     >
-      <p
-        className={`${textClassName} text-tertiary flex gap-1 items-center flex-wrap`}
-      >
+      <p className={`text-tertiary flex gap-1 items-center flex-wrap`}>
         {hasAuthor && (
           <span className="whitespace-nowrap">
             {author}
@@ -102,36 +100,49 @@ export function PublicationPostItemMedium(props: MediumProps) {
   const hasCoverImage = !!props.coverImageSrc;
 
   return (
-    <div className="flex w-full items-stretch ">
-      <div className="flex w-full grow flex-col justify-between min-w-0  pl-3 pr-3 py-2">
-        <PostLink href={props.href}>
-          {props.title && (
-            <h3 className="text-primary leading-snug line-clamp-2 pb-1">
-              {props.title}
-            </h3>
-          )}
-          <p className="text-secondary line-clamp-3 grow mb-2">
-            {props.description}
-          </p>
-        </PostLink>
-        <MetaRow
-          author={props.author}
-          date={props.date}
-          interactions={props.interactions}
-          textClassName="text-sm place-self-end"
-        />
-        <div className="shrink-0">{props.footer}</div>
-      </div>
-      {hasCoverImage && (
-        <div
-          className={`self-start shrink-0 w-16  border-l border-border-light ${props.footer ? " w-[182px] h-[182px]" : "sm:h-36 sm:w-36"}`}
-        >
-          <img
-            src={props.coverImageSrc}
-            alt={props.coverImageAlt || props.title || ""}
-            className="w-full aspect-square object-cover rounded"
+    <div className="flex w-full flex-col">
+      <div className="flex w-full items-stretch ">
+        <div className="flex w-full grow flex-col justify-between min-w-0  pl-3 pr-3 py-2">
+          <PostLink href={props.href}>
+            {props.title && (
+              <h3 className="text-primary leading-snug line-clamp-2 pb-1">
+                {props.title}
+              </h3>
+            )}
+            <p className="text-secondary line-clamp-3 grow mb-2">
+              {props.description}
+            </p>
+          </PostLink>
+          <MetaRow
+            author={props.author}
+            date={props.date}
+            interactions={props.interactions}
+            textClassName="text-sm place-self-end sm:block hidden"
           />
+          {props.footer && (
+            <div className="shrink-0 hidden sm:block">{props.footer}</div>
+          )}
         </div>
+        {hasCoverImage && (
+          <div
+            className={`self-start shrink-0 w-24 h-24 rounded-md mt-2 mr-2 border-l sm:border-border-light border-transparent ${props.footer ? "sm:w-[182px] sm:h-[182px] sm:rounded-none sm:m-0" : "sm:h-36 sm:w-36 sm:rounded-none sm:m-0"}`}
+          >
+            <img
+              src={props.coverImageSrc}
+              alt={props.coverImageAlt || props.title || ""}
+              className="w-full h-full aspect-square object-cover sm:rounded-[0px] rounded-md"
+            />
+          </div>
+        )}
+      </div>
+      <MetaRow
+        author={props.author}
+        date={props.date}
+        interactions={props.interactions}
+        textClassName="text-sm place-self-end shrink-0 sm:hidden px-3 "
+      />
+      {props.footer && (
+        <div className="shrink-0 sm:hidden px-3 pb-2">{props.footer}</div>
       )}
     </div>
   );

@@ -1,13 +1,14 @@
 "use client";
+import { useContext, useState } from "react";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
-import { QuoteTiny } from "./Icons/QuoteTiny";
 import { useSmoker } from "./Toast";
 import { Tag } from "./Tags";
 import { Popover } from "./Popover";
 import { TagTiny } from "./Icons/TagTiny";
-import { SpeedyLink } from "./SpeedyLink";
 import { RecommendButton } from "./RecommendButton";
+import { DiscussionModal } from "./DiscussionModal";
+import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
@@ -16,6 +17,7 @@ export const InteractionPreview = (props: {
   documentUri: string;
   tags?: string[];
   postUrl: string;
+  title?: string;
   showComments: boolean;
   showMentions: boolean;
   showRecommends: boolean;
@@ -23,9 +25,16 @@ export const InteractionPreview = (props: {
   share?: boolean;
 }) => {
   let smoker = useSmoker();
+  // Inside a published post body a DrawerThreadContext is in scope; there we
+  // open this post's discussion in the interaction drawer (like a Bluesky post's
+  // thread) instead of the standalone modal used in listings/feeds.
+  let drawerNav = useContext(DrawerThreadContext);
+  let [discussionsOpen, setDiscussionsOpen] = useState(false);
+  let commentsAvailable = props.showComments !== false && props.commentsCount > 0;
+  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
+  let discussionsAvailable = commentsAvailable || mentionsAvailable;
   let interactionsAvailable =
-    (props.quotesCount > 0 && props.showMentions) ||
-    (props.showComments !== false && props.commentsCount > 0) ||
+    discussionsAvailable ||
     (props.showRecommends !== false && props.recommendsCount > 0);
 
   const tagsCount = props.tags?.length || 0;
@@ -39,23 +48,36 @@ export const InteractionPreview = (props: {
         />
       )}
 
-      {!props.showMentions || props.quotesCount === 0 ? null : (
-        <SpeedyLink
-          aria-label="Post quotes"
-          href={`${props.postUrl}?interactionDrawer=quotes`}
-          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
+      {!discussionsAvailable ? null : (
+        <button
+          aria-label="Post discussions"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (drawerNav)
+              drawerNav.push({
+                type: "standardSitePost",
+                uri: props.documentUri,
+              });
+            else setDiscussionsOpen(true);
+          }}
+          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
         >
-          <QuoteTiny /> {props.quotesCount}
-        </SpeedyLink>
+          <CommentTiny /> {props.commentsCount + props.quotesCount}
+        </button>
       )}
-      {!props.showComments || props.commentsCount === 0 ? null : (
-        <SpeedyLink
-          aria-label="Post comments"
-          href={`${props.postUrl}?interactionDrawer=comments`}
-          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
-        >
-          <CommentTiny /> {props.commentsCount}
-        </SpeedyLink>
+      {discussionsAvailable && !drawerNav && (
+        <DiscussionModal
+          open={discussionsOpen}
+          onOpenChange={setDiscussionsOpen}
+          document_uri={props.documentUri}
+          postUrl={props.postUrl}
+          title={props.title}
+          commentsCount={props.commentsCount}
+          quotesCount={props.quotesCount}
+          showComments={props.showComments}
+          showMentions={props.showMentions}
+        />
       )}
       {tagsCount === 0 ? null : (
         <>

@@ -18,6 +18,7 @@ export type DocumentContextValue = Pick<
   | "quotesAndMentions"
   | "publication"
   | "commentsCount"
+  | "commentsCountByPage"
   | "mentions"
   | "leafletId"
   | "recommendsCount"
