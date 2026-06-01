@@ -29,6 +29,7 @@ export function Page(props: {
   entityID: string;
   first?: boolean;
   fullPageScroll: boolean;
+  flow?: boolean;
 }) {
   let { rep } = useReplicache();
   let publicationPage = useLeafletPublicationPage();
@@ -67,6 +68,7 @@ export function Page(props: {
           drawerOpen={!!drawerOpen}
           isFocused={isFocused}
           fullPageScroll={props.fullPageScroll}
+          flow={props.flow}
           pageType={pageType}
           pageOptions={
             <PageOptions
@@ -102,6 +104,9 @@ export const PageWrapper = (props: {
   pageOptions?: React.ReactNode;
   footnoteSideColumn?: React.ReactNode;
   fullPageScroll: boolean;
+  // In flow mode the page does NOT scroll internally and sizes to its content
+  // height, so an ancestor can be the single vertical scroller.
+  flow?: boolean;
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
   pageType: "canvas" | "doc";
@@ -116,7 +121,7 @@ export const PageWrapper = (props: {
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions
     <div
-      className={`pageWrapper relative shrink-0 h-full ${props.fullPageScroll ? "w-full" : "w-max"}`}
+      className={`pageWrapper relative shrink-0 ${props.flow ? "" : "h-full"} ${props.fullPageScroll ? "w-full" : "w-max"}`}
     >
       {/*
         this div is the scrolling container that wraps only the contents div.
@@ -132,15 +137,16 @@ export const PageWrapper = (props: {
       publicationScrollContainer
       grow
       shrink-0 snap-center
-      ${props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
+      ${props.flow ? "" : props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
-        `h-full border
+        `border
           bg-[rgba(var(--bg-page),var(--bg-page-alpha))]
+          ${props.flow ? "" : "h-full"}
           ${props.drawerOpen ? "rounded-l-lg " : "rounded-lg"}
           ${props.isFocused ? "shadow-md border-border" : "border-border-light"}`
       }
-      ${cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
+      ${cardBorderHidden && (props.flow ? "sm:pt-6 pt-3" : "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3")}
       ${props.fullPageScroll && "max-w-full "}
     ${props.pageType === "doc" && !props.fullPageScroll ? (props.fixedWidth ? "w-[10000px] sm:max-w-prose max-w-[var(--page-width-units)]" : "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]") : ""}
     ${
@@ -153,7 +159,7 @@ export const PageWrapper = (props: {
       >
         <div
           className={`postPageContent footnote-scope
-          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : "w-full h-full"}
+          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : `w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}

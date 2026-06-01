@@ -129,7 +129,7 @@ export function PublicationPagesNav(props: {
   }
 
   return (
-    <nav className="publicationPagesNav border-t border-b border-border-light shrink-0 w-full sm:max-w-[calc(var(--page-width-units)*1.25)] mx-auto">
+    <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page border-t border-b border-border-light shrink-0 w-full sm:max-w-[calc(var(--page-width-units)*1.25)] mx-auto">
       <div className="flex items-center gap-2 px-3 sm:px-4 py-2 overflow-x-auto w-full sm:max-w-(--page-width-units) mx-auto">
         <div className="flex items-center gap-1 grow min-w-0 overflow-x-auto">
           <DndContext
