@@ -90,7 +90,8 @@ const InteractionDrawerContent = (props: {
   let drawer = useDrawerOpen(props.document_uri);
   if (!drawer) return null;
 
-  let { commentsCount } = useDocument();
+  let { commentsCountByPage } = useDocument();
+  let commentsCount = commentsCountByPage[props.pageId ?? ""] ?? 0;
   let { threadStack } = useInteractionState(props.document_uri);
   const drawerNav = useMemo(
     () => ({

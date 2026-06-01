@@ -103,7 +103,7 @@ export function LinearDocumentPage({
           showComments={preferences.showComments !== false}
           showMentions={preferences.showMentions !== false}
           showRecommends={preferences.showRecommends !== false}
-          commentsCount={document.commentsCount}
+          commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
           quotesCount={getQuoteCount(document.quotesAndMentions, pageId) || 0}
           recommendsCount={document.recommendsCount}
         />

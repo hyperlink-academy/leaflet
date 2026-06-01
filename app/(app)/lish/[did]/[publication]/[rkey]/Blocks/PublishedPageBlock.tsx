@@ -2,13 +2,12 @@
 
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { CSSProperties, useRef, useState } from "react";
+import { CSSProperties, useRef } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { PostContent, Block } from "../PostContent";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksText,
-  PubLeafletComment,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletPublication,
@@ -18,10 +17,9 @@ import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_si
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
 import { openPage, useOpenPages } from "../postPageState";
+import { openInteractionDrawer } from "../Interactions/Interactions";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { CanvasBackgroundPattern } from "components/Canvas";
-import { DiscussionModal } from "components/DiscussionModal";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 export function PublishedPageLinkBlock(props: {
   blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
@@ -206,51 +204,37 @@ export function PagePreview(props: {
 const Interactions = (props: { pageId: string; parentPageId?: string }) => {
   const {
     uri: document_uri,
-    commentsCount: comments,
+    commentsCountByPage,
     mentions,
-    normalizedDocument,
-    normalizedPublication,
   } = useDocument();
+  let comments = commentsCountByPage[props.pageId] ?? 0;
   let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 
-  let [discussionsOpen, setDiscussionsOpen] = useState(false);
-  let postUrl = `${getDocumentURL(
-    normalizedDocument,
-    document_uri,
-    normalizedPublication,
-  )}?page=${props.pageId}`;
+  if (quotes + comments === 0) return null;
 
   return (
     <div
       className={`flex gap-2 text-tertiary text-sm absolute bottom-2 bg-bg-page`}
     >
-      {quotes + comments > 0 && (
-        <>
-          <button
-            className={`flex gap-1 items-center`}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setDiscussionsOpen(true);
-            }}
-          >
-            <span className="sr-only">Page discussions</span>
-            <CommentTiny aria-hidden /> {comments + quotes}{" "}
-          </button>
-          <DiscussionModal
-            open={discussionsOpen}
-            onOpenChange={setDiscussionsOpen}
-            document_uri={document_uri}
-            postUrl={postUrl}
-            title={normalizedDocument.title}
-            commentsCount={comments}
-            quotesCount={quotes}
-            showComments
-            showMentions
-            pageId={props.pageId}
-          />
-        </>
-      )}
+      <button
+        className={`flex gap-1 items-center`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          // Open the subpage itself, then open its interaction panel scoped to
+          // comments — rather than popping a standalone discussion modal.
+          openPage(
+            props.parentPageId
+              ? { type: "doc", id: props.parentPageId }
+              : undefined,
+            { type: "doc", id: props.pageId },
+          );
+          openInteractionDrawer("comments", document_uri, props.pageId);
+        }}
+      >
+        <span className="sr-only">Page discussions</span>
+        <CommentTiny aria-hidden /> {comments + quotes}{" "}
+      </button>
     </div>
   );
 };

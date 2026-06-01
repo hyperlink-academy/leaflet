@@ -41,6 +41,12 @@ export function useDocumentDiscussionData(
   const documentRecord = data?.document ?? null;
   const pages = documentRecord ? (getDocumentPages(documentRecord) ?? []) : [];
 
+  const commentsCountByPage: Record<string, number> = {};
+  for (const c of data?.comments ?? []) {
+    const onPage = (c.record as { onPage?: string } | null)?.onPage ?? "";
+    commentsCountByPage[onPage] = (commentsCountByPage[onPage] ?? 0) + 1;
+  }
+
   // The drawer content only reads uri / normalizedDocument / normalizedPublication
   // off the document context; the rest is filled with sensible defaults.
   const documentContextValue: DocumentContextValue | null = documentRecord
@@ -53,6 +59,7 @@ export function useDocumentDiscussionData(
         quotesAndMentions: data?.quotesAndMentions ?? [],
         publication: null,
         commentsCount: data?.comments.length ?? 0,
+        commentsCountByPage,
         mentions: [],
         leafletId: null,
         recommendsCount: 0,

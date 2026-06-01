@@ -150,6 +150,7 @@ export async function PublicationPageRenderer({
       pages: (publication.publication_pages ?? []).filter((p) => p.record_uri),
     },
     commentsCount: 0,
+    commentsCountByPage: {},
     mentions: [],
     leafletId: null,
     recommendsCount: 0,

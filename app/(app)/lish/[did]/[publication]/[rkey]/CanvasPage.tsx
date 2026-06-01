@@ -68,7 +68,7 @@ export function CanvasPage({
         data={document}
         profile={profile}
         preferences={preferences}
-        commentsCount={document.commentsCount}
+        commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
         quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
         recommendsCount={document.recommendsCount}
       />
