@@ -97,7 +97,12 @@ async function getTransformedBlob(
       transform: {
         width: transform.width,
         height: transform.height,
-        resize: "cover",
+        // `contain` scales proportionally to fit `width`. With `cover` and only
+        // a width (no height), imgproxy keeps the source height and crops the
+        // width instead of downscaling — wrong-sized thumbnails. See #286 (and
+        // supabase/supabase-image-loader.js, which hit the same issue). Callers
+        // crop visually with CSS object-cover.
+        resize: "contain",
       },
     });
   if (error || !data) {
