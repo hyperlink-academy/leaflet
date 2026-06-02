@@ -27,3 +27,11 @@ export const blobRefToSrc = (
 // Display widths (px) for cover-image thumbnails, used to request a right-sized
 // transform instead of shipping the full-resolution blob.
 export const COVER_THUMBNAIL_WIDTH = { large: 800, medium: 360 };
+
+// Width (px) to request for inline post content images. Generous enough for
+// retina at the widest page layouts; the transform never upscales past source
+// (callers cap by the image's intrinsic width).
+export const POST_IMAGE_WIDTH = 1600;
+
+// Link/website preview images render as a small (~120px) thumbnail.
+export const LINK_PREVIEW_IMAGE_WIDTH = 240;

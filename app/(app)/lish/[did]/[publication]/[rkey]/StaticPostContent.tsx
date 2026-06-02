@@ -11,7 +11,11 @@ import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import {
+  blobRefToSrc,
+  LINK_PREVIEW_IMAGE_WIDTH,
+  POST_IMAGE_WIDTH,
+} from "src/utils/blobRefToSrc";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { blockTextSize } from "src/utils/blockTextSize";
@@ -102,7 +106,7 @@ let Block = async ({
             <div
               className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
-                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did)})`,
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, undefined, { width: LINK_PREVIEW_IMAGE_WIDTH })})`,
                 backgroundPosition: "center",
               }}
             />
@@ -116,7 +120,12 @@ let Block = async ({
           alt={b.block.alt}
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
-          src={blobRefToSrc(b.block.image.ref, did)}
+          src={blobRefToSrc(b.block.image.ref, did, undefined, {
+            width: Math.min(
+              b.block.aspectRatio?.width || POST_IMAGE_WIDTH,
+              POST_IMAGE_WIDTH,
+            ),
+          })}
         />
       );
     }

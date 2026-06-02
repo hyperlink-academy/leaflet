@@ -27,7 +27,11 @@ import {
 } from "../PublicationPostsList";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import {
+  blobRefToSrc,
+  LINK_PREVIEW_IMAGE_WIDTH,
+  POST_IMAGE_WIDTH,
+} from "src/utils/blobRefToSrc";
 import { TextBlock } from "./Blocks/TextBlock";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
@@ -444,7 +448,7 @@ export let Block = ({
             <div
               className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
-                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did)})`,
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, undefined, { width: LINK_PREVIEW_IMAGE_WIDTH })})`,
                 backgroundPosition: "center",
               }}
             />
@@ -481,7 +485,12 @@ export let Block = ({
             height={b.block.aspectRatio?.height}
             width={b.block.aspectRatio?.width}
             className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-            src={blobRefToSrc(b.block.image.ref, did)}
+            src={blobRefToSrc(b.block.image.ref, did, undefined, {
+              width: Math.min(
+                b.block.aspectRatio?.width || POST_IMAGE_WIDTH,
+                POST_IMAGE_WIDTH,
+              ),
+            })}
           />
           {b.block.alt && (
             <div className="absolute bottom-1.5 right-2 h-max">
