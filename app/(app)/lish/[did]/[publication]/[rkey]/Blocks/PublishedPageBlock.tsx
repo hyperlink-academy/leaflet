@@ -8,7 +8,6 @@ import { PostContent, Block } from "../PostContent";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksText,
-  PubLeafletComment,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletPublication,
@@ -18,13 +17,8 @@ import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_si
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
 import { openPage, useOpenPages } from "../postPageState";
-import {
-  openInteractionDrawer,
-  setInteractionState,
-  useInteractionState,
-} from "../Interactions/Interactions";
+import { openInteractionDrawer } from "../Interactions/Interactions";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CanvasBackgroundPattern } from "components/Canvas";
 
 export function PublishedPageLinkBlock(props: {
@@ -208,59 +202,39 @@ export function PagePreview(props: {
 }
 
 const Interactions = (props: { pageId: string; parentPageId?: string }) => {
-  const { uri: document_uri, commentsCount: comments, mentions } = useDocument();
+  const {
+    uri: document_uri,
+    commentsCountByPage,
+    mentions,
+  } = useDocument();
+  let comments = commentsCountByPage[props.pageId] ?? 0;
   let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 
-  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+  if (quotes + comments === 0) return null;
 
   return (
     <div
       className={`flex gap-2 text-tertiary text-sm absolute bottom-2 bg-bg-page`}
     >
-      {quotes > 0 && (
-        <button
-          className={`flex gap-1 items-center`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openPage(
-              props.parentPageId
-                ? { type: "doc", id: props.parentPageId }
-                : undefined,
-              { type: "doc", id: props.pageId },
-              { scrollIntoView: false },
-            );
-            if (!drawerOpen || drawer !== "quotes")
-              openInteractionDrawer("quotes", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-        >
-          <span className="sr-only">Page quotes</span>
-          <QuoteTiny aria-hidden /> {quotes}{" "}
-        </button>
-      )}
-      {comments > 0 && (
-        <button
-          className={`flex gap-1 items-center`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openPage(
-              props.parentPageId
-                ? { type: "doc", id: props.parentPageId }
-                : undefined,
-              { type: "doc", id: props.pageId },
-              { scrollIntoView: false },
-            );
-            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
-              openInteractionDrawer("comments", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-        >
-          <span className="sr-only">Page comments</span>
-          <CommentTiny aria-hidden /> {comments}{" "}
-        </button>
-      )}
+      <button
+        className={`flex gap-1 items-center`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          // Open the subpage itself, then open its interaction panel scoped to
+          // comments — rather than popping a standalone discussion modal.
+          openPage(
+            props.parentPageId
+              ? { type: "doc", id: props.parentPageId }
+              : undefined,
+            { type: "doc", id: props.pageId },
+          );
+          openInteractionDrawer("comments", document_uri, props.pageId);
+        }}
+      >
+        <span className="sr-only">Page discussions</span>
+        <CommentTiny aria-hidden /> {comments + quotes}{" "}
+      </button>
     </div>
   );
 };

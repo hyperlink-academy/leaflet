@@ -97,7 +97,7 @@ export default async function PublicationEditLayout(props: {
               did={params.did}
               publicationName={params.publication}
             />
-            <div className="pubWrapper flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-hidden">
+            <div className="pubWrapper publicationScrollContainer flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto">
               <div className="shrink-0">
                 <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pt-5">
                   <PublicationHeader
@@ -107,12 +107,12 @@ export default async function PublicationEditLayout(props: {
                     description={record?.description}
                   />
                 </div>
-                <PublicationPagesNav
-                  did={params.did}
-                  publicationName={params.publication}
-                />
               </div>
-              <div className="grow min-h-0 flex flex-col">{props.children}</div>
+              <PublicationPagesNav
+                did={params.did}
+                publicationName={params.publication}
+              />
+              <div className="flex flex-col">{props.children}</div>
             </div>
           </div>
         </PublicationThemeProviderDashboard>

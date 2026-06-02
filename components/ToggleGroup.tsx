@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 
 export function ToggleGroup<T extends string>(props: {
   value: T;
-  onChange: (value: T) => void;
+  onChange: (value: T, e?: React.MouseEvent) => void;
   options: { value: T; label: ReactNode }[];
   className?: string;
   optionClassName?: string;

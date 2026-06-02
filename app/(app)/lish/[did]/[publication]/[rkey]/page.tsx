@@ -2,11 +2,15 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { DocumentPageRenderer } from "./DocumentPageRenderer";
 import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
-import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import {
+  normalizeDocumentRecord,
+  normalizePublicationRecord,
+} from "src/utils/normalizeRecords";
 import {
   documentUriFilter,
   publicationNameOrUriFilter,
 } from "src/utils/uriHelpers";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -47,7 +51,28 @@ export async function generateMetadata(props: {
   const docRecord = normalizeDocumentRecord(document.data);
   if (!docRecord) return { title: "404" };
 
+  let publication = document.documents_in_publications[0]?.publications;
+  // Canonical URL points at the publication's blog domain so the post on
+  // leaflet.pub (and its quote pages, which inherit this metadata) doesn't
+  // compete with the custom-domain version in search results.
+  let canonical: string | undefined;
+  let feedTypes: Record<string, string> | undefined;
+  if (publication) {
+    let url = getDocumentURL(docRecord, document.uri, publication);
+    if (url.startsWith("http")) canonical = url;
+    let pubRecord = normalizePublicationRecord(publication.record);
+    if (pubRecord?.url) {
+      feedTypes = {
+        "application/rss+xml": `${pubRecord.url}/rss`,
+        "application/atom+xml": `${pubRecord.url}/atom`,
+        "application/json": `${pubRecord.url}/json`,
+      };
+    }
+  }
+
   return {
+    alternates:
+      canonical || feedTypes ? { canonical, types: feedTypes } : undefined,
     icons: {
       icon: {
         url:

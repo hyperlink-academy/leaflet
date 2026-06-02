@@ -16,6 +16,7 @@ import {
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { getPublicationType } from "src/utils/collectionHelpers";
+import { resizePublicationIcon } from "src/utils/resizePublicationIcon";
 
 type UpdatePublicationResult =
   | { success: true; publication: any }
@@ -263,11 +264,10 @@ export async function updatePublication({
       // Upload icon if provided
       let iconBlob = normalizedPub?.icon;
       if (iconFile && iconFile.size > 0) {
-        const buffer = await iconFile.arrayBuffer();
-        const uploadResult = await agent.com.atproto.repo.uploadBlob(
-          new Uint8Array(buffer),
-          { encoding: iconFile.type },
-        );
+        const { data, encoding } = await resizePublicationIcon(iconFile);
+        const uploadResult = await agent.com.atproto.repo.uploadBlob(data, {
+          encoding,
+        });
         if (uploadResult.data.blob) {
           iconBlob = uploadResult.data.blob;
         }

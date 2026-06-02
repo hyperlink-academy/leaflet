@@ -13,7 +13,6 @@ import { useSubscribe } from "src/replicache/useSubscribe";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { timeAgo } from "src/utils/timeAgo";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { TagTiny } from "components/Icons/TagTiny";
 import { Popover } from "components/Popover";
 import { TagSelector } from "components/Tags";
@@ -139,12 +138,8 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
                 </div>
               )}
 
-              {merged.showMentions !== false && (
-                <div className="flex gap-1 items-center">
-                  <QuoteTiny />—
-                </div>
-              )}
-              {merged.showComments !== false && (
+              {(merged.showComments !== false ||
+                merged.showMentions !== false) && (
                 <div className="flex gap-1 items-center">
                   <CommentTiny />—
                 </div>

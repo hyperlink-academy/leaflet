@@ -17,7 +17,6 @@ import { TagPopover } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSmoker } from "./Toast";
 import { CommentTiny } from "./Icons/CommentTiny";
-import { QuoteTiny } from "./Icons/QuoteTiny";
 import { ShareTiny } from "./Icons/ShareTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
@@ -25,6 +24,7 @@ import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { RecommendButton } from "./RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
+import { DiscussionModal } from "./DiscussionModal";
 
 export const PostListing = (props: Post & { selected?: boolean }) => {
   let pubRecord = props.publication?.pubRecord as
@@ -245,14 +245,23 @@ const Interactions = (props: {
   let setSelectedPostListing = useSelectedPostListing(
     (s) => s.setSelectedPostListing,
   );
-  let selectPostListing = (drawer: "quotes" | "comments") => {
+  let [discussionsOpen, setDiscussionsOpen] = useState(false);
+  let defaultDrawer: "comments" | "quotes" =
+    props.showComments && props.commentsCount > 0 ? "comments" : "quotes";
+  let openDiscussions = () => {
+    // Keep the listing highlighted (read by the reader feed) while the modal is up.
     setSelectedPostListing({
       document_uri: props.documentUri,
       document: props.document,
       publication: props.publication,
-      drawer,
+      drawer: defaultDrawer,
     });
+    setDiscussionsOpen(true);
   };
+
+  let commentsAvailable = props.showComments && props.commentsCount > 0;
+  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
+  let discussionsAvailable = commentsAvailable || mentionsAvailable;
 
   return (
     <div
@@ -263,25 +272,32 @@ const Interactions = (props: {
           documentUri={props.documentUri}
           recommendsCount={props.recommendsCount}
         />
-        {!props.showMentions || props.quotesCount === 0 ? null : (
+        {!discussionsAvailable ? null : (
           <button
-            aria-label="Post quotes"
-            onClick={() => selectPostListing("quotes")}
+            aria-label="Post discussions"
+            onClick={openDiscussions}
             className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
           >
-            <QuoteTiny /> {props.quotesCount}
-          </button>
-        )}
-        {!props.showComments || props.commentsCount === 0 ? null : (
-          <button
-            aria-label="Post comments"
-            onClick={() => selectPostListing("comments")}
-            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
-          >
-            <CommentTiny /> {props.commentsCount}
+            <CommentTiny /> {props.commentsCount + props.quotesCount}
           </button>
         )}
       </div>
+      {discussionsAvailable && (
+        <DiscussionModal
+          open={discussionsOpen}
+          onOpenChange={(open) => {
+            setDiscussionsOpen(open);
+            if (!open) setSelectedPostListing(null);
+          }}
+          document_uri={props.documentUri}
+          postUrl={props.postUrl}
+          title={props.document.title}
+          commentsCount={props.commentsCount}
+          quotesCount={props.quotesCount}
+          showComments={props.showComments}
+          showMentions={props.showMentions}
+        />
+      )}
     </div>
   );
 };
