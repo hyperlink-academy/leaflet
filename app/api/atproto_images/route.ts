@@ -97,7 +97,7 @@ async function getTransformedBlob(
       transform: {
         width: transform.width,
         height: transform.height,
-        resize: "cover",
+        resize: "contain",
       },
     });
   if (error || !data) {

@@ -21,6 +21,7 @@ export const blobRefToSrc = (
   let src = `${prefix}/api/atproto_images?did=${did}&cid=${link}`;
   if (transform?.width) src += `&width=${transform.width}`;
   if (transform?.height) src += `&height=${transform.height}`;
+  src += "&v=1";
   return src;
 };
 
