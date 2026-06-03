@@ -1,19 +1,10 @@
 "use client";
-import { Agent } from "@atproto/api";
 import { Input } from "components/Input";
 import { Combobox, ComboboxResult } from "components/Combobox";
-import { useRef, useState } from "react";
-import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import { useActorTypeahead } from "src/hooks/useActorTypeahead";
 import { DotLoader } from "components/utils/DotLoader";
 import { theme } from "tailwind.config";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
-
-type ActorSuggestion = {
-  handle: string;
-  did: string;
-  displayName?: string;
-  avatar?: string;
-};
 
 export const HandleInput = (props: {
   autoFocus?: boolean;
@@ -24,38 +15,16 @@ export const HandleInput = (props: {
   loading?: boolean;
   onSubmit?: (handle: string) => void;
 }) => {
-  let [handleValue, setHandleValue] = useState("");
-  let [suggestions, setSuggestions] = useState<ActorSuggestion[]>([]);
-  let [dropdownOpen, setDropdownOpen] = useState(false);
-  let [highlighted, setHighlighted] = useState<string | undefined>(undefined);
-  let requestIdRef = useRef(0);
-
-  useDebouncedEffect(
-    async () => {
-      if (!handleValue) {
-        setSuggestions([]);
-        setDropdownOpen(false);
-        return;
-      }
-      const requestId = ++requestIdRef.current;
-      const agent = new Agent("https://public.api.bsky.app");
-      const result = await agent.searchActorsTypeahead({
-        q: handleValue,
-        limit: 8,
-      });
-      if (requestId !== requestIdRef.current) return;
-      const actors = result.data.actors.map((actor) => ({
-        handle: actor.handle,
-        did: actor.did,
-        displayName: actor.displayName,
-        avatar: actor.avatar,
-      }));
-      setSuggestions(actors);
-      setDropdownOpen(actors.length > 0);
-    },
-    300,
-    [handleValue],
-  );
+  let {
+    handleValue,
+    setHandleValue,
+    suggestions,
+    setSuggestions,
+    dropdownOpen,
+    setDropdownOpen,
+    highlighted,
+    setHighlighted,
+  } = useActorTypeahead();
 
   const handleSelect = (handle?: string) => {
     const selected = handle ?? handleValue;

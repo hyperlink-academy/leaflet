@@ -27,6 +27,11 @@ export type PublicationMetadata = {
     /** Raw record - use normalizePublicationRecord() to get typed data */
     record: Json | null;
     uri: string;
+    publication_contributors?: {
+      contributor_did: string;
+      confirmed: boolean;
+      created_at: string;
+    }[];
   } | null;
   documents: {
     /** Raw data - use normalizeDocumentRecord() to get typed data */

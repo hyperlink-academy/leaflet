@@ -8,11 +8,53 @@ import {
 } from "src/atproto-oauth";
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
+import { isConfirmedContributor } from "src/contributorPermissions";
 import { revalidatePath } from "next/cache";
+
+// An authorization failure, distinct from a (recoverable) expired OAuth
+// session. Callers surface session errors with a "sign in again" affordance;
+// a not-authorized error should not pretend the session can be restored.
+export type NotAuthorizedError = { type: "not_authorized"; message: string };
+
+export type PostMutationError = OAuthSessionError | NotAuthorizedError;
+
+// Resolve which DID owns the PDS that hosts this document and whether the
+// current user (identity_did) is authorized to mutate it. Owner-on-PDS is
+// always authorized; confirmed publication contributors are authorized to
+// act on the owner's behalf and the records are published via the owner's
+// OAuth session.
+async function resolveDocumentAuthority(
+  document_uri: string,
+  current_did: string,
+): Promise<
+  | { ok: true; ownerDid: string }
+  | { ok: false; error: NotAuthorizedError }
+> {
+  let pdsOwner = new AtUri(document_uri).host;
+  if (pdsOwner === current_did) return { ok: true, ownerDid: current_did };
+
+  let notAuthorized = {
+    ok: false,
+    error: {
+      type: "not_authorized",
+      message: "You are not authorized to modify this post.",
+    },
+  } as const;
+
+  let { data: link } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("publication")
+    .eq("document", document_uri)
+    .maybeSingle();
+  if (!link?.publication) return notAuthorized;
+  if (!(await isConfirmedContributor(link.publication, current_did)))
+    return notAuthorized;
+  return { ok: true, ownerDid: pdsOwner };
+}
 
 export async function deletePost(
   document_uri: string
-): Promise<{ success: true } | { success: false; error: OAuthSessionError }> {
+): Promise<{ success: true } | { success: false; error: PostMutationError }> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
     return {
@@ -25,7 +67,13 @@ export async function deletePost(
     };
   }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  let authority = await resolveDocumentAuthority(
+    document_uri,
+    identity.atp_did,
+  );
+  if (!authority.ok) return { success: false, error: authority.error };
+
+  const sessionResult = await restoreOAuthSession(authority.ownerDid);
   if (!sessionResult.ok) {
     return { success: false, error: sessionResult.error };
   }
@@ -34,9 +82,6 @@ export async function deletePost(
     credentialSession.fetchHandler.bind(credentialSession),
   );
   let uri = new AtUri(document_uri);
-  if (uri.host !== identity.atp_did) {
-    return { success: true };
-  }
 
   await Promise.all([
     // Delete from both PDS collections (document exists in one or the other)
@@ -61,7 +106,7 @@ export async function deletePost(
 
 export async function unpublishPost(
   document_uri: string
-): Promise<{ success: true } | { success: false; error: OAuthSessionError }> {
+): Promise<{ success: true } | { success: false; error: PostMutationError }> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
     return {
@@ -74,7 +119,13 @@ export async function unpublishPost(
     };
   }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  let authority = await resolveDocumentAuthority(
+    document_uri,
+    identity.atp_did,
+  );
+  if (!authority.ok) return { success: false, error: authority.error };
+
+  const sessionResult = await restoreOAuthSession(authority.ownerDid);
   if (!sessionResult.ok) {
     return { success: false, error: sessionResult.error };
   }
@@ -83,9 +134,6 @@ export async function unpublishPost(
     credentialSession.fetchHandler.bind(credentialSession),
   );
   let uri = new AtUri(document_uri);
-  if (uri.host !== identity.atp_did) {
-    return { success: true };
-  }
 
   await Promise.all([
     // Delete from both PDS collections (document exists in one or the other)

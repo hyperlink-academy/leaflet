@@ -15,6 +15,7 @@ import {
 } from "lexicons/api";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
+import { isConfirmedContributor } from "src/contributorPermissions";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
@@ -91,21 +92,15 @@ export async function publishToPublication({
     };
   }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
-  if (!sessionResult.ok) {
-    return { success: false, error: sessionResult.error };
-  }
-  let credentialSession = sessionResult.value;
-  let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
-  );
-
-  // Check if we're publishing to a publication or standalone
+  // Check if we're publishing to a publication or standalone, and figure out
+  // whose PDS the record will live in. For publications, the record always
+  // lives in the publication owner's PDS, so contributors publish using the
+  // owner's restored OAuth session.
   let draft: any = null;
   let existingDocUri: string | null = null;
+  let pdsDid = identity.atp_did;
 
   if (publication_uri) {
-    // Publishing to a publication - use leaflets_in_publications
     let { data, error } = await supabaseServerClient
       .from("publications")
       .select("*, leaflets_in_publications(*, documents(*))")
@@ -114,8 +109,16 @@ export async function publishToPublication({
       .single();
     console.log(error);
 
-    if (!data || identity.atp_did !== data?.identity_did)
+    if (!data) throw new Error("No draft or not publisher");
+
+    let isOwner = data.identity_did === identity.atp_did;
+    if (
+      !isOwner &&
+      !(await isConfirmedContributor(publication_uri, identity.atp_did))
+    )
       throw new Error("No draft or not publisher");
+
+    pdsDid = data.identity_did!;
     draft = data.leaflets_in_publications[0];
     existingDocUri = draft?.doc;
   } else {
@@ -143,6 +146,19 @@ export async function publishToPublication({
       }
     }
   }
+
+  // Restore the OAuth session of the PDS that will host the record.
+  // For publications this is the owner; for standalone docs this is the
+  // current user. If a contributor is publishing and the owner is signed
+  // out, this surfaces a clear "owner needs to sign in again" error.
+  const sessionResult = await restoreOAuthSession(pdsDid);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
 
   // Heuristic: Remove title entities if this is the first time publishing
   // (when coming from a standalone leaflet with entitiesToDelete passed in)
@@ -214,6 +230,20 @@ export async function publishToPublication({
 
   // Resolve preferences: explicit param > draft DB value
   const preferences = postPreferences ?? draft?.preferences;
+
+  // Gather contributors from the draft so the published record records its
+  // multi-contributor byline. Only relevant for publication documents, and only
+  // written to the site.standard.document record.
+  let contributors: SiteStandardDocument.Contributor[] = [];
+  if (publication_uri) {
+    let { data: contributorRows } = await supabaseServerClient
+      .from("leaflet_contributors")
+      .select("contributor_did")
+      .eq("leaflet", leaflet_id)
+      .order("created_at", { ascending: true });
+    contributors =
+      contributorRows?.map((c) => ({ did: c.contributor_did })) ?? [];
+  }
 
   // Extract theme for standalone documents (not for publications)
   let theme: PubLeafletPublication.Theme | undefined;
@@ -300,6 +330,7 @@ export async function publishToPublication({
       }),
       // Include theme for standalone documents (not for publication documents)
       ...(!publication_uri && theme && { theme }),
+      ...(contributors.length > 0 && { contributors }),
       ...(preferences && {
         preferences: {
           $type: "pub.leaflet.publication#preferences" as const,

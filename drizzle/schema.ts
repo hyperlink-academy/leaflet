@@ -174,6 +174,8 @@ export const permission_tokens = pgTable("permission_tokens", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	root_entity: uuid("root_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	blocked_by_admin: boolean("blocked_by_admin"),
+	title: text("title"),
+	description: text("description"),
 });
 
 export const user_subscriptions = pgTable("user_subscriptions", {
@@ -412,6 +414,18 @@ export const documents_in_publications = pgTable("documents_in_publications", {
 	}
 });
 
+export const leaflet_contributors = pgTable("leaflet_contributors", {
+	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	contributor_did: text("contributor_did").notNull().references(() => identities.atp_did, { onDelete: "cascade", onUpdate: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		contributor_did_idx: index("leaflet_contributors_contributor_did_idx").on(table.contributor_did),
+		leaflet_contributors_pkey: primaryKey({ columns: [table.leaflet, table.contributor_did], name: "leaflet_contributors_pkey"}),
+	}
+});
+
 export const document_mentions_in_bsky = pgTable("document_mentions_in_bsky", {
 	uri: text("uri").notNull().references(() => bsky_posts.uri, { onDelete: "cascade" } ),
 	link: text("link").notNull(),
@@ -447,6 +461,19 @@ export const publication_domains = pgTable("publication_domains", {
 	return {
 		publication_idx: index("publication_domains_publication_idx").on(table.publication),
 		publication_domains_pkey: primaryKey({ columns: [table.publication, table.domain], name: "publication_domains_pkey"}),
+	}
+});
+
+export const publication_contributors = pgTable("publication_contributors", {
+	publication_uri: text("publication_uri").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	contributor_did: text("contributor_did").notNull().references(() => identities.atp_did, { onDelete: "cascade", onUpdate: "cascade" } ),
+	confirmed: boolean("confirmed").default(false).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		contributor_did_idx: index("publication_contributors_contributor_did_idx").on(table.contributor_did),
+		publication_contributors_pkey: primaryKey({ columns: [table.publication_uri, table.contributor_did], name: "publication_contributors_pkey"}),
 	}
 });
 

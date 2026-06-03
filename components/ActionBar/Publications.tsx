@@ -32,24 +32,22 @@ export const PublicationButtons = (props: { className?: string }) => {
     ? identity.permission_token_on_homepage.length > 0
     : localLeaflets.filter((d) => !d.hidden).length > 0;
 
+  let ownedPubs = identity?.publications ?? [];
+  let contributorPubs = identity?.contributor_publications ?? [];
+  let ownedUris = new Set(ownedPubs.map((p) => p.uri));
+  let extraContributorPubs = contributorPubs.filter(
+    (p) => !ownedUris.has(p.uri),
+  );
+  let allPubs = [...ownedPubs, ...extraContributorPubs];
+
   // don't show pub list button if
   // no pubs or looseleafs but has docs
   // if they don't have docs, the empty state of the homepage prompts them to make publications
   // we show a "start a pub" banner instead
-  console.log(hasDocs);
-  if (
-    !hasLooseleafs &&
-    hasDocs &&
-    (!identity || identity.publications.length === 0)
-  )
+  if (!hasLooseleafs && hasDocs && allPubs.length === 0)
     return <PubListEmptyContent />;
 
-  if (
-    !hasLooseleafs &&
-    !hasDocs &&
-    (!identity || identity.publications.length === 0)
-  )
-    return null;
+  if (!hasLooseleafs && !hasDocs && allPubs.length === 0) return null;
 
   return (
     <>
@@ -77,7 +75,7 @@ export const PublicationButtons = (props: { className?: string }) => {
             <hr className="border-border-light border-dashed my-1" />
           </>
         )}
-        {identity?.publications?.map((d) => {
+        {allPubs.map((d) => {
           return <PublicationOption {...d} key={d.uri} record={d.record} />;
         })}
 

@@ -16,6 +16,7 @@ import { PostSettings } from "./PostSettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { ManageProSubscription, NewsletterSettings } from "./ProSettings";
+import { ContributorSettings } from "./ContributorSettings";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
@@ -190,6 +191,9 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
             <PubDomainSettings />
           </div>
         </DashboardContainer>
+
+        <ContributorSettings />
+
         {canSeePro && !isPro ? (
           <DashboardContainer section="Leaflet Pro" className="pb-4">
             <UpgradeToProButton />

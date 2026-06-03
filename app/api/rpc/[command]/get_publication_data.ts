@@ -51,9 +51,11 @@ export const get_publication_data = makeRoute({
           documents(*),
           permission_tokens(*,
             permission_token_rights(*),
-            custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*)
+            custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),
+            leaflet_contributors(contributor_did, created_at)
          )
         ),
+        publication_contributors(contributor_did, confirmed, created_at),
         publication_pages(*,
           permission_tokens!publication_pages_leaflet_src_fkey(*,
             permission_token_rights(*)

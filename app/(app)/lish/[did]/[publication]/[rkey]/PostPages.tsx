@@ -34,6 +34,7 @@ import {
   closePage,
 } from "./postPageState";
 import { IframePageView } from "components/Pages/IframePageView";
+import type { BylineProfile } from "./PostHeader/PostHeader";
 
 export type { DocPage, ThreadPage, QuotesPage, IframePage, OpenPage };
 export {
@@ -49,6 +50,7 @@ export type SharedPageProps = {
   document: PostPageData;
   did: string;
   profile?: ProfileViewDetailed;
+  contributors?: BylineProfile[];
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
@@ -101,6 +103,7 @@ export function PostPages({
   document,
   did,
   profile,
+  contributors,
   preferences,
   pubRecord,
   prerenderedCodeBlocks,
@@ -113,6 +116,7 @@ export function PostPages({
   document_uri: string;
   document: PostPageData;
   profile?: ProfileViewDetailed;
+  contributors?: BylineProfile[];
   pubRecord?: NormalizedPublication | null;
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
@@ -150,6 +154,7 @@ export function PostPages({
     document,
     did,
     profile,
+    contributors,
     preferences,
     pubRecord,
     theme,

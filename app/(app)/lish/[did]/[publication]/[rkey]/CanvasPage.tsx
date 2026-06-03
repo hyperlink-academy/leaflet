@@ -14,7 +14,7 @@ import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
 import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons/InfoSmall";
-import { PostHeader } from "./PostHeader/PostHeader";
+import { PostHeader, type BylineProfile } from "./PostHeader/PostHeader";
 import { useDrawerOpen } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PollData } from "./fetchPollData";
@@ -34,6 +34,7 @@ export function CanvasPage({
     document,
     did,
     profile,
+    contributors,
     preferences,
     pubRecord,
     theme,
@@ -67,6 +68,7 @@ export function CanvasPage({
         isSubpage={isSubpage}
         data={document}
         profile={profile}
+        contributors={contributors}
         preferences={preferences}
         commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
         quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
@@ -211,6 +213,7 @@ const CanvasMetadata = (props: {
   isSubpage: boolean | undefined;
   data: PostPageData;
   profile?: ProfileViewDetailed;
+  contributors?: BylineProfile[];
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
@@ -245,6 +248,7 @@ const CanvasMetadata = (props: {
             <PostHeader
               data={props.data}
               profile={props.profile}
+              contributors={props.contributors}
               preferences={props.preferences}
               isCanvas
             />

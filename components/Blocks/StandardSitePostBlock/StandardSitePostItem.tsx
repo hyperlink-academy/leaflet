@@ -19,6 +19,7 @@ import { InteractionPreview } from "components/InteractionsPreview";
 import { PubIcon } from "components/ActionBar/Publications";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import { formatBylineNames } from "src/utils/byline";
 
 export type StandardSitePostSize = "large" | "medium" | "small";
 
@@ -178,9 +179,21 @@ export function StandardSitePostItemView({
     post.uri,
     post.publication ?? undefined,
   );
+  // Prefer explicit contributors for the byline; fall back to the single
+  // document author when there are none. Use the bare handle (no `@` prefix)
+  // so this list view matches the post page byline.
+  const bylineLabel = (p: {
+    displayName: string | null;
+    handle: string | null;
+  }) => p.displayName || p.handle || undefined;
   const authorLabel =
-    post.author?.displayName ||
-    (post.author?.handle ? `@${post.author.handle}` : undefined);
+    post.contributors.length > 0
+      ? formatBylineNames(
+          post.contributors
+            .map(bylineLabel)
+            .filter((l): l is string => !!l),
+        ) || undefined
+      : bylineLabel(post.author ?? { displayName: null, handle: null });
   const date = post.record.publishedAt ? (
     <LocalizedDate
       dateString={post.record.publishedAt}

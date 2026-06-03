@@ -77,11 +77,17 @@ export default async function PublicationDashboardLayout(props: {
   let { publication } = publication_data;
   const record = normalizePublicationRecord(publication?.record);
 
-  if (
-    !publication ||
-    identity.atp_did !== publication.identity_did ||
-    !record
-  ) {
+  if (!publication || !record) {
+    return <PubNotFound />;
+  }
+
+  let isOwner = identity.atp_did === publication.identity_did;
+  let isConfirmedContributor =
+    !isOwner &&
+    (publication.publication_contributors ?? []).some(
+      (c) => c.contributor_did === identity.atp_did && c.confirmed,
+    );
+  if (!isOwner && !isConfirmedContributor) {
     return <PubNotFound />;
   }
 

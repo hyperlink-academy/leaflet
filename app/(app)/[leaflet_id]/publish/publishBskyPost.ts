@@ -39,6 +39,11 @@ export async function publishPostToBsky(args: {
   document_record: SiteStandardDocument.Record;
   rkey: string;
   facets: AppBskyRichtextFacet.Main[];
+  // When publishing to a publication, the document record lives in the
+  // publication owner's PDS, so the Bluesky cross-post must also be created
+  // from the owner's account. Standalone publishes leave this undefined and
+  // post from the current viewer.
+  ownerDid?: string;
 }): Promise<PublishBskyResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -52,7 +57,14 @@ export async function publishPostToBsky(args: {
     };
   }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  // The post is authored by whichever PDS hosts the document record. For
+  // publications that's the owner; for standalone docs it's the viewer. If a
+  // contributor is publishing and the owner is signed out, this surfaces a
+  // clear "owner needs to sign in again" error rather than silently posting
+  // from the contributor's account.
+  let postAuthorDid = args.ownerDid || identity.atp_did;
+
+  const sessionResult = await restoreOAuthSession(postAuthorDid);
   if (!sessionResult.ok) {
     return { success: false, error: sessionResult.error };
   }
@@ -70,7 +82,9 @@ export async function publishPostToBsky(args: {
         "$link"
       ] || args.document_record.coverImage.ref.toString();
 
-    let coverImageResponse = await fetchAtprotoBlob(identity.atp_did, cid);
+    // The cover image blob was uploaded to the post author's PDS alongside
+    // the document record, so fetch it from there.
+    let coverImageResponse = await fetchAtprotoBlob(postAuthorDid, cid);
     if (coverImageResponse) {
       imageBinary = await coverImageResponse.blob();
     }

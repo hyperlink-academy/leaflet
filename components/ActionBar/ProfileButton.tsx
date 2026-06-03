@@ -54,7 +54,7 @@ export const ProfileButton = () => {
       }
     >
       <div className="flex flex-col gap-0.5">
-        {record && (
+        {record?.handle && (
           <>
             <SpeedyLink
               className="no-underline! menuItem -mx-[8px]"

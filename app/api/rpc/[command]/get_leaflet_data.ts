@@ -6,7 +6,7 @@ export type GetLeafletDataReturnType = Awaited<
   ReturnType<(typeof get_leaflet_data)["handler"]>
 >;
 
-const leaflets_in_publications_query = `leaflets_in_publications(*, publications(*), documents(*))`;
+const leaflets_in_publications_query = `leaflets_in_publications(*, publications(*, publication_contributors(contributor_did, confirmed, created_at)), documents(*))`;
 const leaflets_to_documents_query = `leaflets_to_documents(*, documents(*))`;
 const publication_pages_query = `publication_pages!publication_pages_leaflet_src_fkey(*, publications(*))`;
 export const get_leaflet_data = makeRoute({

@@ -13,10 +13,24 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import Post from "app/(app)/p/[didOrHandle]/[rkey]/l-quote/[quote]/page";
 import { Separator } from "components/Layout";
 import { ProfilePopover } from "components/ProfilePopover";
+import { Fragment } from "react";
+import {
+  type BylineProfile,
+  bylineName,
+  bylineSeparator,
+} from "src/utils/byline";
+
+// Re-export so existing importers of `BylineProfile` from this module keep
+// working. The serializable byline profile (subset of the profile cache shape)
+// is passed from the server data builder. When present and non-empty it
+// represents the document's contributors; otherwise the single-author
+// `profile` is used.
+export type { BylineProfile };
 
 export function PostHeader(props: {
   data: PostPageData;
   profile?: ProfileViewDetailed;
+  contributors?: BylineProfile[];
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
@@ -29,6 +43,13 @@ export function PostHeader(props: {
 
   const record = document?.normalizedDocument;
   let profile = props.profile;
+  // Only keep contributors that resolve to a real name (displayName or handle).
+  // Unresolved profiles (bare DIDs) would otherwise render empty clickable
+  // spans and stray separators. When none remain we fall back to the
+  // single-author `profile` path below.
+  let namedContributors = (props.contributors ?? []).filter(
+    (c) => c.displayName || c.handle,
+  );
   let pub = props.data?.documents_in_publications[0]?.publications;
 
   const formattedDate = useLocalizedDate(
@@ -71,7 +92,27 @@ export function PostHeader(props: {
       postInfo={
         <>
           <div className="flex flex-row gap-2 items-center">
-            {profile ? (
+            {namedContributors.length > 0 ? (
+              <div className="flex flex-row flex-wrap items-center text-tertiary">
+                {namedContributors.map((c, i) => (
+                  <Fragment key={c.did}>
+                    {i > 0 && (
+                      <span className="whitespace-pre">
+                        {bylineSeparator(i, namedContributors.length)}
+                      </span>
+                    )}
+                    <ProfilePopover
+                      didOrHandle={c.did}
+                      trigger={
+                        <span className="hover:underline">
+                          {bylineName(c)}
+                        </span>
+                      }
+                    />
+                  </Fragment>
+                ))}
+              </div>
+            ) : profile ? (
               <ProfilePopover
                 didOrHandle={profile.did}
                 trigger={
