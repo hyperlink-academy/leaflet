@@ -47,6 +47,11 @@ export function DraftContributorSelector(props: { leaflet_id: string }) {
     profile: profiles?.[did] ?? null,
   }));
 
+  // Only surface the contributor UI when the publication actually has more than
+  // one contributor (owner + at least one confirmed). With a lone owner there's
+  // nothing to pick, so the byline/selector would just be noise.
+  if (candidateDids.length <= 1) return null;
+
   // The byline always shows the PERSON: displayName -> handle -> did fallback,
   // resolved via the profile cache. The owner is rendered as a person too
   // (never the publication name).
