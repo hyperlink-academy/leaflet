@@ -26,6 +26,7 @@ type SubscribeMode = "email" | "atproto";
 
 export type SubscribeProps = {
   autoFocus?: boolean;
+  compact?: boolean;
   publicationUri: string;
   publicationUrl?: string;
   publicationName: string;
@@ -149,7 +150,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
   );
   return (
     <>
-      <div className="h-1 w-full spacer" />
+      {!props.compact && <div className="h-1 w-full spacer" />}
 
       {isSubscribed ? (
         <>
@@ -178,6 +179,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   onChange={setEmail}
                   disabled={user.loggedIn && !!user.email}
                   autoFocus={props.autoFocus}
+                  compact={props.compact}
                   loading={requesting}
                   action={
                     <ButtonPrimary
@@ -210,6 +212,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               onChange={setEmail}
               disabled={user.loggedIn && !!user.email}
               autoFocus={props.autoFocus}
+              compact={props.compact}
               loading={requesting}
               leading={modeMenu}
               action={
@@ -233,6 +236,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
             <SubscribeWithHandle
               user={user}
               autoFocus={props.autoFocus}
+              compact={props.compact}
               publicationUri={props.publicationUri}
               publicationUrl={props.publicationUrl}
               onAtSuccess={() => setAtSuccessOpen(true)}
@@ -244,6 +248,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
         <SubscribeWithHandle
           user={user}
           autoFocus={props.autoFocus}
+          compact={props.compact}
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           onSubscribed={() => setLocallySubscribed(true)}

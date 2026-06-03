@@ -12,6 +12,7 @@ export const EmailInput = (props: {
   leading?: React.ReactNode;
   autoFocus?: boolean;
   large?: boolean;
+  compact?: boolean;
   value: string;
   onChange: (val: string) => void;
   disabled?: boolean;
@@ -19,7 +20,7 @@ export const EmailInput = (props: {
   publicationUrl?: string;
 }) => {
   return (
-    <div className="flex gap-1 w-full">
+    <div className="flex gap-1 w-full min-w-0">
       <div
         className={` input-with-border flex gap-2 w-full items-center mx-auto py-0! min-w-0 ${props.large && "px-2!"} `}
         style={
@@ -42,7 +43,7 @@ export const EmailInput = (props: {
         <Input
           type="email"
           autoFocus={props.autoFocus}
-          className={`appearance-none! outline-none! grow min-w-0 ${props.large ? "py-1!" : "py-0.5 disabled:text-tertiary disabled:italic disabled:border-border-light"}`}
+          className={`appearance-none! outline-none! grow min-w-0 ${props.large ? "py-1!" : `${props.compact ? "py-0!" : "py-0.5"} disabled:text-tertiary disabled:italic disabled:border-border-light`}`}
           disabled={props.disabled || props.loading}
           placeholder="email@example.com"
           size={0}
@@ -60,7 +61,9 @@ export const EmailInput = (props: {
           rel="noopener noreferrer"
           className={`no-underlinetext-accent-contrast`}
         >
-          <ButtonSecondary className="p-[6px]!  border-border!">
+          <ButtonSecondary
+            className={`${props.compact ? "p-[3px]!" : "p-[6px!"} border-border!`}
+          >
             <RSSTiny />
           </ButtonSecondary>
         </a>

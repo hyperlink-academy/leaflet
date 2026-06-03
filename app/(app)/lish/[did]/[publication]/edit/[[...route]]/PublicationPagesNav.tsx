@@ -18,11 +18,18 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
 } from "@dnd-kit/sortable";
-import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+import {
+  restrictToHorizontalAxis,
+  restrictToParentElement,
+} from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { generateKeyBetween } from "fractional-indexing";
 import { SpeedyLink } from "components/SpeedyLink";
-import { ButtonPrimary, ButtonSecondary, ButtonTertiary } from "components/Buttons";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
 import { AddTiny } from "components/Icons/AddTiny";
@@ -34,8 +41,11 @@ import { reorderPublicationPages } from "actions/reorderPublicationPages";
 import {
   usePublicationData,
   mutatePublicationData,
+  useNormalizedPublicationRecord,
 } from "../../dashboard/PublicationSWRProvider";
 import { sortPublicationPages } from "../../sortPublicationPages";
+import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import { DotLoader } from "components/utils/DotLoader";
 
 type SortablePage = {
   id: number;
@@ -51,40 +61,22 @@ export function PublicationPagesNav(props: {
   let router = useRouter();
   let pathname = usePathname() ?? "";
   let { data, mutate } = usePublicationData();
-  let [creating, setCreating] = useState(false);
-  let [open, setOpen] = useState(false);
-  let [name, setName] = useState("");
-  let [path, setPath] = useState("/");
+  let [subscribeHovered, setSubscribeHovered] = useState(false);
+  let [subscribeFocused, setSubscribeFocused] = useState(false);
+  let [subscribeHasValue, setSubscribeHasValue] = useState(false);
+  let subscribeOpen = subscribeHovered || subscribeFocused || subscribeHasValue;
 
   let pages = data?.publication?.publication_pages ?? [];
   let publicationUri = data?.publication?.uri;
+  let publicationRecord = useNormalizedPublicationRecord();
+  let newsletterMode =
+    !!data?.publication?.publication_newsletter_settings?.enabled;
 
   let baseHref = `/lish/${props.did}/${props.publicationName}`;
 
   function hrefForPath(path: string | null) {
     let segment = path && path !== "/" ? path : "";
     return `${baseHref}/edit${segment}`;
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (creating || !publicationUri) return;
-    let trimmedPath = path.trim();
-    if (!trimmedPath) return;
-    if (!trimmedPath.startsWith("/")) trimmedPath = "/" + trimmedPath;
-    setCreating(true);
-    let created = await createPublicationPage({
-      publication_uri: publicationUri,
-      path: trimmedPath,
-      title: name.trim() || undefined,
-    });
-    setCreating(false);
-    if (!created) return;
-    setOpen(false);
-    setName("");
-    setPath("/");
-    await mutate();
-    router.push(hrefForPath(created.path));
   }
 
   let sortedPages = useMemo(() => sortPublicationPages(pages), [pages]);
@@ -129,16 +121,17 @@ export function PublicationPagesNav(props: {
   }
 
   return (
-    <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page border-t border-b border-border-light shrink-0 w-full sm:max-w-[calc(var(--page-width-units)*1.25)] mx-auto">
-      <div className="flex items-center gap-2 px-3 sm:px-4 py-2 overflow-x-auto w-full sm:max-w-(--page-width-units) mx-auto">
-        <div className="flex items-center gap-1 grow min-w-0 overflow-x-auto">
+    <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page  shrink-0 w-full sm:max-w-[calc(var(--page-width-units)*1.25)] mx-auto pt-3 ">
+      <div className="flex justify-between items-center gap-4 px-3 sm:px-4  w-full sm:max-w-(--page-width-units) mx-auto">
+        <div className="pubPageTabs flex items-center shrink-0 gap-4 w-fit min-w-0 overflow-x-auto pt-2 pb-5 -mb-5">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            autoScroll={false}
             measuring={{
               droppable: { strategy: MeasuringStrategy.Always },
             }}
-            modifiers={[restrictToHorizontalAxis]}
+            modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
             onDragEnd={handleDragEnd}
           >
             <SortableContext
@@ -149,8 +142,7 @@ export function PublicationPagesNav(props: {
                 let isActive =
                   decodeURIComponent(pathname) ===
                   decodeURIComponent(hrefForPath(page.path));
-                let neighbor =
-                  sortedPages[idx - 1] ?? sortedPages[idx + 1];
+                let neighbor = sortedPages[idx - 1] ?? sortedPages[idx + 1];
                 let redirectHrefOnDelete =
                   isActive && neighbor ? hrefForPath(neighbor.path) : null;
                 return (
@@ -160,6 +152,7 @@ export function PublicationPagesNav(props: {
                     href={hrefForPath(page.path)}
                     active={isActive}
                     publicationUri={publicationUri}
+                    publicationUrl={publicationRecord?.url}
                     canDelete={sortedPages.length > 1}
                     onUpdated={(updated) => {
                       mutatePublicationData(mutate, (draft) => {
@@ -189,52 +182,156 @@ export function PublicationPagesNav(props: {
               })}
             </SortableContext>
           </DndContext>
-        </div>
-        <Popover
-          asChild
-          align="end"
-          open={open}
-          onOpenChange={setOpen}
-          className="w-64"
-          trigger={
-            <ButtonSecondary compact>
-              <AddTiny className="scale-90" />
-              Page
-            </ButtonSecondary>
-          }
-        >
-          <form
-            onSubmit={handleSubmit}
-            onKeyDown={(e) => {
-              if (e.key === "Tab") e.stopPropagation();
+          <AddPageButton
+            publicationUri={publicationUri}
+            publicationUrl={publicationRecord?.url}
+            onCreated={async (created) => {
+              await mutate();
+              router.push(hrefForPath(created.path));
             }}
-            className="flex flex-col gap-2"
+          />
+        </div>
+        {publicationUri && publicationRecord && (
+          <div
+            className="shrink-0"
+            onMouseEnter={() => setSubscribeHovered(true)}
+            onMouseLeave={() => setSubscribeHovered(false)}
+            onFocus={() => setSubscribeFocused(true)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                setSubscribeFocused(false);
+            }}
+            onInput={(e) => {
+              let target = e.target as HTMLInputElement;
+              if (target.type === "email") setSubscribeHasValue(!!target.value);
+            }}
           >
-            <InputWithLabel
-              label="Name"
-              type="text"
-              name="page-title"
-              autoComplete="off"
-              value={name}
-              onChange={(e) => setName(e.currentTarget.value)}
-              autoFocus
-            />
-            <InputWithLabel
-              label="Path"
-              type="text"
-              name="page-path"
-              autoComplete="off"
-              value={path}
-              onChange={(e) => setPath(e.currentTarget.value)}
-              placeholder="/about"
-            />
-            <ButtonPrimary type="submit" disabled={creating}>
-              {creating ? "Creating..." : "Create Page"}
-            </ButtonPrimary>
-          </form>
-        </Popover>
+            {!subscribeOpen ? (
+              <div className="max-w-64">
+                <SubscribeInput
+                  compact
+                  publicationUri={publicationUri}
+                  publicationUrl={publicationRecord.url}
+                  publicationName={publicationRecord.name}
+                  publicationDescription={publicationRecord.description}
+                  newsletterMode={newsletterMode}
+                />
+              </div>
+            ) : (
+              <ButtonPrimary compact className="pubPageSubscribe text-sm!">
+                Subscribe
+              </ButtonPrimary>
+            )}
+          </div>
+        )}
       </div>
+      <div className="border-b border-border-light" />
     </nav>
+  );
+}
+
+function AddPageButton(props: {
+  publicationUri: string | undefined;
+  publicationUrl: string | undefined;
+  onCreated: (created: { path: string | null }) => void | Promise<void>;
+}) {
+  let [open, setOpen] = useState(false);
+  let [creating, setCreating] = useState(false);
+  let [name, setName] = useState("");
+  let [path, setPath] = useState("");
+
+  function cleanPath(path: string) {
+    if (!path) return;
+    let trimmedPath = path.trim().toLocaleLowerCase().replaceAll(" ", "-");
+    let leadingSlashPath = trimmedPath.startsWith("/")
+      ? trimmedPath
+      : "/" + trimmedPath;
+    return leadingSlashPath;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (creating || !props.publicationUri) return;
+    setCreating(true);
+    let created = await createPublicationPage({
+      publication_uri: props.publicationUri,
+      path: cleanPath(path) || "",
+      title: name.trim() || undefined,
+    });
+    setCreating(false);
+    if (!created) return;
+    setOpen(false);
+    setName("");
+    setPath("");
+    await props.onCreated(created);
+  }
+
+  return (
+    <div className="sticky right-0 shrink-0  self-center">
+      <Popover
+        asChild
+        align="end"
+        open={open}
+        onOpenChange={setOpen}
+        className="w-sm py-3!"
+        trigger={
+          <button
+            type="button"
+            aria-label="Add page"
+            className="flex items-center px-1 pt-1 pb-0.5 border-b-3 border-transparent hover:bold-accent-contrast text-tertiary hover:text-accent-contrast text-sm font-bold"
+          >
+            New Page
+          </button>
+        }
+      >
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            if (e.key === "Tab") e.stopPropagation();
+          }}
+          className="flex flex-col gap-2"
+        >
+          <InputWithLabel
+            label="Page Title"
+            type="text"
+            name="page-title"
+            autoComplete="off"
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
+            autoFocus
+          />
+          <InputWithLabel
+            label="Path"
+            type="text"
+            name="page-path"
+            placeholder="about"
+            autoComplete="off"
+            value={path}
+            onChange={(e) => setPath(e.currentTarget.value)}
+          />
+          <div className="text-sm text-tertiary -mt-1">
+            {props.publicationUrl?.replace(/^https?:\/\//, "")}
+            {cleanPath(path)}
+          </div>
+
+          <ButtonPrimary
+            type="submit"
+            disabled={
+              creating ||
+              !path ||
+              path.trim() === "" ||
+              !name ||
+              name.trim() === ""
+            }
+            fullWidth
+            compact
+            className="mt-2"
+          >
+            {creating ? <DotLoader /> : "Create Page"}
+          </ButtonPrimary>
+        </form>
+      </Popover>
+    </div>
   );
 }
 
@@ -243,6 +340,8 @@ function SortableTab(props: {
   href: string;
   active: boolean;
   publicationUri: string | undefined;
+  publicationUrl: string | undefined;
+
   canDelete: boolean;
   onUpdated: (updated: { title: string; path: string }) => void;
   onDeleted: () => void;
@@ -268,7 +367,14 @@ function SortableTab(props: {
     transition,
     zIndex: isDragging ? 1 : undefined,
   };
-
+  function cleanPath(path: string) {
+    if (!path) return;
+    let trimmedPath = path.trim().toLocaleLowerCase().replaceAll(" ", "-");
+    let leadingSlashPath = trimmedPath.startsWith("/")
+      ? trimmedPath
+      : "/" + trimmedPath;
+    return leadingSlashPath;
+  }
   function handleOpenChange(o: boolean) {
     setPopoverOpen(o);
     if (o) {
@@ -281,21 +387,19 @@ function SortableTab(props: {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!props.publicationUri || saving) return;
-    let trimmedPath = path.trim();
-    if (!trimmedPath) return;
-    if (!trimmedPath.startsWith("/")) trimmedPath = "/" + trimmedPath;
+
     let trimmedTitle = name.trim();
     setSaving(true);
     let result = await updatePublicationPage({
       publication_uri: props.publicationUri,
       page_id: props.page.id,
       title: trimmedTitle,
-      path: trimmedPath,
+      path: cleanPath(path) || "",
     });
     setSaving(false);
     if (!result.success) return;
     setPopoverOpen(false);
-    props.onUpdated({ title: trimmedTitle, path: trimmedPath });
+    props.onUpdated({ title: trimmedTitle, path: cleanPath(path) || "" });
   }
 
   async function handleDelete() {
@@ -315,50 +419,56 @@ function SortableTab(props: {
     <div
       ref={setNodeRef}
       style={style}
-      className={`group/sortable-tab flex items-center shrink-0 rounded-md ${
+      className={`relative group/sortable-tab flex items-center shrink-0 ${
         isDragging ? "opacity-50" : ""
       } ${
         props.active
-          ? "bg-accent-1 text-accent-2"
-          : "text-secondary hover:bg-border-light"
+          ? "text-accent-contrast"
+          : "text-tertiary hover:text-secondary"
       }`}
     >
-      <button
-        ref={setActivatorNodeRef}
-        type="button"
-        aria-label="Drag to reorder"
-        className={`shrink-0 w-[9px] h-[15px] ml-1 cursor-grab touch-none focus:opacity-100 ${
-          props.active
-            ? "opacity-100"
-            : "opacity-0 group-hover/sortable-tab:opacity-100"
-        }`}
-        style={{
-          maskImage: "var(--gripperSVG)",
-          maskRepeat: "repeat",
-          backgroundColor: "currentColor",
-        }}
-        {...attributes}
-        {...listeners}
-      />
       <SpeedyLink
         href={props.href}
-        className="block pl-1 py-1 rounded-md text-sm text-inherit hover:no-underline! select-none"
+        className={`block px-1 pt-1 pb-0.5 text-sm font-bold text-inherit hover:no-underline! select-none border-b-3 ${
+          props.active ? "border-accent-contrast" : "border-transparent"
+        }`}
       >
         {props.page.title || props.page.path || "/"}
       </SpeedyLink>
+      <div
+        className={`absolute top-full inset-x-0 flex items-center pt-0.5 ${
+          props.active || popoverOpen
+            ? "opacity-100"
+            : "opacity-0 group-hover/sortable-tab:opacity-100 focus-within:opacity-100"
+        }`}
+      >
+        <button
+          ref={setActivatorNodeRef}
+          type="button"
+          aria-label="Drag to reorder"
+          className="grow h-[9px] cursor-grab touch-none"
+          style={{
+            maskImage: "var(--gripperSVGVertical)",
+            maskRepeat: "repeat",
+            backgroundColor: "currentColor",
+          }}
+          {...attributes}
+          {...listeners}
+        />
+      </div>
       <Popover
         asChild
         align="end"
         open={popoverOpen}
         onOpenChange={handleOpenChange}
-        className="w-64"
+        className="w-sm"
         trigger={
           <button
             type="button"
             aria-label="Edit page"
-            className="shrink-0 mx-1 p-0.5 rounded text-inherit opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100 hover:bg-border-light"
+            className="absolute -top-2 -right-3 shrink-0 p-0.5 rounded-full opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100 bg-accent-1 text-accent-2"
           >
-            <EditTiny className="w-3 h-3" />
+            <EditTiny />
           </button>
         }
       >
@@ -371,7 +481,7 @@ function SortableTab(props: {
             className="flex flex-col gap-2"
           >
             <InputWithLabel
-              label="Name"
+              label="Page Title"
               type="text"
               name="page-title"
               autoComplete="off"
@@ -387,35 +497,39 @@ function SortableTab(props: {
               value={path}
               onChange={(e) => setPath(e.currentTarget.value)}
               placeholder="/about"
-            />
-            <div className="flex gap-2 justify-between items-center">
-              {props.canDelete ? (
+            />{" "}
+            <div className="text-sm text-tertiary -mt-1">
+              {props.publicationUrl?.replace(/^https?:\/\//, "")}
+              {cleanPath(path)}
+            </div>
+            <ButtonPrimary type="submit" disabled={saving} fullWidth compact>
+              {saving ? "Saving..." : "Save"}
+            </ButtonPrimary>
+            {props.canDelete && (
+              <>
+                <hr className="mt-2 border-border-light" />
                 <ButtonTertiary
+                  fullWidth
                   type="button"
                   onClick={() => setMode("confirm")}
                 >
                   Delete
                 </ButtonTertiary>
-              ) : (
-                <div />
-              )}
-              <ButtonPrimary type="submit" disabled={saving}>
-                {saving ? "Saving..." : "Save"}
-              </ButtonPrimary>
-            </div>
+              </>
+            )}
           </form>
         ) : (
-          <div className="flex flex-col gap-2">
-            <div className="text-secondary text-sm pb-1">
+          <div className="flex flex-col gap-2 text-center justify-center">
+            <h3>Are you sure?</h3>
+            <div className="text-secondary  pb-1">
               This will permanently delete{" "}
-              <span className="font-bold text-primary">
-                {props.page.title || props.page.path || "/"}
-              </span>
-              .
+              <div className="font-bold text-secondary">
+                {props.page.title || props.page.path || "this page"}
+              </div>
             </div>
-            <div className="flex gap-2 justify-end items-center">
+            <div className="flex gap-2 justify-center items-center pb-1">
               <ButtonTertiary type="button" onClick={() => setMode("edit")}>
-                Cancel
+                Nevermind
               </ButtonTertiary>
               <ButtonPrimary onClick={handleDelete} disabled={deleting}>
                 {deleting ? "Deleting..." : "Delete"}

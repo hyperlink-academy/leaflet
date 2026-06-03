@@ -40,6 +40,7 @@ const apps = [
 
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
+  compact?: boolean;
   publicationUri: string;
   publicationUrl?: string;
   onSubscribed?: () => void;
@@ -79,10 +80,11 @@ export const SubscribeWithHandle = (props: {
 
   if (props.user.loggedIn && props.user.handle) {
     return (
-      <div className="flex flex-col gap-2 w-max max-w-full mx-auto">
+      <div className="flex flex-col gap-2 w-max max-w-full mx-auto min-w-0">
         <div className="flex items-center gap-1">
           <ButtonPrimary
-            className="mx-auto max-w-full grow"
+            compact={props.compact}
+            className={`mx-auto max-w-full grow ${props.compact && "text-sm"}`}
             disabled={subscribing}
             onClick={async () => {
               if (subscribing) return;
@@ -137,7 +139,9 @@ export const SubscribeWithHandle = (props: {
               rel="noopener noreferrer"
               className={`no-underlinetext-accent-contrast`}
             >
-              <ButtonPrimary className="p-[6px]!">
+              <ButtonPrimary
+                className={`${props.compact ? "p-[3px]!" : "p-[6px!"} `}
+              >
                 <RSSTiny />
               </ButtonPrimary>
             </a>
@@ -153,10 +157,11 @@ export const SubscribeWithHandle = (props: {
     );
   } else
     return (
-      <div className="subscribeHandleInputWrapper max-w-sm mx-auto w-full">
+      <div className="subscribeHandleInputWrapper max-w-sm mx-auto w-full min-w-0">
         <div className="flex gap-1 w-full">
           <HandleInput
             autoFocus={props.autoFocus}
+            compact={props.compact}
             loading={loading}
             leading={props.leading}
             onSubmit={(handle) => {
@@ -180,7 +185,9 @@ export const SubscribeWithHandle = (props: {
               rel="noopener noreferrer"
               className={`no-underlinetext-accent-contrast`}
             >
-              <ButtonSecondary className="p-[6px]!  border-border!">
+              <ButtonSecondary
+                className={`${props.compact ? "p-[3px]!" : "p-[6px!"} border-border!`}
+              >
                 <RSSTiny />
               </ButtonSecondary>
             </a>

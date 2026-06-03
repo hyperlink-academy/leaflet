@@ -51,7 +51,7 @@ export function PublicationPageLeaflet(props: {
               path={props.pagePath}
               title={props.pageTitle}
             />
-            <LeafletLayout flow className="!pb-6">
+            <LeafletLayout flow className="pb-6! pt-0!">
               <Pages rootPage={props.leaflet_id} flow />
             </LeafletLayout>
           </PublicationBackgroundProvider>

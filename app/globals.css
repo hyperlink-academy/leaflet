@@ -131,6 +131,7 @@
     );
 
     --gripperSVG: url("/gripperPattern.svg");
+    --gripperSVGVertical: url("/gripperPatternVertical.svg");
     --gripperSVG2: url("/gripperPattern2.svg");
     --hatchSVG: url("/hatchPattern.svg");
     --wavySVG: (url("/RSVPBackground/wavy.svg"));
