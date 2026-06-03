@@ -5,6 +5,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
 import { revalidatePath } from "next/cache";
 import { idResolver } from "src/identity";
+import { isPro } from "src/entitlements";
 
 export type ContributorRow = {
   contributor_did: string;
@@ -59,7 +60,10 @@ export async function inviteContributor(
   if (!publication) return Err("not_owner");
   if (publication.identity_did !== identity.atp_did) return Err("not_owner");
 
-  if (!identity.entitlements?.publication_analytics) return Err("not_pro");
+  // Inviting contributors is a Pro feature. Mirror useIsPro's logic exactly
+  // (via the shared isPro helper) so the server enforcement can't drift from
+  // the client gating. Invitees, by contrast, never need Pro to accept.
+  if (!isPro(identity.entitlements)) return Err("not_pro");
 
   let did = await resolveHandleToDid(handle);
   if (!did) return Err("invalid_handle");
