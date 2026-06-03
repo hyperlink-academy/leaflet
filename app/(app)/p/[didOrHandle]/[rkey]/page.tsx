@@ -5,6 +5,7 @@ import { DocumentPageRenderer } from "app/(app)/lish/[did]/[publication]/[rkey]/
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { documentUriFilter } from "src/utils/uriHelpers";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 export async function generateMetadata(props: {
   params: Promise<{ didOrHandle: string; rkey: string }>;
@@ -36,7 +37,14 @@ export async function generateMetadata(props: {
   const docRecord = normalizeDocumentRecord(document.data);
   if (!docRecord) return { title: "404" };
 
+  // Canonical URL points at the document's blog domain (doc.site + path) so
+  // the post on leaflet.pub (and its quote pages, which inherit this
+  // metadata) doesn't compete with the custom-domain version in search.
+  let docUrl = getDocumentURL(docRecord, document.uri);
+  let canonical = docUrl.startsWith("http") ? docUrl : undefined;
+
   return {
+    alternates: canonical ? { canonical } : undefined,
     icons: {
       other: [
         {

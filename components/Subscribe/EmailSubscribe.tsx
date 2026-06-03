@@ -1,6 +1,7 @@
 "use client";
 import * as OneTimePasswordField from "@radix-ui/react-one-time-password-field";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonSecondary } from "components/Buttons";
+import { RSSTiny } from "components/Icons/RSSTiny";
 import { Input } from "components/Input";
 import { DotLoader } from "components/utils/DotLoader";
 import { onMouseDown as iosOnPointerDown } from "src/utils/iosInputMouseDown";
@@ -15,40 +16,55 @@ export const EmailInput = (props: {
   onChange: (val: string) => void;
   disabled?: boolean;
   loading?: boolean;
+  publicationUrl?: string;
 }) => {
   return (
-    <div
-      className={` input-with-border flex gap-2 w-full items-center mx-auto py-0! ${props.large && "px-2!"} `}
-      style={
-        props.loading
-          ? {
-              backgroundColor: theme.colors["border-light"],
-              color: theme.colors.tertiary,
-            }
-          : {
-              backgroundColor: theme.colors["bg-page"],
-              color: theme.colors.primary,
-            }
-      }
-    >
-      {props.leading && (
-        <div className="text-tertiary shrink-0 flex items-center">
-          {props.leading}
+    <div className="flex gap-1 w-full">
+      <div
+        className={` input-with-border flex gap-2 w-full items-center mx-auto py-0! min-w-0 ${props.large && "px-2!"} `}
+        style={
+          props.loading
+            ? {
+                backgroundColor: theme.colors["border-light"],
+                color: theme.colors.tertiary,
+              }
+            : {
+                backgroundColor: theme.colors["bg-page"],
+                color: theme.colors.primary,
+              }
+        }
+      >
+        {props.leading && (
+          <div className="text-tertiary shrink-0 flex items-center">
+            {props.leading}
+          </div>
+        )}
+        <Input
+          type="email"
+          autoFocus={props.autoFocus}
+          className={`appearance-none! outline-none! grow min-w-0 ${props.large ? "py-1!" : "py-0.5 disabled:text-tertiary disabled:italic disabled:border-border-light"}`}
+          disabled={props.disabled || props.loading}
+          placeholder="email@example.com"
+          size={0}
+          value={props.value}
+          onChange={(e) => props.onChange(e.target.value)}
+        />
+        <div className={` text-accent-contrast flex items-center shrink-0 `}>
+          {props.loading ? <DotLoader /> : props.action}
         </div>
-      )}
-      <Input
-        type="email"
-        autoFocus={props.autoFocus}
-        className={`appearance-none! outline-none! grow min-w-0 ${props.large ? "py-1!" : "py-0.5 disabled:text-tertiary disabled:italic disabled:border-border-light"}`}
-        disabled={props.disabled || props.loading}
-        placeholder="email@example.com"
-        size={0}
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-      />
-      <div className={` text-accent-contrast flex items-center shrink-0 `}>
-        {props.loading ? <DotLoader /> : props.action}
       </div>
+      {props.publicationUrl && (
+        <a
+          href={`${props.publicationUrl}/rss`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`no-underlinetext-accent-contrast`}
+        >
+          <ButtonSecondary className="p-[6px]!  border-border!">
+            <RSSTiny />
+          </ButtonSecondary>
+        </a>
+      )}
     </div>
   );
 };

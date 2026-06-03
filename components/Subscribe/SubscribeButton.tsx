@@ -173,6 +173,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               <div className="font-bold">Opt in to get updates via email!</div>
               <div className="max-w-sm w-full mx-auto">
                 <EmailInput
+                  publicationUrl={props.publicationUrl}
                   value={email}
                   onChange={setEmail}
                   disabled={user.loggedIn && !!user.email}
@@ -204,6 +205,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
         <div className="max-w-sm w-full mx-auto">
           {subscribeMode === "email" ? (
             <EmailInput
+              publicationUrl={props.publicationUrl}
               value={email}
               onChange={setEmail}
               disabled={user.loggedIn && !!user.email}
@@ -232,6 +234,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               user={user}
               autoFocus={props.autoFocus}
               publicationUri={props.publicationUri}
+              publicationUrl={props.publicationUrl}
               onAtSuccess={() => setAtSuccessOpen(true)}
               leading={modeMenu}
             />
@@ -242,6 +245,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           user={user}
           autoFocus={props.autoFocus}
           publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
           onSubscribed={() => setLocallySubscribed(true)}
         />
       )}

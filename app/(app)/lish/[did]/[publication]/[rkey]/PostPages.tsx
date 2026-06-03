@@ -10,10 +10,8 @@ import { useDocument } from "contexts/DocumentContext";
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
-import {
-  InteractionDrawer,
-  useDrawerOpen,
-} from "./Interactions/InteractionDrawer";
+import { InteractionDrawer } from "./Interactions/InteractionDrawer";
+import { useDrawerOpen } from "./Interactions/useDrawerOpen";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
 import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
@@ -22,8 +20,6 @@ import { PollData } from "./fetchPollData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
-import { ThreadPage as ThreadPageComponent } from "./ThreadPage";
-import { BlueskyQuotesPage } from "./BlueskyQuotesPage";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import {
   type OpenPage,
@@ -208,46 +204,6 @@ export function PostPages({
       {openPageIds.map((openPage, openPageIndex) => {
         const pageKey = getPageKey(openPage);
 
-        // Handle thread pages
-        if (openPage.type === "thread") {
-          return (
-            <Fragment key={pageKey}>
-              <SandwichSpacer />
-              <ThreadPageComponent
-                parentUri={openPage.uri}
-                pageId={pageKey}
-                hasPageBackground={hasPageBackground}
-                pageOptions={
-                  <PageOptions
-                    onClick={() => closePage(openPage)}
-                    hasPageBackground={hasPageBackground}
-                  />
-                }
-              />
-            </Fragment>
-          );
-        }
-
-        // Handle quotes pages
-        if (openPage.type === "quotes") {
-          return (
-            <Fragment key={pageKey}>
-              <SandwichSpacer />
-              <BlueskyQuotesPage
-                postUri={openPage.uri}
-                pageId={pageKey}
-                hasPageBackground={hasPageBackground}
-                pageOptions={
-                  <PageOptions
-                    onClick={() => closePage(openPage)}
-                    hasPageBackground={hasPageBackground}
-                  />
-                }
-              />
-            </Fragment>
-          );
-        }
-
         // Handle iframe pages
         if (openPage.type === "iframe") {
           return (
@@ -268,6 +224,10 @@ export function PostPages({
             </Fragment>
           );
         }
+
+        // Only document pages can be opened now; thread/quotes views render in
+        // the interaction drawer rather than as their own pages.
+        if (openPage.type !== "doc") return null;
 
         // Handle document pages
         let page = pages.find(

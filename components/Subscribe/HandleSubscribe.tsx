@@ -1,5 +1,5 @@
 "use client";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import Link from "next/link";
 import { useState } from "react";
@@ -14,6 +14,7 @@ import { Avatar } from "components/Avatar";
 import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { LinkIdentityModal } from "./LinkIdentityModal";
+import { RSSTiny } from "components/Icons/RSSTiny";
 const apps = [
   { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
   { name: "Bluesky", logo: "https://leaflet.pub/logos/bluesky.svg" },
@@ -40,6 +41,7 @@ const apps = [
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
   publicationUri: string;
+  publicationUrl?: string;
   onSubscribed?: () => void;
   onAtSuccess?: () => void;
   leading?: React.ReactNode;
@@ -78,7 +80,7 @@ export const SubscribeWithHandle = (props: {
   if (props.user.loggedIn && props.user.handle) {
     return (
       <div className="flex flex-col gap-2 w-max max-w-full mx-auto">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <ButtonPrimary
             className="mx-auto max-w-full grow"
             disabled={subscribing}
@@ -128,6 +130,18 @@ export const SubscribeWithHandle = (props: {
               </>
             )}
           </ButtonPrimary>
+          {props.publicationUrl && (
+            <a
+              href={`${props.publicationUrl}/rss`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`no-underlinetext-accent-contrast`}
+            >
+              <ButtonPrimary className="p-[6px]!">
+                <RSSTiny />
+              </ButtonPrimary>
+            </a>
+          )}
         </div>
         {oauthError && (
           <OAuthErrorMessage
@@ -139,25 +153,39 @@ export const SubscribeWithHandle = (props: {
     );
   } else
     return (
-      <div className="max-w-sm mx-auto w-full ">
-        <HandleInput
-          autoFocus={props.autoFocus}
-          loading={loading}
-          leading={props.leading}
-          onSubmit={(handle) => {
-            let trimmed = handle.trim();
-            if (!trimmed) return;
-            if (needsLinkConfirmation) {
-              setPendingLinkHandle(trimmed);
-              return;
-            }
-            setLoading(true);
-            redirectToOauthForSubscribe(trimmed, false);
-          }}
-          action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
-            Subscribe
-          </div>
-        />
+      <div className="subscribeHandleInputWrapper max-w-sm mx-auto w-full">
+        <div className="flex gap-1 w-full">
+          <HandleInput
+            autoFocus={props.autoFocus}
+            loading={loading}
+            leading={props.leading}
+            onSubmit={(handle) => {
+              let trimmed = handle.trim();
+              if (!trimmed) return;
+              if (needsLinkConfirmation) {
+                setPendingLinkHandle(trimmed);
+                return;
+              }
+              setLoading(true);
+              redirectToOauthForSubscribe(trimmed, false);
+            }}
+            action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+              Subscribe
+            </div>
+          />
+          {props.publicationUrl && (
+            <a
+              href={`${props.publicationUrl}/rss`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`no-underlinetext-accent-contrast`}
+            >
+              <ButtonSecondary className="p-[6px]!  border-border!">
+                <RSSTiny />
+              </ButtonSecondary>
+            </a>
+          )}
+        </div>
         <div className=" pt-1 ">
           <AtmosphericHandleInfo />
         </div>

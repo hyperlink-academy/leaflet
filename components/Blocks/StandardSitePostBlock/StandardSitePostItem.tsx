@@ -12,7 +12,7 @@ import {
   getPublicationURL,
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { InteractionPreview } from "components/InteractionsPreview";
@@ -27,18 +27,25 @@ export function StandardSitePostItem({
   uri,
   size = "medium",
   currentPublicationUri,
+  pageWidth,
+  hideInteractions,
 }: {
   uri: string;
   size?: StandardSitePostSize;
   currentPublicationUri?: string | null;
+  pageWidth?: number;
+  hideInteractions?: boolean;
 }) {
   const { data, isLoading } = useStandardSitePost(uri);
   const { rootEntity } = useReplicache();
-  const pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
+  const postPageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
 
   if (isLoading) {
     return (
-      <StandardSitePostItemPlaceholder size={size} pageWidth={pageWidth} />
+      <StandardSitePostItemPlaceholder
+        size={size}
+        pageWidth={pageWidth ? pageWidth : postPageWidth}
+      />
     );
   }
 
@@ -50,7 +57,9 @@ export function StandardSitePostItem({
     <StandardSitePostItemView
       post={data}
       size={size}
+      pageWidth={pageWidth}
       currentPublicationUri={currentPublicationUri}
+      hideInteractions={hideInteractions}
     />
   );
 }
@@ -156,10 +165,14 @@ export function StandardSitePostItemView({
   post,
   size = "medium",
   currentPublicationUri,
+  hideInteractions,
+  pageWidth: pageWidthProp,
 }: {
   post: StandardSitePostData;
   size?: StandardSitePostSize;
   currentPublicationUri?: string | null;
+  hideInteractions?: boolean;
+  pageWidth?: number;
 }) {
   const docUrl = getDocumentURL(
     post.record,
@@ -197,11 +210,17 @@ export function StandardSitePostItemView({
   }
   const coverImageSrc =
     post.record.coverImage && postDid
-      ? blobRefToSrc(post.record.coverImage.ref, postDid)
+      ? blobRefToSrc(post.record.coverImage.ref, postDid, undefined, {
+          width:
+            size === "large"
+              ? COVER_THUMBNAIL_WIDTH.large
+              : COVER_THUMBNAIL_WIDTH.medium,
+        })
       : undefined;
 
   const { rootEntity } = useReplicache();
-  const pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
+  const themePageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
+  const pageWidth = pageWidthProp ?? themePageWidth;
 
   const publicationPrefs = post.publication?.record?.preferences;
   const showComments = publicationPrefs?.showComments !== false;
@@ -209,7 +228,7 @@ export function StandardSitePostItemView({
   const showRecommends = publicationPrefs?.showRecommends !== false;
   const commentsCount = showComments ? post.commentsCount : 0;
 
-  const interactions = (
+  const interactions = hideInteractions ? undefined : (
     <InteractionPreview
       quotesCount={post.mentionsCount}
       commentsCount={commentsCount}
@@ -217,6 +236,7 @@ export function StandardSitePostItemView({
       documentUri={post.uri}
       tags={post.record.tags || []}
       postUrl={docUrl}
+      title={post.record.title}
       showComments={showComments}
       showMentions={showMentions}
       showRecommends={showRecommends}

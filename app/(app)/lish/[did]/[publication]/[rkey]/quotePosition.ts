@@ -1,3 +1,10 @@
+import { AtUri } from "@atproto/syntax";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import type {
+  NormalizedDocument,
+  NormalizedPublication,
+} from "src/utils/normalizeRecords";
+
 export interface QuotePosition {
   pageId?: string;
   start: {
@@ -68,4 +75,63 @@ export function decodeQuotePosition(encoded: string): QuotePosition | null {
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Builds the list of canonical/known URLs that point to a given document.
+ * Mirrors the URLs a Bluesky post might link to when referencing the doc.
+ */
+export function getDocumentUrls(
+  doc: NormalizedDocument,
+  docUri: string,
+  publication?: NormalizedPublication | null,
+): string[] {
+  const urls: string[] = [];
+  const docAtUri = new AtUri(docUri);
+
+  const canonicalUrl = getDocumentURL(doc, docUri, publication);
+  if (canonicalUrl.startsWith("http")) {
+    urls.push(canonicalUrl);
+  } else {
+    urls.push(`https://leaflet.pub${canonicalUrl}`);
+  }
+  urls.push(`https://leaflet.pub/p/${docAtUri.host}/${docAtUri.rkey}`);
+  if (doc.site && doc.site.startsWith("http")) {
+    const path = doc.path || "/" + docAtUri.rkey;
+    urls.push(doc.site + path);
+  }
+  return urls;
+}
+
+/**
+ * Check if a URL matches any of the document's known URLs,
+ * and extract the quote position if present.
+ */
+export function matchDocumentUrl(
+  uri: string,
+  documentUrls: string[],
+): { url: string; quotePosition: QuotePosition | null } | null {
+  try {
+    const url = new URL(uri);
+    const parts = url.pathname.split("/l-quote/");
+    const pathWithoutQuote = parts[0];
+    const quoteParam = parts[1];
+    const fullUrlWithoutQuote = (url.origin + pathWithoutQuote).replace(
+      /\/$/,
+      "",
+    );
+
+    for (const docUrl of documentUrls) {
+      const normalized = docUrl.replace(/\/$/, "");
+      if (fullUrlWithoutQuote === normalized) {
+        return {
+          url: uri,
+          quotePosition: quoteParam ? decodeQuotePosition(quoteParam) : null,
+        };
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }

@@ -6,13 +6,25 @@ import { BlobRef } from "@atproto/lexicon";
 // If `$link` is already an http(s) URL we return it untouched — the email-preview
 // path stuffs a direct draft-image URL into `$link` since drafts aren't uploaded
 // to a PDS yet.
+// `transform` requests a downscaled version of the image via Supabase's image
+// transformation pipeline (handled in /api/atproto_images). Use it for
+// thumbnails so we don't ship the full-resolution blob to render a small image.
 export const blobRefToSrc = (
   b: BlobRef["ref"],
   did: string,
   baseUrl?: string,
+  transform?: { width?: number; height?: number },
 ) => {
   const link = (b as unknown as { $link: string })["$link"];
   if (link.startsWith("http://") || link.startsWith("https://")) return link;
   const prefix = baseUrl ? baseUrl.replace(/\/$/, "") : "";
-  return `${prefix}/api/atproto_images?did=${did}&cid=${link}`;
+  let src = `${prefix}/api/atproto_images?did=${did}&cid=${link}`;
+  if (transform?.width) src += `&width=${transform.width}`;
+  if (transform?.height) src += `&height=${transform.height}`;
+  src += "&v=1";
+  return src;
 };
+
+// Display widths (px) for cover-image thumbnails, used to request a right-sized
+// transform instead of shipping the full-resolution blob.
+export const COVER_THUMBNAIL_WIDTH = { large: 800, medium: 360 };

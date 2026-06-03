@@ -248,24 +248,30 @@ export let Block = ({
           </div>
         );
       }
+      // default to "medium" to match the draft (StandardSitePostBlock),
+      // since the publish step omits size when it hasn't been explicitly set
       let size: "large" | "medium" | "small" =
         b.block.size === "large"
           ? "large"
-          : b.block.size === "medium"
-            ? "medium"
-            : "small";
+          : b.block.size === "small"
+            ? "small"
+            : "medium";
       return (
         <div className={className} {...blockProps}>
-          <WithStandardSitePostPublicationTheme
-            post={post}
-            enabled={b.block.showPublicationTheme !== false}
-          >
-            <StandardSitePostItemView
+          <div className="standardSitePostBlock block-border overflow-hidden w-full">
+            <WithStandardSitePostPublicationTheme
               post={post}
-              size={size}
-              currentPublicationUri={currentPublicationUri}
-            />
-          </WithStandardSitePostPublicationTheme>
+              enabled={b.block.showPublicationTheme !== false}
+            >
+              <div className="bg-bg-page">
+                <StandardSitePostItemView
+                  post={post}
+                  size={size}
+                  currentPublicationUri={currentPublicationUri}
+                />
+              </div>
+            </WithStandardSitePostPublicationTheme>
+          </div>
         </div>
       );
     }

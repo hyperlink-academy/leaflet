@@ -137,7 +137,7 @@ export function PostHeader(props: {
               quotesCount={
                 getQuoteCount(document?.quotesAndMentions || []) || 0
               }
-              commentsCount={document?.commentsCount || 0}
+              commentsCount={document?.commentsCountByPage[""] || 0}
               recommendsCount={document?.recommendsCount || 0}
             />
           )}

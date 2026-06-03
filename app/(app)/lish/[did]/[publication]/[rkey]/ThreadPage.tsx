@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppBskyFeedDefs,
   AppBskyFeedPost,
@@ -8,32 +8,28 @@ import {
 } from "@atproto/api";
 import { AtUri } from "@atproto/syntax";
 import useSWR from "swr";
-import { PageWrapper } from "components/Pages/Page";
-import { useDrawerOpen } from "./Interactions/InteractionDrawer";
+import { DrawerThreadContext } from "./Interactions/drawerThreadContext";
 import { DotLoader } from "components/utils/DotLoader";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { useThreadState } from "src/useThreadState";
-import {
-  BskyPostContent,
-  CompactBskyPostContent,
-  ClientDate,
-} from "./BskyPostContent";
+import { BskyPostContent, CompactBskyPostContent } from "./BskyPostContent";
 import {
   ThreadLink,
   getThreadKey,
   fetchThread,
-  prefetchThread,
+  getQuotesKey,
+  fetchQuotes,
 } from "./PostLinks";
+import { Tabs } from "components/Tabs";
+import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { useDocument } from "contexts/DocumentContext";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { QuoteContent } from "./Interactions/Quotes";
 import {
   decodeQuotePosition,
+  getDocumentUrls,
+  matchDocumentUrl,
   type QuotePosition,
 } from "./quotePosition";
-
-// Re-export for backwards compatibility
-export { ThreadLink, getThreadKey, fetchThread, prefetchThread, ClientDate };
 
 type ThreadViewPost = AppBskyFeedDefs.ThreadViewPost;
 type NotFoundPost = AppBskyFeedDefs.NotFoundPost;
@@ -69,39 +65,6 @@ function flattenSameAuthorChain(
   return chain;
 }
 
-// Check if a URL matches any of the document's known URLs,
-// and extract the quote position if present
-function matchDocumentUrl(
-  uri: string,
-  documentUrls: string[],
-): { url: string; quotePosition: QuotePosition | null } | null {
-  try {
-    const url = new URL(uri);
-    const parts = url.pathname.split("/l-quote/");
-    const pathWithoutQuote = parts[0];
-    const quoteParam = parts[1];
-    const fullUrlWithoutQuote = (url.origin + pathWithoutQuote).replace(
-      /\/$/,
-      "",
-    );
-
-    for (const docUrl of documentUrls) {
-      const normalized = docUrl.replace(/\/$/, "");
-      if (fullUrlWithoutQuote === normalized) {
-        return {
-          url: uri,
-          quotePosition: quoteParam
-            ? decodeQuotePosition(quoteParam)
-            : null,
-        };
-      }
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
 // Scan a post's facets and embed for links to the current document
 function findDocumentQuoteLink(
   post: AppBskyFeedDefs.PostView,
@@ -129,25 +92,21 @@ function findDocumentQuoteLink(
 
   // Check external embed URI
   if (post.embed && AppBskyEmbedExternal.isView(post.embed)) {
-    const match = matchDocumentUrl(
-      post.embed.external.uri,
-      documentUrls,
-    );
+    const match = matchDocumentUrl(post.embed.external.uri, documentUrls);
     if (match) return { ...match, isEmbed: true };
   }
 
   return null;
 }
 
-export function ThreadPage(props: {
+// Fetches a thread and renders its content (loading/error states included).
+// Used both as a standalone page and inside the interaction drawer. `initialTab`
+// selects whether replies or quote posts are shown first (defaults to replies).
+export function ThreadView(props: {
   parentUri: string;
-  pageId: string;
-  pageOptions?: React.ReactNode;
-  hasPageBackground: boolean;
+  initialTab?: "replies" | "quotes";
 }) {
-  const { parentUri, pageId, pageOptions } = props;
-  const drawer = useDrawerOpen(parentUri);
-
+  const { parentUri, initialTab } = props;
   const {
     data: thread,
     isLoading,
@@ -156,36 +115,38 @@ export function ThreadPage(props: {
     fetchThread(parentUri),
   );
 
-  return (
-    <PageWrapper
-      pageType="doc"
-      fullPageScroll={false}
-      id={`post-page-${pageId}`}
-      drawerOpen={false}
-      pageOptions={pageOptions}
-      fixedWidth
-    >
-      <div className="flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-4 w-full">
-        {isLoading ? (
-          <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
-            <span>loading thread</span>
-            <DotLoader />
-          </div>
-        ) : error ? (
-          <div className="text-tertiary italic text-sm text-center py-8">
-            Failed to load thread
-          </div>
-        ) : thread ? (
-          <ThreadContent post={thread} parentUri={parentUri} />
-        ) : null}
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
+        <span>loading thread</span>
+        <DotLoader />
       </div>
-    </PageWrapper>
+    );
+  }
+  if (error) {
+    return (
+      <div className="text-tertiary italic text-sm text-center py-8">
+        Failed to load thread
+      </div>
+    );
+  }
+  if (!thread) return null;
+  return (
+    <ThreadContent post={thread} parentUri={parentUri} initialTab={initialTab} />
   );
 }
 
-function ThreadContent(props: { post: ThreadType; parentUri: string }) {
+function ThreadContent(props: {
+  post: ThreadType;
+  parentUri: string;
+  initialTab?: "replies" | "quotes";
+}) {
   const { post, parentUri } = props;
   const mainPostRef = useRef<HTMLDivElement>(null);
+  // Inside the interaction drawer the header (back/close) shares the scroll
+  // container, so we let the drawer handle scroll position instead of pulling
+  // the main post to the top (which would hide the header).
+  const inDrawer = useContext(DrawerThreadContext) !== null;
 
   // Compute document URLs for leaflet link detection
   const {
@@ -196,38 +157,21 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
   const docAtUri = useMemo(() => new AtUri(docUri), [docUri]);
   const docDid = docAtUri.host;
 
-  const documentUrls = useMemo(() => {
-    const urls: string[] = [];
-    const canonicalUrl = getDocumentURL(
-      normalizedDocument,
-      docUri,
-      normalizedPublication,
-    );
-    if (canonicalUrl.startsWith("http")) {
-      urls.push(canonicalUrl);
-    } else {
-      urls.push(`https://leaflet.pub${canonicalUrl}`);
-    }
-    urls.push(`https://leaflet.pub/p/${docAtUri.host}/${docAtUri.rkey}`);
-    if (
-      normalizedDocument.site &&
-      normalizedDocument.site.startsWith("http")
-    ) {
-      const path = normalizedDocument.path || "/" + docAtUri.rkey;
-      urls.push(normalizedDocument.site + path);
-    }
-    return urls;
-  }, [docUri, docAtUri, normalizedDocument, normalizedPublication]);
+  const documentUrls = useMemo(
+    () => getDocumentUrls(normalizedDocument, docUri, normalizedPublication),
+    [docUri, normalizedDocument, normalizedPublication],
+  );
 
   // Scroll the main post into view when the thread loads
   useEffect(() => {
+    if (inDrawer) return;
     if (mainPostRef.current) {
       mainPostRef.current.scrollIntoView({
         behavior: "instant",
         block: "start",
       });
     }
-  }, []);
+  }, [inDrawer]);
 
   if (AppBskyFeedDefs.isNotFoundPost(post)) {
     return <PostNotAvailable />;
@@ -274,21 +218,139 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
         <ThreadPost post={post} isMainPost={true} pageUri={parentUri} />
       </div>
 
-      {/* Replies */}
-      {post.replies && post.replies.length > 0 && (
-        <div className="threadReplies flex flex-col mt-4 pt-4  border-t border-border-light w-full">
-          <Replies
-            replies={post.replies as any[]}
-            pageUri={post.post.uri}
-            parentPostUri={post.post.uri}
-            depth={0}
-            parentAuthorDid={post.post.author.did}
-            rootAuthorDid={rootAuthorDid}
-            documentUrls={documentUrls}
-            docDid={docDid}
-          />
+      {/* Replies and quote posts */}
+      <ThreadInteractions
+        post={post}
+        rootAuthorDid={rootAuthorDid}
+        documentUrls={documentUrls}
+        docDid={docDid}
+        initialTab={props.initialTab}
+      />
+    </div>
+  );
+}
+
+// Tabbed section under the main post showing its replies and quote posts.
+// When only one of the two has content, a header is shown instead of tabs.
+function ThreadInteractions(props: {
+  post: ThreadViewPost;
+  rootAuthorDid: string;
+  documentUrls: string[];
+  docDid: string;
+  initialTab?: "replies" | "quotes";
+}) {
+  const { post, rootAuthorDid, documentUrls, docDid } = props;
+
+  const replies = (post.replies as any[]) ?? [];
+  const replyCount = post.post.replyCount ?? replies.length;
+  const quoteCount = post.post.quoteCount ?? 0;
+  const hasReplies = replies.length > 0;
+  const hasQuotes = quoteCount > 0;
+  const showTabs = hasReplies && hasQuotes;
+
+  const [activeTab, setActiveTab] = useState<"replies" | "quotes">(
+    props.initialTab ?? (hasReplies ? "replies" : "quotes"),
+  );
+
+  if (!hasReplies && !hasQuotes) return null;
+
+  // Default to whichever tab actually has content
+  const tab = !hasReplies ? "quotes" : !hasQuotes ? "replies" : activeTab;
+
+  return (
+    <div className="threadInteractions flex flex-col mt-4  w-full">
+      {showTabs ? (
+        <Tabs
+          value={tab}
+          onChange={(value) => setActiveTab(value)}
+          options={[
+            { value: "replies", label: `Replies (${replyCount})` },
+            { value: "quotes", label: `Quote Posts (${quoteCount})` },
+          ]}
+        />
+      ) : (
+        <div className="text-tertiary text-sm font-bold">
+          {hasReplies
+            ? `Replies (${replyCount})`
+            : `Quote Posts (${quoteCount})`}
+          <hr className="border-border-light mt-[6px]" />
         </div>
       )}
+
+      {tab === "replies" ? (
+        <Replies
+          replies={replies}
+          pageUri={post.post.uri}
+          parentPostUri={post.post.uri}
+          depth={0}
+          parentAuthorDid={post.post.author.did}
+          rootAuthorDid={rootAuthorDid}
+          documentUrls={documentUrls}
+          docDid={docDid}
+        />
+      ) : (
+        <ThreadQuotes postUri={post.post.uri} pageUri={post.post.uri} />
+      )}
+    </div>
+  );
+}
+
+// Fetches and renders the posts that quote the main post
+function ThreadQuotes(props: { postUri: string; pageUri: string }) {
+  const {
+    data: quotesData,
+    isLoading,
+    error,
+  } = useSWR(getQuotesKey(props.postUri), () => fetchQuotes(props.postUri));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
+        <span>loading quotes</span>
+        <DotLoader />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-tertiary italic text-sm text-center py-8">
+        Failed to load quotes
+      </div>
+    );
+  }
+
+  if (!quotesData || quotesData.posts.length === 0) {
+    return (
+      <div className="text-tertiary italic text-sm text-center py-8">
+        No quotes yet
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-0 pt-4">
+      {quotesData.posts.map((post, index) => {
+        const parent = { type: "thread" as const, uri: props.pageUri };
+        // let isPinnedPost = post.uri ===
+        return (
+          <>
+            <BskyPostContent
+              key={post.uri}
+              post={post}
+              parent={parent}
+              showEmbed
+              compactEmbed
+              showBlueskyLink
+              quoteEnabled
+              replyEnabled
+              className="relative rounded text-sm"
+            />
+
+            <hr className="last:hidden border-border-light my-4" />
+          </>
+        );
+      })}
     </div>
   );
 }
@@ -310,6 +372,7 @@ function ThreadPost(props: {
           parent={page}
           avatarSize="large"
           showBlueskyLink={true}
+          showInteractions={false}
           showEmbed={true}
           compactEmbed
           quoteEnabled
@@ -353,9 +416,6 @@ function Replies(props: {
     documentUrls,
     docDid,
   } = props;
-  const collapsedThreads = useThreadState((s) => s.collapsedThreads);
-  const toggleCollapsed = useThreadState((s) => s.toggleCollapsed);
-
   // Sort replies so that replies from the parent author come first
   const sortedReplies = useMemo(
     () =>
@@ -376,7 +436,11 @@ function Replies(props: {
   );
 
   return (
-    <div className="replies flex flex-col gap-0 w-full">
+    <div
+      className={`replies flex flex-col w-full pt-4 ${
+        props.depth === 0 ? "gap-0" : "gap-8"
+      }`}
+    >
       {sortedReplies.map((reply, index) => {
         if (AppBskyFeedDefs.isNotFoundPost(reply)) {
           return (
@@ -405,25 +469,58 @@ function Replies(props: {
         }
 
         const hasReplies = reply.replies && reply.replies.length > 0;
-        const isCollapsed = collapsedThreads.has(reply.post.uri);
 
         return (
-          <ReplyPost
-            key={reply.post.uri}
-            post={reply}
-            isLast={index === replies.length - 1 && !hasReplies}
-            pageUri={pageUri}
-            parentPostUri={parentPostUri}
-            toggleCollapsed={toggleCollapsed}
-            isCollapsed={isCollapsed}
-            depth={props.depth}
-            rootAuthorDid={rootAuthorDid}
-            documentUrls={documentUrls}
-            docDid={docDid}
-          />
+          <>
+            <ReplyPost
+              key={reply.post.uri}
+              post={reply}
+              isLast={index === replies.length - 1 && !hasReplies}
+              pageUri={pageUri}
+              depth={props.depth}
+              rootAuthorDid={rootAuthorDid}
+              documentUrls={documentUrls}
+              docDid={docDid}
+            />
+            {props.depth === 0 && (
+              <hr className="border-border-light my-4 last:hidden" />
+            )}
+          </>
         );
       })}
     </div>
+  );
+}
+
+// Wraps a nested reply list in the same indented thread-line + collapse
+// affordance used by document comment replies (Interactions/Comments), and
+// animates its height when it opens/closes so threads collapse with the same
+// motion as comments.
+function NestedReplies(props: {
+  open: boolean;
+  onCollapse: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <CollapsibleReplies open={props.open}>
+      <div className="repliesWrapper relative pt-1 pl-[26px] ">
+        {/* the thread line itself is non-interactive; a transparent button is
+            overlaid on top of it (z-10) so clicking the line collapses the
+            thread. The button has to sit over the line (left-[28px]) rather
+            than in the empty gutter, otherwise clicks land on the post's
+            absolute-inset overlay underneath and open the thread instead. */}
+        <div className="absolute top-0 bottom-0 left-[38px] w-[2px] bg-border-light pointer-events-none" />
+        <button
+          className="repliesCollapse absolute top-0 bottom-0 left-[28px] w-[20px] z-10"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            props.onCollapse();
+          }}
+        />
+        {props.children}
+      </div>
+    </CollapsibleReplies>
   );
 }
 
@@ -431,20 +528,20 @@ const ReplyPost = (props: {
   post: ThreadViewPost;
   isLast: boolean;
   pageUri: string;
-  parentPostUri: string;
-  toggleCollapsed: (uri: string) => void;
-  isCollapsed: boolean;
   depth: number;
   rootAuthorDid: string;
   documentUrls: string[];
   docDid: string;
 }) => {
-  const { post, pageUri, parentPostUri, rootAuthorDid, documentUrls, docDid } = props;
+  const { post, pageUri, rootAuthorDid, documentUrls, docDid } = props;
+  const collapsedThreads = useThreadState((s) => s.collapsedThreads);
+  const toggleCollapsed = useThreadState((s) => s.toggleCollapsed);
 
   // Flatten same-author chains
   const chain = flattenSameAuthorChain(post, rootAuthorDid);
   const lastInChain = chain[chain.length - 1];
   const hasReplies = lastInChain.replies && lastInChain.replies.length > 0;
+  const isCollapsed = collapsedThreads.has(lastInChain.post.uri);
   const isTruncated =
     !hasReplies &&
     lastInChain.post.replyCount != null &&
@@ -452,95 +549,51 @@ const ReplyPost = (props: {
 
   return (
     <div className="flex h-fit relative">
-      {props.depth > 0 && (
-        <>
-          <div className="absolute replyLine top-0 bottom-0 left-0 w-6 pointer-events-none ">
-            <div className="bg-border-light w-[2px] h-full mx-auto" />
-          </div>
-          <button
-            className="absolute top-0 bottom-0 left-0 w-6 z-10"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              props.toggleCollapsed(parentPostUri);
-            }}
-          />
-        </>
-      )}
-      <div
-        className={`reply relative flex flex-col w-full ${props.depth === 0 && "mb-3"}`}
-      >
-        {/* Render chain: intermediate posts compact, last post full */}
-        {chain.length > 1 ? (
-          <>
-            {chain.slice(0, -1).map((chainPost) => (
-              <div
-                key={chainPost.post.uri}
-                className="flex gap-2 relative w-full pl-[6px] pb-2"
-              >
-                <div className="absolute top-0 bottom-0 left-[6px] w-5">
-                  <div className="bg-border-light w-[2px] h-full mx-auto" />
-                </div>
-                <ReplyPostContent
-                  post={chainPost.post}
-                  pageUri={pageUri}
-                  documentUrls={documentUrls}
-                  docDid={docDid}
-                  compact
-                />
-              </div>
-            ))}
-            <ReplyPostContent
-              post={lastInChain.post}
+      <div className={`reply relative flex flex-col w-full `}>
+        <ReplyPostContent
+          post={post.post}
+          pageUri={pageUri}
+          documentUrls={documentUrls}
+          docDid={docDid}
+          toggleCollapsed={() => toggleCollapsed(post.post.uri)}
+        />
+
+        {/* Render child replies, styled like replies to a comment */}
+        {hasReplies && props.depth < 10 && (
+          <NestedReplies
+            open={!isCollapsed}
+            onCollapse={() => toggleCollapsed(lastInChain.post.uri)}
+          >
+            <Replies
               pageUri={pageUri}
+              parentPostUri={lastInChain.post.uri}
+              replies={lastInChain.replies as any[]}
+              depth={props.depth + 1}
+              parentAuthorDid={lastInChain.post.author.did}
+              rootAuthorDid={rootAuthorDid}
               documentUrls={documentUrls}
               docDid={docDid}
-              compact
-              toggleCollapsed={() =>
-                props.toggleCollapsed(lastInChain.post.uri)
-              }
             />
-          </>
-        ) : (
-          <ReplyPostContent
-            post={post.post}
-            pageUri={pageUri}
-            documentUrls={documentUrls}
-            docDid={docDid}
-            toggleCollapsed={() => props.toggleCollapsed(post.post.uri)}
-          />
+          </NestedReplies>
         )}
 
-        {/* Render child replies */}
-        {hasReplies && props.depth < 10 && (
-          <div className="ml-[28px] flex grow">
-            {!props.isCollapsed && (
-              <Replies
+        {/* Auto-load truncated replies */}
+        {isTruncated && props.depth < 10 && (
+          <NestedReplies
+            open={!isCollapsed}
+            onCollapse={() => toggleCollapsed(lastInChain.post.uri)}
+          >
+            {!isCollapsed && (
+              <SubThread
+                postUri={lastInChain.post.uri}
                 pageUri={pageUri}
-                parentPostUri={lastInChain.post.uri}
-                replies={lastInChain.replies as any[]}
-                depth={props.depth + 1}
-                parentAuthorDid={lastInChain.post.author.did}
+                depth={props.depth}
                 rootAuthorDid={rootAuthorDid}
                 documentUrls={documentUrls}
                 docDid={docDid}
               />
             )}
-          </div>
-        )}
-
-        {/* Auto-load truncated replies */}
-        {isTruncated && props.depth < 10 && !props.isCollapsed && (
-          <div className="ml-[28px] flex grow">
-            <SubThread
-              postUri={lastInChain.post.uri}
-              pageUri={pageUri}
-              depth={props.depth}
-              rootAuthorDid={rootAuthorDid}
-              documentUrls={documentUrls}
-              docDid={docDid}
-            />
-          </div>
+          </NestedReplies>
         )}
 
         {/* Safety fallback at extreme depth */}
@@ -583,7 +636,7 @@ function ReplyPostContent(props: {
 
   if (compact) {
     return (
-      <div className="flex flex-col w-full">
+      <div className="bskyPostReplyCompact flex flex-col w-full">
         {quoteBlock}
         <CompactBskyPostContent
           post={post}
@@ -604,7 +657,7 @@ function ReplyPostContent(props: {
   }
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="bskyPostReply flex flex-col w-full ">
       {quoteBlock}
       <BskyPostContent
         post={post}
@@ -621,7 +674,7 @@ function ReplyPostContent(props: {
               }
             : undefined
         }
-        className="text-sm"
+        className=" text-sm"
       />
     </div>
   );
@@ -636,9 +689,8 @@ function SubThread(props: {
   documentUrls: string[];
   docDid: string;
 }) {
-  const { data: thread, isLoading } = useSWR(
-    getThreadKey(props.postUri),
-    () => fetchThread(props.postUri),
+  const { data: thread, isLoading } = useSWR(getThreadKey(props.postUri), () =>
+    fetchThread(props.postUri),
   );
 
   if (isLoading) {

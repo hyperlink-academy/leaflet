@@ -15,7 +15,7 @@ import { PageOptionButton } from "./PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 
-export function Pages(props: { rootPage: string }) {
+export function Pages(props: { rootPage: string; flow?: boolean }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
   let pages = useUIState((s) => s.openPages);
   let params = useSearchParams();
@@ -29,7 +29,7 @@ export function Pages(props: { rootPage: string }) {
   return (
     <>
       <LeafletSidebar />
-      {!fullPageScroll && (
+      {!fullPageScroll && !props.flow && (
         <BookendSpacer
           onClick={(e) => {
             e.currentTarget === e.target && blurPage();
@@ -37,7 +37,12 @@ export function Pages(props: { rootPage: string }) {
         />
       )}
 
-      <Page entityID={firstPage} first fullPageScroll={fullPageScroll} />
+      <Page
+        entityID={firstPage}
+        first
+        fullPageScroll={fullPageScroll}
+        flow={props.flow}
+      />
       {pages.map((page) => {
         let key = getEditorPageKey(page);
         if (typeof page === "object") {
@@ -87,11 +92,11 @@ export function Pages(props: { rootPage: string }) {
                 e.currentTarget === e.target && blurPage();
               }}
             />
-            <Page entityID={page} fullPageScroll={false} />
+            <Page entityID={page} fullPageScroll={false} flow={props.flow} />
           </React.Fragment>
         );
       })}
-      {!fullPageScroll && (
+      {!fullPageScroll && !props.flow && (
         <BookendSpacer
           onClick={(e) => {
             e.currentTarget === e.target && blurPage();

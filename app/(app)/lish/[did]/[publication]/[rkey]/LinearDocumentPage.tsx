@@ -8,7 +8,8 @@ import {
 import { PostContent } from "./PostContent";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { AppBskyFeedDefs } from "@atproto/api";
-import { useDrawerOpen } from "./Interactions/InteractionDrawer";
+import { useDrawerOpen } from "./Interactions/useDrawerOpen";
+import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PageWrapper } from "components/Pages/Page";
 import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
@@ -82,17 +83,19 @@ export function LinearDocumentPage({
             preferences={preferences}
           />
         )}
-        <PostContent
-          pollData={pollData}
-          pages={pages as PubLeafletPagesLinearDocument.Main[]}
-          pageId={pageId}
-          bskyPostData={bskyPostData}
-          standardSitePostData={standardSitePostData}
-          blocks={blocks}
-          did={did}
-          prerenderedCodeBlocks={prerenderedCodeBlocks}
-          footnoteIndexMap={footnoteIndexMap}
-        />
+        <DrawerThreadPageProvider document_uri={document_uri} pageId={pageId}>
+          <PostContent
+            pollData={pollData}
+            pages={pages as PubLeafletPagesLinearDocument.Main[]}
+            pageId={pageId}
+            bskyPostData={bskyPostData}
+            standardSitePostData={standardSitePostData}
+            blocks={blocks}
+            did={did}
+            prerenderedCodeBlocks={prerenderedCodeBlocks}
+            footnoteIndexMap={footnoteIndexMap}
+          />
+        </DrawerThreadPageProvider>
         <PublishedFootnoteSection footnotes={footnotes} />
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}
@@ -102,7 +105,7 @@ export function LinearDocumentPage({
           showComments={preferences.showComments !== false}
           showMentions={preferences.showMentions !== false}
           showRecommends={preferences.showRecommends !== false}
-          commentsCount={document.commentsCount}
+          commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
           quotesCount={getQuoteCount(document.quotesAndMentions, pageId) || 0}
           recommendsCount={document.recommendsCount}
         />

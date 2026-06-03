@@ -22,17 +22,14 @@ export function AboutPage() {
     <main
       className={`${ibmPlexSerif.variable} aboutPage w-full bg-[#FDFCFA] flex flex-col justify-center sm:px-12 px-4 mx-auto overflow-x-clip overflow-y-auto`}
     >
-      <div className="spacer h-[96px] sm:h-[160px]" />
-      <div className="aboutCover relative  max-w-full mx-auto w-[800px] flex flex-col gap-3 sm:gap-4">
-        <h1
-          className={` text-[#57822B] leading-none absolute -top-16 left-4 sm:-top-28 md:-left-16 sm:left-6 z-10`}
-          style={{
-            textShadow: "3px 7px 0 #D9EA72",
-            WebkitTextStroke: "0.5px #D9EA72",
-          }}
-        >
-          Leaflet
-        </h1>
+      <div className="spacer h-[48px] sm:h-[96px]" />
+      <div className="aboutCover relative  max-w-full mx-auto w-[960px] flex flex-col gap-3 sm:gap-4">
+        <h1 className={`hidden`}>Leaflet</h1>
+        <img
+          src="/about/HeroText.webp"
+          alt=""
+          className="absolute left-1/2 -translate-x-1/2 top-0 sm:top-[3%] z-10 w-[90%] sm:w-[75%]"
+        />
 
         <img
           src="/about/hero.webp"
@@ -42,12 +39,17 @@ export function AboutPage() {
         <LandingCTA />
       </div>
 
-      <p className=" pt-6 text-tertiary text-center leading-snug mx-auto text-lg sm:text-xl!">
-        Delightful writing and effortless publishing, to connect with your
-        community — whether you're writing a blog, newsletter, or secret third
-        thing.
+      <p className="max-w-4xl pt-6 sm:pt-12 text-tertiary text-center leading-snug mx-auto text-lg sm:text-xl!">
+        Delightful publishing to connect with your community, whether you're
+        writing a blog, newsletter, or secret third thing.
       </p>
-      <div className="pt-12">
+      <div className="mt-12 sm:mt-24 py-6 sm:p-12 bg-[#F1EDE5] rounded-[12px] sm:rounded-[24px]">
+        <div className="text-center mx-auto pb-3 sm:pb-6">
+          <h3>Powerful Publishing Tools</h3>
+          <p className="text-secondary">
+            Easily write, manage posts, and track subscriptions
+          </p>
+        </div>
         <Media mobile={false}>
           <InteractiveAppDemo />
         </Media>
