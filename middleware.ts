@@ -99,15 +99,17 @@ export default async function middleware(req: NextRequest) {
       req.nextUrl.pathname.includes("/atom") ||
       req.nextUrl.pathname.includes("/json");
 
-    // Check if we've already completed auth (prevents redirect loop when cookies are disabled)
+    // refreshAuth forces a re-sync (auth changed upstream); auth_completed marks
+    // a sync already attempted, breaking the loop when cookies are disabled.
     let authCompleted = req.nextUrl.searchParams.has("auth_completed");
+    let refreshAuth = req.nextUrl.searchParams.has("refreshAuth");
+    let needsAuthSync = refreshAuth || (!cookie && !authCompleted);
 
     if (
       !isStaticReq &&
       !isBot(req) &&
-      (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
-      !authCompleted &&
-      !hostname.includes("leaflet.pub")
+      !hostname.includes("leaflet.pub") &&
+      needsAuthSync
     ) {
       return initiateAuthCallback(req);
     }
