@@ -2,9 +2,11 @@
 
 import React from "react";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
-import { PublicationHeader } from "./PublicationHeader";
+import {
+  PublicationHeader,
+  NewPublicationHeader,
+} from "./PublicationHeader";
 import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
-import { PublicationStickyHeader } from "./PublicationStickyHeader";
 
 export function PublicationHomeLayout(props: {
   uri: string;
@@ -17,17 +19,41 @@ export function PublicationHomeLayout(props: {
   navPages: PublicationNavPage[];
   publicationUrl: string;
   activePath: string;
+  subscribe?: {
+    publicationUri: string;
+    publicationUrl?: string;
+    publicationName: string;
+    publicationDescription?: string;
+    newsletterMode: boolean;
+  };
   children: React.ReactNode;
 }) {
   let { ref } = usePreserveScroll<HTMLDivElement>(props.uri);
   let hasNav = props.navPages.length > 0;
 
+  // When the publication has nav pages, mirror the editor (PublicationEditLayout
+  // + PublicationPagesNav): an inline header that scrolls away above a sticky
+  // tab-bar nav. Otherwise fall back to the full stacked header.
   let header = hasNav ? (
-    <PublicationHeader
-      variant="inline"
-      iconUrl={props.iconUrl}
-      publicationName={props.publicationName}
-    />
+    <>
+      <div className="shrink-0">
+        <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
+          <NewPublicationHeader
+            variant="inline"
+            iconUrl={props.iconUrl}
+            publicationName={props.publicationName}
+            description={props.description}
+            subscribeButton={props.subscribeButton}
+          />
+        </div>
+      </div>
+      <PublicationNav
+        publicationUrl={props.publicationUrl}
+        pages={props.navPages}
+        activePath={props.activePath}
+        subscribe={props.subscribe}
+      />
+    </>
   ) : (
     <div className="pubFullHeader shrink-0">
       <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pt-5">

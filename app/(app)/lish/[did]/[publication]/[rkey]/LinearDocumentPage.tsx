@@ -111,13 +111,17 @@ export function LinearDocumentPage({
         />
         <div className={`spacer h-4 w-full`} />
         {document.publication?.uri && (
-          <SubscribePanel
-            publicationUri={document.publication.uri}
-            publicationUrl={props.pubRecord?.url}
-            publicationName={props.pubRecord?.name ?? document.publication.name}
-            publicationDescription={props.pubRecord?.description}
-            newsletterMode={document.publication.newsletterMode}
-          />
+          <div className="px-3 sm:px-4 w-full">
+            <SubscribePanel
+              publicationUri={document.publication.uri}
+              publicationUrl={props.pubRecord?.url}
+              publicationName={
+                props.pubRecord?.name ?? document.publication.name
+              }
+              publicationDescription={props.pubRecord?.description}
+              newsletterMode={document.publication.newsletterMode}
+            />
+          </div>
         )}
 
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}

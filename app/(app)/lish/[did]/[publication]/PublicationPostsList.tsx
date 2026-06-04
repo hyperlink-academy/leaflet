@@ -44,6 +44,7 @@ export function PublicationPostsList({
   fakePosts,
   view = "medium",
   highlightFirstPost = false,
+  className,
 }: {
   publication: PublicationForURL;
   publicationRecord: NormalizedPublication | null;
@@ -51,9 +52,12 @@ export function PublicationPostsList({
   fakePosts?: PublicationPostsListFakePost[];
   view?: PublicationPostsListView;
   highlightFirstPost?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="publicationPostList w-full flex flex-col gap-2">
+    <div
+      className={`publicationPostList w-full flex flex-col gap-2 ${className}`}
+    >
       {fakePosts
         ? fakePosts.map((post, i) => (
             <PublicationPostItem

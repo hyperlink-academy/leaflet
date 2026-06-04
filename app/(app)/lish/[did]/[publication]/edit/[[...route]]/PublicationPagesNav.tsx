@@ -44,7 +44,7 @@ import {
   useNormalizedPublicationRecord,
 } from "../../dashboard/PublicationSWRProvider";
 import { sortPublicationPages } from "../../sortPublicationPages";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import { PublicationNavSubscribe } from "../../PublicationNavSubscribe";
 import { DotLoader } from "components/utils/DotLoader";
 
 // Turn arbitrary user input into a slug that is safe to use as the path
@@ -77,10 +77,6 @@ export function PublicationPagesNav(props: {
   let router = useRouter();
   let pathname = usePathname() ?? "";
   let { data, mutate } = usePublicationData();
-  let [subscribeHovered, setSubscribeHovered] = useState(false);
-  let [subscribeFocused, setSubscribeFocused] = useState(false);
-  let [subscribeHasValue, setSubscribeHasValue] = useState(false);
-  let subscribeOpen = subscribeHovered || subscribeFocused || subscribeHasValue;
 
   let pages = data?.publication?.publication_pages ?? [];
   let publicationUri = data?.publication?.uri;
@@ -208,35 +204,13 @@ export function PublicationPagesNav(props: {
           />
         </div>
         {publicationUri && publicationRecord && (
-          <div
-            className="sm:block hidden min-w-0 max-w-64 w-fit pb-1"
-            onMouseEnter={() => setSubscribeHovered(true)}
-            onMouseLeave={() => setSubscribeHovered(false)}
-            onFocus={() => setSubscribeFocused(true)}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null))
-                setSubscribeFocused(false);
-            }}
-            onInput={(e) => {
-              let target = e.target as HTMLInputElement;
-              if (target.type === "email") setSubscribeHasValue(!!target.value);
-            }}
-          >
-            {subscribeOpen ? (
-              <SubscribeInput
-                compact
-                publicationUri={publicationUri}
-                publicationUrl={publicationRecord.url}
-                publicationName={publicationRecord.name}
-                publicationDescription={publicationRecord.description}
-                newsletterMode={newsletterMode}
-              />
-            ) : (
-              <ButtonPrimary compact className="pubPageSubscribe text-sm!">
-                Subscribe
-              </ButtonPrimary>
-            )}
-          </div>
+          <PublicationNavSubscribe
+            publicationUri={publicationUri}
+            publicationUrl={publicationRecord.url}
+            publicationName={publicationRecord.name}
+            publicationDescription={publicationRecord.description}
+            newsletterMode={newsletterMode}
+          />
         )}
       </div>
       <div className="border-b border-border-light" />

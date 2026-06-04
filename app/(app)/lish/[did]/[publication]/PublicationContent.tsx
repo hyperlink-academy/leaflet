@@ -93,6 +93,13 @@ export const PublicationContent = ({
         navPages={navPages}
         publicationUrl={getPublicationURL(publication)}
         activePath="/"
+        subscribe={{
+          publicationUri: publication.uri,
+          publicationUrl: record?.url,
+          publicationName: record?.name ?? publication.name,
+          publicationDescription: record?.description,
+          newsletterMode,
+        }}
         author={
           profile ? (
             <PublicationAuthor
@@ -119,6 +126,7 @@ export const PublicationContent = ({
           publicationRecord={record}
           posts={posts}
           fakePosts={fakePosts}
+          className="px-3 sm:px-4"
         />
       </PublicationHomeLayout>
     </>

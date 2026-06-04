@@ -36,17 +36,18 @@ export type SubscribeProps = {
 
 export const SubscribePanel = (props: SubscribeProps) => {
   return (
-    <div className="px-3 sm:px-4 w-full">
-      <div className="accent-container rounded-lg! w-full px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5 text-center justify-center">
-        <h3 className="leading-snug text-secondary">{props.publicationName}</h3>
-        {props.publicationDescription && (
-          <div className="text-tertiary pb-1">
-            {props.publicationDescription}
+    <div className=" w-full">
+      <div className="accent-container rounded-lg! border-none! p-0! w-full text-center justify-center">
+        <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
+          <h3 className="leading-snug text-secondary">
+            {props.publicationName}
+          </h3>
+          {props.publicationDescription && (
+            <div className="text-tertiary">{props.publicationDescription}</div>
+          )}
+          <div className="w-fit max-w-full mx-auto pt-3">
+            <SubscribeInput {...props} />
           </div>
-        )}
-
-        <div className="mx-auto">
-          <SubscribeInput {...props} />
         </div>
       </div>
     </div>
