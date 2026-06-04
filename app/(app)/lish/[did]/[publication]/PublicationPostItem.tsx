@@ -9,6 +9,7 @@ type CommonProps = {
   date?: React.ReactNode;
   interactions?: React.ReactNode;
   footer?: React.ReactNode;
+  inList?: boolean;
 };
 
 type LargeProps = CommonProps & {
@@ -79,7 +80,9 @@ function PostLink({
 
 export function PublicationPostItemSmall(props: CommonProps) {
   return (
-    <div className="flex w-full grow flex-col px-3 py-2">
+    <div
+      className={`flex w-full grow flex-col py-2 ${props.inList ? "px-0" : "px-3"}`}
+    >
       <PostLink href={props.href}>
         {props.title && (
           <h3 className="text-primary leading-snug pb-1">{props.title}</h3>
@@ -102,7 +105,9 @@ export function PublicationPostItemMedium(props: MediumProps) {
   return (
     <div className="flex w-full flex-col">
       <div className="flex w-full items-stretch ">
-        <div className="flex w-full grow flex-col justify-between min-w-0  pl-3 pr-3 py-2">
+        <div
+          className={`flex w-full grow flex-col justify-between min-w-0 py-2 ${props.inList ? "pl-0" : "pl-3"} ${props.inList && !hasCoverImage ? "pr-0" : "pr-3"}`}
+        >
           <PostLink href={props.href}>
             {props.title && (
               <h3 className="text-primary leading-snug line-clamp-2 pb-1">
@@ -139,10 +144,14 @@ export function PublicationPostItemMedium(props: MediumProps) {
         author={props.author}
         date={props.date}
         interactions={props.interactions}
-        textClassName="text-sm place-self-end shrink-0 sm:hidden px-3 "
+        textClassName={`text-sm place-self-end shrink-0 sm:hidden ${props.inList ? "px-0" : "px-3"} `}
       />
       {props.footer && (
-        <div className="shrink-0 sm:hidden px-3 pb-2">{props.footer}</div>
+        <div
+          className={`shrink-0 sm:hidden pb-2 ${props.inList ? "px-0" : "px-3"}`}
+        >
+          {props.footer}
+        </div>
       )}
     </div>
   );
@@ -151,9 +160,16 @@ export function PublicationPostItemMedium(props: MediumProps) {
 export function PublicationPostItemLarge(props: LargeProps) {
   const hasCoverImage = !!props.coverImageSrc;
   const widePage = (props.pageWidth ?? 0) >= 768;
+  const px = props.inList
+    ? widePage
+      ? hasCoverImage
+        ? "pl-3"
+        : "pr-0"
+      : "px-0"
+    : "px-3";
   const body = (
     <div
-      className={`min-w-0 flex w-full grow flex-col ${widePage ? " px-3 py-2 sm:pb-3" : "px-3 py-2 "}`}
+      className={`min-w-0 flex w-full grow flex-col ${px} py-2 ${widePage ? "sm:pb-3" : ""}`}
     >
       <div className="flex flex-col grow w-full min-w-0 justify-between gap-2">
         <PostLink href={props.href}>

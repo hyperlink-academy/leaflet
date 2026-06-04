@@ -80,11 +80,11 @@ export const SubscribeWithHandle = (props: {
 
   if (props.user.loggedIn && props.user.handle) {
     return (
-      <div className="flex flex-col gap-2 w-max max-w-full mx-auto min-w-0">
-        <div className="flex items-center gap-1">
+      <div className="flex flex-col gap-2 w-full mx-auto min-w-0">
+        <div className="flex items-center gap-1 min-w-0">
           <ButtonPrimary
             compact={props.compact}
-            className={`mx-auto max-w-full grow ${props.compact && "text-sm"}`}
+            className={`mx-auto max-w-full grow shrink! min-w-0 ${props.compact && "text-sm"}`}
             disabled={subscribing}
             onClick={async () => {
               if (subscribing) return;
@@ -137,7 +137,7 @@ export const SubscribeWithHandle = (props: {
               href={`${props.publicationUrl}/rss`}
               target="_blank"
               rel="noopener noreferrer"
-              className={`no-underlinetext-accent-contrast`}
+              className={`no-underlinetext-accent-contrast shrink-0`}
             >
               <ButtonPrimary
                 className={`${props.compact ? "p-[3px]!" : "p-[6px!"} `}

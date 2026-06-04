@@ -16,9 +16,9 @@ const id = 'pub.leaflet.blocks.postsList'
 
 export interface Main {
   $type?: 'pub.leaflet.blocks.postsList'
-  view?: 'compact' | 'full' | (string & {})
+  view?: 'small' | 'medium' | (string & {})
   highlightFirstPost?: boolean
-  filterByTag?: string
+  filterByTags?: string[]
 }
 
 const hashMain = 'main'

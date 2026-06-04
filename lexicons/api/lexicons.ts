@@ -1578,13 +1578,16 @@ export const schemaDict = {
         properties: {
           view: {
             type: 'string',
-            knownValues: ['compact', 'full'],
+            knownValues: ['small', 'medium'],
           },
           highlightFirstPost: {
             type: 'boolean',
           },
-          filterByTag: {
-            type: 'string',
+          filterByTags: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
           },
         },
       },

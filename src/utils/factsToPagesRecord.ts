@@ -561,12 +561,13 @@ export async function processBlocksToPages(opts: {
         b.value,
         "posts-list/highlight-first-post",
       );
-      const [filterTagFact] = scan.eav(b.value, "posts-list/filter-tag");
+      const filterTagFacts = scan.eav(b.value, "posts-list/filter-tag");
+      const filterByTags = filterTagFacts.map((f) => f.data.value);
       const block: $Typed<PubLeafletBlocksPostsList.Main> = {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
-        ...(filterTagFact && { filterByTag: filterTagFact.data.value }),
+        ...(filterByTags.length > 0 && { filterByTags }),
       };
       return block;
     }

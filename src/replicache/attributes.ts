@@ -229,7 +229,7 @@ const PostsListBlockAttributes = {
   },
   "posts-list/filter-tag": {
     type: "string",
-    cardinality: "one",
+    cardinality: "many",
   },
 } as const;
 
@@ -416,7 +416,7 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "posts-list-view-union": {
     type: "posts-list-view-union";
-    value: "compact" | "full";
+    value: "small" | "medium";
   };
   "standard-site-post-size-union": {
     type: "standard-site-post-size-union";

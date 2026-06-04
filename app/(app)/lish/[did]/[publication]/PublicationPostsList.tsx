@@ -35,14 +35,14 @@ type PublicationForURL = {
   record: unknown;
 };
 
-export type PublicationPostsListView = "compact" | "full";
+export type PublicationPostsListView = "small" | "medium";
 
 export function PublicationPostsList({
   publication,
   publicationRecord,
   posts,
   fakePosts,
-  view = "full",
+  view = "medium",
   highlightFirstPost = false,
 }: {
   publication: PublicationForURL;
@@ -119,7 +119,7 @@ export function PublicationPostsList({
               const isHighlightedFirst = highlightFirstPost && index === 0;
               const Variant = isHighlightedFirst
                 ? "large"
-                : view === "compact"
+                : view === "small"
                   ? "small"
                   : "medium";
 
@@ -140,6 +140,7 @@ export function PublicationPostsList({
                 return (
                   <React.Fragment key={post.uri}>
                     <PublicationPostItemLarge
+                      inList
                       href={docUrl}
                       title={doc_record.title}
                       description={
@@ -160,6 +161,7 @@ export function PublicationPostsList({
                 return (
                   <React.Fragment key={post.uri}>
                     <PublicationPostItemSmall
+                      inList
                       href={docUrl}
                       title={doc_record.title}
                       date={date}
@@ -173,6 +175,7 @@ export function PublicationPostsList({
               return (
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemMedium
+                    inList
                     href={docUrl}
                     title={doc_record.title}
                     description={

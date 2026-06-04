@@ -306,14 +306,15 @@ export let Block = ({
     }
     case PubLeafletBlocksPostsList.isMain(b.block): {
       if (!postsListData) return null;
-      const view: "compact" | "full" =
-        b.block.view === "compact" ? "compact" : "full";
-      const filterByTag = b.block.filterByTag;
-      const posts = filterByTag
-        ? postsListData.posts.filter((p) =>
-            p.record.tags?.includes(filterByTag),
-          )
-        : postsListData.posts;
+      const view: "small" | "medium" =
+        b.block.view === "small" ? "small" : "medium";
+      const filterByTags = b.block.filterByTags;
+      const posts =
+        filterByTags && filterByTags.length > 0
+          ? postsListData.posts.filter((p) =>
+              p.record.tags?.some((t) => filterByTags.includes(t)),
+            )
+          : postsListData.posts;
       return (
         <div className={className} {...blockProps}>
           <PublicationPostsList
@@ -631,7 +632,6 @@ function PublishedIframeBlock(props: {
     "parts.page.embed.ctx.primaryColor",
     pubTheme.primary.toString("hex"),
   );
-
 
   let aspectRatio = props.aspectRatio
     ? `${props.aspectRatio.width}/${props.aspectRatio.height}`

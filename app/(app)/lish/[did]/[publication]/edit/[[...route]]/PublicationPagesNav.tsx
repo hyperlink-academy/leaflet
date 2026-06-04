@@ -123,7 +123,7 @@ export function PublicationPagesNav(props: {
   return (
     <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page  shrink-0 w-full sm:max-w-[calc(var(--page-width-units)*1.25)] mx-auto pt-3 ">
       <div className="flex justify-between items-center gap-4 px-3 sm:px-4  w-full sm:max-w-(--page-width-units) mx-auto">
-        <div className="pubPageTabs flex items-center shrink-0 gap-4 w-fit min-w-0 overflow-x-auto pt-2 pb-5 -mb-5">
+        <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-2 pb-5 -mb-5">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -193,7 +193,7 @@ export function PublicationPagesNav(props: {
         </div>
         {publicationUri && publicationRecord && (
           <div
-            className="shrink-0"
+            className="min-w-0 max-w-64 w-fit"
             onMouseEnter={() => setSubscribeHovered(true)}
             onMouseLeave={() => setSubscribeHovered(false)}
             onFocus={() => setSubscribeFocused(true)}
@@ -206,17 +206,15 @@ export function PublicationPagesNav(props: {
               if (target.type === "email") setSubscribeHasValue(!!target.value);
             }}
           >
-            {!subscribeOpen ? (
-              <div className="max-w-64">
-                <SubscribeInput
-                  compact
-                  publicationUri={publicationUri}
-                  publicationUrl={publicationRecord.url}
-                  publicationName={publicationRecord.name}
-                  publicationDescription={publicationRecord.description}
-                  newsletterMode={newsletterMode}
-                />
-              </div>
+            {subscribeOpen ? (
+              <SubscribeInput
+                compact
+                publicationUri={publicationUri}
+                publicationUrl={publicationRecord.url}
+                publicationName={publicationRecord.name}
+                publicationDescription={publicationRecord.description}
+                newsletterMode={newsletterMode}
+              />
             ) : (
               <ButtonPrimary compact className="pubPageSubscribe text-sm!">
                 Subscribe
