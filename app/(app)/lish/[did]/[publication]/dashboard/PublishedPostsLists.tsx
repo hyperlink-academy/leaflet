@@ -19,6 +19,7 @@ import { InteractionPreview } from "components/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(app)/(home-pages)/(writer)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -66,11 +67,23 @@ function PublishedPostItem(props: {
   showPageBackground: boolean;
 }) {
   const { doc, publication, pubRecord, showPageBackground } = props;
+  const { identity } = useIdentityData();
   const uri = new AtUri(doc.uri);
   const leaflet = publication.leaflets_in_publications.find(
     (l) => l.doc === doc.uri,
   );
   const docUrl = getDocumentURL(doc.record, doc.uri, publication);
+
+  // Owners can edit every post; contributors can only edit posts where they
+  // appear in that leaflet's leaflet_contributors.
+  const isOwner =
+    !!identity?.atp_did && identity.atp_did === publication.identity_did;
+  const canEdit =
+    isOwner ||
+    (leaflet?.permission_tokens?.leaflet_contributors ?? []).some(
+      (c: { contributor_did: string }) =>
+        c.contributor_did === identity?.atp_did,
+    );
 
   return (
     <Fragment>
@@ -92,7 +105,7 @@ function PublishedPostItem(props: {
               </h3>
             </a>
             <div className="flex justify-start align-top flex-row gap-1">
-              {leaflet && leaflet.permission_tokens && (
+              {leaflet && leaflet.permission_tokens && canEdit && (
                 <>
                   <SpeedyLink className="pt-[6px]" href={`/${leaflet.leaflet}`}>
                     <EditTiny />

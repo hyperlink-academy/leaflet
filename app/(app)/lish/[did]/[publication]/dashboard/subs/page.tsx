@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getProfiles } from "src/identity";
+import { getIdentityData } from "actions/getIdentityData";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
@@ -30,6 +32,12 @@ export default async function SubsPage(props: {
         showPageBackground={false}
       />
     );
+  }
+
+  const identity = await getIdentityData();
+  const isOwner = !!identity?.atp_did && identity.atp_did === pub.identity_did;
+  if (!isOwner) {
+    redirect(`/lish/${params.did}/${params.publication}/dashboard`);
   }
 
   const record = normalizePublicationRecord(pub.record);

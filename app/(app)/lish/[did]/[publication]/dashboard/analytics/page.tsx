@@ -11,22 +11,26 @@ import {
   useNormalizedPublicationRecord,
 } from "../PublicationSWRProvider";
 import { useCanSeePro } from "src/hooks/useEntitlement";
+import { useIdentityData } from "components/IdentityProvider";
 
 export default function AnalyticsPage() {
   let canSeePro = useCanSeePro();
   let router = useRouter();
   let { data } = usePublicationData();
+  let { identity } = useIdentityData();
   let record = useNormalizedPublicationRecord();
   let pubUri = data?.publication?.uri || "";
   const showPageBackground = !!record?.theme?.showPageBackground;
+  let isOwner =
+    !!identity?.atp_did && identity.atp_did === data?.publication?.identity_did;
 
   let [dateState, setDateState] = useAnalyticsDateState();
 
   useEffect(() => {
-    if (canSeePro === false) router.replace("../");
-  }, [canSeePro, router]);
+    if (canSeePro === false || isOwner === false) router.replace("../");
+  }, [canSeePro, isOwner, router]);
 
-  if (!canSeePro) return null;
+  if (!canSeePro || !isOwner) return null;
 
   return (
     <DashboardPageLayout

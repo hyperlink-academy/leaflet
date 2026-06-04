@@ -45,6 +45,13 @@ export function LeafletSidebar() {
     !!pub?.publications &&
     !!identity?.atp_did &&
     pub.publications.identity_did === identity.atp_did;
+  let isContributorToPub =
+    !!pub?.publications &&
+    !!identity?.atp_did &&
+    !!pub.publications.publication_contributors?.some(
+      (c) => c.contributor_did === identity.atp_did && c.confirmed,
+    );
+  let canManagePubDraft = isOwnerOfPub || isContributorToPub;
   if (publicationPage) return null;
 
   return (
@@ -56,7 +63,7 @@ export function LeafletSidebar() {
         <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
           {entity_set.permissions.write && (
             <Sidebar className="my-0!">
-              {isOwnerOfPub || isOnHome ? (
+              {canManagePubDraft || isOnHome ? (
                 <PublishButton entityID={rootEntity} />
               ) : (
                 <AddToHomeButton />
@@ -67,7 +74,7 @@ export function LeafletSidebar() {
               <ThemePopover entityID={rootEntity} />
               <HelpButton />
               <hr className="text-border" />
-              {isOwnerOfPub && pub?.publications ? (
+              {canManagePubDraft && pub?.publications ? (
                 <BackToPubButton publication={pub.publications} />
               ) : (
                 <HomeButton />
