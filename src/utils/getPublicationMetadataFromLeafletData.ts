@@ -7,7 +7,7 @@ import { Json } from "supabase/database.types";
  * Consumers should use `normalizePublicationRecord()` and `normalizeDocumentRecord()`
  * from `src/utils/normalizeRecords` to get properly typed data.
  */
-export type PublicationPageMetadataEntry = {
+type PublicationPageMetadataEntry = {
   id: number;
   title: string;
   path: string | null;
@@ -15,7 +15,7 @@ export type PublicationPageMetadataEntry = {
   metadata: Json;
 };
 
-export type PublicationMetadata = {
+type PublicationMetadata = {
   description: string;
   title: string;
   leaflet: string;

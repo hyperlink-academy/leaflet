@@ -39,7 +39,7 @@ export const ImageToolbar = (props: {
   );
 };
 
-export const ImageFullBleedButton = (props: {}) => {
+const ImageFullBleedButton = (props: {}) => {
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
   let isFullBleed = useEntity(focusedBlock, "image/full-bleed")?.data.value;
@@ -67,7 +67,7 @@ export const ImageFullBleedButton = (props: {}) => {
   );
 };
 
-export const ImageAltTextButton = (props: {}) => {
+const ImageAltTextButton = (props: {}) => {
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
 
@@ -111,7 +111,7 @@ export const ImageAltTextButton = (props: {}) => {
   );
 };
 
-export const ImageCoverButton = () => {
+const ImageCoverButton = () => {
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
   let hasSrc = useEntity(focusedBlock, "block/image")?.data;

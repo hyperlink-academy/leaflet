@@ -78,7 +78,7 @@ export function PublishedPageLinkBlock(props: {
     </div>
   );
 }
-export function DocLinkBlock(props: {
+function DocLinkBlock(props: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId: string;
   parentPageId?: string;
@@ -157,7 +157,7 @@ export function DocLinkBlock(props: {
   );
 }
 
-export function PagePreview(props: {
+function PagePreview(props: {
   did: string;
   blocks: PubLeafletPagesLinearDocument.Block[];
 }) {

@@ -60,24 +60,3 @@ export function atUriToUrl(atUri: string): string {
   }
 }
 
-/**
- * Opens a mention link in the appropriate way
- * - DID mentions open in a new tab (external Bluesky)
- * - Publication/document mentions navigate in the same tab
- */
-export function handleMentionClick(
-  e: MouseEvent | React.MouseEvent,
-  type: "did" | "at-uri",
-  value: string,
-) {
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (type === "did") {
-    // Open Bluesky profile in new tab
-    window.open(didToBlueskyUrl(value), "_blank", "noopener,noreferrer");
-  } else {
-    // Navigate to publication/document in same tab
-    window.location.href = atUriToUrl(value);
-  }
-}

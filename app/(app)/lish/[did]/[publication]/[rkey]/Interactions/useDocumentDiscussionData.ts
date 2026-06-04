@@ -10,7 +10,7 @@ import {
 } from "src/utils/normalizeRecords";
 import type { Comment } from "./Comments";
 
-export type DocumentInteractionsData = {
+type DocumentInteractionsData = {
   comments: Comment[];
   quotesAndMentions: { uri: string; link?: string }[];
   document: NormalizedDocument | null;

@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { idResolver } from "src/identity";
 import { isPro } from "src/entitlements";
 
-export type ContributorRow = {
+type ContributorRow = {
   contributor_did: string;
   confirmed: boolean;
   created_at: string;

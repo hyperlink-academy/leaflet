@@ -144,7 +144,7 @@ export function QuoteHandler() {
   }
 }
 
-export const QuoteOptionButtons = (props: { position: string }) => {
+const QuoteOptionButtons = (props: { position: string }) => {
   let smoker = useSmoker();
   let { identity } = useIdentityData();
   const { uri: document_uri, publication } = useDocument();

@@ -21,7 +21,7 @@ function getWindowDimensions() {
   };
 }
 
-export function useWindowDimensions() {
+function useWindowDimensions() {
   const [windowDimensions, setWindowDimensions] = useState(
     getWindowDimensions(),
   );

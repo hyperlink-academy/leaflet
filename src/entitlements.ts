@@ -3,7 +3,7 @@
 // client gating and the server enforcement can never drift apart.
 
 // The single entitlement key that grants Leaflet Pro.
-export const PRO_ENTITLEMENT_KEY = "publication_analytics";
+const PRO_ENTITLEMENT_KEY = "publication_analytics";
 
 export function hasEntitlement(
   entitlements: Record<string, unknown> | null | undefined,

@@ -15,7 +15,7 @@ export type Notification = Omit<TablesInsert<"notifications">, "data"> & {
   data: NotificationData;
 };
 
-export type NotificationProfile = Pick<
+type NotificationProfile = Pick<
   Profile,
   "did" | "handle" | "displayName" | "avatar"
 >;

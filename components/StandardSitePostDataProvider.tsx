@@ -48,23 +48,10 @@ function batchFetchStandardSitePost(
   });
 }
 
-export const StandardSitePostDataContext = createContext<Record<
+const StandardSitePostDataContext = createContext<Record<
   string,
   StandardSitePostData
 > | null>(null);
-
-export function StandardSitePostDataProvider(props: {
-  posts: StandardSitePostData[];
-  children: React.ReactNode;
-}) {
-  const map: Record<string, StandardSitePostData> = {};
-  for (const p of props.posts) map[p.uri] = p;
-  return (
-    <StandardSitePostDataContext.Provider value={map}>
-      {props.children}
-    </StandardSitePostDataContext.Provider>
-  );
-}
 
 export function useStandardSitePost(uri: string | null | undefined) {
   const ctx = useContext(StandardSitePostDataContext);

@@ -93,7 +93,7 @@ export const HomeContent = (props: {
   );
 };
 
-export function HomeLeafletList(props: {
+function HomeLeafletList(props: {
   titles: { [root_entity: string]: string };
   searchValue: string;
 }) {

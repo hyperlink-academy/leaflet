@@ -11,7 +11,7 @@ type ThreadType = ThreadViewPost | NotFoundPost | BlockedPost;
 
 type PostView = AppBskyFeedDefs.PostView;
 
-export interface QuotesResponse {
+interface QuotesResponse {
   uri: string;
   cid?: string;
   cursor?: string;
@@ -32,7 +32,7 @@ export async function fetchThread(uri: string): Promise<ThreadType> {
   return response.json();
 }
 
-export const prefetchThread = (uri: string) => {
+const prefetchThread = (uri: string) => {
   preload(getThreadKey(uri), () => fetchThread(uri));
 };
 
@@ -50,7 +50,7 @@ export async function fetchQuotes(uri: string): Promise<QuotesResponse> {
   return response.json();
 }
 
-export const prefetchQuotes = (uri: string) => {
+const prefetchQuotes = (uri: string) => {
   preload(getQuotesKey(uri), () => fetchQuotes(uri));
 };
 

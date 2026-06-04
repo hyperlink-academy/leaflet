@@ -8,12 +8,12 @@
 const POSTMARK_API = "https://api.postmarkapp.com";
 const BROADCAST_STREAM = "broadcast";
 
-export type SuppressionReason =
+type SuppressionReason =
   | "HardBounce"
   | "SpamComplaint"
   | "ManualSuppression";
 
-export type SuppressionLookup = {
+type SuppressionLookup = {
   email: string;
   reason: SuppressionReason;
 } | null;

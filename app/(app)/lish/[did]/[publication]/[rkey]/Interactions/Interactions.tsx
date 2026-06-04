@@ -40,7 +40,7 @@ const defaultInteractionState: InteractionState = {
   threadStack: [],
 };
 
-export let useInteractionStateStore = create<{
+let useInteractionStateStore = create<{
   [document_uri: string]: InteractionState;
 }>(() => ({}));
 
@@ -394,7 +394,7 @@ export function getQuoteCount(
   return getQuoteCountFromArray(quotesAndMentions, pageId);
 }
 
-export function getQuoteCountFromArray(
+function getQuoteCountFromArray(
   quotesAndMentions: { uri: string; link?: string }[],
   pageId?: string,
 ) {

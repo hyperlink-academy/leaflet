@@ -31,7 +31,7 @@ export const PollBlock = (
   return <PublicationPollBlock {...props} />;
 };
 
-export const LeafletPollBlock = (
+const LeafletPollBlock = (
   props: BlockProps & {
     areYouSure?: boolean;
     setAreYouSure?: (value: boolean) => void;

@@ -21,20 +21,6 @@ export function isPublicationCollection(collection: string): boolean {
 }
 
 /**
- * Check if a collection belongs to the site.standard namespace.
- */
-export function isSiteStandardCollection(collection: string): boolean {
-  return collection.startsWith("site.standard.");
-}
-
-/**
- * Check if a collection belongs to the pub.leaflet namespace.
- */
-export function isPubLeafletCollection(collection: string): boolean {
-  return collection.startsWith("pub.leaflet.");
-}
-
-/**
  * Get the document $type to use based on an existing URI's collection.
  * If no existing URI or collection isn't a document, defaults to site.standard.document.
  */

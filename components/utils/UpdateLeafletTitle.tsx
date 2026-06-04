@@ -67,7 +67,7 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   return null;
 }
 
-export const usePageTitle = (entityID: string) => {
+const usePageTitle = (entityID: string) => {
   let [title, setTitle] = useState("");
   let canvasBlocks = useCanvasBlocksWithType(entityID).filter(
     (b) => b.type === "text" || b.type === "heading",

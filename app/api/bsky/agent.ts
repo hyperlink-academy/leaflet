@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createOauthClient } from "src/atproto-oauth";
 import { supabaseServerClient } from "supabase/serverClient";
 
-export async function getAuthenticatedAgent(): Promise<Agent | null> {
+async function getAuthenticatedAgent(): Promise<Agent | null> {
   try {
     const cookieStore = await cookies();
     const authToken =

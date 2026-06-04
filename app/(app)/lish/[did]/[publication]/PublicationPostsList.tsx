@@ -35,7 +35,7 @@ type PublicationForURL = {
   record: unknown;
 };
 
-export type PublicationPostsListView = "small" | "medium";
+type PublicationPostsListView = "small" | "medium";
 
 export function PublicationPostsList({
   publication,

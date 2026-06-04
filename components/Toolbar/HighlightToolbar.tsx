@@ -133,7 +133,7 @@ export const HighlightToolbar = (props: {
   );
 };
 
-export const HighlightColorButton = (props: {
+const HighlightColorButton = (props: {
   color: "1" | "2" | "3";
   lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHightlight: (color: "1" | "2" | "3") => void;
@@ -189,7 +189,7 @@ export const HighlightColorButton = (props: {
   );
 };
 
-export const HighlightColorSettings = (props: { pageID: string }) => {
+const HighlightColorSettings = (props: { pageID: string }) => {
   let { rep, rootEntity } = useReplicache();
   let set = useMemo(() => {
     return setColorAttribute(rep, rootEntity);

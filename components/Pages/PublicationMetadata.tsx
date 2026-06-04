@@ -167,7 +167,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
   );
 };
 
-export const TextField = ({
+const TextField = ({
   value,
   onChange,
   className,

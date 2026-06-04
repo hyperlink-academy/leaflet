@@ -10,9 +10,9 @@ export function useCardBorderHiddenContext() {
 }
 
 // Context for hasBackgroundImage
-export const HasBackgroundImageContext = createContext<boolean>(false);
+const HasBackgroundImageContext = createContext<boolean>(false);
 
-export function useHasBackgroundImageContext() {
+function useHasBackgroundImageContext() {
   return useContext(HasBackgroundImageContext);
 }
 import {
@@ -68,7 +68,7 @@ export function ThemeProvider(props: {
 // for PUBLICATIONS: define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
 
 // for LEAFLETS : define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
-export function LeafletThemeProvider(props: {
+function LeafletThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
   children: React.ReactNode;

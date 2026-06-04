@@ -2,7 +2,7 @@ import { Agent } from "@atproto/api";
 import { useRef, useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 
-export type ActorSuggestion = {
+type ActorSuggestion = {
   handle: string;
   did: string;
   displayName?: string;

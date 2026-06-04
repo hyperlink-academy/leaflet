@@ -367,7 +367,7 @@ const BlockTypeComponents: {
   signup: SubscribeBlock,
 };
 
-export const BlockMultiselectIndicator = (props: BlockProps) => {
+const BlockMultiselectIndicator = (props: BlockProps) => {
   let { rep } = useReplicache();
   let isMobile = useIsMobile();
 

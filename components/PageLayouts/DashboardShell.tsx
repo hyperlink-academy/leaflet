@@ -9,7 +9,7 @@ import { Sidebar, useSidebarStore } from "components/ActionBar/Sidebar";
 import { DashboardIdContext } from "./dashboardState";
 import { NotificationContent } from "./NotificationContent";
 
-export type DashboardShellProps = {
+type DashboardShellProps = {
   id: string;
   pageTitle: React.ReactNode;
   publication?: string;

@@ -76,7 +76,7 @@ export const UpgradeContent = () => {
   );
 };
 
-export const UpgradeModal = (props: {
+const UpgradeModal = (props: {
   trigger: React.ReactNode;
   asChild?: boolean;
 }) => {

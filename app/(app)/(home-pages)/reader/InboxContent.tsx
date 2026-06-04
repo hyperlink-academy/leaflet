@@ -111,7 +111,7 @@ export const InboxContent = (props: {
   );
 };
 
-export const ReaderEmpty = () => {
+const ReaderEmpty = () => {
   return (
     <EmptyState container="frosted" title="Nothing to read yet…">
       Subscribe to publications and find their latest posts here!

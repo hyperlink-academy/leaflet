@@ -14,9 +14,9 @@ import { revalidatePath } from "next/cache";
 // An authorization failure, distinct from a (recoverable) expired OAuth
 // session. Callers surface session errors with a "sign in again" affordance;
 // a not-authorized error should not pretend the session can be restored.
-export type NotAuthorizedError = { type: "not_authorized"; message: string };
+type NotAuthorizedError = { type: "not_authorized"; message: string };
 
-export type PostMutationError = OAuthSessionError | NotAuthorizedError;
+type PostMutationError = OAuthSessionError | NotAuthorizedError;
 
 // Resolve which DID owns the PDS that hosts this document and whether the
 // current user (identity_did) is authorized to mutate it. Owner-on-PDS is

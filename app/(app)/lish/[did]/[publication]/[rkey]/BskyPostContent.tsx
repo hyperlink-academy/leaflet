@@ -6,8 +6,6 @@ import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { OpenPage } from "./postPageState";
 import { useOpenThread } from "./Interactions/drawerThreadContext";
 import { ThreadLink, QuotesLink } from "./PostLinks";
@@ -357,22 +355,3 @@ function PostCounts(props: {
     </div>
   );
 }
-
-export const ClientDate = (props: { date?: string }) => {
-  const pageLoaded = useHasPageLoaded();
-  const formattedDate = useLocalizedDate(
-    props.date || new Date().toISOString(),
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-      hour12: true,
-    },
-  );
-
-  if (!pageLoaded) return null;
-
-  return <div className="text-xs text-tertiary">{formattedDate}</div>;
-};

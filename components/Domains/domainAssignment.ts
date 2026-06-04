@@ -1,6 +1,6 @@
 import type { CustomDomain } from "./DomainList";
 
-export type DomainAssignment =
+type DomainAssignment =
   | { type: "unassigned" }
   | { type: "publication" }
   | { type: "document"; routes: string[] };

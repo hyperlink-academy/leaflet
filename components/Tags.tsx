@@ -76,7 +76,7 @@ export const TagSelector = (props: {
   );
 };
 
-export const TagSearchInput = (props: {
+const TagSearchInput = (props: {
   rightAlign?: boolean;
   selectedTags: string[];
   setSelectedTags: (tags: string[]) => void;

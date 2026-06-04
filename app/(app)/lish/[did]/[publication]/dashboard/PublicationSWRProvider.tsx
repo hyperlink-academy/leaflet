@@ -14,7 +14,6 @@ import {
 export type PublicationData = GetPublicationDataReturnType["result"];
 export type PublishedDocument =
   NonNullable<PublicationData>["documents"][number];
-export type PublicationDraft = NonNullable<PublicationData>["drafts"][number];
 
 const PublicationContext = createContext({ name: "", did: "" });
 export function PublicationSWRDataProvider(props: {

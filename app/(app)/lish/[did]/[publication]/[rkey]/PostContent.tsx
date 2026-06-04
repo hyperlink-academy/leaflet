@@ -56,7 +56,7 @@ import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 
-export type PostsListData = {
+type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
   posts: PublicationPostsListPost[];

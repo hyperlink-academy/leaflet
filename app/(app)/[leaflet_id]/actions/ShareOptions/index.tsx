@@ -22,7 +22,7 @@ import { AtUri } from "@atproto/syntax";
 import { useIsMobile } from "src/hooks/isMobile";
 import { LoginModal } from "components/LoginButton";
 
-export type ShareMenuStates = "default" | "domain";
+type ShareMenuStates = "default" | "domain";
 
 export let useReadOnlyShareLink = () => {
   let { permission_token, rootEntity } = useReplicache();

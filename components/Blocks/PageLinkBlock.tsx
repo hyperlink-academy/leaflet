@@ -68,7 +68,7 @@ export function PageLinkBlock(
     </CardThemeProvider>
   );
 }
-export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
+function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
   let page = useEntity(props.entityID, "block/card");
   let pageEntity = page ? page.data.value : props.entityID;
@@ -148,7 +148,7 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
   );
 }
 
-export function PagePreview(props: { entityID: string }) {
+function PagePreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
   let { rootEntity } = useReplicache();

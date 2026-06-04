@@ -510,7 +510,7 @@ export function IOSBS(props: { view: RefObject<EditorView | null> }) {
   );
 }
 
-export function docToFacetedText(
+function docToFacetedText(
   doc: Node,
 ): [string, PubLeafletRichtextFacet.Main[]] {
   let fullText = "";
