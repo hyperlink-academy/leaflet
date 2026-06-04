@@ -62,7 +62,7 @@ export const EmailInput = (props: {
           className={`no-underlinetext-accent-contrast`}
         >
           <ButtonSecondary
-            className={`${props.compact ? "p-[3px]!" : "p-[6px!"} border-border!`}
+            className={`${props.compact ? "p-[3px]!" : "p-[6px]!"} border-border!`}
           >
             <RSSTiny />
           </ButtonSecondary>

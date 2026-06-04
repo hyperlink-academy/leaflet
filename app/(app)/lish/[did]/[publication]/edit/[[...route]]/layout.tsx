@@ -11,7 +11,11 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
 import { PublicationPagesNav } from "./PublicationPagesNav";
 import { PublicationEditHeader } from "./PublicationEditHeader";
-import { PublicationHeader } from "../../PublicationHeader";
+import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import {
+  NewPublicationHeader,
+  PublicationHeader,
+} from "../../PublicationHeader";
 import { PublicationEditDirtyProvider } from "./dirtyContext";
 
 export async function generateMetadata(props: {
@@ -80,7 +84,7 @@ export default async function PublicationEditLayout(props: {
   ) {
     return <PubNotFound />;
   }
-
+  let newsletterMode = !!publication?.publication_newsletter_settings?.enabled;
   let uri = new AtUri(publication.uri);
   const iconUrl = record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined;
 
@@ -99,12 +103,22 @@ export default async function PublicationEditLayout(props: {
             />
             <div className="pubWrapper publicationScrollContainer flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto">
               <div className="shrink-0">
-                <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pt-5">
-                  <PublicationHeader
+                <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
+                  <NewPublicationHeader
                     variant="inline"
                     iconUrl={iconUrl}
                     publicationName={publication.name}
                     description={record?.description}
+                    subscribeButton={
+                      <SubscribeInput
+                        compact
+                        publicationUri={publication.uri}
+                        publicationUrl={record.url}
+                        publicationName={record.name}
+                        publicationDescription={record.description}
+                        newsletterMode={newsletterMode}
+                      />
+                    }
                   />
                 </div>
               </div>

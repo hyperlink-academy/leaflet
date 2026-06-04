@@ -47,6 +47,22 @@ import { sortPublicationPages } from "../../sortPublicationPages";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import { DotLoader } from "components/utils/DotLoader";
 
+// Turn arbitrary user input into a slug that is safe to use as the path
+// segment of a URL: lowercase, ascii letters/numbers/dashes only, no spaces
+// or characters that would need percent-encoding.
+function cleanPath(path: string) {
+  if (!path) return;
+  let slug = path
+    .trim()
+    .toLocaleLowerCase()
+    .normalize("NFKD") // split accented chars so the diacritics can be stripped
+    .replace(/[̀-ͯ]/g, "") // remove the diacritic marks
+    .replace(/[^a-z0-9]+/g, "-") // collapse anything non-url-safe into a dash
+    .replace(/^-+|-+$/g, ""); // trim leading/trailing dashes
+  if (!slug) return;
+  return "/" + slug;
+}
+
 type SortablePage = {
   id: number;
   path: string | null;
@@ -121,8 +137,8 @@ export function PublicationPagesNav(props: {
   }
 
   return (
-    <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page  shrink-0 w-full sm:max-w-[calc(var(--page-width-units)*1.25)] mx-auto pt-3 ">
-      <div className="flex justify-between items-center gap-4 px-3 sm:px-4  w-full sm:max-w-(--page-width-units) mx-auto">
+    <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page  shrink-0 w-full sm:max-w-[calc(var(--page-width-units)+.75rem)] mx-auto pt-3 ">
+      <div className="flex  items-baseline justify-between  gap-6 px-3 sm:px-4  w-full sm:max-w-(--page-width-units) mx-auto">
         <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-2 pb-5 -mb-5">
           <DndContext
             sensors={sensors}
@@ -193,7 +209,7 @@ export function PublicationPagesNav(props: {
         </div>
         {publicationUri && publicationRecord && (
           <div
-            className="min-w-0 max-w-64 w-fit"
+            className="sm:block hidden min-w-0 max-w-64 w-fit pb-1"
             onMouseEnter={() => setSubscribeHovered(true)}
             onMouseLeave={() => setSubscribeHovered(false)}
             onFocus={() => setSubscribeFocused(true)}
@@ -237,14 +253,27 @@ function AddPageButton(props: {
   let [creating, setCreating] = useState(false);
   let [name, setName] = useState("");
   let [path, setPath] = useState("");
+  // While the path is "linked" it tracks cleanPath(name); editing the path
+  // field directly breaks the link so it stays whatever the user typed.
+  let [pathLinked, setPathLinked] = useState(true);
 
-  function cleanPath(path: string) {
-    if (!path) return;
-    let trimmedPath = path.trim().toLocaleLowerCase().replaceAll(" ", "-");
-    let leadingSlashPath = trimmedPath.startsWith("/")
-      ? trimmedPath
-      : "/" + trimmedPath;
-    return leadingSlashPath;
+  function handleNameChange(newName: string) {
+    setName(newName);
+    if (pathLinked) setPath("/" + (cleanPath(newName) ?? ""));
+  }
+
+  function handlePathChange(newPath: string) {
+    setPath(newPath);
+    setPathLinked(false);
+  }
+
+  function handleOpenChange(o: boolean) {
+    setOpen(o);
+    if (o) {
+      setName("");
+      setPath("");
+      setPathLinked(true);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -261,6 +290,7 @@ function AddPageButton(props: {
     setOpen(false);
     setName("");
     setPath("");
+    setPathLinked(true);
     await props.onCreated(created);
   }
 
@@ -270,7 +300,7 @@ function AddPageButton(props: {
         asChild
         align="end"
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         className="w-sm py-3!"
         trigger={
           <button
@@ -295,17 +325,17 @@ function AddPageButton(props: {
             name="page-title"
             autoComplete="off"
             value={name}
-            onChange={(e) => setName(e.currentTarget.value)}
+            onChange={(e) => handleNameChange(e.currentTarget.value)}
             autoFocus
           />
           <InputWithLabel
             label="Path"
             type="text"
             name="page-path"
-            placeholder="about"
+            placeholder="/about"
             autoComplete="off"
             value={path}
-            onChange={(e) => setPath(e.currentTarget.value)}
+            onChange={(e) => handlePathChange(e.currentTarget.value)}
           />
           <div className="text-sm text-tertiary -mt-1">
             {props.publicationUrl?.replace(/^https?:\/\//, "")}
@@ -365,14 +395,6 @@ function SortableTab(props: {
     transition,
     zIndex: isDragging ? 1 : undefined,
   };
-  function cleanPath(path: string) {
-    if (!path) return;
-    let trimmedPath = path.trim().toLocaleLowerCase().replaceAll(" ", "-");
-    let leadingSlashPath = trimmedPath.startsWith("/")
-      ? trimmedPath
-      : "/" + trimmedPath;
-    return leadingSlashPath;
-  }
   function handleOpenChange(o: boolean) {
     setPopoverOpen(o);
     if (o) {
@@ -464,7 +486,11 @@ function SortableTab(props: {
           <button
             type="button"
             aria-label="Edit page"
-            className="absolute -top-2 -right-3 shrink-0 p-0.5 rounded-full opacity-0 group-hover/sortable-tab:opacity-100 focus:opacity-100 bg-accent-1 text-accent-2"
+            className={`${props.active ? "opacity-100" : "opacity-0"}
+            absolute -top-2 -right-3
+            shrink-0 p-0.5 bg-accent-1 text-accent-2 rounded-full
+            group-hover/sortable-tab:opacity-100
+            focus:opacity-100   `}
           >
             <EditTiny />
           </button>
@@ -496,7 +522,8 @@ function SortableTab(props: {
               onChange={(e) => setPath(e.currentTarget.value)}
               placeholder="/about"
             />{" "}
-            <div className="text-sm text-tertiary -mt-1">
+            <div className="text-sm text-tertiary leading-tight -mt-1">
+              <strong>Full page link</strong> <br />
               {props.publicationUrl?.replace(/^https?:\/\//, "")}
               {cleanPath(path)}
             </div>

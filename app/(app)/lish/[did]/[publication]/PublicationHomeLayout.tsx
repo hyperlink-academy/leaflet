@@ -23,21 +23,11 @@ export function PublicationHomeLayout(props: {
   let hasNav = props.navPages.length > 0;
 
   let header = hasNav ? (
-    <PublicationStickyHeader
-      nav={
-        <PublicationNav
-          publicationUrl={props.publicationUrl}
-          pages={props.navPages}
-          activePath={props.activePath}
-        />
-      }
-    >
-      <PublicationHeader
-        variant="inline"
-        iconUrl={props.iconUrl}
-        publicationName={props.publicationName}
-      />
-    </PublicationStickyHeader>
+    <PublicationHeader
+      variant="inline"
+      iconUrl={props.iconUrl}
+      publicationName={props.publicationName}
+    />
   ) : (
     <div className="pubFullHeader shrink-0">
       <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pt-5">

@@ -140,7 +140,7 @@ export const SubscribeWithHandle = (props: {
               className={`no-underlinetext-accent-contrast shrink-0`}
             >
               <ButtonPrimary
-                className={`${props.compact ? "p-[3px]!" : "p-[6px!"} `}
+                className={`${props.compact ? "p-[3px]!" : "p-[6px]!"} `}
               >
                 <RSSTiny />
               </ButtonPrimary>
@@ -186,7 +186,7 @@ export const SubscribeWithHandle = (props: {
               className={`no-underlinetext-accent-contrast`}
             >
               <ButtonSecondary
-                className={`${props.compact ? "p-[3px]!" : "p-[6px!"} border-border!`}
+                className={`${props.compact ? "p-[3px]!" : "p-[6px]!"} border-border!`}
               >
                 <RSSTiny />
               </ButtonSecondary>

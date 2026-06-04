@@ -7,67 +7,13 @@ export function PublicationStickyHeader(props: {
   children: React.ReactNode;
 }) {
   let ref = useRef<HTMLDivElement>(null);
-  let pathname = usePathname();
-
-  useEffect(() => {
-    let el = ref.current;
-    let parent = el?.parentElement;
-    if (!el || !parent) return;
-
-    let rafId: number | null = null;
-    let writeProgress = (target: HTMLElement) => {
-      let p = Math.min(Math.max(target.scrollTop / 100, 0), 1);
-      el!.style.setProperty("--header-shrink", String(p));
-      el!.classList.toggle("header-shrunk", target.scrollTop > 32);
-    };
-    let schedule = (target: HTMLElement) => {
-      if (rafId !== null) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        writeProgress(target);
-      });
-    };
-
-    let onScroll = (e: Event) => {
-      let t = e.target;
-      if (!(t instanceof HTMLElement)) return;
-      if (!t.matches(".publicationScrollContainer")) return;
-      schedule(t);
-    };
-    parent.addEventListener("scroll", onScroll, {
-      passive: true,
-      capture: true,
-    });
-
-    let initial = (
-      parent.matches(".publicationScrollContainer")
-        ? parent
-        : parent.querySelector(".publicationScrollContainer")
-    ) as HTMLElement | null;
-    if (initial) writeProgress(initial);
-
-    return () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      parent.removeEventListener("scroll", onScroll, true);
-    };
-  }, []);
-
-  useEffect(() => {
-    ref.current?.style.setProperty("--header-shrink", "0");
-    ref.current?.classList.remove("header-shrunk");
-  }, [pathname]);
 
   return (
     <div
       ref={ref}
       className="pubStickyHeader sticky top-0 z-10 bg-bg-page shrink-0"
     >
-      <div
-        className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4"
-        style={{
-          paddingTop: "calc(20px - 20px * var(--header-shrink, 0))",
-        }}
-      >
+      <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4">
         {props.children}
       </div>
       {props.nav}

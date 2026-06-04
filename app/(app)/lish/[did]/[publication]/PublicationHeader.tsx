@@ -1,3 +1,4 @@
+import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import React from "react";
 
 export function PublicationHeader(props: {
@@ -64,6 +65,45 @@ export function PublicationHeader(props: {
           <div className="pt-4 pb-1 px-3">{props.subscribeButton}</div>
         )}
       </div>
+    </div>
+  );
+}
+
+export function NewPublicationHeader(props: {
+  iconUrl?: string;
+  publicationName: string;
+  description?: string;
+  author?: React.ReactNode;
+  subscribeButton?: React.ReactNode;
+  variant?: "stacked" | "inline";
+}) {
+  let variant = props.variant ?? "stacked";
+  let icon = props.iconUrl ? (
+    <div
+      className={`pubHeaderIcon shrink-0 rounded-full sm:w-7 sm:h-7 w-10 h-10`}
+      style={{
+        backgroundImage: `url(${props.iconUrl})`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+      }}
+    />
+  ) : null;
+  let title = (
+    <h2 className={`sm:text-xl text-[1.5rem]`}>{props.publicationName}</h2>
+  );
+
+  return (
+    <div className="publicationHeader flex flex-col gap-2">
+      <div className="publicationName flex sm:flex-row flex-col items-center justify-center sm:gap-3 gap-1">
+        {icon}
+        {title}
+      </div>
+      {props.subscribeButton && (
+        <div className="sm:hidden block max-w-full w-fit mx-auto">
+          {props.subscribeButton}
+        </div>
+      )}
     </div>
   );
 }

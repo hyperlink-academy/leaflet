@@ -731,23 +731,3 @@ pre.shiki {
 .toastError a {
   color: var(--color-white);
 }
-
-.pubHeaderIcon {
-  width: 40px;
-  height: 40px;
-  transition:
-    width 180ms ease-out,
-    height 180ms ease-out;
-}
-.pubHeaderTitle {
-  font-size: 22px;
-  line-height: 1.2;
-  transition: font-size 180ms ease-out;
-}
-.pubStickyHeader.header-shrunk .pubHeaderIcon {
-  width: 24px;
-  height: 24px;
-}
-.pubStickyHeader.header-shrunk .pubHeaderTitle {
-  font-size: 16px;
-}

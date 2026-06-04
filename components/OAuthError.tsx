@@ -26,12 +26,9 @@ export function OAuthErrorMessage({
 
   return (
     <div className={`${className} leading-snug`}>
-      <span>Your session has expired or is invalid </span>
-      <a
-        href={signInUrl}
-        className="underline font-bold whitespace-nowrap"
-      >
-        Sign in again
+      <span>You're logged out! </span>
+      <a href={signInUrl} className="underline font-bold whitespace-nowrap">
+        Sign in
       </a>
     </div>
   );
