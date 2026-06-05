@@ -10,6 +10,7 @@ import {
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
+import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 
 export async function getDocumentsByTag(
   tag: string,
@@ -70,6 +71,7 @@ export async function getDocumentsByTag(
         author: handle?.alsoKnownAs?.[0]
           ? `@${handle.alsoKnownAs[0].slice(5)}`
           : null,
+        contributors: await resolveBylineProfiles(normalizedData, uri.host),
         documents: {
           comments_on_documents: doc.comments_on_documents,
           document_mentions_in_bsky: doc.document_mentions_in_bsky,
