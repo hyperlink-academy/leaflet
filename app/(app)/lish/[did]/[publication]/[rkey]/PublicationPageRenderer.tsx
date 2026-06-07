@@ -6,7 +6,6 @@ import {
 import { AtpAgent } from "@atproto/api";
 
 import {
-  normalizeDocumentRecord,
   normalizePublicationRecord,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
@@ -20,9 +19,8 @@ import { FontLoader } from "components/FontLoader";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { DocumentProvider } from "contexts/DocumentContext";
 import type { DocumentContextValue } from "contexts/DocumentContext";
-import {
-  type PublicationPostsListPost,
-} from "../PublicationPostsList";
+import { buildPublicationPosts } from "../PublicationPostsList";
+import { withBylineProfiles } from "src/utils/resolveBylineProfiles";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
@@ -99,26 +97,10 @@ export async function PublicationPageRenderer({
   const hasPostsList = allBlocks.some((b) =>
     PubLeafletBlocksPostsList.isMain(b.block),
   );
-  const postsListPosts: PublicationPostsListPost[] = hasPostsList
-    ? (publication.documents_in_publications ?? [])
-        .map((dip) => {
-          if (!dip.documents) return null;
-          const normalized = normalizeDocumentRecord(
-            dip.documents.data,
-            dip.documents.uri,
-          );
-          if (!normalized) return null;
-          return {
-            uri: dip.documents.uri,
-            record: normalized,
-            commentsCount: dip.documents.comments_on_documents?.[0]?.count || 0,
-            mentionsCount:
-              dip.documents.document_mentions_in_bsky?.[0]?.count || 0,
-            recommendsCount:
-              dip.documents.recommends_on_documents?.[0]?.count || 0,
-          };
-        })
-        .filter((p): p is PublicationPostsListPost => p !== null)
+  const postsListPosts = hasPostsList
+    ? await withBylineProfiles(
+        buildPublicationPosts(publication.documents_in_publications),
+      )
     : [];
 
   const postsListData = hasPostsList

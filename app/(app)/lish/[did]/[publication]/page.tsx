@@ -9,6 +9,8 @@ import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { PublicationContent } from "./PublicationContent";
+import { buildPublicationPosts } from "./PublicationPostsList";
+import { withBylineProfiles } from "src/utils/resolveBylineProfiles";
 import { tryRenderPublicationPage } from "./tryRenderPublicationPage";
 import {
   PublicationThemeProvider,
@@ -53,6 +55,12 @@ export default async function Publication(props: {
 
   if (!publication) return <PubNotFound />;
 
+  // Build the post list server-side and resolve contributor profiles up front
+  // so the legacy publication home renders bylines without a client round-trip.
+  const posts = await withBylineProfiles(
+    buildPublicationPosts(publication.documents_in_publications),
+  );
+
   try {
     const homePageRender = tryRenderPublicationPage({
       did,
@@ -75,6 +83,7 @@ export default async function Publication(props: {
             did={did}
             profile={profile}
             showPageBackground={showPageBackground}
+            posts={posts}
           />
         </PublicationBackgroundProvider>
       </PublicationThemeProvider>

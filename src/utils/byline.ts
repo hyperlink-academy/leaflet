@@ -63,6 +63,18 @@ export function toBylineProfiles(
   });
 }
 
+/**
+ * Keeps only contributors that resolve to a real name (displayName or handle),
+ * dropping any that are bare DIDs. The single source of truth for "is this
+ * byline presentable", shared by every byline renderer so an unresolved profile
+ * never produces an empty clickable span or an orphan separator.
+ */
+export function namedBylineProfiles(
+  contributors: BylineProfile[] | undefined,
+): BylineProfile[] {
+  return (contributors ?? []).filter((c) => c.displayName || c.handle);
+}
+
 /** Best display label for a profile: displayName, else handle, else did. */
 export function bylineName(
   profile: Pick<Profile, "did" | "handle" | "displayName">,

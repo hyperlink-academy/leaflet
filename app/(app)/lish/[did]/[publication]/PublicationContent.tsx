@@ -1,10 +1,7 @@
 import React from "react";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
 import { PublicationAuthor } from "./PublicationAuthor";
-import {
-  normalizePublicationRecord,
-  normalizeDocumentRecord,
-} from "src/utils/normalizeRecords";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -12,6 +9,7 @@ import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import {
   PublicationPostsList,
+  buildPublicationPosts,
   type PublicationPostsListPost,
   type PublicationPostsListFakePost,
 } from "./PublicationPostsList";
@@ -25,6 +23,7 @@ export const PublicationContent = ({
   profile,
   showPageBackground,
   fakePosts,
+  posts: providedPosts,
 }: {
   record: ReturnType<typeof normalizePublicationRecord>;
   publication: {
@@ -55,6 +54,10 @@ export const PublicationContent = ({
   profile: { did: string; displayName?: string; handle: string } | undefined;
   showPageBackground: boolean | undefined;
   fakePosts?: FakePost[];
+  // Pre-built (and byline-enriched) posts from the server page. When omitted
+  // we build them inline from the publication's documents — used by the client
+  // theme preview, which only ever renders `fakePosts`.
+  posts?: PublicationPostsListPost[];
 }) => {
   const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
   const navPages = (publication.publication_pages ?? []).filter(
@@ -62,22 +65,8 @@ export const PublicationContent = ({
   );
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
-    : publication.documents_in_publications
-        .map((dip) => {
-          if (!dip.documents) return null;
-          const normalized = normalizeDocumentRecord(dip.documents.data);
-          if (!normalized) return null;
-          return {
-            uri: dip.documents.uri,
-            record: normalized,
-            commentsCount: dip.documents.comments_on_documents[0]?.count || 0,
-            mentionsCount:
-              dip.documents.document_mentions_in_bsky[0]?.count || 0,
-            recommendsCount:
-              dip.documents.recommends_on_documents?.[0]?.count || 0,
-          };
-        })
-        .filter((p): p is PublicationPostsListPost => p !== null);
+    : (providedPosts ??
+      buildPublicationPosts(publication.documents_in_publications));
   return (
     <>
       <FontLoader

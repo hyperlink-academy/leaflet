@@ -10,11 +10,14 @@ import {
   PublicationPostItemLarge,
 } from "./PublicationPostItem";
 import {
+  normalizeDocumentRecord,
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
+import { PostByline } from "components/PostByline";
+import { namedBylineProfiles, type BylineProfile } from "src/utils/byline";
 
 export type PublicationPostsListPost = {
   uri: string;
@@ -22,7 +25,52 @@ export type PublicationPostsListPost = {
   commentsCount: number;
   mentionsCount: number;
   recommendsCount: number;
+  // Resolved byline profiles for posts with an explicit byline (co-authors /
+  // guest authors). Empty/undefined for single-author posts, which omit the
+  // byline. Populated server-side via `withBylineProfiles`.
+  contributors?: BylineProfile[];
 };
+
+/**
+ * Builds the post list for a publication home page from its joined
+ * `documents_in_publications` rows: normalizes each document record and pulls
+ * the comment / mention / recommend counts, dropping rows that can't be
+ * normalized. Shared by every publication-home render path (custom page,
+ * legacy fallback, theme preview) so they stay in sync. Wrap the result in
+ * `withBylineProfiles` to enrich it with contributor profiles.
+ */
+export function buildPublicationPosts(
+  documentsInPublications:
+    | Array<{
+        documents: {
+          uri: string;
+          data: unknown;
+          comments_on_documents?: { count: number }[] | null;
+          document_mentions_in_bsky?: { count: number }[] | null;
+          recommends_on_documents?: { count: number }[] | null;
+        } | null;
+      }>
+    | null
+    | undefined,
+): PublicationPostsListPost[] {
+  return (documentsInPublications ?? [])
+    .map((dip) => {
+      if (!dip.documents) return null;
+      const normalized = normalizeDocumentRecord(
+        dip.documents.data,
+        dip.documents.uri,
+      );
+      if (!normalized) return null;
+      return {
+        uri: dip.documents.uri,
+        record: normalized,
+        commentsCount: dip.documents.comments_on_documents?.[0]?.count || 0,
+        mentionsCount: dip.documents.document_mentions_in_bsky?.[0]?.count || 0,
+        recommendsCount: dip.documents.recommends_on_documents?.[0]?.count || 0,
+      };
+    })
+    .filter((p): p is PublicationPostsListPost => p !== null);
+}
 
 export type PublicationPostsListFakePost = {
   title: string;
@@ -120,6 +168,15 @@ export function PublicationPostsList({
                 />
               );
 
+              // Only render a byline when contributors resolve to a real name.
+              // Pass `undefined` (not an empty node) otherwise so MetaRow
+              // doesn't draw an orphan separator before the date.
+              const namedContributors = namedBylineProfiles(post.contributors);
+              const author =
+                namedContributors.length > 0 ? (
+                  <PostByline contributors={namedContributors} />
+                ) : undefined;
+
               const isHighlightedFirst = highlightFirstPost && index === 0;
               const Variant = isHighlightedFirst
                 ? "large"
@@ -150,6 +207,7 @@ export function PublicationPostsList({
                       description={
                         doc_record.description || getFirstParagraph(doc_record)
                       }
+                      author={author}
                       date={date}
                       interactions={interactions}
                       coverImageSrc={coverImageSrc}
@@ -168,6 +226,7 @@ export function PublicationPostsList({
                       inList
                       href={docUrl}
                       title={doc_record.title}
+                      author={author}
                       date={date}
                       interactions={interactions}
                     />
@@ -185,6 +244,7 @@ export function PublicationPostsList({
                     description={
                       doc_record.description || getFirstParagraph(doc_record)
                     }
+                    author={author}
                     date={date}
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}

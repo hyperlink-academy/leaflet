@@ -12,13 +12,9 @@ import { hasLeafletContent } from "lexicons/src/normalize";
 import type { Post } from "app/(app)/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
-import { Fragment, useEffect, useRef, useState } from "react";
-import { ProfilePopover } from "./ProfilePopover";
-import {
-  type BylineProfile,
-  bylineName,
-  bylineSeparator,
-} from "src/utils/byline";
+import { useEffect, useRef, useState } from "react";
+import { PostByline } from "./PostByline";
+import { namedBylineProfiles } from "src/utils/byline";
 import { TagPopover } from "./InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSmoker } from "./Toast";
@@ -96,9 +92,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
   let recommends = props.documents.recommends_on_documents?.[0]?.count || 0;
   let tags = (postRecord?.tags as string[] | undefined) || [];
 
-  let namedContributors = (props.contributors ?? []).filter(
-    (c) => c.displayName || c.handle,
-  );
+  let namedContributors = namedBylineProfiles(props.contributors);
 
   // For standalone posts, link directly to the document
   let postUrl = getDocumentURL(postRecord, props.documents.uri, pubRecord);
@@ -171,7 +165,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
               )}
               <div className="flex flex-row justify-between gap-2 text-xs items-center w-full">
                 <div className="flex flex-row flex-wrap items-center gap-1 text-tertiary min-w-0">
-                  <Byline contributors={namedContributors} />
+                  <PostByline contributors={namedContributors} />
                   {namedContributors.length > 0 && postRecord.publishedAt ? (
                     <span>·</span>
                   ) : null}
@@ -231,27 +225,6 @@ const PubInfo = (props: {
           </div>
         )}
       </div>
-    </div>
-  );
-};
-
-const Byline = (props: { contributors: BylineProfile[] }) => {
-  if (props.contributors.length === 0) return null;
-  return (
-    <div className="postListingByline relative flex flex-row flex-wrap items-center min-w-0">
-      {props.contributors.map((c, i) => (
-        <Fragment key={c.did}>
-          {i > 0 && (
-            <span className="whitespace-pre">
-              {bylineSeparator(i, props.contributors.length)}
-            </span>
-          )}
-          <ProfilePopover
-            didOrHandle={c.did}
-            trigger={<span className="hover:underline">{bylineName(c)}</span>}
-          />
-        </Fragment>
-      ))}
     </div>
   );
 };
