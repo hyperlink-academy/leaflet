@@ -54,7 +54,7 @@ export function PubPreview(props: {
     day: "2-digit",
   };
 
-  const fakePosts = !hasPosts
+  const fakePosts = hasPosts
     ? undefined
     : [
         {

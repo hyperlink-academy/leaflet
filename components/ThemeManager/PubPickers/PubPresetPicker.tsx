@@ -164,7 +164,7 @@ export function PresetThemePicker(props: { state: PubThemeEditorState }) {
   return (
     <div className="pubPresetPicker flex flex-col pb-2">
       <div className="text-sm  text-[#969696] -mb-0.5">PRESETS</div>
-      <div className="flex gap-1.5 items-center px-2 py-2 border border-[#CCCCCC] rounded-md bg-white mb-1">
+      <div className="flex gap-1.5 items-center px-2 py-2 border border-[#CCCCCC] rounded-md bg-white mb-1 overflow-auto">
         {presetThemes.map((preset) => (
           <button
             key={preset.name}

@@ -107,26 +107,34 @@ export function ThemeSettingsContent(props: {
             localBgImage={pubBGImage}
             localBgImageRepeat={leafletBGRepeat}
           >
-            <div
-              className="mx-auto h-full w-fit"
-              onClickCapture={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            >
-              {previewMode === "pub" ? (
+            {previewMode === "pub" ? (
+              <div
+                className="h-full w-full"
+                onClickCapture={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
                 <PubPreview
                   showPageBackground={showPageBackground}
                   pageWidth={pageWidth}
                   homePagePreview={props.homePagePreview}
                 />
-              ) : (
+              </div>
+            ) : (
+              <div
+                className="mx-auto h-full w-fit"
+                onClickCapture={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
                 <PostPreview
                   showPageBackground={showPageBackground}
                   pageWidth={pageWidth}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </PublicationBackgroundProvider>
         </div>
       </BaseThemeProvider>
