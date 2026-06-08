@@ -3,7 +3,7 @@ import { AtUri } from "@atproto/api";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
-import { PublicationPostItem } from "./PublicationContent";
+import { PublicationPostItem } from "./DefaultPublicationHomepage";
 import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,

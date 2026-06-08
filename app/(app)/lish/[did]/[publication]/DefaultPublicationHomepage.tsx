@@ -17,7 +17,7 @@ import {
 
 type FakePost = PublicationPostsListFakePost;
 
-export const PublicationContent = ({
+export const DefaultPublicationHomepage = ({
   record,
   publication,
   did,

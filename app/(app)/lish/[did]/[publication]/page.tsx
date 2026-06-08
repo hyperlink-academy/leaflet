@@ -8,7 +8,7 @@ import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { PublicationContent } from "./PublicationContent";
+import { DefaultPublicationHomepage } from "./DefaultPublicationHomepage";
 import { tryRenderPublicationPage } from "./tryRenderPublicationPage";
 import {
   PublicationThemeProvider,
@@ -69,7 +69,7 @@ export default async function Publication(props: {
           record={record}
           pub_creator={publication.identity_did}
         >
-          <PublicationContent
+          <DefaultPublicationHomepage
             record={record}
             publication={publication}
             did={did}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   BaseThemeProvider,
@@ -26,7 +26,9 @@ import { Separator } from "components/Layout";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import Link from "next/link";
 
-export function ThemeSettingsContent() {
+export function ThemeSettingsContent(props: {
+  homePagePreview?: ReactNode;
+}) {
   let toolbarRef = useRef<HTMLDivElement>(null);
   let [previewMode, setPreviewMode] = useState<"post" | "pub">("post");
   let params = useParams<{ did: string; publication: string }>();
@@ -116,6 +118,7 @@ export function ThemeSettingsContent() {
                 <PubPreview
                   showPageBackground={showPageBackground}
                   pageWidth={pageWidth}
+                  homePagePreview={props.homePagePreview}
                 />
               ) : (
                 <PostPreview

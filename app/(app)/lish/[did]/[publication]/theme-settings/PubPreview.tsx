@@ -6,17 +6,23 @@ import {
 } from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { PublicationContent } from "../PublicationContent";
+import { DefaultPublicationHomepage } from "../DefaultPublicationHomepage";
 import { LocalizedDate } from "../LocalizedDate";
+import type { ReactNode } from "react";
 
 export function PubPreview(props: {
   showPageBackground: boolean;
   pageWidth: number;
+  homePagePreview?: ReactNode;
 }) {
   let { data } = usePublicationData();
   let { publication } = data || {};
   let { identity } = useIdentityData();
   let record = useNormalizedPublicationRecord();
+
+  // When the publication has a published custom home page, the server renders
+  // it and passes it down here; show that instead of the default homepage.
+  if (props.homePagePreview) return <>{props.homePagePreview}</>;
 
   let profileRecord = identity?.bsky_profiles
     ?.record as unknown as ProfileViewDetailed;
@@ -87,7 +93,7 @@ export function PubPreview(props: {
       ];
 
   return (
-    <PublicationContent
+    <DefaultPublicationHomepage
       record={record}
       publication={publication}
       did={did}

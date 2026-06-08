@@ -6,6 +6,7 @@ import { AtUri } from "@atproto/syntax";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { ThemeSettingsContent } from "./ThemeSettingsContent";
+import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
 import { LoginModal } from "components/LoginButton";
 
 export default async function ThemeSettingsPage(props: {
@@ -49,13 +50,22 @@ export default async function ThemeSettingsPage(props: {
     return <ThemeNotFound />;
   let uri = new AtUri(publication.uri);
 
+  // If the publication has a published custom home page, render it (server
+  // component) and thread it down to the client preview. PubPreview falls back
+  // to DefaultPublicationHomepage when this is absent.
+  const homePagePreview = tryRenderPublicationPage({
+    did,
+    publication,
+    path: "/",
+  });
+
   return (
     <PublicationSWRDataProvider
       publication_did={did}
       publication_rkey={uri.rkey}
       publication_data={publication_data}
     >
-      <ThemeSettingsContent />
+      <ThemeSettingsContent homePagePreview={homePagePreview} />
     </PublicationSWRDataProvider>
   );
 }
