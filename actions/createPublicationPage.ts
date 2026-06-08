@@ -1,7 +1,7 @@
 "use server";
 import { generateKeyBetween } from "fractional-indexing";
 import { getIdentityData } from "actions/getIdentityData";
-import { createNewLeaflet, type DefaultBlockType } from "./createNewLeaflet";
+import { createNewLeaflet, type DefaultBlockSpec } from "./createNewLeaflet";
 import { supabaseServerClient } from "supabase/serverClient";
 
 export async function createPublicationPage(args: {
@@ -17,11 +17,14 @@ export async function createPublicationPage(args: {
 
   let { data: publication } = await supabaseServerClient
     .from("publications")
-    .select("uri, identity_did")
+    .select("uri, identity_did, record")
     .eq("uri", args.publication_uri)
     .single();
   if (!publication || publication.identity_did !== identity.atp_did)
     return null;
+
+  let description =
+    (publication.record as { description?: string } | null)?.description ?? "";
 
   let sort_order = args.sort_order;
   if (!sort_order) {
@@ -35,10 +38,10 @@ export async function createPublicationPage(args: {
     sort_order = generateKeyBetween(last?.sort_order ?? null, null);
   }
 
-  let firstBlocks: DefaultBlockType[] = [
-    "text",
-    ...(args.includeSignup ? (["signup"] as const) : []),
+  let firstBlocks: DefaultBlockSpec[] = [
+    description ? { type: "text" as const, content: description } : "text",
     ...(args.includePostsList ? (["posts-list"] as const) : []),
+    ...(args.includeSignup ? (["signup"] as const) : []),
   ];
   let leaflet_src = await createNewLeaflet({
     pageType: "doc",

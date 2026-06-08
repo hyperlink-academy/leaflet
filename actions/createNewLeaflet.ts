@@ -7,8 +7,15 @@ import { sql } from "drizzle-orm";
 import { generateKeyBetween } from "fractional-indexing";
 import { cookies } from "next/headers";
 import { pool } from "supabase/pool";
+import { createYjsText } from "src/utils/createYjsText";
 
 export type DefaultBlockType = "h1" | "text" | "posts-list" | "signup";
+
+// A block to seed into a new leaflet. Either a bare type, or a text block with
+// pre-filled content.
+export type DefaultBlockSpec =
+  | DefaultBlockType
+  | { type: "text"; content: string };
 
 type FactRow = {
   id: string;
@@ -31,7 +38,7 @@ export async function createNewLeaflet({
   firstBlockType?: "h1" | "text";
   welcomeModal?: boolean;
   addToHome?: boolean;
-  firstBlocks?: DefaultBlockType[];
+  firstBlocks?: DefaultBlockSpec[];
   addToHomepage?: boolean;
 }) {
   let auth_token = (await cookies()).get("auth_token")?.value;
@@ -87,7 +94,7 @@ export async function createNewLeaflet({
       },
     );
   } else {
-    const blockSpecs: DefaultBlockType[] =
+    const blockSpecs: DefaultBlockSpec[] =
       firstBlocks ?? [firstBlockType === "text" ? "text" : "h1"];
     blockEntityIds = blockSpecs.map(() => v7());
     let prevPosition: string | null = null;
@@ -95,13 +102,14 @@ export async function createNewLeaflet({
       const entity = blockEntityIds[i];
       const position = generateKeyBetween(prevPosition, null);
       prevPosition = position;
+      const type = typeof spec === "string" ? spec : spec.type;
       factRows.push({
         id: v7(),
         entity: firstPageId,
         attribute: "card/block",
         data: { type: "ordered-reference", value: entity, position },
       });
-      if (spec === "h1") {
+      if (type === "h1") {
         factRows.push(
           {
             id: v7(),
@@ -121,8 +129,16 @@ export async function createNewLeaflet({
           id: v7(),
           entity,
           attribute: "block/type",
-          data: { type: "block-type-union", value: spec },
+          data: { type: "block-type-union", value: type },
         });
+        if (typeof spec !== "string" && spec.content) {
+          factRows.push({
+            id: v7(),
+            entity,
+            attribute: "block/text",
+            data: { type: "text", value: createYjsText(spec.content) },
+          });
+        }
       }
     });
   }

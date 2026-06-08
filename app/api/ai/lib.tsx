@@ -499,16 +499,7 @@ export function extractPlaintext(base64Value: string): string {
 
 // --- YJS text creation ---
 
-export function createYjsText(plaintext: string): string {
-  let doc = new Y.Doc();
-  let fragment = doc.getXmlFragment("prosemirror");
-  let paragraph = new Y.XmlElement("paragraph");
-  let textNode = new Y.XmlText();
-  textNode.insert(0, plaintext);
-  paragraph.insert(0, [textNode]);
-  fragment.insert(0, [paragraph]);
-  return base64.fromByteArray(Y.encodeStateAsUpdate(doc));
-}
+export { createYjsText } from "src/utils/createYjsText";
 
 // --- YJS text editing ---
 
