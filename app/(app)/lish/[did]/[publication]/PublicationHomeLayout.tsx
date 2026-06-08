@@ -5,30 +5,23 @@ import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 import {
   PublicationHeader,
   NewPublicationHeader,
+  type SubscribeData,
 } from "./PublicationHeader";
 import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
 
 export function PublicationHomeLayout(props: {
-  uri: string;
   showPageBackground: boolean;
   iconUrl?: string;
-  publicationName: string;
-  description?: string;
   author?: React.ReactNode;
-  subscribeButton?: React.ReactNode;
   navPages: PublicationNavPage[];
   publicationUrl: string;
   activePath: string;
-  subscribe?: {
-    publicationUri: string;
-    publicationUrl?: string;
-    publicationName: string;
-    publicationDescription?: string;
-    newsletterMode: boolean;
-  };
+  subscribe: SubscribeData;
   children: React.ReactNode;
 }) {
-  let { ref } = usePreserveScroll<HTMLDivElement>(props.uri);
+  let { ref } = usePreserveScroll<HTMLDivElement>(
+    props.subscribe.publicationUri,
+  );
   let hasNav = props.navPages.length > 0;
 
   // When the publication has nav pages, mirror the editor (PublicationEditLayout
@@ -41,9 +34,10 @@ export function PublicationHomeLayout(props: {
           <NewPublicationHeader
             variant="inline"
             iconUrl={props.iconUrl}
-            publicationName={props.publicationName}
-            description={props.description}
-            subscribeButton={props.subscribeButton}
+            publicationName={props.subscribe.publicationName}
+            description={props.subscribe.publicationDescription}
+            hasNav={props.navPages.length > 1}
+            subscribe={props.subscribe}
           />
         </div>
       </div>
@@ -59,10 +53,10 @@ export function PublicationHomeLayout(props: {
       <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pt-5">
         <PublicationHeader
           iconUrl={props.iconUrl}
-          publicationName={props.publicationName}
-          description={props.description}
+          publicationName={props.subscribe.publicationName}
+          description={props.subscribe.publicationDescription}
           author={props.author}
-          subscribeButton={props.subscribeButton}
+          subscribe={props.subscribe}
         />
       </div>
     </div>

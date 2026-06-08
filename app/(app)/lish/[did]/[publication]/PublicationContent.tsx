@@ -9,7 +9,6 @@ import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import {
   PublicationPostsList,
   type PublicationPostsListPost,
@@ -85,11 +84,8 @@ export const PublicationContent = ({
         bodyFontId={record?.theme?.bodyFont}
       />
       <PublicationHomeLayout
-        uri={publication.uri}
         showPageBackground={!!showPageBackground}
         iconUrl={record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined}
-        publicationName={publication.name}
-        description={record?.description}
         navPages={navPages}
         publicationUrl={getPublicationURL(publication)}
         activePath="/"
@@ -108,17 +104,6 @@ export const PublicationContent = ({
               handle={profile.handle}
             />
           ) : undefined
-        }
-        subscribeButton={
-          <div className="max-w-sm mx-auto">
-            <SubscribeInput
-              publicationUri={publication.uri}
-              publicationUrl={record?.url}
-              publicationName={record?.name ?? publication.name}
-              publicationDescription={record?.description}
-              newsletterMode={newsletterMode}
-            />
-          </div>
         }
       >
         <PublicationPostsList

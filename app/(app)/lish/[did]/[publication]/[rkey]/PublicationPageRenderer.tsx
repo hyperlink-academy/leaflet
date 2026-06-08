@@ -24,7 +24,6 @@ import {
   type PublicationPostsListPost,
 } from "../PublicationPostsList";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
@@ -177,15 +176,12 @@ export async function PublicationPageRenderer({
             pub_creator={publication.identity_did}
           >
             <PublicationHomeLayout
-              uri={publication.uri}
               showPageBackground={showPageBackground}
               iconUrl={
                 normalizedPublication?.icon
                   ? blobRefToSrc(normalizedPublication.icon.ref, did)
                   : undefined
               }
-              publicationName={publication.name}
-              description={normalizedPublication?.description}
               navPages={navPages}
               publicationUrl={getPublicationURL(publication)}
               activePath={page.path}
@@ -198,21 +194,6 @@ export async function PublicationPageRenderer({
                 newsletterMode:
                   !!publication.publication_newsletter_settings?.enabled,
               }}
-              subscribeButton={
-                <div className="max-w-sm mx-auto">
-                  <SubscribeInput
-                    publicationUri={publication.uri}
-                    publicationUrl={normalizedPublication?.url}
-                    publicationName={
-                      normalizedPublication?.name ?? publication.name
-                    }
-                    publicationDescription={normalizedPublication?.description}
-                    newsletterMode={
-                      !!publication.publication_newsletter_settings?.enabled
-                    }
-                  />
-                </div>
-              }
             >
               <div className="pubPageContent pt-6">
                 <PostContent

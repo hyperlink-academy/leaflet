@@ -70,7 +70,7 @@ type SortablePage = {
   sort_order: string;
 };
 
-export function PublicationPagesNav(props: {
+export function PublicationPagesEditNav(props: {
   did: string;
   publicationName: string;
 }) {

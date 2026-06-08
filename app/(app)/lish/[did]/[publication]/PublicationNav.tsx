@@ -1,6 +1,10 @@
 import { SpeedyLink } from "components/SpeedyLink";
 import { sortPublicationPages } from "./sortPublicationPages";
 import { PublicationNavSubscribe } from "./PublicationNavSubscribe";
+import {
+  SubscribeButton,
+  SubscribeInput,
+} from "components/Subscribe/SubscribeButton";
 
 export type PublicationNavPage = {
   id: number;
@@ -27,13 +31,20 @@ export function PublicationNav(props: {
   if (props.pages.length === 0) return null;
 
   let sortedPages = sortPublicationPages(props.pages);
+  let tabs = sortedPages.filter((page) => page.path);
+  // With a single page there's nothing to navigate between, so drop the tabs
+  // and center the full subscribe input where the tab bar would have been.
+  let showTabs = tabs.length > 1;
 
+  if (!showTabs)
+    return (
+      <div className="border-b border-border-light mt-6 w-full sm:max-w-[calc(var(--page-width-units)+.75rem)] mx-auto " />
+    );
   return (
     <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page shrink-0 w-full sm:max-w-[calc(var(--page-width-units)+.75rem)] mx-auto pt-3">
       <div className="flex items-baseline justify-between gap-6 px-3 sm:px-4 w-full sm:max-w-(--page-width-units) mx-auto">
         <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-2 pb-5 -mb-5">
-          {sortedPages.map((page) => {
-            if (!page.path) return null;
+          {tabs.map((page) => {
             let segment = page.path === "/" ? "" : page.path;
             let href = `${props.publicationUrl}${segment}`;
             let active = props.activePath === page.path;
@@ -58,15 +69,10 @@ export function PublicationNav(props: {
             );
           })}
         </div>
-        {props.subscribe && (
-          <PublicationNavSubscribe
-            publicationUri={props.subscribe.publicationUri}
-            publicationUrl={props.subscribe.publicationUrl}
-            publicationName={props.subscribe.publicationName}
-            publicationDescription={props.subscribe.publicationDescription}
-            newsletterMode={props.subscribe.newsletterMode}
-          />
-        )}
+        )
+        <div className="sm:block hidden min-w-0 w-fit pb-1">
+          {props.subscribe && <SubscribeButton {...props.subscribe} />}
+        </div>
       </div>
       <div className="border-b border-border-light" />
     </nav>

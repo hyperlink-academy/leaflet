@@ -159,8 +159,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
   );
   return (
     <>
-      {!props.compact && <div className="h-1 w-full spacer" />}
-
       {isSubscribed ? (
         <>
           <ManageSubscription

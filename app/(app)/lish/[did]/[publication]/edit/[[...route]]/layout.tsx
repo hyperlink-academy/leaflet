@@ -9,9 +9,8 @@ import { AtUri } from "@atproto/syntax";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
-import { PublicationPagesNav } from "./PublicationPagesNav";
+import { PublicationPagesEditNav } from "./PublicationPagesNav";
 import { PublicationEditHeader } from "./PublicationEditHeader";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import {
   NewPublicationHeader,
   PublicationHeader,
@@ -109,20 +108,17 @@ export default async function PublicationEditLayout(props: {
                     iconUrl={iconUrl}
                     publicationName={publication.name}
                     description={record?.description}
-                    subscribeButton={
-                      <SubscribeInput
-                        compact
-                        publicationUri={publication.uri}
-                        publicationUrl={record.url}
-                        publicationName={record.name}
-                        publicationDescription={record.description}
-                        newsletterMode={newsletterMode}
-                      />
-                    }
+                    subscribe={{
+                      publicationUri: publication.uri,
+                      publicationUrl: record.url,
+                      publicationName: record.name,
+                      publicationDescription: record.description,
+                      newsletterMode,
+                    }}
                   />
                 </div>
               </div>
-              <PublicationPagesNav
+              <PublicationPagesEditNav
                 did={params.did}
                 publicationName={params.publication}
               />

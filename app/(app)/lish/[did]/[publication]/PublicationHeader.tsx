@@ -1,12 +1,19 @@
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import {
+  SubscribeInput,
+  type SubscribeProps,
+} from "components/Subscribe/SubscribeButton";
 import React from "react";
+
+// The data needed to render a subscribe control; the header owns the UI flags
+// (autoFocus/compact), so callers only supply the publication data.
+export type SubscribeData = Omit<SubscribeProps, "autoFocus" | "compact">;
 
 export function PublicationHeader(props: {
   iconUrl?: string;
   publicationName: string;
   description?: string;
   author?: React.ReactNode;
-  subscribeButton?: React.ReactNode;
+  subscribe?: SubscribeData;
   variant?: "stacked" | "inline";
 }) {
   let variant = props.variant ?? "stacked";
@@ -61,8 +68,12 @@ export function PublicationHeader(props: {
           <p className="sm:text-lg text-secondary">{props.description}</p>
         )}
         {props.author}
-        {props.subscribeButton && (
-          <div className="pt-4 pb-1 px-3">{props.subscribeButton}</div>
+        {props.subscribe && (
+          <div className="pt-4 pb-1 px-3">
+            <div className="max-w-sm mx-auto">
+              <SubscribeInput {...props.subscribe} />
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -74,8 +85,9 @@ export function NewPublicationHeader(props: {
   publicationName: string;
   description?: string;
   author?: React.ReactNode;
-  subscribeButton?: React.ReactNode;
+  subscribe?: SubscribeData;
   variant?: "stacked" | "inline";
+  hasNav?: boolean;
 }) {
   let variant = props.variant ?? "stacked";
   let icon = props.iconUrl ? (
@@ -99,9 +111,11 @@ export function NewPublicationHeader(props: {
         {icon}
         {title}
       </div>
-      {props.subscribeButton && (
-        <div className="sm:hidden block max-w-full w-fit mx-auto">
-          {props.subscribeButton}
+      {props.subscribe && (
+        <div
+          className={`${props.hasNav && "sm:hidden"}  block max-w-full w-fit mx-auto`}
+        >
+          <SubscribeInput {...props.subscribe} />
         </div>
       )}
     </div>

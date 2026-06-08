@@ -157,9 +157,9 @@ export const SubscribeWithHandle = (props: {
               href={`${props.publicationUrl}/rss`}
               target="_blank"
               rel="noopener noreferrer"
-              className={`no-underlinetext-accent-contrast shrink-0 flex`}
+              className={`no-underline shrink-0 ${props.compact ? "w-6" : "w-7"}`}
             >
-              <ButtonPrimary className="h-full! py-0! px-0! aspect-square">
+              <ButtonPrimary className="h-full! w-auto! py-0! px-0! aspect-square">
                 <RSSTiny />
               </ButtonPrimary>
             </a>
