@@ -9,7 +9,7 @@ import { AtUri } from "@atproto/syntax";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
-import { PublicationPagesEditNav } from "./PublicationPagesNav";
+import { PublicationPagesEditNav } from "./PublicationPagesEditNav";
 import { PublicationEditHeader } from "./PublicationEditHeader";
 import {
   NewPublicationHeader,

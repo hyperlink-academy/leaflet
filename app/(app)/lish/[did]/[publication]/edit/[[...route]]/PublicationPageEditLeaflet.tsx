@@ -14,7 +14,7 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { Json } from "supabase/database.types";
 import { LeafletDirtyReporter } from "./LeafletDirtyReporter";
 
-export function PublicationPageLeaflet(props: {
+export function PublicationPageEditLeaflet(props: {
   token: PermissionToken;
   initialFacts: Fact<Attribute>[];
   leaflet_id: string;

@@ -1,7 +1,7 @@
 import React from "react";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
-import { PublicationPageLeaflet } from "./PublicationPageLeaflet";
+import { PublicationPageEditLeaflet } from "./PublicationPageEditLeaflet";
 import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -65,7 +65,7 @@ export default async function PublicationEditPage(props: Props) {
         leaflet_id={res.data.id}
         leaflet_data={res}
       >
-        <PublicationPageLeaflet
+        <PublicationPageEditLeaflet
           initialFacts={initialFacts}
           leaflet_id={rootEntity}
           token={res.data}
