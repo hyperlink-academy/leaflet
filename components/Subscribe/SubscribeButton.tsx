@@ -2,10 +2,15 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { SubscribeWithHandle, AtSubscribeSuccess } from "./HandleSubscribe";
-import { EmailInput, EmailConfirm } from "./EmailSubscribe";
+import { EmailInput, EmailButton, EmailConfirm } from "./EmailSubscribe";
 import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
 import { LinkIdentityModal } from "./LinkIdentityModal";
+import {
+  SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES,
+  type SubscribeError,
+} from "./subscribeErrors";
 import { Modal } from "components/Modal";
+import { Popover } from "components/Popover";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
 import { useToaster } from "components/Toast";
@@ -46,7 +51,10 @@ export const SubscribePanel = (props: SubscribeProps) => {
             <div className="text-tertiary">{props.publicationDescription}</div>
           )}
           <div className="w-fit max-w-full mx-auto pt-3">
-            <SubscribeInput {...props} />
+            {/* The panel always has room — force the roomy (non-compact) input
+                even if the caller passed compact (e.g. the modal opened from a
+                compact SubscribeButton). */}
+            <SubscribeInput {...props} compact={false} />
           </div>
         </div>
       </div>
@@ -206,7 +214,16 @@ export const SubscribeInput = (props: SubscribeProps) => {
         </>
       ) : props.newsletterMode ? (
         <div className="max-w-sm w-full mx-auto">
-          {subscribeMode === "email" ? (
+          {user.loggedIn && user.email ? (
+            <EmailButton
+              compact={props.compact}
+              publicationUri={props.publicationUri}
+              publicationUrl={props.publicationUrl}
+              email={user.email}
+              handle={user.handle}
+              onSubscribed={() => setLocallySubscribed(true)}
+            />
+          ) : subscribeMode === "email" ? (
             <EmailInput
               publicationUrl={props.publicationUrl}
               value={email}
@@ -334,6 +351,103 @@ export const SubscribeInput = (props: SubscribeProps) => {
   );
 };
 
+// Compact, single-control counterpart to SubscribeInput, for tight spaces
+// (publication nav, pub listing cards). Kept as its own component rather than a
+// `variant` on SubscribeInput: the inline form and the button diverge in how
+// they render (always-open input vs. one-click button / popover), and folding
+// them together would tangle those paths across SubscribeInput's many call
+// sites. Shared logic lives in SubscribeWithHandle, EmailButton, and
+// subscribeErrors so the two stay in sync.
+//
+//   - already subscribed         -> ManageSubscription (same as SubscribeInput)
+//   - atproto pub + has handle   -> compact one-click SubscribeWithHandle
+//   - newsletter pub + has email -> compact one-click EmailButton
+//   - everything else            -> "Subscribe" button opening the full
+//                                   SubscribeInput in a popover (needs an input:
+//                                   logged out, or missing the identity the pub
+//                                   requires)
+export const SubscribeButton = (props: Omit<SubscribeProps, "compact">) => {
+  const user = useViewerSubscription(props.publicationUri);
+  let [locallySubscribed, setLocallySubscribed] = useState(false);
+
+  const showManage = props.newsletterMode
+    ? user.emailSubscribed
+    : user.atprotoSubscribed;
+
+  if (showManage || locallySubscribed) {
+    return (
+      <ManageSubscription
+        publicationUri={props.publicationUri}
+        publicationUrl={props.publicationUrl}
+        newsletterMode={props.newsletterMode}
+        user={user}
+      />
+    );
+  }
+
+  if (!props.newsletterMode && user.loggedIn && user.handle) {
+    return (
+      <SubscribeWithHandle
+        compact
+        user={user}
+        publicationUri={props.publicationUri}
+        publicationUrl={props.publicationUrl}
+        onSubscribed={() => setLocallySubscribed(true)}
+      />
+    );
+  }
+
+  if (props.newsletterMode && user.loggedIn && user.email) {
+    return (
+      <EmailButton
+        compact
+        publicationUri={props.publicationUri}
+        publicationUrl={props.publicationUrl}
+        email={user.email}
+        handle={user.handle}
+        onSubscribed={() => setLocallySubscribed(true)}
+      />
+    );
+  }
+
+  // Logged out: there's nothing to one-click with, so open the full
+  // SubscribePanel (pub name/description + form) in a modal.
+  if (!user.loggedIn) {
+    return (
+      <Modal
+        asChild
+        trigger={
+          <ButtonPrimary compact className="pubPageSubscribe text-sm!">
+            Subscribe
+          </ButtonPrimary>
+        }
+      >
+        <div className="w-md max-w-full">
+          <SubscribePanel {...props} />
+        </div>
+      </Modal>
+    );
+  }
+
+  // Logged in but missing the identity this pub needs (a handle for atproto
+  // pubs, an email for newsletters) — open the full input in a popover.
+  return (
+    <Popover
+      asChild
+      align="end"
+      trigger={
+        <ButtonPrimary compact className="pubPageSubscribe text-sm!">
+          Subscribe
+        </ButtonPrimary>
+      }
+    >
+      <div className="w-md max-w-full">
+        <SubscribeInput {...props} compact autoFocus />
+      </div>
+    </Popover>
+  );
+};
+
 const SubscribeModeMenu = (props: {
   mode: SubscribeMode;
   onChange: (mode: SubscribeMode) => void;
@@ -343,6 +457,9 @@ const SubscribeModeMenu = (props: {
       <Menu
         align="start"
         asChild
+        // Above the Modal overlay/content (z-50) when this renders inside the
+        // logged-out subscribe modal; otherwise it hides behind the overlay.
+        className="z-[60]!"
         trigger={
           <button
             type="button"
@@ -376,33 +493,4 @@ const SubscribeModeMenu = (props: {
       <Separator classname="h-5! " />
     </div>
   );
-};
-
-type SubscribeError =
-  | "invalid_email"
-  | "newsletter_disabled"
-  | "email_send_failed"
-  | "subscriber_not_found"
-  | "invalid_code"
-  | "database_error"
-  | "suppressed_spam_complaint"
-  | "suppression_delete_failed"
-  | "link_invalid_state"
-  | "email_belongs_to_other_account";
-
-const ERROR_MESSAGES: Record<SubscribeError, string> = {
-  invalid_email: "Please enter a valid email address.",
-  newsletter_disabled: "This publication isn't accepting email subscriptions.",
-  email_send_failed: "We couldn't send the confirmation email. Try again.",
-  subscriber_not_found: "No pending subscription. Start over.",
-  invalid_code: "That code didn't match. Try again.",
-  database_error: "Something went wrong. Try again.",
-  suppressed_spam_complaint:
-    "This address was previously marked as spam and can't be resubscribed. Contact the publication to resolve.",
-  suppression_delete_failed:
-    "We couldn't clear a prior delivery issue on this address. Try again later.",
-  link_invalid_state:
-    "Couldn't link this email to your account. Try logging out and subscribing again.",
-  email_belongs_to_other_account:
-    "This email is already linked to a different Bluesky account. Log out to use that account instead.",
 };

@@ -106,7 +106,7 @@ export const RadioMenuItem = (props: {
       value={props.value}
       onSelect={props.onSelect}
       className={` menuItem
-      ${props.selected && "bg-accent-1! text-accent-2!"}
+      ${props.selected && "bg-[var(--accent-light)]! text-accent-contrast! "}
         ${props.className}
         `}
     >
