@@ -41,21 +41,19 @@ export type SubscribeProps = {
 
 export const SubscribePanel = (props: SubscribeProps) => {
   return (
-    <div className=" w-full">
-      <div className="accent-container rounded-lg! border-none! p-0! w-full text-center justify-center">
-        <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
-          <h3 className="leading-snug text-secondary">
-            {props.publicationName}
-          </h3>
-          {props.publicationDescription && (
-            <div className="text-tertiary">{props.publicationDescription}</div>
-          )}
-          <div className="w-fit max-w-full mx-auto pt-3">
-            {/* The panel always has room — force the roomy (non-compact) input
+    <div className="subscribePanel accent-container rounded-lg! border-none! p-0! w-full text-center justify-center">
+      <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
+        <h3 className="leading-snug text-secondary">{props.publicationName}</h3>
+        {props.publicationDescription && (
+          <div className="text-tertiary leading-snug">
+            {props.publicationDescription}
+          </div>
+        )}
+        <div className="w-fit max-w-full mx-auto pt-3">
+          {/* The panel always has room — force the roomy (non-compact) input
                 even if the caller passed compact (e.g. the modal opened from a
                 compact SubscribeButton). */}
-            <SubscribeInput {...props} compact={false} />
-          </div>
+          <SubscribeInput {...props} compact={false} />
         </div>
       </div>
     </div>

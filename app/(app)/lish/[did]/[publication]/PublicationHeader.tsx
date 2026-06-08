@@ -1,3 +1,4 @@
+import { PubIcon } from "components/ActionBar/Publications";
 import {
   SubscribeInput,
   type SubscribeProps,
@@ -86,21 +87,9 @@ export function NewPublicationHeader(props: {
   description?: string;
   author?: React.ReactNode;
   subscribe?: SubscribeData;
-  variant?: "stacked" | "inline";
   hasNav?: boolean;
+  edit?: boolean;
 }) {
-  let variant = props.variant ?? "stacked";
-  let icon = props.iconUrl ? (
-    <div
-      className={`pubHeaderIcon shrink-0 rounded-full sm:w-7 sm:h-7 w-10 h-10`}
-      style={{
-        backgroundImage: `url(${props.iconUrl})`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center",
-        backgroundSize: "cover",
-      }}
-    />
-  ) : null;
   let title = (
     <h2 className={`sm:text-xl text-[1.5rem]`}>{props.publicationName}</h2>
   );
@@ -108,12 +97,15 @@ export function NewPublicationHeader(props: {
   return (
     <div className="publicationHeader flex flex-col gap-2">
       <div className="publicationName flex sm:flex-row flex-col items-center justify-center sm:gap-3 gap-1">
-        {icon}
+        <PubIcon
+          icon={props.iconUrl}
+          pubName={props.subscribe?.publicationName}
+        />
         {title}
       </div>
       {props.subscribe && (
         <div
-          className={`${props.hasNav && "sm:hidden"}  block max-w-full w-fit mx-auto`}
+          className={`${props.hasNav || props.edit ? "sm:hidden" : ""} ${props.edit && "pointer-events-none"} block max-w-full w-fit mx-auto`}
         >
           <SubscribeInput {...props.subscribe} />
         </div>

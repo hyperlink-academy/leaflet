@@ -46,6 +46,7 @@ import {
 import { sortPublicationPages } from "../../sortPublicationPages";
 import { PublicationNavSubscribe } from "../../PublicationNavSubscribe";
 import { DotLoader } from "components/utils/DotLoader";
+import { useToaster } from "components/Toast";
 
 // Turn arbitrary user input into a slug that is safe to use as the path
 // segment of a URL: lowercase, ascii letters/numbers/dashes only, no spaces
@@ -69,6 +70,22 @@ type SortablePage = {
   title: string;
   sort_order: string;
 };
+
+// Returns a checker that reports whether a path is already used by another
+// page in this publication. Paths are compared in their cleaned form so e.g.
+// "About" and "/about" are treated as the same. Pass the current page's id as
+// `excludePageId` so editing a page and keeping its own path isn't a conflict.
+function useIsPathInUse() {
+  let { data } = usePublicationData();
+  let pages = data?.publication?.publication_pages ?? [];
+  return (path: string | null, excludePageId?: number) => {
+    let normalized = cleanPath(path ?? "") || "/";
+    return pages.some(
+      (p) =>
+        p.id !== excludePageId && (cleanPath(p.path ?? "") || "/") === normalized,
+    );
+  };
+}
 
 export function PublicationPagesEditNav(props: {
   did: string;
@@ -204,13 +221,15 @@ export function PublicationPagesEditNav(props: {
           />
         </div>
         {publicationUri && publicationRecord && (
-          <PublicationNavSubscribe
-            publicationUri={publicationUri}
-            publicationUrl={publicationRecord.url}
-            publicationName={publicationRecord.name}
-            publicationDescription={publicationRecord.description}
-            newsletterMode={newsletterMode}
-          />
+          <div className="pointer-events-none">
+            <PublicationNavSubscribe
+              publicationUri={publicationUri}
+              publicationUrl={publicationRecord.url}
+              publicationName={publicationRecord.name}
+              publicationDescription={publicationRecord.description}
+              newsletterMode={newsletterMode}
+            />
+          </div>
         )}
       </div>
       <div className="border-b border-border-light" />
@@ -223,6 +242,8 @@ function AddPageButton(props: {
   publicationUrl: string | undefined;
   onCreated: (created: { path: string | null }) => void | Promise<void>;
 }) {
+  let toaster = useToaster();
+  let isPathInUse = useIsPathInUse();
   let [open, setOpen] = useState(false);
   let [creating, setCreating] = useState(false);
   let [name, setName] = useState("");
@@ -253,6 +274,10 @@ function AddPageButton(props: {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (creating || !props.publicationUri) return;
+    if (isPathInUse(path)) {
+      toaster({ type: "error", content: "path already in use!" });
+      return;
+    }
     setCreating(true);
     let created = await createPublicationPage({
       publication_uri: props.publicationUri,
@@ -357,6 +382,8 @@ function SortableTab(props: {
     transition,
     isDragging,
   } = useSortable({ id: props.page.id });
+  let toaster = useToaster();
+  let isPathInUse = useIsPathInUse();
   let [popoverOpen, setPopoverOpen] = useState(false);
   let [mode, setMode] = useState<"edit" | "confirm">("edit");
   let [name, setName] = useState(props.page.title);
@@ -381,6 +408,10 @@ function SortableTab(props: {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!props.publicationUri || saving) return;
+    if (isPathInUse(path, props.page.id)) {
+      toaster({ type: "error", content: "path already in use!" });
+      return;
+    }
 
     let trimmedTitle = name.trim();
     setSaving(true);

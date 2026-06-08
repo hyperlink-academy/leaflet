@@ -55,7 +55,15 @@ export const PubListing = (props: PubListingProps) => {
           className={`flex w-full flex-col justify-center text-center pt-4 pb-3 px-3 rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
         >
           <div className="mx-auto pb-1">
-            <PubIcon record={record} uri={props.uri} large />
+            <PubIcon
+              icon={
+                record.icon
+                  ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
+                  : undefined
+              }
+              pubName={record.name}
+              large
+            />
           </div>
 
           <h4

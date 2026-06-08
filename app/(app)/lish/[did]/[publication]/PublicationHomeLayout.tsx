@@ -32,7 +32,6 @@ export function PublicationHomeLayout(props: {
       <div className="shrink-0">
         <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
           <NewPublicationHeader
-            variant="inline"
             iconUrl={props.iconUrl}
             publicationName={props.subscribe.publicationName}
             description={props.subscribe.publicationDescription}

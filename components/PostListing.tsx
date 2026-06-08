@@ -205,7 +205,15 @@ const PubInfo = (props: {
           href={props.href}
           className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
         >
-          <PubIcon tiny record={props.pubRecord} uri={props.uri} />
+          <PubIcon
+            tiny
+            icon={
+              props.pubRecord.icon
+                ? blobRefToSrc(props.pubRecord.icon.ref, new AtUri(props.uri).host)
+                : undefined
+            }
+            pubName={props.pubRecord.name}
+          />
           <div className="w-max min-w-0">{props.pubRecord.name}</div>
         </Link>
         {!isLeaflet && (

@@ -11,6 +11,7 @@ import { publishPostToBsky } from "./publishBskyPost";
 import { ShareOptions, type ShareState } from "./ShareOptions";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
@@ -576,7 +577,17 @@ const PublishingTo = (props: {
         <div className="text-tertiary">Publishing to</div>
         <div className="flex gap-2 items-center ">
           <div className="font-bold text-secondary">{props.record.name}</div>
-          <PubIcon record={props.record} uri={props.publication_uri} />
+          <PubIcon
+            icon={
+              props.record.icon
+                ? blobRefToSrc(
+                    props.record.icon.ref,
+                    new AtUri(props.publication_uri).host,
+                  )
+                : undefined
+            }
+            pubName={props.record.name}
+          />
         </div>
       </div>
     );

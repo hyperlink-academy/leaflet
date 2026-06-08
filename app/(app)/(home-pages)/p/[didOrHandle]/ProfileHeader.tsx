@@ -4,6 +4,8 @@ import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { PubIcon } from "components/ActionBar/Publications";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { AtUri } from "@atproto/syntax";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { SpeedyLink } from "components/SpeedyLink";
@@ -123,7 +125,14 @@ const PublicationCard = (props: {
             : undefined,
         }}
       >
-        <PubIcon record={record} uri={uri} />
+        <PubIcon
+          icon={
+            record.icon
+              ? blobRefToSrc(record.icon.ref, new AtUri(uri).host)
+              : undefined
+          }
+          pubName={record.name}
+        />
         <h4
           className="truncate min-w-0"
           style={{
