@@ -513,6 +513,7 @@ export type Database = {
       facts: {
         Row: {
           attribute: string
+          author_did: string | null
           created_at: string
           data: Json
           entity: string
@@ -522,6 +523,7 @@ export type Database = {
         }
         Insert: {
           attribute: string
+          author_did?: string | null
           created_at?: string
           data: Json
           entity: string
@@ -531,6 +533,7 @@ export type Database = {
         }
         Update: {
           attribute?: string
+          author_did?: string | null
           created_at?: string
           data?: Json
           entity?: string
@@ -1751,6 +1754,7 @@ export type Database = {
           created_at: string
           updated_at: string
           version: number
+          author_did: string | null
         }[]
       }
       get_facts_with_depth: {
@@ -1759,7 +1763,14 @@ export type Database = {
           max_depth: number
         }
         Returns: {
-          like: unknown
+          id: string
+          entity: string
+          attribute: string
+          data: Json
+          created_at: string
+          updated_at: string
+          version: number
+          author_did: string | null
         }[]
       }
       get_leaflet_page_data: {

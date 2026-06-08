@@ -64,6 +64,7 @@ export const pull = makeRoute({
 
     let facts = data.facts as {
       attribute: string;
+      author_did: string | null;
       created_at: string;
       data: any;
       entity: string;
