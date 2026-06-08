@@ -133,7 +133,7 @@ export function PublicationPagesEditNav(props: {
   }
 
   return (
-    <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page  shrink-0 w-full sm:max-w-[calc(var(--page-width-units)+.75rem)] mx-auto pt-3 ">
+    <nav className="publicationPagesNav editorScrollStickyHeader sticky top-0 z-10 bg-bg-page  shrink-0 w-full sm:max-w-[calc(var(--page-width-units)+.75rem)] mx-auto pt-3 ">
       <div className="flex  items-baseline justify-between  gap-6 px-3 sm:px-4  w-full sm:max-w-(--page-width-units) mx-auto">
         <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-2 pb-5 -mb-5">
           <DndContext

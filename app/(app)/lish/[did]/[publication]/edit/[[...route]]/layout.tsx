@@ -100,7 +100,7 @@ export default async function PublicationEditLayout(props: {
               did={params.did}
               publicationName={params.publication}
             />
-            <div className="pubWrapper publicationScrollContainer flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto">
+            <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto">
               <div className="shrink-0">
                 <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
                   <NewPublicationHeader

@@ -90,7 +90,7 @@ export function Page(props: {
           )}
           <PageContent entityID={props.entityID} first={props.first} />
         </PageWrapper>
-        <DesktopPageFooter pageID={props.entityID} />
+        <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
         <FootnotePopover />
         <LinkPopover />
       </FootnoteContext.Provider>
