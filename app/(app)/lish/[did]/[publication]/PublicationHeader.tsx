@@ -83,7 +83,6 @@ export function PublicationHeader(props: {
 
 export function NewPublicationHeader(props: {
   iconUrl?: string;
-  publicationName: string;
   description?: string;
   author?: React.ReactNode;
   subscribe?: SubscribeData;
@@ -91,11 +90,13 @@ export function NewPublicationHeader(props: {
   edit?: boolean;
 }) {
   let title = (
-    <h2 className={`sm:text-xl text-[1.5rem]`}>{props.publicationName}</h2>
+    <h2 className={`sm:text-xl text-[1.5rem]`}>
+      {props.subscribe?.publicationName}
+    </h2>
   );
 
   return (
-    <div className="publicationHeader flex flex-col gap-2">
+    <div className="publicationHeader flex flex-col gap-2 pt-4 pb-3 sm:pc-4 px-3">
       <div className="publicationName flex sm:flex-row flex-col items-center justify-center sm:gap-3 gap-1">
         <PubIcon
           icon={props.iconUrl}

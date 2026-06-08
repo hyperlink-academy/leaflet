@@ -30,7 +30,7 @@ export function PublicationNavSubscribe(props: {
     );
   }
   return (
-    <div className="sm:block hidden min-w-0 max-w-64 w-fit pb-1">
+    <div className="sm:block hidden min-w-0 max-w-64 w-fit">
       <SubscribeButton {...props} />
     </div>
   );

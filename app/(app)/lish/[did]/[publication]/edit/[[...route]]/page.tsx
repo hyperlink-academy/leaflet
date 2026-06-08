@@ -69,9 +69,13 @@ export default async function PublicationEditPage(props: Props) {
           initialFacts={initialFacts}
           leaflet_id={rootEntity}
           token={res.data}
-          publicationRecord={publication.record}
+          did={did}
+          publicationRecord={pubRecord}
           publicationCreator={publication.identity_did}
           publicationUri={publication.uri}
+          newsletterMode={
+            !!publication.publication_newsletter_settings?.enabled
+          }
           pagePath={path}
           pageTitle={page.title ?? ""}
         />

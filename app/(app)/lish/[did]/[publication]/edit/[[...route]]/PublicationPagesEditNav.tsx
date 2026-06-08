@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -82,7 +82,8 @@ function useIsPathInUse() {
     let normalized = cleanPath(path ?? "") || "/";
     return pages.some(
       (p) =>
-        p.id !== excludePageId && (cleanPath(p.path ?? "") || "/") === normalized,
+        p.id !== excludePageId &&
+        (cleanPath(p.path ?? "") || "/") === normalized,
     );
   };
 }
@@ -100,7 +101,7 @@ export function PublicationPagesEditNav(props: {
   let publicationRecord = useNormalizedPublicationRecord();
   let newsletterMode =
     !!data?.publication?.publication_newsletter_settings?.enabled;
-
+  let cardBorderHidden = !publicationRecord?.theme?.showPageBackground;
   let baseHref = `/lish/${props.did}/${props.publicationName}`;
 
   function hrefForPath(path: string | null) {
@@ -110,6 +111,41 @@ export function PublicationPagesEditNav(props: {
 
   let sortedPages = useMemo(() => sortPublicationPages(pages), [pages]);
   let sortableIds = useMemo(() => sortedPages.map((p) => p.id), [sortedPages]);
+
+  // When the card border is shown, fade the nav background in as the user
+  // scrolls so it reaches full opacity exactly when the nav reaches its sticky
+  // position. Only the background fades — the tabs/contents stay fully opaque.
+  let navRef = useRef<HTMLElement>(null);
+  let [bgOpacity, setBgOpacity] = useState(0);
+  useEffect(() => {
+    if (cardBorderHidden) {
+      setBgOpacity(1);
+      return;
+    }
+    let nav = navRef.current;
+    if (!nav) return;
+    // When the card border is shown the nav is sticky within the page card's
+    // own scroll container (`.pageScrollWrapper`), not the outer
+    // `.editorScrollRoot` — so listen on the nearest scrolling ancestor.
+    let scroller = nav.closest<HTMLElement>(".publicationScrollContainer");
+    if (!scroller) return;
+    let stickyOffset = 8; // top-2 = 0.5rem
+    let update = () => {
+      let navRect = nav.getBoundingClientRect();
+      let scrollerRect = scroller.getBoundingClientRect();
+      // The nav's offset from the top of the scrollable content; stays constant
+      // whether or not the nav is currently stuck.
+      let offsetTop = navRect.top - scrollerRect.top + scroller.scrollTop;
+      let range = offsetTop - stickyOffset;
+      let opacity =
+        range <= 0 ? 1 : Math.min(1, Math.max(0, scroller.scrollTop / range));
+      setBgOpacity(opacity);
+    };
+
+    update();
+    scroller.addEventListener("scroll", update, { passive: true });
+    return () => scroller.removeEventListener("scroll", update);
+  }, [cardBorderHidden]);
 
   let sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -150,9 +186,18 @@ export function PublicationPagesEditNav(props: {
   }
 
   return (
-    <nav className="publicationPagesNav editorScrollStickyHeader sticky top-0 z-10 bg-bg-page  shrink-0 w-full sm:max-w-[calc(var(--page-width-units)+.75rem)] mx-auto pt-3 ">
-      <div className="flex  items-baseline justify-between  gap-6 px-3 sm:px-4  w-full sm:max-w-(--page-width-units) mx-auto">
-        <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-2 pb-5 -mb-5">
+    <nav
+      ref={navRef}
+      className={`publicationPagesNav editorScrollStickyHeader  z-10 shrink-0 sticky  mx-1 sm:mx-2 ${cardBorderHidden ? "pt-3 -top-6 bg-bg-page" : "top-2 rounded-md"}`}
+    >
+      {!cardBorderHidden && (
+        <div
+          className="absolute inset-0 -z-10 light-container pointer-events-none"
+          style={{ opacity: bgOpacity }}
+        />
+      )}
+      <div className="flex  items-center justify-between  gap-6 px-2  w-full sm:max-w-(--page-width-units) mx-auto">
+        <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-1 pb-5 -mb-5">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -232,7 +277,10 @@ export function PublicationPagesEditNav(props: {
           </div>
         )}
       </div>
-      <div className="border-b border-border-light" />
+      <div
+        className="border-b border-border-light"
+        style={cardBorderHidden ? undefined : { opacity: 1 - bgOpacity }}
+      />
     </nav>
   );
 }
@@ -254,7 +302,7 @@ function AddPageButton(props: {
 
   function handleNameChange(newName: string) {
     setName(newName);
-    if (pathLinked) setPath("/" + (cleanPath(newName) ?? ""));
+    if (pathLinked) setPath(cleanPath(newName) ?? "");
   }
 
   function handlePathChange(newPath: string) {
@@ -294,71 +342,69 @@ function AddPageButton(props: {
   }
 
   return (
-    <div className="sticky right-0 shrink-0  self-center">
-      <Popover
-        asChild
-        align="end"
-        open={open}
-        onOpenChange={handleOpenChange}
-        className="w-sm py-3!"
-        trigger={
-          <button
-            type="button"
-            aria-label="Add page"
-            className="flex items-center px-1 pt-1 pb-0.5 border-b-3 border-transparent hover:bold-accent-contrast text-tertiary hover:text-accent-contrast text-sm font-bold"
-          >
-            New Page
-          </button>
-        }
-      >
-        <form
-          onSubmit={handleSubmit}
-          onKeyDown={(e) => {
-            if (e.key === "Tab") e.stopPropagation();
-          }}
-          className="flex flex-col gap-2"
+    <Popover
+      asChild
+      align="end"
+      open={open}
+      onOpenChange={handleOpenChange}
+      className="w-sm py-3!"
+      trigger={
+        <button
+          type="button"
+          aria-label="Add page"
+          className="flex items-center px-1 pt-1 pb-0.5 border-b-3 border-transparent hover:bold-accent-contrast text-tertiary hover:text-accent-contrast text-sm font-bold"
         >
-          <InputWithLabel
-            label="Page Title"
-            type="text"
-            name="page-title"
-            autoComplete="off"
-            value={name}
-            onChange={(e) => handleNameChange(e.currentTarget.value)}
-            autoFocus
-          />
-          <InputWithLabel
-            label="Path"
-            type="text"
-            name="page-path"
-            placeholder="/about"
-            autoComplete="off"
-            value={path}
-            onChange={(e) => handlePathChange(e.currentTarget.value)}
-          />
-          <div className="text-sm text-tertiary -mt-1">
-            {props.publicationUrl?.replace(/^https?:\/\//, "")}
-            {cleanPath(path)}
-          </div>
+          New Page
+        </button>
+      }
+    >
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key === "Tab") e.stopPropagation();
+        }}
+        className="flex flex-col gap-2"
+      >
+        <InputWithLabel
+          label="Page Title"
+          type="text"
+          name="page-title"
+          autoComplete="off"
+          value={name}
+          onChange={(e) => handleNameChange(e.currentTarget.value)}
+          autoFocus
+        />
+        <InputWithLabel
+          label="Path"
+          type="text"
+          name="page-path"
+          placeholder="/about"
+          autoComplete="off"
+          value={path}
+          onChange={(e) => handlePathChange(e.currentTarget.value)}
+        />
+        <div className="text-sm text-tertiary -mt-1">
+          {props.publicationUrl?.replace(/^https?:\/\//, "")}
+          {cleanPath(path)}
+        </div>
 
-          <ButtonPrimary
-            type="submit"
-            disabled={
-              creating ||
-              !path ||
-              path.trim() === "" ||
-              !name ||
-              name.trim() === ""
-            }
-            fullWidth
-            compact
-            className="mt-2"
-          >
-            {creating ? <DotLoader /> : "Create Page"}
-          </ButtonPrimary>
-        </form>
-      </Popover>
-    </div>
+        <ButtonPrimary
+          type="submit"
+          disabled={
+            creating ||
+            !path ||
+            path.trim() === "" ||
+            !name ||
+            name.trim() === ""
+          }
+          fullWidth
+          compact
+          className="mt-2"
+        >
+          {creating ? <DotLoader /> : "Create Page"}
+        </ButtonPrimary>
+      </form>
+    </Popover>
   );
 }
 
@@ -454,7 +500,7 @@ function SortableTab(props: {
     >
       <SpeedyLink
         href={props.href}
-        className={`block px-1 pt-1 pb-0.5 text-sm font-bold text-inherit hover:no-underline! select-none border-b-3 ${
+        className={`block px-1 pt-1 pb-0.5 text-sm font-bold text-inherit no-underline! select-none border-b-3 ${
           props.active ? "border-accent-contrast" : "border-transparent"
         }`}
       >

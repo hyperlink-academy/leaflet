@@ -6,15 +6,14 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { LoginModal } from "components/LoginButton";
 import { AtUri } from "@atproto/syntax";
-import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
-import { PublicationPagesEditNav } from "./PublicationPagesEditNav";
-import { PublicationEditHeader } from "./PublicationEditHeader";
 import {
-  NewPublicationHeader,
-  PublicationHeader,
-} from "../../PublicationHeader";
+  PublicationBackgroundProvider,
+  PublicationThemeProvider,
+  PublicationThemeProviderDashboard,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
+import { PublicationEditHeader } from "./PublicationEditHeader";
+import { PublicationHeader } from "../../PublicationHeader";
 import { PublicationEditDirtyProvider } from "./dirtyContext";
 
 export async function generateMetadata(props: {
@@ -83,9 +82,7 @@ export default async function PublicationEditLayout(props: {
   ) {
     return <PubNotFound />;
   }
-  let newsletterMode = !!publication?.publication_newsletter_settings?.enabled;
   let uri = new AtUri(publication.uri);
-  const iconUrl = record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined;
 
   return (
     <PublicationSWRDataProvider
@@ -100,29 +97,14 @@ export default async function PublicationEditLayout(props: {
               did={params.did}
               publicationName={params.publication}
             />
-            <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto">
-              <div className="shrink-0">
-                <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
-                  <NewPublicationHeader
-                    edit
-                    iconUrl={iconUrl}
-                    publicationName={publication.name}
-                    description={record?.description}
-                    subscribe={{
-                      publicationUri: publication.uri,
-                      publicationUrl: record.url,
-                      publicationName: record.name,
-                      publicationDescription: record.description,
-                      newsletterMode,
-                    }}
-                  />
-                </div>
-              </div>
-              <PublicationPagesEditNav
-                did={params.did}
-                publicationName={params.publication}
-              />
-              <div className="flex flex-col">{props.children}</div>
+            <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto ">
+              <PublicationBackgroundProvider
+                record={record}
+                pub_creator={publication.identity_did}
+                className=" h-full flex items-stretch place-items-center "
+              >
+                {props.children}
+              </PublicationBackgroundProvider>
             </div>
           </div>
         </PublicationThemeProviderDashboard>

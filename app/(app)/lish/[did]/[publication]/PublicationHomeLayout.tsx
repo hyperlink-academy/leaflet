@@ -33,7 +33,6 @@ export function PublicationHomeLayout(props: {
         <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
           <NewPublicationHeader
             iconUrl={props.iconUrl}
-            publicationName={props.subscribe.publicationName}
             description={props.subscribe.publicationDescription}
             hasNav={props.navPages.length > 1}
             subscribe={props.subscribe}

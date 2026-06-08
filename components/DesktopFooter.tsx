@@ -34,7 +34,7 @@ export function DesktopPageFooter(props: { pageID: string; flow?: boolean }) {
       className={
         props.flow
           ? "fixed inset-x-0 bottom-3 z-10 pointer-events-none"
-          : "absolute bottom-[40px] w-full z-10 pointer-events-none"
+          : "absolute bottom-[40px] left-0 right-0 z-10 pointer-events-none"
       }
     >
       {focusedEntity &&
