@@ -2,10 +2,7 @@
 
 import React from "react";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
-import {
-  PublicationHeader,
-  NewPublicationHeader,
-} from "./PublicationHeader";
+import { PublicationHeader, NewPublicationHeader } from "./PublicationHeader";
 import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
 
 export function PublicationHomeLayout(props: {
@@ -58,6 +55,7 @@ export function PublicationHomeLayout(props: {
     <div className="pubFullHeader shrink-0">
       <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pt-5">
         <PublicationHeader
+          variant="stacked"
           iconUrl={props.iconUrl}
           publicationName={props.publicationName}
           description={props.description}
