@@ -1,17 +1,20 @@
 "use client";
-import { SpeedyLink } from "components/SpeedyLink";
+import { isExternalLink } from "src/utils/externalPublicationLink";
 import { sortPublicationPages } from "./sortPublicationPages";
 import { PublicationNavSubscribe } from "./PublicationNavSubscribe";
+import { PublicationNavTabLink } from "./PublicationNavTabLink";
 import {
   SubscribeButton,
   SubscribeInput,
 } from "components/Subscribe/SubscribeButton";
 import { useNavBackgroundFade } from "./useNavBackgroundFade";
 
+// Pages here are published snapshots (publishedNavPages output), where path
+// and title are always present.
 export type PublicationNavPage = {
   id: number;
-  path: string | null;
-  title: string | null;
+  path: string;
+  title: string;
   sort_order: string;
 };
 
@@ -64,9 +67,13 @@ export function PublicationNav(props: {
       >
         <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-1 pb-5 -mb-5">
           {tabs.map((page) => {
+            let external = isExternalLink(page.path);
             let segment = page.path === "/" ? "" : page.path;
-            let href = `${props.publicationUrl}${segment}`;
-            let active = props.activePath === page.path;
+            let href = external
+              ? page.path
+              : `${props.publicationUrl}${segment}`;
+            // External links point off-site, so they're never the active tab.
+            let active = !external && props.activePath === page.path;
             return (
               <div
                 key={page.id}
@@ -76,14 +83,13 @@ export function PublicationNav(props: {
                     : "text-tertiary hover:text-secondary"
                 }`}
               >
-                <SpeedyLink
+                <PublicationNavTabLink
                   href={href}
-                  className={`block px-1 pt-1 pb-0.5 text-sm font-bold text-inherit no-underline! select-none border-b-3 ${
-                    active ? "border-accent-contrast" : "border-transparent"
-                  }`}
+                  external={external}
+                  active={active}
                 >
                   {page.title || page.path}
-                </SpeedyLink>
+                </PublicationNavTabLink>
               </div>
             );
           })}

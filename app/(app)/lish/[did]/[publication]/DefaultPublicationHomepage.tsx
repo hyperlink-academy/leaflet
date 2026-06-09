@@ -9,6 +9,7 @@ import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { publishedNavPages } from "src/utils/publishedPageMetadata";
 import {
   PublicationPostsList,
   type PublicationPostsListPost,
@@ -39,6 +40,7 @@ export const DefaultPublicationHomepage = ({
       title: string | null;
       record_uri: string | null;
       sort_order: string;
+      published_metadata: unknown;
     }[];
     documents_in_publications: {
       documents: {
@@ -56,9 +58,8 @@ export const DefaultPublicationHomepage = ({
   fakePosts?: FakePost[];
 }) => {
   const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
-  const navPages = (publication.publication_pages ?? []).filter(
-    (p) => p.record_uri,
-  );
+  // Public nav renders only published tabs, from their published snapshot.
+  const navPages = publishedNavPages(publication.publication_pages);
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
     : publication.documents_in_publications

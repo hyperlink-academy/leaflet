@@ -77,6 +77,7 @@ export const facts = pgTable("facts", {
 	updated_at: timestamp("updated_at", { mode: 'string' }),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
+	author_did: text("author_did"),
 },
 (table) => {
 	return {
@@ -599,7 +600,7 @@ export const publication_pages = pgTable("publication_pages", {
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	id: bigint("id", { mode: "number" }).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	leaflet_src: uuid("leaflet_src").notNull().references(() => permission_tokens.id),
+	leaflet_src: uuid("leaflet_src").references(() => permission_tokens.id),
 	document: text("document").references(() => documents.uri),
 	path: text("path"),
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
@@ -608,6 +609,7 @@ export const publication_pages = pgTable("publication_pages", {
 	record: jsonb("record"),
 	record_uri: text("record_uri"),
 	sort_order: text("sort_order").notNull(),
+	published_metadata: jsonb("published_metadata"),
 },
 (table) => {
 	return {
