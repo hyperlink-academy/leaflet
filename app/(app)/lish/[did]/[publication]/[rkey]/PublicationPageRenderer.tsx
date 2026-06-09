@@ -24,6 +24,7 @@ import { type PublicationPostsListPost } from "../PublicationPostsList";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { publishedNavPages } from "src/utils/publishedPageMetadata";
 
 import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { PostContent } from "./PostContent";
@@ -42,6 +43,7 @@ type PublicationRow = {
     title: string;
     record_uri: string | null;
     sort_order: string;
+    published_metadata: unknown;
   }[];
   documents_in_publications?: {
     documents: {
@@ -161,9 +163,9 @@ export async function PublicationPageRenderer({
     recommendsCount: 0,
   };
 
-  const navPages = (publication.publication_pages ?? []).filter(
-    (p) => p.record_uri,
-  );
+  // The public nav renders only published tabs, from their published snapshot —
+  // never the live draft columns.
+  const navPages = publishedNavPages(publication.publication_pages);
 
   return (
     <DocumentProvider value={documentContextValue}>

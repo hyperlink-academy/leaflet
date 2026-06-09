@@ -1276,10 +1276,11 @@ export type Database = {
           created_at: string
           document: string | null
           id: number
-          leaflet_src: string
+          leaflet_src: string | null
           metadata: Json
           path: string | null
           publication: string
+          published_metadata: Json | null
           record: Json | null
           record_uri: string | null
           sort_order: string
@@ -1289,10 +1290,11 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: number
-          leaflet_src: string
+          leaflet_src?: string | null
           metadata?: Json
           path?: string | null
           publication: string
+          published_metadata?: Json | null
           record?: Json | null
           record_uri?: string | null
           sort_order: string
@@ -1302,10 +1304,11 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: number
-          leaflet_src?: string
+          leaflet_src?: string | null
           metadata?: Json
           path?: string | null
           publication?: string
+          published_metadata?: Json | null
           record?: Json | null
           record_uri?: string | null
           sort_order?: string

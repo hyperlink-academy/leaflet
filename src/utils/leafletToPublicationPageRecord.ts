@@ -54,13 +54,3 @@ export async function leafletToPublicationPageRecord(opts: {
     },
   };
 }
-
-export function pathToRkey(path: string): string {
-  let trimmed = path.replace(/^\/+/, "").replace(/\/+$/, "");
-  if (trimmed === "") return "home";
-  let slug = trimmed
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return slug || "home";
-}

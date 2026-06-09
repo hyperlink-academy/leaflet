@@ -33,7 +33,8 @@ export default async function PublicationEditPage(props: Props) {
   if (!publication) return <PageNotFound path={path} />;
 
   let page = publication.publication_pages?.find((p) => p.path === path);
-  if (!page) return <PageNotFound path={path} />;
+  // External link tabs have no backing leaflet document to edit.
+  if (!page || !page.leaflet_src) return <PageNotFound path={path} />;
 
   let { result: res } = await get_leaflet_data.handler(
     { token_id: page.leaflet_src },

@@ -11,6 +11,7 @@ import {
   publicationNameOrUriFilter,
 } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { findPublishedPage } from "src/utils/publishedPageMetadata";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -23,17 +24,18 @@ export async function generateMetadata(props: {
 
   let { data: pubs } = await supabaseServerClient
     .from("publications")
-    .select("name, publication_pages(path, title, record_uri)")
+    .select("name, publication_pages(record_uri, published_metadata)")
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
     .limit(1);
-  let matchingPage = pubs?.[0]?.publication_pages?.find(
-    (p) => p.path === "/" + rkey && p.record_uri,
-  );
-  if (matchingPage) {
+  // Match on the published snapshot, the same way the page body does
+  // (tryRenderPublicationPage), so metadata and body never disagree about
+  // which page a URL serves.
+  let match = findPublishedPage(pubs?.[0]?.publication_pages, "/" + rkey);
+  if (match && match.page.record_uri) {
     return {
-      title: `${matchingPage.title || matchingPage.path} - ${pubs?.[0]?.name}`,
+      title: `${match.metadata.title || match.metadata.path} - ${pubs?.[0]?.name}`,
     };
   }
 
@@ -120,7 +122,7 @@ export default async function Post(props: {
     .from("publications")
     .select(
       `uri, name, identity_did, record,
-       publication_pages(id, path, title, record, record_uri, sort_order),
+       publication_pages(id, path, title, record, record_uri, sort_order, published_metadata),
        documents_in_publications(documents(uri, data,
          comments_on_documents(count),
          document_mentions_in_bsky(count),

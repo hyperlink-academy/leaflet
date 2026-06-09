@@ -24,7 +24,6 @@ import {
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { generateKeyBetween } from "fractional-indexing";
-import { SpeedyLink } from "components/SpeedyLink";
 import {
   ButtonPrimary,
   ButtonSecondary,
@@ -45,10 +44,15 @@ import {
 } from "../../dashboard/PublicationSWRProvider";
 import { sortPublicationPages } from "../../sortPublicationPages";
 import { PublicationNavSubscribe } from "../../PublicationNavSubscribe";
+import { PublicationNavTabLink } from "../../PublicationNavTabLink";
 import { useNavBackgroundFade } from "../../useNavBackgroundFade";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { Checkbox } from "components/Checkbox";
+import {
+  isExternalLink,
+  normalizeExternalLink,
+} from "src/utils/externalPublicationLink";
 
 // Turn arbitrary user input into a slug that is safe to use as the path
 // segment of a URL: lowercase, ascii letters/numbers/dashes only, no spaces
@@ -87,6 +91,34 @@ function useIsPathInUse() {
         p.id !== excludePageId &&
         (cleanPath(p.path ?? "") || "/") === normalized,
     );
+  };
+}
+
+// Validate the user's path/url input for a tab and return the value to store
+// in `path`, or null (after showing an error toast) if it's unusable. External
+// link tabs store a full url; hosted pages store a cleaned relative path that
+// must be unique within the publication.
+function useResolveTabPath() {
+  let toaster = useToaster();
+  let isPathInUse = useIsPathInUse();
+  return (
+    input: string,
+    external: boolean,
+    excludePageId?: number,
+  ): string | null => {
+    if (external) {
+      let url = normalizeExternalLink(input);
+      if (!url) {
+        toaster({ type: "error", content: "enter a valid url (https://…)" });
+        return null;
+      }
+      return url;
+    }
+    if (isPathInUse(input, excludePageId)) {
+      toaster({ type: "error", content: "path already in use!" });
+      return null;
+    }
+    return cleanPath(input) || "";
   };
 }
 
@@ -231,7 +263,10 @@ export function PublicationPagesEditNav(props: {
             publicationUrl={publicationRecord?.url}
             onCreated={async (created) => {
               await mutate();
-              router.push(hrefForPath(created.path));
+              // External links have no editable page to navigate to — they just
+              // appear in the nav once created.
+              if (!isExternalLink(created.path))
+                router.push(hrefForPath(created.path));
             }}
           />
         </div>
@@ -260,8 +295,7 @@ function AddPageButton(props: {
   publicationUrl: string | undefined;
   onCreated: (created: { path: string | null }) => void | Promise<void>;
 }) {
-  let toaster = useToaster();
-  let isPathInUse = useIsPathInUse();
+  let resolveTabPath = useResolveTabPath();
   let [open, setOpen] = useState(false);
   let [creating, setCreating] = useState(false);
   let [name, setName] = useState("");
@@ -298,14 +332,17 @@ function AddPageButton(props: {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (creating || !props.publicationUri) return;
-    if (isPathInUse(path)) {
-      toaster({ type: "error", content: "path already in use!" });
-      return;
-    }
+
+    let path_to_create = resolveTabPath(
+      isExternal ? externalLink : path,
+      isExternal,
+    );
+    if (path_to_create === null) return;
+
     setCreating(true);
     let created = await createPublicationPage({
       publication_uri: props.publicationUri,
-      path: cleanPath(path) || "",
+      path: path_to_create,
       title: name.trim() || undefined,
     });
     setCreating(false);
@@ -396,10 +433,8 @@ function AddPageButton(props: {
           type="submit"
           disabled={
             creating ||
-            !path ||
-            path.trim() === "" ||
-            !name ||
-            name.trim() === ""
+            !name.trim() ||
+            (isExternal ? !externalLink.trim() : !path.trim())
           }
           fullWidth
           compact
@@ -432,8 +467,8 @@ function SortableTab(props: {
     transition,
     isDragging,
   } = useSortable({ id: props.page.id });
-  let toaster = useToaster();
-  let isPathInUse = useIsPathInUse();
+  let resolveTabPath = useResolveTabPath();
+  let external = isExternalLink(props.page.path);
   let [popoverOpen, setPopoverOpen] = useState(false);
   let [mode, setMode] = useState<"edit" | "confirm">("edit");
   let [name, setName] = useState(props.page.title);
@@ -458,10 +493,9 @@ function SortableTab(props: {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!props.publicationUri || saving) return;
-    if (isPathInUse(path, props.page.id)) {
-      toaster({ type: "error", content: "path already in use!" });
-      return;
-    }
+
+    let nextPath = resolveTabPath(path, external, props.page.id);
+    if (nextPath === null) return;
 
     let trimmedTitle = name.trim();
     setSaving(true);
@@ -469,12 +503,12 @@ function SortableTab(props: {
       publication_uri: props.publicationUri,
       page_id: props.page.id,
       title: trimmedTitle,
-      path: cleanPath(path) || "",
+      path: nextPath,
     });
     setSaving(false);
     if (!result.success) return;
     setPopoverOpen(false);
-    props.onUpdated({ title: trimmedTitle, path: cleanPath(path) || "" });
+    props.onUpdated({ title: trimmedTitle, path: nextPath });
   }
 
   async function handleDelete() {
@@ -502,14 +536,13 @@ function SortableTab(props: {
           : "text-tertiary hover:text-secondary"
       }`}
     >
-      <SpeedyLink
-        href={props.href}
-        className={`block px-1 pt-1 pb-0.5 text-sm font-bold text-inherit no-underline! select-none border-b-3 ${
-          props.active ? "border-accent-contrast" : "border-transparent"
-        }`}
+      <PublicationNavTabLink
+        href={external && props.page.path ? props.page.path : props.href}
+        external={external}
+        active={props.active}
       >
         {props.page.title || props.page.path || "/"}
-      </SpeedyLink>
+      </PublicationNavTabLink>
       <div
         className={`absolute top-full inset-x-0 flex items-center pt-0.5 ${
           props.active || popoverOpen
@@ -568,20 +601,34 @@ function SortableTab(props: {
               onChange={(e) => setName(e.currentTarget.value)}
               autoFocus
             />
-            <InputWithLabel
-              label="Path"
-              type="text"
-              name="page-path"
-              autoComplete="off"
-              value={path}
-              onChange={(e) => setPath(e.currentTarget.value)}
-              placeholder="/about"
-            />
-            <div className="text-sm text-tertiary leading-tight -mt-1">
-              <strong>Full page link</strong> <br />
-              {props.publicationUrl?.replace(/^https?:\/\//, "")}
-              {cleanPath(path)}
-            </div>
+            {external ? (
+              <InputWithLabel
+                label="External Link"
+                type="text"
+                name="external-link"
+                autoComplete="off"
+                value={path}
+                onChange={(e) => setPath(e.currentTarget.value)}
+                placeholder="https://example.com"
+              />
+            ) : (
+              <>
+                <InputWithLabel
+                  label="Path"
+                  type="text"
+                  name="page-path"
+                  autoComplete="off"
+                  value={path}
+                  onChange={(e) => setPath(e.currentTarget.value)}
+                  placeholder="/about"
+                />
+                <div className="text-sm text-tertiary leading-tight -mt-1">
+                  <strong>Full page link</strong> <br />
+                  {props.publicationUrl?.replace(/^https?:\/\//, "")}
+                  {cleanPath(path)}
+                </div>
+              </>
+            )}
 
             <ButtonPrimary type="submit" disabled={saving} fullWidth compact>
               {saving ? "Saving..." : "Save"}
