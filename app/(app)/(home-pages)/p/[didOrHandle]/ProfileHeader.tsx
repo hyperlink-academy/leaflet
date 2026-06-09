@@ -46,6 +46,7 @@ export const ProfileHeader = (props: {
   return (
     <div
       className={`profileHeader flex flex-col relative pb-6`}
+      style={{ wordBreak: "break-word" }}
       id="profile-header"
     >
       {!props.popover && <ProfileLinks handle={props.profile.handle || ""} />}
