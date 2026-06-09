@@ -53,6 +53,7 @@ import {
   isExternalLink,
   normalizeExternalLink,
 } from "src/utils/externalPublicationLink";
+import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 
 // Turn arbitrary user input into a slug that is safe to use as the path
 // segment of a URL: lowercase, ascii letters/numbers/dashes only, no spaces
@@ -365,7 +366,7 @@ function AddPageButton(props: {
         <button
           type="button"
           aria-label="Add page"
-          className="flex items-center px-1 pt-1 pb-0.5 border-b-3 border-transparent hover:bold-accent-contrast text-tertiary hover:text-accent-contrast text-sm font-bold w-max text-nowrap"
+          className="flex items-center px-1 mt-1 mb-[5px]  border-transparent hover:bold-accent-contrast text-accent-contrast hover:bg-[var(--accent-light)] rounded-md text-sm font-bold w-max text-nowrap"
         >
           New Page
         </button>
@@ -424,7 +425,7 @@ function AddPageButton(props: {
           onChange={(e) => setIsExternal(e.currentTarget.checked)}
           small
         >
-          Make this tab a link
+          Link to an external URL
         </Checkbox>
 
         <hr className="border-border-light" />
@@ -541,7 +542,8 @@ function SortableTab(props: {
         external={external}
         active={props.active}
       >
-        {props.page.title || props.page.path || "/"}
+        {props.page.title || props.page.path || "/"}{" "}
+        {external && <ExternalLinkTiny />}
       </PublicationNavTabLink>
       <div
         className={`absolute top-full inset-x-0 flex items-center pt-0.5 ${

@@ -48,7 +48,7 @@ export function PublicationEditHeader(props: {
                   rel="noreferrer"
                   className="underline text-accent-2!"
                 >
-                  View here.
+                  View it here
                 </a>
               )}
             </span>

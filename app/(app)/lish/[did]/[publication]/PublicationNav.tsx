@@ -8,6 +8,7 @@ import {
   SubscribeInput,
 } from "components/Subscribe/SubscribeButton";
 import { useNavBackgroundFade } from "./useNavBackgroundFade";
+import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 
 // Pages here are published snapshots (publishedNavPages output), where path
 // and title are always present.
@@ -88,7 +89,7 @@ export function PublicationNav(props: {
                   external={external}
                   active={active}
                 >
-                  {page.title || page.path}
+                  {page.title || page.path} {external && <ExternalLinkTiny />}
                 </PublicationNavTabLink>
               </div>
             );

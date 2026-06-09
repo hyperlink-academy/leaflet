@@ -19,7 +19,7 @@ export function PublicationNavTabLink(props: {
         href={props.href}
         target="_blank"
         rel="noopener noreferrer"
-        className={className}
+        className={`flex gap-1 items-center ${className}`}
       >
         {props.children}
       </a>
