@@ -16,6 +16,7 @@ import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { LinkIdentityModal } from "./LinkIdentityModal";
 import { RSSTiny } from "components/Icons/RSSTiny";
 import { Tooltip } from "components/Tooltip";
+import { SubscribeButtonModeMenu } from "./SubscribeButton";
 const apps = [
   { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
   { name: "Bluesky", logo: "https://leaflet.pub/logos/bluesky.svg" },
@@ -79,56 +80,68 @@ export const SubscribeWithHandle = (props: {
     window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
   };
 
+  // Without a handle there's no atproto identity to one-click subscribe with, so
+  // fall through to the logged-out HandleInput form (same as a logged-out user).
   if (props.user.loggedIn && props.user.handle) {
+    let tooltipLabel = props.user.handle ? `@${props.user.handle}` : null;
+    let avatar = (
+      <Avatar
+        size="tiny"
+        src={record?.avatar}
+        displayName={record?.displayName || record?.handle}
+      />
+    );
+    const subscribeAtproto = async () => {
+      if (subscribing) return;
+      setSubscribing(true);
+      setOauthError(null);
+      let url = new URL(window.location.href);
+      url.searchParams.set("refreshAuth", "");
+      let result = await subscribeToPublication(
+        props.publicationUri,
+        url.toString(),
+      );
+      if (!result.success) {
+        if (isOAuthSessionError(result.error)) setOauthError(result.error);
+        setSubscribing(false);
+        return;
+      }
+      if (props.onAtSuccess) {
+        props.onAtSuccess();
+      } else {
+        toaster({
+          content: <div>You're Subscribed!</div>,
+          type: "success",
+        });
+      }
+      props.onSubscribed?.();
+      setSubscribing(false);
+    };
     let subscribeButton = (
       <ButtonPrimary
         compact={props.compact}
-        className={`subscribeButton text-sm grow shrink! min-w-0 flex items-center ${props.compact ? "gap-1!" : ""}`}
+        className={`
+          subscribeButton
+          text-sm grow shrink!
+          ${
+            props.compact
+              ? "gap-1! min-w-0 flex items-center rounded-r-none! hover:outline-transparent! focus:outline-transparent!"
+              : ""
+          }`}
         disabled={subscribing}
-        onClick={async () => {
-          if (subscribing) return;
-          setSubscribing(true);
-          setOauthError(null);
-          let url = new URL(window.location.href);
-          url.searchParams.set("refreshAuth", "");
-          let result = await subscribeToPublication(
-            props.publicationUri,
-            url.toString(),
-          );
-          if (!result.success) {
-            if (isOAuthSessionError(result.error)) setOauthError(result.error);
-            setSubscribing(false);
-            return;
-          }
-          if (props.onAtSuccess) {
-            props.onAtSuccess();
-          } else {
-            toaster({
-              content: <div>You're Subscribed!</div>,
-              type: "success",
-            });
-          }
-          props.onSubscribed?.();
-          setSubscribing(false);
-        }}
+        onClick={subscribeAtproto}
       >
         {subscribing ? (
           <DotLoader />
         ) : (
           <>
             {props.leading}
-            <Avatar
-              size="tiny"
-              src={record?.avatar}
-              displayName={record?.displayName || record?.handle}
-            />
+            {avatar}
             <div className="flex grow  min-w-0">
-              <div className="shrink-0 pr-[6px]">
-                Subscribe{!props.compact && " as"}
-              </div>
+              <div className="shrink-0 pr-[6px]">Subscribe</div>
               {!props.compact && (
                 <span className="grow truncate min-w-0">
-                  {props.user.handle}
+                  as {props.user.handle}
                 </span>
               )}
             </div>
@@ -139,20 +152,39 @@ export const SubscribeWithHandle = (props: {
     return (
       <div className="flex flex-col gap-2 w-fit max-w-full min-w-0">
         <div className="flex items-stretch gap-1 min-w-0">
-          {props.compact ? (
-            <Tooltip
-              asChild
-              delayDuration={0}
-              side="top"
-              trigger={subscribeButton}
-              className="text-sm p-1! text-tertiary"
-            >
-              @{props.user.handle}
-            </Tooltip>
-          ) : (
-            subscribeButton
-          )}
-          {props.publicationUrl && (
+          <div
+            className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1" : ""}`}
+          >
+            {props.compact && tooltipLabel ? (
+              <Tooltip
+                asChild
+                delayDuration={0}
+                side="top"
+                trigger={subscribeButton}
+                className="text-sm p-1! text-tertiary"
+              >
+                {tooltipLabel}
+              </Tooltip>
+            ) : (
+              subscribeButton
+            )}
+            {props.compact && (
+              <SubscribeButtonModeMenu
+                disabled={subscribing}
+                publicationUrl={props.publicationUrl}
+                accounts={[
+                  {
+                    value: "atproto",
+                    label: `@${props.user.handle}`,
+                    icon: avatar,
+                    selected: true,
+                    onSelect: subscribeAtproto,
+                  },
+                ]}
+              />
+            )}
+          </div>
+          {!props.compact && (
             <a
               href={`${props.publicationUrl}/rss`}
               target="_blank"

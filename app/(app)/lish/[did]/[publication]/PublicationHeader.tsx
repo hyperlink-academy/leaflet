@@ -5,9 +5,8 @@ import {
 } from "components/Subscribe/SubscribeButton";
 import React from "react";
 
-// The data needed to render a subscribe control; the header owns the UI flags
-// (autoFocus/compact), so callers only supply the publication data.
-export type SubscribeData = Omit<SubscribeProps, "autoFocus" | "compact">;
+// The data needed to render a subscribe control.
+export type SubscribeData = SubscribeProps;
 
 export function PublicationHeader(props: {
   iconUrl?: string;

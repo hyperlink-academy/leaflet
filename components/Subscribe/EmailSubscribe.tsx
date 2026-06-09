@@ -17,9 +17,8 @@ import { EmailTiny } from "components/Icons/EmailTiny";
 import { Avatar } from "components/Avatar";
 import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
-import { Menu, RadioMenuGroup, RadioMenuItem } from "components/Menu";
-import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Tooltip } from "components/Tooltip";
+import { SubscribeButtonModeMenu } from "./SubscribeButton";
 
 export const EmailInput = (props: {
   action: React.ReactNode;
@@ -86,12 +85,6 @@ export const EmailInput = (props: {
   );
 };
 
-// Compact one-click subscribe for a signed-in user. Defaults to their verified
-// email — the request action takes the fast path (confirmed: true) so there's
-// no code round-trip. If they also have an atproto handle, the caret opens an
-// account menu (mirroring SubscribeModeMenu) to subscribe via Bluesky instead.
-// Used by SubscribeButton in newsletter mode; the roomier inline equivalent is
-// the logged-in EmailInput in SubscribeInput.
 export const EmailButton = (props: {
   publicationUri: string;
   publicationUrl?: string;
@@ -105,9 +98,10 @@ export const EmailButton = (props: {
   let { identity } = useIdentityData();
   let { data: record } = useRecordFromDid(identity?.atp_did);
   let [loading, setLoading] = useState(false);
-  let [account, setAccount] = useState<"email" | "atproto">("email");
-  let hasMenu = !!props.handle;
-  let isEmail = account === "email" || !props.handle;
+  let hasModeMenu = props.compact || props.handle;
+  // The main button always subscribes via email; the atproto handle is offered
+  // as a one-click alternate in the dropdown.
+  let tooltipLabel = props.email || null;
 
   const avatar = (
     <Avatar
@@ -150,10 +144,10 @@ export const EmailButton = (props: {
     return true;
   };
 
-  const subscribe = async () => {
+  const subscribe = async (mode: "email" | "atproto") => {
     if (loading) return;
     setLoading(true);
-    let ok = isEmail ? await subscribeEmail() : await subscribeAtproto();
+    let ok = mode === "email" ? await subscribeEmail() : await subscribeAtproto();
     setLoading(false);
     if (!ok) return;
     toaster({ content: <div>You're Subscribed!</div>, type: "success" });
@@ -165,23 +159,18 @@ export const EmailButton = (props: {
     <ButtonPrimary
       compact={props.compact}
       disabled={loading}
-      onClick={subscribe}
-      className={`text-sm grow shrink! min-w-0 flex gap-2 items-center ${hasMenu ? "rounded-r-none! hover:outline-transparent! focus:outline-transparent!" : ""} ${props.compact ? "gap-1!" : ""}`}
+      onClick={() => subscribe("email")}
+      className={`text-sm grow shrink! min-w-0 flex gap-2 items-center ${hasModeMenu ? "gap-1! rounded-r-none! hover:outline-transparent! focus:outline-transparent!" : ""} `}
     >
       {loading ? (
         <DotLoader />
       ) : (
         <>
-          {isEmail ? <EmailTiny className="shrink-0" /> : avatar}
-          <span className="shrink-0">
-            Subscribe
-            {!props.compact && (isEmail ? " with" : " as")}
+          <EmailTiny className="shrink-0" />
+          <span className={`shrink-0`}> Subscribe</span>{" "}
+          <span className={`truncate min-w-0 ${props.compact && "hidden"}`}>
+            with {props.email}
           </span>
-          {!props.compact && (
-            <span className="truncate min-w-0">
-              {isEmail ? props.email : `@${props.handle}`}
-            </span>
-          )}
         </>
       )}
     </ButtonPrimary>
@@ -190,9 +179,9 @@ export const EmailButton = (props: {
   return (
     <div className="flex gap-1 max-w-full w-fit min-w-0">
       <div
-        className={`flex grow min-w-0 ${hasMenu ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1" : ""}`}
+        className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1" : ""}`}
       >
-        {props.compact ? (
+        {props.compact && tooltipLabel ? (
           <Tooltip
             asChild
             delayDuration={0}
@@ -200,59 +189,39 @@ export const EmailButton = (props: {
             trigger={subscribeButton}
             className="text-sm p-1! text-tertiary"
           >
-            {isEmail ? props.email : `@${props.handle}`}
+            {tooltipLabel}
           </Tooltip>
         ) : (
           subscribeButton
         )}
-        {hasMenu && (
-          <Menu
-            align="end"
-            asChild
-            className={props.compact ? "text-sm" : undefined}
-            trigger={
-              <ButtonPrimary
-                compact={props.compact}
-                disabled={loading}
-                aria-label="Choose account"
-                className={`rounded-l-none! border-l-accent-2! py-0! h-full! hover:outline-transparent! focus:outline-transparent! active:outline-transparent! ${props.compact ? "px-0.5!" : "px-1!"} `}
-              >
-                <ArrowDownTiny />
-              </ButtonPrimary>
-            }
-          >
-            <div className="text-tertiary text-sm px-1 pt-0.5 ">
-              Subscribe with…
-            </div>
-            <RadioMenuGroup
-              value={account}
-              onValueChange={(v) => setAccount(v as "email" | "atproto")}
-            >
-              <RadioMenuItem
-                className="py-0.5! font-normal!"
-                value="email"
-                selected={isEmail}
-              >
-                <span className="flex items-center gap-2 min-w-0">
-                  <EmailTiny />
-                  <span className="truncate">{props.email}</span>
-                </span>
-              </RadioMenuItem>
-              <RadioMenuItem
-                className="py-0.5! font-normal!"
-                value="atproto"
-                selected={!isEmail}
-              >
-                <span className="flex items-center gap-2 min-w-0">
-                  {avatar}
-                  <span className="truncate">@{props.handle}</span>
-                </span>
-              </RadioMenuItem>
-            </RadioMenuGroup>
-          </Menu>
-        )}
+        {hasModeMenu ? (
+          <SubscribeButtonModeMenu
+            disabled={loading}
+            publicationUrl={props.publicationUrl}
+            accounts={[
+              {
+                value: "email",
+                label: props.email,
+                icon: <EmailTiny />,
+                selected: true,
+                onSelect: () => subscribe("email"),
+              },
+              ...(props.handle
+                ? [
+                    {
+                      value: "atproto" as const,
+                      label: `@${props.handle}`,
+                      icon: avatar,
+                      selected: false,
+                      onSelect: () => subscribe("atproto"),
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        ) : null}
       </div>
-      {props.publicationUrl && (
+      {!props.compact && (
         <a
           href={`${props.publicationUrl}/rss`}
           target="_blank"

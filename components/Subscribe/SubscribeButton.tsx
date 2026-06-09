@@ -10,14 +10,14 @@ import {
   type SubscribeError,
 } from "./subscribeErrors";
 import { Modal } from "components/Modal";
-import { Popover } from "components/Popover";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
 import { useToaster } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
-import { Menu, RadioMenuGroup, RadioMenuItem } from "components/Menu";
+import { Menu, MenuItem, RadioMenuGroup, RadioMenuItem } from "components/Menu";
+import { RSSTiny } from "components/Icons/RSSTiny";
 import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
@@ -30,8 +30,6 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 type SubscribeMode = "email" | "atproto";
 
 export type SubscribeProps = {
-  autoFocus?: boolean;
-  compact?: boolean;
   publicationUri: string;
   publicationUrl?: string;
   publicationName: string;
@@ -50,10 +48,7 @@ export const SubscribePanel = (props: SubscribeProps) => {
           </div>
         )}
         <div className="w-fit max-w-full mx-auto pt-3">
-          {/* The panel always has room — force the roomy (non-compact) input
-                even if the caller passed compact (e.g. the modal opened from a
-                compact SubscribeButton). */}
-          <SubscribeInput {...props} compact={false} />
+          <SubscribeInput {...props} />
         </div>
       </div>
     </div>
@@ -153,7 +148,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
     : user.atprotoSubscribed;
   const isSubscribed = showManage || locallySubscribed;
   const modeMenu = (
-    <SubscribeModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
+    <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
   return (
     <>
@@ -183,8 +178,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   value={email}
                   onChange={setEmail}
                   disabled={user.loggedIn && !!user.email}
-                  autoFocus={props.autoFocus}
-                  compact={props.compact}
                   loading={requesting}
                   action={
                     <ButtonPrimary
@@ -212,7 +205,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
         <div className="max-w-sm w-full mx-auto">
           {user.loggedIn && user.email ? (
             <EmailButton
-              compact={props.compact}
               publicationUri={props.publicationUri}
               publicationUrl={props.publicationUrl}
               email={user.email}
@@ -225,8 +217,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
               value={email}
               onChange={setEmail}
               disabled={user.loggedIn && !!user.email}
-              autoFocus={props.autoFocus}
-              compact={props.compact}
               loading={requesting}
               leading={modeMenu}
               action={
@@ -249,8 +239,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
           ) : (
             <SubscribeWithHandle
               user={user}
-              autoFocus={props.autoFocus}
-              compact={props.compact}
               publicationUri={props.publicationUri}
               publicationUrl={props.publicationUrl}
               onAtSuccess={() => setAtSuccessOpen(true)}
@@ -261,8 +249,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
       ) : (
         <SubscribeWithHandle
           user={user}
-          autoFocus={props.autoFocus}
-          compact={props.compact}
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           onSubscribed={() => setLocallySubscribed(true)}
@@ -347,22 +333,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
   );
 };
 
-// Compact, single-control counterpart to SubscribeInput, for tight spaces
-// (publication nav, pub listing cards). Kept as its own component rather than a
-// `variant` on SubscribeInput: the inline form and the button diverge in how
-// they render (always-open input vs. one-click button / popover), and folding
-// them together would tangle those paths across SubscribeInput's many call
-// sites. Shared logic lives in SubscribeWithHandle, EmailButton, and
-// subscribeErrors so the two stay in sync.
-//
-//   - already subscribed         -> ManageSubscription (same as SubscribeInput)
-//   - atproto pub + has handle   -> compact one-click SubscribeWithHandle
-//   - newsletter pub + has email -> compact one-click EmailButton
-//   - everything else            -> "Subscribe" button opening the full
-//                                   SubscribeInput in a popover (needs an input:
-//                                   logged out, or missing the identity the pub
-//                                   requires)
-export const SubscribeButton = (props: Omit<SubscribeProps, "compact">) => {
+export const SubscribeButton = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
   let [locallySubscribed, setLocallySubscribed] = useState(false);
 
@@ -406,31 +377,13 @@ export const SubscribeButton = (props: Omit<SubscribeProps, "compact">) => {
     );
   }
 
-  // Logged out: there's nothing to one-click with, so open the full
-  // SubscribePanel (pub name/description + form) in a modal.
-  if (!user.loggedIn) {
-    return (
-      <Modal
-        asChild
-        trigger={
-          <ButtonPrimary compact className="pubPageSubscribe text-sm!">
-            Subscribe
-          </ButtonPrimary>
-        }
-      >
-        <div className="w-md max-w-full">
-          <SubscribePanel {...props} />
-        </div>
-      </Modal>
-    );
-  }
-
-  // Logged in but missing the identity this pub needs (a handle for atproto
-  // pubs, an email for newsletters) — open the full input in a popover.
+  // Nothing to one-click with — either logged out, or logged in but missing the
+  // identity this pub needs (a handle for atproto pubs, an email for
+  // newsletters). Both open the full SubscribePanel (pub name/description +
+  // form) in a modal.
   return (
-    <Popover
+    <Modal
       asChild
-      align="end"
       trigger={
         <ButtonPrimary compact className="pubPageSubscribe text-sm!">
           Subscribe
@@ -438,13 +391,13 @@ export const SubscribeButton = (props: Omit<SubscribeProps, "compact">) => {
       }
     >
       <div className="w-md max-w-full">
-        <SubscribeInput {...props} compact autoFocus />
+        <SubscribePanel {...props} />
       </div>
-    </Popover>
+    </Modal>
   );
 };
 
-const SubscribeModeMenu = (props: {
+const SubscribeInputModeMenu = (props: {
   mode: SubscribeMode;
   onChange: (mode: SubscribeMode) => void;
 }) => {
@@ -453,8 +406,6 @@ const SubscribeModeMenu = (props: {
       <Menu
         align="start"
         asChild
-        // Above the Modal overlay/content (z-50) when this renders inside the
-        // logged-out subscribe modal; otherwise it hides behind the overlay.
         className="z-[60]!"
         trigger={
           <button
@@ -488,5 +439,80 @@ const SubscribeModeMenu = (props: {
       </Menu>
       <Separator classname="h-5! " />
     </div>
+  );
+};
+
+export type SubscribeButtonModeMenuAccount = {
+  value: SubscribeMode;
+  label: string;
+  icon: React.ReactNode;
+  // The account the main button currently subscribes with — marked in the menu.
+  selected: boolean;
+  // Subscribe with this account directly, rather than just toggling selection.
+  onSelect: () => void;
+};
+
+// The caret dropdown beside the compact subscribe button. Each account is a
+// one-click subscribe (it runs the subscribe action, not just a toggle), and
+// the optional RSS item links the feed. Shared by the atproto (HandleSubscribe)
+// and email (EmailSubscribe) buttons.
+export const SubscribeButtonModeMenu = (props: {
+  disabled: boolean;
+  publicationUrl?: string;
+  accounts: SubscribeButtonModeMenuAccount[];
+}) => {
+  let selectedValue =
+    props.accounts.find((a) => a.selected)?.value ?? props.accounts[0]?.value;
+  return (
+    <Menu
+      align="end"
+      asChild
+      className="text-sm"
+      trigger={
+        <ButtonPrimary
+          compact
+          disabled={props.disabled}
+          aria-label="Choose how to subscribe"
+          className="rounded-l-none! border-l-accent-2! py-0! h-full! hover:outline-transparent! focus:outline-transparent! active:outline-transparent! px-0.5!"
+        >
+          <ArrowDownTiny />
+        </ButtonPrimary>
+      }
+    >
+      <div className="text-tertiary text-sm px-1 pt-0.5 ">Subscribe with…</div>
+      <RadioMenuGroup value={selectedValue ?? ""}>
+        {props.accounts.map((account) => (
+          <RadioMenuItem
+            key={account.value}
+            className="py-0.5! font-normal!"
+            value={account.value}
+            selected={account.selected}
+            onSelect={() => account.onSelect()}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              {account.icon}
+              <span className="truncate">{account.label}</span>
+            </span>
+          </RadioMenuItem>
+        ))}
+      </RadioMenuGroup>
+
+      {props.publicationUrl && (
+        <MenuItem
+          className="py-0.5! font-normal!"
+          onSelect={() =>
+            window.open(
+              `${props.publicationUrl}/rss`,
+              "_blank",
+              "noopener,noreferrer",
+            )
+          }
+        >
+          <span className="flex items-center gap-2">
+            <RSSTiny className="shrink-0 text-tertiary" /> RSS Feed
+          </span>
+        </MenuItem>
+      )}
+    </Menu>
   );
 };
