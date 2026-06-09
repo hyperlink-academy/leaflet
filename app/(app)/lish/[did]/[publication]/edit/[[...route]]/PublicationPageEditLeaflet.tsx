@@ -1,5 +1,5 @@
 "use client";
-import { Fact, PermissionToken, ReplicacheProvider } from "src/replicache";
+import { Fact, PermissionToken, ReplicacheProvider, useEntity } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { SelectionManager } from "components/SelectionManager";
 import { EntitySetProvider } from "components/EntitySetProvider";
@@ -39,39 +39,63 @@ export function PublicationPageEditLeaflet(props: {
       >
         <UpdateLeafletTitle entityID={props.leaflet_id} />
         <SelectionManager />
-        <div
-          className={`pubPageContent py-6 h-full ${
-            !!record.theme?.showPageBackground && "mx-auto"
-          }`}
-        >
-          <Page
-            entityID={props.leaflet_id}
-            fullPageScroll={!!!record.theme?.showPageBackground}
-            header={
-              <>
-                <NewPublicationHeader
-                  edit
-                  iconUrl={iconUrl}
-                  description={record?.description}
-                  subscribe={{
-                    publicationUri: props.publicationUri,
-                    publicationUrl: record.url,
-                    publicationName: record.name,
-                    publicationDescription: record.description,
-                    newsletterMode: props.newsletterMode,
-                  }}
-                />
-
-                <PublicationPagesEditNav
-                  did={props.did}
-                  publicationName={record.name}
-                />
-                <div className="spacer h-3" />
-              </>
-            }
-          />
-        </div>
+        <PublicationPageEditContent
+          leaflet_id={props.leaflet_id}
+          did={props.did}
+          record={record}
+          iconUrl={iconUrl}
+          publicationUri={props.publicationUri}
+          newsletterMode={props.newsletterMode}
+        />
       </EntitySetProvider>
     </ReplicacheProvider>
+  );
+}
+
+function PublicationPageEditContent(props: {
+  leaflet_id: string;
+  did: string;
+  record: NonNullable<NormalizedPublication>;
+  iconUrl: string | undefined;
+  publicationUri: string;
+  newsletterMode: boolean;
+}) {
+  let { record } = props;
+  let rootPage = useEntity(props.leaflet_id, "root/page")[0];
+  let firstPage = rootPage?.data.value || props.leaflet_id;
+
+  return (
+    <div
+      className={`pubPageContent py-6 h-full ${
+        !!record.theme?.showPageBackground && "mx-auto"
+      }`}
+    >
+      <Page
+        entityID={firstPage}
+        fullPageScroll={!!!record.theme?.showPageBackground}
+        header={
+          <>
+            <NewPublicationHeader
+              edit
+              iconUrl={props.iconUrl}
+              description={record?.description}
+              subscribe={{
+                publicationUri: props.publicationUri,
+                publicationUrl: record.url,
+                publicationName: record.name,
+                publicationDescription: record.description,
+                newsletterMode: props.newsletterMode,
+              }}
+            />
+
+            <PublicationPagesEditNav
+              did={props.did}
+              publicationName={record.name}
+            />
+            <div className="spacer h-3" />
+          </>
+        }
+      />
+    </div>
   );
 }
