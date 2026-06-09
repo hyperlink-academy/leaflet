@@ -1,3 +1,4 @@
+"use client";
 import { SpeedyLink } from "components/SpeedyLink";
 import { sortPublicationPages } from "./sortPublicationPages";
 import { PublicationNavSubscribe } from "./PublicationNavSubscribe";
@@ -5,6 +6,7 @@ import {
   SubscribeButton,
   SubscribeInput,
 } from "components/Subscribe/SubscribeButton";
+import { useNavBackgroundFade } from "./useNavBackgroundFade";
 
 export type PublicationNavPage = {
   id: number;
@@ -15,11 +17,12 @@ export type PublicationNavPage = {
 
 // Read-only mirror of the editor's PublicationPagesNav: a sticky tab bar of
 // publication pages with the subscribe control on the right. Kept visually
-// identical to the editor (edit/[[...route]]/PublicationPagesNav.tsx).
+// identical to the editor (edit/[[...route]]/PublicationPagesEditNav.tsx).
 export function PublicationNav(props: {
   publicationUrl: string;
   pages: PublicationNavPage[];
   activePath: string | null;
+  showPageBackground?: boolean;
   subscribe?: {
     publicationUri: string;
     publicationUrl?: string;
@@ -28,6 +31,9 @@ export function PublicationNav(props: {
     newsletterMode: boolean;
   };
 }) {
+  let cardBorderHidden = !props.showPageBackground;
+  let { navRef, bgOpacity } = useNavBackgroundFade(cardBorderHidden);
+
   if (props.pages.length === 0) return null;
 
   let sortedPages = sortPublicationPages(props.pages);
@@ -41,9 +47,18 @@ export function PublicationNav(props: {
       <div className="border-b border-border-light mt-6 w-full sm:max-w-[calc(var(--page-width-units)+.75rem)] mx-auto " />
     );
   return (
-    <nav className="publicationPagesNav sticky top-0 z-10 bg-bg-page shrink-0 w-full sm:max-w-[calc(var(--page-width-units)+.75rem)] mx-auto pt-3">
-      <div className="flex items-baseline justify-between gap-6 px-3 sm:px-4 w-full sm:max-w-(--page-width-units) mx-auto">
-        <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-2 pb-5 -mb-5">
+    <nav
+      ref={navRef}
+      className={`publicationPagesNav z-10 shrink-0 sticky mx-1 sm:mx-2 ${cardBorderHidden ? "pt-3 -top-6 bg-bg-page" : "top-2 rounded-md"}`}
+    >
+      {!cardBorderHidden && (
+        <div
+          className="absolute inset-0 -z-10 light-container pointer-events-none"
+          style={{ opacity: bgOpacity }}
+        />
+      )}
+      <div className="flex items-center justify-between gap-6 px-2 w-full sm:max-w-(--page-width-units) mx-auto">
+        <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-1 pb-5 -mb-5">
           {tabs.map((page) => {
             let segment = page.path === "/" ? "" : page.path;
             let href = `${props.publicationUrl}${segment}`;
@@ -59,7 +74,7 @@ export function PublicationNav(props: {
               >
                 <SpeedyLink
                   href={href}
-                  className={`block px-1 pt-1 pb-0.5 text-sm font-bold text-inherit hover:no-underline! select-none border-b-3 ${
+                  className={`block px-1 pt-1 pb-0.5 text-sm font-bold text-inherit no-underline! select-none border-b-3 ${
                     active ? "border-accent-contrast" : "border-transparent"
                   }`}
                 >
@@ -69,12 +84,15 @@ export function PublicationNav(props: {
             );
           })}
         </div>
-        )
-        <div className="sm:block hidden min-w-0 w-fit pb-1">
+
+        <div className="sm:block hidden min-w-0 w-fit">
           {props.subscribe && <SubscribeButton {...props.subscribe} />}
         </div>
       </div>
-      <div className="border-b border-border-light" />
+      <div
+        className="border-b border-border-light"
+        style={cardBorderHidden ? undefined : { opacity: 1 - bgOpacity }}
+      />
     </nav>
   );
 }

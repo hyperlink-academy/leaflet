@@ -5,7 +5,11 @@ import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 import { publishPublicationPages } from "actions/publishPublicationPages";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
-import { usePublicationData } from "../../dashboard/PublicationSWRProvider";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "../../dashboard/PublicationSWRProvider";
+import { DotLoader } from "components/utils/DotLoader";
 
 type Status = "idle" | "publishing" | "success";
 
@@ -15,6 +19,7 @@ export function PublicationEditHeader(props: {
 }) {
   let { data, mutate } = usePublicationData();
   let publicationUri = data?.publication?.uri;
+  let publicationUrl = useNormalizedPublicationRecord()?.url;
   let [status, setStatus] = useState<Status>("idle");
   let toaster = useToaster();
 
@@ -31,6 +36,24 @@ export function PublicationEditHeader(props: {
         setStatus("success");
         mutate();
         setTimeout(() => setStatus("idle"), 2000);
+        toaster({
+          type: "success",
+          content: (
+            <span>
+              Updated!{" "}
+              {publicationUrl && (
+                <a
+                  href={publicationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline text-white!"
+                >
+                  View here.
+                </a>
+              )}
+            </span>
+          ),
+        });
       } else {
         setStatus("idle");
         toaster({
@@ -52,11 +75,13 @@ export function PublicationEditHeader(props: {
   }
 
   let label =
-    status === "publishing"
-      ? "Publishing..."
-      : status === "success"
-        ? "Published!"
-        : "Update Publication";
+    status === "publishing" ? (
+      <DotLoader />
+    ) : status === "success" ? (
+      "Published!"
+    ) : (
+      "Update Publication"
+    );
 
   return (
     <div className="publicationEditHeader bg-accent-1 text-accent-2 px-4 pt-4 pb-2 flex items-center justify-between gap-2 shrink-0">

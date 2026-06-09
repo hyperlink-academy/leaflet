@@ -96,17 +96,20 @@ export function NewPublicationHeader(props: {
   );
 
   return (
-    <div className="publicationHeader flex flex-col gap-2 pt-4 pb-3 sm:pc-4 px-3">
+    <div className="publicationHeader flex flex-col gap-2 sm:px-4 px-3 sm:pt-10 sm:pb-3 pt-6 pb-0 ">
       <div className="publicationName flex sm:flex-row flex-col items-center justify-center sm:gap-3 gap-1">
-        <PubIcon
-          icon={props.iconUrl}
-          pubName={props.subscribe?.publicationName}
-        />
+        {props.iconUrl && (
+          <PubIcon
+            className="sm:w-8! sm:h-8! w-12! h-12!"
+            icon={props.iconUrl}
+            pubName={props.subscribe?.publicationName}
+          />
+        )}
         {title}
       </div>
       {props.subscribe && (
         <div
-          className={`${props.hasNav || props.edit ? "sm:hidden" : ""} ${props.edit && "pointer-events-none"} block max-w-full w-fit mx-auto`}
+          className={`${props.hasNav || props.edit ? "sm:hidden" : ""} ${props.edit && "pointer-events-none"} block max-w-full w-fit mx-auto px-3 sm:px-0`}
         >
           <SubscribeInput {...props.subscribe} />
         </div>

@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -45,6 +45,7 @@ import {
 } from "../../dashboard/PublicationSWRProvider";
 import { sortPublicationPages } from "../../sortPublicationPages";
 import { PublicationNavSubscribe } from "../../PublicationNavSubscribe";
+import { useNavBackgroundFade } from "../../useNavBackgroundFade";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 
@@ -112,40 +113,7 @@ export function PublicationPagesEditNav(props: {
   let sortedPages = useMemo(() => sortPublicationPages(pages), [pages]);
   let sortableIds = useMemo(() => sortedPages.map((p) => p.id), [sortedPages]);
 
-  // When the card border is shown, fade the nav background in as the user
-  // scrolls so it reaches full opacity exactly when the nav reaches its sticky
-  // position. Only the background fades — the tabs/contents stay fully opaque.
-  let navRef = useRef<HTMLElement>(null);
-  let [bgOpacity, setBgOpacity] = useState(0);
-  useEffect(() => {
-    if (cardBorderHidden) {
-      setBgOpacity(1);
-      return;
-    }
-    let nav = navRef.current;
-    if (!nav) return;
-    // When the card border is shown the nav is sticky within the page card's
-    // own scroll container (`.pageScrollWrapper`), not the outer
-    // `.editorScrollRoot` — so listen on the nearest scrolling ancestor.
-    let scroller = nav.closest<HTMLElement>(".publicationScrollContainer");
-    if (!scroller) return;
-    let stickyOffset = 8; // top-2 = 0.5rem
-    let update = () => {
-      let navRect = nav.getBoundingClientRect();
-      let scrollerRect = scroller.getBoundingClientRect();
-      // The nav's offset from the top of the scrollable content; stays constant
-      // whether or not the nav is currently stuck.
-      let offsetTop = navRect.top - scrollerRect.top + scroller.scrollTop;
-      let range = offsetTop - stickyOffset;
-      let opacity =
-        range <= 0 ? 1 : Math.min(1, Math.max(0, scroller.scrollTop / range));
-      setBgOpacity(opacity);
-    };
-
-    update();
-    scroller.addEventListener("scroll", update, { passive: true });
-    return () => scroller.removeEventListener("scroll", update);
-  }, [cardBorderHidden]);
+  let { navRef, bgOpacity } = useNavBackgroundFade(cardBorderHidden);
 
   let sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -538,7 +506,7 @@ function SortableTab(props: {
             type="button"
             aria-label="Edit page"
             className={`${props.active ? "opacity-100" : "opacity-0"}
-            absolute -top-2 -right-3
+            absolute -top-1 -right-4
             shrink-0 p-0.5 bg-accent-1 text-accent-2 rounded-full
             group-hover/sortable-tab:opacity-100
             focus:opacity-100   `}

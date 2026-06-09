@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { AtpBaseClient } from "lexicons/api";
 import { Json } from "supabase/database.types";
 import type { Fact } from "src/replicache";
@@ -141,6 +142,10 @@ export async function publishPublicationPages({
 
     published.push({ id: page.id, uri: putResult.uri });
   }
+
+  // Bust the cached reader routes so edits to existing pages show up — without
+  // this only brand-new (uncached) page paths would reflect the latest content.
+  revalidatePath("/lish/[did]/[publication]", "layout");
 
   return { success: true, published };
 }

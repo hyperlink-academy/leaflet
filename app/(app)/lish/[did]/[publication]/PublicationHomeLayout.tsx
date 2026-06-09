@@ -30,7 +30,7 @@ export function PublicationHomeLayout(props: {
   let header = hasNav ? (
     <>
       <div className="shrink-0">
-        <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
+        <div className="sm:max-w-(--page-width-units) mx-auto ">
           <NewPublicationHeader
             iconUrl={props.iconUrl}
             description={props.subscribe.publicationDescription}
@@ -43,6 +43,7 @@ export function PublicationHomeLayout(props: {
         publicationUrl={props.publicationUrl}
         pages={props.navPages}
         activePath={props.activePath}
+        showPageBackground={props.showPageBackground}
         subscribe={props.subscribe}
       />
     </>
