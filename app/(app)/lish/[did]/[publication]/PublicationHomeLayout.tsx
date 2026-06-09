@@ -18,11 +18,15 @@ export function PublicationHomeLayout(props: {
   activePath: string;
   subscribe: SubscribeData;
   children: React.ReactNode;
+  pageWidth?: number;
 }) {
   let { ref } = usePreserveScroll<HTMLDivElement>(
     props.subscribe.publicationUri,
   );
   let hasNav = props.navPages.length > 0;
+
+  let narrowPage = props.pageWidth && props.pageWidth < 480;
+  let hideSubscribeInHeader = props.navPages.length > 1 && !narrowPage;
 
   // When the publication has nav pages, mirror the editor (PublicationEditLayout
   // + PublicationPagesNav): an inline header that scrolls away above a sticky
@@ -36,6 +40,7 @@ export function PublicationHomeLayout(props: {
             description={props.subscribe.publicationDescription}
             hasNav={props.navPages.length > 1}
             subscribe={props.subscribe}
+            hideSubscribeInHeader={hideSubscribeInHeader}
           />
         </div>
       </div>
@@ -45,6 +50,7 @@ export function PublicationHomeLayout(props: {
         activePath={props.activePath}
         showPageBackground={props.showPageBackground}
         subscribe={props.subscribe}
+        hideSubscribeInHeader={hideSubscribeInHeader}
       />
     </>
   ) : (

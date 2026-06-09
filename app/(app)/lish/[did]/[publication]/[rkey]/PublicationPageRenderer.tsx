@@ -20,9 +20,7 @@ import { FontLoader } from "components/FontLoader";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { DocumentProvider } from "contexts/DocumentContext";
 import type { DocumentContextValue } from "contexts/DocumentContext";
-import {
-  type PublicationPostsListPost,
-} from "../PublicationPostsList";
+import { type PublicationPostsListPost } from "../PublicationPostsList";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -62,7 +60,12 @@ export async function PublicationPageRenderer({
   publication,
 }: {
   did: string;
-  page: { id: number; path: string; title: string | null; record: PublicationPageRecord };
+  page: {
+    id: number;
+    path: string;
+    title: string | null;
+    record: PublicationPageRecord;
+  };
   publication: PublicationRow;
 }) {
   const normalizedPublication = normalizePublicationRecord(publication.record);
@@ -71,7 +74,7 @@ export async function PublicationPageRenderer({
 
   const allBlocks: PubLeafletPagesLinearDocument.Block[] =
     firstPage && firstPage.$type === "pub.leaflet.pages.linearDocument"
-      ? ((firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? [])
+      ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
       : [];
 
   const agent = new AtpAgent({
@@ -123,7 +126,8 @@ export async function PublicationPageRenderer({
   const postsListData = hasPostsList
     ? {
         publication: { uri: publication.uri, record: publication.record },
-        publicationRecord: normalizedPublication as NormalizedPublication | null,
+        publicationRecord:
+          normalizedPublication as NormalizedPublication | null,
         posts: postsListPosts,
       }
     : undefined;
@@ -133,7 +137,8 @@ export async function PublicationPageRenderer({
 
   const documentContextValue: DocumentContextValue = {
     uri: page.record.publication,
-    normalizedDocument: null as unknown as DocumentContextValue["normalizedDocument"],
+    normalizedDocument:
+      null as unknown as DocumentContextValue["normalizedDocument"],
     normalizedPublication,
     theme,
     prevNext: undefined,
@@ -177,6 +182,7 @@ export async function PublicationPageRenderer({
           >
             <PublicationHomeLayout
               showPageBackground={showPageBackground}
+              pageWidth={normalizedPublication?.theme?.pageWidth}
               iconUrl={
                 normalizedPublication?.icon
                   ? blobRefToSrc(normalizedPublication.icon.ref, did)

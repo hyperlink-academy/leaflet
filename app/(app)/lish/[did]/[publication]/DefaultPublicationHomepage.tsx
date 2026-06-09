@@ -89,6 +89,7 @@ export const DefaultPublicationHomepage = ({
         navPages={navPages}
         publicationUrl={getPublicationURL(publication)}
         activePath="/"
+        pageWidth={record?.theme?.pageWidth}
         subscribe={{
           publicationUri: publication.uri,
           publicationUrl: record?.url,

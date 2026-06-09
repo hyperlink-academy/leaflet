@@ -46,7 +46,7 @@ export function PublicationEditHeader(props: {
                   href={publicationUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="underline text-white!"
+                  className="underline text-accent-2!"
                 >
                   View here.
                 </a>
@@ -76,11 +76,13 @@ export function PublicationEditHeader(props: {
 
   let label =
     status === "publishing" ? (
-      <DotLoader />
+      <DotLoader className="h-[21px]!" />
     ) : status === "success" ? (
       "Published!"
     ) : (
-      "Update Publication"
+      <div className="flex gap-[6px]">
+        Update<span className="sm:block hidden "> Publication</span>
+      </div>
     );
 
   return (

@@ -23,6 +23,8 @@ export function PublicationNav(props: {
   pages: PublicationNavPage[];
   activePath: string | null;
   showPageBackground?: boolean;
+  pageWidth?: number;
+  hideSubscribeInHeader?: boolean;
   subscribe?: {
     publicationUri: string;
     publicationUrl?: string;
@@ -49,7 +51,7 @@ export function PublicationNav(props: {
   return (
     <nav
       ref={navRef}
-      className={`publicationPagesNav z-10 shrink-0 sticky mx-1 sm:mx-2 ${cardBorderHidden ? "pt-3 -top-6 bg-bg-page" : "top-2 rounded-md"}`}
+      className={`publicationPagesNav z-10 shrink-0 sticky  mx-1 sm:mx-2 ${cardBorderHidden ? "pt-3 bg-bg-page top-0 " : "top-2 rounded-md "}`}
     >
       {!cardBorderHidden && (
         <div
@@ -57,7 +59,9 @@ export function PublicationNav(props: {
           style={{ opacity: bgOpacity }}
         />
       )}
-      <div className="flex items-center justify-between gap-6 px-2 w-full sm:max-w-(--page-width-units) mx-auto">
+      <div
+        className={`flex items-center justify-between gap-3  w-full sm:max-w-(--page-width-units) mx-auto ${cardBorderHidden ? "px-4" : "px-2"}`}
+      >
         <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-1 pb-5 -mb-5">
           {tabs.map((page) => {
             let segment = page.path === "/" ? "" : page.path;
@@ -86,7 +90,9 @@ export function PublicationNav(props: {
         </div>
 
         <div className="sm:block hidden min-w-0 w-fit">
-          {props.subscribe && <SubscribeButton {...props.subscribe} />}
+          {props.subscribe && props.hideSubscribeInHeader && (
+            <SubscribeButton {...props.subscribe} />
+          )}
         </div>
       </div>
       <div

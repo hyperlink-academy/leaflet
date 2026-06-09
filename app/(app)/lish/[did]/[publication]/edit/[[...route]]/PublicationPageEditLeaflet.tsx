@@ -1,5 +1,10 @@
 "use client";
-import { Fact, PermissionToken, ReplicacheProvider, useEntity } from "src/replicache";
+import {
+  Fact,
+  PermissionToken,
+  ReplicacheProvider,
+  useEntity,
+} from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { SelectionManager } from "components/SelectionManager";
 import { EntitySetProvider } from "components/EntitySetProvider";
@@ -63,6 +68,9 @@ function PublicationPageEditContent(props: {
   let { record } = props;
   let rootPage = useEntity(props.leaflet_id, "root/page")[0];
   let firstPage = rootPage?.data.value || props.leaflet_id;
+  let narrowPage = record.theme?.pageWidth && record.theme.pageWidth < 480;
+  console.log(narrowPage);
+  let hideSubscribeInHeader = !narrowPage;
 
   return (
     <div
@@ -77,6 +85,7 @@ function PublicationPageEditContent(props: {
           <>
             <NewPublicationHeader
               edit
+              hideSubscribeInHeader={hideSubscribeInHeader}
               iconUrl={props.iconUrl}
               description={record?.description}
               subscribe={{
@@ -91,6 +100,7 @@ function PublicationPageEditContent(props: {
             <PublicationPagesEditNav
               did={props.did}
               publicationName={record.name}
+              hideSubscribeInHeader={hideSubscribeInHeader}
             />
             <div className="spacer h-3" />
           </>

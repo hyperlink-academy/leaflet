@@ -92,6 +92,7 @@ function useIsPathInUse() {
 export function PublicationPagesEditNav(props: {
   did: string;
   publicationName: string;
+  hideSubscribeInHeader?: boolean;
 }) {
   let router = useRouter();
   let pathname = usePathname() ?? "";
@@ -164,7 +165,7 @@ export function PublicationPagesEditNav(props: {
           style={{ opacity: bgOpacity }}
         />
       )}
-      <div className="flex  items-center justify-between  gap-6 px-2  w-full sm:max-w-(--page-width-units) mx-auto">
+      <div className="flex  items-center justify-between  gap-3 px-2  w-full sm:max-w-(--page-width-units) mx-auto">
         <div className="pubPageTabs flex items-center gap-4 min-w-0 overflow-x-auto pt-1 pb-5 -mb-5">
           <DndContext
             sensors={sensors}
@@ -233,7 +234,7 @@ export function PublicationPagesEditNav(props: {
             }}
           />
         </div>
-        {publicationUri && publicationRecord && (
+        {publicationUri && publicationRecord && props.hideSubscribeInHeader && (
           <div className="pointer-events-none">
             <PublicationNavSubscribe
               publicationUri={publicationUri}
@@ -320,7 +321,7 @@ function AddPageButton(props: {
         <button
           type="button"
           aria-label="Add page"
-          className="flex items-center px-1 pt-1 pb-0.5 border-b-3 border-transparent hover:bold-accent-contrast text-tertiary hover:text-accent-contrast text-sm font-bold"
+          className="flex items-center px-1 pt-1 pb-0.5 border-b-3 border-transparent hover:bold-accent-contrast text-tertiary hover:text-accent-contrast text-sm font-bold w-max text-nowrap"
         >
           New Page
         </button>

@@ -83,6 +83,7 @@ export function PublicationHeader(props: {
 
 export function NewPublicationHeader(props: {
   iconUrl?: string;
+  hideSubscribeInHeader?: boolean;
   description?: string;
   author?: React.ReactNode;
   subscribe?: SubscribeData;
@@ -109,7 +110,10 @@ export function NewPublicationHeader(props: {
       </div>
       {props.subscribe && (
         <div
-          className={`${props.hasNav || props.edit ? "sm:hidden" : ""} ${props.edit && "pointer-events-none"} block max-w-full w-fit mx-auto px-3 sm:px-0`}
+          className={`
+            ${props.hideSubscribeInHeader && "sm:hidden pb-2"}
+            ${props.edit && "pointer-events-none"}
+            block max-w-full w-fit mx-auto px-3 sm:px-0`}
         >
           <SubscribeInput {...props.subscribe} />
         </div>
