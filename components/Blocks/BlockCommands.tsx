@@ -20,6 +20,7 @@ import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { BlockPollSmall } from "components/Icons/BlockPollSmall";
+import { PostListSmall } from "components/Icons/PostListSmall";
 import {
   ParagraphSmall,
   Header1Small,
@@ -444,8 +445,8 @@ export const blockCommands: Command[] = [
 
   // PUBLICATION BLOCKS — only shown when editing a publication page
   {
-    name: "Posts List",
-    icon: <BlockDocPageSmall />,
+    name: "Post List",
+    icon: <PostListSmall />,
     type: "publication",
     alternateNames: ["posts", "archive", "feed", "listing"],
     publicationOnly: true,
