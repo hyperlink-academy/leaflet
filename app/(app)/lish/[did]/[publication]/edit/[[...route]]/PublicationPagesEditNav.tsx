@@ -536,7 +536,7 @@ function SortableTab(props: {
         align="end"
         open={popoverOpen}
         onOpenChange={handleOpenChange}
-        className="w-sm"
+        className="w-sm py-3!"
         trigger={
           <button
             type="button"
@@ -577,7 +577,7 @@ function SortableTab(props: {
               onChange={(e) => setPath(e.currentTarget.value)}
               placeholder="/about"
             />
-            <div className="text-sm text-tertiary leading-tight -mt-1">
+            <div className="text-sm text-tertiary leading-tight -mt-1 mb-1">
               <strong>Full page link</strong> <br />
               {props.publicationUrl?.replace(/^https?:\/\//, "")}
               {cleanPath(path)}
@@ -588,7 +588,7 @@ function SortableTab(props: {
             </ButtonPrimary>
             {props.canDelete && (
               <>
-                <hr className="mt-2 border-border-light" />
+                <hr className="mt-1 border-border-light" />
                 <ButtonTertiary
                   fullWidth
                   type="button"
