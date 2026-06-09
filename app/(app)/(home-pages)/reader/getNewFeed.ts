@@ -21,6 +21,11 @@ export async function getNewFeed(
       "record->preferences->showInDiscover.is.null,record->preferences->>showInDiscover.eq.true",
       { referencedTable: "documents_in_publications.publications" },
     )
+    // Exclude posts published "quietly" (the document record opts itself out of
+    // Discover). Absent/true is kept; only an explicit false is hidden.
+    .or(
+      "data->preferences->showInDiscover.is.null,data->preferences->>showInDiscover.eq.true",
+    )
     .order("sort_date", { ascending: false })
     .order("uri", { ascending: false })
     .limit(25);

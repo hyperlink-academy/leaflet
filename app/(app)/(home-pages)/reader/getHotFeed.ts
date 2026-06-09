@@ -37,6 +37,10 @@ export async function getHotFeed(): Promise<{ posts: Post[] }> {
       FROM documents
       WHERE indexed = true
         AND sort_date > now() - interval '7 days'
+        AND (
+          data->'preferences'->>'showInDiscover' IS NULL
+          OR data->'preferences'->>'showInDiscover' = 'true'
+        )
       ORDER BY
         (bsky_like_count + recommend_count * 5)::numeric
         / power(extract(epoch from (now() - sort_date)) / 3600 + 2, 1.5) DESC

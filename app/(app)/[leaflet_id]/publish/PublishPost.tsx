@@ -161,7 +161,10 @@ const PublishPostForm = (
       entitiesToDelete: props.entitiesToDelete,
       publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
       postPreferences,
-      sendEmail: shareState.email,
+      // Posting quietly forces every share channel off, mirroring the UI where
+      // checking "Post Quietly" unchecks all the other options.
+      sendEmail: shareState.email && !shareState.quiet,
+      showInDiscover: shareState.postToReaders && !shareState.quiet,
     });
 
     if (!result.success) {
@@ -180,7 +183,7 @@ const PublishPostForm = (
     let [text, facets] = editorStateRef.current
       ? editorStateToFacetedText(editorStateRef.current)
       : [];
-    if (shareState.bluesky) {
+    if (shareState.bluesky && !shareState.quiet) {
       let bskyResult = await publishPostToBsky({
         facets: facets || [],
         text: text || "",

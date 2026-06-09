@@ -63,6 +63,7 @@ export async function publishToPublication({
   publishedAt,
   postPreferences,
   sendEmail = true,
+  showInDiscover,
 }: {
   root_entity: string;
   publication_uri?: string;
@@ -79,6 +80,10 @@ export async function publishToPublication({
     showRecommends?: boolean;
   } | null;
   sendEmail?: boolean;
+  // Whether this post appears in Discover and aggregated feeds. Undefined leaves
+  // the record as-is; pass false (e.g. a "quiet" publish) to opt the document's
+  // own record out of those feeds.
+  showInDiscover?: boolean;
 }): Promise<PublishResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -229,7 +234,14 @@ export async function publishToPublication({
   }
 
   // Resolve preferences: explicit param > draft DB value
-  const preferences = postPreferences ?? draft?.preferences;
+  const basePreferences = postPreferences ?? draft?.preferences;
+  // When the caller opts the post out of Discover (e.g. a "quiet" publish), bake
+  // showInDiscover:false into the record itself (rather than a DB-only flag) so
+  // it survives the appview re-indexing the record from the firehose.
+  const preferences =
+    showInDiscover === false
+      ? { ...(basePreferences ?? {}), showInDiscover: false }
+      : basePreferences;
 
   // Gather contributors from the draft so the published record records its
   // multi-contributor byline. Only relevant for publication documents, and only
