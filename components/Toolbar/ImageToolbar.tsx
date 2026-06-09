@@ -4,7 +4,10 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { Props } from "components/Icons/Props";
 import { ImageAltSmall, ImageRemoveAltSmall } from "components/Icons/ImageAlt";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "components/PageSWRDataProvider";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   ImageCoverImage,
@@ -116,12 +119,14 @@ export const ImageCoverButton = () => {
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
   let hasSrc = useEntity(focusedBlock, "block/image")?.data;
   let { data: pubData } = useLeafletPublicationData();
+  let publicationPage = useLeafletPublicationPage();
   let coverImage = useSubscribe(rep, (tx) =>
     tx.get<string | null>("publication_cover_image"),
   );
 
-  // Only show if in a publication and has an image
-  if (!pubData?.publications || !hasSrc) return null;
+  // Only show if in a publication and has an image. Publication pages
+  // (e.g. an About page) don't have cover images, so skip them.
+  if (!pubData?.publications || !hasSrc || publicationPage) return null;
 
   let isCoverImage = coverImage === focusedBlock;
 
