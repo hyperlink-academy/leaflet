@@ -538,6 +538,8 @@ pre.shiki {
   @apply data-highlighted:bg-[var(--accent-light)];
   @apply data-highlighted:outline-none;
   @apply hover:bg-[var(--accent-light)];
+  @apply border;
+  @apply border-transparent;
   text-align: left;
   font-weight: 800;
   padding: 0.25rem 0.5rem;

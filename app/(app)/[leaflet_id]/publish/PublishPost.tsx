@@ -194,9 +194,7 @@ const PublishPostForm = (
         rkey: result.rkey,
         // For publications the post must be authored by the owner's PDS (where
         // the record lives); standalone publishes leave this undefined.
-        ownerDid: props.publication_uri
-          ? props.publicationOwnerDid
-          : undefined,
+        ownerDid: props.publication_uri ? props.publicationOwnerDid : undefined,
       });
       if (!bskyResult.success && isOAuthSessionError(bskyResult.error)) {
         setIsLoading(false);
@@ -251,7 +249,7 @@ const PublishPostForm = (
                         setShowTagSelector(true);
                       }}
                     >
-                      No Tags
+                      Add Tags
                     </button>
                   )}
                 </div>
@@ -460,10 +458,7 @@ const PublicationSocialPreview = (props: {
 }) => {
   const pub_creator = new AtUri(props.publication_uri).host;
   return (
-    <PublicationThemeProvider
-      record={props.record}
-      pub_creator={pub_creator}
-    >
+    <PublicationThemeProvider record={props.record} pub_creator={pub_creator}>
       <PublicationBackgroundProvider
         record={props.record}
         pub_creator={pub_creator}
