@@ -14,6 +14,7 @@ import { Page } from "components/Pages/Page";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { NewPublicationHeader } from "../../PublicationHeader";
 import { PublicationPagesEditNav } from "./PublicationPagesEditNav";
+import { useCardBorderHiddenContext } from "components/ThemeManager/ThemeProvider";
 
 export function PublicationPageEditLeaflet(props: {
   token: PermissionToken;
@@ -69,18 +70,21 @@ function PublicationPageEditContent(props: {
   let rootPage = useEntity(props.leaflet_id, "root/page")[0];
   let firstPage = rootPage?.data.value || props.leaflet_id;
   let narrowPage = record.theme?.pageWidth && record.theme.pageWidth < 480;
-  console.log(narrowPage);
   let hideSubscribeInHeader = !narrowPage;
+  // Read from the live theme context so the layout responds to page-background
+  // toggles in the theme editor, not just the saved record.
+  let cardBorderHidden = useCardBorderHiddenContext();
+  let showPageBackground = !cardBorderHidden;
 
   return (
     <div
       className={`pubPageContent py-6 h-full ${
-        !!record.theme?.showPageBackground && "mx-auto"
+        showPageBackground && "mx-auto"
       }`}
     >
       <Page
         entityID={firstPage}
-        fullPageScroll={!!!record.theme?.showPageBackground}
+        fullPageScroll={!showPageBackground}
         header={
           <>
             <NewPublicationHeader

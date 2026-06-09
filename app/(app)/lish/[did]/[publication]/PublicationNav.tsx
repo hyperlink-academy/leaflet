@@ -96,7 +96,7 @@ export function PublicationNav(props: {
           })}
         </div>
 
-        <div className="sm:block hidden min-w-0 w-fit">
+        <div className="sm:block hidden min-w-0 w-fit shrink-0">
           {props.subscribe && props.hideSubscribeInHeader && (
             <SubscribeButton {...props.subscribe} />
           )}

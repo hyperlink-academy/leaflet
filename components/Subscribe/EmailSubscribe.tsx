@@ -147,7 +147,8 @@ export const EmailButton = (props: {
   const subscribe = async (mode: "email" | "atproto") => {
     if (loading) return;
     setLoading(true);
-    let ok = mode === "email" ? await subscribeEmail() : await subscribeAtproto();
+    let ok =
+      mode === "email" ? await subscribeEmail() : await subscribeAtproto();
     setLoading(false);
     if (!ok) return;
     toaster({ content: <div>You're Subscribed!</div>, type: "success" });
@@ -179,7 +180,7 @@ export const EmailButton = (props: {
   return (
     <div className="flex gap-1 max-w-full w-fit min-w-0">
       <div
-        className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1" : ""}`}
+        className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1 shrink-0" : ""}`}
       >
         {props.compact && tooltipLabel ? (
           <Tooltip

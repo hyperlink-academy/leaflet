@@ -6,14 +6,8 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { LoginModal } from "components/LoginButton";
 import { AtUri } from "@atproto/syntax";
-import {
-  PublicationBackgroundProvider,
-  PublicationThemeProvider,
-  PublicationThemeProviderDashboard,
-} from "components/ThemeManager/PublicationThemeProvider";
 import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
-import { PublicationEditHeader } from "./PublicationEditHeader";
-import { PublicationHeader } from "../../PublicationHeader";
+import { PublicationEditThemeProvider } from "./PublicationEditThemeProvider";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -89,23 +83,12 @@ export default async function PublicationEditLayout(props: {
       publication_rkey={uri.rkey}
       publication_data={publication_data}
     >
-      <PublicationThemeProviderDashboard>
-          <div className="flex flex-col h-full w-full bg-accent-1">
-            <PublicationEditHeader
-              did={params.did}
-              publicationName={params.publication}
-            />
-            <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto ">
-              <PublicationBackgroundProvider
-                record={record}
-                pub_creator={publication.identity_did}
-                className=" h-full flex items-stretch place-items-center "
-              >
-                {props.children}
-              </PublicationBackgroundProvider>
-            </div>
-          </div>
-        </PublicationThemeProviderDashboard>
+      <PublicationEditThemeProvider
+        did={params.did}
+        publicationName={params.publication}
+      >
+        {props.children}
+      </PublicationEditThemeProvider>
     </PublicationSWRDataProvider>
   );
 }

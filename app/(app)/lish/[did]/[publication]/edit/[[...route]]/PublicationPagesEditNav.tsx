@@ -54,6 +54,7 @@ import {
   normalizeExternalLink,
 } from "src/utils/externalPublicationLink";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
+import { useCardBorderHiddenContext } from "components/ThemeManager/ThemeProvider";
 
 // Turn arbitrary user input into a slug that is safe to use as the path
 // segment of a URL: lowercase, ascii letters/numbers/dashes only, no spaces
@@ -137,7 +138,9 @@ export function PublicationPagesEditNav(props: {
   let publicationRecord = useNormalizedPublicationRecord();
   let newsletterMode =
     !!data?.publication?.publication_newsletter_settings?.enabled;
-  let cardBorderHidden = !publicationRecord?.theme?.showPageBackground;
+  // Read from the live theme context so the nav responds to page-background
+  // toggles in the theme editor, not just the saved record.
+  let cardBorderHidden = useCardBorderHiddenContext();
   let baseHref = `/lish/${props.did}/${props.publicationName}`;
 
   function hrefForPath(path: string | null) {

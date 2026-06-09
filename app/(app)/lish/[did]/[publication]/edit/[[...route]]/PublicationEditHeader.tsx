@@ -10,6 +10,18 @@ import {
   useNormalizedPublicationRecord,
 } from "../../dashboard/PublicationSWRProvider";
 import { DotLoader } from "components/utils/DotLoader";
+import { Popover } from "components/Popover";
+import { PaintSmall } from "components/Icons/PaintSmall";
+import { ButtonPrimary } from "components/Buttons";
+import {
+  BaseThemeProvider,
+  CardBorderHiddenContext,
+} from "components/ThemeManager/ThemeProvider";
+import {
+  PubThemePickerPanel,
+  type PubThemeEditorState,
+} from "components/ThemeManager/PubThemeSetter";
+import { usePubEditThemeState } from "./PublicationEditThemeProvider";
 
 type Status = "idle" | "publishing" | "success";
 
@@ -22,6 +34,7 @@ export function PublicationEditHeader(props: {
   let publicationUrl = useNormalizedPublicationRecord()?.url;
   let [status, setStatus] = useState<Status>("idle");
   let toaster = useToaster();
+  let themeState = usePubEditThemeState();
 
   let dashboardHref = `/lish/${props.did}/${props.publicationName}/dashboard`;
 
@@ -98,13 +111,86 @@ export function PublicationEditHeader(props: {
         </div>
         <div className="pl-5 text-xs">Draft autosaves</div>
       </SpeedyLink>
-      <button
-        type="button"
-        onClick={handlePublish}
-        className="bg-accent-2 text-accent-1 font-bold px-3 py-1 rounded-md text-sm shrink-0 disabled:opacity-60"
-      >
-        {label}
-      </button>
+      <div className="flex items-center gap-2 shrink-0">
+        <PubThemePopover state={themeState} />
+        <button
+          type="button"
+          onClick={handlePublish}
+          className="bg-accent-2 text-accent-1 font-bold px-3 py-1 rounded-md text-sm shrink-0 disabled:opacity-60"
+        >
+          {label}
+        </button>
+      </div>
     </div>
   );
 }
+
+const PubThemePopover = ({ state }: { state: PubThemeEditorState }) => {
+  let {
+    localPubTheme,
+    headingFont,
+    bodyFont,
+    image,
+    pageWidth,
+    submitTheme,
+    showPageBackground,
+    toaster,
+  } = state;
+  let [loading, setLoading] = useState(false);
+
+  return (
+    <Popover
+      align="end"
+      side="bottom"
+      arrowFill="white"
+      border="#CCCCCC"
+      className="sm:w-sm w-[1000px] rounded-lg! !p-0 bg-white! border-[#CCCCCC]!"
+      trigger={
+        <button
+          type="button"
+          className="w-7 h-7 rounded-md bg-accent-1 text-accent-2 data-[state=open]:bg-accent-2 data-[state=open]:text-accent-1 flex items-center justify-center transition-colors cursor-pointer"
+          aria-label="Edit theme"
+        >
+          <PaintSmall />
+        </button>
+      }
+      asChild
+    >
+      <CardBorderHiddenContext.Provider value={!showPageBackground}>
+        <BaseThemeProvider
+          local
+          {...localPubTheme}
+          headingFontId={headingFont}
+          bodyFontId={bodyFont}
+          hasBackgroundImage={!!image}
+          pageWidth={pageWidth}
+        >
+          <div className="flex flex-col overflow-y-auto max-h-(--radix-popover-content-available-height) py-3">
+            <div className="p-3 pt-0">
+              <ButtonPrimary
+                fullWidth
+                type="button"
+                disabled={loading}
+                onClick={async () => {
+                  let result = await submitTheme(setLoading);
+                  if (result?.success) {
+                    toaster({
+                      content: "Theme saved!",
+                      type: "success",
+                    });
+                  }
+                }}
+              >
+                {loading ? <DotLoader /> : "Save Changes"}
+              </ButtonPrimary>
+            </div>
+
+            <div className="px-3 gap-2 flex flex-col">
+              <PubThemePickerPanel state={state} />
+            </div>
+          </div>
+        </BaseThemeProvider>
+      </CardBorderHiddenContext.Provider>
+    </Popover>
+  );
+};

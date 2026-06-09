@@ -152,7 +152,7 @@ export const SubscribeWithHandle = (props: {
       <div className="flex flex-col gap-2 w-fit max-w-full min-w-0">
         <div className="flex items-stretch gap-1 min-w-0">
           <div
-            className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1" : ""}`}
+            className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1 shrink-0" : ""}`}
           >
             {props.leading && (
               <div className="shrink-0 flex items-center">{props.leading}</div>
