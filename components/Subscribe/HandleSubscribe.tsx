@@ -135,7 +135,6 @@ export const SubscribeWithHandle = (props: {
           <DotLoader />
         ) : (
           <>
-            {props.leading}
             {avatar}
             <div className="flex grow  min-w-0">
               <div className="shrink-0 pr-[6px]">Subscribe</div>
@@ -155,6 +154,9 @@ export const SubscribeWithHandle = (props: {
           <div
             className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1" : ""}`}
           >
+            {props.leading && (
+              <div className="shrink-0 flex items-center">{props.leading}</div>
+            )}
             {props.compact && tooltipLabel ? (
               <Tooltip
                 asChild

@@ -48,6 +48,7 @@ import { PublicationNavSubscribe } from "../../PublicationNavSubscribe";
 import { useNavBackgroundFade } from "../../useNavBackgroundFade";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
+import { Checkbox } from "components/Checkbox";
 
 // Turn arbitrary user input into a slug that is safe to use as the path
 // segment of a URL: lowercase, ascii letters/numbers/dashes only, no spaces
@@ -268,6 +269,10 @@ function AddPageButton(props: {
   // While the path is "linked" it tracks cleanPath(name); editing the path
   // field directly breaks the link so it stays whatever the user typed.
   let [pathLinked, setPathLinked] = useState(true);
+  // When set, this page is an external link rather than a hosted page; the
+  // path input is disabled and we collect a URL instead.
+  let [isExternal, setIsExternal] = useState(false);
+  let [externalLink, setExternalLink] = useState("");
 
   function handleNameChange(newName: string) {
     setName(newName);
@@ -285,6 +290,8 @@ function AddPageButton(props: {
       setName("");
       setPath("");
       setPathLinked(true);
+      setIsExternal(false);
+      setExternalLink("");
     }
   }
 
@@ -343,19 +350,47 @@ function AddPageButton(props: {
           onChange={(e) => handleNameChange(e.currentTarget.value)}
           autoFocus
         />
-        <InputWithLabel
-          label="Path"
-          type="text"
-          name="page-path"
-          placeholder="/about"
-          autoComplete="off"
-          value={path}
-          onChange={(e) => handlePathChange(e.currentTarget.value)}
-        />
-        <div className="text-sm text-tertiary -mt-1">
-          {props.publicationUrl?.replace(/^https?:\/\//, "")}
-          {cleanPath(path)}
-        </div>
+        {isExternal ? (
+          <>
+            <InputWithLabel
+              label="External Link"
+              type="text"
+              name="external-link"
+              placeholder="https://example.com"
+              autoComplete="off"
+              value={externalLink}
+              onChange={(e) => setExternalLink(e.currentTarget.value)}
+            />{" "}
+            <div className="h-1 w-full spacer" />
+          </>
+        ) : (
+          <>
+            <InputWithLabel
+              label="Path"
+              type="text"
+              name="page-path"
+              placeholder="/about"
+              autoComplete="off"
+              value={path}
+              disabled={isExternal}
+              onChange={(e) => handlePathChange(e.currentTarget.value)}
+            />
+            <div className="text-sm text-tertiary -mt-1">
+              {props.publicationUrl?.replace(/^https?:\/\//, "")}
+              {cleanPath(path)}
+            </div>
+          </>
+        )}
+        <hr className="border-border-light" />
+        <Checkbox
+          checked={isExternal}
+          onChange={(e) => setIsExternal(e.currentTarget.checked)}
+          small
+        >
+          Make this tab a link
+        </Checkbox>
+
+        <hr className="border-border-light" />
 
         <ButtonPrimary
           type="submit"
@@ -541,12 +576,13 @@ function SortableTab(props: {
               value={path}
               onChange={(e) => setPath(e.currentTarget.value)}
               placeholder="/about"
-            />{" "}
+            />
             <div className="text-sm text-tertiary leading-tight -mt-1">
               <strong>Full page link</strong> <br />
               {props.publicationUrl?.replace(/^https?:\/\//, "")}
               {cleanPath(path)}
             </div>
+
             <ButtonPrimary type="submit" disabled={saving} fullWidth compact>
               {saving ? "Saving..." : "Save"}
             </ButtonPrimary>
