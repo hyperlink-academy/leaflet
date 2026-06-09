@@ -4,9 +4,7 @@ import type { Attribute } from "src/replicache/attributes";
 import { SelectionManager } from "components/SelectionManager";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
-import { LeafletLayout } from "components/LeafletLayout";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
-import { LeafletDirtyReporter } from "./LeafletDirtyReporter";
 import { Page } from "components/Pages/Page";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { NewPublicationHeader } from "../../PublicationHeader";
@@ -21,8 +19,6 @@ export function PublicationPageEditLeaflet(props: {
   publicationCreator: string;
   publicationUri: string;
   newsletterMode: boolean;
-  pagePath: string;
-  pageTitle: string;
 }) {
   let record = props.publicationRecord;
   const iconUrl = record?.icon
@@ -43,12 +39,6 @@ export function PublicationPageEditLeaflet(props: {
       >
         <UpdateLeafletTitle entityID={props.leaflet_id} />
         <SelectionManager />
-        <LeafletDirtyReporter
-          leaflet_id={props.leaflet_id}
-          publication_uri={props.publicationUri}
-          path={props.pagePath}
-          title={props.pageTitle}
-        />
         <div
           className={`pubPageContent py-6 h-full ${
             !!record.theme?.showPageBackground && "mx-auto"

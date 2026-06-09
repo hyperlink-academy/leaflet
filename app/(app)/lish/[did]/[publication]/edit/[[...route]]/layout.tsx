@@ -14,7 +14,6 @@ import {
 import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
 import { PublicationEditHeader } from "./PublicationEditHeader";
 import { PublicationHeader } from "../../PublicationHeader";
-import { PublicationEditDirtyProvider } from "./dirtyContext";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -90,8 +89,7 @@ export default async function PublicationEditLayout(props: {
       publication_rkey={uri.rkey}
       publication_data={publication_data}
     >
-      <PublicationEditDirtyProvider>
-        <PublicationThemeProviderDashboard>
+      <PublicationThemeProviderDashboard>
           <div className="flex flex-col h-full w-full bg-accent-1">
             <PublicationEditHeader
               did={params.did}
@@ -108,7 +106,6 @@ export default async function PublicationEditLayout(props: {
             </div>
           </div>
         </PublicationThemeProviderDashboard>
-      </PublicationEditDirtyProvider>
     </PublicationSWRDataProvider>
   );
 }

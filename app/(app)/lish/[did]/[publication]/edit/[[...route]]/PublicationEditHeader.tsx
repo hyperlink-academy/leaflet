@@ -6,7 +6,6 @@ import { publishPublicationPages } from "actions/publishPublicationPages";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { usePublicationData } from "../../dashboard/PublicationSWRProvider";
-import { usePublicationEditDirtyState } from "./dirtyContext";
 
 type Status = "idle" | "publishing" | "success";
 
@@ -18,7 +17,6 @@ export function PublicationEditHeader(props: {
   let publicationUri = data?.publication?.uri;
   let [status, setStatus] = useState<Status>("idle");
   let toaster = useToaster();
-  let dirtyState = usePublicationEditDirtyState();
 
   let dashboardHref = `/lish/${props.did}/${props.publicationName}/dashboard`;
 
@@ -76,9 +74,6 @@ export function PublicationEditHeader(props: {
       <button
         type="button"
         onClick={handlePublish}
-        disabled={
-          status === "publishing" || !publicationUri || dirtyState === "clean"
-        }
         className="bg-accent-2 text-accent-1 font-bold px-3 py-1 rounded-md text-sm shrink-0 disabled:opacity-60"
       >
         {label}

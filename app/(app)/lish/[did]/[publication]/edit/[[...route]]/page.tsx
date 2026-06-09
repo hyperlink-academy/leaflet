@@ -76,8 +76,6 @@ export default async function PublicationEditPage(props: Props) {
           newsletterMode={
             !!publication.publication_newsletter_settings?.enabled
           }
-          pagePath={path}
-          pageTitle={page.title ?? ""}
         />
       </PageSWRDataProvider>
     </React.Fragment>
