@@ -293,10 +293,18 @@ export function normalizePublication(
 
   // Pass through site.standard records directly, but validate the theme
   if (isStandardPublication(record)) {
-    // Validate theme - only keep if it's a valid pub.leaflet.publication#theme
-    const theme = PubLeafletPublication.isTheme(record.theme)
-      ? (record.theme as $Typed<PubLeafletPublication.Theme>)
-      : undefined;
+    // Keep the theme if present, adding the $type for legacy records that were
+    // published without it (otherwise non-color theme fields like pageWidth and
+    // fonts would be dropped here while colors survive via basicTheme).
+    let theme: $Typed<PubLeafletPublication.Theme> | undefined;
+    if (record.theme) {
+      theme = PubLeafletPublication.isTheme(record.theme)
+        ? (record.theme as $Typed<PubLeafletPublication.Theme>)
+        : {
+            ...(record.theme as PubLeafletPublication.Theme),
+            $type: "pub.leaflet.publication#theme",
+          };
+    }
     return {
       ...record,
       theme,

@@ -95,6 +95,7 @@ export async function extractThemeFromFacts(
   const bodyFont = scan.eav(root_entity, "theme/body-font")[0];
 
   const theme: PubLeafletPublication.Theme = {
+    $type: "pub.leaflet.publication#theme",
     showPageBackground,
   };
   if (pageWidth) theme.pageWidth = pageWidth.data.value;
