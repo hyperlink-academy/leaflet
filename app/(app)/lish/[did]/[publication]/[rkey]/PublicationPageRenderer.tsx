@@ -24,6 +24,7 @@ import { type PublicationPostsListPost } from "../PublicationPostsList";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { wordmarkFromTheme } from "src/utils/wordmark";
 import { publishedNavPages } from "src/utils/publishedPageMetadata";
 
 import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
@@ -198,6 +199,7 @@ export async function PublicationPageRenderer({
                   ? blobRefToSrc(normalizedPublication.icon.ref, did)
                   : undefined
               }
+              wordmark={wordmarkFromTheme(normalizedPublication?.theme, did)}
               navPages={navPages}
               publicationUrl={getPublicationURL(publication)}
               activePath={page.path}

@@ -7,6 +7,7 @@ import { validate as _validate } from '../../../lexicons'
 import { type $Typed, is$typed as _is$typed, type OmitKey } from '../../../util'
 import type * as PubLeafletThemeColor from './theme/color'
 import type * as PubLeafletThemeBackgroundImage from './theme/backgroundImage'
+import type * as PubLeafletThemeWordmark from './theme/wordmark'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -59,6 +60,7 @@ export interface Theme {
     | $Typed<PubLeafletThemeColor.Rgb>
     | { $type: string }
   backgroundImage?: PubLeafletThemeBackgroundImage.Main
+  wordmark?: PubLeafletThemeWordmark.Main
   pageWidth?: number
   primary?:
     | $Typed<PubLeafletThemeColor.Rgba>

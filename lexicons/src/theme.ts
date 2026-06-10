@@ -19,6 +19,24 @@ export const PubLeafletThemeBackgroundImage = {
     },
   },
 };
+export const PubLeafletThemeWordmark = {
+  lexicon: 1,
+  id: "pub.leaflet.theme.wordmark",
+  defs: {
+    main: {
+      type: "object",
+      required: ["image"],
+      properties: {
+        image: {
+          type: "blob",
+          accept: ["image/*"],
+          maxSize: 1000000,
+        },
+        width: { type: "integer" },
+      },
+    },
+  },
+};
 export const PubLeafletThemeColor: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.theme.color",
@@ -47,6 +65,7 @@ export const PubLeafletThemeColor: LexiconDoc = {
 
 export const ThemeLexicons = [
   PubLeafletThemeBackgroundImage,
+  PubLeafletThemeWordmark,
   PubLeafletThemeColor,
 ];
 

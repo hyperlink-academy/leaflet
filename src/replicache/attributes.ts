@@ -276,6 +276,14 @@ export const ThemeAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "theme/wordmark-image": {
+    type: "image",
+    cardinality: "one",
+  },
+  "theme/wordmark-width": {
+    type: "number",
+    cardinality: "one",
+  },
   "theme/card-background": {
     type: "color",
     cardinality: "one",

@@ -3,13 +3,37 @@ import {
   SubscribeInput,
   type SubscribeProps,
 } from "components/Subscribe/SubscribeButton";
+import type { WordmarkData } from "src/utils/wordmark";
 import React from "react";
+import { Popover } from "components/Popover";
+import { EditTiny } from "components/Icons/EditTiny";
+import { WordmarkEditor } from "components/ThemeManager/WordmarkEditor";
 
 // The data needed to render a subscribe control.
 export type SubscribeData = SubscribeProps;
 
+// Renders a publication wordmark image, sized to its configured max width.
+export function Wordmark(props: {
+  wordmark: WordmarkData;
+  alt?: string;
+  className?: string;
+}) {
+  return (
+    <img
+      src={props.wordmark.src}
+      alt={props.alt || ""}
+      className={`pubHeaderWordmark mx-auto h-auto object-contain ${props.className || ""}`}
+      style={{
+        width: props.wordmark.width ? `${props.wordmark.width}px` : "auto",
+        maxWidth: "100%",
+      }}
+    />
+  );
+}
+
 export function PublicationHeader(props: {
   iconUrl?: string;
+  wordmark?: WordmarkData | null;
   publicationName: string;
   description?: string;
   author?: React.ReactNode;
@@ -46,7 +70,9 @@ export function PublicationHeader(props: {
           : null),
       }}
     >
-      {variant === "inline" ? (
+      {props.wordmark ? (
+        <Wordmark wordmark={props.wordmark} alt={props.publicationName} />
+      ) : variant === "inline" ? (
         <div className="flex items-center justify-center gap-3">
           {icon}
           {title}
@@ -82,6 +108,7 @@ export function PublicationHeader(props: {
 
 export function NewPublicationHeader(props: {
   iconUrl?: string;
+  wordmark?: WordmarkData | null;
   hideSubscribeInHeader?: boolean;
   description?: string;
   author?: React.ReactNode;
@@ -96,16 +123,44 @@ export function NewPublicationHeader(props: {
   );
 
   return (
-    <div className="publicationHeader flex flex-col gap-2 sm:px-4 px-3 sm:pt-10 sm:pb-3 pt-6 pb-0 ">
-      <div className="publicationName flex sm:flex-row flex-col items-center justify-center sm:gap-3 gap-1">
-        {props.iconUrl && (
-          <PubIcon
-            className="sm:w-8! sm:h-8! w-12! h-12!"
-            icon={props.iconUrl}
-            pubName={props.subscribe?.publicationName}
-          />
-        )}
-        {title}
+    <div className="group/wordmark publicationHeader flex flex-col gap-2 sm:px-4 px-3 sm:pt-10 sm:pb-3 pt-6 pb-0 ">
+      <div className="mx-auto">
+        <div className="publicationName relative flex sm:flex-row flex-col items-center justify-center sm:gap-3 gap-1 w-max">
+          {props.wordmark ? (
+            <Wordmark
+              wordmark={props.wordmark}
+              alt={props.subscribe?.publicationName}
+            />
+          ) : (
+            <>
+              {props.iconUrl && (
+                <PubIcon
+                  className="sm:w-8! sm:h-8! w-12! h-12!"
+                  icon={props.iconUrl}
+                  pubName={props.subscribe?.publicationName}
+                />
+              )}
+              {title}
+            </>
+          )}
+          {props.edit && (
+            <div className="absolute -top-2 -left-3 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/wordmark:opacity-100 sm:focus-within:opacity-100 sm:-active:opacity-100 sm:has-[[data-state=open]]:opacity-100">
+              <Popover
+                className="pb-3!"
+                trigger={
+                  <div
+                    aria-label="Edit publication header"
+                    className="  p-1 rounded-full bg-accent-1 text-accent-2 border border-accet-2"
+                  >
+                    <EditTiny />
+                  </div>
+                }
+              >
+                <WordmarkEditor />
+              </Popover>
+            </div>
+          )}
+        </div>
       </div>
       {props.subscribe && (
         <div

@@ -8,6 +8,7 @@ import {
 import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { wordmarkFromTheme } from "src/utils/wordmark";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { publishedNavPages } from "src/utils/publishedPageMetadata";
 import {
@@ -109,6 +110,7 @@ export const DefaultPublicationHomepage = ({
       <PublicationHomeLayout
         showPageBackground={!!showPageBackground}
         iconUrl={record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined}
+        wordmark={wordmarkFromTheme(record?.theme, did)}
         navPages={navPages}
         publicationUrl={getPublicationURL(publication)}
         activePath="/"

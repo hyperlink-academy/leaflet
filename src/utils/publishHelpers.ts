@@ -90,6 +90,8 @@ export async function extractThemeFromFacts(
     root_entity,
     "theme/background-image-repeat",
   )[0];
+  const wordmarkImage = scan.eav(root_entity, "theme/wordmark-image")[0];
+  const wordmarkWidth = scan.eav(root_entity, "theme/wordmark-width")[0];
   const pageWidth = scan.eav(root_entity, "theme/page-width")[0];
   const headingFont = scan.eav(root_entity, "theme/heading-font")[0];
   const bodyFont = scan.eav(root_entity, "theme/body-font")[0];
@@ -120,6 +122,23 @@ export async function extractThemeFromFacts(
         repeat: !!backgroundImageRepeat?.data.value,
         ...(backgroundImageRepeat?.data.value && {
           width: Math.floor(backgroundImageRepeat.data.value),
+        }),
+      };
+    }
+  }
+
+  if (wordmarkImage?.data) {
+    const imageData = await fetch(wordmarkImage.data.src);
+    if (imageData.status === 200) {
+      const binary = await imageData.blob();
+      const blob = await agent.com.atproto.repo.uploadBlob(binary, {
+        headers: { "Content-Type": binary.type },
+      });
+      theme.wordmark = {
+        $type: "pub.leaflet.theme.wordmark",
+        image: blob.data.blob,
+        ...(wordmarkWidth?.data.value && {
+          width: Math.floor(wordmarkWidth.data.value),
         }),
       };
     }

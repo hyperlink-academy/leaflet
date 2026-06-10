@@ -8,10 +8,12 @@ import {
   type SubscribeData,
 } from "./PublicationHeader";
 import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
+import type { WordmarkData } from "src/utils/wordmark";
 
 export function PublicationHomeLayout(props: {
   showPageBackground: boolean;
   iconUrl?: string;
+  wordmark?: WordmarkData | null;
   author?: React.ReactNode;
   navPages: PublicationNavPage[];
   publicationUrl: string;
@@ -37,6 +39,7 @@ export function PublicationHomeLayout(props: {
         <div className="sm:max-w-(--page-width-units) mx-auto ">
           <NewPublicationHeader
             iconUrl={props.iconUrl}
+            wordmark={props.wordmark}
             description={props.subscribe.publicationDescription}
             hasNav={props.navPages.length > 1}
             subscribe={props.subscribe}

@@ -2327,6 +2327,10 @@ export const schemaDict = {
             type: 'ref',
             ref: 'lex:pub.leaflet.theme.backgroundImage',
           },
+          wordmark: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.wordmark',
+          },
           pageWidth: {
             type: 'integer',
             minimum: 0,
@@ -2648,6 +2652,26 @@ export const schemaDict = {
             type: 'integer',
             maximum: 255,
             minimum: 0,
+          },
+        },
+      },
+    },
+  },
+  PubLeafletThemeWordmark: {
+    lexicon: 1,
+    id: 'pub.leaflet.theme.wordmark',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['image'],
+        properties: {
+          image: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          width: {
+            type: 'integer',
           },
         },
       },
@@ -3045,6 +3069,7 @@ export const ids = {
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
   PubLeafletThemeColor: 'pub.leaflet.theme.color',
+  PubLeafletThemeWordmark: 'pub.leaflet.theme.wordmark',
   SiteStandardDocument: 'site.standard.document',
   SiteStandardGraphRecommend: 'site.standard.graph.recommend',
   SiteStandardGraphSubscription: 'site.standard.graph.subscription',

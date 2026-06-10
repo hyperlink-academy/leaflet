@@ -128,6 +128,15 @@ function PublicationDraftEditorContent(props: {
   let pageWidth = useEntity(props.leaflet_id, "theme/page-width")?.data.value;
   let narrowPage = pageWidth && pageWidth < 480;
   let hideSubscribeInHeader = !narrowPage;
+  // Wordmark draft state, rendered live in the header in place of logo + name.
+  let wordmarkImage = useEntity(props.leaflet_id, "theme/wordmark-image");
+  let wordmarkWidth = useEntity(props.leaflet_id, "theme/wordmark-width");
+  let wordmark = wordmarkImage
+    ? {
+        src: wordmarkImage.data.src,
+        width: wordmarkWidth?.data.value ?? undefined,
+      }
+    : null;
   // Read from the live theme context so the layout responds to page-background
   // toggles in the theme editor.
   let cardBorderHidden = useCardBorderHiddenContext();
@@ -151,6 +160,7 @@ function PublicationDraftEditorContent(props: {
               edit
               hideSubscribeInHeader={hideSubscribeInHeader}
               iconUrl={props.iconUrl}
+              wordmark={wordmark}
               description={record?.description}
               subscribe={{
                 publicationUri: props.publicationUri,
