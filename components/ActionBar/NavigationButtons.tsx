@@ -1,6 +1,5 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { HomeSmall } from "components/Icons/HomeSmall";
 import { ActionButton } from "./ActionButton";
 import { useIdentityData } from "components/IdentityProvider";
 import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
@@ -10,41 +9,17 @@ import {
 } from "components/Icons/NotificationSmall";
 import { SpeedyLink } from "components/SpeedyLink";
 import { WriterSmall } from "components/Icons/WriterSmall";
-export type navPages =
-  | "home"
-  | "reader"
-  | "pub"
-  | "notifications"
-  | "looseleafs"
-  | "tag"
-  | "profile"
-  | "discover";
-
 function useIsActive(href: string) {
   let pathname = usePathname();
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export const WRITER_PATHS = ["/home", "/looseleafs", "/notifications"] as const;
+const WRITER_PATHS = ["/home", "/looseleafs", "/notifications"] as const;
 
 export function useIsOnWriterPage() {
   let pathname = usePathname();
   return WRITER_PATHS.some((p) => pathname.startsWith(p));
 }
-
-export const HomeButton = (props: { className?: string }) => {
-  let current = useIsActive("/home");
-  return (
-    <SpeedyLink href={"/home"} className="hover:!no-underline">
-      <ActionButton
-        icon={<HomeSmall />}
-        label="Home"
-        active={current}
-        className={`w-full! ${props.className}`}
-      />
-    </SpeedyLink>
-  );
-};
 
 export const WriterButton = () => {
   let current = useIsOnWriterPage();

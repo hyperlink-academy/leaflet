@@ -1,10 +1,7 @@
 import React from "react";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
 import { PublicationAuthor } from "./PublicationAuthor";
-import {
-  normalizePublicationRecord,
-  normalizeDocumentRecord,
-} from "src/utils/normalizeRecords";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -13,44 +10,12 @@ import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { publishedNavPages } from "src/utils/publishedPageMetadata";
 import {
   PublicationPostsList,
+  buildPublicationPosts,
   type PublicationPostsListPost,
   type PublicationPostsListFakePost,
 } from "./PublicationPostsList";
 
 type FakePost = PublicationPostsListFakePost;
-
-type HomepageDocuments = {
-  documents: {
-    uri: string;
-    data: unknown;
-    comments_on_documents: { count: number }[];
-    document_mentions_in_bsky: { count: number }[];
-    recommends_on_documents: { count: number }[];
-  } | null;
-}[];
-
-// Builds the post list for the default homepage from the raw
-// documents_in_publications rows. Shared by the server page (which then
-// resolves bylines via getProfiles) and the in-component fallback used by the
-// client theme preview.
-export function buildHomepagePosts(
-  documentsInPublications: HomepageDocuments,
-): PublicationPostsListPost[] {
-  return documentsInPublications
-    .map((dip) => {
-      if (!dip.documents) return null;
-      const normalized = normalizeDocumentRecord(dip.documents.data);
-      if (!normalized) return null;
-      return {
-        uri: dip.documents.uri,
-        record: normalized,
-        commentsCount: dip.documents.comments_on_documents[0]?.count || 0,
-        mentionsCount: dip.documents.document_mentions_in_bsky[0]?.count || 0,
-        recommendsCount: dip.documents.recommends_on_documents?.[0]?.count || 0,
-      };
-    })
-    .filter((p): p is PublicationPostsListPost => p !== null);
-}
 
 export const DefaultPublicationHomepage = ({
   record,
@@ -100,7 +65,7 @@ export const DefaultPublicationHomepage = ({
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
     : (resolvedPosts ??
-      buildHomepagePosts(publication.documents_in_publications));
+      buildPublicationPosts(publication.documents_in_publications));
   return (
     <>
       <FontLoader

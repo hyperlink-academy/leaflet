@@ -6,6 +6,7 @@ import type {
   NormalizedDocument,
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import type { BylineProfile } from "src/utils/byline";
 import { enrichDocumentToPost } from "./enrichPost";
 
 export type Cursor = {
@@ -79,6 +80,9 @@ export async function getReaderFeed(
 
 export type Post = {
   author: string | null;
+  // Ordered byline profiles (contributors, or the lone author as a fallback)
+  // resolved via the profile cache so listings can render display names.
+  contributors: BylineProfile[];
   publication?: {
     href: string;
     pubRecord: NormalizedPublication | null;

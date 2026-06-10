@@ -19,7 +19,7 @@ type PopoverState = {
   close: () => void;
 };
 
-export const usePublishedFootnotePopoverStore = create<PopoverState>((set) => ({
+const usePublishedFootnotePopoverStore = create<PopoverState>((set) => ({
   activeFootnoteId: null,
   anchorElement: null,
   open: (footnoteId, anchor) =>

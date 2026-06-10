@@ -26,7 +26,7 @@ export function parseHSBToRGB(color: string) {
   }
 }
 
-export function normalizeHue(hue: number) {
+function normalizeHue(hue: number) {
   if (hue === 360) {
     return hue;
   }

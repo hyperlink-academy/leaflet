@@ -13,7 +13,7 @@ import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 
 // --- Auth ---
 
-export type AuthResult = {
+type AuthResult = {
   tokenId: string;
   rootEntity: string;
   tokenRights: {
@@ -451,7 +451,7 @@ async function renderListToHTML(l: List, allFacts: FactRow[]): Promise<string> {
   }</li>`;
 }
 
-export async function blocksToHTML(
+async function blocksToHTML(
   blocks: Block[],
   allFacts: FactRow[],
 ): Promise<string[]> {

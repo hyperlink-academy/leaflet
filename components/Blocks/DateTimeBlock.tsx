@@ -32,9 +32,7 @@ export function DateTimeBlock(props: BlockProps) {
   return <BaseDateTimeBlock {...props} initalLoad={initialPageLoad} />;
 }
 
-export function BaseDateTimeBlock(
-  props: BlockProps & { initalLoad?: boolean },
-) {
+function BaseDateTimeBlock(props: BlockProps & { initalLoad?: boolean }) {
   let { rep } = useReplicache();
   let { permissions } = useEntitySetContext();
   let dateFact = useEntity(props.entityID, "block/date-time");

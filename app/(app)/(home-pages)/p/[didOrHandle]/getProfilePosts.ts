@@ -8,7 +8,9 @@ import {
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
+import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 import { idResolver } from "src/identity";
+import { AtUri } from "@atproto/api";
 
 export type Cursor = {
   sort_date: string;
@@ -53,6 +55,10 @@ export async function getProfilePosts(
 
     let post: Post = {
       author: handle,
+      contributors: await resolveBylineProfiles(
+        normalizedData,
+        new AtUri(row.uri).host,
+      ),
       documents: {
         data: normalizedData,
         uri: row.uri,

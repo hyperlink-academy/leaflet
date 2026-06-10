@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, ReactNode } from "react";
 import { useUIState } from "src/useUIState";
 
-export type FootnoteSideItem = {
+type FootnoteSideItem = {
   id: string;
   index: number;
 };

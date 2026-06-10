@@ -60,6 +60,7 @@ export function PublicationHomeLayout(props: {
     <div className="pubFullHeader shrink-0">
       <div className="sm:max-w-(--page-width-units) w-full mx-auto px-3 sm:px-4 pt-5">
         <PublicationHeader
+          variant="stacked"
           iconUrl={props.iconUrl}
           publicationName={props.subscribe.publicationName}
           description={props.subscribe.publicationDescription}

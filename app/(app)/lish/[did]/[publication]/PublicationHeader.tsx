@@ -43,7 +43,7 @@ export function PublicationHeader(props: {
   let variant = props.variant ?? "stacked";
   let icon = props.iconUrl ? (
     <div
-      className={`pubHeaderIcon shrink-0 rounded-full${variant === "stacked" ? " mx-auto" : ""}`}
+      className={`pubHeaderIcon shrink-0 rounded-full w-12 h-12 ${variant === "stacked" ? " mx-auto" : ""}`}
       style={{
         backgroundImage: `url(${props.iconUrl})`,
         backgroundRepeat: "no-repeat",

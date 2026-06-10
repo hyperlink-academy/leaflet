@@ -247,7 +247,7 @@ const PostsListBlockAttributes = {
   },
 } as const;
 
-export const ThemeAttributes = {
+const ThemeAttributes = {
   "theme/heading-font": {
     type: "string",
     cardinality: "one",

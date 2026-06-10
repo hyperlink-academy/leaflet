@@ -32,6 +32,7 @@ export type Fact<A extends Attribute> = {
   entity: string;
   attribute: A;
   data: Data<A>;
+  author_did?: string | null;
 };
 
 let ReplicacheContext = createContext({

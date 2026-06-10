@@ -14,7 +14,7 @@ import {
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PubThemeDefaults } from "./themeDefaults";
 
-export type PubThemeSource =
+type PubThemeSource =
   | {
       theme?: PubLeafletPublication.Theme | null;
       basicTheme?: SiteStandardThemeBasic.Main | null;

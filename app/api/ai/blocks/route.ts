@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
         tx,
         auth.tokenId,
         token_rights,
+        null,
       );
       let ctx = getContext("ai-api", 0);
 

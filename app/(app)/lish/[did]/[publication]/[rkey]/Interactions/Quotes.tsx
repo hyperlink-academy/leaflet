@@ -42,7 +42,7 @@ function engagementScore(post: PostView | undefined): number {
 }
 
 // Helper to get SWR key for quotes
-export function getQuotesSWRKey(uris: string[]) {
+function getQuotesSWRKey(uris: string[]) {
   if (uris.length === 0) return null;
   const params = new URLSearchParams({
     uris: JSON.stringify(uris),

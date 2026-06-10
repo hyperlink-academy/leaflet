@@ -7,6 +7,7 @@ import {
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
 import { idResolver } from "src/identity";
+import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 import type { Post } from "./getReaderFeed";
 
 type RawDocument = {
@@ -50,6 +51,8 @@ export async function enrichDocumentToPost(
     doc.document_mentions_in_bsky?.[0]?.count || 0,
   );
 
+  const contributors = await resolveBylineProfiles(normalizedData, uri.host);
+
   return {
     publication: pub
       ? {
@@ -61,6 +64,7 @@ export async function enrichDocumentToPost(
     author: handle?.alsoKnownAs?.[0]
       ? `@${handle.alsoKnownAs[0].slice(5)}`
       : null,
+    contributors,
     documents: {
       comments_on_documents: doc.comments_on_documents,
       document_mentions_in_bsky: doc.document_mentions_in_bsky,

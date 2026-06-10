@@ -1,7 +1,7 @@
 "use client";
 import { DependencyList, useEffect, useState } from "react";
 
-export type Subscribable<Tx> = {
+type Subscribable<Tx> = {
   subscribe<Data>(
     query: (tx: Tx) => Promise<Data>,
     options: {
@@ -26,9 +26,9 @@ function doCallback() {
   }
 }
 
-export type RemoveUndefined<T> = T extends undefined ? never : T;
+type RemoveUndefined<T> = T extends undefined ? never : T;
 
-export type UseSubscribeOptions<QueryRet, Default> = {
+type UseSubscribeOptions<QueryRet, Default> = {
   /** Default can already be undefined since it is an unbounded type parameter. */
   default?: Default;
   dependencies?: DependencyList | undefined;

@@ -774,7 +774,7 @@ export type Mention =
       subscope?: SearchService.SubscopeInfo;
     };
 
-export type MentionScope =
+type MentionScope =
   | { type: "default" }
   | { type: "identities" }
   | { type: "publications" }

@@ -47,7 +47,7 @@ import {
 } from "./shared";
 import { supabaseServerClient } from "supabase/serverClient";
 
-export type PostEmailProps = {
+type PostEmailProps = {
   publicationName: string;
   publicationUrl: string;
   postTitle: string;
@@ -937,7 +937,7 @@ const listItemContent = (
   return { plaintext: "" };
 };
 
-export const List = ({
+const List = ({
   items,
   style,
   did,
@@ -1017,7 +1017,7 @@ export const List = ({
   );
 };
 
-export const LinkBlock = ({
+const LinkBlock = ({
   url,
   title,
   description,
@@ -1149,7 +1149,7 @@ export const LinkBlock = ({
   );
 };
 
-export const ImageBlock = ({
+const ImageBlock = ({
   src,
   alt,
   naturalWidth,
@@ -1186,7 +1186,7 @@ export const ImageBlock = ({
   );
 };
 
-export const ButtonBlock = ({
+const ButtonBlock = ({
   text,
   url,
   align = "center",
@@ -1246,7 +1246,7 @@ export const ButtonBlock = ({
   );
 };
 
-export const CodeBlock = ({
+const CodeBlock = ({
   code,
   language,
   borderColor,
@@ -1278,7 +1278,7 @@ export const CodeBlock = ({
   );
 };
 
-export const BlockNotSupported = ({
+const BlockNotSupported = ({
   theme = defaultEmailTheme,
   colors,
   postUrl,
@@ -1418,7 +1418,7 @@ function highlightFacetBackground(
 const defaultHighlightBackground = (theme: EmailTheme): string =>
   mixRgb(theme.accentBackground, theme.pageBackground, 75);
 
-export const RichTextSpans = ({
+const RichTextSpans = ({
   plaintext,
   facets,
   theme,

@@ -21,6 +21,7 @@ import { PostEmail } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
 import { getProfiles } from "src/identity";
 import { toBylineProfiles, formatBylineProfiles } from "src/utils/byline";
+import { isConfirmedContributor } from "src/contributorPermissions";
 
 type SendPreviewError =
   | "unauthorized"
@@ -56,7 +57,11 @@ export async function sendPostPreview(args: {
     .single();
 
   if (!publication) return Err("publication_not_found");
-  if (publication.identity_did !== identity.atp_did) return Err("unauthorized");
+  const isOwner = publication.identity_did === identity.atp_did;
+  const isContributor =
+    isOwner ||
+    (await isConfirmedContributor(args.publication_uri, identity.atp_did));
+  if (!isContributor) return Err("unauthorized");
 
   const settings = publication.publication_newsletter_settings;
   if (!settings?.enabled) {

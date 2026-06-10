@@ -5,7 +5,7 @@ import { useSelectedLayoutSegment } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
-export type ProfileTabType = "posts" | "comments" | "subscriptions";
+type ProfileTabType = "posts" | "comments" | "subscriptions";
 
 export const ProfileTabs = (props: { didOrHandle: string }) => {
   const cardBorderHidden = useCardBorderHidden();

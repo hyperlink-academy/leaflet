@@ -90,7 +90,7 @@ export function TextAlignmentButton(props: {
   );
 }
 
-export const AlignLeftSmall = (props: Props) => {
+const AlignLeftSmall = (props: Props) => {
   return (
     <svg
       width="24"
@@ -109,7 +109,7 @@ export const AlignLeftSmall = (props: Props) => {
     </svg>
   );
 };
-export const AlignCenterSmall = (props: Props) => {
+const AlignCenterSmall = (props: Props) => {
   return (
     <svg
       width="24"
@@ -128,7 +128,7 @@ export const AlignCenterSmall = (props: Props) => {
     </svg>
   );
 };
-export const AlignRightSmall = (props: Props) => {
+const AlignRightSmall = (props: Props) => {
   return (
     <svg
       width="24"
@@ -148,7 +148,7 @@ export const AlignRightSmall = (props: Props) => {
   );
 };
 
-export const AlignJustifiedSmall = (props: Props) => {
+const AlignJustifiedSmall = (props: Props) => {
   return (
     <svg
       width="24"

@@ -8,7 +8,7 @@ const CONTENT_BLOB_THRESHOLD = 100 * 1024;
 // referenced by the record after pages are offloaded to a JSON blob — the PDS
 // only scans the record itself for blob references when deciding what to
 // garbage-collect.
-export function collectBlobRefs(value: unknown): BlobRef[] {
+function collectBlobRefs(value: unknown): BlobRef[] {
   const out: BlobRef[] = [];
   const visit = (v: unknown) => {
     if (v instanceof BlobRef) {

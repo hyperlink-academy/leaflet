@@ -1,9 +1,9 @@
-export function gcd(a: number, b: number): number {
+function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
 }
 
 // Find the simplest fraction close to a decimal by testing small denominators
-export function toFraction(
+function toFraction(
   decimal: number,
   maxDenominator = 100,
 ): [number, number] {

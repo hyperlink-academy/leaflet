@@ -78,9 +78,6 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
           <div className="font-bold text-tertiary px-1 h-[20px] text-sm flex place-items-center bg-border-light rounded-md ">
             DRAFT
           </div>
-          {pub.publications && leaflet_id && (
-            <DraftContributorSelector leaflet_id={leaflet_id} />
-          )}
         </div>
       }
       postTitle={
@@ -111,30 +108,37 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
       }
       postInfo={
         <>
-          {pub.doc ? (
-            <div className="flex gap-2 items-center">
-              <p className="text-sm text-tertiary">
-                Published{" "}
-                {publishedAt && (
-                  <Backdater publishedAt={publishedAt} docURI={pub.doc} />
-                )}
-              </p>
+          <div className="flex gap-1 items-center">
+            {pub.publications && leaflet_id && (
+              <>
+                <DraftContributorSelector leaflet_id={leaflet_id} />
+              </>
+            )}
+            {pub.doc ? (
+              <div className="flex gap-2 items-center">
+                <p className="text-sm text-tertiary">
+                  Published{" "}
+                  {publishedAt && (
+                    <Backdater publishedAt={publishedAt} docURI={pub.doc} />
+                  )}
+                </p>
 
-              <Link
-                target="_blank"
-                className="text-sm"
-                href={
-                  pub.publications
-                    ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
-                    : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
-                }
-              >
-                View
-              </Link>
-            </div>
-          ) : (
-            <p>Draft</p>
-          )}
+                <Link
+                  target="_blank"
+                  className="text-sm"
+                  href={
+                    pub.publications
+                      ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
+                      : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
+                  }
+                >
+                  View
+                </Link>
+              </div>
+            ) : (
+              <p>Draft</p>
+            )}
+          </div>
           {!props.noInteractions && (
             <div className="flex gap-2 text-border items-center">
               {merged.showRecommends !== false && (
@@ -167,7 +171,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
   );
 };
 
-export const TextField = ({
+const TextField = ({
   value,
   onChange,
   className,

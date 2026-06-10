@@ -10,9 +10,9 @@ export function useCardBorderHiddenContext() {
 }
 
 // Context for hasBackgroundImage
-export const HasBackgroundImageContext = createContext<boolean>(false);
+const HasBackgroundImageContext = createContext<boolean>(false);
 
-export function useHasBackgroundImageContext() {
+function useHasBackgroundImageContext() {
   return useContext(HasBackgroundImageContext);
 }
 import {

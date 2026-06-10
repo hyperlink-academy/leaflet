@@ -5,8 +5,6 @@ import type { PostPageData } from "app/(app)/lish/[did]/[publication]/[rkey]/get
 // Derive types from PostPageData
 type NonNullPostPageData = NonNullable<PostPageData>;
 export type PublicationContext = NonNullPostPageData["publication"];
-export type DocumentMention = NonNullPostPageData["mentions"][number];
-export type QuotesAndMentions = NonNullPostPageData["quotesAndMentions"];
 
 export type DocumentContextValue = Pick<
   NonNullPostPageData,

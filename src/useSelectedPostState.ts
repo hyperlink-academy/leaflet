@@ -4,7 +4,7 @@ import type {
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
 
-export type SelectedPostListing = {
+type SelectedPostListing = {
   document_uri: string;
   document: NormalizedDocument;
   publication?: NormalizedPublication;

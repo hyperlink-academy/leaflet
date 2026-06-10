@@ -85,7 +85,7 @@ export const PageOptions = (props: {
   );
 };
 
-export const UndoButtons = () => {
+const UndoButtons = () => {
   let undoState = useUndoState();
   let { undoManager } = useReplicache();
   return (
@@ -109,7 +109,7 @@ export const UndoButtons = () => {
   );
 };
 
-export const OptionsMenu = (props: { entityID: string; first: boolean }) => {
+const OptionsMenu = (props: { entityID: string; first: boolean }) => {
   let [state, setState] = useState<"normal" | "theme" | "share">("normal");
   let { permissions } = useEntitySetContext();
   if (!permissions.write) return null;

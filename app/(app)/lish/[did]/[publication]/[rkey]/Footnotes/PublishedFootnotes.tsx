@@ -130,7 +130,7 @@ export function PublishedFootnoteSection(props: {
   );
 }
 
-export function PublishedFootnoteItem(props: { footnote: PublishedFootnote }) {
+function PublishedFootnoteItem(props: { footnote: PublishedFootnote }) {
   let fn = props.footnote;
   return (
     <FootnoteItemLayout

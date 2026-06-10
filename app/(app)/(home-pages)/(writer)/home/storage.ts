@@ -1,7 +1,7 @@
 import type { PermissionToken } from "src/replicache";
 import { mutate } from "swr";
 
-export type HomeDoc = {
+type HomeDoc = {
   token: PermissionToken;
   added_at: string;
   hidden?: boolean;
@@ -37,16 +37,6 @@ export function addDocToHome(doc: PermissionToken) {
   let newValue: HomeDocsStorage = {
     version: 1,
     docs: homepageDocs,
-  };
-  window.localStorage.setItem(key, JSON.stringify(newValue));
-}
-
-export function removeDocFromHome(doc: PermissionToken) {
-  let homepageDocs = getHomeDocs();
-  let newDocs = homepageDocs.filter((d) => d.token.id !== doc.id);
-  let newValue: HomeDocsStorage = {
-    version: 1,
-    docs: newDocs,
   };
   window.localStorage.setItem(key, JSON.stringify(newValue));
 }

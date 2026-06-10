@@ -74,11 +74,11 @@ export const facts = pgTable("facts", {
 	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "restrict" } ),
 	attribute: text("attribute").notNull(),
 	data: jsonb("data").notNull(),
+	author_did: text("author_did"),
 	created_at: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updated_at: timestamp("updated_at", { mode: 'string' }),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
-	author_did: text("author_did"),
 },
 (table) => {
 	return {

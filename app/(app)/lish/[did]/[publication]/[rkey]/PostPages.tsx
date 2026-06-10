@@ -23,10 +23,6 @@ import { CanvasPage } from "./CanvasPage";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import {
   type OpenPage,
-  type DocPage,
-  type ThreadPage,
-  type QuotesPage,
-  type IframePage,
   getPageKey,
   useOpenPages,
   useInitializeOpenPages,
@@ -36,14 +32,7 @@ import {
 import { IframePageView } from "components/Pages/IframePageView";
 import type { BylineProfile } from "./PostHeader/PostHeader";
 
-export type { DocPage, ThreadPage, QuotesPage, IframePage, OpenPage };
-export {
-  getPageKey,
-  useOpenPages,
-  useInitializeOpenPages,
-  openPageAction as openPage,
-  closePage,
-};
+export type { OpenPage };
 
 // Shared props type for both page components
 export type SharedPageProps = {

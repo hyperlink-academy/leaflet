@@ -82,7 +82,7 @@ export function TextBlock(
   );
 }
 
-export function IOSBS(props: BlockProps) {
+function IOSBS(props: BlockProps) {
   let [initialRender, setInitialRender] = useState(true);
   useEffect(() => {
     setInitialRender(false);
@@ -201,7 +201,7 @@ export function RenderedTextBlock(props: {
   );
 }
 
-export function BaseTextBlock(props: BlockProps & { className?: string }) {
+function BaseTextBlock(props: BlockProps & { className?: string }) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =

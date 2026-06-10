@@ -108,21 +108,30 @@ export default async function PublicationDashboardLayout(props: {
           actions={
             <>
               <Actions publication={publication.uri} />
-              <EditPagesNavLink
-                publication={publication.uri}
-                did={uri.host}
-                publicationName={uri.rkey}
-              />
+              {isOwner && (
+                <EditPagesNavLink
+                  publication={publication.uri}
+                  did={uri.host}
+                  publicationName={uri.rkey}
+                />
+              )}
             </>
           }
           tabs={{
             Drafts: { href: baseHref, icon: <ArchiveSmall /> },
             Posts: { href: `${baseHref}/posts`, icon: <PublishSmall /> },
-            Subs: { href: `${baseHref}/subs`, icon: <SubscribersSmall /> },
-            Analytics: {
-              href: `${baseHref}/analytics`,
-              icon: <AnalyticsSmall />,
-            },
+            ...(isOwner
+              ? {
+                  Subs: {
+                    href: `${baseHref}/subs`,
+                    icon: <SubscribersSmall />,
+                  },
+                  Analytics: {
+                    href: `${baseHref}/analytics`,
+                    icon: <AnalyticsSmall />,
+                  },
+                }
+              : {}),
             Settings: {
               href: `${baseHref}/settings`,
               icon: <SettingsSmall />,

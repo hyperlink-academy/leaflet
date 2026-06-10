@@ -80,7 +80,7 @@ export const fonts: Record<string, FontConfig> = {
 };
 
 export const defaultFontId = "quattro";
-export const defaultBaseSize = 16;
+const defaultBaseSize = 16;
 
 // Parse a Google Fonts URL or string to extract the font name and family parameter
 // Supports various formats:
@@ -135,7 +135,7 @@ export function isCustomFontId(fontId: string): boolean {
   return fontId.startsWith("custom:");
 }
 
-export function parseCustomFontId(fontId: string): {
+function parseCustomFontId(fontId: string): {
   fontName: string;
   googleFontsFamily: string;
 } | null {

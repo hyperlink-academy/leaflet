@@ -56,7 +56,7 @@ function withDefaults(stored: DashboardState | undefined): DashboardState {
   };
 }
 
-export const useDashboardStore = create<DashboardStore>((set) => ({
+const useDashboardStore = create<DashboardStore>((set) => ({
   dashboards: {},
   setDashboard: (id: string, partial: Partial<DashboardState>) => {
     set((state) => ({
@@ -73,7 +73,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
 
 export const DashboardIdContext = createContext<string | null>(null);
 
-export const useDashboardId = () => {
+const useDashboardId = () => {
   const id = useContext(DashboardIdContext);
   if (!id) {
     throw new Error("useDashboardId must be used within a DashboardLayout");

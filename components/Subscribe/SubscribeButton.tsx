@@ -30,6 +30,8 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 type SubscribeMode = "email" | "atproto";
 
 export type SubscribeProps = {
+  autoFocus?: boolean;
+  compact?: boolean;
   publicationUri: string;
   publicationUrl?: string;
   publicationName: string;

@@ -37,7 +37,7 @@ export const LooseleafsContent = (props: {
   );
 };
 
-export const LooseleafList = (props: {
+const LooseleafList = (props: {
   titles: { [root_entity: string]: string };
   searchValue: string;
 }) => {

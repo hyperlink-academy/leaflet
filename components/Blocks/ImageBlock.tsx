@@ -9,7 +9,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage, localImages } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
@@ -184,19 +184,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     </BlockLayout>
   );
 }
-
-export const FullBleedSelectionIndicator = () => {
-  return (
-    <div
-      className={`absolute top-3 sm:top-4 bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 border-2 border-bg-page rounded-lg outline-offset-1 outline-solid outline-2 outline-tertiary`}
-    />
-  );
-};
-
-export const ImageBlockContext = createContext({
-  altEditorOpen: false,
-  setAltEditorOpen: (s: boolean) => {},
-});
 
 const CoverImageButton = (props: { entityID: string }) => {
   let { rep } = useReplicache();

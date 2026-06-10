@@ -162,7 +162,10 @@ const PublishPostForm = (
       entitiesToDelete: props.entitiesToDelete,
       publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
       postPreferences,
-      sendEmail: shareState.email,
+      // Posting quietly forces every share channel off, mirroring the UI where
+      // checking "Post Quietly" unchecks all the other options.
+      sendEmail: shareState.email && !shareState.quiet,
+      showInDiscover: shareState.postToReaders && !shareState.quiet,
     });
 
     if (!result.success) {
@@ -181,7 +184,7 @@ const PublishPostForm = (
     let [text, facets] = editorStateRef.current
       ? editorStateToFacetedText(editorStateRef.current)
       : [];
-    if (shareState.bluesky) {
+    if (shareState.bluesky && !shareState.quiet) {
       let bskyResult = await publishPostToBsky({
         facets: facets || [],
         text: text || "",
@@ -192,9 +195,7 @@ const PublishPostForm = (
         rkey: result.rkey,
         // For publications the post must be authored by the owner's PDS (where
         // the record lives); standalone publishes leave this undefined.
-        ownerDid: props.publication_uri
-          ? props.publicationOwnerDid
-          : undefined,
+        ownerDid: props.publication_uri ? props.publicationOwnerDid : undefined,
       });
       if (!bskyResult.success && isOAuthSessionError(bskyResult.error)) {
         setIsLoading(false);
@@ -249,7 +250,7 @@ const PublishPostForm = (
                         setShowTagSelector(true);
                       }}
                     >
-                      No Tags
+                      Add Tags
                     </button>
                   )}
                 </div>
@@ -458,10 +459,7 @@ const PublicationSocialPreview = (props: {
 }) => {
   const pub_creator = new AtUri(props.publication_uri).host;
   return (
-    <PublicationThemeProvider
-      record={props.record}
-      pub_creator={pub_creator}
-    >
+    <PublicationThemeProvider record={props.record} pub_creator={pub_creator}>
       <PublicationBackgroundProvider
         record={props.record}
         pub_creator={pub_creator}

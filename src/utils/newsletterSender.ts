@@ -1,4 +1,4 @@
-export const NEWSLETTER_FROM_SUFFIX = "@email.leaflet.pub";
+const NEWSLETTER_FROM_SUFFIX = "@email.leaflet.pub";
 export const NO_REPLY_EMAIL = "no-reply@leaflet.pub";
 
 export function resolveFromDomain(

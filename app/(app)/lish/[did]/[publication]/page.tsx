@@ -8,10 +8,8 @@ import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import {
-  DefaultPublicationHomepage,
-  buildHomepagePosts,
-} from "./DefaultPublicationHomepage";
+import { DefaultPublicationHomepage } from "./DefaultPublicationHomepage";
+import { buildPublicationPosts } from "./PublicationPostsList";
 import { tryRenderPublicationPage } from "./tryRenderPublicationPage";
 import { getProfiles } from "src/identity";
 import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
@@ -66,7 +64,7 @@ export default async function Publication(props: {
     });
     if (homePageRender) return homePageRender;
     // Resolve post bylines server-side so author names are in the SSR HTML.
-    const homepagePosts = buildHomepagePosts(
+    const homepagePosts = buildPublicationPosts(
       publication.documents_in_publications,
     );
     const homepagePostsWithByline = attachBylineProfiles(

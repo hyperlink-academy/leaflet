@@ -8,7 +8,7 @@ import { getProfiles, type Profile } from "src/identity";
 import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 export const getIdentityData = cache(uncachedGetIdentityData);
-export async function uncachedGetIdentityData() {
+async function uncachedGetIdentityData() {
   let cookieStore = await cookies();
   let auth_token =
     cookieStore.get("auth_token")?.value ||

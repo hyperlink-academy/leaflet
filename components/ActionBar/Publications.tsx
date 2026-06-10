@@ -93,7 +93,7 @@ export const PublicationButtons = (props: { className?: string }) => {
   );
 };
 
-export const PublicationOption = (props: {
+const PublicationOption = (props: {
   uri: string;
   name: string;
   record: Json;

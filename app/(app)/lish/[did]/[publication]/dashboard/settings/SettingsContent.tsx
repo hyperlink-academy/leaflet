@@ -18,6 +18,7 @@ import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { ManageProSubscription, NewsletterSettings } from "./ProSettings";
 import { ContributorSettings } from "./ContributorSettings";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
+import { useIdentityData } from "components/IdentityProvider";
 import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
@@ -30,6 +31,9 @@ type SettingsView = "all" | "theme";
 export function SettingsContent(props: { showPageBackground: boolean }) {
   let { data } = usePublicationData();
   let { publication: pubData } = data || {};
+  let { identity } = useIdentityData();
+  let isOwner =
+    !!identity?.atp_did && identity.atp_did === pubData?.identity_did;
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
   let record = useNormalizedPublicationRecord();
@@ -130,6 +134,18 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
     showRecommends,
     showPrevNext,
   ]);
+
+  // Contributors (non-owners) only get the contributor settings — they can't
+  // edit the publication's general/theme/post/domain/pro settings or delete it.
+  if (!isOwner) {
+    return (
+      <div className="flex flex-col w-full pb-8">
+        <div className="flex flex-col gap-6 relative">
+          <ContributorSettings />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form

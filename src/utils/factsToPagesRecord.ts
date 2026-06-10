@@ -69,7 +69,7 @@ export type ProcessBlocksToPagesHooks = {
     | null;
 };
 
-export type ProcessBlocksToPagesResult = {
+type ProcessBlocksToPagesResult = {
   pages: {
     id: string;
     blocks:
@@ -630,11 +630,11 @@ export async function processBlocksToPages(opts: {
   }
 }
 
-export type HighlightColors = Partial<
+type HighlightColors = Partial<
   Record<"1" | "2" | "3", PubLeafletRichtextFacet.Highlight["color"]>
 >;
 
-export function YJSFragmentToFacets(
+function YJSFragmentToFacets(
   node: Y.XmlElement | Y.XmlText | Y.XmlHook,
   byteOffset: number = 0,
   footnoteContentResolver?: (footnoteEntityID: string) => {

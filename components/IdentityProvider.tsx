@@ -10,7 +10,7 @@ export type InterfaceState = {
   dashboards: { [id: string]: DashboardState | undefined };
 };
 export type Identity = Awaited<ReturnType<typeof getIdentityData>>;
-export let IdentityContext = createContext({
+let IdentityContext = createContext({
   identity: null as Identity,
   mutate: (() => {}) as KeyedMutator<Identity>,
 });

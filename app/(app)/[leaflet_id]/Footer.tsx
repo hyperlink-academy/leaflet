@@ -56,6 +56,13 @@ export function LeafletFooter(props: { entityID: string }) {
     !!pub?.publications &&
     !!identity?.atp_did &&
     pub.publications.identity_did === identity.atp_did;
+  let isContributorToPub =
+    !!pub?.publications &&
+    !!identity?.atp_did &&
+    !!pub.publications.publication_contributors?.some(
+      (c) => c.contributor_did === identity.atp_did && c.confirmed,
+    );
+  let canManagePubDraft = isOwnerOfPub || isContributorToPub;
 
   return (
     <Media
@@ -89,14 +96,14 @@ export function LeafletFooter(props: { entityID: string }) {
         </FooterLayout>
       ) : entity_set.permissions.write ? (
         <FooterLayout>
-          {isOwnerOfPub && pub?.publications ? (
+          {canManagePubDraft && pub?.publications ? (
             <BackToPubButton publication={pub.publications} />
           ) : (
             <HomeButton />
           )}
 
           <div className="mobileLeafletActions flex gap-2 shrink-0">
-            {isOwnerOfPub || isOnHome ? (
+            {canManagePubDraft || isOnHome ? (
               <PublishButton entityID={props.entityID} />
             ) : (
               <AddToHomeButton primary />
