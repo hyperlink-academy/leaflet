@@ -1,6 +1,6 @@
 import { cache } from "react";
 import Client from "ioredis";
-import { getAgent } from "app/api/bsky/agent";
+import { getPublicAgent } from "app/api/bsky/agent";
 
 export type Profile = {
   did: string;
@@ -70,7 +70,10 @@ async function fetchProfiles(dids: string[]): Promise<FetchResult> {
   for (const did of dids) results.set(did, null);
   if (dids.length === 0) return { results, toCache };
 
-  const agent = await getAgent();
+  // getProfiles is a public AppView read — no auth needed. Using a public agent
+  // avoids restoring the viewer's OAuth session on every render (which races
+  // concurrent token refreshes and triggers "refreshToken replayed").
+  const agent = getPublicAgent();
   const batches: string[][] = [];
   for (let i = 0; i < dids.length; i += BATCH_SIZE) {
     batches.push(dids.slice(i, i + BATCH_SIZE));
