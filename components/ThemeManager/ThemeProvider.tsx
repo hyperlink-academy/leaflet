@@ -68,7 +68,7 @@ export function ThemeProvider(props: {
 // for PUBLICATIONS: define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
 
 // for LEAFLETS : define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
-function LeafletThemeProvider(props: {
+export function LeafletThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
   children: React.ReactNode;
@@ -241,9 +241,13 @@ export const BaseThemeProvider = ({
   const headingGoogleFontsUrl = getGoogleFontsUrl(headingFontConfig);
   const bodyGoogleFontsUrl = getGoogleFontsUrl(bodyFontConfig);
 
-  // Dynamically load Google Fonts when fonts change
+  // Dynamically load Google Fonts when fonts change. This runs even in `local`
+  // mode (unlike the CSS-variable effect below): injecting the stylesheet into
+  // <head> is a global, idempotent side effect, and editing contexts that scope
+  // their theme locally (e.g. the publication draft editor) still need the
+  // @font-face available so font changes apply immediately instead of falling
+  // back to the browser default until a reload.
   useEffect(() => {
-    if (local) return;
     const loadGoogleFont = (url: string | null, fontFamily: string) => {
       if (!url) return;
 
@@ -282,7 +286,6 @@ export const BaseThemeProvider = ({
     loadGoogleFont(headingGoogleFontsUrl, headingFontConfig.fontFamily);
     loadGoogleFont(bodyGoogleFontsUrl, bodyFontConfig.fontFamily);
   }, [
-    local,
     headingGoogleFontsUrl,
     bodyGoogleFontsUrl,
     headingFontConfig.fontFamily,

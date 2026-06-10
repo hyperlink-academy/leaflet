@@ -111,6 +111,10 @@ function resolveHighlightColors(
 export async function processBlocksToPages(opts: {
   facts: Fact<Attribute>[];
   root_entity: string;
+  // The page entity to serialize as the record's first page. Defaults to the
+  // leaflet's first root/page; publication drafts pass each nav page here
+  // (theme facts still resolve against root_entity).
+  start_page?: string;
   hooks: ProcessBlocksToPagesHooks;
 }): Promise<ProcessBlocksToPagesResult> {
   const { facts, root_entity, hooks } = opts;
@@ -119,23 +123,24 @@ export async function processBlocksToPages(opts: {
 
   const highlightColors = resolveHighlightColors(scan, root_entity);
 
-  const firstEntity = scan.eav(root_entity, "root/page")?.[0];
-  if (!firstEntity) throw new Error("No root page");
+  const startPage =
+    opts.start_page ?? scan.eav(root_entity, "root/page")?.[0]?.data.value;
+  if (!startPage) throw new Error("No root page");
 
-  const [pageType] = scan.eav(firstEntity.data.value, "page/type");
+  const [pageType] = scan.eav(startPage, "page/type");
 
   if (pageType?.data.value === "canvas") {
-    const canvasBlocks = await canvasBlocksToRecord(firstEntity.data.value);
+    const canvasBlocks = await canvasBlocksToRecord(startPage);
     pages.unshift({
-      id: firstEntity.data.value,
+      id: startPage,
       blocks: canvasBlocks,
       type: "canvas",
     });
   } else {
-    const blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
+    const blocks = getBlocksWithTypeLocal(facts, startPage);
     const b = await blocksToRecord(blocks);
     pages.unshift({
-      id: firstEntity.data.value,
+      id: startPage,
       blocks: b,
       type: "doc",
     });

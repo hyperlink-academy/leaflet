@@ -1,54 +1,37 @@
 "use client";
-import { useState } from "react";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
-import { ButtonPrimary } from "components/Buttons";
+import {
+  SubscribeButton,
+  SubscribeInput,
+} from "components/Subscribe/SubscribeButton";
 
 // The subscribe control that sits at the right edge of the publication nav.
-// Collapsed it shows a "Subscribe" button; hovering, focusing, or typing an
-// email expands it into the full SubscribeInput. Shared by the editor nav
-// (PublicationPagesNav) and the published nav (PublicationNav) so they stay
-// identical. Desktop only — mobile subscribes from the header.
+// Renders the compact SubscribeButton: a one-click subscribe for signed-in
+// users, or a "Subscribe" button that opens the full subscribe form in a
+// popover otherwise. Shared by the editor nav (PublicationPagesNav) and the
+// published nav (PublicationNav) so they stay identical. Desktop only — mobile
+// subscribes from the header.
+//
+// When `input` is set (single-page publications with no tabs to show) the nav
+// has the whole row to itself, so render the full inline SubscribeInput
+// centered instead of the compact button.
 export function PublicationNavSubscribe(props: {
+  input?: boolean;
   publicationUri: string;
   publicationUrl?: string;
   publicationName: string;
   publicationDescription?: string;
   newsletterMode: boolean;
 }) {
-  let [hovered, setHovered] = useState(false);
-  let [focused, setFocused] = useState(false);
-  let [hasValue, setHasValue] = useState(false);
-  let open = hovered || focused || hasValue;
-
+  if (props.input) {
+    return (
+      <div className="min-w-0 w-full max-w-sm mx-auto pb-1">
+        <SubscribeInput {...props} />
+      </div>
+    );
+  }
   return (
-    <div
-      className="sm:block hidden min-w-0 max-w-64 w-fit pb-1"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocus={() => setFocused(true)}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null))
-          setFocused(false);
-      }}
-      onInput={(e) => {
-        let target = e.target as HTMLInputElement;
-        if (target.type === "email") setHasValue(!!target.value);
-      }}
-    >
-      {open ? (
-        <SubscribeInput
-          compact
-          publicationUri={props.publicationUri}
-          publicationUrl={props.publicationUrl}
-          publicationName={props.publicationName}
-          publicationDescription={props.publicationDescription}
-          newsletterMode={props.newsletterMode}
-        />
-      ) : (
-        <ButtonPrimary compact className="pubPageSubscribe text-sm!">
-          Subscribe
-        </ButtonPrimary>
-      )}
+    <div className="sm:block hidden min-w-0 max-w-64 w-fit">
+      <SubscribeButton {...props} />
     </div>
   );
 }

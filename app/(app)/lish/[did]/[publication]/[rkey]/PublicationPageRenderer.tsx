@@ -20,14 +20,16 @@ import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { DocumentProvider } from "contexts/DocumentContext";
 import type { DocumentContextValue } from "contexts/DocumentContext";
 import { buildPublicationPosts } from "../PublicationPostsList";
-import { withBylineProfiles } from "src/utils/resolveBylineProfiles";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { wordmarkFromTheme } from "src/utils/wordmark";
+import { publishedNavPages } from "src/utils/publishedPageMetadata";
 
 import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { PostContent } from "./PostContent";
+import { getProfiles } from "src/identity";
+import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
 
 export type PublicationPageRecord = PubLeafletPublicationPage.Record;
 
@@ -61,7 +63,12 @@ export async function PublicationPageRenderer({
   publication,
 }: {
   did: string;
-  page: { id: number; path: string; title: string | null; record: PublicationPageRecord };
+  page: {
+    id: number;
+    path: string;
+    title: string | null;
+    record: PublicationPageRecord;
+  };
   publication: PublicationRow;
 }) {
   const normalizedPublication = normalizePublicationRecord(publication.record);
@@ -70,7 +77,7 @@ export async function PublicationPageRenderer({
 
   const allBlocks: PubLeafletPagesLinearDocument.Block[] =
     firstPage && firstPage.$type === "pub.leaflet.pages.linearDocument"
-      ? ((firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? [])
+      ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
       : [];
 
   const agent = new AtpAgent({
@@ -98,16 +105,23 @@ export async function PublicationPageRenderer({
     PubLeafletBlocksPostsList.isMain(b.block),
   );
   const postsListPosts = hasPostsList
-    ? await withBylineProfiles(
-        buildPublicationPosts(publication.documents_in_publications),
-      )
+    ? buildPublicationPosts(publication.documents_in_publications)
     : [];
+
+  // Resolve bylines server-side so post-list author names are in the SSR HTML.
+  const postsListPostsWithByline = hasPostsList
+    ? attachBylineProfiles(
+        postsListPosts,
+        await getProfiles(bylineDidsForPosts(postsListPosts)),
+      )
+    : postsListPosts;
 
   const postsListData = hasPostsList
     ? {
         publication: { uri: publication.uri, record: publication.record },
-        publicationRecord: normalizedPublication as NormalizedPublication | null,
-        posts: postsListPosts,
+        publicationRecord:
+          normalizedPublication as NormalizedPublication | null,
+        posts: postsListPostsWithByline,
       }
     : undefined;
 
@@ -116,7 +130,8 @@ export async function PublicationPageRenderer({
 
   const documentContextValue: DocumentContextValue = {
     uri: page.record.publication,
-    normalizedDocument: null as unknown as DocumentContextValue["normalizedDocument"],
+    normalizedDocument:
+      null as unknown as DocumentContextValue["normalizedDocument"],
     normalizedPublication,
     theme,
     prevNext: undefined,
@@ -139,9 +154,8 @@ export async function PublicationPageRenderer({
     recommendsCount: 0,
   };
 
-  const navPages = (publication.publication_pages ?? []).filter(
-    (p) => p.record_uri,
-  );
+  // publication_pages rows are published state, so the nav reads them directly.
+  const navPages = publishedNavPages(publication.publication_pages);
 
   return (
     <DocumentProvider value={documentContextValue}>
@@ -159,15 +173,14 @@ export async function PublicationPageRenderer({
             pub_creator={publication.identity_did}
           >
             <PublicationHomeLayout
-              uri={publication.uri}
               showPageBackground={showPageBackground}
+              pageWidth={normalizedPublication?.theme?.pageWidth}
               iconUrl={
                 normalizedPublication?.icon
                   ? blobRefToSrc(normalizedPublication.icon.ref, did)
                   : undefined
               }
-              publicationName={publication.name}
-              description={normalizedPublication?.description}
+              wordmark={wordmarkFromTheme(normalizedPublication?.theme, did)}
               navPages={navPages}
               publicationUrl={getPublicationURL(publication)}
               activePath={page.path}
@@ -180,21 +193,6 @@ export async function PublicationPageRenderer({
                 newsletterMode:
                   !!publication.publication_newsletter_settings?.enabled,
               }}
-              subscribeButton={
-                <div className="max-w-sm mx-auto">
-                  <SubscribeInput
-                    publicationUri={publication.uri}
-                    publicationUrl={normalizedPublication?.url}
-                    publicationName={
-                      normalizedPublication?.name ?? publication.name
-                    }
-                    publicationDescription={normalizedPublication?.description}
-                    newsletterMode={
-                      !!publication.publication_newsletter_settings?.enabled
-                    }
-                  />
-                </div>
-              }
             >
               <div className="pubPageContent pt-6">
                 <PostContent

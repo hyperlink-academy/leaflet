@@ -30,6 +30,7 @@ export function Page(props: {
   first?: boolean;
   fullPageScroll: boolean;
   flow?: boolean;
+  header?: React.ReactNode;
 }) {
   let { rep } = useReplicache();
   let publicationPage = useLeafletPublicationPage();
@@ -85,12 +86,15 @@ export function Page(props: {
             />
           }
         >
+          {/*this is used in the publication page, for publication information and
+          nav*/}
+          {props.header}
           {props.first && pageType === "doc" && !publicationPage && (
             <PublicationMetadata />
           )}
           <PageContent entityID={props.entityID} first={props.first} />
         </PageWrapper>
-        <DesktopPageFooter pageID={props.entityID} />
+        <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
         <FootnotePopover />
         <LinkPopover />
       </FootnoteContext.Provider>
@@ -104,8 +108,6 @@ export const PageWrapper = (props: {
   pageOptions?: React.ReactNode;
   footnoteSideColumn?: React.ReactNode;
   fullPageScroll: boolean;
-  // In flow mode the page does NOT scroll internally and sizes to its content
-  // height, so an ancestor can be the single vertical scroller.
   flow?: boolean;
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
@@ -135,7 +137,7 @@ export const PageWrapper = (props: {
         className={`
       pageScrollWrapper
       publicationScrollContainer
-      grow
+      grow relative
       shrink-0 snap-center
       ${props.flow ? "" : props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
       ${
@@ -158,12 +160,14 @@ export const PageWrapper = (props: {
 `}
       >
         <div
-          className={`postPageContent footnote-scope
-          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : `w-full ${props.flow ? "" : "h-full"}`}
+          className={`postPageContent footnote-scope static
+          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}
-          {props.pageType === "doc" && !props.noBottomSpacer && <div className="h-4 sm:h-6 w-full" />}
+          {props.pageType === "doc" && !props.noBottomSpacer && (
+            <div className="h-4 sm:h-6 w-full" />
+          )}
         </div>
       </div>
       {props.pageOptions}

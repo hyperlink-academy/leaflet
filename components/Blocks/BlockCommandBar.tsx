@@ -66,6 +66,7 @@ export const BlockCommandBar = ({
     <Combobox
       open
       triggerClassName="absolute left-0"
+      resultsClassName="py-1"
       results={commandResults.map((r) => r.name)}
       highlighted={highlighted}
       setHighlighted={setHighlighted}

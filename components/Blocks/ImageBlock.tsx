@@ -17,7 +17,10 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { set } from "colorjs.io/fn";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "components/PageSWRDataProvider";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   ImageCoverImage,
@@ -186,6 +189,7 @@ const CoverImageButton = (props: { entityID: string }) => {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pubData } = useLeafletPublicationData();
+  let publicationPage = useLeafletPublicationPage();
   let coverImage = useSubscribe(rep, (tx) =>
     tx.get<string | null>("publication_cover_image"),
   );
@@ -193,8 +197,14 @@ const CoverImageButton = (props: { entityID: string }) => {
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
 
-  // Only show if focused, in a publication, has write permissions, and no cover image is set
-  if (!isFocused || !pubData?.publications || !entity_set.permissions.write)
+  // Only show if focused, in a publication, has write permissions, and no cover image is set.
+  // Publication pages (e.g. an About page) don't have cover images, so skip them.
+  if (
+    !isFocused ||
+    !pubData?.publications ||
+    !entity_set.permissions.write ||
+    publicationPage
+  )
     return null;
   if (coverImage === props.entityID)
     return (

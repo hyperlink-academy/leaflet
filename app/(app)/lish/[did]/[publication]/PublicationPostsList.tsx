@@ -1,9 +1,11 @@
-import React from "react";
+"use client";
+
+import React, { useMemo } from "react";
 import { AtUri } from "@atproto/api";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
-import { PublicationPostItem } from "./PublicationContent";
+import { PublicationPostItem } from "./DefaultPublicationHomepage";
 import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,
@@ -16,8 +18,22 @@ import {
 } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
-import { PostByline } from "components/PostByline";
-import { namedBylineProfiles, type BylineProfile } from "src/utils/byline";
+import { useContributorProfiles } from "src/hooks/useContributorProfiles";
+import {
+  getBylineDids,
+  toBylineProfiles,
+  formatBylineProfiles,
+  type BylineProfile,
+} from "src/utils/byline";
+
+// The author DID for a post is the host of its document AT-URI.
+function postOwnerDid(uri: string): string | null {
+  try {
+    return new AtUri(uri).host;
+  } catch {
+    return null;
+  }
+}
 
 export type PublicationPostsListPost = {
   uri: string;
@@ -25,10 +41,10 @@ export type PublicationPostsListPost = {
   commentsCount: number;
   mentionsCount: number;
   recommendsCount: number;
-  // Resolved byline profiles for posts with an explicit byline (co-authors /
-  // guest authors). Empty/undefined for single-author posts, which omit the
-  // byline. Populated server-side via `withBylineProfiles`.
-  contributors?: BylineProfile[];
+  // Byline profiles resolved server-side (in order). When present, the list
+  // renders these directly; when absent (editor / theme preview) the component
+  // resolves them on the client via useContributorProfiles.
+  bylineProfiles?: BylineProfile[];
 };
 
 /**
@@ -36,8 +52,8 @@ export type PublicationPostsListPost = {
  * `documents_in_publications` rows: normalizes each document record and pulls
  * the comment / mention / recommend counts, dropping rows that can't be
  * normalized. Shared by every publication-home render path (custom page,
- * legacy fallback, theme preview) so they stay in sync. Wrap the result in
- * `withBylineProfiles` to enrich it with contributor profiles.
+ * legacy fallback, theme preview) so they stay in sync. Enrich the result with
+ * `attachBylineProfiles` to add server-resolved contributor profiles.
  */
 export function buildPublicationPosts(
   documentsInPublications:
@@ -102,6 +118,38 @@ export function PublicationPostsList({
   highlightFirstPost?: boolean;
   className?: string;
 }) {
+  // Resolve a byline name per post: the post's explicit contributors when
+  // present, otherwise the document author (publication owner). Server render
+  // paths attach `bylineProfiles` so they appear in the initial HTML; for any
+  // post without them (editor / theme preview) we resolve client-side here,
+  // batched into a single get_profiles lookup keyed on the full DID set.
+  const unresolvedDids = useMemo(() => {
+    const dids = new Set<string>();
+    for (const post of posts ?? []) {
+      if (post.bylineProfiles) continue;
+      const owner = postOwnerDid(post.uri);
+      if (!owner) continue;
+      for (const did of getBylineDids(post.record, owner)) dids.add(did);
+    }
+    return Array.from(dids);
+  }, [posts]);
+  const { data: profilesRecord } = useContributorProfiles(unresolvedDids);
+  const authorByUri = useMemo(() => {
+    const profiles = new Map(Object.entries(profilesRecord ?? {}));
+    const map = new Map<string, string | undefined>();
+    for (const post of posts ?? []) {
+      let byline = post.bylineProfiles;
+      if (!byline) {
+        const owner = postOwnerDid(post.uri);
+        byline = owner
+          ? toBylineProfiles(getBylineDids(post.record, owner), profiles)
+          : [];
+      }
+      map.set(post.uri, formatBylineProfiles(byline));
+    }
+    return map;
+  }, [posts, profilesRecord]);
+
   return (
     <div
       className={`publicationPostList w-full flex flex-col gap-2 ${className}`}
@@ -168,15 +216,6 @@ export function PublicationPostsList({
                 />
               );
 
-              // Only render a byline when contributors resolve to a real name.
-              // Pass `undefined` (not an empty node) otherwise so MetaRow
-              // doesn't draw an orphan separator before the date.
-              const namedContributors = namedBylineProfiles(post.contributors);
-              const author =
-                namedContributors.length > 0 ? (
-                  <PostByline contributors={namedContributors} />
-                ) : undefined;
-
               const isHighlightedFirst = highlightFirstPost && index === 0;
               const Variant = isHighlightedFirst
                 ? "large"
@@ -207,7 +246,7 @@ export function PublicationPostsList({
                       description={
                         doc_record.description || getFirstParagraph(doc_record)
                       }
-                      author={author}
+                      author={authorByUri.get(post.uri)}
                       date={date}
                       interactions={interactions}
                       coverImageSrc={coverImageSrc}
@@ -226,7 +265,7 @@ export function PublicationPostsList({
                       inList
                       href={docUrl}
                       title={doc_record.title}
-                      author={author}
+                      author={authorByUri.get(post.uri)}
                       date={date}
                       interactions={interactions}
                     />
@@ -244,13 +283,13 @@ export function PublicationPostsList({
                     description={
                       doc_record.description || getFirstParagraph(doc_record)
                     }
-                    author={author}
+                    author={authorByUri.get(post.uri)}
                     date={date}
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}
                     coverImageAlt={doc_record.title}
                   />
-                  <hr className="last:hidden border-border-light mx-3" />
+                  <hr className="last:hidden border-border-light" />
                 </React.Fragment>
               );
             })}

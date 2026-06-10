@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   BaseThemeProvider,
@@ -26,7 +26,9 @@ import { Separator } from "components/Layout";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import Link from "next/link";
 
-export function ThemeSettingsContent() {
+export function ThemeSettingsContent(props: {
+  homePagePreview?: ReactNode;
+}) {
   let toolbarRef = useRef<HTMLDivElement>(null);
   let [previewMode, setPreviewMode] = useState<"post" | "pub">("post");
   let params = useParams<{ did: string; publication: string }>();
@@ -105,25 +107,34 @@ export function ThemeSettingsContent() {
             localBgImage={pubBGImage}
             localBgImageRepeat={leafletBGRepeat}
           >
-            <div
-              className="mx-auto h-full w-fit"
-              onClickCapture={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            >
-              {previewMode === "pub" ? (
+            {previewMode === "pub" ? (
+              <div
+                className="h-full w-full"
+                onClickCapture={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
                 <PubPreview
                   showPageBackground={showPageBackground}
                   pageWidth={pageWidth}
+                  homePagePreview={props.homePagePreview}
                 />
-              ) : (
+              </div>
+            ) : (
+              <div
+                className="mx-auto h-full w-fit"
+                onClickCapture={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
                 <PostPreview
                   showPageBackground={showPageBackground}
                   pageWidth={pageWidth}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </PublicationBackgroundProvider>
         </div>
       </BaseThemeProvider>

@@ -130,7 +130,7 @@ function PublishedPostItem(props: {
                         },
                       ],
                       leaflets_to_documents: [],
-                      publication_pages: [],
+                      publications: [],
                       blocked_by_admin: null,
                       custom_domain_routes: [],
                     }}

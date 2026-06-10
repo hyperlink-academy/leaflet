@@ -23,6 +23,8 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { AtUri } from "@atproto/syntax";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -411,7 +413,17 @@ const PubSelector = (props: {
                 onSelect={() => props.setSelectedPub(p.uri)}
               >
                 <>
-                  <PubIcon record={pubRecord} uri={p.uri} />
+                  <PubIcon
+                    icon={
+                      pubRecord?.icon
+                        ? blobRefToSrc(
+                            pubRecord.icon.ref,
+                            new AtUri(p.uri).host,
+                          )
+                        : undefined
+                    }
+                    pubName={p.name}
+                  />
                   {p.name}
                 </>
               </PubOption>

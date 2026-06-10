@@ -15,6 +15,9 @@ import { string } from "zod";
 import { getPublicationType } from "src/utils/collectionHelpers";
 import { resizePublicationIcon } from "src/utils/resizePublicationIcon";
 import { PubThemeDefaultsRGB } from "components/ThemeManager/themeDefaults";
+import { createPublicationDraftLeaflet } from "actions/createPublicationDraftLeaflet";
+import { resolvePublicationTheme } from "lexicons/src/normalize";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const vercel = new Vercel({
@@ -153,6 +156,16 @@ export async function createPublication({
     })
     .select()
     .single();
+
+  // Every publication gets a draft leaflet holding its draft pages, nav, and
+  // theme; seed it with a home page now so the pages editor is ready to go.
+  await createPublicationDraftLeaflet({
+    publication_uri: result.uri,
+    description,
+    theme: resolvePublicationTheme(
+      normalizePublicationRecord(record as unknown as Json),
+    ),
+  });
 
   // Create the custom domain
   if (isProductionDomain()) {

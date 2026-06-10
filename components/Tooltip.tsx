@@ -21,10 +21,8 @@ export const Tooltip = (props: {
 }) => {
   return (
     <RadixTooltip.Provider
-      delayDuration={props.delayDuration ? props.delayDuration : 600}
-      skipDelayDuration={
-        props.skipDelayDuration ? props.skipDelayDuration : 300
-      }
+      delayDuration={props.delayDuration ?? 600}
+      skipDelayDuration={props.skipDelayDuration ?? 300}
     >
       <RadixTooltip.Root onOpenChange={props.onOpenChange}>
         <RadixTooltip.Trigger disabled={props.disabled} asChild={props.asChild}>
@@ -38,8 +36,10 @@ export const Tooltip = (props: {
           px-3 py-2
           max-w-(--radix-popover-content-available-width)
           max-h-(--radix-popover-content-available-height)
+          light-container
           border border-border rounded-md shadow-md
           overflow-y-scroll no-scrollbar
+          text-primary
           ${props.className}
         `}
               side={props.side}

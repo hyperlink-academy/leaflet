@@ -309,6 +309,114 @@ const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
   await ctx.retractFact(args.factID);
 };
 
+// Add a content page to a publication draft leaflet's nav, seeded with a
+// single empty text block.
+const addPublicationNavPage: Mutation<{
+  rootEntity: string;
+  pageEntity: string;
+  permission_set: string;
+  navFactID: string;
+  route: string;
+  title: string;
+  firstBlockEntity: string;
+  firstBlockFactID: string;
+}> = async (args, ctx) => {
+  let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
+  let last = entries.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[entries.length - 1];
+  await ctx.createEntity({
+    entityID: args.pageEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    id: args.navFactID,
+    entity: args.rootEntity,
+    attribute: "root/page",
+    data: {
+      type: "ordered-reference",
+      value: args.pageEntity,
+      position: generateKeyBetween(last?.data.position || null, null),
+    },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "page/type",
+    data: { type: "page-type-union", value: "doc" },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "page/route",
+    data: { type: "string", value: args.route },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "page/title",
+    data: { type: "string", value: args.title },
+  });
+  await addBlock(
+    {
+      factID: args.firstBlockFactID,
+      permission_set: args.permission_set,
+      newEntityID: args.firstBlockEntity,
+      type: "text",
+      parent: args.pageEntity,
+      position: "a0",
+    },
+    ctx,
+  );
+};
+
+// Add an external link tab: same root/page list as content pages, but with an
+// external url and no content.
+const addPublicationNavLink: Mutation<{
+  rootEntity: string;
+  linkEntity: string;
+  permission_set: string;
+  navFactID: string;
+  url: string;
+  title: string;
+}> = async (args, ctx) => {
+  let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
+  let last = entries.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[entries.length - 1];
+  await ctx.createEntity({
+    entityID: args.linkEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    id: args.navFactID,
+    entity: args.rootEntity,
+    attribute: "root/page",
+    data: {
+      type: "ordered-reference",
+      value: args.linkEntity,
+      position: generateKeyBetween(last?.data.position || null, null),
+    },
+  });
+  await ctx.assertFact({
+    entity: args.linkEntity,
+    attribute: "page/external-url",
+    data: { type: "string", value: args.url },
+  });
+  await ctx.assertFact({
+    entity: args.linkEntity,
+    attribute: "page/title",
+    data: { type: "string", value: args.title },
+  });
+};
+
+const removePublicationNavEntry: Mutation<{
+  rootEntity: string;
+  entity: string;
+}> = async (args, ctx) => {
+  let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
+  let fact = entries.find((f) => f.data.value === args.entity);
+  if (fact) await ctx.retractFact(fact.id);
+  await ctx.deleteEntity(args.entity);
+};
+
 const removeBlock: Mutation<
   { blockEntity: string } | { blockEntity: string }[]
 > = async (args, ctx) => {
@@ -843,6 +951,9 @@ export const mutations = {
   moveBlockUp,
   moveBlockDown,
   addPageLinkBlock,
+  addPublicationNavPage,
+  addPublicationNavLink,
+  removePublicationNavEntry,
   moveBlock,
   assertFact,
   retractFact,

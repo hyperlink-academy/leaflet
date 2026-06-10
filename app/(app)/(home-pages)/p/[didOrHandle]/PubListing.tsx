@@ -2,7 +2,7 @@
 import { AtUri } from "@atproto/syntax";
 import { PublicationSubscription } from "app/(app)/(home-pages)/reader/getSubscriptions";
 import { PubIcon } from "components/ActionBar/Publications";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import { SubscribeButton } from "components/Subscribe/SubscribeButton";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -55,7 +55,15 @@ export const PubListing = (props: PubListingProps) => {
           className={`flex w-full flex-col justify-center text-center pt-4 pb-3 px-3 rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
         >
           <div className="mx-auto pb-1">
-            <PubIcon record={record} uri={props.uri} large />
+            <PubIcon
+              icon={
+                record.icon
+                  ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
+                  : undefined
+              }
+              pubName={record.name}
+              large
+            />
           </div>
 
           <h4
@@ -84,8 +92,8 @@ export const PubListing = (props: PubListingProps) => {
             )}
           </div>
           {props.showSubscribeButton && (
-            <div className="mt-3 max-w-sm mx-auto relative z-[2] w-full">
-              <SubscribeInput
+            <div className="mt-3 max-w-sm mx-auto relative z-[2] w-fit">
+              <SubscribeButton
                 publicationUri={props.uri}
                 publicationUrl={record.url}
                 publicationName={record.name}

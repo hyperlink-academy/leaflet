@@ -2,6 +2,7 @@ import {
   PublicationPageRenderer,
   type PublicationPageRecord,
 } from "./[rkey]/PublicationPageRenderer";
+import { findPublishedPage } from "src/utils/publishedPageMetadata";
 
 type RendererProps = Parameters<typeof PublicationPageRenderer>[0];
 
@@ -28,19 +29,16 @@ export function tryRenderPublicationPage({
   publication: PublicationForRenderer;
   path: string;
 }) {
-  const matchingPage = publication.publication_pages?.find(
-    (p) => p.path === path && p.record_uri && p.record,
-  );
-  if (!matchingPage || !matchingPage.record) return null;
-  const pageRecord =
-    matchingPage.record as unknown as PublicationPageRecord;
+  const match = findPublishedPage(publication.publication_pages, path);
+  if (!match || !match.record_uri || !match.record) return null;
+  const pageRecord = match.record as unknown as PublicationPageRecord;
   return (
     <PublicationPageRenderer
       did={did}
       page={{
-        id: matchingPage.id,
-        path: matchingPage.path ?? "/",
-        title: matchingPage.title,
+        id: match.id,
+        path: match.path!,
+        title: match.title,
         record: pageRecord,
       }}
       publication={publication}

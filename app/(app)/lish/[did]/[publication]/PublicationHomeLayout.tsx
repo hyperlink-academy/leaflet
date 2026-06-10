@@ -2,31 +2,33 @@
 
 import React from "react";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
-import { PublicationHeader, NewPublicationHeader } from "./PublicationHeader";
+import {
+  PublicationHeader,
+  NewPublicationHeader,
+  type SubscribeData,
+} from "./PublicationHeader";
 import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
+import type { WordmarkData } from "src/utils/wordmark";
 
 export function PublicationHomeLayout(props: {
-  uri: string;
   showPageBackground: boolean;
   iconUrl?: string;
-  publicationName: string;
-  description?: string;
+  wordmark?: WordmarkData | null;
   author?: React.ReactNode;
-  subscribeButton?: React.ReactNode;
   navPages: PublicationNavPage[];
   publicationUrl: string;
   activePath: string;
-  subscribe?: {
-    publicationUri: string;
-    publicationUrl?: string;
-    publicationName: string;
-    publicationDescription?: string;
-    newsletterMode: boolean;
-  };
+  subscribe: SubscribeData;
   children: React.ReactNode;
+  pageWidth?: number;
 }) {
-  let { ref } = usePreserveScroll<HTMLDivElement>(props.uri);
+  let { ref } = usePreserveScroll<HTMLDivElement>(
+    props.subscribe.publicationUri,
+  );
   let hasNav = props.navPages.length > 0;
+
+  let narrowPage = props.pageWidth && props.pageWidth < 480;
+  let hideSubscribeInHeader = props.navPages.length > 1 && !narrowPage;
 
   // When the publication has nav pages, mirror the editor (PublicationEditLayout
   // + PublicationPagesNav): an inline header that scrolls away above a sticky
@@ -34,13 +36,14 @@ export function PublicationHomeLayout(props: {
   let header = hasNav ? (
     <>
       <div className="shrink-0">
-        <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
+        <div className="sm:max-w-(--page-width-units) mx-auto ">
           <NewPublicationHeader
-            variant="inline"
             iconUrl={props.iconUrl}
-            publicationName={props.publicationName}
-            description={props.description}
-            subscribeButton={props.subscribeButton}
+            wordmark={props.wordmark}
+            description={props.subscribe.publicationDescription}
+            hasNav={props.navPages.length > 1}
+            subscribe={props.subscribe}
+            hideSubscribeInHeader={hideSubscribeInHeader}
           />
         </div>
       </div>
@@ -48,7 +51,9 @@ export function PublicationHomeLayout(props: {
         publicationUrl={props.publicationUrl}
         pages={props.navPages}
         activePath={props.activePath}
+        showPageBackground={props.showPageBackground}
         subscribe={props.subscribe}
+        hideSubscribeInHeader={hideSubscribeInHeader}
       />
     </>
   ) : (
@@ -57,10 +62,10 @@ export function PublicationHomeLayout(props: {
         <PublicationHeader
           variant="stacked"
           iconUrl={props.iconUrl}
-          publicationName={props.publicationName}
-          description={props.description}
+          publicationName={props.subscribe.publicationName}
+          description={props.subscribe.publicationDescription}
           author={props.author}
-          subscribeButton={props.subscribeButton}
+          subscribe={props.subscribe}
         />
       </div>
     </div>

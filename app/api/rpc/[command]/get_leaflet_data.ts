@@ -6,9 +6,11 @@ export type GetLeafletDataReturnType = Awaited<
   ReturnType<(typeof get_leaflet_data)["handler"]>
 >;
 
-const leaflets_in_publications_query = `leaflets_in_publications(*, publications(*, publication_contributors(contributor_did, confirmed, created_at)), documents(*))`;
+const leaflets_in_publications_query = `leaflets_in_publications(*, publications!leaflets_in_publications_publication_fkey(*, publication_contributors(contributor_did, confirmed, created_at)), documents(*))`;
 const leaflets_to_documents_query = `leaflets_to_documents(*, documents(*))`;
-const publication_pages_query = `publication_pages!publication_pages_leaflet_src_fkey(*, publications(*))`;
+// Set when this token is a publication's draft leaflet (the single leaflet
+// holding the publication's draft pages, nav, and theme).
+const draft_publication_query = `publications!publications_draft_leaflet_fkey(*)`;
 export const get_leaflet_data = makeRoute({
   route: "get_leaflet_data",
   input: z.object({
@@ -20,11 +22,11 @@ export const get_leaflet_data = makeRoute({
       .from("permission_tokens")
       .select(
         `*,
-        permission_token_rights(*, entity_sets(permission_tokens(${leaflets_in_publications_query}, ${leaflets_to_documents_query}, ${publication_pages_query}))),
+        permission_token_rights(*, entity_sets(permission_tokens(${leaflets_in_publications_query}, ${leaflets_to_documents_query}, ${draft_publication_query}))),
         custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),
         ${leaflets_in_publications_query},
         ${leaflets_to_documents_query},
-        ${publication_pages_query}`,
+        ${draft_publication_query}`,
       )
       .eq("id", token_id)
       .single();

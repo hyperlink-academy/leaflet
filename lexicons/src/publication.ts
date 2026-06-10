@@ -1,5 +1,9 @@
 import { LexiconDoc } from "@atproto/lexicon";
-import { ColorUnion, PubLeafletThemeBackgroundImage } from "./theme";
+import {
+  ColorUnion,
+  PubLeafletThemeBackgroundImage,
+  PubLeafletThemeWordmark,
+} from "./theme";
 
 export const PubLeafletPublication: LexiconDoc = {
   lexicon: 1,
@@ -39,6 +43,10 @@ export const PubLeafletPublication: LexiconDoc = {
         backgroundImage: {
           type: "ref",
           ref: PubLeafletThemeBackgroundImage.id,
+        },
+        wordmark: {
+          type: "ref",
+          ref: PubLeafletThemeWordmark.id,
         },
         pageWidth: {
           type: "integer",

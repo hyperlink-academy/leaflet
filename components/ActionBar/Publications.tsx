@@ -7,11 +7,9 @@ import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationUR
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
 import { ActionButton } from "./ActionButton";
-import {
-  normalizePublicationRecord,
-  type NormalizedPublication,
-} from "src/utils/normalizeRecords";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { SpeedyLink } from "components/SpeedyLink";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LoginModal } from "components/LoginButton";
@@ -112,7 +110,16 @@ const PublicationOption = (props: {
       <ActionButton
         labelOnMobile
         label={record.name}
-        icon={<PubIcon record={record} uri={props.uri} />}
+        icon={
+          <PubIcon
+            icon={
+              record.icon
+                ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
+                : undefined
+            }
+            pubName={record.name}
+          />
+        }
         className={` ${props.className}`}
       />
     </SpeedyLink>
@@ -165,24 +172,22 @@ export const PubListEmptyContent = (props: { compact?: boolean }) => {
 };
 
 export const PubIcon = (props: {
-  record: NormalizedPublication | null;
-  uri: string;
+  icon?: string;
+  pubName?: string;
   tiny?: boolean;
   small?: boolean;
   large?: boolean;
   className?: string;
 }) => {
-  if (!props.record) return null;
-
   let iconSizeClassName = `${props.tiny ? "w-4 h-4" : props.small ? "w-5 h-5" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full`;
 
-  return props.record.icon ? (
+  return props.icon ? (
     <div
       className={`${iconSizeClassName} ${props.className} relative overflow-hidden shrink-0`}
     >
       <img
-        src={`/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(props.record.icon?.ref as unknown as { $link: string })["$link"]}`}
-        alt={`${props.record.name} icon`}
+        src={props.icon}
+        alt={`${props.pubName ? props.pubName : "publication"} icon`}
         loading="lazy"
         fetchPriority="low"
         className="absolute inset-0 w-full h-full object-cover object-center"
@@ -193,7 +198,7 @@ export const PubIcon = (props: {
       <div
         className={`${props.tiny ? "text-xs" : props.large ? "text-2xl" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2`}
       >
-        {props.record?.name.slice(0, 1).toUpperCase()}
+        {props.pubName ? props.pubName.slice(0, 1).toUpperCase() : "P"}
       </div>
     </div>
   );

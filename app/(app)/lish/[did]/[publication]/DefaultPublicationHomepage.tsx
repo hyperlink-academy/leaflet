@@ -5,8 +5,9 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { FontLoader } from "components/FontLoader";
 import { SpeedyLink } from "components/SpeedyLink";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { wordmarkFromTheme } from "src/utils/wordmark";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import { publishedNavPages } from "src/utils/publishedPageMetadata";
 import {
   PublicationPostsList,
   buildPublicationPosts,
@@ -16,14 +17,14 @@ import {
 
 type FakePost = PublicationPostsListFakePost;
 
-export const PublicationContent = ({
+export const DefaultPublicationHomepage = ({
   record,
   publication,
   did,
   profile,
   showPageBackground,
   fakePosts,
-  posts: providedPosts,
+  posts: resolvedPosts,
 }: {
   record: ReturnType<typeof normalizePublicationRecord>;
   publication: {
@@ -54,18 +55,16 @@ export const PublicationContent = ({
   profile: { did: string; displayName?: string; handle: string } | undefined;
   showPageBackground: boolean | undefined;
   fakePosts?: FakePost[];
-  // Pre-built (and byline-enriched) posts from the server page. When omitted
-  // we build them inline from the publication's documents — used by the client
-  // theme preview, which only ever renders `fakePosts`.
+  // Posts with bylines resolved server-side. When omitted (client theme
+  // preview) the list is built here and bylines resolve on the client.
   posts?: PublicationPostsListPost[];
 }) => {
   const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
-  const navPages = (publication.publication_pages ?? []).filter(
-    (p) => p.record_uri,
-  );
+  // publication_pages rows are published state, so the nav reads them directly.
+  const navPages = publishedNavPages(publication.publication_pages);
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
-    : (providedPosts ??
+    : (resolvedPosts ??
       buildPublicationPosts(publication.documents_in_publications));
   return (
     <>
@@ -74,14 +73,13 @@ export const PublicationContent = ({
         bodyFontId={record?.theme?.bodyFont}
       />
       <PublicationHomeLayout
-        uri={publication.uri}
         showPageBackground={!!showPageBackground}
         iconUrl={record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined}
-        publicationName={publication.name}
-        description={record?.description}
+        wordmark={wordmarkFromTheme(record?.theme, did)}
         navPages={navPages}
         publicationUrl={getPublicationURL(publication)}
         activePath="/"
+        pageWidth={record?.theme?.pageWidth}
         subscribe={{
           publicationUri: publication.uri,
           publicationUrl: record?.url,
@@ -97,17 +95,6 @@ export const PublicationContent = ({
               handle={profile.handle}
             />
           ) : undefined
-        }
-        subscribeButton={
-          <div className="max-w-sm mx-auto">
-            <SubscribeInput
-              publicationUri={publication.uri}
-              publicationUrl={record?.url}
-              publicationName={record?.name ?? publication.name}
-              publicationDescription={record?.description}
-              newsletterMode={newsletterMode}
-            />
-          </div>
         }
       >
         <PublicationPostsList

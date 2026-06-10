@@ -109,7 +109,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
       useUIState
         .getState()
         .openPage(props.parent, { type: "iframe", url: openUrl });
-      scrollIntoView(`iframe-page-${openUrl}`, "pages", 0.8);
+      scrollIntoView(`iframe-page-${openUrl}`, 0.8);
     },
     onReplaceWith: (block) => {
       assertBlockData(props.entityID, block);

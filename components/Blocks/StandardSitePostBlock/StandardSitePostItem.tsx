@@ -299,7 +299,18 @@ function PubFooter({
         href={pubUrl}
         className="flex items-center gap-1.5  text-accent-contrast font-bold no-underline! text-sm -mb-0.5"
       >
-        <PubIcon tiny record={publication.record} uri={publication.uri} />
+        <PubIcon
+          tiny
+          icon={
+            publication.record.icon
+              ? blobRefToSrc(
+                  publication.record.icon.ref,
+                  new AtUri(publication.uri).host,
+                )
+              : undefined
+          }
+          pubName={publication.record.name}
+        />
         <span className="min-w-0 truncate">{publication.record.name}</span>
       </Link>
     </div>

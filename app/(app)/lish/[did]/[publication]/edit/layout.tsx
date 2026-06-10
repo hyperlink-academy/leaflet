@@ -6,17 +6,7 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { LoginModal } from "components/LoginButton";
 import { AtUri } from "@atproto/syntax";
-import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
-import { PublicationPagesNav } from "./PublicationPagesNav";
-import { PublicationEditHeader } from "./PublicationEditHeader";
-import { SubscribeInput } from "components/Subscribe/SubscribeButton";
-import {
-  NewPublicationHeader,
-  PublicationHeader,
-} from "../../PublicationHeader";
-import { PublicationEditDirtyProvider } from "./dirtyContext";
+import { PublicationSWRDataProvider } from "../dashboard/PublicationSWRProvider";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -84,9 +74,7 @@ export default async function PublicationEditLayout(props: {
   ) {
     return <PubNotFound />;
   }
-  let newsletterMode = !!publication?.publication_newsletter_settings?.enabled;
   let uri = new AtUri(publication.uri);
-  const iconUrl = record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined;
 
   return (
     <PublicationSWRDataProvider
@@ -94,43 +82,7 @@ export default async function PublicationEditLayout(props: {
       publication_rkey={uri.rkey}
       publication_data={publication_data}
     >
-      <PublicationEditDirtyProvider>
-        <PublicationThemeProviderDashboard>
-          <div className="flex flex-col h-full w-full bg-accent-1">
-            <PublicationEditHeader
-              did={params.did}
-              publicationName={params.publication}
-            />
-            <div className="pubWrapper publicationScrollContainer flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto">
-              <div className="shrink-0">
-                <div className="sm:max-w-(--page-width-units) mx-auto px-3 sm:px-4 sm:pt-12 sm:pb-3 pt-6 pb-0">
-                  <NewPublicationHeader
-                    variant="inline"
-                    iconUrl={iconUrl}
-                    publicationName={publication.name}
-                    description={record?.description}
-                    subscribeButton={
-                      <SubscribeInput
-                        compact
-                        publicationUri={publication.uri}
-                        publicationUrl={record.url}
-                        publicationName={record.name}
-                        publicationDescription={record.description}
-                        newsletterMode={newsletterMode}
-                      />
-                    }
-                  />
-                </div>
-              </div>
-              <PublicationPagesNav
-                did={params.did}
-                publicationName={params.publication}
-              />
-              <div className="flex flex-col">{props.children}</div>
-            </div>
-          </div>
-        </PublicationThemeProviderDashboard>
-      </PublicationEditDirtyProvider>
+      {props.children}
     </PublicationSWRDataProvider>
   );
 }

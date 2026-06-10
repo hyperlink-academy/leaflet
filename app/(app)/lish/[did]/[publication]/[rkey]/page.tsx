@@ -11,6 +11,7 @@ import {
   publicationNameOrUriFilter,
 } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { findPublishedPage } from "src/utils/publishedPageMetadata";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -28,12 +29,12 @@ export async function generateMetadata(props: {
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
     .limit(1);
-  let matchingPage = pubs?.[0]?.publication_pages?.find(
-    (p) => p.path === "/" + rkey && p.record_uri,
-  );
-  if (matchingPage) {
+  // Match the same way the page body does (tryRenderPublicationPage), so
+  // metadata and body never disagree about which page a URL serves.
+  let match = findPublishedPage(pubs?.[0]?.publication_pages, "/" + rkey);
+  if (match && match.record_uri) {
     return {
-      title: `${matchingPage.title || matchingPage.path} - ${pubs?.[0]?.name}`,
+      title: `${match.title || match.path} - ${pubs?.[0]?.name}`,
     };
   }
 
