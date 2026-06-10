@@ -8,20 +8,16 @@ import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "../../dashboard/PublicationSWRProvider";
+} from "../dashboard/PublicationSWRProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { Popover } from "components/Popover";
 import { PaintSmall } from "components/Icons/PaintSmall";
-import { ButtonPrimary } from "components/Buttons";
 import {
   BaseThemeProvider,
   CardBorderHiddenContext,
 } from "components/ThemeManager/ThemeProvider";
-import {
-  PubThemePickerPanel,
-  type PubThemeEditorState,
-} from "components/ThemeManager/PubThemeSetter";
-import { usePubEditThemeState } from "./PublicationEditThemeProvider";
+import { PubThemePickerPanel } from "components/ThemeManager/PubThemeSetter";
+import { useDraftPubThemeState } from "components/ThemeManager/PubDraftThemeSetter";
 
 type Status = "idle" | "publishing" | "success";
 
@@ -34,7 +30,6 @@ export function PublicationEditHeader(props: {
   let publicationUrl = useNormalizedPublicationRecord()?.url;
   let [status, setStatus] = useState<Status>("idle");
   let toaster = useToaster();
-  let themeState = usePubEditThemeState();
 
   let dashboardHref = `/lish/${props.did}/${props.publicationName}/dashboard`;
 
@@ -112,7 +107,7 @@ export function PublicationEditHeader(props: {
         <div className="pl-5 text-xs">Draft autosaves</div>
       </SpeedyLink>
       <div className="flex items-center gap-2 shrink-0">
-        <PubThemePopover state={themeState} />
+        <PubThemePopover />
         <button
           type="button"
           onClick={handlePublish}
@@ -125,18 +120,18 @@ export function PublicationEditHeader(props: {
   );
 }
 
-const PubThemePopover = ({ state }: { state: PubThemeEditorState }) => {
+// Theme edits write theme/* facts on the draft leaflet; they autosave as
+// draft state and go live on publish — no separate save step.
+const PubThemePopover = () => {
+  let state = useDraftPubThemeState();
   let {
     localPubTheme,
     headingFont,
     bodyFont,
     image,
     pageWidth,
-    submitTheme,
     showPageBackground,
-    toaster,
   } = state;
-  let [loading, setLoading] = useState(false);
 
   return (
     <Popover
@@ -156,6 +151,8 @@ const PubThemePopover = ({ state }: { state: PubThemeEditorState }) => {
       }
       asChild
     >
+      {/* The popover portals outside the editor's themed wrapper, so re-apply
+          the (fact-backed) theme around its content. */}
       <CardBorderHiddenContext.Provider value={!showPageBackground}>
         <BaseThemeProvider
           local
@@ -166,25 +163,6 @@ const PubThemePopover = ({ state }: { state: PubThemeEditorState }) => {
           pageWidth={pageWidth}
         >
           <div className="flex flex-col overflow-y-auto max-h-(--radix-popover-content-available-height) py-3">
-            <div className="p-3 pt-0">
-              <ButtonPrimary
-                fullWidth
-                type="button"
-                disabled={loading}
-                onClick={async () => {
-                  let result = await submitTheme(setLoading);
-                  if (result?.success) {
-                    toaster({
-                      content: "Theme saved!",
-                      type: "success",
-                    });
-                  }
-                }}
-              >
-                {loading ? <DotLoader /> : "Save Changes"}
-              </ButtonPrimary>
-            </div>
-
             <div className="px-3 gap-2 flex flex-col">
               <PubThemePickerPanel state={state} />
             </div>

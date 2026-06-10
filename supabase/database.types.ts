@@ -1276,11 +1276,9 @@ export type Database = {
           created_at: string
           document: string | null
           id: number
-          leaflet_src: string | null
-          metadata: Json
+          page_entity: string | null
           path: string | null
           publication: string
-          published_metadata: Json | null
           record: Json | null
           record_uri: string | null
           sort_order: string
@@ -1290,11 +1288,9 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: number
-          leaflet_src?: string | null
-          metadata?: Json
+          page_entity?: string | null
           path?: string | null
           publication: string
-          published_metadata?: Json | null
           record?: Json | null
           record_uri?: string | null
           sort_order: string
@@ -1304,11 +1300,9 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: number
-          leaflet_src?: string | null
-          metadata?: Json
+          page_entity?: string | null
           path?: string | null
           publication?: string
-          published_metadata?: Json | null
           record?: Json | null
           record_uri?: string | null
           sort_order?: string
@@ -1321,13 +1315,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["uri"]
-          },
-          {
-            foreignKeyName: "publication_pages_leaflet_src_fkey"
-            columns: ["leaflet_src"]
-            isOneToOne: false
-            referencedRelation: "permission_tokens"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "publication_pages_publication_fkey"
@@ -1424,6 +1411,7 @@ export type Database = {
       }
       publications: {
         Row: {
+          draft_leaflet: string | null
           identity_did: string
           indexed_at: string
           name: string
@@ -1431,6 +1419,7 @@ export type Database = {
           uri: string
         }
         Insert: {
+          draft_leaflet?: string | null
           identity_did: string
           indexed_at?: string
           name: string
@@ -1438,6 +1427,7 @@ export type Database = {
           uri: string
         }
         Update: {
+          draft_leaflet?: string | null
           identity_did?: string
           indexed_at?: string
           name?: string
@@ -1445,6 +1435,13 @@ export type Database = {
           uri?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "publications_draft_leaflet_fkey"
+            columns: ["draft_leaflet"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "publications_identity_did_fkey"
             columns: ["identity_did"]

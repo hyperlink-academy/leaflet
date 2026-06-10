@@ -30,7 +30,7 @@ export default async function Publication(props: {
         `*,
         publication_subscriptions(*),
         publication_newsletter_settings(enabled),
-        publication_pages(id, path, title, record, record_uri, sort_order, published_metadata),
+        publication_pages(id, path, title, record, record_uri, sort_order),
         documents_in_publications(documents(
           *,
           comments_on_documents(count),

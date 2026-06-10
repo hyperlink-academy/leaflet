@@ -16,6 +16,20 @@ const PageAttributes = {
     type: "page-type-union",
     cardinality: "one",
   },
+  // Publication nav state: root/page entries carry a route and tab title;
+  // entries with page/external-url instead are external link tabs.
+  "page/route": {
+    type: "string",
+    cardinality: "one",
+  },
+  "page/title": {
+    type: "string",
+    cardinality: "one",
+  },
+  "page/external-url": {
+    type: "string",
+    cardinality: "one",
+  },
   "canvas/block": {
     type: "spatial-reference",
     cardinality: "many",

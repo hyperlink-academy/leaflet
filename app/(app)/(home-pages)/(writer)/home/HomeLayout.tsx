@@ -179,7 +179,7 @@ export function LeafletList(props: {
               description: leaflet.description ?? null,
               leaflets_in_publications: leaflet.leaflets_in_publications || [],
               leaflets_to_documents: leaflet.leaflets_to_documents || [],
-              publication_pages: [],
+              publications: [],
               blocked_by_admin: null,
               custom_domain_routes: [],
             }}

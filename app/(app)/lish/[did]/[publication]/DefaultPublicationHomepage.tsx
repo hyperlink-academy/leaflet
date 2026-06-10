@@ -40,7 +40,6 @@ export const DefaultPublicationHomepage = ({
       title: string | null;
       record_uri: string | null;
       sort_order: string;
-      published_metadata: unknown;
     }[];
     documents_in_publications: {
       documents: {
@@ -58,7 +57,7 @@ export const DefaultPublicationHomepage = ({
   fakePosts?: FakePost[];
 }) => {
   const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
-  // Public nav renders only published tabs, from their published snapshot.
+  // publication_pages rows are published state, so the nav reads them directly.
   const navPages = publishedNavPages(publication.publication_pages);
   const posts: PublicationPostsListPost[] = fakePosts
     ? []

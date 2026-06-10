@@ -48,6 +48,10 @@ export const publicationsRelations = relations(publications, ({one, many}) => ({
 		fields: [publications.identity_did],
 		references: [identities.atp_did]
 	}),
+	draft_leaflet_token: one(permission_tokens, {
+		fields: [publications.draft_leaflet],
+		references: [permission_tokens.id]
+	}),
 	publication_newsletter_settings: many(publication_newsletter_settings),
 	publication_email_subscribers: many(publication_email_subscribers),
 	publication_email_subscriber_events: many(publication_email_subscriber_events),
@@ -163,7 +167,7 @@ export const permission_tokensRelations = relations(permission_tokens, ({one, ma
 	permission_token_rights: many(permission_token_rights),
 	leaflets_to_documents: many(leaflets_to_documents),
 	leaflets_in_publications: many(leaflets_in_publications),
-	publication_pages: many(publication_pages),
+	publications: many(publications),
 }));
 
 export const user_subscriptionsRelations = relations(user_subscriptions, ({one}) => ({
@@ -460,10 +464,6 @@ export const publication_pagesRelations = relations(publication_pages, ({one}) =
 	document: one(documents, {
 		fields: [publication_pages.document],
 		references: [documents.uri]
-	}),
-	permission_token: one(permission_tokens, {
-		fields: [publication_pages.leaflet_src],
-		references: [permission_tokens.id]
 	}),
 	publication: one(publications, {
 		fields: [publication_pages.publication],

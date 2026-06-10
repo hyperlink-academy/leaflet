@@ -3,6 +3,7 @@ import {
   useNormalizedPublicationRecord,
 } from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useState } from "react";
+import type { Color } from "react-aria-components";
 import { pickers, SectionArrow } from "./ThemeSetter";
 import { PubLeafletThemeBackgroundImage } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
@@ -28,6 +29,47 @@ export type ImageState = {
   src: string;
   file?: File;
   repeat: number | null;
+};
+
+export type PubThemeColorSet = {
+  bgLeaflet: Color;
+  bgPage: Color;
+  primary: Color;
+  accent1: Color;
+  accent2: Color;
+};
+
+// The state PubThemePickerPanel needs; implemented by usePubThemeEditorState
+// (React state + explicit save) and useDraftPubThemeState (draft leaflet facts).
+export type PubThemePanelState = {
+  openPicker: pickers;
+  setOpenPicker: (p: pickers) => void;
+  showPageBackground: boolean;
+  setShowPageBackground: (s: boolean) => void;
+  localPubTheme: PubThemeColorSet & {
+    highlight1?: string;
+    highlight2: Color;
+    highlight3: Color;
+    showPageBackground?: boolean;
+    pageWidth?: number;
+    headingFontId?: string;
+    bodyFontId?: string;
+  };
+  setTheme: (
+    action:
+      | Partial<PubThemeColorSet>
+      | ((t: Partial<PubThemeColorSet>) => Partial<PubThemeColorSet>),
+  ) => void;
+  image: ImageState | null;
+  setImage: (i: ImageState | null) => void;
+  pageWidth: number;
+  setPageWidth: (w: number) => void;
+  headingFont: string | undefined;
+  setHeadingFont: (f: string | undefined) => void;
+  bodyFont: string | undefined;
+  setBodyFont: (f: string | undefined) => void;
+  pubBGImage: string | null;
+  leafletBGRepeat: number | null;
 };
 
 export function usePubThemeEditorState() {
@@ -150,7 +192,7 @@ export function usePubThemeEditorState() {
 
 export type PubThemeEditorState = ReturnType<typeof usePubThemeEditorState>;
 
-export function PubThemePickerPanel(props: { state: PubThemeEditorState }) {
+export function PubThemePickerPanel(props: { state: PubThemePanelState }) {
   let {
     openPicker,
     setOpenPicker,

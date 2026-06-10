@@ -4,24 +4,46 @@ import { revalidatePath } from "next/cache";
 import { TID } from "@atproto/common";
 import { AtUri } from "@atproto/syntax";
 import { AtpBaseClient } from "lexicons/api";
+import { leafletThemeToBasicTheme } from "lexicons/src/normalize";
 import { Json } from "supabase/database.types";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
-import { Lock } from "src/utils/lock";
+import { readNavEntries } from "src/utils/publicationNavEntries";
 import { OAuthSessionError, restoreOAuthSession } from "src/atproto-oauth";
-import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
 import { getIdentityData } from "actions/getIdentityData";
 import { leafletToPublicationPageRecord } from "src/utils/leafletToPublicationPageRecord";
-import { supabaseServerClient } from "supabase/serverClient";
+import {
+  extractThemeFromFacts,
+  makePublishUploadHooks,
+} from "src/utils/publishHelpers";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { getPublicationType } from "src/utils/collectionHelpers";
+import {
+  buildRecord,
+  type PublicationType,
+} from "src/utils/buildPublicationRecord";
 import { isExternalLink } from "src/utils/externalPublicationLink";
+import { supabaseServerClient } from "supabase/serverClient";
 
 type PublishPagesResult =
-  | { success: true; published: { id: number; uri: string }[] }
+  | { success: true; published: { entity: string; uri: string }[] }
   | {
       success: false;
       error: OAuthSessionError | { type: "other"; message: string };
     };
 
+const err = (message: string): PublishPagesResult => ({
+  success: false,
+  error: { type: "other", message },
+});
+
+// Content page routes are single-segment lowercase slugs, plus the reserved
+// home route "/".
+const routeShape = /^\/[a-z0-9-]+$/;
+
+// Publish a publication's draft leaflet in one go: page records, nav rows,
+// and theme. Re-running converges: rkeys are stable per page entity, rows are
+// upserts, and stale state is re-diffed every time.
 export async function publishPublicationPages({
   publication_uri,
 }: {
@@ -41,15 +63,57 @@ export async function publishPublicationPages({
 
   const { data: publication } = await supabaseServerClient
     .from("publications")
-    .select("uri, identity_did")
+    .select("uri, identity_did, record, draft_leaflet")
     .eq("uri", publication_uri)
     .single();
-  if (!publication || publication.identity_did !== identity.atp_did) {
-    return {
-      success: false,
-      error: { type: "other", message: "Not the publication owner" },
-    };
+  if (!publication || publication.identity_did !== identity.atp_did)
+    return err("Not the publication owner");
+  if (!publication.draft_leaflet)
+    return err("This publication has no draft yet");
+
+  const { data: token } = await supabaseServerClient
+    .from("permission_tokens")
+    .select("root_entity")
+    .eq("id", publication.draft_leaflet)
+    .single();
+  if (!token) return err("Draft leaflet not found");
+  const root_entity = token.root_entity;
+
+  const { data: factData } = await supabaseServerClient.rpc("get_facts", {
+    root: root_entity,
+  });
+  const facts = (factData as unknown as Fact<Attribute>[]) || [];
+
+  const entries = readNavEntries(facts, root_entity);
+  const contentPages = entries.filter((e) => !e.externalUrl);
+  const externalLinks = entries.filter((e) => e.externalUrl);
+
+  // Validate the whole nav before writing anything.
+  const errors: string[] = [];
+  if (!contentPages.some((p) => p.route === "/"))
+    errors.push("The publication needs a home page at /");
+  const seenRoutes = new Set<string>();
+  for (const page of contentPages) {
+    const label = page.title || page.route || "untitled page";
+    if (!page.route) {
+      errors.push(`"${label}" has no path`);
+      continue;
+    }
+    if (page.route !== "/" && !routeShape.test(page.route)) {
+      errors.push(`"${label}" has an invalid path (${page.route})`);
+      continue;
+    }
+    if (seenRoutes.has(page.route))
+      errors.push(`Multiple pages share the path ${page.route}`);
+    seenRoutes.add(page.route);
   }
+  for (const link of externalLinks) {
+    if (!isExternalLink(link.externalUrl))
+      errors.push(
+        `"${link.title || "external link"}" has an invalid url (${link.externalUrl})`,
+      );
+  }
+  if (errors.length > 0) return err(errors.join(". "));
 
   const sessionResult = await restoreOAuthSession(identity.atp_did);
   if (!sessionResult.ok) {
@@ -60,90 +124,30 @@ export async function publishPublicationPages({
     credentialSession.fetchHandler.bind(credentialSession),
   );
 
-  const { data: pageRows } = await supabaseServerClient
+  const { data: existingRows } = await supabaseServerClient
     .from("publication_pages")
-    .select("id, title, path, leaflet_src, sort_order, record_uri")
+    .select("id, page_entity, record_uri")
     .eq("publication", publication_uri);
-  if (!pageRows || pageRows.length === 0) {
-    return { success: true, published: [] };
-  }
 
-  const uploadLock = new Lock();
+  const hooks = makePublishUploadHooks(agent, credentialSession.did!);
 
-  const published: { id: number; uri: string }[] = [];
-  for (const page of pageRows) {
-    const title = page.title ?? "";
-    const sort_order = page.sort_order;
-
-    // External link tabs have no backing leaflet document — there's nothing to
-    // publish to the network. Just snapshot their nav metadata (the url lives in
-    // `path`) so the tab goes live / picks up draft edits.
-    if (isExternalLink(page.path)) {
-      await supabaseServerClient
-        .from("publication_pages")
-        .update({
-          published_metadata: { path: page.path, title, sort_order },
-        })
-        .eq("id", page.id)
-        .eq("publication", publication_uri);
-      continue;
-    }
-    if (!page.leaflet_src) continue;
-    const path = page.path ?? "/";
-
-    const { result: leafletRes } = await get_leaflet_data.handler(
-      { token_id: page.leaflet_src },
-      { supabase: supabaseServerClient },
-    );
-    const rootEntity = leafletRes.data?.root_entity;
-    if (!rootEntity) continue;
-
-    const { data: factData } = await supabaseServerClient.rpc("get_facts", {
-      root: rootEntity,
-    });
-    const facts = (factData as unknown as Fact<Attribute>[]) || [];
-
+  const published: { entity: string; uri: string }[] = [];
+  for (const page of contentPages) {
     const record = await leafletToPublicationPageRecord({
       facts,
-      root_entity: rootEntity,
+      root_entity,
+      start_page: page.entity,
       publication_uri,
-      path,
-      title: page.title ?? "",
-      hooks: {
-        uploadImage: async (src: string) => {
-          const data = await fetch(src);
-          if (data.status !== 200) return;
-          const binary = await data.blob();
-          return uploadLock.withLock(async () => {
-            const blob = await agent.com.atproto.repo.uploadBlob(binary, {
-              headers: { "Content-Type": binary.type },
-            });
-            return blob.data.blob;
-          });
-        },
-        uploadPoll: async (entityId, pollRecord) => {
-          const { data: pollResult } = await agent.com.atproto.repo.putRecord({
-            rkey: entityId,
-            repo: credentialSession.did!,
-            collection: pollRecord.$type,
-            record: pollRecord,
-            validate: false,
-          });
-          await supabaseServerClient.from("atp_poll_records").upsert({
-            uri: pollResult.uri,
-            cid: pollResult.cid,
-            record: pollRecord as Json,
-          });
-          return { uri: pollResult.uri, cid: pollResult.cid };
-        },
-      },
+      path: page.route!,
+      title: page.title,
+      hooks,
     });
 
-    // Reuse the rkey of an already-published page so republishing updates the
-    // record in place. New pages get a tid — a path-derived rkey would collide
-    // across publications in the same repo (e.g. every pub's "home").
-    const rkey = page.record_uri
-      ? new AtUri(page.record_uri).rkey
+    // Reuse the published page's rkey so the record updates in place and
+    // stays stable across renames and re-routes. New pages get a tid.
+    const existing = existingRows?.find((r) => r.page_entity === page.entity);
+    const rkey = existing?.record_uri
+      ? new AtUri(existing.record_uri).rkey
       : TID.nextStr();
     const { data: putResult } = await agent.com.atproto.repo.putRecord({
       rkey,
@@ -153,20 +157,93 @@ export async function publishPublicationPages({
       validate: false,
     });
 
-    await supabaseServerClient
-      .from("publication_pages")
-      .update({
+    await supabaseServerClient.from("publication_pages").upsert(
+      {
+        publication: publication_uri,
+        page_entity: page.entity,
+        path: page.route,
+        title: page.title,
+        sort_order: page.position,
         record: record as unknown as Json,
         record_uri: putResult.uri,
-        // Snapshot the live nav metadata alongside the content so the public
-        // nav reflects this publish (and not any later draft edits).
-        published_metadata: { path, title, sort_order },
-      })
-      .eq("id", page.id)
-      .eq("publication", publication_uri);
+      },
+      { onConflict: "publication,page_entity" },
+    );
 
-    published.push({ id: page.id, uri: putResult.uri });
+    published.push({ entity: page.entity, uri: putResult.uri });
   }
+
+  // External link tabs have no record on the network; their url lives in `path`.
+  if (externalLinks.length > 0)
+    await supabaseServerClient.from("publication_pages").upsert(
+      externalLinks.map((link) => ({
+        publication: publication_uri,
+        page_entity: link.entity,
+        path: link.externalUrl,
+        title: link.title,
+        sort_order: link.position,
+        record: null,
+        record_uri: null,
+      })),
+      { onConflict: "publication,page_entity" },
+    );
+
+  // Delete rows and PDS records for pages no longer in the draft, including
+  // rows from before the single-draft-leaflet model (no page_entity at all).
+  const draftEntities = new Set(entries.map((e) => e.entity));
+  const staleRows = (existingRows ?? []).filter(
+    (r) => !r.page_entity || !draftEntities.has(r.page_entity),
+  );
+  for (const row of staleRows) {
+    if (!row.record_uri) continue;
+    const uri = new AtUri(row.record_uri);
+    await agent.com.atproto.repo.deleteRecord({
+      repo: credentialSession.did!,
+      collection: uri.collection,
+      rkey: uri.rkey,
+    });
+  }
+  if (staleRows.length > 0)
+    await supabaseServerClient
+      .from("publication_pages")
+      .delete()
+      .in(
+        "id",
+        staleRows.map((r) => r.id),
+      );
+
+  // Fold the draft theme facts into the publication record (pub.leaflet theme
+  // plus the derived basicTheme for site.standard publications).
+  const theme = await extractThemeFromFacts(facts, root_entity, agent);
+  const normalizedPub = normalizePublicationRecord(publication.record);
+  const aturi = new AtUri(publication.uri);
+  const publicationType = getPublicationType(
+    aturi.collection,
+  ) as PublicationType;
+  const existingBasePath = normalizedPub?.url
+    ? normalizedPub.url.replace(/^https?:\/\//, "")
+    : undefined;
+  const basicTheme = leafletThemeToBasicTheme(theme);
+  const pubRecord = buildRecord(
+    normalizedPub,
+    existingBasePath,
+    publicationType,
+    {
+      theme,
+      ...(basicTheme && { basicTheme }),
+    },
+  );
+  await agent.com.atproto.repo.putRecord({
+    repo: credentialSession.did!,
+    rkey: aturi.rkey,
+    record: pubRecord,
+    collection: publicationType,
+    validate: false,
+  });
+  await supabaseServerClient
+    .from("publications")
+    .update({ record: pubRecord as Json })
+    .eq("uri", publication_uri);
 
   // Bust the cached reader routes so edits to existing pages show up — without
   // this only brand-new (uncached) page paths would reflect the latest content.

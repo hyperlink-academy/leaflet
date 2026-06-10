@@ -56,11 +56,7 @@ export const get_publication_data = makeRoute({
          )
         ),
         publication_contributors(contributor_did, confirmed, created_at),
-        publication_pages(*,
-          permission_tokens!publication_pages_leaflet_src_fkey(*,
-            permission_token_rights(*)
-          )
-        )`,
+        publication_pages(*)`,
       )
       .or(
         `name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`,
@@ -107,26 +103,11 @@ export const get_publication_data = makeRoute({
         _raw: l,
       }));
 
-    const pages = (publication?.publication_pages || []).map((p) => ({
-      id: p.id,
-      title: p.title,
-      path: p.path,
-      document: p.document,
-      metadata: p.metadata,
-      record: p.record,
-      record_uri: p.record_uri,
-      leaflet_src: p.leaflet_src,
-      created_at: p.created_at,
-      sort_order: p.sort_order,
-      permission_tokens: p.permission_tokens,
-    }));
-
     return {
       result: {
         publication,
         documents,
         drafts,
-        pages,
       },
     };
   },

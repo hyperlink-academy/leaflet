@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { parseColor } from "react-aria-components";
-import { PubThemeEditorState } from "../PubThemeSetter";
+import { PubThemePanelState } from "../PubThemeSetter";
 
 type PresetTheme = {
   name: string;
@@ -126,7 +126,7 @@ const presetThemes: PresetTheme[] = [
   },
 ];
 
-export function PresetThemePicker(props: { state: PubThemeEditorState }) {
+export function PresetThemePicker(props: { state: PubThemePanelState }) {
   let {
     setTheme,
     setImage,

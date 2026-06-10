@@ -43,7 +43,6 @@ type PublicationRow = {
     title: string;
     record_uri: string | null;
     sort_order: string;
-    published_metadata: unknown;
   }[];
   documents_in_publications?: {
     documents: {
@@ -163,8 +162,7 @@ export async function PublicationPageRenderer({
     recommendsCount: 0,
   };
 
-  // The public nav renders only published tabs, from their published snapshot —
-  // never the live draft columns.
+  // publication_pages rows are published state, so the nav reads them directly.
   const navPages = publishedNavPages(publication.publication_pages);
 
   return (

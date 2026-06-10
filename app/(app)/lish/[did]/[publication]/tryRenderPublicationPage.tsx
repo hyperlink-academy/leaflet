@@ -17,7 +17,6 @@ type PublicationForRenderer = Omit<
     record: unknown;
     record_uri: string | null;
     sort_order: string;
-    published_metadata: unknown;
   }[];
 };
 
@@ -31,15 +30,15 @@ export function tryRenderPublicationPage({
   path: string;
 }) {
   const match = findPublishedPage(publication.publication_pages, path);
-  if (!match || !match.page.record_uri || !match.page.record) return null;
-  const pageRecord = match.page.record as unknown as PublicationPageRecord;
+  if (!match || !match.record_uri || !match.record) return null;
+  const pageRecord = match.record as unknown as PublicationPageRecord;
   return (
     <PublicationPageRenderer
       did={did}
       page={{
-        id: match.page.id,
-        path: match.metadata.path,
-        title: match.metadata.title,
+        id: match.id,
+        path: match.path!,
+        title: match.title,
         record: pageRecord,
       }}
       publication={publication}

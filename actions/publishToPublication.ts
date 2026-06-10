@@ -22,19 +22,17 @@ import type { Attribute } from "src/replicache/attributes";
 import { BlobRef } from "@atproto/lexicon";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
-import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
 import { processBlocksToPages } from "src/utils/factsToPagesRecord";
+import {
+  extractThemeFromFacts,
+  makePublishUploadHooks,
+} from "src/utils/publishHelpers";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import {
   normalizeDocumentRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
-import {
-  ColorToRGB,
-  ColorToRGBA,
-} from "components/ThemeManager/colorToLexicons";
-import { parseColor } from "@react-stately/color";
 import {
   Notification,
   pingIdentityToUpdateNotification,
@@ -174,42 +172,10 @@ export async function publishToPublication({
   });
   let facts = (data as unknown as Fact<Attribute>[]) || [];
 
-  const uploadLock = new Lock();
   let { pages } = await processBlocksToPages({
     facts,
     root_entity,
-    hooks: {
-      uploadImage: async (src: string) => {
-        const data = await fetch(src);
-        if (data.status !== 200) return;
-        const binary = await data.blob();
-        return uploadLock.withLock(async () => {
-          const blob = await agent.com.atproto.repo.uploadBlob(binary, {
-            headers: { "Content-Type": binary.type },
-          });
-          return blob.data.blob;
-        });
-      },
-      uploadPoll: async (entityId, record) => {
-        // Use the entity id as the rkey so the editor can associate the poll
-        // definition with the in-document poll block.
-        const { data: pollResult } = await agent.com.atproto.repo.putRecord({
-          rkey: entityId,
-          repo: credentialSession.did!,
-          collection: record.$type,
-          record,
-          validate: false,
-        });
-        console.log(
-          await supabaseServerClient.from("atp_poll_records").upsert({
-            uri: pollResult.uri,
-            cid: pollResult.cid,
-            record: record as Json,
-          }),
-        );
-        return { uri: pollResult.uri, cid: pollResult.cid };
-      },
-    },
+    hooks: makePublishUploadHooks(agent, credentialSession.did!),
   });
 
   let existingRecord: Partial<SiteStandardDocument.Record> = {};
@@ -245,10 +211,13 @@ export async function publishToPublication({
       contributorRows?.map((c) => ({ did: c.contributor_did })) ?? [];
   }
 
-  // Extract theme for standalone documents (not for publications)
+  // Extract theme for standalone documents (not for publications). Only keep
+  // it if at least one property beyond the showPageBackground default is set.
   let theme: PubLeafletPublication.Theme | undefined;
   if (!publication_uri) {
-    theme = await extractThemeFromFacts(facts, root_entity, agent);
+    let extracted = await extractThemeFromFacts(facts, root_entity, agent);
+    if (Object.keys(extracted).length > 1 || extracted.showPageBackground !== true)
+      theme = extracted;
   }
 
   // Upload cover image if provided
@@ -468,76 +437,6 @@ export async function publishToPublication({
   }
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
-}
-
-async function extractThemeFromFacts(
-  facts: Fact<any>[],
-  root_entity: string,
-  agent: AtpBaseClient,
-): Promise<PubLeafletPublication.Theme | undefined> {
-  let scan = scanIndexLocal(facts);
-  let pageBackground = scan.eav(root_entity, "theme/page-background")?.[0]?.data
-    .value;
-  let cardBackground = scan.eav(root_entity, "theme/card-background")?.[0]?.data
-    .value;
-  let primary = scan.eav(root_entity, "theme/primary")?.[0]?.data.value;
-  let accentBackground = scan.eav(root_entity, "theme/accent-background")?.[0]
-    ?.data.value;
-  let accentText = scan.eav(root_entity, "theme/accent-text")?.[0]?.data.value;
-  let showPageBackground = !scan.eav(
-    root_entity,
-    "theme/card-border-hidden",
-  )?.[0]?.data.value;
-  let backgroundImage = scan.eav(root_entity, "theme/background-image")?.[0];
-  let backgroundImageRepeat = scan.eav(
-    root_entity,
-    "theme/background-image-repeat",
-  )?.[0];
-  let pageWidth = scan.eav(root_entity, "theme/page-width")?.[0];
-
-  let theme: PubLeafletPublication.Theme = {
-    showPageBackground: showPageBackground ?? true,
-  };
-
-  if (pageWidth) theme.pageWidth = pageWidth.data.value;
-  if (pageBackground)
-    theme.backgroundColor = ColorToRGBA(parseColor(`hsba(${pageBackground})`));
-  if (cardBackground)
-    theme.pageBackground = ColorToRGBA(parseColor(`hsba(${cardBackground})`));
-  if (primary) theme.primary = ColorToRGB(parseColor(`hsba(${primary})`));
-  if (accentBackground)
-    theme.accentBackground = ColorToRGB(
-      parseColor(`hsba(${accentBackground})`),
-    );
-  if (accentText)
-    theme.accentText = ColorToRGB(parseColor(`hsba(${accentText})`));
-
-  // Upload background image if present
-  if (backgroundImage?.data) {
-    let imageData = await fetch(backgroundImage.data.src);
-    if (imageData.status === 200) {
-      let binary = await imageData.blob();
-      let blob = await agent.com.atproto.repo.uploadBlob(binary, {
-        headers: { "Content-Type": binary.type },
-      });
-
-      theme.backgroundImage = {
-        $type: "pub.leaflet.theme.backgroundImage",
-        image: blob.data.blob,
-        repeat: backgroundImageRepeat?.data.value ? true : false,
-        ...(backgroundImageRepeat?.data.value && {
-          width: Math.floor(backgroundImageRepeat.data.value),
-        }),
-      };
-    }
-  }
-
-  // Only return theme if at least one property is set
-  if (Object.keys(theme).length > 1 || theme.showPageBackground !== true) {
-    return theme;
-  }
-
-  return undefined;
 }
 
 /**

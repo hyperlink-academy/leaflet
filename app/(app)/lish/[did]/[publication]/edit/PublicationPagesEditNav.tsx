@@ -1,5 +1,4 @@
 "use client";
-import { useRouter, usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   DndContext,
@@ -24,41 +23,31 @@ import {
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { generateKeyBetween } from "fractional-indexing";
+import { v7 } from "uuid";
 import {
   ButtonPrimary,
-  ButtonSecondary,
   ButtonTertiary,
 } from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
-import { AddTiny } from "components/Icons/AddTiny";
 import { EditTiny } from "components/Icons/EditTiny";
-import { createPublicationPage } from "actions/createPublicationPage";
-import { deletePublicationPage } from "actions/deletePublicationPage";
-import { updatePublicationPage } from "actions/updatePublicationPage";
-import { reorderPublicationPages } from "actions/reorderPublicationPages";
-import {
-  usePublicationData,
-  mutatePublicationData,
-  useNormalizedPublicationRecord,
-} from "../../dashboard/PublicationSWRProvider";
-import { sortPublicationPages } from "../../sortPublicationPages";
-import { PublicationNavSubscribe } from "../../PublicationNavSubscribe";
-import { PublicationNavTabLink } from "../../PublicationNavTabLink";
-import { useNavBackgroundFade } from "../../useNavBackgroundFade";
-import { DotLoader } from "components/utils/DotLoader";
+import { useReplicache } from "src/replicache";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { PublicationNavSubscribe } from "../PublicationNavSubscribe";
+import { type SubscribeData } from "../PublicationHeader";
+import { useNavBackgroundFade } from "../useNavBackgroundFade";
 import { useToaster } from "components/Toast";
 import { Checkbox } from "components/Checkbox";
-import {
-  isExternalLink,
-  normalizeExternalLink,
-} from "src/utils/externalPublicationLink";
+import { normalizeExternalLink } from "src/utils/externalPublicationLink";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { useCardBorderHiddenContext } from "components/ThemeManager/ThemeProvider";
+import {
+  usePublicationNavEntries,
+  type PublicationNavEntry,
+} from "./usePublicationNavEntries";
 
-// Turn arbitrary user input into a slug that is safe to use as the path
-// segment of a URL: lowercase, ascii letters/numbers/dashes only, no spaces
-// or characters that would need percent-encoding.
+// Turn arbitrary input into a url-safe slug: lowercase ascii
+// letters/numbers/dashes only.
 function cleanPath(path: string) {
   if (!path) return;
   let slug = path
@@ -72,41 +61,15 @@ function cleanPath(path: string) {
   return "/" + slug;
 }
 
-type SortablePage = {
-  id: number;
-  path: string | null;
-  title: string;
-  sort_order: string;
-};
-
-// Returns a checker that reports whether a path is already used by another
-// page in this publication. Paths are compared in their cleaned form so e.g.
-// "About" and "/about" are treated as the same. Pass the current page's id as
-// `excludePageId` so editing a page and keeping its own path isn't a conflict.
-function useIsPathInUse() {
-  let { data } = usePublicationData();
-  let pages = data?.publication?.publication_pages ?? [];
-  return (path: string | null, excludePageId?: number) => {
-    let normalized = cleanPath(path ?? "") || "/";
-    return pages.some(
-      (p) =>
-        p.id !== excludePageId &&
-        (cleanPath(p.path ?? "") || "/") === normalized,
-    );
-  };
-}
-
-// Validate the user's path/url input for a tab and return the value to store
-// in `path`, or null (after showing an error toast) if it's unusable. External
-// link tabs store a full url; hosted pages store a cleaned relative path that
-// must be unique within the publication.
-function useResolveTabPath() {
+// Validate a tab's path/url input and return the value to store, or null
+// after an error toast. Pass the entry being edited as `excludeEntity` so
+// keeping its own route isn't a conflict.
+function useResolveTabRoute(entries: PublicationNavEntry[]) {
   let toaster = useToaster();
-  let isPathInUse = useIsPathInUse();
   return (
     input: string,
     external: boolean,
-    excludePageId?: number,
+    excludeEntity?: string,
   ): string | null => {
     if (external) {
       let url = normalizeExternalLink(input);
@@ -116,40 +79,36 @@ function useResolveTabPath() {
       }
       return url;
     }
-    if (isPathInUse(input, excludePageId)) {
+    let route = cleanPath(input);
+    if (!route) {
+      toaster({ type: "error", content: "enter a path like /about" });
+      return null;
+    }
+    let inUse = entries.some(
+      (e) => e.entity !== excludeEntity && e.route === route,
+    );
+    if (inUse) {
       toaster({ type: "error", content: "path already in use!" });
       return null;
     }
-    return cleanPath(input) || "";
+    return route;
   };
 }
 
 export function PublicationPagesEditNav(props: {
-  did: string;
-  publicationName: string;
+  publicationUrl: string | undefined;
   hideSubscribeInHeader?: boolean;
+  subscribe: SubscribeData;
+  selectedPage: string | null;
+  onSelectPage: (entity: string) => void;
 }) {
-  let router = useRouter();
-  let pathname = usePathname() ?? "";
-  let { data, mutate } = usePublicationData();
-
-  let pages = data?.publication?.publication_pages ?? [];
-  let publicationUri = data?.publication?.uri;
-  let publicationRecord = useNormalizedPublicationRecord();
-  let newsletterMode =
-    !!data?.publication?.publication_newsletter_settings?.enabled;
+  let entries = usePublicationNavEntries();
   // Read from the live theme context so the nav responds to page-background
-  // toggles in the theme editor, not just the saved record.
+  // toggles in the theme editor.
   let cardBorderHidden = useCardBorderHiddenContext();
-  let baseHref = `/lish/${props.did}/${props.publicationName}`;
+  let { rep, rootEntity } = useReplicache();
 
-  function hrefForPath(path: string | null) {
-    let segment = path && path !== "/" ? path : "";
-    return `${baseHref}/edit${segment}`;
-  }
-
-  let sortedPages = useMemo(() => sortPublicationPages(pages), [pages]);
-  let sortableIds = useMemo(() => sortedPages.map((p) => p.id), [sortedPages]);
+  let sortableIds = useMemo(() => entries.map((e) => e.entity), [entries]);
 
   let { navRef, bgOpacity } = useNavBackgroundFade(cardBorderHidden);
 
@@ -162,32 +121,26 @@ export function PublicationPagesEditNav(props: {
 
   function handleDragEnd(event: DragEndEvent) {
     let { active, over } = event;
-    if (!over || active.id === over.id || !publicationUri) return;
+    if (!over || active.id === over.id) return;
 
-    let activeId = Number(active.id);
-    let overId = Number(over.id);
-    let oldIndex = sortedPages.findIndex((p) => p.id === activeId);
-    let newIndex = sortedPages.findIndex((p) => p.id === overId);
+    let oldIndex = entries.findIndex((e) => e.entity === active.id);
+    let newIndex = entries.findIndex((e) => e.entity === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    let reordered = arrayMove(sortedPages, oldIndex, newIndex);
-    let before = reordered[newIndex - 1]?.sort_order ?? null;
-    let after = reordered[newIndex + 1]?.sort_order ?? null;
-    let newSortOrder = generateKeyBetween(before, after);
+    let reordered = arrayMove(entries, oldIndex, newIndex);
+    let before = reordered[newIndex - 1]?.position ?? null;
+    let after = reordered[newIndex + 1]?.position ?? null;
+    let moved = entries[oldIndex];
 
-    mutatePublicationData(mutate, (draft) => {
-      let page = draft.publication?.publication_pages.find(
-        (p) => p.id === activeId,
-      );
-      if (page) page.sort_order = newSortOrder;
-    });
-
-    reorderPublicationPages({
-      publication_uri: publicationUri,
-      page_id: activeId,
-      sort_order: newSortOrder,
-    }).then((result) => {
-      if (!result.success) mutate();
+    rep?.mutate.assertFact({
+      id: moved.factID,
+      entity: rootEntity,
+      attribute: "root/page",
+      data: {
+        type: "ordered-reference",
+        value: moved.entity,
+        position: generateKeyBetween(before, after),
+      },
     });
   }
 
@@ -218,71 +171,34 @@ export function PublicationPagesEditNav(props: {
               items={sortableIds}
               strategy={horizontalListSortingStrategy}
             >
-              {sortedPages.map((page, idx) => {
-                let isActive =
-                  decodeURIComponent(pathname) ===
-                  decodeURIComponent(hrefForPath(page.path));
-                let neighbor = sortedPages[idx - 1] ?? sortedPages[idx + 1];
-                let redirectHrefOnDelete =
-                  isActive && neighbor ? hrefForPath(neighbor.path) : null;
-                return (
-                  <SortableTab
-                    key={page.id}
-                    page={page}
-                    href={hrefForPath(page.path)}
-                    active={isActive}
-                    publicationUri={publicationUri}
-                    publicationUrl={publicationRecord?.url}
-                    canDelete={sortedPages.length > 1}
-                    onUpdated={(updated) => {
-                      mutatePublicationData(mutate, (draft) => {
-                        let p = draft.publication?.publication_pages.find(
-                          (p) => p.id === page.id,
-                        );
-                        if (p) {
-                          p.title = updated.title;
-                          p.path = updated.path;
-                        }
-                      });
-                      if (isActive && updated.path !== page.path)
-                        router.push(hrefForPath(updated.path));
-                    }}
-                    onDeleted={() => {
-                      mutatePublicationData(mutate, (draft) => {
-                        let pages = draft.publication?.publication_pages;
-                        if (!pages) return;
-                        let i = pages.findIndex((p) => p.id === page.id);
-                        if (i !== -1) pages.splice(i, 1);
-                      });
-                      if (redirectHrefOnDelete)
-                        router.push(redirectHrefOnDelete);
-                    }}
-                  />
-                );
-              })}
+              {/* Deleting the selected page needs no special handling here —
+                  the editor falls back to the home page when the selected
+                  entity disappears from the nav. */}
+              {entries.map((entry) => (
+                <SortableTab
+                  key={entry.entity}
+                  entry={entry}
+                  entries={entries}
+                  active={entry.entity === props.selectedPage}
+                  publicationUrl={props.publicationUrl}
+                  onSelect={() => {
+                    if (!entry.externalUrl) props.onSelectPage(entry.entity);
+                  }}
+                />
+              ))}
             </SortableContext>
           </DndContext>
           <AddPageButton
-            publicationUri={publicationUri}
-            publicationUrl={publicationRecord?.url}
-            onCreated={async (created) => {
-              await mutate();
-              // External links have no editable page to navigate to — they just
-              // appear in the nav once created.
-              if (!isExternalLink(created.path))
-                router.push(hrefForPath(created.path));
+            entries={entries}
+            publicationUrl={props.publicationUrl}
+            onCreated={(entity, external) => {
+              if (!external) props.onSelectPage(entity);
             }}
           />
         </div>
-        {publicationUri && publicationRecord && props.hideSubscribeInHeader && (
+        {props.hideSubscribeInHeader && (
           <div className="pointer-events-none">
-            <PublicationNavSubscribe
-              publicationUri={publicationUri}
-              publicationUrl={publicationRecord.url}
-              publicationName={publicationRecord.name}
-              publicationDescription={publicationRecord.description}
-              newsletterMode={newsletterMode}
-            />
+            <PublicationNavSubscribe {...props.subscribe} />
           </div>
         )}
       </div>
@@ -295,13 +211,14 @@ export function PublicationPagesEditNav(props: {
 }
 
 function AddPageButton(props: {
-  publicationUri: string | undefined;
+  entries: PublicationNavEntry[];
   publicationUrl: string | undefined;
-  onCreated: (created: { path: string | null }) => void | Promise<void>;
+  onCreated: (entity: string, external: boolean) => void;
 }) {
-  let resolveTabPath = useResolveTabPath();
+  let { rep, rootEntity } = useReplicache();
+  let entitySet = useEntitySetContext();
+  let resolveTabRoute = useResolveTabRoute(props.entries);
   let [open, setOpen] = useState(false);
-  let [creating, setCreating] = useState(false);
   let [name, setName] = useState("");
   let [path, setPath] = useState("");
   // While the path is "linked" it tracks cleanPath(name); editing the path
@@ -335,27 +252,38 @@ function AddPageButton(props: {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (creating || !props.publicationUri) return;
+    if (!rep) return;
 
-    let path_to_create = resolveTabPath(
+    let value = resolveTabRoute(
       isExternal ? externalLink : path,
       isExternal,
     );
-    if (path_to_create === null) return;
+    if (value === null) return;
 
-    setCreating(true);
-    let created = await createPublicationPage({
-      publication_uri: props.publicationUri,
-      path: path_to_create,
-      title: name.trim() || undefined,
-    });
-    setCreating(false);
-    if (!created) return;
+    let newEntity = v7();
+    if (isExternal) {
+      await rep.mutate.addPublicationNavLink({
+        rootEntity,
+        linkEntity: newEntity,
+        permission_set: entitySet.set,
+        navFactID: v7(),
+        url: value,
+        title: name.trim(),
+      });
+    } else {
+      await rep.mutate.addPublicationNavPage({
+        rootEntity,
+        pageEntity: newEntity,
+        permission_set: entitySet.set,
+        navFactID: v7(),
+        route: value,
+        title: name.trim(),
+        firstBlockEntity: v7(),
+        firstBlockFactID: v7(),
+      });
+    }
     setOpen(false);
-    setName("");
-    setPath("");
-    setPathLinked(true);
-    await props.onCreated(created);
+    props.onCreated(newEntity, isExternal);
   }
 
   return (
@@ -436,7 +364,6 @@ function AddPageButton(props: {
         <ButtonPrimary
           type="submit"
           disabled={
-            creating ||
             !name.trim() ||
             (isExternal ? !externalLink.trim() : !path.trim())
           }
@@ -444,7 +371,7 @@ function AddPageButton(props: {
           compact
           className="mt-2"
         >
-          {creating ? <DotLoader /> : "Create Page"}
+          Create Page
         </ButtonPrimary>
       </form>
     </Popover>
@@ -452,15 +379,11 @@ function AddPageButton(props: {
 }
 
 function SortableTab(props: {
-  page: SortablePage;
-  href: string;
+  entry: PublicationNavEntry;
+  entries: PublicationNavEntry[];
   active: boolean;
-  publicationUri: string | undefined;
   publicationUrl: string | undefined;
-
-  canDelete: boolean;
-  onUpdated: (updated: { title: string; path: string }) => void;
-  onDeleted: () => void;
+  onSelect: () => void;
 }) {
   let {
     attributes,
@@ -470,15 +393,17 @@ function SortableTab(props: {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: props.page.id });
-  let resolveTabPath = useResolveTabPath();
-  let external = isExternalLink(props.page.path);
+  } = useSortable({ id: props.entry.entity });
+  let { rep, rootEntity } = useReplicache();
+  let resolveTabRoute = useResolveTabRoute(props.entries);
+  let external = !!props.entry.externalUrl;
+  let isHome = props.entry.route === "/";
   let [popoverOpen, setPopoverOpen] = useState(false);
   let [mode, setMode] = useState<"edit" | "confirm">("edit");
-  let [name, setName] = useState(props.page.title);
-  let [path, setPath] = useState(props.page.path ?? "/");
-  let [saving, setSaving] = useState(false);
-  let [deleting, setDeleting] = useState(false);
+  let [name, setName] = useState(props.entry.title);
+  let [path, setPath] = useState(
+    props.entry.externalUrl ?? props.entry.route ?? "/",
+  );
 
   let style = {
     transform: CSS.Translate.toString(transform),
@@ -488,45 +413,65 @@ function SortableTab(props: {
   function handleOpenChange(o: boolean) {
     setPopoverOpen(o);
     if (o) {
-      setName(props.page.title);
-      setPath(props.page.path ?? "/");
+      setName(props.entry.title);
+      setPath(props.entry.externalUrl ?? props.entry.route ?? "/");
       setMode("edit");
     }
   }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!props.publicationUri || saving) return;
+    if (!rep) return;
 
-    let nextPath = resolveTabPath(path, external, props.page.id);
+    // The home page always lives at "/"; only its title can change.
+    let nextPath = isHome
+      ? "/"
+      : resolveTabRoute(path, external, props.entry.entity);
     if (nextPath === null) return;
 
     let trimmedTitle = name.trim();
-    setSaving(true);
-    let result = await updatePublicationPage({
-      publication_uri: props.publicationUri,
-      page_id: props.page.id,
-      title: trimmedTitle,
-      path: nextPath,
-    });
-    setSaving(false);
-    if (!result.success) return;
+    await rep.mutate.assertFact([
+      {
+        entity: props.entry.entity,
+        attribute: "page/title",
+        data: { type: "string", value: trimmedTitle },
+      },
+      external
+        ? {
+            entity: props.entry.entity,
+            attribute: "page/external-url",
+            data: { type: "string", value: nextPath },
+          }
+        : {
+            entity: props.entry.entity,
+            attribute: "page/route",
+            data: { type: "string", value: nextPath },
+          },
+    ]);
     setPopoverOpen(false);
-    props.onUpdated({ title: trimmedTitle, path: nextPath });
   }
 
   async function handleDelete() {
-    if (!props.publicationUri || deleting) return;
-    setDeleting(true);
-    let result = await deletePublicationPage({
-      publication_uri: props.publicationUri,
-      page_id: props.page.id,
+    if (!rep) return;
+    await rep.mutate.removePublicationNavEntry({
+      rootEntity,
+      entity: props.entry.entity,
     });
-    setDeleting(false);
-    if (!result.success) return;
     setPopoverOpen(false);
-    props.onDeleted();
   }
+
+  let label = (
+    <>
+      {props.entry.title ||
+        props.entry.externalUrl ||
+        props.entry.route ||
+        "/"}{" "}
+      {external && <ExternalLinkTiny />}
+    </>
+  );
+  let tabClassName = `block px-1 pt-1 pb-0.5 text-sm font-bold text-inherit no-underline! select-none border-b-3 ${
+    props.active ? "border-accent-contrast" : "border-transparent"
+  }`;
 
   return (
     <div
@@ -540,14 +485,20 @@ function SortableTab(props: {
           : "text-tertiary hover:text-secondary"
       }`}
     >
-      <PublicationNavTabLink
-        href={external && props.page.path ? props.page.path : props.href}
-        external={external}
-        active={props.active}
-      >
-        {props.page.title || props.page.path || "/"}{" "}
-        {external && <ExternalLinkTiny />}
-      </PublicationNavTabLink>
+      {external ? (
+        <a
+          href={props.entry.externalUrl!}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex gap-1 items-center ${tabClassName}`}
+        >
+          {label}
+        </a>
+      ) : (
+        <button type="button" onClick={props.onSelect} className={tabClassName}>
+          {label}
+        </button>
+      )}
       <div
         className={`absolute top-full inset-x-0 flex items-center pt-0.5 ${
           props.active || popoverOpen
@@ -616,6 +567,13 @@ function SortableTab(props: {
                 onChange={(e) => setPath(e.currentTarget.value)}
                 placeholder="https://example.com"
               />
+            ) : isHome ? (
+              <div className="text-sm text-tertiary leading-tight -mt-1">
+                The home page always lives at{" "}
+                <strong>
+                  {props.publicationUrl?.replace(/^https?:\/\//, "")}/
+                </strong>
+              </div>
             ) : (
               <>
                 <InputWithLabel
@@ -635,10 +593,10 @@ function SortableTab(props: {
               </>
             )}
 
-            <ButtonPrimary type="submit" disabled={saving} fullWidth compact>
-              {saving ? "Saving..." : "Save"}
+            <ButtonPrimary type="submit" fullWidth compact>
+              Save
             </ButtonPrimary>
-            {props.canDelete && (
+            {!isHome && (
               <>
                 <hr className="mt-1 border-border-light" />
                 <ButtonTertiary
@@ -657,16 +615,17 @@ function SortableTab(props: {
             <div className="text-secondary  pb-1">
               This will permanently delete{" "}
               <div className="font-bold text-secondary">
-                {props.page.title || props.page.path || "this page"}
+                {props.entry.title ||
+                  props.entry.externalUrl ||
+                  props.entry.route ||
+                  "this page"}
               </div>
             </div>
             <div className="flex gap-2 justify-center items-center pb-1">
               <ButtonTertiary type="button" onClick={() => setMode("edit")}>
                 Nevermind
               </ButtonTertiary>
-              <ButtonPrimary onClick={handleDelete} disabled={deleting}>
-                {deleting ? "Deleting..." : "Delete"}
-              </ButtonPrimary>
+              <ButtonPrimary onClick={handleDelete}>Delete</ButtonPrimary>
             </div>
           </div>
         )}

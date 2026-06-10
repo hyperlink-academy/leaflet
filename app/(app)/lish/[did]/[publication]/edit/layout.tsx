@@ -6,8 +6,7 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { LoginModal } from "components/LoginButton";
 import { AtUri } from "@atproto/syntax";
-import { PublicationSWRDataProvider } from "../../dashboard/PublicationSWRProvider";
-import { PublicationEditThemeProvider } from "./PublicationEditThemeProvider";
+import { PublicationSWRDataProvider } from "../dashboard/PublicationSWRProvider";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -83,12 +82,7 @@ export default async function PublicationEditLayout(props: {
       publication_rkey={uri.rkey}
       publication_data={publication_data}
     >
-      <PublicationEditThemeProvider
-        did={params.did}
-        publicationName={params.publication}
-      >
-        {props.children}
-      </PublicationEditThemeProvider>
+      {props.children}
     </PublicationSWRDataProvider>
   );
 }

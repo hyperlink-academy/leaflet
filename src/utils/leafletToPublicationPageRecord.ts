@@ -15,6 +15,8 @@ import {
 export async function leafletToPublicationPageRecord(opts: {
   facts: Fact<Attribute>[];
   root_entity: string;
+  // Set when the facts hold a whole draft leaflet rather than one page's.
+  start_page?: string;
   publication_uri: string;
   path: string;
   title?: string;
@@ -24,6 +26,7 @@ export async function leafletToPublicationPageRecord(opts: {
   const { pages } = await processBlocksToPages({
     facts: opts.facts,
     root_entity: opts.root_entity,
+    start_page: opts.start_page,
     hooks: opts.hooks,
   });
 

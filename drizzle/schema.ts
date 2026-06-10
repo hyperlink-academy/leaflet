@@ -37,6 +37,7 @@ export const publications = pgTable("publications", {
 	name: text("name").notNull(),
 	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	record: jsonb("record"),
+	draft_leaflet: uuid("draft_leaflet").references(() => permission_tokens.id),
 },
 (table) => {
 	return {
@@ -600,19 +601,18 @@ export const publication_pages = pgTable("publication_pages", {
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	id: bigint("id", { mode: "number" }).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	leaflet_src: uuid("leaflet_src").references(() => permission_tokens.id),
+	page_entity: uuid("page_entity"),
 	document: text("document").references(() => documents.uri),
 	path: text("path"),
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
 	title: text("title").default('').notNull(),
-	metadata: jsonb("metadata").default({}).notNull(),
 	record: jsonb("record"),
 	record_uri: text("record_uri"),
 	sort_order: text("sort_order").notNull(),
-	published_metadata: jsonb("published_metadata"),
 },
 (table) => {
 	return {
 		publication_pages_pkey: primaryKey({ columns: [table.id, table.publication], name: "publication_pages_pkey"}),
+		publication_pages_publication_page_entity_idx: uniqueIndex("publication_pages_publication_page_entity_idx").on(table.publication, table.page_entity),
 	}
 });
