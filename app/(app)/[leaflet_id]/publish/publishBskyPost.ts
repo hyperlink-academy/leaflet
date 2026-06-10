@@ -97,22 +97,44 @@ export async function publishPostToBsky(args: {
       height: 733,
       noCache: true,
     });
-    imageBinary = await preview_image.blob();
+    // On failure the screenshot service returns a non-2xx with a JSON error
+    // body, not image bytes (a 422 here usually means the render timed out).
+    // Feeding that to sharp throws "unsupported image format", so guard on .ok.
+    if (preview_image.ok) {
+      imageBinary = await preview_image.blob();
+    } else {
+      console.error(
+        `Screenshot for bsky card failed (${preview_image.status}): ${await preview_image
+          .text()
+          .catch(() => "")}`,
+      );
+    }
   }
 
-  // Resize and upload
-  let resizedImage = await sharp(await imageBinary.arrayBuffer())
-    .resize({
-      width: 1200,
-      height: 630,
-      fit: "cover",
-    })
-    .webp({ quality: 85 })
-    .toBuffer();
+  // Resize and upload. A screenshot hiccup or unexpected image format should
+  // degrade to a card without a thumbnail rather than failing the publish, so
+  // keep `blob` optional and tolerate sharp throwing.
+  let blob:
+    | Awaited<ReturnType<typeof agent.com.atproto.repo.uploadBlob>>
+    | undefined;
+  if (imageBinary) {
+    try {
+      let resizedImage = await sharp(await imageBinary.arrayBuffer())
+        .resize({
+          width: 1200,
+          height: 630,
+          fit: "cover",
+        })
+        .webp({ quality: 85 })
+        .toBuffer();
 
-  let blob = await agent.com.atproto.repo.uploadBlob(resizedImage, {
-    headers: { "Content-Type": "image/webp" },
-  });
+      blob = await agent.com.atproto.repo.uploadBlob(resizedImage, {
+        headers: { "Content-Type": "image/webp" },
+      });
+    } catch (e) {
+      console.error("Failed to process bsky card thumbnail:", e);
+    }
+  }
 
   // Reference the document and, when it lives in a publication, the publication
   // record on the post so the appview can index the relationship. Our DB
@@ -143,7 +165,7 @@ export async function publishPostToBsky(args: {
     uri: args.url,
     title: args.title,
     description: args.description,
-    thumb: blob.data.blob,
+    ...(blob ? { thumb: blob.data.blob } : {}),
   };
   if (associatedRefs.length > 0) external.associatedRefs = associatedRefs;
 
