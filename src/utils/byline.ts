@@ -1,3 +1,4 @@
+import { AtUri } from "@atproto/syntax";
 import type { NormalizedDocument } from "lexicons/src/normalize";
 import type { Profile } from "src/identity/profileCache";
 
@@ -98,6 +99,58 @@ export function formatBylineNames(names: string[]): string {
     (acc, name, i) => acc + bylineSeparator(i, names.length) + name,
     "",
   );
+}
+
+/** A post with the minimum fields needed to resolve its byline. */
+type BylinePost = {
+  uri: string;
+  record: Pick<NormalizedDocument, "contributors">;
+};
+
+/** The author DID for a post — the host of its document AT-URI, or null. */
+function postOwnerDid(uri: string): string | null {
+  try {
+    return new AtUri(uri).host;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * All distinct byline DIDs across a set of posts — each post's contributors
+ * when present, otherwise its author (the AT-URI host). Use to batch a single
+ * `getProfiles` lookup before attaching per-post byline profiles.
+ */
+export function bylineDidsForPosts(posts: BylinePost[]): string[] {
+  const dids = new Set<string>();
+  for (const post of posts) {
+    const owner = postOwnerDid(post.uri);
+    if (!owner) continue;
+    for (const did of getBylineDids(post.record, owner)) dids.add(did);
+  }
+  return Array.from(dids);
+}
+
+/**
+ * Attaches resolved `bylineProfiles` (in byline order) to each post, given a
+ * map of did -> profile such as the one returned by `getProfiles`. Posts whose
+ * URI can't be parsed get an empty list. Used by the server render paths so
+ * post-list bylines land in the initial HTML instead of being fetched on the
+ * client.
+ */
+export function attachBylineProfiles<T extends BylinePost>(
+  posts: T[],
+  profiles: Map<string, Pick<Profile, "handle" | "displayName"> | null>,
+): (T & { bylineProfiles: BylineProfile[] })[] {
+  return posts.map((post) => {
+    const owner = postOwnerDid(post.uri);
+    return {
+      ...post,
+      bylineProfiles: owner
+        ? toBylineProfiles(getBylineDids(post.record, owner), profiles)
+        : [],
+    };
+  });
 }
 
 /**

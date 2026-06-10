@@ -8,8 +8,13 @@ import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { DefaultPublicationHomepage } from "./DefaultPublicationHomepage";
+import {
+  DefaultPublicationHomepage,
+  buildHomepagePosts,
+} from "./DefaultPublicationHomepage";
 import { tryRenderPublicationPage } from "./tryRenderPublicationPage";
+import { getProfiles } from "src/identity";
+import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
 import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
@@ -60,6 +65,14 @@ export default async function Publication(props: {
       path: "/",
     });
     if (homePageRender) return homePageRender;
+    // Resolve post bylines server-side so author names are in the SSR HTML.
+    const homepagePosts = buildHomepagePosts(
+      publication.documents_in_publications,
+    );
+    const homepagePostsWithByline = attachBylineProfiles(
+      homepagePosts,
+      await getProfiles(bylineDidsForPosts(homepagePosts)),
+    );
     return (
       <PublicationThemeProvider
         record={record}
@@ -75,6 +88,7 @@ export default async function Publication(props: {
             did={did}
             profile={profile}
             showPageBackground={showPageBackground}
+            posts={homepagePostsWithByline}
           />
         </PublicationBackgroundProvider>
       </PublicationThemeProvider>

@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useMemo } from "react";
 import { AtUri } from "@atproto/api";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { InteractionPreview } from "components/InteractionsPreview";
@@ -15,6 +17,22 @@ import {
 } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
+import { useContributorProfiles } from "src/hooks/useContributorProfiles";
+import {
+  getBylineDids,
+  toBylineProfiles,
+  formatBylineProfiles,
+  type BylineProfile,
+} from "src/utils/byline";
+
+// The author DID for a post is the host of its document AT-URI.
+function postOwnerDid(uri: string): string | null {
+  try {
+    return new AtUri(uri).host;
+  } catch {
+    return null;
+  }
+}
 
 export type PublicationPostsListPost = {
   uri: string;
@@ -22,6 +40,10 @@ export type PublicationPostsListPost = {
   commentsCount: number;
   mentionsCount: number;
   recommendsCount: number;
+  // Byline profiles resolved server-side (in order). When present, the list
+  // renders these directly; when absent (editor / theme preview) the component
+  // resolves them on the client via useContributorProfiles.
+  bylineProfiles?: BylineProfile[];
 };
 
 export type PublicationPostsListFakePost = {
@@ -54,6 +76,38 @@ export function PublicationPostsList({
   highlightFirstPost?: boolean;
   className?: string;
 }) {
+  // Resolve a byline name per post: the post's explicit contributors when
+  // present, otherwise the document author (publication owner). Server render
+  // paths attach `bylineProfiles` so they appear in the initial HTML; for any
+  // post without them (editor / theme preview) we resolve client-side here,
+  // batched into a single get_profiles lookup keyed on the full DID set.
+  const unresolvedDids = useMemo(() => {
+    const dids = new Set<string>();
+    for (const post of posts ?? []) {
+      if (post.bylineProfiles) continue;
+      const owner = postOwnerDid(post.uri);
+      if (!owner) continue;
+      for (const did of getBylineDids(post.record, owner)) dids.add(did);
+    }
+    return Array.from(dids);
+  }, [posts]);
+  const { data: profilesRecord } = useContributorProfiles(unresolvedDids);
+  const authorByUri = useMemo(() => {
+    const profiles = new Map(Object.entries(profilesRecord ?? {}));
+    const map = new Map<string, string | undefined>();
+    for (const post of posts ?? []) {
+      let byline = post.bylineProfiles;
+      if (!byline) {
+        const owner = postOwnerDid(post.uri);
+        byline = owner
+          ? toBylineProfiles(getBylineDids(post.record, owner), profiles)
+          : [];
+      }
+      map.set(post.uri, formatBylineProfiles(byline));
+    }
+    return map;
+  }, [posts, profilesRecord]);
+
   return (
     <div
       className={`publicationPostList w-full flex flex-col gap-2 ${className}`}
@@ -150,6 +204,7 @@ export function PublicationPostsList({
                       description={
                         doc_record.description || getFirstParagraph(doc_record)
                       }
+                      author={authorByUri.get(post.uri)}
                       date={date}
                       interactions={interactions}
                       coverImageSrc={coverImageSrc}
@@ -168,6 +223,7 @@ export function PublicationPostsList({
                       inList
                       href={docUrl}
                       title={doc_record.title}
+                      author={authorByUri.get(post.uri)}
                       date={date}
                       interactions={interactions}
                     />
@@ -185,6 +241,7 @@ export function PublicationPostsList({
                     description={
                       doc_record.description || getFirstParagraph(doc_record)
                     }
+                    author={authorByUri.get(post.uri)}
                     date={date}
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}

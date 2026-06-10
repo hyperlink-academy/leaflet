@@ -18,6 +18,39 @@ import {
 
 type FakePost = PublicationPostsListFakePost;
 
+type HomepageDocuments = {
+  documents: {
+    uri: string;
+    data: unknown;
+    comments_on_documents: { count: number }[];
+    document_mentions_in_bsky: { count: number }[];
+    recommends_on_documents: { count: number }[];
+  } | null;
+}[];
+
+// Builds the post list for the default homepage from the raw
+// documents_in_publications rows. Shared by the server page (which then
+// resolves bylines via getProfiles) and the in-component fallback used by the
+// client theme preview.
+export function buildHomepagePosts(
+  documentsInPublications: HomepageDocuments,
+): PublicationPostsListPost[] {
+  return documentsInPublications
+    .map((dip) => {
+      if (!dip.documents) return null;
+      const normalized = normalizeDocumentRecord(dip.documents.data);
+      if (!normalized) return null;
+      return {
+        uri: dip.documents.uri,
+        record: normalized,
+        commentsCount: dip.documents.comments_on_documents[0]?.count || 0,
+        mentionsCount: dip.documents.document_mentions_in_bsky[0]?.count || 0,
+        recommendsCount: dip.documents.recommends_on_documents?.[0]?.count || 0,
+      };
+    })
+    .filter((p): p is PublicationPostsListPost => p !== null);
+}
+
 export const DefaultPublicationHomepage = ({
   record,
   publication,
@@ -25,6 +58,7 @@ export const DefaultPublicationHomepage = ({
   profile,
   showPageBackground,
   fakePosts,
+  posts: resolvedPosts,
 }: {
   record: ReturnType<typeof normalizePublicationRecord>;
   publication: {
@@ -55,28 +89,17 @@ export const DefaultPublicationHomepage = ({
   profile: { did: string; displayName?: string; handle: string } | undefined;
   showPageBackground: boolean | undefined;
   fakePosts?: FakePost[];
+  // Posts with bylines resolved server-side. When omitted (client theme
+  // preview) the list is built here and bylines resolve on the client.
+  posts?: PublicationPostsListPost[];
 }) => {
   const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
   // publication_pages rows are published state, so the nav reads them directly.
   const navPages = publishedNavPages(publication.publication_pages);
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
-    : publication.documents_in_publications
-        .map((dip) => {
-          if (!dip.documents) return null;
-          const normalized = normalizeDocumentRecord(dip.documents.data);
-          if (!normalized) return null;
-          return {
-            uri: dip.documents.uri,
-            record: normalized,
-            commentsCount: dip.documents.comments_on_documents[0]?.count || 0,
-            mentionsCount:
-              dip.documents.document_mentions_in_bsky[0]?.count || 0,
-            recommendsCount:
-              dip.documents.recommends_on_documents?.[0]?.count || 0,
-          };
-        })
-        .filter((p): p is PublicationPostsListPost => p !== null);
+    : (resolvedPosts ??
+      buildHomepagePosts(publication.documents_in_publications));
   return (
     <>
       <FontLoader

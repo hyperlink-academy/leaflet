@@ -28,6 +28,8 @@ import { publishedNavPages } from "src/utils/publishedPageMetadata";
 
 import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { PostContent } from "./PostContent";
+import { getProfiles } from "src/identity";
+import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
 
 export type PublicationPageRecord = PubLeafletPublicationPage.Record;
 
@@ -124,12 +126,20 @@ export async function PublicationPageRenderer({
         .filter((p): p is PublicationPostsListPost => p !== null)
     : [];
 
+  // Resolve bylines server-side so post-list author names are in the SSR HTML.
+  const postsListPostsWithByline = hasPostsList
+    ? attachBylineProfiles(
+        postsListPosts,
+        await getProfiles(bylineDidsForPosts(postsListPosts)),
+      )
+    : postsListPosts;
+
   const postsListData = hasPostsList
     ? {
         publication: { uri: publication.uri, record: publication.record },
         publicationRecord:
           normalizedPublication as NormalizedPublication | null,
-        posts: postsListPosts,
+        posts: postsListPostsWithByline,
       }
     : undefined;
 
