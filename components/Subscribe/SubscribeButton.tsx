@@ -126,6 +126,23 @@ export const SubscribeInput = (props: SubscribeProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.newsletterMode]);
 
+  // The atproto subscribe flow pops oauth into a new tab when the form is
+  // embedded in an iframe (see HandleSubscribe.redirectToOauthForSubscribe).
+  // The oauth callback writes the subscription and redirects back here with
+  // `showSubscribeSuccess=true`; open the success modal and clear the param.
+  useEffect(() => {
+    if (searchParams.get("showSubscribeSuccess") !== "true") return;
+    setAtSuccessOpen(true);
+    setLocallySubscribed(true);
+    mutateIdentity();
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("showSubscribeSuccess");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const sendRequest = async (link: boolean) => {
     setRequesting(true);
     setLinkToCurrent(link);
@@ -272,21 +289,26 @@ export const SubscribeInput = (props: SubscribeProps) => {
           }}
         />
       )}
+      {/* Shown after an atproto subscribe completes — either inline (the
+          newsletter "subscribe via Atmosphere" branch) or when the oauth flow
+          redirects back with `showSubscribeSuccess` after popping login into a
+          new tab from an embedded iframe. Rendered for every pub, not just
+          newsletters, so the iframe success path works on atproto-only pubs. */}
+      <Modal
+        open={atSuccessOpen}
+        onOpenChange={(open) => {
+          setAtSuccessOpen(open);
+          if (!open) {
+            setLocallySubscribed(true);
+            mutateIdentity();
+            router.refresh();
+          }
+        }}
+      >
+        <AtSubscribeSuccess />
+      </Modal>
       {props.newsletterMode && (
         <>
-          <Modal
-            open={atSuccessOpen}
-            onOpenChange={(open) => {
-              setAtSuccessOpen(open);
-              if (!open) {
-                setLocallySubscribed(true);
-                mutateIdentity();
-                router.refresh();
-              }
-            }}
-          >
-            <AtSubscribeSuccess />
-          </Modal>
           <Modal
             open={confirmOpen}
             onOpenChange={(open) => {

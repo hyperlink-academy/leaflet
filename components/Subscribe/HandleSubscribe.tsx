@@ -40,6 +40,18 @@ const apps = [
   { name: "Graze", logo: "https://leaflet.pub/logos/graze.svg" },
 ];
 
+// True when this document is running inside an iframe. Reading `window.top`
+// across origins throws a SecurityError, which itself only happens when we're
+// framed by a different origin — so treat that as being framed too.
+const isInIframe = () => {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
   compact?: boolean;
@@ -73,11 +85,27 @@ export const SubscribeWithHandle = (props: {
       action: "subscribe",
       publication: props.publicationUri,
     });
+    let inIframe = isInIframe();
     let url = new URL(window.location.href);
     url.searchParams.set("refreshAuth", "");
+    // When the subscribe form is embedded in an iframe we can't run the oauth
+    // flow in-frame (the PDS login page refuses to be framed), so we pop it into
+    // a new top-level tab. That tab needs to land somewhere that surfaces the
+    // result — `showSubscribeSuccess` is preserved through the oauth callback's
+    // redirect and consumed by SubscribeInput to show the success modal once the
+    // subscription has been written.
+    if (inIframe) url.searchParams.set("showSubscribeSuccess", "true");
     let redirectUrl = encodeURIComponent(url.toString());
     let extra = link ? "&link=true&autoMerge=true" : "";
-    window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
+    let loginUrl = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
+    if (inIframe) {
+      window.open(loginUrl, "_blank", "noopener,noreferrer");
+      // The iframe stays put while the user completes login in the new tab —
+      // clear the pending spinner so the embedded form isn't stuck loading.
+      setLoading(false);
+      return;
+    }
+    window.location.href = loginUrl;
   };
 
   // Without a handle there's no atproto identity to one-click subscribe with, so
