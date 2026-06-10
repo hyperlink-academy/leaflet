@@ -90,7 +90,7 @@ export function NewPublicationHeader(props: {
   edit?: boolean;
 }) {
   let title = (
-    <h2 className={`sm:text-xl text-[1.5rem]`}>
+    <h2 className={`sm:text-xl text-[1.5rem] text-accent-contrast`}>
       {props.subscribe?.publicationName}
     </h2>
   );
