@@ -10,10 +10,12 @@ import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { publishedNavPages } from "src/utils/publishedPageMetadata";
 import {
   PublicationPostsList,
-  buildPublicationPosts,
-  type PublicationPostsListPost,
   type PublicationPostsListFakePost,
 } from "./PublicationPostsList";
+import {
+  buildPublicationPosts,
+  type PublicationPostsListPost,
+} from "./buildPublicationPosts";
 
 type FakePost = PublicationPostsListFakePost;
 

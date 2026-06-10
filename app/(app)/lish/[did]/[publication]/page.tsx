@@ -9,7 +9,7 @@ import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { DefaultPublicationHomepage } from "./DefaultPublicationHomepage";
-import { buildPublicationPosts } from "./PublicationPostsList";
+import { buildPublicationPosts } from "./buildPublicationPosts";
 import { tryRenderPublicationPage } from "./tryRenderPublicationPage";
 import { getProfiles } from "src/identity";
 import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";

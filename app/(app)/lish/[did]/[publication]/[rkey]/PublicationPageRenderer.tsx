@@ -19,7 +19,7 @@ import { FontLoader } from "components/FontLoader";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { DocumentProvider } from "contexts/DocumentContext";
 import type { DocumentContextValue } from "contexts/DocumentContext";
-import { buildPublicationPosts } from "../PublicationPostsList";
+import { buildPublicationPosts } from "../buildPublicationPosts";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
