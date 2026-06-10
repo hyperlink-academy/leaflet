@@ -310,7 +310,7 @@ const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
 };
 
 // Add a content page to a publication draft leaflet's nav, seeded with a
-// single heading block.
+// single empty text block.
 const addPublicationNavPage: Mutation<{
   rootEntity: string;
   pageEntity: string;
@@ -359,17 +359,12 @@ const addPublicationNavPage: Mutation<{
       factID: args.firstBlockFactID,
       permission_set: args.permission_set,
       newEntityID: args.firstBlockEntity,
-      type: "heading",
+      type: "text",
       parent: args.pageEntity,
       position: "a0",
     },
     ctx,
   );
-  await ctx.assertFact({
-    entity: args.firstBlockEntity,
-    attribute: "block/heading-level",
-    data: { type: "number", value: 1 },
-  });
 };
 
 // Add an external link tab: same root/page list as content pages, but with an
