@@ -3,7 +3,7 @@ import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { ySyncPlugin } from "y-prosemirror";
+import { ySyncPlugin, yCursorPlugin } from "y-prosemirror";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { useReplicache } from "src/replicache";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
@@ -27,7 +27,7 @@ export function FootnoteEditor(props: {
 }) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let rep = useReplicache();
-  let value = useYJSValue(props.footnoteEntityID);
+  let { yText: value, awareness } = useYJSValue(props.footnoteEntityID);
   let actionTimeout = useRef<number | null>(null);
   let { pageID } = useFootnoteContext();
 
@@ -36,6 +36,7 @@ export function FootnoteEditor(props: {
 
     let plugins = [
       ySyncPlugin(value),
+      yCursorPlugin(awareness),
       keymap({
         "Meta-b": toggleMark(schema.marks.strong),
         "Ctrl-b": toggleMark(schema.marks.strong),
@@ -180,6 +181,7 @@ export function FootnoteEditor(props: {
   }, [
     props.footnoteEntityID,
     value,
+    awareness,
     props.editable,
     props.autoFocus,
     rep.undoManager,

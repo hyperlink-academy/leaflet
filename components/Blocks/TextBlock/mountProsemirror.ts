@@ -3,8 +3,9 @@ import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { ySyncPlugin } from "y-prosemirror";
+import { ySyncPlugin, yCursorPlugin } from "y-prosemirror";
 import * as Y from "yjs";
+import { Awareness } from "y-protocols/awareness";
 import * as base64 from "base64-js";
 import { Replicache } from "replicache";
 import { produce } from "immer";
@@ -29,6 +30,8 @@ import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import {
   useLinkPopoverStore,
 } from "components/LinkPopover";
+import { useYjsRealtime, YjsRealtimeConnection } from "src/yjsRealtime";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function useMountProsemirror({
   props,
@@ -41,7 +44,7 @@ export function useMountProsemirror({
   let rep = useReplicache();
   let mountRef = useRef<HTMLPreElement | null>(null);
   const repRef = useRef<Replicache<ReplicacheMutators> | null>(null);
-  let value = useYJSValue(entityID);
+  let { yText: value, awareness } = useYJSValue(entityID);
   let entity_set = useEntitySetContext();
   let alignment =
     useEntity(entityID, "block/text-alignment")?.data.value || "left";
@@ -66,6 +69,7 @@ export function useMountProsemirror({
       schema: schema,
       plugins: [
         ySyncPlugin(value),
+        yCursorPlugin(awareness),
         keymap(km),
         inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
@@ -275,7 +279,7 @@ export function useMountProsemirror({
         };
       });
     }
-  }, [entityID, parent, value, handlePaste, rep]);
+  }, [entityID, parent, value, awareness, handlePaste, rep]);
   return { mountRef, actionTimeout };
 }
 
@@ -305,16 +309,55 @@ export function trackUndoRedo(
   }
 }
 
+const CURSOR_COLORS = [
+  "#30bced",
+  "#6eeb83",
+  "#ffbc42",
+  "#ecd444",
+  "#ee6352",
+  "#9ac2c9",
+  "#8acb88",
+  "#1be7ff",
+];
+
 export function useYJSValue(entityID: string) {
-  const [ydoc] = useState(new Y.Doc());
+  const [ydoc] = useState(() => new Y.Doc());
   const docStateFromReplicache = useEntity(entityID, "block/text");
   let rep = useReplicache();
-  const [yText] = useState(ydoc.getXmlFragment("prosemirror"));
+  let realtime = useYjsRealtime();
+  let { identity } = useIdentityData();
+  const [yText] = useState(() => ydoc.getXmlFragment("prosemirror"));
+  const [awareness] = useState(() => new Awareness(ydoc));
 
   if (docStateFromReplicache) {
     const update = base64.toByteArray(docStateFromReplicache.data.value);
     Y.applyUpdate(ydoc, update);
   }
+
+  let userName =
+    identity?.bsky_profiles?.record?.displayName ||
+    identity?.bsky_profiles?.handle ||
+    "Anonymous";
+  useEffect(() => {
+    awareness.setLocalStateField("user", {
+      name: userName,
+      color: CURSOR_COLORS[ydoc.clientID % CURSOR_COLORS.length],
+    });
+  }, [awareness, userName, ydoc]);
+
+  // Broadcast local edits and cursor positions to connected peers, and apply
+  // theirs as they arrive. Cursors only ever travel over the channel; doc
+  // updates also flow through replicache below.
+  useEffect(() => {
+    if (!realtime) return;
+    return realtime.register(entityID, ydoc, awareness);
+  }, [realtime, entityID, ydoc, awareness]);
+
+  useEffect(() => {
+    return () => {
+      awareness.destroy();
+    };
+  }, [awareness]);
 
   useEffect(() => {
     if (!rep.rep) return;
@@ -333,7 +376,11 @@ export function useYJSValue(entityID: string) {
       });
     };
     const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
+      // Transactions with no origin come from replicache itself, and ones
+      // originating from the realtime channel are persisted by the peer that
+      // authored them — only local edits should be written back.
       if (!transaction.origin) return;
+      if (transaction.origin instanceof YjsRealtimeConnection) return;
       if (timeout) clearTimeout(timeout);
       timeout = window.setTimeout(async () => {
         updateReplicache();
@@ -345,5 +392,5 @@ export function useYJSValue(entityID: string) {
       yText.unobserveDeep(f);
     };
   }, [yText, entityID, rep, ydoc]);
-  return yText;
+  return { yText, awareness };
 }

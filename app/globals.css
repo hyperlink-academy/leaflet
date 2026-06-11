@@ -715,3 +715,32 @@ body.cmd-held .ProseMirror a {
 .toastError a {
   color: var(--color-white);
 }
+
+/* Collaborative cursors rendered by y-prosemirror's yCursorPlugin.
+   Border and background colors are overridden inline per user. */
+.ProseMirror-yjs-cursor {
+  position: relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: 1px solid orange;
+  border-right: 1px solid orange;
+  word-break: normal;
+  pointer-events: none;
+}
+.ProseMirror-yjs-cursor > div {
+  position: absolute;
+  top: -1.05em;
+  left: -1px;
+  font-size: 12px;
+  background-color: rgb(250, 129, 0);
+  font-family: inherit;
+  font-style: normal;
+  font-weight: normal;
+  line-height: normal;
+  user-select: none;
+  color: white;
+  padding-left: 2px;
+  padding-right: 2px;
+  white-space: nowrap;
+  border-radius: 2px 2px 2px 0;
+}
