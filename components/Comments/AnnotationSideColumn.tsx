@@ -10,7 +10,7 @@ import { FootnoteEditor } from "components/Footnotes/FootnoteEditor";
 import { deleteFootnoteFromBlock } from "components/Footnotes/deleteFootnoteFromBlock";
 import { FootnoteSideColumnLayout } from "components/Footnotes/FootnoteSideColumnLayout";
 import { useCommentContext } from "./CommentContext";
-import { useCommentDraftStore } from "./commentStores";
+import { useCommentDraftStore, useCommentSheetStore } from "./commentStores";
 import { cancelCommentDraft, submitCommentDraft } from "./commentDraftActions";
 import { CommentComposer } from "./CommentComposer";
 import { CommentThread } from "./CommentThread";
@@ -145,12 +145,17 @@ export function CommentDraftComposer(props: { autoFocus?: boolean }) {
       submitLabel="Submit"
       onSubmit={async (ydoc: Y.Doc) => {
         if (!rep.rep) return;
-        await submitCommentDraft({
+        let commentEntityID = await submitCommentDraft({
           rep: rep.rep,
           permissionSet: entity_set.set,
           authorDid: atp_did,
           ydoc,
         });
+        // If drafting in the mobile sheet, show the posted thread there
+        let sheet = useCommentSheetStore.getState();
+        if (commentEntityID && sheet.pageID) {
+          sheet.openSheet(sheet.pageID, commentEntityID);
+        }
       }}
       onCancel={cancelCommentDraft}
     />
