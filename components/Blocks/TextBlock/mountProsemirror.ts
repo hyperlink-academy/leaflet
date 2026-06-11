@@ -28,8 +28,6 @@ import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import {
   useLinkPopoverStore,
-  scheduleLinkPopoverClose,
-  cancelLinkPopoverClose,
 } from "components/LinkPopover";
 
 export function useMountProsemirror({
@@ -159,9 +157,18 @@ export function useMountProsemirror({
             nodeAt1?.marks.find((f) => f.type === schema.marks.link) ||
             nodeAt2?.marks.find((f) => f.type === schema.marks.link);
           if (linkMark) {
+            // cmd/ctrl+click opens the link in a new tab
+            if (_event.metaKey || _event.ctrlKey) {
+              if (linkMark.attrs.href)
+                window.open(
+                  linkMark.attrs.href,
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              return;
+            }
             let anchor = (_event.target as HTMLElement).closest("a") as HTMLElement | null;
             if (anchor) {
-              cancelLinkPopoverClose();
               useLinkPopoverStore.getState().open(
                 linkMark.attrs.href,
                 anchor,
@@ -170,42 +177,6 @@ export function useMountProsemirror({
             }
             return;
           }
-        },
-        handleDOMEvents: {
-          mouseover: (() => {
-            let activeTimer: number | null = null;
-            let activeAnchor: HTMLAnchorElement | null = null;
-            let activeLeaveHandler: (() => void) | null = null;
-            return (_view: EditorView, event: MouseEvent) => {
-              let target = event.target as HTMLElement;
-              let anchor = target.closest("a[href]") as HTMLAnchorElement | null;
-              if (!anchor) return false;
-              if (anchor === activeAnchor) return false;
-              if (activeTimer !== null) window.clearTimeout(activeTimer);
-              if (activeAnchor && activeLeaveHandler) {
-                activeAnchor.removeEventListener("mouseleave", activeLeaveHandler);
-              }
-              cancelLinkPopoverClose();
-              activeAnchor = anchor;
-              activeTimer = window.setTimeout(() => {
-                useLinkPopoverStore.getState().open(
-                  anchor.getAttribute("href") || "",
-                  anchor,
-                  entityID,
-                );
-                activeTimer = null;
-              }, 300);
-              activeLeaveHandler = () => {
-                if (activeTimer !== null) window.clearTimeout(activeTimer);
-                activeTimer = null;
-                activeAnchor = null;
-                activeLeaveHandler = null;
-                scheduleLinkPopoverClose();
-              };
-              anchor.addEventListener("mouseleave", activeLeaveHandler, { once: true });
-              return false;
-            };
-          })(),
         },
         dispatchTransaction,
       },

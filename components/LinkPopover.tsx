@@ -138,8 +138,6 @@ export function LinkPopover() {
           sideOffset={4}
           collisionPadding={12}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          onMouseEnter={() => cancelLinkPopoverClose()}
-          onMouseLeave={() => scheduleLinkPopoverClose()}
           className="link-popover z-50 bg-bg-page border border-border rounded-lg shadow-md px-2 py-1 w-[min(calc(100vw-24px),320px)]"
         >
           <div className="flex items-center gap-1">
@@ -211,21 +209,4 @@ export function LinkPopover() {
       </RadixPopover.Portal>
     </RadixPopover.Root>
   );
-}
-
-let closeTimer: number | null = null;
-
-export function scheduleLinkPopoverClose() {
-  cancelLinkPopoverClose();
-  closeTimer = window.setTimeout(() => {
-    useLinkPopoverStore.getState().close();
-    closeTimer = null;
-  }, 300);
-}
-
-export function cancelLinkPopoverClose() {
-  if (closeTimer !== null) {
-    window.clearTimeout(closeTimer);
-    closeTimer = null;
-  }
 }
