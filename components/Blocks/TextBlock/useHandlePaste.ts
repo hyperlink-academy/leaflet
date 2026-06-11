@@ -15,7 +15,6 @@ import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl, isUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
 import type { FilterAttributes } from "src/replicache/attributes";
-import { addLinkBlock } from "src/utils/addLinkBlock";
 import { UndoManager } from "src/undoManager";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
@@ -258,7 +257,9 @@ const createBlockFromHTML = (
       break;
     }
     case "A": {
-      type = "link";
+      // Only explicit buttons get their own block; plain links are
+      // autolinked inline as a link mark within a text block.
+      type = child.getAttribute("data-type") === "button" ? "link" : "text";
       break;
     }
     case "HR": {
@@ -327,29 +328,28 @@ const createBlockFromHTML = (
   if (child.tagName === "A") {
     let href = child.getAttribute("href");
     let dataType = child.getAttribute("data-type");
-    if (href) {
-      if (dataType === "button") {
-        rep.mutate.assertFact([
-          {
-            entity: entityID,
-            attribute: "block/type",
-            data: { type: "block-type-union", value: "button" },
-          },
-          {
-            entity: entityID,
-            attribute: "button/text",
-            data: { type: "string", value: child.textContent || "" },
-          },
-          {
-            entity: entityID,
-            attribute: "button/url",
-            data: { type: "string", value: href },
-          },
-        ]);
-      } else {
-        addLinkBlock(href, entityID, rep);
-      }
+    if (href && dataType === "button") {
+      rep.mutate.assertFact([
+        {
+          entity: entityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "button" },
+        },
+        {
+          entity: entityID,
+          attribute: "button/text",
+          data: { type: "string", value: child.textContent || "" },
+        },
+        {
+          entity: entityID,
+          attribute: "button/url",
+          data: { type: "string", value: href },
+        },
+      ]);
     }
+    // Non-button links fall through and are parsed inline as a link mark
+    // (see the parser.parse(child) handling below) rather than becoming a
+    // standalone link block.
   }
   if (child.tagName === "PRE") {
     let lang = child.getAttribute("data-language") || "plaintext";
