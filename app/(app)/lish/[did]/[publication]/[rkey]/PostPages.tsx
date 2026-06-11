@@ -11,7 +11,7 @@ import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { InteractionDrawer } from "./Interactions/InteractionDrawer";
-import { useDrawerOpen } from "./Interactions/useDrawerOpen";
+import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
 import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
@@ -120,7 +120,7 @@ export function PostPages({
   pollData: PollData[];
   commentsSlot: React.ReactNode;
 }) {
-  let drawer = useDrawerOpen(document_uri);
+  let drawer = useInlineDrawer(document_uri);
   useInitializeOpenPages();
   let openPageIds = useOpenPages();
   const { pages } = useLeafletContent();
