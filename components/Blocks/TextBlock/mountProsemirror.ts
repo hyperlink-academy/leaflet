@@ -27,8 +27,8 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { useLinkPopoverStore } from "components/LinkPopover";
-import { useUIState } from "src/useUIState";
 import { useCommentSheetStore } from "components/Comments/commentStores";
+import { useCommentPopoverStore } from "components/Comments/CommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
 
 export function useMountProsemirror({
@@ -91,41 +91,34 @@ export function useMountProsemirror({
           // window.open from a click handler, and ProseMirror cancels its
           // click handling when the mouse moves >4px between down and up.
           click: (_view, event) => {
-            // Clicking commented text focuses its thread: in the side column
-            // on desktop, or the slide-in sheet on mobile/canvas.
             let commentAnchor = (event.target as HTMLElement | null)?.closest(
               ".comment-anchor[data-comment-id]",
             );
             if (commentAnchor && !(event.metaKey || event.ctrlKey)) {
               let commentID = commentAnchor.getAttribute("data-comment-id")!;
               let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
-              let isCanvas = propsRef.current.pageType === "canvas";
-              let sideThread = document.querySelector(
-                `.footnote-side-column [data-comment-thread="${commentID}"]`,
-              );
-              if (!isDesktop || isCanvas || !sideThread) {
+              if (!isDesktop) {
+                // On mobile, show a popover with an excerpt and a button
+                // that opens the thread in the slide-in sheet
+                let store = useCommentPopoverStore.getState();
+                if (store.commentID === commentID) {
+                  store.close();
+                } else {
+                  store.open(commentID, commentAnchor as HTMLElement);
+                }
+                event.preventDefault();
+                return true;
+              }
+              // On desktop canvas pages there's no side column, so open the
+              // sheet directly; on doc pages the side column thread expands
+              // on hover, so the click just places the cursor.
+              if (propsRef.current.pageType === "canvas") {
                 useCommentSheetStore
                   .getState()
                   .openSheet(propsRef.current.parent, commentID);
                 event.preventDefault();
                 return true;
               }
-              sideThread.scrollIntoView({
-                behavior: "smooth",
-                block: "nearest",
-              });
-              // The click is about to focus the block; focus the comment
-              // afterwards so its side item expands.
-              let parent = propsRef.current.parent;
-              setTimeout(() => {
-                useUIState.setState({
-                  focusedEntity: {
-                    entityType: "comment",
-                    entityID: commentID,
-                    parent,
-                  },
-                });
-              }, 0);
               return false;
             }
             if (!(event.metaKey || event.ctrlKey)) return false;

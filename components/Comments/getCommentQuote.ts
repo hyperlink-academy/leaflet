@@ -1,6 +1,18 @@
 import { Doc, applyUpdate, XmlElement, XmlText } from "yjs";
 import * as base64 from "base64-js";
-import { Delta } from "src/utils/yjsFragmentToString";
+import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
+
+// Plain text of an encoded YJS doc (e.g. a comment's content), for excerpts
+export function getCommentPlaintext(value: string | undefined): string {
+  if (!value) return "";
+  let doc = new Doc();
+  applyUpdate(doc, base64.toByteArray(value));
+  return doc
+    .getXmlElement("prosemirror")
+    .toArray()
+    .map((n) => YJSFragmentToString(n))
+    .join("\n");
+}
 
 // Extracts the text covered by a comment's mark from a block's encoded YJS
 // doc, for showing the quoted range alongside the comment.
