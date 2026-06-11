@@ -26,9 +26,10 @@ import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
-import {
-  useLinkPopoverStore,
-} from "components/LinkPopover";
+import { useLinkPopoverStore } from "components/LinkPopover";
+import { useUIState } from "src/useUIState";
+import { useCommentSheetStore } from "components/Comments/commentStores";
+import { commentDraftPlugin } from "./commentDraftPlugin";
 
 export function useMountProsemirror({
   props,
@@ -70,6 +71,7 @@ export function useMountProsemirror({
         inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
         highlightSelectionPlugin,
+        commentDraftPlugin,
         autolink({
           type: schema.marks.link,
           shouldAutoLink: () => true,
@@ -89,6 +91,43 @@ export function useMountProsemirror({
           // window.open from a click handler, and ProseMirror cancels its
           // click handling when the mouse moves >4px between down and up.
           click: (_view, event) => {
+            // Clicking commented text focuses its thread: in the side column
+            // on desktop, or the slide-in sheet on mobile/canvas.
+            let commentAnchor = (event.target as HTMLElement | null)?.closest(
+              ".comment-anchor[data-comment-id]",
+            );
+            if (commentAnchor && !(event.metaKey || event.ctrlKey)) {
+              let commentID = commentAnchor.getAttribute("data-comment-id")!;
+              let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
+              let isCanvas = propsRef.current.pageType === "canvas";
+              let sideThread = document.querySelector(
+                `.footnote-side-column [data-comment-thread="${commentID}"]`,
+              );
+              if (!isDesktop || isCanvas || !sideThread) {
+                useCommentSheetStore
+                  .getState()
+                  .openSheet(propsRef.current.parent, commentID);
+                event.preventDefault();
+                return true;
+              }
+              sideThread.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest",
+              });
+              // The click is about to focus the block; focus the comment
+              // afterwards so its side item expands.
+              let parent = propsRef.current.parent;
+              setTimeout(() => {
+                useUIState.setState({
+                  focusedEntity: {
+                    entityType: "comment",
+                    entityID: commentID,
+                    parent,
+                  },
+                });
+              }, 0);
+              return false;
+            }
             if (!(event.metaKey || event.ctrlKey)) return false;
             let anchor = (event.target as HTMLElement | null)?.closest("a");
             let href = anchor?.getAttribute("href");
@@ -176,13 +215,13 @@ export function useMountProsemirror({
             // above — don't open the edit popover or let ProseMirror treat
             // it as a select-node click.
             if (_event.metaKey || _event.ctrlKey) return true;
-            let anchor = (_event.target as HTMLElement).closest("a") as HTMLElement | null;
+            let anchor = (_event.target as HTMLElement).closest(
+              "a",
+            ) as HTMLElement | null;
             if (anchor) {
-              useLinkPopoverStore.getState().open(
-                linkMark.attrs.href,
-                anchor,
-                entityID,
-              );
+              useLinkPopoverStore
+                .getState()
+                .open(linkMark.attrs.href, anchor, entityID);
             }
             return;
           }
@@ -237,6 +276,27 @@ export function useMountProsemirror({
             if (!newFootnotes.has(id)) {
               repRef.current?.mutate.deleteFootnote({
                 footnoteEntityID: id,
+                blockID: entityID,
+              });
+            }
+          }
+
+          // Diff comment marks: deleting all the commented text deletes the
+          // comment, like removing a footnote node deletes the footnote
+          let oldComments = new Set<string>();
+          let newComments = new Set<string>();
+          oldEditorState.doc.descendants((n) => {
+            for (let m of n.marks)
+              if (m.type.name === "comment") oldComments.add(m.attrs.commentID);
+          });
+          newState.doc.descendants((n) => {
+            for (let m of n.marks)
+              if (m.type.name === "comment") newComments.add(m.attrs.commentID);
+          });
+          for (let id of oldComments) {
+            if (!newComments.has(id)) {
+              repRef.current?.mutate.deleteComment({
+                commentEntityID: id,
                 blockID: entityID,
               });
             }

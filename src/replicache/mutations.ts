@@ -942,6 +942,129 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
+// Comment facts carry the author's did so the server's authentication gate
+// (sessionDid must match author_did) verifies authorship. Content is a
+// base64-encoded YJS update, composed locally and only persisted on submit.
+const createComment: Mutation<{
+  commentEntityID: string;
+  blockID: string;
+  permission_set: string;
+  position: string;
+  authorDid: string;
+  createdAt: string;
+  anchorStart: number;
+  anchorEnd: number;
+  content: string;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.commentEntityID,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.blockID,
+    attribute: "block/comment",
+    data: {
+      type: "ordered-reference",
+      value: args.commentEntityID,
+      position: args.position,
+    },
+  });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "block/text",
+    data: { type: "text", value: args.content },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "comment/author",
+    data: { type: "string", value: args.authorDid },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "comment/created-at",
+    data: { type: "string", value: args.createdAt },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "comment/anchor-start",
+    data: { type: "number", value: args.anchorStart },
+  });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "comment/anchor-end",
+    data: { type: "number", value: args.anchorEnd },
+  });
+};
+
+const createCommentReply: Mutation<{
+  replyEntityID: string;
+  commentEntityID: string;
+  permission_set: string;
+  position: string;
+  authorDid: string;
+  createdAt: string;
+  content: string;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.replyEntityID,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "comment/reply",
+    data: {
+      type: "ordered-reference",
+      value: args.replyEntityID,
+      position: args.position,
+    },
+  });
+  await ctx.assertFact({
+    entity: args.replyEntityID,
+    attribute: "block/text",
+    data: { type: "text", value: args.content },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.replyEntityID,
+    attribute: "comment/author",
+    data: { type: "string", value: args.authorDid },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.replyEntityID,
+    attribute: "comment/created-at",
+    data: { type: "string", value: args.createdAt },
+    author_did: args.authorDid,
+  });
+};
+
+const deleteComment: Mutation<{
+  commentEntityID: string;
+  blockID: string;
+}> = async (args, ctx) => {
+  let comments = await ctx.scanIndex.eav(args.blockID, "block/comment");
+  let fact = comments.find((f) => f.data.value === args.commentEntityID);
+  if (fact) await ctx.retractFact(fact.id);
+  let replies = await ctx.scanIndex.eav(args.commentEntityID, "comment/reply");
+  for (let reply of replies) {
+    await ctx.deleteEntity(reply.data.value);
+  }
+  await ctx.deleteEntity(args.commentEntityID);
+};
+
+const deleteCommentReply: Mutation<{
+  replyEntityID: string;
+  commentEntityID: string;
+}> = async (args, ctx) => {
+  let replies = await ctx.scanIndex.eav(args.commentEntityID, "comment/reply");
+  let fact = replies.find((f) => f.data.value === args.replyEntityID);
+  if (fact) await ctx.retractFact(fact.id);
+  await ctx.deleteEntity(args.replyEntityID);
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -972,4 +1095,8 @@ export const mutations = {
   toggleDraftContributor,
   createFootnote,
   deleteFootnote,
+  createComment,
+  createCommentReply,
+  deleteComment,
+  deleteCommentReply,
 };

@@ -116,7 +116,12 @@ export function RenderYJSFragment({
                   const href = node.getAttribute("href") || undefined;
                   const icon = node.getAttribute("icon") || undefined;
                   return (
-                    <AtMentionLink key={index} atURI={atURI} href={href} icon={icon}>
+                    <AtMentionLink
+                      key={index}
+                      atURI={atURI}
+                      href={href}
+                      icon={icon}
+                    >
                       {text}
                     </AtMentionLink>
                   );
@@ -184,6 +189,10 @@ function attributesToStyle(d: Delta) {
         : d.attributes.highlight.color === "2"
           ? theme.colors["highlight-2"]
           : theme.colors["highlight-3"];
+  }
+  if (d.attributes?.comment) {
+    props.className += " comment-anchor";
+    props["data-comment-id"] = d.attributes.comment.commentID;
   }
 
   return props;

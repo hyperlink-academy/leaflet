@@ -3,19 +3,26 @@
 import { useEffect, useRef, useState, useCallback, ReactNode } from "react";
 import { useUIState } from "src/useUIState";
 
-type FootnoteSideItem = {
+type SideItemBase = {
   id: string;
-  index: number;
 };
 
 const GAP = 4;
 
-export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
+// Lays out annotations (footnotes, comments) in a column beside the page,
+// each positioned next to its anchor in the text, pushed down as needed so
+// items don't overlap.
+export function FootnoteSideColumnLayout<T extends SideItemBase>(props: {
   items: T[];
   visible: boolean;
   fullPageScroll?: boolean;
   getAnchorSelector: (item: T) => string;
   renderItem: (item: T & { top: number }) => ReactNode;
+  // Per-item hooks so comments can share the column with footnotes. Defaults
+  // preserve the footnote-only behavior.
+  getItemClassName?: (item: T) => string;
+  getItemFocusKind?: (item: T) => "footnote" | "comment";
+  columnClassName?: string;
 }) {
   let containerRef = useRef<HTMLDivElement>(null);
   let innerRef = useRef<HTMLDivElement>(null);
@@ -29,7 +36,8 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
       return;
     }
 
-    let scrollWrapper = container.closest(".pageWrapper")
+    let scrollWrapper = container
+      .closest(".pageWrapper")
       ?.querySelector(".pageScrollWrapper") as HTMLElement | null;
     if (!scrollWrapper) return;
 
@@ -60,6 +68,10 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
       measurements.push({ ...item, anchorTop, height });
     }
 
+    // Items can come from multiple sources (footnotes, comments), so resolve
+    // overlaps in anchor order rather than array order
+    measurements.sort((a, b) => a.anchorTop - b.anchorTop);
+
     let resolved: (T & { top: number })[] = [];
     let nextAvailableTop = 0;
     for (let m of measurements) {
@@ -78,7 +90,8 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
     if (!props.visible) return;
     calculatePositions();
 
-    let scrollWrapper = containerRef.current?.closest(".pageWrapper")
+    let scrollWrapper = containerRef.current
+      ?.closest(".pageWrapper")
       ?.querySelector(".pageScrollWrapper") as HTMLElement | null;
     if (!scrollWrapper) return;
 
@@ -146,19 +159,22 @@ export function FootnoteSideColumnLayout<T extends FootnoteSideItem>(props: {
   return (
     <div
       ref={containerRef}
-      className={`footnote-side-column hidden lg:block absolute top-0 w-[250px] ${
+      className={`footnote-side-column hidden lg:block absolute top-0 ${props.columnClassName ?? "w-[250px]"} ${
         props.fullPageScroll
           ? "left-[calc(50%+var(--page-width-units)/2+12px)]"
           : "left-full ml-3"
       }`}
       style={{ height: "100%" }}
     >
-      <div
-        ref={innerRef}
-        className="relative"
-      >
+      <div ref={innerRef} className="relative">
         {positions.map((item) => (
-          <SideItem key={item.id} id={item.id} top={item.top}>
+          <SideItem
+            key={item.id}
+            id={item.id}
+            top={item.top}
+            className={props.getItemClassName?.(item)}
+            focusKind={props.getItemFocusKind?.(item) ?? "footnote"}
+          >
             {props.renderItem(item)}
           </SideItem>
         ))}
@@ -171,14 +187,20 @@ function SideItem(props: {
   children: ReactNode;
   id: string;
   top: number;
+  className?: string;
+  focusKind: "footnote" | "comment";
 }) {
   let ref = useRef<HTMLDivElement>(null);
   let [overflows, setOverflows] = useState(false);
   let isFocused = useUIState(
     (s) =>
-      s.focusedEntity?.entityType === "footnote" &&
+      s.focusedEntity?.entityType === props.focusKind &&
       s.focusedEntity.entityID === props.id,
   );
+  let focusedClass =
+    props.focusKind === "comment"
+      ? "comment-side-focused"
+      : "footnote-side-focused";
 
   useEffect(() => {
     let el = ref.current;
@@ -199,7 +221,7 @@ function SideItem(props: {
     <div
       ref={ref}
       data-footnote-side-id={props.id}
-      className={`absolute left-0 right-0 text-sm footnote-side-enter footnote-side-item${overflows ? " has-overflow" : ""}${isFocused ? " footnote-side-focused" : ""}`}
+      className={`absolute left-0 text-sm footnote-side-enter ${props.className ?? "right-0 footnote-side-item"}${overflows ? " has-overflow" : ""}${isFocused ? ` ${focusedClass}` : ""}`}
       style={{ top: props.top }}
     >
       {props.children}
