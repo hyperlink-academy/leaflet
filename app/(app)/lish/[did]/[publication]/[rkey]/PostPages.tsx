@@ -176,19 +176,17 @@ export function PostPages({
         }
       />
 
-      {drawer && !drawer.pageId && (
-        <InteractionDrawer
-          showPageBackground={pubRecord?.theme?.showPageBackground}
-          document_uri={document.uri}
-          commentsSlot={
-            preferences.showComments === false ? null : commentsSlot
-          }
-          quotesAndMentions={
-            preferences.showMentions === false ? [] : quotesAndMentions
-          }
-          did={did}
-        />
-      )}
+      {/* Always mounted: the drawer reads its own open state and, on mobile,
+          needs to stay mounted while its close animation plays. */}
+      <InteractionDrawer
+        showPageBackground={pubRecord?.theme?.showPageBackground}
+        document_uri={document.uri}
+        commentsSlot={preferences.showComments === false ? null : commentsSlot}
+        quotesAndMentions={
+          preferences.showMentions === false ? [] : quotesAndMentions
+        }
+        did={did}
+      />
 
       {openPageIds.map((openPage, openPageIndex) => {
         const pageKey = getPageKey(openPage);
@@ -252,20 +250,18 @@ export function PostPages({
                 />
               }
             />
-            {drawer && drawer.pageId === page.id && (
-              <InteractionDrawer
-                showPageBackground={pubRecord?.theme?.showPageBackground}
-                pageId={page.id}
-                document_uri={document.uri}
-                commentsSlot={
-                  preferences.showComments === false ? null : commentsSlot
-                }
-                quotesAndMentions={
-                  preferences.showMentions === false ? [] : quotesAndMentions
-                }
-                did={did}
-              />
-            )}
+            <InteractionDrawer
+              showPageBackground={pubRecord?.theme?.showPageBackground}
+              pageId={page.id}
+              document_uri={document.uri}
+              commentsSlot={
+                preferences.showComments === false ? null : commentsSlot
+              }
+              quotesAndMentions={
+                preferences.showMentions === false ? [] : quotesAndMentions
+              }
+              did={did}
+            />
           </Fragment>
         );
       })}

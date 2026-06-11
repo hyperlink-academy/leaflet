@@ -42,15 +42,32 @@ export const InteractionDrawer = (props: {
 
   let isMobile = useIsMobile();
 
+  // This component is mounted unconditionally (in PostPages) and reads the
+  // drawer state itself, so that on mobile the sheet can animate out on close
+  // instead of being abruptly unmounted by its parent.
+  let drawerState = useDrawerOpen(props.document_uri);
+  let open =
+    !!drawerState &&
+    (props.pageId
+      ? drawerState.pageId === props.pageId
+      : !drawerState.pageId);
+
+  // Remember the last open tab so the content keeps rendering it while the
+  // sheet plays its exit animation (drawerState is already null by then).
+  let lastTab = useRef(drawerState?.drawer);
+  if (open && drawerState?.drawer) lastTab.current = drawerState.drawer;
+  let tab: "comments" | "quotes" =
+    lastTab.current === "quotes" ? "quotes" : "comments";
+
   // On mobile the drawer slides up from the bottom as a sheet instead of sitting
   // inline in the horizontal page sandwich. The content renders its own header
-  // and close button, so the sheet supplies no title/chrome of its own. This
-  // component only mounts while the drawer is open (gated in PostPages), so the
-  // sheet is always open; closing it clears the drawer state.
+  // and close button, so the sheet supplies no title/chrome of its own. The
+  // sheet stays mounted with open=false so MobileSheet's spring can play the
+  // slide-out animation before removing the portal.
   if (isMobile) {
     return (
       <MobileSheet
-        open
+        open={open}
         onOpenChange={(open) => {
           if (!open)
             setInteractionState(props.document_uri, { drawerOpen: false });
@@ -58,10 +75,12 @@ export const InteractionDrawer = (props: {
         id="interaction-drawer"
         contentRef={scrollRef}
       >
-        <InteractionDrawerContent {...props} />
+        <InteractionDrawerContent {...props} tab={tab} />
       </MobileSheet>
     );
   }
+
+  if (!open) return null;
 
   return (
     <>
@@ -72,7 +91,7 @@ export const InteractionDrawer = (props: {
           id="interaction-drawer"
           className={`relative h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll flex flex-col  ${props.showPageBackground ? "light-container rounded-l-none! rounded-r-lg! -ml-[1px]" : " opaque-container rounded-lg! sm:ml-4"}`}
         >
-          <InteractionDrawerContent {...props} />
+          <InteractionDrawerContent {...props} tab={tab} />
         </div>
       </div>
     </>
@@ -86,10 +105,8 @@ const InteractionDrawerContent = (props: {
   commentsSlot: React.ReactNode;
   did: string;
   pageId?: string;
+  tab: "comments" | "quotes";
 }) => {
-  let drawer = useDrawerOpen(props.document_uri);
-  if (!drawer) return null;
-
   let { commentsCountByPage } = useDocument();
   let commentsCount = commentsCountByPage[props.pageId ?? ""] ?? 0;
   let { threadStack } = useInteractionState(props.document_uri);
@@ -144,8 +161,7 @@ const InteractionDrawerContent = (props: {
   const bothAvailable = commentsAvailable && mentionsAvailable;
 
   // Resolve the active tab, falling back to whichever option is available.
-  let activeTab: "comments" | "quotes" =
-    drawer.drawer === "quotes" ? "quotes" : "comments";
+  let activeTab: "comments" | "quotes" = props.tab;
   if (activeTab === "comments" && !commentsAvailable) activeTab = "quotes";
   if (activeTab === "quotes" && !mentionsAvailable) activeTab = "comments";
   return (
