@@ -11,7 +11,7 @@ import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { InteractionDrawer } from "./Interactions/InteractionDrawer";
-import { useDrawerOpen } from "./Interactions/useDrawerOpen";
+import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
 import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
@@ -120,7 +120,7 @@ export function PostPages({
   pollData: PollData[];
   commentsSlot: React.ReactNode;
 }) {
-  let drawer = useDrawerOpen(document_uri);
+  let drawer = useInlineDrawer(document_uri);
   useInitializeOpenPages();
   let openPageIds = useOpenPages();
   const { pages } = useLeafletContent();
@@ -176,19 +176,17 @@ export function PostPages({
         }
       />
 
-      {drawer && !drawer.pageId && (
-        <InteractionDrawer
-          showPageBackground={pubRecord?.theme?.showPageBackground}
-          document_uri={document.uri}
-          commentsSlot={
-            preferences.showComments === false ? null : commentsSlot
-          }
-          quotesAndMentions={
-            preferences.showMentions === false ? [] : quotesAndMentions
-          }
-          did={did}
-        />
-      )}
+      {/* Always mounted: the drawer reads its own open state and, on mobile,
+          needs to stay mounted while its close animation plays. */}
+      <InteractionDrawer
+        showPageBackground={pubRecord?.theme?.showPageBackground}
+        document_uri={document.uri}
+        commentsSlot={preferences.showComments === false ? null : commentsSlot}
+        quotesAndMentions={
+          preferences.showMentions === false ? [] : quotesAndMentions
+        }
+        did={did}
+      />
 
       {openPageIds.map((openPage, openPageIndex) => {
         const pageKey = getPageKey(openPage);
@@ -252,20 +250,18 @@ export function PostPages({
                 />
               }
             />
-            {drawer && drawer.pageId === page.id && (
-              <InteractionDrawer
-                showPageBackground={pubRecord?.theme?.showPageBackground}
-                pageId={page.id}
-                document_uri={document.uri}
-                commentsSlot={
-                  preferences.showComments === false ? null : commentsSlot
-                }
-                quotesAndMentions={
-                  preferences.showMentions === false ? [] : quotesAndMentions
-                }
-                did={did}
-              />
-            )}
+            <InteractionDrawer
+              showPageBackground={pubRecord?.theme?.showPageBackground}
+              pageId={page.id}
+              document_uri={document.uri}
+              commentsSlot={
+                preferences.showComments === false ? null : commentsSlot
+              }
+              quotesAndMentions={
+                preferences.showMentions === false ? [] : quotesAndMentions
+              }
+              did={did}
+            />
           </Fragment>
         );
       })}

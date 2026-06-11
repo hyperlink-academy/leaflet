@@ -15,7 +15,7 @@ import { Separator } from "components/Layout";
 import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons/InfoSmall";
 import { PostHeader, type BylineProfile } from "./PostHeader/PostHeader";
-import { useDrawerOpen } from "./Interactions/useDrawerOpen";
+import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
@@ -51,7 +51,7 @@ export function CanvasPage({
   if (!document) return null;
 
   let isSubpage = !!pageId;
-  let drawer = useDrawerOpen(document_uri);
+  let drawer = useInlineDrawer(document_uri);
 
   return (
     <PageWrapper

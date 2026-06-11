@@ -8,7 +8,7 @@ import {
 import { PostContent } from "./PostContent";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { AppBskyFeedDefs } from "@atproto/api";
-import { useDrawerOpen } from "./Interactions/useDrawerOpen";
+import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PageWrapper } from "components/Pages/Page";
 import { decodeQuotePosition } from "./quotePosition";
@@ -47,7 +47,7 @@ export function LinearDocumentPage({
     fullPageScroll,
     hasPageBackground,
   } = props;
-  let drawer = useDrawerOpen(document_uri);
+  let drawer = useInlineDrawer(document_uri);
   const { pages } = useLeafletContent();
   const footnotes = collectFootnotesFromBlocks(blocks);
   const footnoteIndexMap = buildFootnoteIndexMap(footnotes);

@@ -679,29 +679,6 @@ body.cmd-held .ProseMirror a {
   animation: mobile-sidebar-slide-out 80ms ease-in;
 }
 
-@keyframes bottom-sheet-slide-in {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-@keyframes bottom-sheet-slide-out {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(100%);
-  }
-}
-.mobileSheet[data-state="open"] {
-  animation: bottom-sheet-slide-in 200ms ease-out;
-}
-.mobileSheet[data-state="closed"] {
-  animation: bottom-sheet-slide-out 200ms ease-in;
-}
-
 .footnote-side-item {
   overflow: hidden;
   transition:
