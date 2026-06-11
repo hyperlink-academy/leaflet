@@ -21,13 +21,16 @@ export function CommentMobileSheet() {
   let { pageID: sheetPageID, focusedCommentID, close } = useCommentSheetStore();
   let draft = useCommentDraftStore((s) => s.draft);
 
-  let open = sheetPageID === pageID && pageID !== "";
   let draftOnThisPage = draft?.pageID === pageID;
   let focusedComment = focusedCommentID
     ? comments.find((c) => c.commentEntityID === focusedCommentID)
     : undefined;
-
-  if (!open || (!focusedComment && !draftOnThisPage)) return null;
+  // Closes (with the sheet's exit animation) when the focused comment goes
+  // away, e.g. if it's deleted while open
+  let open =
+    sheetPageID === pageID &&
+    pageID !== "" &&
+    (!!focusedComment || draftOnThisPage);
 
   return (
     <MobileSheet

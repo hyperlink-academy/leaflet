@@ -7,6 +7,8 @@ import { PopoverArrow } from "components/Icons/PopoverArrow";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { theme } from "tailwind.config";
 import { useEntity } from "src/replicache";
+import { useRecordFromDid } from "src/utils/useRecordFromDid";
+import { Avatar } from "components/Avatar";
 import { useCommentContext } from "./CommentContext";
 import { useCommentSheetStore } from "./commentStores";
 import { getCommentPlaintext } from "./getCommentQuote";
@@ -39,6 +41,8 @@ export function CommentPopover() {
 
   let content = useEntity(comment?.commentEntityID ?? null, "block/text");
   let replies = useEntity(comment?.commentEntityID ?? null, "comment/reply");
+  let author = useEntity(comment?.commentEntityID ?? null, "comment/author");
+  let { data: profile } = useRecordFromDid(author?.data.value);
   let excerpt = useMemo(
     () => getCommentPlaintext(content?.data.value),
     [content?.data.value],
@@ -96,6 +100,13 @@ export function CommentPopover() {
           className="comment-popover z-50 bg-bg-page border border-border rounded-lg shadow-md px-3 py-1.5 w-[min(calc(100vw-24px),320px)]"
         >
           <div className="flex items-center gap-2">
+            <div className="shrink-0">
+              <Avatar
+                src={profile?.avatar}
+                displayName={profile?.displayName || profile?.handle}
+                size="small"
+              />
+            </div>
             <div
               className="grow min-w-0 text-sm text-secondary whitespace-nowrap overflow-hidden"
               style={{
