@@ -82,6 +82,17 @@ export const HandleInput = (props: {
             onChange={(e) => setHandleValue(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                // handle Enter here (with the current handleValue) instead of
+                // relying on the Combobox's window listener, which only submits
+                // when a suggestion is highlighted. stopPropagation keeps that
+                // listener from also firing with a stale value.
+                e.stopPropagation();
+                handleSelect(highlighted);
+              }
+            }}
             autoComplete="off"
             disabled={props.loading}
           />
