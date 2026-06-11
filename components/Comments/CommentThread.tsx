@@ -14,6 +14,7 @@ import { Avatar } from "components/Avatar";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { CommentComposer } from "./CommentComposer";
+import { CommentLoginPrompt } from "./CommentLoginPrompt";
 import { deleteCommentFromBlock } from "./commentDraftActions";
 
 export function CommentThread(props: {
@@ -77,35 +78,35 @@ export function CommentThread(props: {
           {replies.length} {replies.length === 1 ? "reply" : "replies"}
         </div>
       )}
-      {identity?.atp_did && (
-        <div className="comment-thread-actions">
-          {replying ? (
-            <CommentComposer
-              placeholder="Reply..."
-              submitLabel="Reply"
-              autoFocus
-              onSubmit={submitReply}
-              onCancel={() => setReplying(false)}
-            />
-          ) : (
-            <button
-              className="text-xs text-tertiary hover:text-accent-contrast"
-              onClick={() => {
-                setReplying(true);
-                useUIState.setState({
-                  focusedEntity: {
-                    entityType: "comment",
-                    entityID: props.commentEntityID,
-                    parent: props.pageID,
-                  },
-                });
-              }}
-            >
-              Reply
-            </button>
-          )}
-        </div>
-      )}
+      <div className="comment-thread-actions">
+        {!identity?.atp_did ? (
+          <CommentLoginPrompt action="reply" />
+        ) : replying ? (
+          <CommentComposer
+            placeholder="Reply..."
+            submitLabel="Reply"
+            autoFocus
+            onSubmit={submitReply}
+            onCancel={() => setReplying(false)}
+          />
+        ) : (
+          <button
+            className="text-xs text-tertiary hover:text-accent-contrast"
+            onClick={() => {
+              setReplying(true);
+              useUIState.setState({
+                focusedEntity: {
+                  entityType: "comment",
+                  entityID: props.commentEntityID,
+                  parent: props.pageID,
+                },
+              });
+            }}
+          >
+            Reply
+          </button>
+        )}
+      </div>
     </div>
   );
 }

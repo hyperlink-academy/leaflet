@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { create } from "zustand";
 import * as RadixPopover from "@radix-ui/react-popover";
 import { PopoverArrow } from "components/Icons/PopoverArrow";
+import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { theme } from "tailwind.config";
 import { useEntity } from "src/replicache";
 import { useCommentContext } from "./CommentContext";
@@ -92,12 +93,20 @@ export function CommentPopover() {
               return;
             close();
           }}
-          className="comment-popover z-50 bg-bg-page border border-border rounded-lg shadow-md px-3 py-2 w-[min(calc(100vw-24px),320px)]"
+          className="comment-popover z-50 bg-bg-page border border-border rounded-lg shadow-md px-3 py-1.5 w-[min(calc(100vw-24px),320px)]"
         >
-          <div className="flex flex-col gap-1">
-            <div className="text-sm text-secondary line-clamp-2">{excerpt}</div>
+          <div className="flex items-center gap-2">
+            <div
+              className="grow min-w-0 text-sm text-secondary whitespace-nowrap overflow-hidden"
+              style={{
+                maskImage: "linear-gradient(to right, black 75%, transparent)",
+              }}
+            >
+              {excerpt}
+            </div>
             <button
-              className="self-end text-sm font-bold text-accent-contrast"
+              className="shrink-0 text-accent-contrast"
+              title={replies.length > 0 ? "Open thread" : "Open comment"}
               onClick={() => {
                 useCommentSheetStore
                   .getState()
@@ -105,7 +114,7 @@ export function CommentPopover() {
                 close();
               }}
             >
-              View {replies.length > 0 ? "thread" : "comment"}
+              <ArrowRightTiny />
             </button>
           </div>
           <RadixPopover.Arrow asChild width={16} height={8}>

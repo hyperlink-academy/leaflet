@@ -13,6 +13,7 @@ import { useCommentContext } from "./CommentContext";
 import { useCommentDraftStore, useCommentSheetStore } from "./commentStores";
 import { cancelCommentDraft, submitCommentDraft } from "./commentDraftActions";
 import { CommentComposer } from "./CommentComposer";
+import { CommentLoginPrompt } from "./CommentLoginPrompt";
 import { CommentThread } from "./CommentThread";
 
 type SideAnnotation =
@@ -135,7 +136,8 @@ export function CommentDraftComposer(props: { autoFocus?: boolean }) {
   let entity_set = useEntitySetContext();
   let { identity } = useIdentityData();
 
-  if (!identity?.atp_did) return null;
+  if (!identity?.atp_did)
+    return <CommentLoginPrompt onCancel={cancelCommentDraft} />;
   let atp_did = identity.atp_did;
 
   return (
