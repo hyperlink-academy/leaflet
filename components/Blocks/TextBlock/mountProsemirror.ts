@@ -84,14 +84,18 @@ export function useMountProsemirror({
         state: editor,
         handlePaste,
         handleDOMEvents: {
-          mousedown: (_view, event) => {
-            // Clicking a link should open the link popover (handled in
-            // handleClickOn) without moving the cursor into / focusing the
-            // block, so prevent the default focus & caret placement. The
-            // synthetic click is still dispatched, so handleClickOn fires.
-            let target = event.target as HTMLElement | null;
-            if (target?.closest("a")) event.preventDefault();
-            return false;
+          // cmd/ctrl+click opens links in a new tab. Handled on the native
+          // click event rather than in handleClickOn: popup blockers trust
+          // window.open from a click handler, and ProseMirror cancels its
+          // click handling when the mouse moves >4px between down and up.
+          click: (_view, event) => {
+            if (!(event.metaKey || event.ctrlKey)) return false;
+            let anchor = (event.target as HTMLElement | null)?.closest("a");
+            let href = anchor?.getAttribute("href");
+            if (!href) return false;
+            window.open(href, "_blank", "noopener,noreferrer");
+            event.preventDefault();
+            return true;
           },
         },
         handleClickOn: (_view, _pos, node, _nodePos, _event, direct) => {
@@ -168,16 +172,10 @@ export function useMountProsemirror({
             nodeAt1?.marks.find((f) => f.type === schema.marks.link) ||
             nodeAt2?.marks.find((f) => f.type === schema.marks.link);
           if (linkMark) {
-            // cmd/ctrl+click opens the link in a new tab
-            if (_event.metaKey || _event.ctrlKey) {
-              if (linkMark.attrs.href)
-                window.open(
-                  linkMark.attrs.href,
-                  "_blank",
-                  "noopener,noreferrer",
-                );
-              return;
-            }
+            // cmd/ctrl+click opens in a new tab via the click DOM handler
+            // above — don't open the edit popover or let ProseMirror treat
+            // it as a select-node click.
+            if (_event.metaKey || _event.ctrlKey) return true;
             let anchor = (_event.target as HTMLElement).closest("a") as HTMLElement | null;
             if (anchor) {
               useLinkPopoverStore.getState().open(
