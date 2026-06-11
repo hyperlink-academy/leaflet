@@ -52,6 +52,16 @@ export const MobileSheet = ({
   };
 
   let sheetRef = useRef<HTMLDivElement>(null);
+  // Internal handle on the scrolling content container (for the drag-at-top
+  // check below), merged with the forwarded contentRef.
+  let scrollerRef = useRef<HTMLDivElement>(null);
+  let setScrollerRef = (el: HTMLDivElement | null) => {
+    scrollerRef.current = el;
+    if (typeof contentRef === "function") contentRef(el);
+    else if (contentRef)
+      (contentRef as React.MutableRefObject<HTMLDivElement | null>).current =
+        el;
+  };
 
   // Mount/unmount slide + overlay fade. y is a percentage of the sheet's own
   // height; clamp so the spring never overshoots above the bottom edge.
@@ -62,7 +72,7 @@ export const MobileSheet = ({
     config: { tension: 300, friction: 30, clamp: true },
   });
 
-  // Drag offset (px) from the handle, layered on top of the transition's y.
+  // Drag offset (px) layered on top of the transition's y.
   let [{ dragY }, dragApi] = useSpring(() => ({ dragY: 0 }));
 
   // A close that started from a drag leaves dragY where it was so the exit
@@ -71,19 +81,57 @@ export const MobileSheet = ({
     if (isOpen) dragApi.set({ dragY: 0 });
   }, [isOpen, dragApi]);
 
+  // On release: past a quarter of the sheet, or a downward flick, close.
+  // Otherwise spring back into place.
+  let settleDrag = (offsetY: number, vy: number, dy: number) => {
+    let sheetHeight = sheetRef.current?.offsetHeight ?? 0;
+    if (offsetY > sheetHeight * 0.25 || (vy > 0.5 && dy > 0)) setOpen(false);
+    else dragApi.start({ dragY: 0 });
+  };
+
   let bindHandle = useDrag(
     ({ last, offset: [, oy], velocity: [, vy], direction: [, dy] }) => {
-      if (!last) {
-        dragApi.set({ dragY: Math.max(0, oy) });
-        return;
-      }
-      let sheetHeight = sheetRef.current?.offsetHeight ?? 0;
-      // Past a quarter of the sheet, or a downward flick: close. Otherwise
-      // spring back into place.
-      if (oy > sheetHeight * 0.25 || (vy > 0.5 && dy > 0)) setOpen(false);
-      else dragApi.start({ dragY: 0 });
+      if (!last) dragApi.set({ dragY: Math.max(0, oy) });
+      else settleDrag(Math.max(0, oy), vy, dy);
     },
     { axis: "y", from: () => [0, dragY.get()] },
+  );
+
+  // Pulling down on the content when it's scrolled to the top also drags the
+  // sheet. Touch-only — a mouse drag in the content should select text, not
+  // move the sheet. The gesture engages once the scroller is at the top and the
+  // finger moves downward; from then on we preventDefault the (non-passive)
+  // touchmove events to take over from native scrolling. Movement before
+  // engagement (e.g. scrolling up to the top first) is subtracted off via the
+  // memo so the sheet doesn't jump.
+  let bindContent = useDrag(
+    ({
+      last,
+      movement: [, my],
+      velocity: [, vy],
+      direction: [, dy],
+      event,
+      memo,
+    }) => {
+      let m = memo as { engagedAt: number; base: number } | undefined;
+      if (!m) {
+        if (!("touches" in event)) return;
+        if ((scrollerRef.current?.scrollTop ?? 0) > 0) return;
+        if (dy <= 0) return;
+        m = { engagedAt: my, base: dragY.get() };
+      }
+      if (event.cancelable) event.preventDefault();
+      let offsetY = Math.max(0, m.base + my - m.engagedAt);
+      if (!last) dragApi.set({ dragY: offsetY });
+      else settleDrag(offsetY, vy, dy);
+      return m;
+    },
+    {
+      axis: "y",
+      pointer: { touch: true },
+      eventOptions: { passive: false },
+      filterTaps: true,
+    },
   );
 
   return (
@@ -96,7 +144,16 @@ export const MobileSheet = ({
           <Dialog.Portal forceMount>
             <Dialog.Overlay forceMount asChild>
               <animated.div
-                style={{ opacity: style.opacity }}
+                // The overlay also fades proportionally as the sheet is
+                // dragged toward the bottom of the screen.
+                style={{
+                  opacity: to([style.opacity, dragY], (o, px) => {
+                    let sheetHeight = sheetRef.current?.offsetHeight;
+                    return sheetHeight
+                      ? o * Math.max(0, 1 - px / sheetHeight)
+                      : o;
+                  }),
+                }}
                 className="fixed z-50 inset-0 bg-primary/60 backdrop-blur-sm"
               />
             </Dialog.Overlay>
@@ -125,11 +182,12 @@ export const MobileSheet = ({
                     <div className="w-9 h-1 rounded-full bg-border" />
                   </div>
                   <div
-                    ref={contentRef}
+                    {...bindContent()}
+                    ref={setScrollerRef}
                     id={id}
                     className={`
                     px-3 pb-3 pt-1 flex flex-col grow
-                    overflow-y-scroll
+                    overflow-y-scroll overscroll-y-contain
                     ${className}`}
                   >
                     {/* When a title is given the sheet supplies its own header
