@@ -24,6 +24,7 @@ import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/replicache/getBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
+import { codeFencePattern, convertToCodeBlock } from "./convertToCodeBlock";
 type PropsRef = RefObject<
   BlockProps & {
     entity_set: { set: string };
@@ -426,6 +427,16 @@ const enter =
     view?: EditorView,
   ) => {
     if (state.doc.textContent.startsWith("/")) return true;
+    // ``` fence (with optional language) followed by Enter becomes a code block
+    let codeFence = codeFencePattern.exec(state.doc.textContent);
+    if (
+      codeFence &&
+      // make sure the text is the block's entire content (no hard breaks etc.)
+      state.doc.content.size === state.doc.textContent.length + 2
+    ) {
+      convertToCodeBlock(propsRef, repRef, codeFence[1] || undefined);
+      return true;
+    }
     // Empty list item: just outdent, don't create a new block
     if (
       propsRef.current.listData &&

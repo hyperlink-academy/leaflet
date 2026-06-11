@@ -8,11 +8,10 @@ import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import { BlockProps } from "../Block";
-import { focusBlock } from "src/utils/focusBlock";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
-import { flushSync } from "react-dom";
-import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
+import { ensureProtocol } from "src/utils/ensureProtocol";
+import { convertToCodeBlock } from "./convertToCodeBlock";
 import { insertFootnote } from "./insertFootnote";
 import { useEditorStates } from "src/state/useEditorState";
 
@@ -63,6 +62,25 @@ export const inputrules = (
               }),
             )
             .removeStoredMark(schema.marks.highlight);
+          return tr;
+        }
+        return null;
+      }),
+
+      //Bold (underscore)
+      new InputRule(/(?:^|[^\w_])__([^_]+)__$/, (state, match, start, end) => {
+        if (anchorInCodeMark(state, start, end)) return null;
+        const [fullMatch, content] = match;
+        const { tr } = state;
+        if (content) {
+          const startIndex = start + fullMatch.indexOf("__");
+          tr.replaceWith(startIndex, end, state.schema.text(content))
+            .addMark(
+              startIndex,
+              startIndex + content.length,
+              schema.marks.strong.create(),
+            )
+            .removeStoredMark(schema.marks.strong);
           return tr;
         }
         return null;
@@ -124,26 +142,49 @@ export const inputrules = (
         return null;
       }),
 
-      // Code Block
-      new InputRule(/^```\s$/, (state, match) => {
-        flushSync(() => {
-          repRef.current?.mutate.assertFact({
-            entity: propsRef.current.entityID,
-            attribute: "block/type",
-            data: { type: "block-type-union", value: "code" },
-          });
-          let lastLang = localStorage.getItem(LAST_USED_CODE_LANGUAGE_KEY);
-          if (lastLang) {
-            repRef.current?.mutate.assertFact({
-              entity: propsRef.current.entityID,
-              attribute: "block/code-language",
-              data: { type: "string", value: lastLang },
-            });
+      //Italic (underscore)
+      new InputRule(/(?:^|[^\w_])_([^_]+)_$/, (state, match, start, end) => {
+        if (anchorInCodeMark(state, start, end)) return null;
+        const [fullMatch, content] = match;
+        const { tr } = state;
+        if (content) {
+          const startIndex = start + fullMatch.indexOf("_");
+          tr.replaceWith(startIndex, end, state.schema.text(content))
+            .addMark(
+              startIndex,
+              startIndex + content.length,
+              schema.marks.em.create(),
+            )
+            .removeStoredMark(schema.marks.em);
+          return tr;
+        }
+        return null;
+      }),
+
+      //Link - [text](url)
+      new InputRule(
+        /\[([^\[\]]+)\]\(([^()\s]+)\)$/,
+        (state, match, start, end) => {
+          if (anchorInCodeMark(state, start, end)) return null;
+          const [fullMatch, content, url] = match;
+          const { tr } = state;
+          if (content && url) {
+            tr.replaceWith(start, end, state.schema.text(content))
+              .addMark(
+                start,
+                start + content.length,
+                schema.marks.link.create({ href: ensureProtocol(url) }),
+              )
+              .removeStoredMark(schema.marks.link);
+            return tr;
           }
-        });
-        setTimeout(() => {
-          focusBlock({ ...propsRef.current, type: "code" }, { type: "start" });
-        }, 20);
+          return null;
+        },
+      ),
+
+      // Code Block - ``` with an optional language (e.g. ```ts)
+      new InputRule(/^```([a-zA-Z0-9#+.-]*)\s$/, (state, match) => {
+        convertToCodeBlock(propsRef, repRef, match[1] || undefined);
         return null;
       }),
 
