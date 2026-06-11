@@ -37,6 +37,8 @@ export function useBlockMouseHandlers(props: Block) {
   let onMouseDown = useCallback(
     (e: MouseEvent) => {
       if ((e.target as Element).getAttribute("data-draggable")) return;
+      // Clicking a link opens the link popover — don't select/focus the block.
+      if ((e.target as Element).closest?.("a")) return;
       if ((e.target as Element).tagName === "BUTTON") return;
       if ((e.target as Element).tagName === "SELECT") return;
       if ((e.target as Element).tagName === "OPTION") return;

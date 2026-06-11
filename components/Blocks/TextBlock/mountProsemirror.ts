@@ -83,6 +83,17 @@ export function useMountProsemirror({
       {
         state: editor,
         handlePaste,
+        handleDOMEvents: {
+          mousedown: (_view, event) => {
+            // Clicking a link should open the link popover (handled in
+            // handleClickOn) without moving the cursor into / focusing the
+            // block, so prevent the default focus & caret placement. The
+            // synthetic click is still dispatched, so handleClickOn fires.
+            let target = event.target as HTMLElement | null;
+            if (target?.closest("a")) event.preventDefault();
+            return false;
+          },
+        },
         handleClickOn: (_view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
 

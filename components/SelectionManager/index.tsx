@@ -619,6 +619,24 @@ export function SelectionManager() {
     };
   }, [moreThanOneSelected, rep, entity_set.permissions.write]);
 
+  // Show a pointer cursor on links while cmd/ctrl is held, since cmd+click
+  // opens the link instead of editing it.
+  useEffect(() => {
+    let update = (held: boolean) =>
+      document.body.classList.toggle("cmd-held", held);
+    let onKey = (e: KeyboardEvent) => update(e.metaKey || e.ctrlKey);
+    let clear = () => update(false);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKey);
+    window.addEventListener("blur", clear);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKey);
+      window.removeEventListener("blur", clear);
+      clear();
+    };
+  }, []);
+
   let [mouseDown, setMouseDown] = useState(false);
   let initialContentEditableParent = useRef<null | Node>(null);
   let savedSelection = useRef<SavedRange[] | null>(undefined);

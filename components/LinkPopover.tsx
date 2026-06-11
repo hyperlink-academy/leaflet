@@ -138,6 +138,15 @@ export function LinkPopover() {
           sideOffset={4}
           collisionPadding={12}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            // Clicking the link the popover is anchored to re-opens it via the
+            // editor's click handler — leave it alone to avoid a close/reopen
+            // flicker. Any other outside interaction dismisses the popover.
+            let target = e.detail.originalEvent.target as Node | null;
+            if (anchorElement && target && anchorElement.contains(target))
+              return;
+            close();
+          }}
           className="link-popover z-50 bg-bg-page border border-border rounded-lg shadow-md px-2 py-1 w-[min(calc(100vw-24px),320px)]"
         >
           <div className="flex items-center gap-1">

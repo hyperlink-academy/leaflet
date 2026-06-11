@@ -399,6 +399,11 @@ pre.shiki {
   border: 1px solid rgba(var(--accent-contrast), 1);
 }
 
+/* While cmd/ctrl is held, links in the editor act as clickable links */
+body.cmd-held .ProseMirror a {
+  cursor: pointer !important;
+}
+
 .mention {
   @apply cursor-pointer;
   @apply text-accent-contrast;
