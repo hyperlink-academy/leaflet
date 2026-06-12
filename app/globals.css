@@ -724,14 +724,9 @@ body.cmd-held .ProseMirror a {
 }
 
 /* Two-way hover pairing: hovering a comment anchor borders its thread in the
-   side column and vice versa. Outline on the inline anchor so the border
-   doesn't reflow the text. */
-.comment-anchor.comment-anchor-hovered {
-  outline: 2px solid
-    color-mix(in oklab, rgb(var(--accent-contrast)), transparent 20%);
-  outline-offset: 1px;
-  border-radius: 2px;
-}
+   side column and vice versa. The inline anchor highlight is injected as a
+   <style> tag by CommentAnchorHover (ProseMirror owns those spans); this is
+   the side-column thread half. */
 .comment-side-item.comment-side-hovered {
   border-color: rgb(var(--accent-contrast));
 }

@@ -1,31 +1,27 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo } from "react";
+import { elementId } from "src/utils/elementId";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { useCommentContext } from "./CommentContext";
 import { useHoveredCommentStore } from "./commentStores";
 
 // The text side of the comment hover pairing (the thread side lives in
-// FootnoteSideColumnLayout's SideItem). Comment anchors are owned by the
-// ProseMirror DOM, not React, so we drive their highlight the same way
-// ResolvedComments does — by reaching into the page's scroll wrapper. A single
-// delegated `pointerover` recomputes the hovered anchor on every move (entering
-// non-anchor text clears it), and an effect toggles the border class on the
-// matching anchors when the store changes from either side.
+// FootnoteSideColumnLayout's SideItem). Hovering an anchor in the document
+// stores its IDs (so the matching thread borders), and hovering a thread
+// borders its anchor(s) here.
 export function CommentAnchorHover() {
   let { permissions } = useEntitySetContext();
-  let ref = useRef<HTMLDivElement>(null);
+  let { pageID } = useCommentContext();
   let hoveredCommentIDs = useHoveredCommentStore((s) => s.hoveredCommentIDs);
 
-  let scrollWrapper = () =>
-    (ref.current
-      ?.closest(".pageWrapper")
-      ?.querySelector(".pageScrollWrapper") as HTMLElement | null) ?? null;
-
-  // Anchor hover -> store
+  // Anchor hover -> store. A single delegated `pointerover` recomputes the
+  // hovered anchor on every move (entering non-anchor text clears it). The
+  // wrapper is found by id since this component mounts outside the page DOM.
   useEffect(() => {
     // Read-only viewers don't see comments, so there's nothing to pair
     if (!permissions.write) return;
-    let wrapper = scrollWrapper();
+    let wrapper = document.getElementById(elementId.page(pageID).container);
     if (!wrapper) return;
 
     let onPointerOver = (e: PointerEvent) => {
@@ -38,7 +34,10 @@ export function CommentAnchorHover() {
           ?.split(" ")
           .filter(Boolean) ?? [];
       let current = useHoveredCommentStore.getState().hoveredCommentIDs;
-      if (current.length === ids.length && current.every((id) => ids.includes(id)))
+      if (
+        current.length === ids.length &&
+        current.every((id) => ids.includes(id))
+      )
         return;
       useHoveredCommentStore.setState({ hoveredCommentIDs: ids });
     };
@@ -51,21 +50,24 @@ export function CommentAnchorHover() {
       wrapper.removeEventListener("pointerover", onPointerOver);
       wrapper.removeEventListener("pointerleave", clear);
     };
-  }, [permissions.write]);
+  }, [permissions.write, pageID]);
 
-  // Store -> anchor border class
-  useEffect(() => {
-    let wrapper = scrollWrapper();
-    if (!wrapper) return;
-    let highlighted = new Set(hoveredCommentIDs);
-    for (let el of wrapper.querySelectorAll<HTMLElement>(".comment-anchor")) {
-      let match = el
-        .getAttribute("data-comment-id")
-        ?.split(" ")
-        .some((id) => highlighted.has(id));
-      el.classList.toggle("comment-anchor-hovered", !!match);
-    }
-  }, [hoveredCommentIDs]);
+  // Store -> inline anchor highlight, driven by a <style> tag like
+  // ResolvedComments rather than toggling a class on the spans: ProseMirror
+  // owns the editable DOM and reconciles away manual class changes. The `~=`
+  // token selector matches the combined "id1 id2" anchors that intersecting /
+  // nested comments share, so every segment of the hovered comment highlights.
+  let css = useMemo(() => {
+    if (!permissions.write || hoveredCommentIDs.length === 0) return "";
+    let selector = hoveredCommentIDs
+      .map((id) => `.comment-anchor[data-comment-id~="${id}"]`)
+      .join(",\n");
+    return `${selector} {
+  background: color-mix(in oklab, rgb(var(--accent-contrast)), transparent 75%);
+  border-bottom: 2px solid rgb(var(--accent-contrast));
+}`;
+  }, [hoveredCommentIDs, permissions.write]);
 
-  return <div ref={ref} className="hidden" />;
+  if (!css) return null;
+  return <style>{css}</style>;
 }
