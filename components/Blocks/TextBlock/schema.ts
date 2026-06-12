@@ -84,6 +84,32 @@ let baseSchema = {
         ];
       },
     } as MarkSpec,
+    comment: {
+      attrs: {
+        commentID: {},
+      },
+      inclusive: false,
+      parseDOM: [
+        {
+          tag: "span.comment-anchor",
+          getAttrs(dom: HTMLElement) {
+            return {
+              commentID: dom.getAttribute("data-comment-id"),
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        return [
+          "span",
+          {
+            class: "comment-anchor",
+            "data-comment-id": node.attrs.commentID,
+          },
+          0,
+        ];
+      },
+    } as MarkSpec,
     link: {
       attrs: {
         href: {},
@@ -101,7 +127,16 @@ let baseSchema = {
       ],
       toDOM(node) {
         let { href } = node.attrs;
-        return ["a", { href, target: "_blank", referrerpolicy: "no-referrer", style: "cursor: text" }, 0];
+        return [
+          "a",
+          {
+            href,
+            target: "_blank",
+            referrerpolicy: "no-referrer",
+            style: "cursor: text",
+          },
+          0,
+        ];
       },
     } as MarkSpec,
   },

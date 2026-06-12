@@ -167,7 +167,13 @@ export function RenderedTextBlock(props: {
         </div>
       );
   } else {
-    content = <RenderYJSFragment value={initialFact.data.value} wrapper="p" />;
+    content = (
+      <RenderYJSFragment
+        value={initialFact.data.value}
+        wrapper="p"
+        renderComments={permissions.write}
+      />
+    );
   }
   return (
     <div

@@ -21,8 +21,14 @@ import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 import { usePageFootnotes } from "components/Footnotes/usePageFootnotes";
 import { FootnoteContext } from "components/Footnotes/FootnoteContext";
 import { FootnoteSection } from "components/Footnotes/FootnoteSection";
-import { FootnoteSideColumn } from "components/Footnotes/FootnoteSideColumn";
 import { FootnotePopover } from "components/Footnotes/FootnotePopover";
+import { usePageComments } from "components/Comments/usePageComments";
+import { CommentContext } from "components/Comments/CommentContext";
+import { AnnotationSideColumn } from "components/Comments/AnnotationSideColumn";
+import { CommentMobileSheet } from "components/Comments/CommentMobileSheet";
+import { CommentPopover } from "components/Comments/CommentPopover";
+import { ResolvedComments } from "components/Comments/ResolvedComments";
+import { CommentAnchorHover } from "components/Comments/CommentAnchorHover";
 import { LinkPopover } from "components/LinkPopover";
 
 export function Page(props: {
@@ -47,6 +53,7 @@ export function Page(props: {
 
   let drawerOpen = useDrawerOpen(props.entityID);
   let footnoteData = usePageFootnotes(props.entityID);
+  let commentData = usePageComments(props.entityID);
   let isRightmostPage = useUIState((s) => {
     let pages = s.openPages;
     if (pages.length === 0) return true;
@@ -57,46 +64,52 @@ export function Page(props: {
   return (
     <CardThemeProvider entityID={props.entityID}>
       <FootnoteContext.Provider value={footnoteData}>
-        <PageWrapper
-          onClickAction={(e) => {
-            if (e.defaultPrevented) return;
-            if (rep) {
-              if (isFocused) return;
-              focusPage(props.entityID, rep);
+        <CommentContext.Provider value={commentData}>
+          <PageWrapper
+            onClickAction={(e) => {
+              if (e.defaultPrevented) return;
+              if (rep) {
+                if (isFocused) return;
+                focusPage(props.entityID, rep);
+              }
+            }}
+            id={elementId.page(props.entityID).container}
+            drawerOpen={!!drawerOpen}
+            isFocused={isFocused}
+            fullPageScroll={props.fullPageScroll}
+            flow={props.flow}
+            pageType={pageType}
+            pageOptions={
+              <PageOptions
+                entityID={props.entityID}
+                first={props.first}
+                isFocused={isFocused}
+              />
             }
-          }}
-          id={elementId.page(props.entityID).container}
-          drawerOpen={!!drawerOpen}
-          isFocused={isFocused}
-          fullPageScroll={props.fullPageScroll}
-          flow={props.flow}
-          pageType={pageType}
-          pageOptions={
-            <PageOptions
-              entityID={props.entityID}
-              first={props.first}
-              isFocused={isFocused}
-            />
-          }
-          footnoteSideColumn={
-            <FootnoteSideColumn
-              pageEntityID={props.entityID}
-              visible={sideColumnVisible}
-              fullPageScroll={props.fullPageScroll}
-            />
-          }
-        >
-          {/*this is used in the publication page, for publication information and
+            footnoteSideColumn={
+              <AnnotationSideColumn
+                pageEntityID={props.entityID}
+                visible={sideColumnVisible}
+                fullPageScroll={props.fullPageScroll}
+              />
+            }
+          >
+            {/*this is used in the publication page, for publication information and
           nav*/}
-          {props.header}
-          {props.first && pageType === "doc" && !publicationPage && (
-            <PublicationMetadata />
-          )}
-          <PageContent entityID={props.entityID} first={props.first} />
-        </PageWrapper>
-        <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
-        <FootnotePopover />
-        <LinkPopover />
+            {props.header}
+            {props.first && pageType === "doc" && !publicationPage && (
+              <PublicationMetadata />
+            )}
+            <PageContent entityID={props.entityID} first={props.first} />
+          </PageWrapper>
+          <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
+          <FootnotePopover />
+          <CommentPopover />
+          <CommentMobileSheet />
+          <ResolvedComments />
+          <CommentAnchorHover />
+          <LinkPopover />
+        </CommentContext.Provider>
       </FootnoteContext.Provider>
     </CardThemeProvider>
   );

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
+import type { Node } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin } from "y-prosemirror";
@@ -24,10 +25,32 @@ import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
+import { useLinkPopoverStore } from "components/LinkPopover";
 import {
-  useLinkPopoverStore,
-} from "components/LinkPopover";
+  useCommentSheetStore,
+  useResolvedCommentsStore,
+} from "components/Comments/commentStores";
+import { useCommentPopoverStore } from "components/Comments/CommentPopover";
+import { commentDraftPlugin } from "./commentDraftPlugin";
 import { useCollabCursors } from "./useCollabCursors";
+
+// The comment anchor under an event's target, along with the IDs of its
+// unresolved comments; null when there are none (fully-resolved anchors
+// behave like plain text). Anchors carry one or more comment IDs since
+// overlapping comments share a mark.
+function unresolvedCommentAnchor(event: Event) {
+  let anchor = (event.target as HTMLElement | null)?.closest(
+    ".comment-anchor[data-comment-id]",
+  ) as HTMLElement | null;
+  if (!anchor) return null;
+  let resolved = useResolvedCommentsStore.getState().resolved;
+  let commentIDs = anchor
+    .getAttribute("data-comment-id")!
+    .split(" ")
+    .filter((id) => id && !resolved[id]);
+  if (commentIDs.length === 0) return null;
+  return { anchor, commentIDs };
+}
 
 export function useMountProsemirror({
   props,
@@ -70,6 +93,7 @@ export function useMountProsemirror({
         inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
         highlightSelectionPlugin,
+        commentDraftPlugin,
         autolink({
           type: schema.marks.link,
           shouldAutoLink: () => true,
@@ -89,7 +113,40 @@ export function useMountProsemirror({
           // window.open from a click handler, and ProseMirror cancels its
           // click handling when the mouse moves >4px between down and up.
           click: (_view, event) => {
-            if (!(event.metaKey || event.ctrlKey)) return false;
+            if (!(event.metaKey || event.ctrlKey)) {
+              let target = unresolvedCommentAnchor(event);
+              // Read-only viewers don't see comments, so anchors are inert
+              if (target && propsRef.current.entity_set.permissions.write) {
+                let { anchor, commentIDs } = target;
+                let isDesktop = window.matchMedia(
+                  "(min-width: 1280px)",
+                ).matches;
+                if (!isDesktop) {
+                  // On mobile, show a popover with an excerpt and a button
+                  // that opens the thread in the slide-in sheet
+                  let store = useCommentPopoverStore.getState();
+                  if (store.commentIDs?.join(" ") === commentIDs.join(" ")) {
+                    store.close();
+                  } else {
+                    store.open(commentIDs, anchor);
+                  }
+                  event.preventDefault();
+                  return true;
+                }
+                // On desktop canvas pages there's no side column, so open the
+                // sheet directly; on doc pages the side column thread expands
+                // on hover, so the click just places the cursor.
+                if (propsRef.current.pageType === "canvas") {
+                  useCommentSheetStore
+                    .getState()
+                    .openSheet(propsRef.current.parent, commentIDs[0]);
+                  event.preventDefault();
+                  return true;
+                }
+                return false;
+              }
+              return false;
+            }
             let anchor = (event.target as HTMLElement | null)?.closest("a");
             let href = anchor?.getAttribute("href");
             if (!href) return false;
@@ -176,13 +233,13 @@ export function useMountProsemirror({
             // above — don't open the edit popover or let ProseMirror treat
             // it as a select-node click.
             if (_event.metaKey || _event.ctrlKey) return true;
-            let anchor = (_event.target as HTMLElement).closest("a") as HTMLElement | null;
+            let anchor = (_event.target as HTMLElement).closest(
+              "a",
+            ) as HTMLElement | null;
             if (anchor) {
-              useLinkPopoverStore.getState().open(
-                linkMark.attrs.href,
-                anchor,
-                entityID,
-              );
+              useLinkPopoverStore
+                .getState()
+                .open(linkMark.attrs.href, anchor, entityID);
             }
             return;
           }
@@ -237,6 +294,32 @@ export function useMountProsemirror({
             if (!newFootnotes.has(id)) {
               repRef.current?.mutate.deleteFootnote({
                 footnoteEntityID: id,
+                blockID: entityID,
+              });
+            }
+          }
+
+          // Diff comment marks: deleting all the commented text deletes the
+          // comment, like removing a footnote node deletes the footnote
+          let collectCommentIDs = (doc: Node, into: Set<string>) => {
+            doc.descendants((n) => {
+              for (let m of n.marks)
+                if (m.type.name === "comment")
+                  for (let id of ((m.attrs.commentID as string) || "").split(
+                    " ",
+                  )) {
+                    if (id) into.add(id);
+                  }
+            });
+          };
+          let oldComments = new Set<string>();
+          let newComments = new Set<string>();
+          collectCommentIDs(oldEditorState.doc, oldComments);
+          collectCommentIDs(newState.doc, newComments);
+          for (let id of oldComments) {
+            if (!newComments.has(id)) {
+              repRef.current?.mutate.deleteComment({
+                commentEntityID: id,
                 blockID: entityID,
               });
             }

@@ -9,6 +9,7 @@ export type Delta = {
     underline?: {};
     strikethrough?: {};
     highlight?: { color: string };
+    comment?: { commentID: string };
     link?: { href: string };
   };
 };

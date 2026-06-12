@@ -137,6 +137,46 @@ const BlockAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  "block/comment": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+} as const;
+
+// Comments are authored by authenticated users; their facts carry an
+// author_did so the server can gate writes to the comment's author.
+// Comment content is stored as a YJS doc in a "block/text" fact on the
+// comment entity, like footnotes.
+const CommentAttributes = {
+  "comment/reply": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "comment/author": {
+    type: "string",
+    cardinality: "one",
+  },
+  "comment/created-at": {
+    type: "string",
+    cardinality: "one",
+  },
+  // Set by anyone with write permission (no author_did); resolved comments
+  // are hidden in the UI but their data and anchor marks are kept.
+  "comment/resolved": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  // Snapshot of the anchor range in the block's text at creation time. The
+  // live anchor is the comment mark in the block's YJS doc, which moves with
+  // edits; these are kept as a fallback record of where the comment started.
+  "comment/anchor-start": {
+    type: "number",
+    cardinality: "one",
+  },
+  "comment/anchor-end": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const MailboxAttributes = {
@@ -338,6 +378,7 @@ export const Attributes = {
   ...RootAttributes,
   ...PageAttributes,
   ...BlockAttributes,
+  ...CommentAttributes,
   ...LinkBlockAttributes,
   ...ThemeAttributes,
   ...MailboxAttributes,

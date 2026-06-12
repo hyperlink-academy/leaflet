@@ -3,6 +3,7 @@ import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";
 import { baseKeymap, setBlockType, toggleMark } from "prosemirror-commands";
+import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
 import { keymap } from "prosemirror-keymap";
 import {
   Command,
@@ -37,13 +38,7 @@ export const TextBlockKeymap = (
   openMentionAutocomplete: () => void,
 ) =>
   ({
-    "Meta-b": toggleMark(schema.marks.strong),
-    "Ctrl-b": toggleMark(schema.marks.strong),
-    "Meta-u": toggleMark(schema.marks.underline),
-    "Ctrl-u": toggleMark(schema.marks.underline),
-    "Meta-i": toggleMark(schema.marks.em),
-    "Ctrl-i": toggleMark(schema.marks.em),
-    "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
+    ...formattingKeymap(schema.marks),
     "Ctrl-Meta-h": (...args) => {
       return toggleMark(schema.marks.highlight, {
         color: useUIState.getState().lastUsedHighlight,

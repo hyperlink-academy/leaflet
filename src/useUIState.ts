@@ -4,6 +4,13 @@ import { combine, createJSONStorage, persist } from "zustand/middleware";
 
 type SelectedBlock = Pick<Block, "value" | "parent">;
 
+export type FocusedEntity =
+  | { entityType: "page"; entityID: string }
+  | { entityType: "block"; entityID: string; parent: string }
+  | { entityType: "footnote"; entityID: string; parent: string }
+  | { entityType: "comment"; entityID: string; parent: string }
+  | null;
+
 export type EditorIframePage = { type: "iframe"; url: string };
 export type EditorOpenPage = string | EditorIframePage;
 
@@ -14,11 +21,7 @@ export const useUIState = create(
   combine(
     {
       lastUsedHighlight: "1" as "1" | "2" | "3",
-      focusedEntity: null as
-        | { entityType: "page"; entityID: string }
-        | { entityType: "block"; entityID: string; parent: string }
-        | { entityType: "footnote"; entityID: string; parent: string }
-        | null,
+      focusedEntity: null as FocusedEntity,
       foldedBlocks: [] as string[],
       openPages: [] as EditorOpenPage[],
       selectedBlocks: [] as SelectedBlock[],
@@ -59,13 +62,7 @@ export const useUIState = create(
             ),
           };
         }),
-      setFocusedBlock: (
-        b:
-          | { entityType: "page"; entityID: string }
-          | { entityType: "block"; entityID: string; parent: string }
-          | { entityType: "footnote"; entityID: string; parent: string }
-          | null,
-      ) => set(() => ({ focusedEntity: b })),
+      setFocusedBlock: (b: FocusedEntity) => set(() => ({ focusedEntity: b })),
       setSelectedBlock: (block: SelectedBlock) =>
         set((state) => {
           return { ...state, selectedBlocks: [block] };
