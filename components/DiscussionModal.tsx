@@ -13,6 +13,8 @@ import { useDocumentDiscussionData } from "app/(app)/lish/[did]/[publication]/[r
 import { GoToArrow } from "./Icons/GoToArrow";
 import { ButtonPrimary } from "./Buttons";
 import { StandardSitePostItem } from "./Blocks/StandardSitePostBlock/StandardSitePostItem";
+import { MobileSheet } from "./MobileSheet";
+import { useIsMobile } from "src/hooks/isMobile";
 
 // A self-contained modal that renders a post's comments and Bluesky mentions
 // with a toggle between them. Used from post listings, the reader feed, and
@@ -47,6 +49,10 @@ export function DiscussionModal(props: {
   const { isLoading, data, did, pages, documentContextValue, comments } =
     useDocumentDiscussionData(props.document_uri, props.open);
 
+  // On mobile this renders in the slide-up sheet (like the interaction drawer)
+  // instead of a centered modal.
+  const isMobile = useIsMobile();
+
   // Restrict mentions to the page this modal is about (mirrors InteractionDrawer).
   const quotesAndMentions = (data?.quotesAndMentions ?? []).filter((q) => {
     if (!q.link) return !props.pageId;
@@ -57,12 +63,8 @@ export function DiscussionModal(props: {
     return quotePosition?.pageId === props.pageId;
   });
 
-  return (
-    <Modal
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-      className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]! h-[1000px]!"
-    >
+  const content = (
+    <>
       <div className="standardSitePostBlock block-border overflow-hidden w-full bg-bg-page my-3">
         <StandardSitePostItem
           pageWidth={448}
@@ -71,7 +73,10 @@ export function DiscussionModal(props: {
           hideInteractions
         />
       </div>
-      <div className="discussionModalStickyHeader sticky top-0 z-10 bg-[var(--color-bg-light)]! -mx-3">
+      {/* bg matches the surface it scrolls over: plain bg-page in the mobile
+          sheet, the bg-light tint in the desktop modal (sm: aligns with the
+          useIsMobile breakpoint). */}
+      <div className="discussionModalStickyHeader sticky top-0 z-10 bg-bg-page! sm:bg-[var(--color-bg-light)]! -mx-3">
         <div className="flex items-center justify-between gap-3 pt-3 pb-2 px-3">
           {bothAvailable ? (
             <ToggleGroup
@@ -140,6 +145,28 @@ export function DiscussionModal(props: {
           </LeafletContentProvider>
         ) : null}
       </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <MobileSheet
+        open={props.open}
+        onOpenChange={props.onOpenChange}
+        className="px-3! pt-0!"
+      >
+        {content}
+      </MobileSheet>
+    );
+  }
+
+  return (
+    <Modal
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]! h-[1000px]!"
+    >
+      {content}
     </Modal>
   );
 }

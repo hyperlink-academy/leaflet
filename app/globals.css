@@ -570,8 +570,8 @@ body.cmd-held .ProseMirror a {
 
 .pwa-padding-x {
   @media (display-mode: standalone) {
-    margin-left: 1rem;
-    margin-right: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 
@@ -777,4 +777,198 @@ body.cmd-held .ProseMirror a {
 
 .toastError a {
   color: var(--color-white);
+}
+
+/* Collaborative cursors (yCursorPlugin + collabCursorBuilder): a caret line
+   with a dot on its tip. Hover contracts the caret in anticipation, then
+   springs it open into a name pill, the shapes melting together via the
+   #yjs-cursor-goo SVG filter. Three layers: a goo-filtered layer (line stub
+   + pill blob with transparent sizing text), the crisp caret line outside
+   the filter, and a transparent twin pill carrying the visible text with
+   identical bounds in every state. --cursor-color and the spring easing
+   variables are set inline per cursor by the builder. */
+/* 0×0 positioned anchor next to the editor; carets are positioned inside it
+   from viewport-rect deltas, so surrounding layout doesn't matter */
+.yjs-cursor-layer {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.ProseMirror-yjs-cursor {
+  --caret-w: 2.3px;
+  /* how much the caret stretches upward when open, lifting the pill clear
+     of the text */
+  --cursor-lift: 10px;
+  /* the goo layer needs real dimensions or the SVG filter region clips */
+  --goo-pad-x: 130px;
+  --goo-pad-top: 26px;
+  /* left/top/height are set inline per cursor from view.coordsAtPos */
+  position: absolute;
+  width: 0;
+  pointer-events: none;
+}
+.yjs-cursor-goo,
+.yjs-cursor-overlay {
+  position: absolute;
+  left: calc(-1 * var(--goo-pad-x));
+  top: calc(-1 * var(--goo-pad-top));
+  width: calc(var(--goo-pad-x) * 2);
+  height: calc(100% + var(--goo-pad-top));
+  pointer-events: none;
+}
+.yjs-cursor-goo {
+  filter: url(#yjs-cursor-goo);
+}
+.yjs-cursor-line,
+.yjs-cursor-stub {
+  position: absolute;
+  width: var(--caret-w);
+  border-radius: 999px;
+  background-color: var(--cursor-color, orange);
+  transform: translateX(-50%);
+  transition:
+    transform 154ms ease,
+    width 154ms ease,
+    top 154ms ease,
+    height 154ms ease;
+}
+.yjs-cursor-line {
+  left: 0;
+  top: 0;
+  height: 100%;
+  transform-origin: 50% 100%;
+  pointer-events: auto;
+}
+.yjs-cursor-stub {
+  left: var(--goo-pad-x);
+  top: var(--goo-pad-top);
+  height: 12px;
+}
+.yjs-cursor-pill {
+  position: absolute;
+  left: var(--goo-pad-x);
+  top: var(--goo-pad-top);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: var(--cursor-color, orange);
+  transition:
+    transform 154ms ease,
+    max-width 154ms ease,
+    height 154ms ease,
+    top 154ms ease;
+}
+.yjs-cursor-label {
+  background-color: transparent;
+  pointer-events: auto;
+}
+/* invisible enlarged hover target around the 7px dot */
+.yjs-cursor-hit {
+  position: absolute;
+  left: var(--goo-pad-x);
+  top: var(--goo-pad-top);
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  outline: none;
+  pointer-events: auto;
+}
+.yjs-cursor-text {
+  padding: 1px 10px 0;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--cursor-text-color, white);
+  user-select: none;
+}
+.yjs-cursor-sizer {
+  color: transparent;
+}
+.yjs-cursor-label .yjs-cursor-text {
+  opacity: 0;
+  transition: opacity 154ms ease;
+}
+
+/* contract: anticipation squash — the caret shrinks toward its base while
+   the dot (and the text twin) ride down to stay on the tip.
+   --cursor-contract-shift is 22% of the caret height, set inline. */
+.yjs-cursor-contract .yjs-cursor-line {
+  transform: translateX(-50%) scaleY(0.78);
+  transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+.yjs-cursor-contract .yjs-cursor-stub {
+  transform: translateX(-50%) translateY(var(--cursor-contract-shift, 0.3em));
+  transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+.yjs-cursor-contract .yjs-cursor-pill {
+  transform: translate(-50%, -50%) translateY(var(--cursor-contract-shift, 0.3em))
+    scale(0.7);
+  transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* open: transforms spring back to identity while the caret thickens and
+   stretches upward on the spring, the stub and pill riding the lifted tip
+   so the pill sits clear of the text. Never spring the clamped max-width —
+   the clipped overshoot flickers — ease it out instead. */
+.yjs-cursor-open .yjs-cursor-line,
+.yjs-cursor-open .yjs-cursor-stub {
+  width: 3.45px;
+}
+.yjs-cursor-open .yjs-cursor-line {
+  top: calc(-1 * var(--cursor-lift));
+  height: calc(100% + var(--cursor-lift));
+  transition:
+    transform var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    width var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    height var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.yjs-cursor-open .yjs-cursor-stub {
+  top: calc(var(--goo-pad-top) - var(--cursor-lift));
+  transition:
+    transform var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    width var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.yjs-cursor-open .yjs-cursor-pill {
+  top: calc(var(--goo-pad-top) - var(--cursor-lift));
+  max-width: 240px;
+  height: 20px;
+  transition:
+    transform var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    max-width 210ms cubic-bezier(0.25, 0.8, 0.35, 1),
+    height 210ms cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+.yjs-cursor-open .yjs-cursor-label .yjs-cursor-text {
+  opacity: 1;
+  transition: opacity 182ms ease 84ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ProseMirror-yjs-cursor,
+  .ProseMirror-yjs-cursor * {
+    transition: none !important;
+  }
 }

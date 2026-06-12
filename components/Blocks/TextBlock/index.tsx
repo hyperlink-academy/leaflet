@@ -239,7 +239,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
     handleMentionOpenChange,
   } = useMentionState(props.entityID, props);
 
-  let { mountRef, actionTimeout } = useMountProsemirror({
+  let { mountRef, actionTimeout, overlay } = useMountProsemirror({
     props,
     openMentionAutocomplete,
   });
@@ -257,6 +257,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
               : ""
           }`}
       >
+        {overlay}
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {

@@ -1,12 +1,10 @@
-import { useLayoutEffect, useRef, useEffect, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { Node } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin } from "y-prosemirror";
-import * as Y from "yjs";
-import * as base64 from "base64-js";
 import { Replicache } from "replicache";
 import { produce } from "immer";
 
@@ -34,6 +32,7 @@ import {
 } from "components/Comments/commentStores";
 import { useCommentPopoverStore } from "components/Comments/CommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
+import { useCollabCursors } from "./useCollabCursors";
 
 export function useMountProsemirror({
   props,
@@ -46,7 +45,7 @@ export function useMountProsemirror({
   let rep = useReplicache();
   let mountRef = useRef<HTMLPreElement | null>(null);
   const repRef = useRef<Replicache<ReplicacheMutators> | null>(null);
-  let value = useYJSValue(entityID);
+  let { yText: value, cursorPlugin, overlay } = useCollabCursors(entityID);
   let entity_set = useEntitySetContext();
   let alignment =
     useEntity(entityID, "block/text-alignment")?.data.value || "left";
@@ -71,6 +70,7 @@ export function useMountProsemirror({
       schema: schema,
       plugins: [
         ySyncPlugin(value),
+        cursorPlugin,
         keymap(km),
         inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
@@ -344,8 +344,8 @@ export function useMountProsemirror({
         };
       });
     }
-  }, [entityID, parent, value, handlePaste, rep]);
-  return { mountRef, actionTimeout };
+  }, [entityID, parent, value, cursorPlugin, handlePaste, rep]);
+  return { mountRef, actionTimeout, overlay };
 }
 
 export function trackUndoRedo(
@@ -372,47 +372,4 @@ export function trackUndoRedo(
 
     undoManager.add({ undo, redo });
   }
-}
-
-export function useYJSValue(entityID: string) {
-  const [ydoc] = useState(new Y.Doc());
-  const docStateFromReplicache = useEntity(entityID, "block/text");
-  let rep = useReplicache();
-  const [yText] = useState(ydoc.getXmlFragment("prosemirror"));
-
-  if (docStateFromReplicache) {
-    const update = base64.toByteArray(docStateFromReplicache.data.value);
-    Y.applyUpdate(ydoc, update);
-  }
-
-  useEffect(() => {
-    if (!rep.rep) return;
-    let timeout = null as null | number;
-    const updateReplicache = async () => {
-      const update = Y.encodeStateAsUpdate(ydoc);
-      await rep.rep?.mutate.assertFact({
-        //These undos are handled above in the Prosemirror context
-        ignoreUndo: true,
-        entity: entityID,
-        attribute: "block/text",
-        data: {
-          value: base64.fromByteArray(update),
-          type: "text",
-        },
-      });
-    };
-    const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
-      if (!transaction.origin) return;
-      if (timeout) clearTimeout(timeout);
-      timeout = window.setTimeout(async () => {
-        updateReplicache();
-      }, 300);
-    };
-
-    yText.observeDeep(f);
-    return () => {
-      yText.unobserveDeep(f);
-    };
-  }, [yText, entityID, rep, ydoc]);
-  return yText;
 }
