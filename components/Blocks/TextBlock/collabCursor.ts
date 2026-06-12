@@ -71,95 +71,6 @@ function ensureGooFilter() {
   document.body.appendChild(svg);
 }
 
-// Tap-to-expand for touch devices. The widget is fully pointer-events: none
-// on touch so it can never interrupt a caret or selection-handle drag —
-// so instead of receiving events, a single passive document listener
-// watches for completed taps (single touch, little movement) and hit-tests
-// them against the cursor dots by bounding rect (elementFromPoint skips
-// pointer-events: none elements). The tap still places the local caret
-// underneath; the pill just opens above it.
-const TAP_SLOP = 12;
-const TAP_AUTO_CLOSE_MS = 4000;
-let tapToExpandInstalled = false;
-function installTapToExpand() {
-  if (tapToExpandInstalled || typeof window === "undefined") return;
-  tapToExpandInstalled = true;
-  // hover-capable devices use the mouseenter/mouseleave path instead; on
-  // hybrids the synthetic mouse events from taps already drive it
-  if (!window.matchMedia("(hover: none)").matches) return;
-
-  let touchStart: { x: number; y: number } | null = null;
-  let contractTimer: number | null = null;
-  let autoCloseTimer: number | null = null;
-  const close = (cursor: Element) =>
-    cursor.classList.remove("yjs-cursor-contract", "yjs-cursor-open");
-
-  document.addEventListener(
-    "touchstart",
-    (e) => {
-      touchStart =
-        e.touches.length === 1
-          ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
-          : null;
-    },
-    { passive: true },
-  );
-  document.addEventListener(
-    "touchend",
-    (e) => {
-      if (!touchStart) return;
-      const start = touchStart;
-      touchStart = null;
-      const touch = e.changedTouches[0];
-      if (!touch) return;
-      if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > TAP_SLOP)
-        return;
-
-      const tappedHit = Array.from(
-        document.querySelectorAll(".yjs-cursor-hit, .yjs-cursor-label"),
-      ).find((hit) => {
-        const r = hit.getBoundingClientRect();
-        return (
-          touch.clientX >= r.left - TAP_SLOP &&
-          touch.clientX <= r.right + TAP_SLOP &&
-          touch.clientY >= r.top - TAP_SLOP &&
-          touch.clientY <= r.bottom + TAP_SLOP
-        );
-      });
-      const target = tappedHit?.closest(".ProseMirror-yjs-cursor") ?? null;
-
-      if (contractTimer !== null) window.clearTimeout(contractTimer);
-      if (autoCloseTimer !== null) window.clearTimeout(autoCloseTimer);
-      contractTimer = null;
-      autoCloseTimer = null;
-      document
-        .querySelectorAll(
-          ".ProseMirror-yjs-cursor.yjs-cursor-open, .ProseMirror-yjs-cursor.yjs-cursor-contract",
-        )
-        .forEach((c) => {
-          if (c !== target) close(c);
-        });
-      if (!target) return;
-      if (target.classList.contains("yjs-cursor-open")) {
-        close(target);
-        return;
-      }
-      // same anticipation → spring-open sequence as hover
-      target.classList.add("yjs-cursor-contract");
-      contractTimer = window.setTimeout(() => {
-        contractTimer = null;
-        target.classList.remove("yjs-cursor-contract");
-        target.classList.add("yjs-cursor-open");
-      }, CONTRACT_MS);
-      autoCloseTimer = window.setTimeout(() => {
-        autoCloseTimer = null;
-        close(target);
-      }, TAP_AUTO_CLOSE_MS);
-    },
-    { passive: true },
-  );
-}
-
 const el = (tag: string, ...classes: string[]) => {
   const e = document.createElement(tag);
   e.classList.add(...classes);
@@ -225,7 +136,6 @@ export const collabCursorBuilder = (user: {
   hue?: number;
 }): HTMLElement => {
   ensureGooFilter();
-  installTapToExpand();
   const spring = getSpringVars();
   const colors = cursorColors(user.hue ?? 0);
 
@@ -253,6 +163,12 @@ export const collabCursorBuilder = (user: {
 
   const overlay = el("div", "yjs-cursor-overlay");
   const hit = el("div", "yjs-cursor-hit");
+  // Focusable so a tap on touch devices opens the pill through the
+  // browser's native tap → focus/hover emulation (and keyboards can reach
+  // it too); the pill itself is the focus indicator.
+  hit.setAttribute("tabindex", "0");
+  hit.setAttribute("role", "button");
+  hit.setAttribute("aria-label", displayName);
   const label = el("div", "yjs-cursor-pill", "yjs-cursor-label");
   const name = el("span", "yjs-cursor-text");
   name.textContent = displayName;
@@ -265,11 +181,12 @@ export const collabCursorBuilder = (user: {
   cursor.appendChild(overlay);
   cursor.appendChild(document.createTextNode("\u2060"));
 
-  // mouseenter → brief contraction, then spring open; mouseleave anytime →
-  // ease back. States are classes driving transitions (never keyframes), so
-  // interrupting mid-animation stays smooth.
+  // hover or focus in → brief contraction, then spring open; out → ease
+  // back. On touch devices the browser's tap → hover/focus emulation drives
+  // these natively. States are classes driving transitions (never
+  // keyframes), so interrupting mid-animation stays smooth.
   let timer: number | null = null;
-  cursor.addEventListener("mouseenter", () => {
+  const beginReveal = () => {
     if (timer !== null) window.clearTimeout(timer);
     cursor.classList.remove("yjs-cursor-open");
     cursor.classList.add("yjs-cursor-contract");
@@ -278,12 +195,16 @@ export const collabCursorBuilder = (user: {
       cursor.classList.remove("yjs-cursor-contract");
       cursor.classList.add("yjs-cursor-open");
     }, CONTRACT_MS);
-  });
-  cursor.addEventListener("mouseleave", () => {
+  };
+  const endReveal = () => {
     if (timer !== null) window.clearTimeout(timer);
     timer = null;
     cursor.classList.remove("yjs-cursor-contract", "yjs-cursor-open");
-  });
+  };
+  cursor.addEventListener("mouseenter", beginReveal);
+  cursor.addEventListener("mouseleave", endReveal);
+  cursor.addEventListener("focusin", beginReveal);
+  cursor.addEventListener("focusout", endReveal);
 
   return cursor;
 };
