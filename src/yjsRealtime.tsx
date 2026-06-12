@@ -11,6 +11,8 @@ import {
 } from "y-protocols/awareness";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabaseBrowserClient } from "supabase/browserClient";
+import { SCHEMA_VERSION } from "components/Blocks/TextBlock/schema";
+import { markClientStale } from "components/Blocks/TextBlock/schemaVersion";
 
 // Live multiplayer layer for text blocks. Each client broadcasts incremental
 // yjs document updates and cursor (awareness) state over a supabase realtime
@@ -166,6 +168,7 @@ export class YjsRealtimeConnection {
         this.send("doc-update", {
           entity,
           update: base64.fromByteArray(Y.mergeUpdates(updates)),
+          schemaVersion: SCHEMA_VERSION,
         });
       }
       this.pendingDocUpdates.clear();
@@ -199,8 +202,21 @@ export class YjsRealtimeConnection {
     }, AWARENESS_FLUSH_INTERVAL);
   }
 
-  private onDocBroadcast(payload: { entity?: string; update?: string }) {
+  private onDocBroadcast(payload: {
+    entity?: string;
+    update?: string;
+    schemaVersion?: number;
+  }) {
     if (!payload?.entity || !payload.update) return;
+    // Updates from a peer on a newer schema must never reach a bound editor
+    // (see components/Blocks/TextBlock/schemaVersion). The version rides on
+    // every message because an incremental update doesn't necessarily contain
+    // the doc's version stamp, and a separate stamp message could be dropped
+    // or reordered. Pre-versioning peers send no version and count as 0.
+    if ((payload.schemaVersion ?? 0) > SCHEMA_VERSION) {
+      markClientStale();
+      return;
+    }
     let set = this.docs.get(payload.entity);
     if (!set) return;
     let update = base64.toByteArray(payload.update);
