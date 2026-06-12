@@ -108,25 +108,6 @@ export function useMountProsemirror({
         state: editor,
         handlePaste,
         handleDOMEvents: {
-          // Where tapping a comment anchor opens the popover/sheet, the tap
-          // must not focus the editor: focus moves on mousedown (before the
-          // click handler runs), and the block's focus handling plus the
-          // keyboard popping open would immediately dismiss the popover the
-          // click is about to show. stopPropagation also keeps the block's
-          // own mousedown handlers from focusing the editor.
-          mousedown: (_view, event) => {
-            if (event.metaKey || event.ctrlKey) return false;
-            let target = unresolvedCommentAnchor(event);
-            if (!target) return false;
-            let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
-            let isCanvas = propsRef.current.pageType === "canvas";
-            if (!isDesktop || isCanvas) {
-              event.preventDefault();
-              event.stopPropagation();
-              return true;
-            }
-            return false;
-          },
           // cmd/ctrl+click opens links in a new tab. Handled on the native
           // click event rather than in handleClickOn: popup blockers trust
           // window.open from a click handler, and ProseMirror cancels its

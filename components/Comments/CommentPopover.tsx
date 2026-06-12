@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
 import * as RadixPopover from "@radix-ui/react-popover";
 import { PopoverArrow } from "components/Icons/PopoverArrow";
@@ -50,36 +50,69 @@ export function CommentPopover() {
     [content?.data.value],
   );
 
-  // Close on scroll or resize, matching LinkPopover behavior
+  // The popover stays open while the tap also places the cursor in the
+  // block: focusing scrolls the caret into view and (on mobile) opens the
+  // keyboard, so rather than closing on scroll/resize, follow the anchor.
+  // ProseMirror can also re-render the span (e.g. while typing), so re-find
+  // it by comment ID when the stored element is detached.
+  let [anchorRect, setAnchorRect] = useState<DOMRect | undefined>();
   useEffect(() => {
-    if (!isOpen || !anchorElement) return;
-    let handleScroll = () => close();
-    let scrollWrapper = anchorElement.closest(".pageScrollWrapper");
-    scrollWrapper?.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", close);
-    return () => {
-      scrollWrapper?.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", close);
+    if (!isOpen || !anchorElement || !commentIDs) {
+      setAnchorRect(undefined);
+      return;
+    }
+    let update = () => {
+      let el: HTMLElement | null = anchorElement;
+      if (!el!.isConnected) {
+        el = document.querySelector(
+          `.comment-anchor[data-comment-id~="${commentIDs![0]}"]`,
+        );
+        if (!el) {
+          close();
+          return;
+        }
+      }
+      setAnchorRect(el.getBoundingClientRect());
     };
-  }, [isOpen, anchorElement, close]);
+    update();
 
-  let anchorRect = useMemo(
-    () => anchorElement?.getBoundingClientRect(),
-    [anchorElement],
-  );
+    let scrollWrapper = anchorElement.closest(".pageScrollWrapper");
+    scrollWrapper?.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
+    // Typing in the block reflows the text and moves the anchor
+    let mutationObserver = new MutationObserver(update);
+    if (scrollWrapper)
+      mutationObserver.observe(scrollWrapper, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    return () => {
+      scrollWrapper?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
+      mutationObserver.disconnect();
+    };
+  }, [isOpen, anchorElement, commentIDs, close]);
 
   if (!comment) return null;
   let commentEntityID = comment.commentEntityID;
+  // Measure directly on the first render; the effect above takes over and
+  // keeps the rect in sync afterwards
+  let rect = anchorRect ?? anchorElement?.getBoundingClientRect();
 
   return (
     <RadixPopover.Root open={isOpen}>
       <RadixPopover.Anchor
         style={{
           position: "fixed",
-          top: anchorRect?.top ?? 0,
-          left: anchorRect?.left ?? 0,
-          width: anchorRect?.width ?? 0,
-          height: anchorRect?.height ?? 0,
+          top: rect?.top ?? 0,
+          left: rect?.left ?? 0,
+          width: rect?.width ?? 0,
+          height: rect?.height ?? 0,
           pointerEvents: "none",
         }}
       />
