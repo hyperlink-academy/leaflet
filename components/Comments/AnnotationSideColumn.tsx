@@ -150,6 +150,7 @@ export function CommentDraftComposer(props: { autoFocus?: boolean }) {
         if (!rep.rep) return;
         let commentEntityID = await submitCommentDraft({
           rep: rep.rep,
+          undoManager: rep.undoManager,
           permissionSet: entity_set.set,
           authorDid: atp_did,
           ydoc,

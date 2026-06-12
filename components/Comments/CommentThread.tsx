@@ -35,15 +35,21 @@ export function CommentThread(props: {
     if (!rep.rep || !identity?.atp_did) return;
     let lastPosition =
       replies.length > 0 ? replies[replies.length - 1].data.position : null;
-    await rep.rep.mutate.createCommentReply({
-      replyEntityID: v7(),
-      commentEntityID: props.commentEntityID,
-      permission_set: entity_set.set,
-      position: generateKeyBetween(lastPosition, null),
-      authorDid: identity.atp_did,
-      createdAt: new Date().toISOString(),
-      content: base64.fromByteArray(Y.encodeStateAsUpdate(ydoc)),
-    });
+    // A reply is several facts; undo them as one step
+    rep.undoManager.startGroup();
+    try {
+      await rep.rep.mutate.createCommentReply({
+        replyEntityID: v7(),
+        commentEntityID: props.commentEntityID,
+        permission_set: entity_set.set,
+        position: generateKeyBetween(lastPosition, null),
+        authorDid: identity.atp_did,
+        createdAt: new Date().toISOString(),
+        content: base64.fromByteArray(Y.encodeStateAsUpdate(ydoc)),
+      });
+    } finally {
+      rep.undoManager.endGroup();
+    }
     setReplying(false);
   };
 
@@ -55,7 +61,12 @@ export function CommentThread(props: {
       <CommentMessage
         entityID={props.commentEntityID}
         onDelete={() =>
-          deleteCommentFromBlock(props.commentEntityID, props.blockID, rep.rep)
+          deleteCommentFromBlock(
+            props.commentEntityID,
+            props.blockID,
+            rep.rep,
+            rep.undoManager,
+          )
         }
         // Anyone with edit permission can resolve; resolved comments are
         // hidden but their data and anchors are kept
@@ -76,12 +87,18 @@ export function CommentThread(props: {
             <CommentMessage
               key={r.data.value}
               entityID={r.data.value}
-              onDelete={() =>
-                rep.rep?.mutate.deleteCommentReply({
-                  replyEntityID: r.data.value,
-                  commentEntityID: props.commentEntityID,
-                })
-              }
+              onDelete={async () => {
+                // Deleting a reply retracts several facts; undo as one step
+                rep.undoManager.startGroup();
+                try {
+                  await rep.rep?.mutate.deleteCommentReply({
+                    replyEntityID: r.data.value,
+                    commentEntityID: props.commentEntityID,
+                  });
+                } finally {
+                  rep.undoManager.endGroup();
+                }
+              }}
             />
           ))}
         </div>

@@ -5,6 +5,7 @@ import * as base64 from "base64-js";
 import { generateKeyBetween } from "fractional-indexing";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
+import type { UndoManager } from "src/undoManager";
 import { schema } from "components/Blocks/TextBlock/schema";
 import {
   commentDraftKey,
@@ -66,11 +67,13 @@ export function cancelCommentDraft() {
 
 export async function submitCommentDraft({
   rep,
+  undoManager,
   permissionSet,
   authorDid,
   ydoc,
 }: {
   rep: Replicache<ReplicacheMutators>;
+  undoManager: UndoManager;
   permissionSet: string;
   authorDid: string;
   ydoc: Y.Doc;
@@ -118,37 +121,46 @@ export async function submitCommentDraft({
   }
   let position = generateKeyBetween(beforePosition, afterPosition);
 
-  await rep.mutate.createComment({
-    commentEntityID,
-    blockID: draft.blockID,
-    permission_set: permissionSet,
-    position,
-    authorDid,
-    createdAt: new Date().toISOString(),
-    anchorStart: range.from,
-    anchorEnd: range.to,
-    content: base64.fromByteArray(Y.encodeStateAsUpdate(ydoc)),
-  });
+  // The comment's facts and its anchor mark undo as one step. The mark
+  // transaction is dispatched as a bulkOp so trackUndoRedo adds it to this
+  // group instead of starting its own.
+  undoManager.startGroup();
+  try {
+    await rep.mutate.createComment({
+      commentEntityID,
+      blockID: draft.blockID,
+      permission_set: permissionSet,
+      position,
+      authorDid,
+      createdAt: new Date().toISOString(),
+      anchorStart: range.from,
+      anchorEnd: range.to,
+      content: base64.fromByteArray(Y.encodeStateAsUpdate(ydoc)),
+    });
 
-  // Same-type marks exclude each other, so a plain addMark over a range that
-  // already carries a comment mark would replace it and corrupt that
-  // comment's anchor. Instead each anchor mark holds a space-separated list
-  // of comment IDs, and overlaps merge the new ID into the existing list
-  // segment by segment.
-  let markType = schema.marks.comment;
-  let tr = view.state.tr;
-  view.state.doc.nodesBetween(range.from, range.to, (node, pos) => {
-    if (!node.isText) return;
-    let segFrom = Math.max(pos, range.from);
-    let segTo = Math.min(pos + node.nodeSize, range.to);
-    if (segFrom >= segTo) return;
-    let existing = node.marks.find((m) => m.type === markType);
-    let ids = existing ? markCommentIDs(existing) : [];
-    if (!ids.includes(commentEntityID)) ids.push(commentEntityID);
-    tr.addMark(segFrom, segTo, markType.create({ commentID: ids.join(" ") }));
-  });
-  tr.setMeta(commentDraftKey, null);
-  view.dispatch(tr);
+    // Same-type marks exclude each other, so a plain addMark over a range
+    // that already carries a comment mark would replace it and corrupt that
+    // comment's anchor. Instead each anchor mark holds a space-separated list
+    // of comment IDs, and overlaps merge the new ID into the existing list
+    // segment by segment.
+    let markType = schema.marks.comment;
+    let tr = view.state.tr;
+    view.state.doc.nodesBetween(range.from, range.to, (node, pos) => {
+      if (!node.isText) return;
+      let segFrom = Math.max(pos, range.from);
+      let segTo = Math.min(pos + node.nodeSize, range.to);
+      if (segFrom >= segTo) return;
+      let existing = node.marks.find((m) => m.type === markType);
+      let ids = existing ? markCommentIDs(existing) : [];
+      if (!ids.includes(commentEntityID)) ids.push(commentEntityID);
+      tr.addMark(segFrom, segTo, markType.create({ commentID: ids.join(" ") }));
+    });
+    tr.setMeta(commentDraftKey, null);
+    tr.setMeta("bulkOp", true);
+    view.dispatch(tr);
+  } finally {
+    undoManager.endGroup();
+  }
 
   useCommentDraftStore.setState({ draft: null });
   return commentEntityID;
@@ -162,39 +174,49 @@ export function markCommentIDs(mark: {
   return ((mark.attrs.commentID as string) || "").split(" ").filter(Boolean);
 }
 
-export function deleteCommentFromBlock(
+export async function deleteCommentFromBlock(
   commentEntityID: string,
   blockID: string,
   rep: Replicache<ReplicacheMutators> | null,
+  undoManager: UndoManager,
 ) {
   if (!rep) return;
 
-  let editorState = useEditorStates.getState().editorStates[blockID];
-  if (editorState?.view) {
-    let view = editorState.view;
-    let tr = view.state.tr;
-    let markType = schema.marks.comment;
-    view.state.doc.descendants((node, pos) => {
-      let mark = node.marks.find(
-        (m) =>
-          m.type === markType && markCommentIDs(m).includes(commentEntityID),
-      );
-      if (!mark) return;
-      // Strip just this comment's ID; the mark stays if other comments
-      // overlap this range
-      let remaining = markCommentIDs(mark).filter(
-        (id) => id !== commentEntityID,
-      );
-      tr.removeMark(pos, pos + node.nodeSize, mark);
-      if (remaining.length > 0)
-        tr.addMark(
-          pos,
-          pos + node.nodeSize,
-          markType.create({ commentID: remaining.join(" ") }),
+  // The anchor-mark removal and the comment's fact deletions undo together
+  undoManager.startGroup();
+  try {
+    let editorState = useEditorStates.getState().editorStates[blockID];
+    if (editorState?.view) {
+      let view = editorState.view;
+      let tr = view.state.tr;
+      let markType = schema.marks.comment;
+      view.state.doc.descendants((node, pos) => {
+        let mark = node.marks.find(
+          (m) =>
+            m.type === markType && markCommentIDs(m).includes(commentEntityID),
         );
-    });
-    if (tr.steps.length > 0) view.dispatch(tr);
-  }
+        if (!mark) return;
+        // Strip just this comment's ID; the mark stays if other comments
+        // overlap this range
+        let remaining = markCommentIDs(mark).filter(
+          (id) => id !== commentEntityID,
+        );
+        tr.removeMark(pos, pos + node.nodeSize, mark);
+        if (remaining.length > 0)
+          tr.addMark(
+            pos,
+            pos + node.nodeSize,
+            markType.create({ commentID: remaining.join(" ") }),
+          );
+      });
+      if (tr.steps.length > 0) {
+        tr.setMeta("bulkOp", true);
+        view.dispatch(tr);
+      }
+    }
 
-  rep.mutate.deleteComment({ commentEntityID, blockID });
+    await rep.mutate.deleteComment({ commentEntityID, blockID });
+  } finally {
+    undoManager.endGroup();
+  }
 }
