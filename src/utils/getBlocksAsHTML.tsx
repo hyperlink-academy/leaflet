@@ -7,6 +7,8 @@ import { Block } from "components/Blocks/Block";
 import { List, parseBlocksToList } from "./parseBlocksToList";
 import Katex from "katex";
 
+// Only used to fill the clipboard on copy, so comment anchors are omitted
+// (renderComments={false}) — see stripCommentMarks in components/Blocks/TextBlock
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
   selectedBlocks: Block[],
@@ -152,6 +154,7 @@ const BlockTypeToHTML: {
           "data-alignment": a,
         }}
         wrapper={"blockquote"}
+        renderComments={false}
       />
     );
   },
@@ -169,6 +172,7 @@ const BlockTypeToHTML: {
           "data-alignment": a,
         }}
         wrapper={wrapper}
+        renderComments={false}
       />
     );
   },
@@ -205,6 +209,7 @@ const BlockTypeToHTML: {
           "data-text-size": textSize?.data.value,
         }}
         wrapper="p"
+        renderComments={false}
       />
     );
   },

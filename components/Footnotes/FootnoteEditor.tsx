@@ -5,6 +5,7 @@ import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin } from "y-prosemirror";
 import { schema } from "components/Blocks/TextBlock/schema";
+import { stripCommentMarks } from "components/Blocks/TextBlock/stripCommentMarks";
 import { useReplicache, useEntity } from "src/replicache";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { betterIsUrl } from "src/utils/isURL";
@@ -112,6 +113,7 @@ function EditableFootnote(props: {
       {
         state,
         editable: () => props.editable,
+        transformPasted: stripCommentMarks,
         handlePaste: (view, e) => {
           let text = e.clipboardData?.getData("text");
           if (text && betterIsUrl(text)) {

@@ -77,6 +77,12 @@ export const useHandlePaste = (
       // if thre is html
       if (textHTML) {
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
+        // see stripCommentMarks — this path parses clipboard HTML itself,
+        // so the comment-anchor markup is stripped here instead
+        for (let anchor of xml.querySelectorAll("span.comment-anchor")) {
+          anchor.classList.remove("comment-anchor");
+          anchor.removeAttribute("data-comment-id");
+        }
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
         let hasImage = false;

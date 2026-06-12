@@ -32,6 +32,7 @@ import {
 } from "components/Comments/commentStores";
 import { useCommentPopoverStore } from "components/Comments/CommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
+import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
 
 // The comment anchor under an event's target, along with the IDs of its
@@ -107,6 +108,8 @@ export function useMountProsemirror({
       {
         state: editor,
         handlePaste,
+        transformCopied: stripCommentMarks,
+        transformPasted: stripCommentMarks,
         handleDOMEvents: {
           // cmd/ctrl+click opens links in a new tab. Handled on the native
           // click event rather than in handleClickOn: popup blockers trust

@@ -9,6 +9,7 @@ import { EditorView } from "prosemirror-view";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { schema } from "components/Blocks/TextBlock/schema";
+import { stripCommentMarks } from "components/Blocks/TextBlock/stripCommentMarks";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
 import { applyLinkPaste } from "src/utils/prosemirror/linkOnPaste";
@@ -92,6 +93,7 @@ export function CommentComposer(props: {
       { mount: mountRef.current },
       {
         state,
+        transformPasted: stripCommentMarks,
         handlePaste: (view, e) => {
           let text = e.clipboardData?.getData("text");
           if (text && betterIsUrl(text))
