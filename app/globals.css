@@ -716,69 +716,156 @@ body.cmd-held .ProseMirror a {
   color: var(--color-white);
 }
 
-/* Collaborative cursors rendered by y-prosemirror's yCursorPlugin, built by
-   collabCursorBuilder. Each remote caret wears a small rounded cap; hovering
-   it blooms the cap open with a springy ease to reveal the user's name.
-   --cursor-color is set inline per user by the builder. */
+/* Collaborative cursors (yCursorPlugin + collabCursorBuilder): a caret line
+   with a dot on its tip. Hover contracts the caret in anticipation, then
+   springs it open into a name pill, the shapes melting together via the
+   #yjs-cursor-goo SVG filter. Three layers: a goo-filtered layer (line stub
+   + pill blob with transparent sizing text), the crisp caret line outside
+   the filter, and a transparent twin pill carrying the visible text with
+   identical bounds in every state. --cursor-color and the spring easing
+   variables are set inline per cursor by the builder. */
 .ProseMirror-yjs-cursor {
+  --caret-w: 2.3px;
+  /* the goo layer needs real dimensions or the SVG filter region clips */
+  --goo-pad-x: 130px;
+  --goo-pad-top: 14px;
   position: relative;
-  margin-left: -1px;
-  margin-right: -1px;
-  border-left: 1px solid var(--cursor-color, orange);
-  border-right: 1px solid var(--cursor-color, orange);
   word-break: normal;
   pointer-events: none;
 }
-.yjs-cursor-cap {
+.yjs-cursor-goo,
+.yjs-cursor-overlay {
   position: absolute;
-  left: -4.5px;
-  bottom: calc(100% - 4px);
+  left: calc(-1 * var(--goo-pad-x));
+  top: calc(-1 * var(--goo-pad-top));
+  width: calc(var(--goo-pad-x) * 2);
+  height: calc(100% + var(--goo-pad-top));
+  pointer-events: none;
+}
+.yjs-cursor-goo {
+  filter: url(#yjs-cursor-goo);
+}
+.yjs-cursor-line,
+.yjs-cursor-stub {
+  position: absolute;
+  width: var(--caret-w);
+  border-radius: 999px;
+  background-color: var(--cursor-color, orange);
+  transform: translateX(-50%);
+  transition:
+    transform 154ms ease,
+    width 154ms ease;
+}
+.yjs-cursor-line {
+  left: 0;
+  top: 0;
+  height: 100%;
+  transform-origin: 50% 100%;
+  pointer-events: auto;
+}
+.yjs-cursor-stub {
+  left: var(--goo-pad-x);
+  top: var(--goo-pad-top);
+  height: 12px;
+}
+.yjs-cursor-pill {
+  position: absolute;
+  left: var(--goo-pad-x);
+  top: var(--goo-pad-top);
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  height: 9px;
-  min-width: 9px;
-  max-width: 9px;
+  justify-content: center;
+  width: max-content;
+  max-width: 7px;
+  height: 7px;
+  border-radius: 999px;
   overflow: hidden;
-  padding: 0;
-  border-radius: 9999px;
   background-color: var(--cursor-color, orange);
+  transition:
+    transform 154ms ease,
+    max-width 154ms ease,
+    height 154ms ease;
+}
+.yjs-cursor-label {
+  background-color: transparent;
   pointer-events: auto;
-  cursor: default;
-  transition:
-    max-width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-    height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    padding 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    border-radius 0.3s ease;
 }
-.yjs-cursor-cap:hover {
-  height: 17px;
-  max-width: 200px;
-  padding: 0 8px 0 7px;
-  /* small corner at the bottom left, pointing back down at the caret */
-  border-radius: 9999px 9999px 9999px 3px;
+/* invisible enlarged hover target around the 7px dot */
+.yjs-cursor-hit {
+  position: absolute;
+  left: var(--goo-pad-x);
+  top: var(--goo-pad-top);
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  pointer-events: auto;
 }
-.yjs-cursor-name {
-  font-size: 11px;
+.yjs-cursor-text {
+  padding: 1px 10px 0;
   font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
   font-style: normal;
-  font-weight: 600;
   line-height: 1;
-  color: rgba(0, 0, 0, 0.8);
   white-space: nowrap;
+  color: white;
   user-select: none;
+}
+.yjs-cursor-sizer {
+  color: transparent;
+}
+.yjs-cursor-label .yjs-cursor-text {
   opacity: 0;
-  transform: translateX(-6px);
+  transition: opacity 154ms ease;
+}
+
+/* contract: anticipation squash — the caret shrinks toward its base while
+   the dot (and the text twin) ride down to stay on the tip. 0.3em ≈ 22% of
+   the caret height, so it scales with headings. */
+.yjs-cursor-contract .yjs-cursor-line {
+  transform: translateX(-50%) scaleY(0.78);
+  transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+.yjs-cursor-contract .yjs-cursor-stub {
+  transform: translateX(-50%) translateY(0.3em);
+  transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+.yjs-cursor-contract .yjs-cursor-pill {
+  transform: translate(-50%, -50%) translateY(0.3em) scale(0.7);
+  transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* open: transforms spring back to identity and the caret thickens on the
+   spring; the pill blooms open. Never spring the clamped max-width — the
+   clipped overshoot flickers — ease it out instead. */
+.yjs-cursor-open .yjs-cursor-line,
+.yjs-cursor-open .yjs-cursor-stub {
+  width: 3.45px;
   transition:
-    opacity 0.18s ease 0.06s,
-    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.06s;
+    transform var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    width var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
-.yjs-cursor-cap:hover .yjs-cursor-name {
+.yjs-cursor-open .yjs-cursor-pill {
+  max-width: 240px;
+  height: 20px;
+  transition:
+    transform var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    max-width 210ms cubic-bezier(0.25, 0.8, 0.35, 1),
+    height 210ms cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+.yjs-cursor-open .yjs-cursor-label .yjs-cursor-text {
   opacity: 1;
-  transform: translateX(0);
+  transition: opacity 182ms ease 84ms;
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .yjs-cursor-cap,
-  .yjs-cursor-name {
-    transition: none;
+  .ProseMirror-yjs-cursor,
+  .ProseMirror-yjs-cursor * {
+    transition: none !important;
   }
 }
