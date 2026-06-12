@@ -23,15 +23,23 @@ import { supabaseBrowserClient } from "supabase/browserClient";
 const DOC_FLUSH_INTERVAL = 50;
 const AWARENESS_FLUSH_INTERVAL = 80;
 
+type DocEntry = { entityID: string; doc: Y.Doc; awareness: Awareness };
+
 export class YjsRealtimeConnection {
   private channel: RealtimeChannel | null = null;
   private connected = false;
   private closed = false;
-  private docs = new Map<string, { doc: Y.Doc; awareness: Awareness }>();
+  // The same entityID can be mounted by more than one editor at once (e.g. a
+  // footnote rendered in both the side column and the bottom section), each
+  // with its own doc/awareness, so an entity maps to a set of registrations.
+  private docs = new Map<string, Set<DocEntry>>();
   private pendingDocUpdates = new Map<string, Uint8Array[]>();
+  // Keyed by awareness rather than entityID: two editors sharing an entityID
+  // have distinct awareness instances (distinct clientIDs), and
+  // encodeAwarenessUpdate can only encode clients its own awareness knows.
   private pendingAwareness = new Map<
-    string,
-    { awareness: Awareness; clients: Set<number> }
+    Awareness,
+    { entityID: string; clients: Set<number> }
   >();
   private docFlushTimeout: number | null = null;
   private awarenessFlushTimeout: number | null = null;
@@ -69,7 +77,10 @@ export class YjsRealtimeConnection {
 
   register(entityID: string, doc: Y.Doc, awareness: Awareness) {
     this.ensureChannel();
-    this.docs.set(entityID, { doc, awareness });
+    const entry: DocEntry = { entityID, doc, awareness };
+    let set = this.docs.get(entityID);
+    if (!set) this.docs.set(entityID, (set = new Set()));
+    set.add(entry);
 
     const onDocUpdate = (update: Uint8Array, origin: unknown) => {
       // Updates applied from replicache have no origin and updates received
@@ -113,7 +124,9 @@ export class YjsRealtimeConnection {
       doc.off("update", onDocUpdate);
       awareness.off("change", onAwarenessChange);
       awareness.off("update", onAwarenessUpdate);
-      this.docs.delete(entityID);
+      set!.delete(entry);
+      if (set!.size === 0 && this.docs.get(entityID) === set)
+        this.docs.delete(entityID);
     };
   }
 
@@ -134,9 +147,11 @@ export class YjsRealtimeConnection {
   }
 
   private announceAwareness() {
-    for (let [entityID, { doc, awareness }] of this.docs) {
-      if (awareness.getLocalState()?.cursor)
-        this.queueAwareness(entityID, awareness, [doc.clientID]);
+    for (let set of this.docs.values()) {
+      for (let { entityID, doc, awareness } of set) {
+        if (awareness.getLocalState()?.cursor)
+          this.queueAwareness(entityID, awareness, [doc.clientID]);
+      }
     }
   }
 
@@ -162,19 +177,19 @@ export class YjsRealtimeConnection {
     awareness: Awareness,
     clients: number[],
   ) {
-    let pending = this.pendingAwareness.get(entityID);
+    let pending = this.pendingAwareness.get(awareness);
     if (!pending)
       this.pendingAwareness.set(
-        entityID,
-        (pending = { awareness, clients: new Set() }),
+        awareness,
+        (pending = { entityID, clients: new Set() }),
       );
     for (let client of clients) pending.clients.add(client);
     if (this.awarenessFlushTimeout !== null) return;
     this.awarenessFlushTimeout = window.setTimeout(() => {
       this.awarenessFlushTimeout = null;
-      for (let [entity, { awareness, clients }] of this.pendingAwareness) {
+      for (let [awareness, { entityID, clients }] of this.pendingAwareness) {
         this.send("awareness", {
-          entity,
+          entity: entityID,
           update: base64.fromByteArray(
             encodeAwarenessUpdate(awareness, Array.from(clients)),
           ),
@@ -186,27 +201,29 @@ export class YjsRealtimeConnection {
 
   private onDocBroadcast(payload: { entity?: string; update?: string }) {
     if (!payload?.entity || !payload.update) return;
-    let entry = this.docs.get(payload.entity);
-    if (!entry) return;
-    try {
-      Y.applyUpdate(entry.doc, base64.toByteArray(payload.update), this);
-    } catch (e) {
-      console.error("failed to apply remote yjs update", e);
+    let set = this.docs.get(payload.entity);
+    if (!set) return;
+    let update = base64.toByteArray(payload.update);
+    for (let { doc } of set) {
+      try {
+        Y.applyUpdate(doc, update, this);
+      } catch (e) {
+        console.error("failed to apply remote yjs update", e);
+      }
     }
   }
 
   private onAwarenessBroadcast(payload: { entity?: string; update?: string }) {
     if (!payload?.entity || !payload.update) return;
-    let entry = this.docs.get(payload.entity);
-    if (!entry) return;
-    try {
-      applyAwarenessUpdate(
-        entry.awareness,
-        base64.toByteArray(payload.update),
-        this,
-      );
-    } catch (e) {
-      console.error("failed to apply remote awareness update", e);
+    let set = this.docs.get(payload.entity);
+    if (!set) return;
+    let update = base64.toByteArray(payload.update);
+    for (let { awareness } of set) {
+      try {
+        applyAwarenessUpdate(awareness, update, this);
+      } catch (e) {
+        console.error("failed to apply remote awareness update", e);
+      }
     }
   }
 }

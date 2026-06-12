@@ -112,7 +112,18 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
       if (raf === null) raf = window.requestAnimationFrame(recompute);
     };
     props.awareness.on("change", schedule);
-    const unsubscribe = useEditorStates.subscribe(schedule);
+    // Only recompute when *this* block's editor changes. setEditorState
+    // replaces just the edited entity's entry, so a keystroke in another
+    // block leaves our entry referentially equal and is skipped — otherwise
+    // every overlay on the page would recompute on every keystroke anywhere.
+    // (A neighbouring block reflowing moves the caret and its anchor together,
+    // so the stored anchor-relative offset stays valid without a recompute.)
+    const unsubscribe = useEditorStates.subscribe((state, prev) => {
+      if (
+        state.editorStates[props.entityID] !== prev.editorStates[props.entityID]
+      )
+        schedule();
+    });
     window.addEventListener("resize", schedule);
     schedule();
     return () => {
