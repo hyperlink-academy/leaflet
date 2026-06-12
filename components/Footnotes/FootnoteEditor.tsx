@@ -5,7 +5,7 @@ import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin } from "y-prosemirror";
 import { schema } from "components/Blocks/TextBlock/schema";
-import { useReplicache } from "src/replicache";
+import { useReplicache, useEntity } from "src/replicache";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { betterIsUrl } from "src/utils/isURL";
 import {
@@ -14,6 +14,7 @@ import {
 } from "components/Blocks/TextBlock/mountProsemirror";
 import { remoteCursorPlugin } from "components/Blocks/TextBlock/remoteCursorPlugin";
 import { RemoteCursors } from "components/Blocks/TextBlock/RemoteCursors";
+import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { FootnoteItemLayout } from "./FootnoteItemLayout";
 import { useEditorStates } from "src/state/useEditorState";
@@ -21,6 +22,42 @@ import { useUIState } from "src/useUIState";
 import { useFootnoteContext } from "./FootnoteContext";
 
 export function FootnoteEditor(props: {
+  footnoteEntityID: string;
+  index: number;
+  editable: boolean;
+  onDelete?: () => void;
+  autoFocus?: boolean;
+}) {
+  // Read-only viewers don't need a live ProseMirror instance (with its yjs
+  // doc, realtime registration, and remote-cursor overlay) per footnote —
+  // render the stored content statically, the same way RenderedTextBlock does
+  // for non-editable text blocks.
+  if (!props.editable)
+    return (
+      <RenderedFootnote
+        footnoteEntityID={props.footnoteEntityID}
+        index={props.index}
+      />
+    );
+  return <EditableFootnote {...props} />;
+}
+
+function RenderedFootnote(props: { footnoteEntityID: string; index: number }) {
+  let content = useEntity(props.footnoteEntityID, "block/text");
+  return (
+    <div data-footnote-editor={props.footnoteEntityID}>
+      <FootnoteItemLayout index={props.index}>
+        {content ? (
+          <RenderYJSFragment value={content.data.value} wrapper="p" />
+        ) : (
+          <span className="italic text-tertiary">Empty footnote</span>
+        )}
+      </FootnoteItemLayout>
+    </div>
+  );
+}
+
+function EditableFootnote(props: {
   footnoteEntityID: string;
   index: number;
   editable: boolean;
