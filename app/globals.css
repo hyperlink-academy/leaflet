@@ -726,9 +726,12 @@ body.cmd-held .ProseMirror a {
    variables are set inline per cursor by the builder. */
 .ProseMirror-yjs-cursor {
   --caret-w: 2.3px;
+  /* how much the caret stretches upward when open, lifting the pill clear
+     of the text */
+  --cursor-lift: 10px;
   /* the goo layer needs real dimensions or the SVG filter region clips */
   --goo-pad-x: 130px;
-  --goo-pad-top: 14px;
+  --goo-pad-top: 26px;
   position: relative;
   word-break: normal;
   pointer-events: none;
@@ -754,7 +757,9 @@ body.cmd-held .ProseMirror a {
   transform: translateX(-50%);
   transition:
     transform 154ms ease,
-    width 154ms ease;
+    width 154ms ease,
+    top 154ms ease,
+    height 154ms ease;
 }
 .yjs-cursor-line {
   left: 0;
@@ -785,7 +790,8 @@ body.cmd-held .ProseMirror a {
   transition:
     transform 154ms ease,
     max-width 154ms ease,
-    height 154ms ease;
+    height 154ms ease,
+    top 154ms ease;
 }
 .yjs-cursor-label {
   background-color: transparent;
@@ -837,23 +843,45 @@ body.cmd-held .ProseMirror a {
   transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
 }
 
-/* open: transforms spring back to identity and the caret thickens on the
-   spring; the pill blooms open. Never spring the clamped max-width — the
-   clipped overshoot flickers — ease it out instead. */
+/* open: transforms spring back to identity while the caret thickens and
+   stretches upward on the spring, the stub and pill riding the lifted tip
+   so the pill sits clear of the text. Never spring the clamped max-width —
+   the clipped overshoot flickers — ease it out instead. */
 .yjs-cursor-open .yjs-cursor-line,
 .yjs-cursor-open .yjs-cursor-stub {
   width: 3.45px;
+}
+.yjs-cursor-open .yjs-cursor-line {
+  top: calc(-1 * var(--cursor-lift));
+  height: calc(100% + var(--cursor-lift));
   transition:
     transform var(--yjs-spring-dur, 400ms)
       var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
     width var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    height var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.yjs-cursor-open .yjs-cursor-stub {
+  top: calc(var(--goo-pad-top) - var(--cursor-lift));
+  transition:
+    transform var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    width var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms)
       var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .yjs-cursor-open .yjs-cursor-pill {
+  top: calc(var(--goo-pad-top) - var(--cursor-lift));
   max-width: 240px;
   height: 20px;
   transition:
     transform var(--yjs-spring-dur, 400ms)
+      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms)
       var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
     max-width 210ms cubic-bezier(0.25, 0.8, 0.35, 1),
     height 210ms cubic-bezier(0.25, 0.8, 0.35, 1);
