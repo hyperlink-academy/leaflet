@@ -77,27 +77,84 @@ const el = (tag: string, ...classes: string[]) => {
   return e;
 };
 
+// Cursor colors are derived from the leaflet's theme: each client gets a
+// stable hue offset, rotated from --accent-contrast in oklch so every cursor
+// shares the accent's character and re-themes live. Chroma is clamped up so
+// near-gray accents still differentiate, lightness is clamped into a band
+// that keeps cursors visible, and the label text flips between near-white
+// and near-black based on the derived lightness so it always reads.
+const FALLBACK_COLORS = [
+  "#30bced",
+  "#6eeb83",
+  "#ffbc42",
+  "#ecd444",
+  "#ee6352",
+  "#9ac2c9",
+  "#8acb88",
+  "#1be7ff",
+];
+const FALLBACK_TEXT = "rgba(0, 0, 0, 0.8)";
+
+let relativeColorSupport: boolean | null = null;
+const supportsRelativeColor = () => {
+  if (relativeColorSupport === null)
+    relativeColorSupport =
+      typeof CSS !== "undefined" && CSS.supports("color", "oklch(from red l c h)");
+  return relativeColorSupport;
+};
+
+function cursorColors(hue: number) {
+  if (!supportsRelativeColor()) {
+    const i =
+      ((Math.round(hue / 45) % FALLBACK_COLORS.length) +
+        FALLBACK_COLORS.length) %
+      FALLBACK_COLORS.length;
+    return {
+      color: FALLBACK_COLORS[i],
+      text: FALLBACK_TEXT,
+      selection: `${FALLBACK_COLORS[i]}59`, // 35% alpha
+    };
+  }
+  const channels = `clamp(0.55, l, 0.75) clamp(0.08, c, 0.16) calc(h + ${hue})`;
+  return {
+    color: `oklch(from rgb(var(--accent-contrast)) ${channels})`,
+    // the steep slope makes this resolve to ~white below L 0.66, ~black above
+    text: `oklch(from rgb(var(--accent-contrast)) clamp(0.13, (0.66 - clamp(0.55, l, 0.75)) * 1000, 0.985) 0 0)`,
+    selection: `oklch(from rgb(var(--accent-contrast)) ${channels} / 0.35)`,
+  };
+}
+
+// The default selection builder concatenates an alpha onto a hex color, so
+// it can't express theme-derived colors — this one inlines them instead.
+export const collabSelectionBuilder = (user: { hue?: number }) => ({
+  style: `background-color: ${cursorColors(user.hue ?? 0).selection}`,
+  class: "ProseMirror-yjs-selection",
+});
+
 export const collabCursorBuilder = (user: {
-  name: string;
-  color: string;
+  name?: string;
+  hue?: number;
 }): HTMLElement => {
   ensureGooFilter();
   const spring = getSpringVars();
+  const colors = cursorColors(user.hue ?? 0);
 
   const cursor = document.createElement("span");
   cursor.classList.add("ProseMirror-yjs-cursor");
-  cursor.style.setProperty("--cursor-color", user.color);
+  cursor.style.setProperty("--cursor-color", colors.color);
+  cursor.style.setProperty("--cursor-text-color", colors.text);
   cursor.style.setProperty("--yjs-spring-ease", spring.easing);
   cursor.style.setProperty("--yjs-spring-dur", `${spring.duration}ms`);
   // Word-joiners on either side keep the widget from affecting line breaks,
   // same as y-prosemirror's default cursor builder.
   cursor.appendChild(document.createTextNode("\u2060"));
 
+  const displayName = user.name || "Anonymous";
   const goo = el("div", "yjs-cursor-goo");
   const stub = el("div", "yjs-cursor-stub");
   const pill = el("div", "yjs-cursor-pill");
   const sizer = el("span", "yjs-cursor-text", "yjs-cursor-sizer");
-  sizer.textContent = user.name;
+  sizer.textContent = displayName;
   pill.appendChild(sizer);
   goo.appendChild(stub);
   goo.appendChild(pill);
@@ -108,7 +165,7 @@ export const collabCursorBuilder = (user: {
   const hit = el("div", "yjs-cursor-hit");
   const label = el("div", "yjs-cursor-pill", "yjs-cursor-label");
   const name = el("span", "yjs-cursor-text");
-  name.textContent = user.name;
+  name.textContent = displayName;
   label.appendChild(name);
   overlay.appendChild(hit);
   overlay.appendChild(label);

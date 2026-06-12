@@ -816,7 +816,7 @@ body.cmd-held .ProseMirror a {
   font-style: normal;
   line-height: 1;
   white-space: nowrap;
-  color: white;
+  color: var(--cursor-text-color, white);
   user-select: none;
 }
 .yjs-cursor-sizer {

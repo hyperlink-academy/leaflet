@@ -32,7 +32,7 @@ import {
 } from "components/LinkPopover";
 import { useYjsRealtime, YjsRealtimeConnection } from "src/yjsRealtime";
 import { useIdentityData } from "components/IdentityProvider";
-import { collabCursorBuilder } from "./collabCursor";
+import { collabCursorBuilder, collabSelectionBuilder } from "./collabCursor";
 
 export function useMountProsemirror({
   props,
@@ -70,7 +70,10 @@ export function useMountProsemirror({
       schema: schema,
       plugins: [
         ySyncPlugin(value),
-        yCursorPlugin(awareness, { cursorBuilder: collabCursorBuilder }),
+        yCursorPlugin(awareness, {
+          cursorBuilder: collabCursorBuilder,
+          selectionBuilder: collabSelectionBuilder,
+        }),
         keymap(km),
         inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
@@ -310,17 +313,6 @@ export function trackUndoRedo(
   }
 }
 
-const CURSOR_COLORS = [
-  "#30bced",
-  "#6eeb83",
-  "#ffbc42",
-  "#ecd444",
-  "#ee6352",
-  "#9ac2c9",
-  "#8acb88",
-  "#1be7ff",
-];
-
 export function useYJSValue(entityID: string) {
   const [ydoc] = useState(() => new Y.Doc());
   const docStateFromReplicache = useEntity(entityID, "block/text");
@@ -340,9 +332,11 @@ export function useYJSValue(entityID: string) {
     identity?.bsky_profiles?.handle ||
     "Anonymous";
   useEffect(() => {
+    // a stable hue offset per client; each peer derives the actual cursor
+    // color from their own theme's accent (see collabCursor.ts)
     awareness.setLocalStateField("user", {
       name: userName,
-      color: CURSOR_COLORS[ydoc.clientID % CURSOR_COLORS.length],
+      hue: (ydoc.clientID % 8) * 45,
     });
   }, [awareness, userName, ydoc]);
 
