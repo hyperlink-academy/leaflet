@@ -5,13 +5,12 @@ import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin } from "y-prosemirror";
 import { schema } from "components/Blocks/TextBlock/schema";
-import { useReplicache } from "src/replicache";
+import { useReplicache, useEntity } from "src/replicache";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { betterIsUrl } from "src/utils/isURL";
-import {
-  useYJSValue,
-  trackUndoRedo,
-} from "components/Blocks/TextBlock/mountProsemirror";
+import { trackUndoRedo } from "components/Blocks/TextBlock/mountProsemirror";
+import { useCollabCursors } from "components/Blocks/TextBlock/useCollabCursors";
+import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { FootnoteItemLayout } from "./FootnoteItemLayout";
 import { useEditorStates } from "src/state/useEditorState";
@@ -25,9 +24,49 @@ export function FootnoteEditor(props: {
   onDelete?: () => void;
   autoFocus?: boolean;
 }) {
+  // Read-only viewers don't need a live ProseMirror instance (with its yjs
+  // doc, realtime registration, and remote-cursor overlay) per footnote —
+  // render the stored content statically, the same way RenderedTextBlock does
+  // for non-editable text blocks.
+  if (!props.editable)
+    return (
+      <RenderedFootnote
+        footnoteEntityID={props.footnoteEntityID}
+        index={props.index}
+      />
+    );
+  return <EditableFootnote {...props} />;
+}
+
+function RenderedFootnote(props: { footnoteEntityID: string; index: number }) {
+  let content = useEntity(props.footnoteEntityID, "block/text");
+  return (
+    <div data-footnote-editor={props.footnoteEntityID}>
+      <FootnoteItemLayout index={props.index}>
+        {content ? (
+          <RenderYJSFragment value={content.data.value} wrapper="p" />
+        ) : (
+          <span className="italic text-tertiary">Empty footnote</span>
+        )}
+      </FootnoteItemLayout>
+    </div>
+  );
+}
+
+function EditableFootnote(props: {
+  footnoteEntityID: string;
+  index: number;
+  editable: boolean;
+  onDelete?: () => void;
+  autoFocus?: boolean;
+}) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let rep = useReplicache();
-  let value = useYJSValue(props.footnoteEntityID);
+  let {
+    yText: value,
+    cursorPlugin,
+    overlay,
+  } = useCollabCursors(props.footnoteEntityID);
   let actionTimeout = useRef<number | null>(null);
   let { pageID } = useFootnoteContext();
 
@@ -36,6 +75,7 @@ export function FootnoteEditor(props: {
 
     let plugins = [
       ySyncPlugin(value),
+      cursorPlugin,
       keymap({
         "Meta-b": toggleMark(schema.marks.strong),
         "Ctrl-b": toggleMark(schema.marks.strong),
@@ -180,6 +220,7 @@ export function FootnoteEditor(props: {
   }, [
     props.footnoteEntityID,
     value,
+    cursorPlugin,
     props.editable,
     props.autoFocus,
     rep.undoManager,
@@ -207,6 +248,7 @@ export function FootnoteEditor(props: {
           ) : undefined
         }
       >
+        {overlay}
         <div ref={mountRef} className="outline-hidden" />
       </FootnoteItemLayout>
     </div>
