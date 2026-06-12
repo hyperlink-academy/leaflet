@@ -24,7 +24,6 @@ import { isIOS } from "src/utils/isDevice";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
-import { RemoteCursors } from "./RemoteCursors";
 import { schema } from "./schema";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { blockTextSize } from "src/utils/blockTextSize";
@@ -240,7 +239,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
     handleMentionOpenChange,
   } = useMentionState(props.entityID, props);
 
-  let { mountRef, actionTimeout, awareness } = useMountProsemirror({
+  let { mountRef, actionTimeout, overlay } = useMountProsemirror({
     props,
     openMentionAutocomplete,
   });
@@ -258,7 +257,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
               : ""
           }`}
       >
-        <RemoteCursors entityID={props.entityID} awareness={awareness} />
+        {overlay}
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {

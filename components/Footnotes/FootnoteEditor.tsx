@@ -8,12 +8,8 @@ import { schema } from "components/Blocks/TextBlock/schema";
 import { useReplicache, useEntity } from "src/replicache";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { betterIsUrl } from "src/utils/isURL";
-import {
-  useYJSValue,
-  trackUndoRedo,
-} from "components/Blocks/TextBlock/mountProsemirror";
-import { remoteCursorPlugin } from "components/Blocks/TextBlock/remoteCursorPlugin";
-import { RemoteCursors } from "components/Blocks/TextBlock/RemoteCursors";
+import { trackUndoRedo } from "components/Blocks/TextBlock/mountProsemirror";
+import { useCollabCursors } from "components/Blocks/TextBlock/useCollabCursors";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { FootnoteItemLayout } from "./FootnoteItemLayout";
@@ -66,7 +62,11 @@ function EditableFootnote(props: {
 }) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let rep = useReplicache();
-  let { yText: value, awareness } = useYJSValue(props.footnoteEntityID);
+  let {
+    yText: value,
+    cursorPlugin,
+    overlay,
+  } = useCollabCursors(props.footnoteEntityID);
   let actionTimeout = useRef<number | null>(null);
   let { pageID } = useFootnoteContext();
 
@@ -75,7 +75,7 @@ function EditableFootnote(props: {
 
     let plugins = [
       ySyncPlugin(value),
-      remoteCursorPlugin(awareness),
+      cursorPlugin,
       keymap({
         "Meta-b": toggleMark(schema.marks.strong),
         "Ctrl-b": toggleMark(schema.marks.strong),
@@ -220,7 +220,7 @@ function EditableFootnote(props: {
   }, [
     props.footnoteEntityID,
     value,
-    awareness,
+    cursorPlugin,
     props.editable,
     props.autoFocus,
     rep.undoManager,
@@ -248,7 +248,7 @@ function EditableFootnote(props: {
           ) : undefined
         }
       >
-        <RemoteCursors entityID={props.footnoteEntityID} awareness={awareness} />
+        {overlay}
         <div ref={mountRef} className="outline-hidden" />
       </FootnoteItemLayout>
     </div>
