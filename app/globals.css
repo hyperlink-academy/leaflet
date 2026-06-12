@@ -723,6 +723,19 @@ body.cmd-held .ProseMirror a {
   background: color-mix(in oklab, rgb(var(--accent-contrast)), transparent 75%);
 }
 
+/* Two-way hover pairing: hovering a comment anchor borders its thread in the
+   side column and vice versa. Outline on the inline anchor so the border
+   doesn't reflow the text. */
+.comment-anchor.comment-anchor-hovered {
+  outline: 2px solid
+    color-mix(in oklab, rgb(var(--accent-contrast)), transparent 20%);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+.comment-side-item.comment-side-hovered {
+  border-color: rgb(var(--accent-contrast));
+}
+
 /* Comment threads in the side column render in a box matching the page
    background, truncated unless hovered/focused */
 .comment-side-item {

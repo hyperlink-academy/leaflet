@@ -17,6 +17,16 @@ export const useResolvedCommentsStore = create<{
   resolved: {},
 }));
 
+// Two-way hover pairing: hovering a comment anchor in the text highlights its
+// thread in the side column with a border, and vice versa. An anchor can carry
+// several IDs where comments overlap, so this holds a set — an anchor or thread
+// is highlighted when its ID is present.
+export const useHoveredCommentStore = create<{
+  hoveredCommentIDs: string[];
+}>(() => ({
+  hoveredCommentIDs: [],
+}));
+
 // Mobile/canvas slide-in panel state. Scoped to a page since the sheet
 // renders once per open page. focusedCommentID scrolls the panel to that
 // thread when it opens.

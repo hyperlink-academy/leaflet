@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, ReactNode } from "react";
 import { useUIState } from "src/useUIState";
+import { useHoveredCommentStore } from "components/Comments/commentStores";
 
 type SideItemBase = {
   id: string;
@@ -202,6 +203,14 @@ function SideItem(props: {
       ? "comment-side-focused"
       : "footnote-side-focused";
 
+  // Two-way comment hover pairing: borders this thread when its anchor is
+  // hovered in the text, and tells the text which anchor to border when this
+  // thread is hovered. Footnotes don't participate.
+  let isComment = props.focusKind === "comment";
+  let isHovered = useHoveredCommentStore(
+    (s) => isComment && s.hoveredCommentIDs.includes(props.id),
+  );
+
   useEffect(() => {
     let el = ref.current;
     if (!el) return;
@@ -221,8 +230,22 @@ function SideItem(props: {
     <div
       ref={ref}
       data-footnote-side-id={props.id}
-      className={`absolute left-0 text-sm footnote-side-enter ${props.className ?? "right-0 footnote-side-item"}${overflows ? " has-overflow" : ""}${isFocused ? ` ${focusedClass}` : ""}`}
+      className={`absolute left-0 text-sm footnote-side-enter ${props.className ?? "right-0 footnote-side-item"}${overflows ? " has-overflow" : ""}${isFocused ? ` ${focusedClass}` : ""}${isHovered ? " comment-side-hovered" : ""}`}
       style={{ top: props.top }}
+      onMouseEnter={
+        isComment
+          ? () =>
+              useHoveredCommentStore.setState({
+                hoveredCommentIDs: [props.id],
+              })
+          : undefined
+      }
+      onMouseLeave={
+        isComment
+          ? () =>
+              useHoveredCommentStore.setState({ hoveredCommentIDs: [] })
+          : undefined
+      }
     >
       {props.children}
     </div>
