@@ -32,6 +32,7 @@ import {
 } from "components/LinkPopover";
 import { useYjsRealtime, YjsRealtimeConnection } from "src/yjsRealtime";
 import { useIdentityData } from "components/IdentityProvider";
+import { collabCursorBuilder } from "./collabCursor";
 
 export function useMountProsemirror({
   props,
@@ -69,7 +70,7 @@ export function useMountProsemirror({
       schema: schema,
       plugins: [
         ySyncPlugin(value),
-        yCursorPlugin(awareness),
+        yCursorPlugin(awareness, { cursorBuilder: collabCursorBuilder }),
         keymap(km),
         inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),

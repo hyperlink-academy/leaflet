@@ -12,6 +12,7 @@ import {
   useYJSValue,
   trackUndoRedo,
 } from "components/Blocks/TextBlock/mountProsemirror";
+import { collabCursorBuilder } from "components/Blocks/TextBlock/collabCursor";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { FootnoteItemLayout } from "./FootnoteItemLayout";
 import { useEditorStates } from "src/state/useEditorState";
@@ -36,7 +37,7 @@ export function FootnoteEditor(props: {
 
     let plugins = [
       ySyncPlugin(value),
-      yCursorPlugin(awareness),
+      yCursorPlugin(awareness, { cursorBuilder: collabCursorBuilder }),
       keymap({
         "Meta-b": toggleMark(schema.marks.strong),
         "Ctrl-b": toggleMark(schema.marks.strong),

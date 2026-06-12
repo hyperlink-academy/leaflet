@@ -716,31 +716,69 @@ body.cmd-held .ProseMirror a {
   color: var(--color-white);
 }
 
-/* Collaborative cursors rendered by y-prosemirror's yCursorPlugin.
-   Border and background colors are overridden inline per user. */
+/* Collaborative cursors rendered by y-prosemirror's yCursorPlugin, built by
+   collabCursorBuilder. Each remote caret wears a small rounded cap; hovering
+   it blooms the cap open with a springy ease to reveal the user's name.
+   --cursor-color is set inline per user by the builder. */
 .ProseMirror-yjs-cursor {
   position: relative;
   margin-left: -1px;
   margin-right: -1px;
-  border-left: 1px solid orange;
-  border-right: 1px solid orange;
+  border-left: 1px solid var(--cursor-color, orange);
+  border-right: 1px solid var(--cursor-color, orange);
   word-break: normal;
   pointer-events: none;
 }
-.ProseMirror-yjs-cursor > div {
+.yjs-cursor-cap {
   position: absolute;
-  top: -1.05em;
-  left: -1px;
-  font-size: 12px;
-  background-color: rgb(250, 129, 0);
+  left: -4.5px;
+  bottom: calc(100% - 4px);
+  display: flex;
+  align-items: center;
+  height: 9px;
+  min-width: 9px;
+  max-width: 9px;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 9999px;
+  background-color: var(--cursor-color, orange);
+  pointer-events: auto;
+  cursor: default;
+  transition:
+    max-width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    padding 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-radius 0.3s ease;
+}
+.yjs-cursor-cap:hover {
+  height: 17px;
+  max-width: 200px;
+  padding: 0 8px 0 7px;
+  /* small corner at the bottom left, pointing back down at the caret */
+  border-radius: 9999px 9999px 9999px 3px;
+}
+.yjs-cursor-name {
+  font-size: 11px;
   font-family: inherit;
   font-style: normal;
-  font-weight: normal;
-  line-height: normal;
-  user-select: none;
-  color: white;
-  padding-left: 2px;
-  padding-right: 2px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
   white-space: nowrap;
-  border-radius: 2px 2px 2px 0;
+  user-select: none;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 0.18s ease 0.06s,
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.06s;
+}
+.yjs-cursor-cap:hover .yjs-cursor-name {
+  opacity: 1;
+  transform: translateX(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .yjs-cursor-cap,
+  .yjs-cursor-name {
+    transition: none;
+  }
 }
