@@ -1,5 +1,7 @@
 import { AtUri, UnicodeString } from "@atproto/api";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
+import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
+import { applyLinkPaste } from "src/utils/prosemirror/linkOnPaste";
 import { multiBlockSchema } from "components/Blocks/TextBlock/schema";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
@@ -238,13 +240,7 @@ export function CommentBox(props: {
       schema: multiBlockSchema,
       plugins: [
         keymap({
-          "Meta-b": toggleMark(multiBlockSchema.marks.strong),
-          "Ctrl-b": toggleMark(multiBlockSchema.marks.strong),
-          "Meta-u": toggleMark(multiBlockSchema.marks.underline),
-          "Ctrl-u": toggleMark(multiBlockSchema.marks.underline),
-          "Meta-i": toggleMark(multiBlockSchema.marks.em),
-          "Ctrl-i": toggleMark(multiBlockSchema.marks.em),
-          "Ctrl-Meta-x": toggleMark(multiBlockSchema.marks.strikethrough),
+          ...formattingKeymap(multiBlockSchema.marks),
           "Mod-z": undo,
           "Mod-y": redo,
           "Shift-Mod-z": redo,
@@ -288,27 +284,8 @@ export function CommentBox(props: {
             e.clipboardData?.getData("text") ||
             e.clipboardData?.getData("text/html");
           let html = e.clipboardData?.getData("text/html");
-          if (text && betterIsUrl(text)) {
-            let selection = view.state.selection as TextSelection;
-            let tr = view.state.tr;
-            let { from, to } = selection;
-            if (selection.empty) {
-              tr.insertText(text, selection.from);
-              tr.addMark(
-                from,
-                from + text.length,
-                multiBlockSchema.marks.link.create({ href: text }),
-              );
-            } else {
-              tr.addMark(
-                from,
-                to,
-                multiBlockSchema.marks.link.create({ href: text }),
-              );
-            }
-            view.dispatch(tr);
-            return true;
-          }
+          if (text && betterIsUrl(text))
+            return applyLinkPaste(view, multiBlockSchema.marks.link, text);
           if (!text && html) {
             let xml = new DOMParser().parseFromString(html, "text/html");
             text = xml.textContent || "";

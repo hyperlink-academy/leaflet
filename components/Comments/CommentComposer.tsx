@@ -2,22 +2,25 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import * as Y from "yjs";
-import { EditorState, TextSelection } from "prosemirror-state";
+import { prosemirrorToYDoc } from "y-prosemirror";
+import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { baseKeymap, toggleMark } from "prosemirror-commands";
+import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { ySyncPlugin } from "y-prosemirror";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
+import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
+import { applyLinkPaste } from "src/utils/prosemirror/linkOnPaste";
 import { betterIsUrl } from "src/utils/isURL";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Avatar } from "components/Avatar";
 import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 
-// A local-only editor for drafting comments and replies. The YJS doc lives in
-// component state and is never written to Replicache while drafting; the
-// encoded doc is handed to onSubmit only when the user hits submit.
+// A local-only editor for drafting comments and replies. The draft is plain
+// ProseMirror state and is never written to Replicache; it's converted to a
+// Y.Doc (the stored comment format) and handed to onSubmit only when the
+// user hits submit.
 export function CommentComposer(props: {
   onSubmit: (ydoc: Y.Doc) => void | Promise<void>;
   onCancel?: () => void;
@@ -27,7 +30,6 @@ export function CommentComposer(props: {
 }) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let viewRef = useRef<EditorView | null>(null);
-  let [ydoc] = useState(() => new Y.Doc());
   let [empty, setEmpty] = useState(true);
   let { identity } = useIdentityData();
   let { data: profile } = useRecordFromDid(identity?.atp_did);
@@ -37,38 +39,33 @@ export function CommentComposer(props: {
   let submit = async () => {
     let view = viewRef.current;
     if (!view || view.state.doc.textContent.trim() === "") return;
-    await onSubmitRef.current(ydoc);
+    await onSubmitRef.current(prosemirrorToYDoc(view.state.doc));
   };
   let submitRef = useRef(submit);
   submitRef.current = submit;
 
   useLayoutEffect(() => {
     if (!mountRef.current) return;
-    let fragment = ydoc.getXmlFragment("prosemirror");
+
+    // Both Enter and Shift-Enter insert a line break; Mod-Enter submits
+    let insertHardBreak = (
+      state: EditorState,
+      dispatch?: (tr: typeof state.tr) => void,
+    ) => {
+      let hardBreak = schema.nodes.hard_break.create();
+      if (dispatch) {
+        dispatch(state.tr.replaceSelectionWith(hardBreak).scrollIntoView());
+      }
+      return true;
+    };
 
     let plugins = [
-      ySyncPlugin(fragment),
       keymap({
-        "Mod-b": toggleMark(schema.marks.strong),
-        "Mod-i": toggleMark(schema.marks.em),
-        "Mod-u": toggleMark(schema.marks.underline),
-        "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
-        "Shift-Enter": (state, dispatch) => {
-          let hardBreak = schema.nodes.hard_break.create();
-          if (dispatch) {
-            dispatch(state.tr.replaceSelectionWith(hardBreak).scrollIntoView());
-          }
-          return true;
-        },
+        ...formattingKeymap(schema.marks),
+        "Shift-Enter": insertHardBreak,
+        Enter: insertHardBreak,
         "Mod-Enter": () => {
           submitRef.current();
-          return true;
-        },
-        Enter: (state, dispatch) => {
-          let hardBreak = schema.nodes.hard_break.create();
-          if (dispatch) {
-            dispatch(state.tr.replaceSelectionWith(hardBreak).scrollIntoView());
-          }
           return true;
         },
       }),
@@ -87,23 +84,8 @@ export function CommentComposer(props: {
         state,
         handlePaste: (view, e) => {
           let text = e.clipboardData?.getData("text");
-          if (text && betterIsUrl(text)) {
-            let selection = view.state.selection as TextSelection;
-            let tr = view.state.tr;
-            let { from, to } = selection;
-            if (selection.empty) {
-              tr.insertText(text, selection.from);
-              tr.addMark(
-                from,
-                from + text.length,
-                schema.marks.link.create({ href: text }),
-              );
-            } else {
-              tr.addMark(from, to, schema.marks.link.create({ href: text }));
-            }
-            view.dispatch(tr);
-            return true;
-          }
+          if (text && betterIsUrl(text))
+            return applyLinkPaste(view, schema.marks.link, text);
         },
         dispatchTransaction(this: EditorView, tr) {
           let newState = this.state.apply(tr);
@@ -123,7 +105,7 @@ export function CommentComposer(props: {
       view.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ydoc]);
+  }, []);
 
   return (
     <div className="commentComposer flex flex-col gap-2">

@@ -942,9 +942,45 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
-// Comment facts carry the author's did so the server's authentication gate
-// (sessionDid must match author_did) verifies authorship. Content is a
-// base64-encoded YJS update, composed locally and only persisted on submit.
+// A comment and a reply share the same body: an entity holding the YJS
+// content plus author/created-at facts, all carrying the author's did so the
+// server's authentication gate (sessionDid must match author_did) verifies
+// authorship. Content is a base64-encoded YJS update, composed locally and
+// only persisted on submit.
+async function createAuthoredEntity(
+  ctx: MutationContext,
+  args: {
+    entityID: string;
+    permission_set: string;
+    authorDid: string;
+    createdAt: string;
+    content: string;
+  },
+) {
+  await ctx.createEntity({
+    entityID: args.entityID,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "block/text",
+    data: { type: "text", value: args.content },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "comment/author",
+    data: { type: "string", value: args.authorDid },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "comment/created-at",
+    data: { type: "string", value: args.createdAt },
+    author_did: args.authorDid,
+  });
+}
+
 const createComment: Mutation<{
   commentEntityID: string;
   blockID: string;
@@ -956,10 +992,7 @@ const createComment: Mutation<{
   anchorEnd: number;
   content: string;
 }> = async (args, ctx) => {
-  await ctx.createEntity({
-    entityID: args.commentEntityID,
-    permission_set: args.permission_set,
-  });
+  await createAuthoredEntity(ctx, { ...args, entityID: args.commentEntityID });
   await ctx.assertFact({
     entity: args.blockID,
     attribute: "block/comment",
@@ -968,24 +1001,6 @@ const createComment: Mutation<{
       value: args.commentEntityID,
       position: args.position,
     },
-  });
-  await ctx.assertFact({
-    entity: args.commentEntityID,
-    attribute: "block/text",
-    data: { type: "text", value: args.content },
-    author_did: args.authorDid,
-  });
-  await ctx.assertFact({
-    entity: args.commentEntityID,
-    attribute: "comment/author",
-    data: { type: "string", value: args.authorDid },
-    author_did: args.authorDid,
-  });
-  await ctx.assertFact({
-    entity: args.commentEntityID,
-    attribute: "comment/created-at",
-    data: { type: "string", value: args.createdAt },
-    author_did: args.authorDid,
   });
   await ctx.assertFact({
     entity: args.commentEntityID,
@@ -1008,10 +1023,7 @@ const createCommentReply: Mutation<{
   createdAt: string;
   content: string;
 }> = async (args, ctx) => {
-  await ctx.createEntity({
-    entityID: args.replyEntityID,
-    permission_set: args.permission_set,
-  });
+  await createAuthoredEntity(ctx, { ...args, entityID: args.replyEntityID });
   await ctx.assertFact({
     entity: args.commentEntityID,
     attribute: "comment/reply",
@@ -1020,24 +1032,6 @@ const createCommentReply: Mutation<{
       value: args.replyEntityID,
       position: args.position,
     },
-  });
-  await ctx.assertFact({
-    entity: args.replyEntityID,
-    attribute: "block/text",
-    data: { type: "text", value: args.content },
-    author_did: args.authorDid,
-  });
-  await ctx.assertFact({
-    entity: args.replyEntityID,
-    attribute: "comment/author",
-    data: { type: "string", value: args.authorDid },
-    author_did: args.authorDid,
-  });
-  await ctx.assertFact({
-    entity: args.replyEntityID,
-    attribute: "comment/created-at",
-    data: { type: "string", value: args.createdAt },
-    author_did: args.authorDid,
   });
 };
 

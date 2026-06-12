@@ -2,12 +2,16 @@ import { Doc, applyUpdate, XmlElement, XmlText } from "yjs";
 import * as base64 from "base64-js";
 import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
 
+function decodeYDoc(value: string): Doc {
+  let doc = new Doc();
+  applyUpdate(doc, base64.toByteArray(value));
+  return doc;
+}
+
 // Plain text of an encoded YJS doc (e.g. a comment's content), for excerpts
 export function getCommentPlaintext(value: string | undefined): string {
   if (!value) return "";
-  let doc = new Doc();
-  applyUpdate(doc, base64.toByteArray(value));
-  return doc
+  return decodeYDoc(value)
     .getXmlElement("prosemirror")
     .toArray()
     .map((n) => YJSFragmentToString(n))
@@ -21,8 +25,7 @@ export function getCommentQuoteText(
   commentID: string,
 ): string {
   if (!value) return "";
-  let doc = new Doc();
-  applyUpdate(doc, base64.toByteArray(value));
+  let doc = decodeYDoc(value);
   let parts: string[] = [];
   let walk = (node: XmlElement | XmlText | unknown) => {
     if (node instanceof XmlText) {
