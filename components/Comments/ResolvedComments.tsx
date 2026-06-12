@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useEntitySetContext } from "components/EntitySetProvider";
 import { useCommentContext } from "./CommentContext";
 import { useResolvedCommentsStore } from "./commentStores";
 
@@ -11,6 +12,7 @@ import { useResolvedCommentsStore } from "./commentStores";
 // when every comment on it is resolved — anchors can carry several IDs where
 // comments overlap.
 export function ResolvedComments() {
+  let { permissions } = useEntitySetContext();
   let { comments, resolvedCommentIDs } = useCommentContext();
 
   useEffect(() => {
@@ -23,6 +25,10 @@ export function ResolvedComments() {
   }, [comments, resolvedCommentIDs]);
 
   let css = useMemo(() => {
+    // Read-only viewers don't see comments, so strip every anchor's highlight
+    // (the marks stay in the doc; only their styling is neutralized)
+    if (!permissions.write)
+      return ".comment-anchor {\n  background: none;\n  border-bottom: none;\n  cursor: text;\n}";
     if (resolvedCommentIDs.length === 0) return "";
     let unresolvedGuards = comments
       .map((c) => `:not([data-comment-id~="${c.commentEntityID}"])`)
@@ -33,7 +39,7 @@ export function ResolvedComments() {
       )
       .join(",\n");
     return `${selector} {\n  background: none;\n  border-bottom: none;\n  cursor: text;\n}`;
-  }, [comments, resolvedCommentIDs]);
+  }, [comments, resolvedCommentIDs, permissions.write]);
 
   if (!css) return null;
   return <style>{css}</style>;

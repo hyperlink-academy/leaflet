@@ -115,7 +115,8 @@ export function useMountProsemirror({
           click: (_view, event) => {
             if (!(event.metaKey || event.ctrlKey)) {
               let target = unresolvedCommentAnchor(event);
-              if (target) {
+              // Read-only viewers don't see comments, so anchors are inert
+              if (target && propsRef.current.entity_set.permissions.write) {
                 let { anchor, commentIDs } = target;
                 let isDesktop = window.matchMedia(
                   "(min-width: 1280px)",

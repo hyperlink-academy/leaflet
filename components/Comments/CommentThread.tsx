@@ -16,7 +16,7 @@ import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { CommentComposer } from "./CommentComposer";
 import { CommentLoginPrompt } from "./CommentLoginPrompt";
-import { deleteCommentFromBlock } from "./commentDraftActions";
+import { EditTiny } from "components/Icons/EditTiny";
 
 export function CommentThread(props: {
   commentEntityID: string;
@@ -60,16 +60,9 @@ export function CommentThread(props: {
     >
       <CommentMessage
         entityID={props.commentEntityID}
-        onDelete={() =>
-          deleteCommentFromBlock(
-            props.commentEntityID,
-            props.blockID,
-            rep.rep,
-            rep.undoManager,
-          )
-        }
-        // Anyone with edit permission can resolve; resolved comments are
-        // hidden but their data and anchors are kept
+        // The top-level comment has no delete action — resolving supersedes it
+        // (resolved comments are hidden but their data and anchors are kept).
+        // Anyone with edit permission can resolve.
         onResolve={
           entity_set.permissions.write
             ? () =>
@@ -109,7 +102,7 @@ export function CommentThread(props: {
         </div>
       )}
       <div className="comment-thread-actions">
-        {!identity?.atp_did ? (
+        {!entity_set.permissions.write ? null : !identity?.atp_did ? (
           <CommentLoginPrompt action="reply" />
         ) : replying ? (
           <CommentComposer
@@ -146,6 +139,8 @@ function CommentMessage(props: {
   onDelete?: () => void;
   onResolve?: () => void;
 }) {
+  let rep = useReplicache();
+  let { permissions } = useEntitySetContext();
   let content = useEntity(props.entityID, "block/text");
   let author = useEntity(props.entityID, "comment/author");
   let createdAt = useEntity(props.entityID, "comment/created-at");
@@ -153,6 +148,44 @@ function CommentMessage(props: {
   let authorDid = author?.data.value;
   let { data: profile } = useRecordFromDid(authorDid);
   let isOwn = !!identity?.atp_did && identity.atp_did === authorDid;
+  // Editing and deleting are write interactions, available to the author only
+  let canModify = isOwn && permissions.write;
+  let [editing, setEditing] = useState(false);
+
+  let submitEdit = async (ydoc: Y.Doc) => {
+    if (!authorDid) return;
+    // Editing retracts the old body and asserts the new one; undo as one step
+    rep.undoManager.startGroup();
+    try {
+      await rep.rep?.mutate.editComment({
+        entityID: props.entityID,
+        authorDid,
+        content: base64.fromByteArray(Y.encodeStateAsUpdate(ydoc)),
+      });
+    } finally {
+      rep.undoManager.endGroup();
+    }
+    setEditing(false);
+  };
+
+  // Delete/edit are hover-revealed in the dense desktop side column, but on
+  // touch (no hover) they always stay visible. xl matches the 1280px desktop
+  // breakpoint used elsewhere for comments.
+  let hoverRevealClass =
+    "shrink-0 text-tertiary hover:text-accent-contrast opacity-100 xl:opacity-0 xl:group-hover/comment-message:opacity-100 xl:focus:opacity-100";
+
+  if (editing)
+    return (
+      <div className="comment-message flex flex-col gap-0.5">
+        <CommentComposer
+          autoFocus
+          submitLabel="Save"
+          initialContent={content?.data.value}
+          onSubmit={submitEdit}
+          onCancel={() => setEditing(false)}
+        />
+      </div>
+    );
 
   return (
     <div className="comment-message flex flex-col gap-0.5 group/comment-message">
@@ -170,9 +203,18 @@ function CommentMessage(props: {
             {formatCommentDate(createdAt.data.value)}
           </div>
         )}
-        {isOwn && props.onDelete && (
+        {canModify && (
           <button
-            className="shrink-0 text-tertiary hover:text-accent-contrast opacity-0 group-hover/comment-message:opacity-100 focus:opacity-100"
+            className={hoverRevealClass}
+            onClick={() => setEditing(true)}
+            title="Edit comment"
+          >
+            <EditTiny />
+          </button>
+        )}
+        {canModify && props.onDelete && (
+          <button
+            className={hoverRevealClass}
             onClick={props.onDelete}
             title="Delete comment"
           >

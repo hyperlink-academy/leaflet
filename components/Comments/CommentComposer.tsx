@@ -2,7 +2,8 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import * as Y from "yjs";
-import { prosemirrorToYDoc } from "y-prosemirror";
+import * as base64 from "base64-js";
+import { prosemirrorToYDoc, yDocToProsemirror } from "y-prosemirror";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap } from "prosemirror-commands";
@@ -27,6 +28,9 @@ export function CommentComposer(props: {
   placeholder?: string;
   autoFocus?: boolean;
   submitLabel?: string;
+  // base64-encoded YJS state to seed the editor with when editing an
+  // existing comment; the doc is decoded back into a ProseMirror document
+  initialContent?: string;
 }) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let viewRef = useRef<EditorView | null>(null);
@@ -77,7 +81,13 @@ export function CommentComposer(props: {
       }),
     ];
 
-    let state = EditorState.create({ schema, plugins });
+    let doc: ReturnType<typeof yDocToProsemirror> | undefined;
+    if (props.initialContent) {
+      let ydoc = new Y.Doc();
+      Y.applyUpdate(ydoc, base64.toByteArray(props.initialContent));
+      doc = yDocToProsemirror(schema, ydoc);
+    }
+    let state = EditorState.create({ schema, doc, plugins });
     let view = new EditorView(
       { mount: mountRef.current },
       {
@@ -95,6 +105,7 @@ export function CommentComposer(props: {
       },
     );
     viewRef.current = view;
+    setEmpty(state.doc.textContent.trim() === "");
 
     if (props.autoFocus) {
       setTimeout(() => view.focus(), 50);

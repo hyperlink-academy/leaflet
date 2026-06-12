@@ -1059,6 +1059,27 @@ const deleteCommentReply: Mutation<{
   await ctx.deleteEntity(args.replyEntityID);
 };
 
+// Replace a comment or reply body in place. Only the original author may
+// edit. The new content is a full YJS doc state with no shared history with
+// the old one, so we retract the existing block/text and assert the new value
+// rather than letting assertFact merge two independent docs together.
+const editComment: Mutation<{
+  entityID: string;
+  authorDid: string;
+  content: string;
+}> = async (args, ctx) => {
+  let author = await ctx.scanIndex.eav(args.entityID, "comment/author");
+  if (author[0]?.data.value !== args.authorDid) return;
+  let existing = await ctx.scanIndex.eav(args.entityID, "block/text");
+  for (let fact of existing) await ctx.retractFact(fact.id);
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "block/text",
+    data: { type: "text", value: args.content },
+    author_did: args.authorDid,
+  });
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -1093,4 +1114,5 @@ export const mutations = {
   createCommentReply,
   deleteComment,
   deleteCommentReply,
+  editComment,
 };

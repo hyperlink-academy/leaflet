@@ -1,6 +1,7 @@
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { scanIndex } from "src/replicache/utils";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 export type CommentInfo = {
   commentEntityID: string;
@@ -9,6 +10,7 @@ export type CommentInfo = {
 
 export function usePageComments(pageID: string) {
   let rep = useReplicache();
+  let { permissions } = useEntitySetContext();
   let data = useSubscribe(
     rep?.rep,
     async (tx) => {
@@ -53,6 +55,15 @@ export function usePageComments(pageID: string) {
     },
     { dependencies: [pageID] },
   );
+
+  // Read-only viewers don't see comments at all, so hand downstream consumers
+  // (side column, sheet, popover) an empty set
+  if (!permissions.write)
+    return {
+      pageID,
+      comments: [] as CommentInfo[],
+      resolvedCommentIDs: [] as string[],
+    };
 
   return (
     data || {

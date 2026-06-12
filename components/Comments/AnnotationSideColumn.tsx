@@ -61,7 +61,8 @@ export function AnnotationSideColumn(props: {
         }) as const,
     ),
   ];
-  if (draft && draft.pageID === props.pageEntityID) {
+  // Drafting a comment requires write access
+  if (draft && draft.pageID === props.pageEntityID && permissions.write) {
     items.push({ kind: "draft", id: "comment-draft", blockID: draft.blockID });
   }
 
@@ -137,6 +138,8 @@ export function CommentDraftComposer(props: { autoFocus?: boolean }) {
   let entity_set = useEntitySetContext();
   let { identity } = useIdentityData();
 
+  // No commenting interactions without write access
+  if (!entity_set.permissions.write) return null;
   if (!identity?.atp_did)
     return <CommentLoginPrompt onCancel={cancelCommentDraft} />;
   let atp_did = identity.atp_did;
