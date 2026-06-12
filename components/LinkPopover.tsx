@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { create } from "zustand";
 import { Transaction } from "prosemirror-state";
-import * as RadixPopover from "@radix-ui/react-popover";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { useEditorStates, setEditorState } from "src/state/useEditorState";
 import { useReplicache } from "src/replicache";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { CheckTiny } from "components/Icons/CheckTiny";
-import { PopoverArrow } from "components/Icons/PopoverArrow";
-import { theme } from "tailwind.config";
+import { AnchoredPopover } from "components/AnchoredPopover";
 import { ensureProtocol } from "src/utils/ensureProtocol";
 import { findMarkRange } from "src/utils/prosemirror/findMarkRange";
 
@@ -46,21 +44,10 @@ export function LinkPopover() {
     }
   }, [href]);
 
-  // Close on scroll or resize, matching FootnotePopover behavior
-  useEffect(() => {
-    if (!isOpen || !anchorElement) return;
-    let handleScroll = () => close();
-    let scrollWrapper = anchorElement.closest(".pageScrollWrapper");
-    scrollWrapper?.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", close);
-    return () => {
-      scrollWrapper?.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", close);
-    };
-  }, [isOpen, anchorElement, close]);
-
   let applyLinkTransaction = useCallback(
-    (buildTr: (tr: Transaction, linkStart: number, linkEnd: number) => void) => {
+    (
+      buildTr: (tr: Transaction, linkStart: number, linkEnd: number) => void,
+    ) => {
       if (!blockEntityID || !anchorElement) return;
       let editorEntry = useEditorStates.getState().editorStates[blockEntityID];
       if (!editorEntry?.editor || !editorEntry.view) return;
@@ -114,108 +101,72 @@ export function LinkPopover() {
     });
   }, [applyLinkTransaction]);
 
-  let anchorRect = useMemo(
-    () => anchorElement?.getBoundingClientRect(),
-    [anchorElement],
-  );
-
   return (
-    <RadixPopover.Root open={isOpen}>
-      <RadixPopover.Anchor
-        style={{
-          position: "fixed",
-          top: anchorRect?.top ?? 0,
-          left: anchorRect?.left ?? 0,
-          width: anchorRect?.width ?? 0,
-          height: anchorRect?.height ?? 0,
-          pointerEvents: "none",
-        }}
-      />
-      <RadixPopover.Portal>
-        <RadixPopover.Content
-          side="top"
-          align="center"
-          sideOffset={4}
-          collisionPadding={12}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          onInteractOutside={(e) => {
-            // Clicking the link the popover is anchored to re-opens it via the
-            // editor's click handler — leave it alone to avoid a close/reopen
-            // flicker. Any other outside interaction dismisses the popover.
-            let target = e.detail.originalEvent.target as Node | null;
-            if (anchorElement && target && anchorElement.contains(target))
-              return;
-            close();
+    <AnchoredPopover
+      open={isOpen}
+      anchorElement={anchorElement}
+      onClose={close}
+      className="link-popover px-2 py-1"
+    >
+      <div className="flex items-center gap-1">
+        <input
+          type="text"
+          spellCheck={false}
+          value={linkValue}
+          onChange={(e) => setLinkValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              saveLink();
+            }
+            if (e.key === "Escape") {
+              e.preventDefault();
+              close();
+            }
           }}
-          className="link-popover z-50 bg-bg-page border border-border rounded-lg shadow-md px-2 py-1 w-[min(calc(100vw-24px),320px)]"
-        >
-          <div className="flex items-center gap-1">
-            <input
-              type="text"
-              spellCheck={false}
-              value={linkValue}
-              onChange={(e) => setLinkValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  saveLink();
-                }
-                if (e.key === "Escape") {
-                  e.preventDefault();
-                  close();
-                }
+          className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-primary placeholder:text-tertiary"
+          placeholder="https://example.com"
+        />
+        {isDirty ? (
+          <button
+            className="shrink-0 text-tertiary hover:text-accent-contrast"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveLink();
+            }}
+            title="Save link"
+          >
+            <CheckTiny />
+          </button>
+        ) : (
+          <div className="flex items-center shrink-0 gap-1">
+            <button
+              className="text-tertiary hover:text-accent-contrast"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                window.open(
+                  ensureProtocol(linkValue),
+                  "_blank",
+                  "noopener,noreferrer",
+                );
               }}
-              className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-primary placeholder:text-tertiary"
-              placeholder="https://example.com"
-            />
-            {isDirty ? (
-              <button
-                className="shrink-0 text-tertiary hover:text-accent-contrast"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  saveLink();
-                }}
-                title="Save link"
-              >
-                <CheckTiny />
-              </button>
-            ) : (
-              <div className="flex items-center shrink-0 gap-1">
-                <button
-                  className="text-tertiary hover:text-accent-contrast"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    window.open(
-                      ensureProtocol(linkValue),
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                  }}
-                  title="Open link"
-                >
-                  <ExternalLinkTiny />
-                </button>
-                <button
-                  className="text-tertiary hover:text-accent-contrast"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    deleteLink();
-                  }}
-                  title="Remove link"
-                >
-                  <DeleteTiny />
-                </button>
-              </div>
-            )}
+              title="Open link"
+            >
+              <ExternalLinkTiny />
+            </button>
+            <button
+              className="text-tertiary hover:text-accent-contrast"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                deleteLink();
+              }}
+              title="Remove link"
+            >
+              <DeleteTiny />
+            </button>
           </div>
-          <RadixPopover.Arrow asChild width={16} height={8}>
-            <PopoverArrow
-              arrowFill={theme.colors["bg-page"]}
-              arrowStroke={theme.colors["border"]}
-            />
-          </RadixPopover.Arrow>
-        </RadixPopover.Content>
-      </RadixPopover.Portal>
-    </RadixPopover.Root>
+        )}
+      </div>
+    </AnchoredPopover>
   );
 }
