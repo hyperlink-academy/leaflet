@@ -163,12 +163,6 @@ export const collabCursorBuilder = (user: {
 
   const overlay = el("div", "yjs-cursor-overlay");
   const hit = el("div", "yjs-cursor-hit");
-  // Focusable so a tap on touch devices opens the pill through the
-  // browser's native tap → focus/hover emulation (and keyboards can reach
-  // it too); the pill itself is the focus indicator.
-  hit.setAttribute("tabindex", "0");
-  hit.setAttribute("role", "button");
-  hit.setAttribute("aria-label", displayName);
   const label = el("div", "yjs-cursor-pill", "yjs-cursor-label");
   const name = el("span", "yjs-cursor-text");
   name.textContent = displayName;
@@ -181,12 +175,11 @@ export const collabCursorBuilder = (user: {
   cursor.appendChild(overlay);
   cursor.appendChild(document.createTextNode("\u2060"));
 
-  // hover or focus in → brief contraction, then spring open; out → ease
-  // back. On touch devices the browser's tap → hover/focus emulation drives
-  // these natively. States are classes driving transitions (never
-  // keyframes), so interrupting mid-animation stays smooth.
+  // mouseenter → brief contraction, then spring open; mouseleave anytime →
+  // ease back. States are classes driving transitions (never keyframes), so
+  // interrupting mid-animation stays smooth.
   let timer: number | null = null;
-  const beginReveal = () => {
+  cursor.addEventListener("mouseenter", () => {
     if (timer !== null) window.clearTimeout(timer);
     cursor.classList.remove("yjs-cursor-open");
     cursor.classList.add("yjs-cursor-contract");
@@ -195,16 +188,12 @@ export const collabCursorBuilder = (user: {
       cursor.classList.remove("yjs-cursor-contract");
       cursor.classList.add("yjs-cursor-open");
     }, CONTRACT_MS);
-  };
-  const endReveal = () => {
+  });
+  cursor.addEventListener("mouseleave", () => {
     if (timer !== null) window.clearTimeout(timer);
     timer = null;
     cursor.classList.remove("yjs-cursor-contract", "yjs-cursor-open");
-  };
-  cursor.addEventListener("mouseenter", beginReveal);
-  cursor.addEventListener("mouseleave", endReveal);
-  cursor.addEventListener("focusin", beginReveal);
-  cursor.addEventListener("focusout", endReveal);
+  });
 
   return cursor;
 };

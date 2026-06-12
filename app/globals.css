@@ -766,6 +766,7 @@ body.cmd-held .ProseMirror a {
   top: 0;
   height: 100%;
   transform-origin: 50% 100%;
+  pointer-events: auto;
 }
 .yjs-cursor-stub {
   left: var(--goo-pad-x);
@@ -796,8 +797,7 @@ body.cmd-held .ProseMirror a {
   background-color: transparent;
   pointer-events: auto;
 }
-/* invisible enlarged hover/tap target around the 7px dot; focusable, with
-   the opening pill itself as the focus indicator */
+/* invisible enlarged hover target around the 7px dot */
 .yjs-cursor-hit {
   position: absolute;
   left: var(--goo-pad-x);
@@ -806,18 +806,7 @@ body.cmd-held .ProseMirror a {
   height: 16px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
-  outline: none;
   pointer-events: auto;
-}
-
-/* The full-height caret line is only a hover target on devices that can
-   actually hover — on touch it would intercept the native caret/
-   selection-handle drag whenever it crossed a remote cursor. The small
-   dot stays tappable everywhere. */
-@media (hover: hover) and (pointer: fine) {
-  .yjs-cursor-line {
-    pointer-events: auto;
-  }
 }
 .yjs-cursor-text {
   padding: 1px 10px 0;
