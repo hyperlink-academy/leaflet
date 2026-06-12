@@ -1,26 +1,15 @@
-// Custom cursor widget for y-prosemirror's yCursorPlugin: a caret line with
-// a small dot centered on its tip. Hovering contracts the caret in
-// anticipation, then springs it open into a pill showing the user's name,
-// the dot melting into the pill via an SVG goo filter. Styles live in
-// app/globals.css.
-//
-// Three layers, so the goo filter never touches visible text:
-//  1. goo: a line stub + the pill blob (with a transparent copy of the name
-//     for sizing), run through the goo filter so they melt together
-//  2. the full caret line, outside the filter, so its bottom cap stays crisp
-//  3. a transparent twin of the pill holding the visible name — identical
-//     bounds and transforms in every state so the text clips and moves with
-//     the pill
+// Shared helpers for the collaborative cursor overlay (see RemoteCursors.tsx
+// for the rendering and remoteCursorPlugin.ts for the awareness plumbing).
 
 // All durations are the prototype's values × a 0.7 global speed multiplier.
-const CONTRACT_MS = 112;
+export const CONTRACT_MS = 112;
 
 // Damped harmonic oscillator (mass 1, stiffness 280, damping 14 — ~13%
 // overshoot with a faint second bounce) solved closed-form and sampled into
 // a CSS linear() easing. Falls back to a bouncy bezier where linear() isn't
 // supported.
 let springVars: { easing: string; duration: number } | null = null;
-function getSpringVars() {
+export function getSpringVars() {
   if (springVars) return springVars;
   const supported =
     typeof CSS !== "undefined" &&
@@ -55,7 +44,7 @@ function getSpringVars() {
 // Goo: blur, then hard-cut alpha at exactly 0.5 (no halo on lone shapes;
 // melt only appears where two blurs overlap), then draw the crisp source
 // over the goo.
-function ensureGooFilter() {
+export function ensureGooFilter() {
   if (document.getElementById("yjs-cursor-goo-svg")) return;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.id = "yjs-cursor-goo-svg";
@@ -70,12 +59,6 @@ function ensureGooFilter() {
   </filter></defs>`;
   document.body.appendChild(svg);
 }
-
-const el = (tag: string, ...classes: string[]) => {
-  const e = document.createElement(tag);
-  e.classList.add(...classes);
-  return e;
-};
 
 // Cursor colors are derived from the leaflet's theme: each client gets a
 // stable hue offset, rotated from --accent-contrast in oklch so every cursor
@@ -103,7 +86,7 @@ const supportsRelativeColor = () => {
   return relativeColorSupport;
 };
 
-function cursorColors(hue: number) {
+export function cursorColors(hue: number) {
   if (!supportsRelativeColor()) {
     const i =
       ((Math.round(hue / 45) % FALLBACK_COLORS.length) +
@@ -123,77 +106,3 @@ function cursorColors(hue: number) {
     selection: `oklch(from rgb(var(--accent-contrast)) ${channels} / 0.35)`,
   };
 }
-
-// The default selection builder concatenates an alpha onto a hex color, so
-// it can't express theme-derived colors — this one inlines them instead.
-export const collabSelectionBuilder = (user: { hue?: number }) => ({
-  style: `background-color: ${cursorColors(user.hue ?? 0).selection}`,
-  class: "ProseMirror-yjs-selection",
-});
-
-export const collabCursorBuilder = (user: {
-  name?: string;
-  hue?: number;
-}): HTMLElement => {
-  ensureGooFilter();
-  const spring = getSpringVars();
-  const colors = cursorColors(user.hue ?? 0);
-
-  const cursor = document.createElement("span");
-  cursor.classList.add("ProseMirror-yjs-cursor");
-  cursor.style.setProperty("--cursor-color", colors.color);
-  cursor.style.setProperty("--cursor-text-color", colors.text);
-  cursor.style.setProperty("--yjs-spring-ease", spring.easing);
-  cursor.style.setProperty("--yjs-spring-dur", `${spring.duration}ms`);
-  // Word-joiners on either side keep the widget from affecting line breaks,
-  // same as y-prosemirror's default cursor builder.
-  cursor.appendChild(document.createTextNode("\u2060"));
-
-  const displayName = user.name || "Anonymous";
-  const goo = el("div", "yjs-cursor-goo");
-  const stub = el("div", "yjs-cursor-stub");
-  const pill = el("div", "yjs-cursor-pill");
-  const sizer = el("span", "yjs-cursor-text", "yjs-cursor-sizer");
-  sizer.textContent = displayName;
-  pill.appendChild(sizer);
-  goo.appendChild(stub);
-  goo.appendChild(pill);
-
-  const line = el("div", "yjs-cursor-line");
-
-  const overlay = el("div", "yjs-cursor-overlay");
-  const hit = el("div", "yjs-cursor-hit");
-  const label = el("div", "yjs-cursor-pill", "yjs-cursor-label");
-  const name = el("span", "yjs-cursor-text");
-  name.textContent = displayName;
-  label.appendChild(name);
-  overlay.appendChild(hit);
-  overlay.appendChild(label);
-
-  cursor.appendChild(goo);
-  cursor.appendChild(line);
-  cursor.appendChild(overlay);
-  cursor.appendChild(document.createTextNode("\u2060"));
-
-  // mouseenter → brief contraction, then spring open; mouseleave anytime →
-  // ease back. States are classes driving transitions (never keyframes), so
-  // interrupting mid-animation stays smooth.
-  let timer: number | null = null;
-  cursor.addEventListener("mouseenter", () => {
-    if (timer !== null) window.clearTimeout(timer);
-    cursor.classList.remove("yjs-cursor-open");
-    cursor.classList.add("yjs-cursor-contract");
-    timer = window.setTimeout(() => {
-      timer = null;
-      cursor.classList.remove("yjs-cursor-contract");
-      cursor.classList.add("yjs-cursor-open");
-    }, CONTRACT_MS);
-  });
-  cursor.addEventListener("mouseleave", () => {
-    if (timer !== null) window.clearTimeout(timer);
-    timer = null;
-    cursor.classList.remove("yjs-cursor-contract", "yjs-cursor-open");
-  });
-
-  return cursor;
-};

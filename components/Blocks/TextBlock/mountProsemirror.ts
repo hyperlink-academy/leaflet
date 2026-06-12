@@ -3,7 +3,7 @@ import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { ySyncPlugin, yCursorPlugin } from "y-prosemirror";
+import { ySyncPlugin } from "y-prosemirror";
 import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 import * as base64 from "base64-js";
@@ -32,7 +32,7 @@ import {
 } from "components/LinkPopover";
 import { useYjsRealtime, YjsRealtimeConnection } from "src/yjsRealtime";
 import { useIdentityData } from "components/IdentityProvider";
-import { collabCursorBuilder, collabSelectionBuilder } from "./collabCursor";
+import { remoteCursorPlugin } from "./remoteCursorPlugin";
 
 export function useMountProsemirror({
   props,
@@ -70,10 +70,7 @@ export function useMountProsemirror({
       schema: schema,
       plugins: [
         ySyncPlugin(value),
-        yCursorPlugin(awareness, {
-          cursorBuilder: collabCursorBuilder,
-          selectionBuilder: collabSelectionBuilder,
-        }),
+        remoteCursorPlugin(awareness),
         keymap(km),
         inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
@@ -284,7 +281,7 @@ export function useMountProsemirror({
       });
     }
   }, [entityID, parent, value, awareness, handlePaste, rep]);
-  return { mountRef, actionTimeout };
+  return { mountRef, actionTimeout, awareness };
 }
 
 export function trackUndoRedo(

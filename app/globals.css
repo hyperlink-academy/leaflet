@@ -724,6 +724,15 @@ body.cmd-held .ProseMirror a {
    the filter, and a transparent twin pill carrying the visible text with
    identical bounds in every state. --cursor-color and the spring easing
    variables are set inline per cursor by the builder. */
+/* 0×0 positioned anchor next to the editor; carets are positioned inside it
+   from viewport-rect deltas, so surrounding layout doesn't matter */
+.yjs-cursor-layer {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
 .ProseMirror-yjs-cursor {
   --caret-w: 2.3px;
   /* how much the caret stretches upward when open, lifting the pill clear
@@ -732,8 +741,9 @@ body.cmd-held .ProseMirror a {
   /* the goo layer needs real dimensions or the SVG filter region clips */
   --goo-pad-x: 130px;
   --goo-pad-top: 26px;
-  position: relative;
-  word-break: normal;
+  /* left/top/height are set inline per cursor from view.coordsAtPos */
+  position: absolute;
+  width: 0;
   pointer-events: none;
 }
 .yjs-cursor-goo,
@@ -806,6 +816,7 @@ body.cmd-held .ProseMirror a {
   height: 16px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
+  outline: none;
   pointer-events: auto;
 }
 .yjs-cursor-text {
@@ -828,18 +839,19 @@ body.cmd-held .ProseMirror a {
 }
 
 /* contract: anticipation squash — the caret shrinks toward its base while
-   the dot (and the text twin) ride down to stay on the tip. 0.3em ≈ 22% of
-   the caret height, so it scales with headings. */
+   the dot (and the text twin) ride down to stay on the tip.
+   --cursor-contract-shift is 22% of the caret height, set inline. */
 .yjs-cursor-contract .yjs-cursor-line {
   transform: translateX(-50%) scaleY(0.78);
   transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
 }
 .yjs-cursor-contract .yjs-cursor-stub {
-  transform: translateX(-50%) translateY(0.3em);
+  transform: translateX(-50%) translateY(var(--cursor-contract-shift, 0.3em));
   transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
 }
 .yjs-cursor-contract .yjs-cursor-pill {
-  transform: translate(-50%, -50%) translateY(0.3em) scale(0.7);
+  transform: translate(-50%, -50%) translateY(var(--cursor-contract-shift, 0.3em))
+    scale(0.7);
   transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
 }
 

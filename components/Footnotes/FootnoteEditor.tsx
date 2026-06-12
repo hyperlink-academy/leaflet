@@ -3,7 +3,7 @@ import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { ySyncPlugin, yCursorPlugin } from "y-prosemirror";
+import { ySyncPlugin } from "y-prosemirror";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { useReplicache } from "src/replicache";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
@@ -12,10 +12,8 @@ import {
   useYJSValue,
   trackUndoRedo,
 } from "components/Blocks/TextBlock/mountProsemirror";
-import {
-  collabCursorBuilder,
-  collabSelectionBuilder,
-} from "components/Blocks/TextBlock/collabCursor";
+import { remoteCursorPlugin } from "components/Blocks/TextBlock/remoteCursorPlugin";
+import { RemoteCursors } from "components/Blocks/TextBlock/RemoteCursors";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { FootnoteItemLayout } from "./FootnoteItemLayout";
 import { useEditorStates } from "src/state/useEditorState";
@@ -40,10 +38,7 @@ export function FootnoteEditor(props: {
 
     let plugins = [
       ySyncPlugin(value),
-      yCursorPlugin(awareness, {
-        cursorBuilder: collabCursorBuilder,
-        selectionBuilder: collabSelectionBuilder,
-      }),
+      remoteCursorPlugin(awareness),
       keymap({
         "Meta-b": toggleMark(schema.marks.strong),
         "Ctrl-b": toggleMark(schema.marks.strong),
@@ -216,6 +211,7 @@ export function FootnoteEditor(props: {
           ) : undefined
         }
       >
+        <RemoteCursors entityID={props.footnoteEntityID} awareness={awareness} />
         <div ref={mountRef} className="outline-hidden" />
       </FootnoteItemLayout>
     </div>
