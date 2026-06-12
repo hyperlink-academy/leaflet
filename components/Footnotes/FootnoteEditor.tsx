@@ -9,7 +9,8 @@ import { useReplicache, useEntity } from "src/replicache";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { betterIsUrl } from "src/utils/isURL";
 import { trackUndoRedo } from "components/Blocks/TextBlock/mountProsemirror";
-import { useCollabCursors } from "components/Blocks/TextBlock/useCollabCursors";
+import { useCollabText } from "components/Blocks/TextBlock/useCollabText";
+import { useStaleClient } from "components/Blocks/TextBlock/schemaVersion";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { FootnoteItemLayout } from "./FootnoteItemLayout";
@@ -27,8 +28,10 @@ export function FootnoteEditor(props: {
   // Read-only viewers don't need a live ProseMirror instance (with its yjs
   // doc, realtime registration, and remote-cursor overlay) per footnote —
   // render the stored content statically, the same way RenderedTextBlock does
-  // for non-editable text blocks.
-  if (!props.editable)
+  // for non-editable text blocks. Stale clients (see TextBlock/schemaVersion)
+  // also render statically.
+  let stale = useStaleClient((s) => s.stale);
+  if (!props.editable || stale)
     return (
       <RenderedFootnote
         footnoteEntityID={props.footnoteEntityID}
@@ -66,7 +69,7 @@ function EditableFootnote(props: {
     yText: value,
     cursorPlugin,
     overlay,
-  } = useCollabCursors(props.footnoteEntityID);
+  } = useCollabText(props.footnoteEntityID);
   let actionTimeout = useRef<number | null>(null);
   let { pageID } = useFootnoteContext();
 

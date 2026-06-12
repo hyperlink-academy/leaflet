@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import localFont from "next/font/local";
 import { PopUpProvider } from "components/Toast";
+import { StaleClientNotice } from "components/Blocks/TextBlock/schemaVersion";
 
 export const metadata = {
   title: "Leaflet",
@@ -72,6 +73,7 @@ export default function RootLayout({
         <ServiceWorker />
         <InitialPageLoad>
           <PopUpProvider>
+            <StaleClientNotice />
             <ViewportSizeLayout>{children}</ViewportSizeLayout>
           </PopUpProvider>
         </InitialPageLoad>

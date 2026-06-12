@@ -32,7 +32,7 @@ import {
 } from "components/Comments/commentStores";
 import { useCommentPopoverStore } from "components/Comments/CommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
-import { useCollabCursors } from "./useCollabCursors";
+import { useCollabText } from "./useCollabText";
 
 // The comment anchor under an event's target, along with the IDs of its
 // unresolved comments; null when there are none (fully-resolved anchors
@@ -63,7 +63,7 @@ export function useMountProsemirror({
   let rep = useReplicache();
   let mountRef = useRef<HTMLPreElement | null>(null);
   const repRef = useRef<Replicache<ReplicacheMutators> | null>(null);
-  let { yText: value, cursorPlugin, overlay } = useCollabCursors(entityID);
+  let { yText: value, cursorPlugin, overlay } = useCollabText(entityID);
   let entity_set = useEntitySetContext();
   let alignment =
     useEntity(entityID, "block/text-alignment")?.data.value || "left";

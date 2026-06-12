@@ -3,6 +3,13 @@ import { marks } from "prosemirror-schema-basic";
 import { theme } from "tailwind.config";
 import { classifyAtUri } from "src/utils/mentionUtils";
 
+// Bump this whenever the schema changes in a way old clients can't represent:
+// adding a node or mark, or adding a *required* attr to an existing one
+// (prefer attrs with a `default`, which old schemas tolerate). Clients that
+// encounter content from a newer schema version stop editing instead of
+// destroying what they don't understand — see ./schemaVersion.
+export const SCHEMA_VERSION = 1;
+
 let baseSchema = {
   marks: {
     strong: marks.strong,

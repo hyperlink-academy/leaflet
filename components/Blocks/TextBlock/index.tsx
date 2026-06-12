@@ -25,6 +25,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
+import { useStaleClient } from "./schemaVersion";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { blockTextSize } from "src/utils/blockTextSize";
 import { getAspectRatio } from "src/utils/aspectRatio";
@@ -57,10 +58,13 @@ export function TextBlock(
   let initialized = useHasPageLoaded();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
+  // Stale clients (newer-schema content exists; see ./schemaVersion) keep
+  // rendering but must not mount an editor.
+  let stale = useStaleClient((s) => s.stale);
 
   return (
     <>
-      {(!initialized || !permission || props.preview) && (
+      {(!initialized || !permission || props.preview || stale) && (
         <RenderedTextBlock
           type={props.type}
           entityID={props.entityID}
@@ -70,7 +74,7 @@ export function TextBlock(
           previousBlock={props.previousBlock}
         />
       )}
-      {permission && !props.preview && (
+      {permission && !props.preview && !stale && (
         <div
           className={`w-full relative group ${!initialized ? "hidden" : ""}`}
         >
