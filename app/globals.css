@@ -766,7 +766,6 @@ body.cmd-held .ProseMirror a {
   top: 0;
   height: 100%;
   transform-origin: 50% 100%;
-  pointer-events: auto;
 }
 .yjs-cursor-stub {
   left: var(--goo-pad-x);
@@ -795,7 +794,6 @@ body.cmd-held .ProseMirror a {
 }
 .yjs-cursor-label {
   background-color: transparent;
-  pointer-events: auto;
 }
 /* invisible enlarged hover target around the 7px dot */
 .yjs-cursor-hit {
@@ -806,7 +804,18 @@ body.cmd-held .ProseMirror a {
   height: 16px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
-  pointer-events: auto;
+}
+
+/* The hover hit-targets only exist on devices that can actually hover.
+   On touch devices they'd intercept the native caret/selection-handle
+   drag whenever it crossed a remote cursor, so everything stays
+   pointer-events: none there. */
+@media (hover: hover) and (pointer: fine) {
+  .yjs-cursor-line,
+  .yjs-cursor-hit,
+  .yjs-cursor-label {
+    pointer-events: auto;
+  }
 }
 .yjs-cursor-text {
   padding: 1px 10px 0;
