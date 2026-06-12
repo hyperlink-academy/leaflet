@@ -91,6 +91,10 @@ export function CommentPopover() {
           collisionPadding={12}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => {
+            // The block's focus handling can move focus into the editor
+            // right after the opening tap — only pointer interactions
+            // outside dismiss the popover, never focus shifts.
+            if (e.detail.originalEvent.type === "focusin") return;
             // Tapping the commented range the popover is anchored to re-opens
             // it via the editor's click handler — leave it alone to avoid a
             // close/reopen flicker. Any other outside interaction dismisses.

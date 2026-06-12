@@ -34,6 +34,24 @@ import { useCommentPopoverStore } from "components/Comments/CommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
 import { useCollabCursors } from "./useCollabCursors";
 
+// The comment anchor under an event's target, along with the IDs of its
+// unresolved comments; null when there are none (fully-resolved anchors
+// behave like plain text). Anchors carry one or more comment IDs since
+// overlapping comments share a mark.
+function unresolvedCommentAnchor(event: Event) {
+  let anchor = (event.target as HTMLElement | null)?.closest(
+    ".comment-anchor[data-comment-id]",
+  ) as HTMLElement | null;
+  if (!anchor) return null;
+  let resolved = useResolvedCommentsStore.getState().resolved;
+  let commentIDs = anchor
+    .getAttribute("data-comment-id")!
+    .split(" ")
+    .filter((id) => id && !resolved[id]);
+  if (commentIDs.length === 0) return null;
+  return { anchor, commentIDs };
+}
+
 export function useMountProsemirror({
   props,
   openMentionAutocomplete,
@@ -90,49 +108,63 @@ export function useMountProsemirror({
         state: editor,
         handlePaste,
         handleDOMEvents: {
+          // Where tapping a comment anchor opens the popover/sheet, the tap
+          // must not focus the editor: focus moves on mousedown (before the
+          // click handler runs), and the block's focus handling plus the
+          // keyboard popping open would immediately dismiss the popover the
+          // click is about to show. stopPropagation also keeps the block's
+          // own mousedown handlers from focusing the editor.
+          mousedown: (_view, event) => {
+            if (event.metaKey || event.ctrlKey) return false;
+            let target = unresolvedCommentAnchor(event);
+            if (!target) return false;
+            let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
+            let isCanvas = propsRef.current.pageType === "canvas";
+            if (!isDesktop || isCanvas) {
+              event.preventDefault();
+              event.stopPropagation();
+              return true;
+            }
+            return false;
+          },
           // cmd/ctrl+click opens links in a new tab. Handled on the native
           // click event rather than in handleClickOn: popup blockers trust
           // window.open from a click handler, and ProseMirror cancels its
           // click handling when the mouse moves >4px between down and up.
           click: (_view, event) => {
-            let commentAnchor = (event.target as HTMLElement | null)?.closest(
-              ".comment-anchor[data-comment-id]",
-            );
-            if (commentAnchor && !(event.metaKey || event.ctrlKey)) {
-              // Anchors carry one or more comment IDs (overlapping comments
-              // share a mark); resolved comments behave like plain text
-              let resolved = useResolvedCommentsStore.getState().resolved;
-              let commentIDs = commentAnchor
-                .getAttribute("data-comment-id")!
-                .split(" ")
-                .filter((id) => id && !resolved[id]);
-              if (commentIDs.length === 0) return false;
-              let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
-              if (!isDesktop) {
-                // On mobile, show a popover with an excerpt and a button
-                // that opens the thread in the slide-in sheet
-                let store = useCommentPopoverStore.getState();
-                if (store.commentIDs?.join(" ") === commentIDs.join(" ")) {
-                  store.close();
-                } else {
-                  store.open(commentIDs, commentAnchor as HTMLElement);
+            if (!(event.metaKey || event.ctrlKey)) {
+              let target = unresolvedCommentAnchor(event);
+              if (target) {
+                let { anchor, commentIDs } = target;
+                let isDesktop = window.matchMedia(
+                  "(min-width: 1280px)",
+                ).matches;
+                if (!isDesktop) {
+                  // On mobile, show a popover with an excerpt and a button
+                  // that opens the thread in the slide-in sheet
+                  let store = useCommentPopoverStore.getState();
+                  if (store.commentIDs?.join(" ") === commentIDs.join(" ")) {
+                    store.close();
+                  } else {
+                    store.open(commentIDs, anchor);
+                  }
+                  event.preventDefault();
+                  return true;
                 }
-                event.preventDefault();
-                return true;
-              }
-              // On desktop canvas pages there's no side column, so open the
-              // sheet directly; on doc pages the side column thread expands
-              // on hover, so the click just places the cursor.
-              if (propsRef.current.pageType === "canvas") {
-                useCommentSheetStore
-                  .getState()
-                  .openSheet(propsRef.current.parent, commentIDs[0]);
-                event.preventDefault();
-                return true;
+                // On desktop canvas pages there's no side column, so open the
+                // sheet directly; on doc pages the side column thread expands
+                // on hover, so the click just places the cursor.
+                if (propsRef.current.pageType === "canvas") {
+                  useCommentSheetStore
+                    .getState()
+                    .openSheet(propsRef.current.parent, commentIDs[0]);
+                  event.preventDefault();
+                  return true;
+                }
+                return false;
               }
               return false;
             }
-            if (!(event.metaKey || event.ctrlKey)) return false;
             let anchor = (event.target as HTMLElement | null)?.closest("a");
             let href = anchor?.getAttribute("href");
             if (!href) return false;
