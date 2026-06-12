@@ -160,6 +160,12 @@ const CommentAttributes = {
     type: "string",
     cardinality: "one",
   },
+  // Set by anyone with write permission (no author_did); resolved comments
+  // are hidden in the UI but their data and anchor marks are kept.
+  "comment/resolved": {
+    type: "boolean",
+    cardinality: "one",
+  },
   // Snapshot of the anchor range in the block's text at creation time. The
   // live anchor is the comment mark in the block's YJS doc, which moves with
   // edits; these are kept as a fallback record of where the comment started.

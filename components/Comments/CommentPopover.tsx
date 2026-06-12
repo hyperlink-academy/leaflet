@@ -14,28 +14,30 @@ import { useCommentSheetStore } from "./commentStores";
 import { getCommentPlaintext } from "./getCommentQuote";
 
 type CommentPopoverState = {
-  commentID: string | null;
+  // An anchor span can carry several comment IDs where comments overlap; the
+  // popover shows the first one that still exists (and isn't resolved)
+  commentIDs: string[] | null;
   anchorElement: HTMLElement | null;
-  open: (commentID: string, anchor: HTMLElement) => void;
+  open: (commentIDs: string[], anchor: HTMLElement) => void;
   close: () => void;
 };
 
 export const useCommentPopoverStore = create<CommentPopoverState>((set) => ({
-  commentID: null,
+  commentIDs: null,
   anchorElement: null,
-  open: (commentID, anchor) => set({ commentID, anchorElement: anchor }),
-  close: () => set({ commentID: null, anchorElement: null }),
+  open: (commentIDs, anchor) => set({ commentIDs, anchorElement: anchor }),
+  close: () => set({ commentIDs: null, anchorElement: null }),
 }));
 
 // On mobile, tapping a commented range shows this popover (like the link
 // popover) with an excerpt of the comment and a button that opens the full
 // thread in the slide-in sheet.
 export function CommentPopover() {
-  let { commentID, anchorElement, close } = useCommentPopoverStore();
+  let { commentIDs, anchorElement, close } = useCommentPopoverStore();
   let { pageID, comments } = useCommentContext();
 
-  let comment = commentID
-    ? comments.find((c) => c.commentEntityID === commentID)
+  let comment = commentIDs
+    ? comments.find((c) => commentIDs.includes(c.commentEntityID))
     : undefined;
   let isOpen = !!comment && !!anchorElement;
 

@@ -9,6 +9,14 @@ export const useCommentDraftStore = create<{
   draft: null,
 }));
 
+// Resolved comment IDs, synced from page data by ResolvedComments so the
+// editor's click handler can check resolution synchronously.
+export const useResolvedCommentsStore = create<{
+  resolved: Record<string, boolean>;
+}>(() => ({
+  resolved: {},
+}));
+
 // Mobile/canvas slide-in panel state. Scoped to a page since the sheet
 // renders once per open page. focusedCommentID scrolls the panel to that
 // thread when it opens.

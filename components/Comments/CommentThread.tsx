@@ -13,6 +13,7 @@ import { useUIState } from "src/useUIState";
 import { Avatar } from "components/Avatar";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
+import { CheckTiny } from "components/Icons/CheckTiny";
 import { CommentComposer } from "./CommentComposer";
 import { CommentLoginPrompt } from "./CommentLoginPrompt";
 import { deleteCommentFromBlock } from "./commentDraftActions";
@@ -55,6 +56,18 @@ export function CommentThread(props: {
         entityID={props.commentEntityID}
         onDelete={() =>
           deleteCommentFromBlock(props.commentEntityID, props.blockID, rep.rep)
+        }
+        // Anyone with edit permission can resolve; resolved comments are
+        // hidden but their data and anchors are kept
+        onResolve={
+          entity_set.permissions.write
+            ? () =>
+                rep.rep?.mutate.assertFact({
+                  entity: props.commentEntityID,
+                  attribute: "comment/resolved",
+                  data: { type: "boolean", value: true },
+                })
+            : undefined
         }
       />
       {replies.length > 0 && (
@@ -111,7 +124,11 @@ export function CommentThread(props: {
   );
 }
 
-function CommentMessage(props: { entityID: string; onDelete?: () => void }) {
+function CommentMessage(props: {
+  entityID: string;
+  onDelete?: () => void;
+  onResolve?: () => void;
+}) {
   let content = useEntity(props.entityID, "block/text");
   let author = useEntity(props.entityID, "comment/author");
   let createdAt = useEntity(props.entityID, "comment/created-at");
@@ -143,6 +160,15 @@ function CommentMessage(props: { entityID: string; onDelete?: () => void }) {
             title="Delete comment"
           >
             <DeleteTiny />
+          </button>
+        )}
+        {props.onResolve && (
+          <button
+            className="shrink-0 text-tertiary hover:text-accent-contrast"
+            onClick={props.onResolve}
+            title="Resolve comment"
+          >
+            <CheckTiny />
           </button>
         )}
       </div>

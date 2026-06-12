@@ -69,7 +69,8 @@ export function AnnotationSideColumn(props: {
     if (item.kind === "footnote")
       return `.footnote-ref[data-footnote-id="${item.id}"]`;
     if (item.kind === "draft") return `.comment-draft-anchor`;
-    return `.comment-anchor[data-comment-id="${item.id}"]`;
+    // ~= matches within the space-separated ID list overlapping comments share
+    return `.comment-anchor[data-comment-id~="${item.id}"]`;
   }, []);
 
   let getItemClassName = useCallback((item: SideAnnotation) => {

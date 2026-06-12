@@ -3,7 +3,7 @@ import { useUIState } from "src/useUIState";
 import { useEntity } from "src/replicache";
 import { startCommentDraft } from "components/Comments/commentDraftActions";
 import { useCommentSheetStore } from "components/Comments/commentStores";
-import { CommentSmall } from "components/Icons/CommentSmall";
+import { CommentTiny } from "components/Icons/CommentTiny";
 import { ToolbarButton } from ".";
 
 export function CommentButton() {
@@ -35,7 +35,7 @@ export function CommentButton() {
         }
       }}
     >
-      <CommentSmall />
+      <CommentTiny className="w-6 h-6 p-0.5" />
     </ToolbarButton>
   );
 }

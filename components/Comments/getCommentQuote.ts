@@ -27,8 +27,9 @@ export function getCommentQuoteText(
   let walk = (node: XmlElement | XmlText | unknown) => {
     if (node instanceof XmlText) {
       for (let d of node.toDelta() as Delta[]) {
-        if (d.attributes?.comment?.commentID === commentID)
-          parts.push(d.insert);
+        // Anchor marks hold a space-separated ID list where comments overlap
+        let ids = (d.attributes?.comment?.commentID || "").split(" ");
+        if (ids.includes(commentID)) parts.push(d.insert);
       }
     } else if (node instanceof XmlElement) {
       for (let child of node.toArray()) walk(child);

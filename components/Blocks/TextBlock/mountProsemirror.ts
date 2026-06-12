@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useEffect, useState } from "react";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
+import type { Node } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin } from "y-prosemirror";
@@ -27,7 +28,10 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { useLinkPopoverStore } from "components/LinkPopover";
-import { useCommentSheetStore } from "components/Comments/commentStores";
+import {
+  useCommentSheetStore,
+  useResolvedCommentsStore,
+} from "components/Comments/commentStores";
 import { useCommentPopoverStore } from "components/Comments/CommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
 
@@ -95,16 +99,23 @@ export function useMountProsemirror({
               ".comment-anchor[data-comment-id]",
             );
             if (commentAnchor && !(event.metaKey || event.ctrlKey)) {
-              let commentID = commentAnchor.getAttribute("data-comment-id")!;
+              // Anchors carry one or more comment IDs (overlapping comments
+              // share a mark); resolved comments behave like plain text
+              let resolved = useResolvedCommentsStore.getState().resolved;
+              let commentIDs = commentAnchor
+                .getAttribute("data-comment-id")!
+                .split(" ")
+                .filter((id) => id && !resolved[id]);
+              if (commentIDs.length === 0) return false;
               let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
               if (!isDesktop) {
                 // On mobile, show a popover with an excerpt and a button
                 // that opens the thread in the slide-in sheet
                 let store = useCommentPopoverStore.getState();
-                if (store.commentID === commentID) {
+                if (store.commentIDs?.join(" ") === commentIDs.join(" ")) {
                   store.close();
                 } else {
-                  store.open(commentID, commentAnchor as HTMLElement);
+                  store.open(commentIDs, commentAnchor as HTMLElement);
                 }
                 event.preventDefault();
                 return true;
@@ -115,7 +126,7 @@ export function useMountProsemirror({
               if (propsRef.current.pageType === "canvas") {
                 useCommentSheetStore
                   .getState()
-                  .openSheet(propsRef.current.parent, commentID);
+                  .openSheet(propsRef.current.parent, commentIDs[0]);
                 event.preventDefault();
                 return true;
               }
@@ -276,16 +287,21 @@ export function useMountProsemirror({
 
           // Diff comment marks: deleting all the commented text deletes the
           // comment, like removing a footnote node deletes the footnote
+          let collectCommentIDs = (doc: Node, into: Set<string>) => {
+            doc.descendants((n) => {
+              for (let m of n.marks)
+                if (m.type.name === "comment")
+                  for (let id of ((m.attrs.commentID as string) || "").split(
+                    " ",
+                  )) {
+                    if (id) into.add(id);
+                  }
+            });
+          };
           let oldComments = new Set<string>();
           let newComments = new Set<string>();
-          oldEditorState.doc.descendants((n) => {
-            for (let m of n.marks)
-              if (m.type.name === "comment") oldComments.add(m.attrs.commentID);
-          });
-          newState.doc.descendants((n) => {
-            for (let m of n.marks)
-              if (m.type.name === "comment") newComments.add(m.attrs.commentID);
-          });
+          collectCommentIDs(oldEditorState.doc, oldComments);
+          collectCommentIDs(newState.doc, newComments);
           for (let id of oldComments) {
             if (!newComments.has(id)) {
               repRef.current?.mutate.deleteComment({

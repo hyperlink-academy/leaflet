@@ -98,9 +98,10 @@ export async function submitCommentDraft({
   view.state.doc.descendants((node, pos) => {
     for (let mark of node.marks) {
       if (mark.type === schema.marks.comment) {
-        let id = mark.attrs.commentID;
-        if (anchorPosByEntityID[id] === undefined)
-          anchorPosByEntityID[id] = pos;
+        for (let id of markCommentIDs(mark)) {
+          if (anchorPosByEntityID[id] === undefined)
+            anchorPosByEntityID[id] = pos;
+        }
       }
     }
   });
@@ -129,17 +130,36 @@ export async function submitCommentDraft({
     content: base64.fromByteArray(Y.encodeStateAsUpdate(ydoc)),
   });
 
-  let tr = view.state.tr
-    .addMark(
-      range.from,
-      range.to,
-      schema.marks.comment.create({ commentID: commentEntityID }),
-    )
-    .setMeta(commentDraftKey, null);
+  // Same-type marks exclude each other, so a plain addMark over a range that
+  // already carries a comment mark would replace it and corrupt that
+  // comment's anchor. Instead each anchor mark holds a space-separated list
+  // of comment IDs, and overlaps merge the new ID into the existing list
+  // segment by segment.
+  let markType = schema.marks.comment;
+  let tr = view.state.tr;
+  view.state.doc.nodesBetween(range.from, range.to, (node, pos) => {
+    if (!node.isText) return;
+    let segFrom = Math.max(pos, range.from);
+    let segTo = Math.min(pos + node.nodeSize, range.to);
+    if (segFrom >= segTo) return;
+    let existing = node.marks.find((m) => m.type === markType);
+    let ids = existing ? markCommentIDs(existing) : [];
+    if (!ids.includes(commentEntityID)) ids.push(commentEntityID);
+    tr.addMark(segFrom, segTo, markType.create({ commentID: ids.join(" ") }));
+  });
+  tr.setMeta(commentDraftKey, null);
   view.dispatch(tr);
 
   useCommentDraftStore.setState({ draft: null });
   return commentEntityID;
+}
+
+// Anchor marks carry one or more comment IDs, space-separated, so
+// overlapping comments can share a range
+export function markCommentIDs(mark: {
+  attrs: { [key: string]: any };
+}): string[] {
+  return ((mark.attrs.commentID as string) || "").split(" ").filter(Boolean);
 }
 
 export function deleteCommentFromBlock(
@@ -156,9 +176,22 @@ export function deleteCommentFromBlock(
     let markType = schema.marks.comment;
     view.state.doc.descendants((node, pos) => {
       let mark = node.marks.find(
-        (m) => m.type === markType && m.attrs.commentID === commentEntityID,
+        (m) =>
+          m.type === markType && markCommentIDs(m).includes(commentEntityID),
       );
-      if (mark) tr.removeMark(pos, pos + node.nodeSize, mark);
+      if (!mark) return;
+      // Strip just this comment's ID; the mark stays if other comments
+      // overlap this range
+      let remaining = markCommentIDs(mark).filter(
+        (id) => id !== commentEntityID,
+      );
+      tr.removeMark(pos, pos + node.nodeSize, mark);
+      if (remaining.length > 0)
+        tr.addMark(
+          pos,
+          pos + node.nodeSize,
+          markType.create({ commentID: remaining.join(" ") }),
+        );
     });
     if (tr.steps.length > 0) view.dispatch(tr);
   }

@@ -30,23 +30,35 @@ export function usePageComments(pageID: string) {
       let sorted = [...sortedCardBlocks, ...sortedCanvasBlocks];
 
       let comments: CommentInfo[] = [];
+      let resolvedCommentIDs: string[] = [];
       for (let block of sorted) {
         let blockComments = await scan.eav(block.value, "block/comment");
         let sortedComments = blockComments.toSorted((a, b) =>
           a.data.position > b.data.position ? 1 : -1,
         );
         for (let c of sortedComments) {
-          comments.push({
-            commentEntityID: c.data.value,
-            blockID: block.value,
-          });
+          let resolved = await scan.eav(c.data.value, "comment/resolved");
+          if (resolved[0]?.data.value) {
+            resolvedCommentIDs.push(c.data.value);
+          } else {
+            comments.push({
+              commentEntityID: c.data.value,
+              blockID: block.value,
+            });
+          }
         }
       }
 
-      return { pageID, comments };
+      return { pageID, comments, resolvedCommentIDs };
     },
     { dependencies: [pageID] },
   );
 
-  return data || { pageID, comments: [] as CommentInfo[] };
+  return (
+    data || {
+      pageID,
+      comments: [] as CommentInfo[],
+      resolvedCommentIDs: [] as string[],
+    }
+  );
 }
