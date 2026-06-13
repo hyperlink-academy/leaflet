@@ -804,18 +804,31 @@ body.cmd-held .ProseMirror a {
   overflow: visible;
   pointer-events: none;
 }
+/* --goo-pad-x is registered so it can be transitioned (below): on close the
+   goo/overlay boxes shrink in step with the pill instead of snapping small
+   and clipping it mid-animation. */
+@property --goo-pad-x {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 16px;
+}
 .ProseMirror-yjs-cursor {
   --caret-w: 2.3px;
   /* how much the caret stretches upward when open, lifting the pill clear
      of the text */
   --cursor-lift: 10px;
-  /* the goo layer needs real dimensions or the SVG filter region clips */
-  --goo-pad-x: 130px;
+  /* Horizontal half-extent of the goo/overlay boxes — the SVG filter region
+     must fit the widest state. At rest only the caret dot lives here, so we
+     keep it tight; a wide idle box hangs ±130px off the caret and pushes
+     past the page edge, which makes iOS Safari scroll the page sideways. It
+     grows to hold the name pill only when the cursor opens (.yjs-cursor-open). */
+  --goo-pad-x: 16px;
   --goo-pad-top: 26px;
   /* left/top/height are set inline per cursor from view.coordsAtPos */
   position: absolute;
   width: 0;
   pointer-events: none;
+  transition: --goo-pad-x 154ms ease;
 }
 .yjs-cursor-goo,
 .yjs-cursor-overlay {
@@ -930,6 +943,11 @@ body.cmd-held .ProseMirror a {
    stretches upward on the spring, the stub and pill riding the lifted tip
    so the pill sits clear of the text. Never spring the clamped max-width —
    the clipped overshoot flickers — ease it out instead. */
+/* widen the goo/overlay boxes so the springing name pill has filter-region
+   room; --goo-pad-x transitions back down on close (see @property above) */
+.yjs-cursor-open {
+  --goo-pad-x: 130px;
+}
 .yjs-cursor-open .yjs-cursor-line,
 .yjs-cursor-open .yjs-cursor-stub {
   width: 3.45px;
