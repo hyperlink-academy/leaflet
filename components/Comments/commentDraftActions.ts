@@ -166,6 +166,39 @@ export async function submitCommentDraft({
   return commentEntityID;
 }
 
+// Strip a comment's ID from its block's anchor marks: the mark is removed on
+// segments where it was the only comment, and rewritten to the remaining IDs
+// where comments overlap — the inverse of the merge in submitCommentDraft.
+// Used when a thread is resolved (deleted) to make the text read as plain
+// everywhere (no mark to render, highlight, or click). Dispatched as a bulkOp
+// so trackUndoRedo joins the open undo group, letting the mark edit and the
+// comment delete undo together. The edit syncs to peers over yjs; only the
+// resolver (whose block editor is mounted) needs to run it.
+export function removeCommentMark(blockID: string, commentEntityID: string) {
+  let view = useEditorStates.getState().editorStates[blockID]?.view;
+  if (!view) return;
+  let markType = schema.marks.comment;
+  let tr = view.state.tr;
+  // RemoveMark/AddMark steps don't shift positions, so positions read from the
+  // original doc stay valid as the transaction accumulates.
+  view.state.doc.descendants((node, pos) => {
+    if (!node.isText) return;
+    let existing = node.marks.find((m) => m.type === markType);
+    if (!existing) return;
+    let ids = markCommentIDs(existing);
+    if (!ids.includes(commentEntityID)) return;
+    let from = pos;
+    let to = pos + node.nodeSize;
+    tr.removeMark(from, to, markType);
+    let remaining = ids.filter((id) => id !== commentEntityID);
+    if (remaining.length > 0)
+      tr.addMark(from, to, markType.create({ commentID: remaining.join(" ") }));
+  });
+  if (tr.steps.length === 0) return;
+  tr.setMeta("bulkOp", true);
+  view.dispatch(tr);
+}
+
 // Anchor marks carry one or more comment IDs, space-separated, so
 // overlapping comments can share a range
 export function markCommentIDs(mark: {

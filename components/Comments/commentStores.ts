@@ -9,14 +9,6 @@ export const useCommentDraftStore = create<{
   draft: null,
 }));
 
-// Resolved comment IDs, synced from page data by ResolvedComments so the
-// editor's click handler can check resolution synchronously.
-export const useResolvedCommentsStore = create<{
-  resolved: Record<string, boolean>;
-}>(() => ({
-  resolved: {},
-}));
-
 // Two-way hover pairing: hovering a comment anchor in the text highlights its
 // thread in the side column with a border, and vice versa. An anchor can carry
 // several IDs where comments overlap, so this holds a set — an anchor or thread

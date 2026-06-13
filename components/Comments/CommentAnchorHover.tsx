@@ -52,21 +52,25 @@ export function CommentAnchorHover() {
     };
   }, [permissions.write, pageID]);
 
-  // Store -> inline anchor highlight, driven by a <style> tag like
-  // ResolvedComments rather than toggling a class on the spans: ProseMirror
-  // owns the editable DOM and reconciles away manual class changes. The `~=`
-  // token selector matches the combined "id1 id2" anchors that intersecting /
-  // nested comments share, so every segment of the hovered comment highlights.
+  // Store -> inline anchor highlight, driven by a <style> tag rather than
+  // toggling a class on the spans: ProseMirror owns the editable DOM and
+  // reconciles away manual class changes. The `~=` token selector matches the
+  // combined "id1 id2" anchors that intersecting / nested comments share, so
+  // every segment of the hovered comment highlights.
   let css = useMemo(() => {
     if (!permissions.write || hoveredCommentIDs.length === 0) return "";
+    // Scope to this page's container so the global <style> only lights up the
+    // hovered anchor in this page, not an identical comment mark re-rendered
+    // elsewhere. (id has slashes, so match it as an attribute, not a #id.)
+    let scope = `[id="${elementId.page(pageID).container}"] `;
     let selector = hoveredCommentIDs
-      .map((id) => `.comment-anchor[data-comment-id~="${id}"]`)
+      .map((id) => `${scope}.comment-anchor[data-comment-id~="${id}"]`)
       .join(",\n");
     return `${selector} {
   background: color-mix(in oklab, rgb(var(--accent-contrast)), transparent 75%);
   border-bottom: 2px solid rgb(var(--accent-contrast));
 }`;
-  }, [hoveredCommentIDs, permissions.write]);
+  }, [hoveredCommentIDs, permissions.write, pageID]);
 
   if (!css) return null;
   return <style>{css}</style>;

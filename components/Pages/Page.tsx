@@ -27,7 +27,6 @@ import { CommentContext } from "components/Comments/CommentContext";
 import { AnnotationSideColumn } from "components/Comments/AnnotationSideColumn";
 import { CommentMobileSheet } from "components/Comments/CommentMobileSheet";
 import { CommentPopover } from "components/Comments/CommentPopover";
-import { ResolvedComments } from "components/Comments/ResolvedComments";
 import { CommentAnchorHover } from "components/Comments/CommentAnchorHover";
 import { LinkPopover } from "components/LinkPopover";
 
@@ -106,7 +105,6 @@ export function Page(props: {
           <FootnotePopover />
           <CommentPopover />
           <CommentMobileSheet />
-          <ResolvedComments />
           <CommentAnchorHover />
           <LinkPopover />
         </CommentContext.Provider>

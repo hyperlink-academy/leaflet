@@ -4,7 +4,7 @@ import { EditorView } from "prosemirror-view";
 import type { Node } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { ySyncPlugin } from "y-prosemirror";
+import { ySyncPlugin, ySyncPluginKey } from "y-prosemirror";
 import { Replicache } from "replicache";
 import { produce } from "immer";
 
@@ -26,29 +26,24 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { useLinkPopoverStore } from "components/LinkPopover";
-import {
-  useCommentSheetStore,
-  useResolvedCommentsStore,
-} from "components/Comments/commentStores";
+import { useCommentSheetStore } from "components/Comments/commentStores";
 import { useCommentPopoverStore } from "components/Comments/CommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
 import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
 
-// The comment anchor under an event's target, along with the IDs of its
-// unresolved comments; null when there are none (fully-resolved anchors
-// behave like plain text). Anchors carry one or more comment IDs since
-// overlapping comments share a mark.
-function unresolvedCommentAnchor(event: Event) {
+// The comment anchor under an event's target and its comment IDs; null when
+// there is none. Anchors can carry several IDs since overlapping comments
+// share a mark.
+function commentAnchor(event: Event) {
   let anchor = (event.target as HTMLElement | null)?.closest(
     ".comment-anchor[data-comment-id]",
   ) as HTMLElement | null;
   if (!anchor) return null;
-  let resolved = useResolvedCommentsStore.getState().resolved;
   let commentIDs = anchor
     .getAttribute("data-comment-id")!
     .split(" ")
-    .filter((id) => id && !resolved[id]);
+    .filter(Boolean);
   if (commentIDs.length === 0) return null;
   return { anchor, commentIDs };
 }
@@ -117,7 +112,7 @@ export function useMountProsemirror({
           // click handling when the mouse moves >4px between down and up.
           click: (_view, event) => {
             if (!(event.metaKey || event.ctrlKey)) {
-              let target = unresolvedCommentAnchor(event);
+              let target = commentAnchor(event);
               // Read-only viewers don't see comments, so anchors are inert
               if (target && propsRef.current.entity_set.permissions.write) {
                 let { anchor, commentIDs } = target;
@@ -279,9 +274,14 @@ export function useMountProsemirror({
         let oldEditorState = this.state;
         let newState = this.state.apply(tr);
         let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
+        // Changes synced in from a peer over yjs carry the ySync change origin.
+        // The peer that made the edit already fired the orphan-diff mutations
+        // below, so skip them here to avoid deleting the same footnote/comment
+        // twice from every client.
+        let isRemoteChange = !!tr.getMeta(ySyncPluginKey)?.isChangeOrigin;
 
         // Diff for removed/added footnote nodes
-        if (docHasChanges) {
+        if (docHasChanges && !isRemoteChange) {
           let oldFootnotes = new Set<string>();
           let newFootnotes = new Set<string>();
           oldEditorState.doc.descendants((n) => {
@@ -319,6 +319,9 @@ export function useMountProsemirror({
           let newComments = new Set<string>();
           collectCommentIDs(oldEditorState.doc, oldComments);
           collectCommentIDs(newState.doc, newComments);
+          // Resolving a thread strips its anchor mark locally, so this also
+          // fires for a just-resolved comment on the resolver's own client;
+          // deleteComment is idempotent, so the redundant delete is harmless.
           for (let id of oldComments) {
             if (!newComments.has(id)) {
               repRef.current?.mutate.deleteComment({

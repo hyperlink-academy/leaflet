@@ -1039,6 +1039,8 @@ const deleteComment: Mutation<{
   commentEntityID: string;
   blockID: string;
 }> = async (args, ctx) => {
+  // Fired both when a thread is resolved and by the editor's orphan diff when a
+  // comment's anchor text is deleted. Deletes the root comment and all replies.
   let comments = await ctx.scanIndex.eav(args.blockID, "block/comment");
   let fact = comments.find((f) => f.data.value === args.commentEntityID);
   if (fact) await ctx.retractFact(fact.id);

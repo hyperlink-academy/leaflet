@@ -13,7 +13,7 @@ import { getCommentPlaintext } from "./getCommentQuote";
 
 type CommentPopoverState = {
   // An anchor span can carry several comment IDs where comments overlap; the
-  // popover shows the first one that still exists (and isn't resolved)
+  // popover shows the first one that still exists
   commentIDs: string[] | null;
   anchorElement: HTMLElement | null;
   open: (commentIDs: string[], anchor: HTMLElement) => void;

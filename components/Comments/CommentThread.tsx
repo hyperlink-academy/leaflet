@@ -14,6 +14,7 @@ import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { CommentMessageLayout } from "./CommentMessageLayout";
 import { CommentComposer } from "./CommentComposer";
+import { removeCommentMark } from "./commentDraftActions";
 import { CommentLoginPrompt } from "./CommentLoginPrompt";
 import { EditTiny } from "components/Icons/EditTiny";
 
@@ -77,17 +78,26 @@ export function CommentThread(props: {
       <CommentMessage
         entityID={props.commentEntityID}
         onEditingChange={onMessageEditingChange}
-        // The top-level comment has no delete action — resolving supersedes it
-        // (resolved comments are hidden but their data and anchors are kept).
-        // Anyone with edit permission can resolve.
+        // Resolving a thread deletes the top-level comment and all its replies.
+        // Unlike per-message delete (author only), anyone with edit permission
+        // can resolve. The comment's anchor mark is stripped so the text reads
+        // as plain everywhere; the mark edit and the delete are grouped so one
+        // undo reverses both.
         onResolve={
           entity_set.permissions.write
-            ? () =>
-                rep.rep?.mutate.assertFact({
-                  entity: props.commentEntityID,
-                  attribute: "comment/resolved",
-                  data: { type: "boolean", value: true },
-                })
+            ? async () => {
+                if (!rep.rep) return;
+                rep.undoManager.startGroup();
+                try {
+                  removeCommentMark(props.blockID, props.commentEntityID);
+                  await rep.rep.mutate.deleteComment({
+                    commentEntityID: props.commentEntityID,
+                    blockID: props.blockID,
+                  });
+                } finally {
+                  rep.undoManager.endGroup();
+                }
+              }
             : undefined
         }
       />
