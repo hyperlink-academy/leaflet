@@ -15,9 +15,8 @@ import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
 import { applyLinkPaste } from "src/utils/prosemirror/linkOnPaste";
 import { betterIsUrl } from "src/utils/isURL";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
-import { Avatar } from "components/Avatar";
 import { useIdentityData } from "components/IdentityProvider";
-import { useRecordFromDid } from "src/utils/useRecordFromDid";
+import { CommentMessageLayout } from "./CommentMessageLayout";
 
 // A local-only editor for drafting comments and replies. The draft is plain
 // ProseMirror state and is never written to Replicache; it's converted to a
@@ -37,7 +36,6 @@ export function CommentComposer(props: {
   let viewRef = useRef<EditorView | null>(null);
   let [empty, setEmpty] = useState(true);
   let { identity } = useIdentityData();
-  let { data: profile } = useRecordFromDid(identity?.atp_did);
 
   let onSubmitRef = useRef(props.onSubmit);
   onSubmitRef.current = props.onSubmit;
@@ -122,26 +120,17 @@ export function CommentComposer(props: {
 
   return (
     <div className="commentComposer flex flex-col gap-2">
-      <div className="flex gap-2 items-start">
-        {profile && (
-          <Avatar
-            src={profile.avatar}
-            displayName={profile.displayName || profile.handle}
-            size="small"
-          />
+      <CommentMessageLayout did={identity?.atp_did}>
+        {empty && (
+          <div className="absolute top-0 left-0 text-tertiary italic pointer-events-none">
+            {props.placeholder || "Add a comment..."}
+          </div>
         )}
-        <div className="grow min-w-0 relative text-sm text-primary">
-          {empty && (
-            <div className="absolute top-0 left-0 text-tertiary italic pointer-events-none">
-              {props.placeholder || "Add a comment..."}
-            </div>
-          )}
-          <div
-            ref={mountRef}
-            className="outline-hidden [&_.ProseMirror]:outline-hidden min-h-[1.5em]"
-          />
-        </div>
-      </div>
+        <div
+          ref={mountRef}
+          className="outline-hidden [&_.ProseMirror]:outline-hidden min-h-[1.5em]"
+        />
+      </CommentMessageLayout>
       <div className="flex gap-2 justify-end items-center">
         {props.onCancel && (
           <ButtonTertiary compact type="button" onClick={props.onCancel}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { v7 } from "uuid";
@@ -8,12 +8,11 @@ import { generateKeyBetween } from "fractional-indexing";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useIdentityData } from "components/IdentityProvider";
-import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { useUIState } from "src/useUIState";
-import { Avatar } from "components/Avatar";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { CheckTiny } from "components/Icons/CheckTiny";
+import { CommentMessageLayout } from "./CommentMessageLayout";
 import { CommentComposer } from "./CommentComposer";
 import { CommentLoginPrompt } from "./CommentLoginPrompt";
 import { EditTiny } from "components/Icons/EditTiny";
@@ -30,6 +29,23 @@ export function CommentThread(props: {
     (a, b) => (a.data.position > b.data.position ? 1 : -1),
   );
   let [replying, setReplying] = useState(false);
+  // Messages in this thread currently being edited in place; while any is,
+  // the Reply affordance is hidden so the two composers don't stack
+  let [editingMessages, setEditingMessages] = useState<Set<string>>(
+    () => new Set(),
+  );
+  let onMessageEditingChange = useCallback(
+    (entityID: string, editing: boolean) => {
+      setEditingMessages((prev) => {
+        if (prev.has(entityID) === editing) return prev;
+        let next = new Set(prev);
+        if (editing) next.add(entityID);
+        else next.delete(entityID);
+        return next;
+      });
+    },
+    [],
+  );
 
   let submitReply = async (ydoc: Y.Doc) => {
     if (!rep.rep || !identity?.atp_did) return;
@@ -60,6 +76,7 @@ export function CommentThread(props: {
     >
       <CommentMessage
         entityID={props.commentEntityID}
+        onEditingChange={onMessageEditingChange}
         // The top-level comment has no delete action — resolving supersedes it
         // (resolved comments are hidden but their data and anchors are kept).
         // Anyone with edit permission can resolve.
@@ -80,6 +97,7 @@ export function CommentThread(props: {
             <CommentMessage
               key={r.data.value}
               entityID={r.data.value}
+              onEditingChange={onMessageEditingChange}
               onDelete={async () => {
                 // Deleting a reply retracts several facts; undo as one step
                 rep.undoManager.startGroup();
@@ -101,35 +119,40 @@ export function CommentThread(props: {
           {replies.length} {replies.length === 1 ? "reply" : "replies"}
         </div>
       )}
-      <div className="comment-thread-actions">
-        {!entity_set.permissions.write ? null : !identity?.atp_did ? (
-          <CommentLoginPrompt action="reply" />
-        ) : replying ? (
-          <CommentComposer
-            placeholder="Reply..."
-            submitLabel="Reply"
-            autoFocus
-            onSubmit={submitReply}
-            onCancel={() => setReplying(false)}
-          />
-        ) : (
-          <button
-            className="text-xs text-tertiary hover:text-accent-contrast"
-            onClick={() => {
-              setReplying(true);
-              useUIState.setState({
-                focusedEntity: {
-                  entityType: "comment",
-                  entityID: props.commentEntityID,
-                  parent: props.pageID,
-                },
-              });
-            }}
-          >
-            Reply
-          </button>
-        )}
-      </div>
+      {/* Drop the actions row entirely when empty so it doesn't leave a
+          stray flex gap below the thread */}
+      {!entity_set.permissions.write ||
+      (!replying && editingMessages.size > 0) ? null : (
+        <div className="comment-thread-actions">
+          {!identity?.atp_did ? (
+            <CommentLoginPrompt action="reply" />
+          ) : replying ? (
+            <CommentComposer
+              placeholder="Reply..."
+              submitLabel="Reply"
+              autoFocus
+              onSubmit={submitReply}
+              onCancel={() => setReplying(false)}
+            />
+          ) : (
+            <button
+              className="text-xs text-tertiary hover:text-accent-contrast"
+              onClick={() => {
+                setReplying(true);
+                useUIState.setState({
+                  focusedEntity: {
+                    entityType: "comment",
+                    entityID: props.commentEntityID,
+                    parent: props.pageID,
+                  },
+                });
+              }}
+            >
+              Reply
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -138,6 +161,7 @@ function CommentMessage(props: {
   entityID: string;
   onDelete?: () => void;
   onResolve?: () => void;
+  onEditingChange?: (entityID: string, editing: boolean) => void;
 }) {
   let rep = useReplicache();
   let { permissions } = useEntitySetContext();
@@ -146,11 +170,18 @@ function CommentMessage(props: {
   let createdAt = useEntity(props.entityID, "comment/created-at");
   let { identity } = useIdentityData();
   let authorDid = author?.data.value;
-  let { data: profile } = useRecordFromDid(authorDid);
   let isOwn = !!identity?.atp_did && identity.atp_did === authorDid;
   // Editing and deleting are write interactions, available to the author only
   let canModify = isOwn && permissions.write;
   let [editing, setEditing] = useState(false);
+  let { onEditingChange, entityID } = props;
+  // Reported via effect so the cleanup also fires if the message unmounts
+  // mid-edit (e.g. a collaborator deletes it)
+  useEffect(() => {
+    if (!editing) return;
+    onEditingChange?.(entityID, true);
+    return () => onEditingChange?.(entityID, false);
+  }, [editing, onEditingChange, entityID]);
 
   let submitEdit = async (ydoc: Y.Doc) => {
     if (!authorDid) return;
@@ -174,70 +205,62 @@ function CommentMessage(props: {
   let hoverRevealClass =
     "shrink-0 text-tertiary hover:text-accent-contrast opacity-100 xl:opacity-0 xl:group-hover/comment-message:opacity-100 xl:focus:opacity-100";
 
+  // The composer renders the same CommentMessageLayout as the message, so
+  // swapping one for the other doesn't shift the content around
   if (editing)
     return (
-      <div className="comment-message flex flex-col gap-0.5">
-        <CommentComposer
-          autoFocus
-          submitLabel="Save"
-          initialContent={content?.data.value}
-          onSubmit={submitEdit}
-          onCancel={() => setEditing(false)}
-        />
-      </div>
+      <CommentComposer
+        autoFocus
+        submitLabel="Save"
+        initialContent={content?.data.value}
+        onSubmit={submitEdit}
+        onCancel={() => setEditing(false)}
+      />
     );
 
   return (
-    <div className="comment-message flex flex-col gap-0.5 group/comment-message">
-      <div className="flex gap-2 items-center min-w-0">
-        <Avatar
-          src={profile?.avatar}
-          displayName={profile?.displayName || profile?.handle}
-          size="small"
-        />
-        <div className="font-bold text-sm text-secondary truncate grow">
-          {profile?.displayName || profile?.handle || "..."}
-        </div>
-        {createdAt && (
-          <div className="text-xs text-tertiary shrink-0">
-            {formatCommentDate(createdAt.data.value)}
-          </div>
-        )}
-        {canModify && (
-          <button
-            className={hoverRevealClass}
-            onClick={() => setEditing(true)}
-            title="Edit comment"
-          >
-            <EditTiny />
-          </button>
-        )}
-        {canModify && props.onDelete && (
-          <button
-            className={hoverRevealClass}
-            onClick={props.onDelete}
-            title="Delete comment"
-          >
-            <DeleteTiny />
-          </button>
-        )}
-        {props.onResolve && (
-          <button
-            className="shrink-0 text-tertiary hover:text-accent-contrast"
-            onClick={props.onResolve}
-            title="Resolve comment"
-          >
-            <CheckTiny />
-          </button>
-        )}
-      </div>
-      <div
-        className="comment-message-content text-sm text-primary"
-        style={{ wordBreak: "break-word" }}
-      >
-        <RenderYJSFragment value={content?.data.value || ""} wrapper="p" />
-      </div>
-    </div>
+    <CommentMessageLayout
+      did={authorDid}
+      className="group/comment-message"
+      headerActions={
+        <>
+          {createdAt && (
+            <div className="text-xs text-tertiary shrink-0">
+              {formatCommentDate(createdAt.data.value)}
+            </div>
+          )}
+          {canModify && (
+            <button
+              className={hoverRevealClass}
+              onClick={() => setEditing(true)}
+              title="Edit comment"
+            >
+              <EditTiny />
+            </button>
+          )}
+          {canModify && props.onDelete && (
+            <button
+              className={hoverRevealClass}
+              onClick={props.onDelete}
+              title="Delete comment"
+            >
+              <DeleteTiny />
+            </button>
+          )}
+          {props.onResolve && (
+            <button
+              className="shrink-0 text-tertiary hover:text-accent-contrast"
+              onClick={props.onResolve}
+              title="Resolve comment"
+            >
+              <CheckTiny />
+            </button>
+          )}
+        </>
+      }
+    >
+      <RenderYJSFragment value={content?.data.value || ""} wrapper="p" />
+    </CommentMessageLayout>
   );
 }
 
