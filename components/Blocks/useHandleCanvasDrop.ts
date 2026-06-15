@@ -126,7 +126,6 @@ export const useHandleCanvasDrop = (entityID: string) => {
       }
 
       const client = supabaseBrowserClient();
-      const cache = await caches.open("minilink-user-assets");
 
       // Calculate positions and prepare data for all images
       const imageBlocks = imageFiles.map((file, index) => {
@@ -163,19 +162,8 @@ export const useHandleCanvasDrop = (entityID: string) => {
 
       // Create all blocks with image facts
       for (const block of imageBlocks) {
-        // Add to cache for immediate display
-        await cache.put(
-          new URL(block.url + "?local"),
-          new Response(block.file, {
-            headers: {
-              "Content-Type": block.file.type,
-              "Content-Length": block.file.size.toString(),
-            },
-          }),
-        );
-        localImages.set(block.url, true);
+        localImages.set(block.url, URL.createObjectURL(block.file));
 
-        // Create canvas block
         await rep.mutate.addCanvasBlock({
           newEntityID: block.entity,
           parent: entityID,
@@ -185,21 +173,18 @@ export const useHandleCanvasDrop = (entityID: string) => {
           permission_set: entity_set.set,
         });
 
-        // Add image fact with local version for immediate display
-        if (navigator.serviceWorker) {
-          await rep.mutate.assertFact({
-            entity: block.entity,
-            attribute: "block/image",
-            data: {
-              fallback: block.dimensions.thumbhash,
-              type: "image",
-              local: rep.clientID,
-              src: block.url,
-              height: block.dimensions.height,
-              width: block.dimensions.width,
-            },
-          });
-        }
+        await rep.mutate.assertFact({
+          entity: block.entity,
+          attribute: "block/image",
+          data: {
+            fallback: block.dimensions.thumbhash,
+            type: "image",
+            local: rep.clientID,
+            src: block.url,
+            height: block.dimensions.height,
+            width: block.dimensions.width,
+          },
+        });
       }
 
       // Upload all files to storage in parallel

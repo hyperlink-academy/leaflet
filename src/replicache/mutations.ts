@@ -5,6 +5,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
+import { localImages } from "src/utils/addImage";
 
 export type MutationContext = {
   permission_token_id: string;
@@ -449,9 +450,13 @@ const removeBlock: Mutation<
       }
     });
     await ctx.runOnClient(async ({ tx }) => {
-      let cache = await caches.open("minilink-user-assets");
       if (image) {
-        await cache.delete(image.data.src + "?local");
+        // Release the local preview's object URL.
+        let localSrc = localImages.get(image.data.src);
+        if (localSrc) {
+          URL.revokeObjectURL(localSrc);
+          localImages.delete(image.data.src);
+        }
 
         // Clear cover image in client state if this block was the cover image
         let currentCoverImage = await tx.get("publication_cover_image");
