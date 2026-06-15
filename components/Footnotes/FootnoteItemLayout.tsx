@@ -33,11 +33,7 @@ export function FootnoteItemLayout(props: {
         </button>
       )}
       <div
-        // relative + overflow-x-clip contains the remote-cursor overlay: its
-        // goo-filter/label boxes extend ±130px past the caret and would
-        // otherwise expand the scrollable width (which scrolls the page on iOS
-        // Safari). Only x is clipped so the cursor's upward lift stays visible.
-        className="grow min-w-0 relative overflow-x-clip text-secondary [&_.ProseMirror]:outline-hidden"
+        className="grow min-w-0 text-secondary [&_.ProseMirror]:outline-hidden"
         style={{ wordBreak: "break-word" }}
       >
         {props.children}

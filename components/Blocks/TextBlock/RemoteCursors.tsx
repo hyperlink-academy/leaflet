@@ -25,7 +25,7 @@ import {
 // coalesced, after the editor DOM has updated) on awareness changes, editor
 // state changes, and resizes.
 
-export type RemoteCursorData = {
+type RemoteCursorData = {
   clientId: number;
   name: string;
   hue: number;
@@ -146,15 +146,7 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
   );
 }
 
-export function RemoteCursor({
-  cursor,
-  // test-only: pin the cursor open so the name pill / goo melt can be
-  // inspected without hovering (see app/test/cursors). Inert in production.
-  forceOpen,
-}: {
-  cursor: RemoteCursorData;
-  forceOpen?: boolean;
-}) {
+function RemoteCursor({ cursor }: { cursor: RemoteCursorData }) {
   let [phase, setPhase] = useState<"rest" | "contract" | "open">("rest");
   let timer = useRef<number | null>(null);
   let spring = getSpringVars();
@@ -185,13 +177,11 @@ export function RemoteCursor({
     [],
   );
 
-  let open = forceOpen || phase === "open";
-  let contract = !forceOpen && phase === "contract";
   return (
     <div
       className={`ProseMirror-yjs-cursor ${
-        contract ? "yjs-cursor-contract" : ""
-      } ${open ? "yjs-cursor-open" : ""}`}
+        phase === "contract" ? "yjs-cursor-contract" : ""
+      } ${phase === "open" ? "yjs-cursor-open" : ""}`}
       style={
         {
           left: cursor.left,

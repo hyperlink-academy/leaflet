@@ -76,12 +76,7 @@ export function TextBlock(
       )}
       {permission && !props.preview && !stale && (
         <div
-          // overflow-x-clip keeps the absolutely-positioned remote-cursor
-          // overlay (whose goo-filter/label boxes extend ±130px past the caret)
-          // from expanding the editor's scrollable width — on iOS Safari that
-          // off-bounds overflow makes the page card scroll horizontally. Only x
-          // is clipped so the cursor's upward lift stays visible.
-          className={`w-full relative group overflow-x-clip ${!initialized ? "hidden" : ""}`}
+          className={`w-full relative group ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
           <BaseTextBlock {...props} />
