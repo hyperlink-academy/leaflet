@@ -36,6 +36,10 @@ export async function addImage(
   args: {
     entityID: string;
     attribute: keyof FilterAttributes<{ type: "image" }>;
+    // Skip recording the image facts in the undo history. Callers that create
+    // the containing block themselves (e.g. paste) group their own single undo
+    // entry, so the image facts must not add stray undo steps on top of it.
+    ignoreUndo?: boolean;
   },
 ) {
   await acquireSlot();
@@ -52,6 +56,7 @@ async function runAddImage(
   args: {
     entityID: string;
     attribute: keyof FilterAttributes<{ type: "image" }>;
+    ignoreUndo?: boolean;
   },
 ) {
   let client = supabaseBrowserClient();
@@ -105,6 +110,7 @@ async function runAddImage(
     await rep.mutate.assertFact({
       entity: args.entityID,
       attribute: "block/image",
+      ignoreUndo: args.ignoreUndo || undefined,
       data: {
         fallback: thumbhash,
         type: "image",
@@ -120,6 +126,7 @@ async function runAddImage(
   await rep.mutate.assertFact({
     entity: args.entityID,
     attribute: args.attribute,
+    ignoreUndo: args.ignoreUndo || undefined,
     data: {
       fallback: thumbhash,
       type: "image",
