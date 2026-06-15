@@ -177,49 +177,50 @@ export const useHandlePaste = (
           let file = item.getAsFile();
           if (file) {
             // Group the block creation/conversion into a single undo step so
-            // one Cmd-Z removes the pasted image. The structural mutations are
-            // local-only (no network), so awaiting them inside the group is
-            // safe — no user edit can interleave in the microtask window. The
-            // image facts themselves use ignoreUndo so they don't add steps on
-            // top of the group (reverting the block removes them anyway).
-            void (async () => {
-              let entity: string;
-              undoManager.startGroup();
-              try {
-                if (editorState.editor.doc.textContent.length === 0) {
-                  entity = propsRef.current.entityID;
-                  await rep.mutate.assertFact({
-                    entity: propsRef.current.entityID,
-                    attribute: "block/type",
-                    data: { type: "block-type-union", value: "image" },
-                  });
-                  await rep.mutate.retractAttribute({
-                    entity: propsRef.current.entityID,
-                    attribute: "block/text",
-                  });
-                } else {
-                  entity = v7();
-                  await rep.mutate.addBlock({
-                    permission_set: entity_set.set,
-                    factID: v7(),
-                    type: "image",
-                    newEntityID: entity,
-                    parent: propsRef.current.parent,
-                    position: generateKeyBetween(
-                      propsRef.current.position,
-                      propsRef.current.nextPosition,
-                    ),
-                  });
-                }
-              } finally {
-                undoManager.endGroup();
-              }
-              addImage(file, rep, {
-                attribute: "block/image",
-                entityID: entity,
-                ignoreUndo: true,
+            // one Cmd-Z removes the pasted image. withUndoGroup holds the group
+            // open across the async mutator callbacks; the image facts use
+            // ignoreUndo so they don't add steps on top of the group (reverting
+            // the block removes them anyway). The entity is known synchronously,
+            // so we kick off addImage immediately — in parallel with the
+            // structural mutations — instead of blocking on them. That keeps the
+            // optimistic block/image fact and the service-worker cache populating
+            // as soon as possible, and means a transient mutation rejection can't
+            // skip the upload.
+            let entity: string;
+            if (editorState.editor.doc.textContent.length === 0) {
+              entity = propsRef.current.entityID;
+              undoManager.withUndoGroup(async () => {
+                await rep.mutate.assertFact({
+                  entity: propsRef.current.entityID,
+                  attribute: "block/type",
+                  data: { type: "block-type-union", value: "image" },
+                });
+                await rep.mutate.retractAttribute({
+                  entity: propsRef.current.entityID,
+                  attribute: "block/text",
+                });
               });
-            })();
+            } else {
+              entity = v7();
+              undoManager.withUndoGroup(() =>
+                rep.mutate.addBlock({
+                  permission_set: entity_set.set,
+                  factID: v7(),
+                  type: "image",
+                  newEntityID: entity,
+                  parent: propsRef.current.parent,
+                  position: generateKeyBetween(
+                    propsRef.current.position,
+                    propsRef.current.nextPosition,
+                  ),
+                }),
+              );
+            }
+            addImage(file, rep, {
+              attribute: "block/image",
+              entityID: entity,
+              ignoreUndo: true,
+            }).catch(() => {});
           }
           return;
         }
