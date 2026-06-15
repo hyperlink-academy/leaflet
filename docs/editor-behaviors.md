@@ -1,9 +1,8 @@
 # Text Editor Behaviors
 
 A living reference for how Leaflet's text editor is expected to behave. Add a
-new section for each behavior as it is defined. Each entry describes the
-user-facing behavior first, then (where it exists) points to the code that
-implements it.
+new section for each behavior as it is defined. Each entry specifies the
+behavior from the user's point of view, independent of how it is implemented.
 
 ## Enter on a blank list item
 
@@ -25,9 +24,3 @@ This applies to every kind of list item — unordered, ordered, and checkbox
 **Not affected:** pressing Enter in a list item that has content behaves
 normally — it splits the item / creates a new sibling list item at the same
 depth. Only blank items outdent.
-
-Implementation: `components/Blocks/TextBlock/keymap.ts` — the `enter` command
-detects an empty list item and delegates to outdent. `src/utils/list-operations.ts`
-— `outdent` moves the item up one level, or, at the top level (`depth === 1`),
-removes the `block/is-list` attribute while leaving `block/type` (text /
-heading / blockquote) untouched.
