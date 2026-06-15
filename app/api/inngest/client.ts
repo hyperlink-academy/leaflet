@@ -7,9 +7,6 @@ export const events = {
   feedsIndexFollows: eventType("feeds/index-follows", {
     schema: staticSchema<{ did: string }>(),
   }),
-  appviewProfileUpdate: eventType("appview/profile-update", {
-    schema: staticSchema<{ record: any; did: string }>(),
-  }),
   appviewIndexBskyPostMention: eventType("appview/index-bsky-post-mention", {
     schema: staticSchema<{ post_uri: string; document_link: string }>(),
   }),

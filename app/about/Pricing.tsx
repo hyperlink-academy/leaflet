@@ -33,21 +33,21 @@ export const Pricing = () => {
             />
           </div>
           <div
-            className="relative z-10 bg-white border  border-[#57822B]! rounded-lg py-3 px-5 flex-1 max-w-sm text-left"
+            className="relative z-10 bg-white border  border-[#57822B]! rounded-lg py-4 px-5 flex-1 max-w-sm text-left"
             style={{ boxShadow: "8px 12px 0 0 #D9EA72" }}
           >
             <h3 className="leading-tight text-center">Free</h3>
             <p className="text-[1rem]! text-center text-tertiary text-snug pb-3">
               Basic Leaflet is free for everyone
             </p>
-            <Link href="/new?welcomeModal" className="no-underline!">
+            <a href="/new?welcomeModal" className="no-underline!">
               <ButtonPrimary
                 fullWidth
                 className=" bg-[#57822B]! border-[#57822B]! hover:outline-[#57822B]! text-white! text-[1rem] sm:text-[1.25rem]!"
               >
                 Start Writing
               </ButtonPrimary>
-            </Link>
+            </a>
             <hr className="border-border-light" />
 
             <ul className=" text-[1rem] sm:text-[1.25rem]! flex flex-col gap-2 mt-3 text-secondary pb-3 pt-2">
@@ -108,7 +108,7 @@ export const Pricing = () => {
               <li>
                 <div>Analytics</div>
                 <div className="text-tertiary text-base">
-                  Subscriber count, page views, referrers
+                  Subscribers, page views, referrers
                 </div>
               </li>
               <hr className="border-border-light" />
@@ -124,8 +124,8 @@ export const Pricing = () => {
               <li>
                 <div>Coming soon!</div>
                 <div className="text-tertiary text-base">
-                  Memberships, group publication, <br />
-                  social reader, and more
+                  Memberships, group publications, <br />
+                  and more
                 </div>
               </li>
             </ul>

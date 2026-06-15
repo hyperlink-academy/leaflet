@@ -1,13 +1,10 @@
 "use client";
 import { createContext, useContext } from "react";
-import type { PostPageData } from "app/lish/[did]/[publication]/[rkey]/getPostPageData";
+import type { PostPageData } from "app/(app)/lish/[did]/[publication]/[rkey]/getPostPageData";
 
 // Derive types from PostPageData
 type NonNullPostPageData = NonNullable<PostPageData>;
 export type PublicationContext = NonNullPostPageData["publication"];
-export type CommentOnDocument = NonNullPostPageData["comments"][number];
-export type DocumentMention = NonNullPostPageData["mentions"][number];
-export type QuotesAndMentions = NonNullPostPageData["quotesAndMentions"];
 
 export type DocumentContextValue = Pick<
   NonNullPostPageData,
@@ -18,7 +15,8 @@ export type DocumentContextValue = Pick<
   | "prevNext"
   | "quotesAndMentions"
   | "publication"
-  | "comments"
+  | "commentsCount"
+  | "commentsCountByPage"
   | "mentions"
   | "leafletId"
   | "recommendsCount"

@@ -1578,15 +1578,31 @@ export const schemaDict = {
         properties: {
           view: {
             type: 'string',
-            knownValues: ['compact', 'full'],
+            knownValues: ['small', 'medium'],
           },
           highlightFirstPost: {
             type: 'boolean',
           },
-          filterByTag: {
-            type: 'string',
+          filterByTags: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
           },
         },
+      },
+    },
+  },
+  PubLeafletBlocksSignup: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.signup',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "A subscribe/signup form for the publication. Renders the publication's subscribe form; carries no configurable data.",
+        required: [],
+        properties: {},
       },
     },
   },
@@ -2001,6 +2017,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
+              'lex:pub.leaflet.blocks.signup',
             ],
           },
           x: {
@@ -2105,6 +2122,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
+              'lex:pub.leaflet.blocks.signup',
             ],
           },
           alignment: {
@@ -2308,6 +2326,10 @@ export const schemaDict = {
           backgroundImage: {
             type: 'ref',
             ref: 'lex:pub.leaflet.theme.backgroundImage',
+          },
+          wordmark: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.wordmark',
           },
           pageWidth: {
             type: 'integer',
@@ -2635,6 +2657,26 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletThemeWordmark: {
+    lexicon: 1,
+    id: 'pub.leaflet.theme.wordmark',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['image'],
+        properties: {
+          image: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          width: {
+            type: 'integer',
+          },
+        },
+      },
+    },
+  },
   SiteStandardDocument: {
     defs: {
       main: {
@@ -2649,6 +2691,13 @@ export const schemaDict = {
               closed: false,
               refs: ['lex:pub.leaflet.content'],
               type: 'union',
+            },
+            contributors: {
+              type: 'array',
+              items: {
+                ref: 'lex:site.standard.document#contributor',
+                type: 'ref',
+              },
             },
             coverImage: {
               accept: ['image/*'],
@@ -2711,6 +2760,26 @@ export const schemaDict = {
           type: 'object',
         },
         type: 'record',
+      },
+      contributor: {
+        type: 'object',
+        required: ['did'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+          role: {
+            type: 'string',
+            maxLength: 1000,
+            maxGraphemes: 100,
+          },
+          displayName: {
+            type: 'string',
+            maxLength: 1000,
+            maxGraphemes: 100,
+          },
+        },
       },
     },
     id: 'site.standard.document',
@@ -2981,6 +3050,7 @@ export const ids = {
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
+  PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',
   PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
@@ -2999,6 +3069,7 @@ export const ids = {
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
   PubLeafletThemeColor: 'pub.leaflet.theme.color',
+  PubLeafletThemeWordmark: 'pub.leaflet.theme.wordmark',
   SiteStandardDocument: 'site.standard.document',
   SiteStandardGraphRecommend: 'site.standard.graph.recommend',
   SiteStandardGraphSubscription: 'site.standard.graph.subscription',

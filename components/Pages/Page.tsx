@@ -16,19 +16,26 @@ import { useCardBorderHidden } from "./useCardBorderHidden";
 import { focusPage } from "src/utils/focusPage";
 import { PageOptions } from "./PageOptions";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { useDrawerOpen } from "app/lish/[did]/[publication]/[rkey]/Interactions/InteractionDrawer";
+import { useDrawerOpen } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/useDrawerOpen";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 import { usePageFootnotes } from "components/Footnotes/usePageFootnotes";
 import { FootnoteContext } from "components/Footnotes/FootnoteContext";
 import { FootnoteSection } from "components/Footnotes/FootnoteSection";
-import { FootnoteSideColumn } from "components/Footnotes/FootnoteSideColumn";
 import { FootnotePopover } from "components/Footnotes/FootnotePopover";
+import { usePageComments } from "components/Comments/usePageComments";
+import { CommentContext } from "components/Comments/CommentContext";
+import { AnnotationSideColumn } from "components/Comments/AnnotationSideColumn";
+import { CommentMobileSheet } from "components/Comments/CommentMobileSheet";
+import { CommentPopover } from "components/Comments/CommentPopover";
+import { CommentAnchorHover } from "components/Comments/CommentAnchorHover";
 import { LinkPopover } from "components/LinkPopover";
 
 export function Page(props: {
   entityID: string;
   first?: boolean;
   fullPageScroll: boolean;
+  flow?: boolean;
+  header?: React.ReactNode;
 }) {
   let { rep } = useReplicache();
   let publicationPage = useLeafletPublicationPage();
@@ -45,6 +52,7 @@ export function Page(props: {
 
   let drawerOpen = useDrawerOpen(props.entityID);
   let footnoteData = usePageFootnotes(props.entityID);
+  let commentData = usePageComments(props.entityID);
   let isRightmostPage = useUIState((s) => {
     let pages = s.openPages;
     if (pages.length === 0) return true;
@@ -55,42 +63,51 @@ export function Page(props: {
   return (
     <CardThemeProvider entityID={props.entityID}>
       <FootnoteContext.Provider value={footnoteData}>
-        <PageWrapper
-          onClickAction={(e) => {
-            if (e.defaultPrevented) return;
-            if (rep) {
-              if (isFocused) return;
-              focusPage(props.entityID, rep);
+        <CommentContext.Provider value={commentData}>
+          <PageWrapper
+            onClickAction={(e) => {
+              if (e.defaultPrevented) return;
+              if (rep) {
+                if (isFocused) return;
+                focusPage(props.entityID, rep);
+              }
+            }}
+            id={elementId.page(props.entityID).container}
+            drawerOpen={!!drawerOpen}
+            isFocused={isFocused}
+            fullPageScroll={props.fullPageScroll}
+            flow={props.flow}
+            pageType={pageType}
+            pageOptions={
+              <PageOptions
+                entityID={props.entityID}
+                first={props.first}
+                isFocused={isFocused}
+              />
             }
-          }}
-          id={elementId.page(props.entityID).container}
-          drawerOpen={!!drawerOpen}
-          isFocused={isFocused}
-          fullPageScroll={props.fullPageScroll}
-          pageType={pageType}
-          pageOptions={
-            <PageOptions
-              entityID={props.entityID}
-              first={props.first}
-              isFocused={isFocused}
-            />
-          }
-          footnoteSideColumn={
-            <FootnoteSideColumn
-              pageEntityID={props.entityID}
-              visible={sideColumnVisible}
-              fullPageScroll={props.fullPageScroll}
-            />
-          }
-        >
-          {props.first && pageType === "doc" && !publicationPage && (
-            <PublicationMetadata />
-          )}
-          <PageContent entityID={props.entityID} first={props.first} />
-        </PageWrapper>
-        <DesktopPageFooter pageID={props.entityID} />
-        <FootnotePopover />
-        <LinkPopover />
+            footnoteSideColumn={
+              <AnnotationSideColumn
+                pageEntityID={props.entityID}
+                visible={sideColumnVisible}
+                fullPageScroll={props.fullPageScroll}
+              />
+            }
+          >
+            {/*this is used in the publication page, for publication information and
+          nav*/}
+            {props.header}
+            {props.first && pageType === "doc" && !publicationPage && (
+              <PublicationMetadata />
+            )}
+            <PageContent entityID={props.entityID} first={props.first} />
+          </PageWrapper>
+          <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
+          <FootnotePopover />
+          <CommentPopover />
+          <CommentMobileSheet />
+          <CommentAnchorHover />
+          <LinkPopover />
+        </CommentContext.Provider>
       </FootnoteContext.Provider>
     </CardThemeProvider>
   );
@@ -102,6 +119,7 @@ export const PageWrapper = (props: {
   pageOptions?: React.ReactNode;
   footnoteSideColumn?: React.ReactNode;
   fullPageScroll: boolean;
+  flow?: boolean;
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
   pageType: "canvas" | "doc";
@@ -116,7 +134,7 @@ export const PageWrapper = (props: {
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions
     <div
-      className={`pageWrapper relative shrink-0 h-full ${props.fullPageScroll ? "w-full" : "w-max"}`}
+      className={`pageWrapper relative shrink-0 ${props.flow ? "" : "h-full"} ${props.fullPageScroll ? "w-full" : "w-max"}`}
     >
       {/*
         this div is the scrolling container that wraps only the contents div.
@@ -130,17 +148,18 @@ export const PageWrapper = (props: {
         className={`
       pageScrollWrapper
       publicationScrollContainer
-      grow
+      grow relative
       shrink-0 snap-center
-      ${props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
+      ${props.flow ? "" : props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
-        `h-full border
+        `border
           bg-[rgba(var(--bg-page),var(--bg-page-alpha))]
+          ${props.flow ? "" : "h-full"}
           ${props.drawerOpen ? "rounded-l-lg " : "rounded-lg"}
           ${props.isFocused ? "shadow-md border-border" : "border-border-light"}`
       }
-      ${cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
+      ${cardBorderHidden && (props.flow ? "sm:pt-6 pt-3" : "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3")}
       ${props.fullPageScroll && "max-w-full "}
     ${props.pageType === "doc" && !props.fullPageScroll ? (props.fixedWidth ? "w-[10000px] sm:max-w-prose max-w-[var(--page-width-units)]" : "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]") : ""}
     ${
@@ -152,12 +171,14 @@ export const PageWrapper = (props: {
 `}
       >
         <div
-          className={`postPageContent footnote-scope
-          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : "w-full h-full"}
+          className={`postPageContent footnote-scope static
+          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}
-          {props.pageType === "doc" && !props.noBottomSpacer && <div className="h-4 sm:h-6 w-full" />}
+          {props.pageType === "doc" && !props.noBottomSpacer && (
+            <div className="h-4 sm:h-6 w-full" />
+          )}
         </div>
       </div>
       {props.pageOptions}

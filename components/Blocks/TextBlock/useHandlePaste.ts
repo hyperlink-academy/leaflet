@@ -119,6 +119,12 @@ export const useHandlePaste = (
       }
       if (textHTML) {
         let parsedXml = new DOMParser().parseFromString(textHTML, "text/html");
+        // see stripCommentMarks — this path parses clipboard HTML itself,
+        // so the comment-anchor markup is stripped here instead
+        for (let anchor of parsedXml.querySelectorAll("span.comment-anchor")) {
+          anchor.classList.remove("comment-anchor");
+          anchor.removeAttribute("data-comment-id");
+        }
         let children = flattenHTMLToTextBlocks(parsedXml.body);
         let hasImage = false;
         for (let item of e.clipboardData.items) {
@@ -970,7 +976,9 @@ const createBlockFromHTMLLegacy = (
       break;
     }
     case "A": {
-      type = "link";
+      // Only explicit buttons get their own block; plain links are
+      // autolinked inline as a link mark within a text block.
+      type = child.getAttribute("data-type") === "button" ? "link" : "text";
       break;
     }
     case "HR": {
@@ -1039,29 +1047,28 @@ const createBlockFromHTMLLegacy = (
   if (child.tagName === "A") {
     let href = child.getAttribute("href");
     let dataType = child.getAttribute("data-type");
-    if (href) {
-      if (dataType === "button") {
-        rep.mutate.assertFact([
-          {
-            entity: entityID,
-            attribute: "block/type",
-            data: { type: "block-type-union", value: "button" },
-          },
-          {
-            entity: entityID,
-            attribute: "button/text",
-            data: { type: "string", value: child.textContent || "" },
-          },
-          {
-            entity: entityID,
-            attribute: "button/url",
-            data: { type: "string", value: href },
-          },
-        ]);
-      } else {
-        addLinkBlock(href, entityID, rep);
-      }
+    if (href && dataType === "button") {
+      rep.mutate.assertFact([
+        {
+          entity: entityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "button" },
+        },
+        {
+          entity: entityID,
+          attribute: "button/text",
+          data: { type: "string", value: child.textContent || "" },
+        },
+        {
+          entity: entityID,
+          attribute: "button/url",
+          data: { type: "string", value: href },
+        },
+      ]);
     }
+    // Non-button links fall through and are parsed inline as a link mark
+    // (see the parser.parse(child) handling below) rather than becoming a
+    // standalone link block.
   }
   if (child.tagName === "PRE") {
     let lang = child.getAttribute("data-language") || "plaintext";

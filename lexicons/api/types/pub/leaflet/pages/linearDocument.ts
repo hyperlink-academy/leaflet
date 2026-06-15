@@ -26,6 +26,7 @@ import type * as PubLeafletBlocksPage from '../blocks/page'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
 import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
+import type * as PubLeafletBlocksSignup from '../blocks/signup'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -67,6 +68,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksPoll.Main>
     | $Typed<PubLeafletBlocksButton.Main>
     | $Typed<PubLeafletBlocksPostsList.Main>
+    | $Typed<PubLeafletBlocksSignup.Main>
     | { $type: string }
   alignment?:
     | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'

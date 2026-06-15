@@ -13,7 +13,7 @@ import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 
 // --- Auth ---
 
-export type AuthResult = {
+type AuthResult = {
   tokenId: string;
   rootEntity: string;
   tokenRights: {
@@ -451,7 +451,7 @@ async function renderListToHTML(l: List, allFacts: FactRow[]): Promise<string> {
   }</li>`;
 }
 
-export async function blocksToHTML(
+async function blocksToHTML(
   blocks: Block[],
   allFacts: FactRow[],
 ): Promise<string[]> {
@@ -499,16 +499,7 @@ export function extractPlaintext(base64Value: string): string {
 
 // --- YJS text creation ---
 
-export function createYjsText(plaintext: string): string {
-  let doc = new Y.Doc();
-  let fragment = doc.getXmlFragment("prosemirror");
-  let paragraph = new Y.XmlElement("paragraph");
-  let textNode = new Y.XmlText();
-  textNode.insert(0, plaintext);
-  paragraph.insert(0, [textNode]);
-  fragment.insert(0, [paragraph]);
-  return base64.fromByteArray(Y.encodeStateAsUpdate(doc));
-}
+export { createYjsText } from "src/utils/createYjsText";
 
 // --- YJS text editing ---
 

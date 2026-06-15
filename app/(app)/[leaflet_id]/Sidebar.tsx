@@ -1,0 +1,91 @@
+"use client";
+import { Sidebar } from "components/ActionBar/Sidebar";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { HelpButton } from "app/(app)/[leaflet_id]/actions/HelpButton";
+import {
+  AddToHomeButton,
+  HomeButton,
+} from "app/(app)/[leaflet_id]/actions/HomeButton";
+import { Media } from "components/Media";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "components/PageSWRDataProvider";
+import { ShareOptions } from "app/(app)/[leaflet_id]/actions/ShareOptions";
+import { ThemePopover } from "components/ThemeManager/ThemeSetter";
+import { PublishButton } from "./actions/PublishButton";
+import { PostSettings } from "components/PostSettings";
+import { Watermark } from "components/Watermark";
+import { BackToPubButton } from "./actions/BackToPubButton";
+import { useIdentityData } from "components/IdentityProvider";
+import { useReplicache } from "src/replicache";
+import useSWR from "swr";
+import { getHomeDocs } from "app/(app)/(home-pages)/(writer)/home/storage";
+import { useAddToHomeParam } from "./AddToHomeEffect";
+
+export function LeafletSidebar() {
+  let entity_set = useEntitySetContext();
+  let { rootEntity } = useReplicache();
+  let { data: pub } = useLeafletPublicationData();
+  let { identity } = useIdentityData();
+  let publicationPage = useLeafletPublicationPage();
+  let { permission_token } = useReplicache();
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
+    fallbackData: [],
+  });
+  let addingToHome = useAddToHomeParam();
+  let isOnHome =
+    addingToHome ||
+    (identity
+      ? !!identity.permission_token_on_homepage.find(
+          (pth) => pth.permission_tokens.id === permission_token.id,
+        )
+      : !!localLeaflets.find((f) => f.token.id === permission_token.id));
+  let isOwnerOfPub =
+    !!pub?.publications &&
+    !!identity?.atp_did &&
+    pub.publications.identity_did === identity.atp_did;
+  let isContributorToPub =
+    !!pub?.publications &&
+    !!identity?.atp_did &&
+    !!pub.publications.publication_contributors?.some(
+      (c) => c.contributor_did === identity.atp_did && c.confirmed,
+    );
+  let canManagePubDraft = isOwnerOfPub || isContributorToPub;
+  if (publicationPage) return null;
+
+  return (
+    <Media mobile={false} className="w-0 h-full relative">
+      <div
+        className="absolute top-0 left-0  h-full flex justify-end "
+        style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
+      >
+        <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
+          {entity_set.permissions.write && (
+            <Sidebar className="my-0!">
+              {canManagePubDraft || isOnHome ? (
+                <PublishButton entityID={rootEntity} />
+              ) : (
+                <AddToHomeButton />
+              )}
+
+              <ShareOptions />
+              <PostSettings />
+              <ThemePopover entityID={rootEntity} />
+              <HelpButton />
+              <hr className="text-border" />
+              {canManagePubDraft && pub?.publications ? (
+                <BackToPubButton publication={pub.publications} />
+              ) : (
+                <HomeButton />
+              )}
+            </Sidebar>
+          )}
+          <div className="h-full flex items-end">
+            <Watermark />
+          </div>
+        </div>
+      </div>
+    </Media>
+  );
+}

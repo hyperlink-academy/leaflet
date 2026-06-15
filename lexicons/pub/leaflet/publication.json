@@ -80,6 +80,10 @@
           "type": "ref",
           "ref": "pub.leaflet.theme.backgroundImage"
         },
+        "wordmark": {
+          "type": "ref",
+          "ref": "pub.leaflet.theme.wordmark"
+        },
         "pageWidth": {
           "type": "integer",
           "minimum": 0,

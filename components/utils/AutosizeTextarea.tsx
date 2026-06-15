@@ -11,7 +11,7 @@ export type AutosizeTextareaProps = React.DetailedHTMLProps<
   React.TextareaHTMLAttributes<HTMLTextAreaElement>,
   HTMLTextAreaElement
 > & { noWrap?: boolean };
-export const AutosizeTextarea = forwardRef<
+const AutosizeTextarea = forwardRef<
   HTMLTextAreaElement,
   AutosizeTextareaProps
 >((props: AutosizeTextareaProps & { noWrap?: boolean }, ref) => {

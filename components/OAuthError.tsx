@@ -1,6 +1,7 @@
 "use client";
 
 import { OAuthSessionError } from "src/atproto-oauth";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function OAuthErrorMessage({
   error,
@@ -9,16 +10,25 @@ export function OAuthErrorMessage({
   error: OAuthSessionError;
   className?: string;
 }) {
-  const signInUrl = `/api/oauth/login?redirect_url=${encodeURIComponent(window.location.href)}${error.did ? `&handle=${encodeURIComponent(error.did)}` : ""}`;
+  let { identity } = useIdentityData();
+  let signInUrl = `/api/oauth/login?redirect_url=${encodeURIComponent(window.location.href)}${error.did ? `&handle=${encodeURIComponent(error.did)}` : ""}`;
+  let isOtherUser =
+    !!error.did && !!identity?.atp_did && error.did !== identity.atp_did;
+
+  if (isOtherUser) {
+    return (
+      <div className={`${className} leading-snug`}>
+        The publication owner's session has expired. Ask them to sign in again
+        before publishing.
+      </div>
+    );
+  }
 
   return (
     <div className={`${className} leading-snug`}>
-      <span>Your session has expired or is invalid </span>
-      <a
-        href={signInUrl}
-        className="underline font-bold whitespace-nowrap"
-      >
-        Sign in again
+      <span>You're logged out! </span>
+      <a href={signInUrl} className="underline font-bold whitespace-nowrap">
+        Sign in
       </a>
     </div>
   );

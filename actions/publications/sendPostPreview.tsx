@@ -19,6 +19,9 @@ import {
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { PostEmail } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
+import { getProfiles } from "src/identity";
+import { toBylineProfiles, formatBylineProfiles } from "src/utils/byline";
+import { isConfirmedContributor } from "src/contributorPermissions";
 
 type SendPreviewError =
   | "unauthorized"
@@ -32,6 +35,9 @@ type SendPreviewError =
 export async function sendPostPreview(args: {
   publication_uri: string;
   root_entity: string;
+  // The leaflet (permission_token id) the draft belongs to. Used to resolve
+  // the draft's contributors for the byline. Optional for backwards-compat.
+  leaflet_id?: string;
   title: string;
   description?: string;
   to: string;
@@ -51,7 +57,11 @@ export async function sendPostPreview(args: {
     .single();
 
   if (!publication) return Err("publication_not_found");
-  if (publication.identity_did !== identity.atp_did) return Err("unauthorized");
+  const isOwner = publication.identity_did === identity.atp_did;
+  const isContributor =
+    isOwner ||
+    (await isConfirmedContributor(args.publication_uri, identity.atp_did));
+  if (!isContributor) return Err("unauthorized");
 
   const settings = publication.publication_newsletter_settings;
   if (!settings?.enabled) {
@@ -94,6 +104,38 @@ export async function sendPostPreview(args: {
 
   const assetsBaseUrl = await getCurrentDeploymentDomain();
 
+  // Resolve the draft's contributors (if any) for the byline. The published
+  // `contributors` field doesn't exist yet at preview time, so we read the
+  // draft's `leaflet_contributors`. Fall back to the current user's handle
+  // (previous behavior) when there are no contributors.
+  let authorName: string | undefined = identity.bsky_profiles?.handle ?? undefined;
+  if (args.leaflet_id) {
+    // Verify the leaflet actually belongs to this publication before reading
+    // its contributors, so a client can't pass an arbitrary leaflet_id and
+    // leak another draft's contributor list.
+    const { data: leafletInPub } = await supabaseServerClient
+      .from("leaflets_in_publications")
+      .select("leaflet")
+      .eq("publication", args.publication_uri)
+      .eq("leaflet", args.leaflet_id)
+      .maybeSingle();
+    const { data: contributorRows } = leafletInPub
+      ? await supabaseServerClient
+          .from("leaflet_contributors")
+          .select("contributor_did")
+          .eq("leaflet", args.leaflet_id)
+          .order("created_at", { ascending: true })
+      : { data: [] };
+    const contributorDids =
+      contributorRows?.map((c) => c.contributor_did) ?? [];
+    if (contributorDids.length > 0) {
+      const profiles = await getProfiles(contributorDids);
+      authorName =
+        formatBylineProfiles(toBylineProfiles(contributorDids, profiles)) ??
+        authorName;
+    }
+  }
+
   let html: string;
   try {
     html = await render(
@@ -102,7 +144,7 @@ export async function sendPostPreview(args: {
         postTitle: args.title || "(untitled)",
         postDescription: args.description,
         postUrl: pubProps.publicationUrl,
-        authorName: identity.bsky_profiles?.handle ?? undefined,
+        authorName,
         publishedAtLabel: new Date().toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",

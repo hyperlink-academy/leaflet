@@ -19,7 +19,7 @@ const colorToCss = (color: unknown, fallback: string): string => {
   return `rgb(${c.r}, ${c.g}, ${c.b})`;
 };
 
-export const resolveEmailTheme = (
+const resolveEmailTheme = (
   theme: PubLeafletPublication.Theme | undefined,
 ): EmailTheme => {
   if (!theme) return defaultEmailTheme;

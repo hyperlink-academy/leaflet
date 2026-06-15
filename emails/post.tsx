@@ -47,7 +47,7 @@ import {
 } from "./shared";
 import { supabaseServerClient } from "supabase/serverClient";
 
-export type PostEmailProps = {
+type PostEmailProps = {
   publicationName: string;
   publicationUrl: string;
   postTitle: string;
@@ -483,6 +483,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             assetsBaseUrl={p.assetsBaseUrl}
                             theme={theme}
                             colors={c}
+                            postUrl={p.postUrl}
                           />
                         ))}
 
@@ -687,6 +688,7 @@ const BlockRenderer = ({
   assetsBaseUrl,
   theme,
   colors,
+  postUrl,
 }: {
   block: PubLeafletPagesLinearDocument.Block["block"];
   alignment?: string;
@@ -694,6 +696,7 @@ const BlockRenderer = ({
   assetsBaseUrl: string;
   theme: EmailTheme;
   colors: ResolvedColors;
+  postUrl: string;
 }) => {
   if (PubLeafletBlocksText.isMain(block)) {
     return (
@@ -862,7 +865,9 @@ const BlockRenderer = ({
       />
     );
   }
-  return <BlockNotSupported theme={theme} colors={colors} />;
+  return (
+    <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
+  );
 };
 
 // Helpers used by the confirm-email templates inside their <Tailwind>
@@ -932,7 +937,7 @@ const listItemContent = (
   return { plaintext: "" };
 };
 
-export const List = ({
+const List = ({
   items,
   style,
   did,
@@ -1012,7 +1017,7 @@ export const List = ({
   );
 };
 
-export const LinkBlock = ({
+const LinkBlock = ({
   url,
   title,
   description,
@@ -1144,7 +1149,7 @@ export const LinkBlock = ({
   );
 };
 
-export const ImageBlock = ({
+const ImageBlock = ({
   src,
   alt,
   naturalWidth,
@@ -1181,7 +1186,7 @@ export const ImageBlock = ({
   );
 };
 
-export const ButtonBlock = ({
+const ButtonBlock = ({
   text,
   url,
   align = "center",
@@ -1241,7 +1246,7 @@ export const ButtonBlock = ({
   );
 };
 
-export const CodeBlock = ({
+const CodeBlock = ({
   code,
   language,
   borderColor,
@@ -1273,12 +1278,14 @@ export const CodeBlock = ({
   );
 };
 
-export const BlockNotSupported = ({
+const BlockNotSupported = ({
   theme = defaultEmailTheme,
   colors,
+  postUrl,
 }: {
   theme?: EmailTheme;
   colors?: ResolvedColors;
+  postUrl?: string;
 } = {}) => {
   const c = colors ?? resolveColors(theme);
   return (
@@ -1312,6 +1319,7 @@ export const BlockNotSupported = ({
         }}
       >
         <Link
+          href={postUrl}
           style={{
             color: theme.accentBackground,
             fontWeight: "bold",
@@ -1410,7 +1418,7 @@ function highlightFacetBackground(
 const defaultHighlightBackground = (theme: EmailTheme): string =>
   mixRgb(theme.accentBackground, theme.pageBackground, 75);
 
-export const RichTextSpans = ({
+const RichTextSpans = ({
   plaintext,
   facets,
   theme,

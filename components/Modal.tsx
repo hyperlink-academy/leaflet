@@ -38,7 +38,7 @@ export const Modal = ({
               ? { top: `${offsetTop}px`, height: `${height}px` }
               : undefined
           }
-          className="fixed z-50 inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-60"
+          className="fixed z-50 inset-0 bg-primary/60 backdrop-blur-sm data-[state=open]:animate-overlayShow"
         />
         <Dialog.Content
           style={
@@ -60,7 +60,7 @@ export const Modal = ({
           <div
             className={`
             opaque-container p-3
-            flex flex-col rounded-lg!
+            flex flex-col rounded-lg! min-h-0 overflow-y-scroll
             ${className}`}
           >
             {title ? (

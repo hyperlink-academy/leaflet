@@ -1,7 +1,7 @@
 import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtpAgent, AtUri } from "@atproto/api";
-import { idResolver } from "app/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 import type { Json } from "supabase/database.types";
 
 // 1m, 2m, 4m, 8m, 16m, 32m, 1h, 2h, 4h, 8h, 8h, 8h (~37h total)

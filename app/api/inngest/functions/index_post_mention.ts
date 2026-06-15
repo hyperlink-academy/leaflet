@@ -8,7 +8,7 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { v7 } from "uuid";
-import { idResolver } from "app/(home-pages)/reader/idResolver";
+import { idResolver } from "src/identity";
 import { documentUriFilter } from "src/utils/uriHelpers";
 
 export const index_post_mention = inngest.createFunction(

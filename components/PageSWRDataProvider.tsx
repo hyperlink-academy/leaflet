@@ -10,7 +10,7 @@ import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationM
 import {
   getPublicationURL,
   getDocumentURL,
-} from "app/lish/createPub/getPublicationURL";
+} from "app/(app)/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,
@@ -95,13 +95,13 @@ export function useLeafletDomains() {
 }
 
 /**
- * Returns the publication_pages row this leaflet is the source of, if any.
- * Mirrors `draftInPublication` from useLeafletPublicationStatus, but for
- * leaflets that back a publication page rather than a draft post.
+ * Returns the publication this leaflet is the draft leaflet of, if any —
+ * i.e. whether we're editing a publication's pages rather than a post or a
+ * standalone leaflet.
  */
 export function useLeafletPublicationPage() {
   let { data } = useLeafletData();
-  return data?.publication_pages?.[0] ?? null;
+  return data?.publications?.[0] ?? null;
 }
 
 export function useLeafletPublicationStatus() {

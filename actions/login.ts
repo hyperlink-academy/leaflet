@@ -15,6 +15,7 @@ import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscri
 
 export async function loginWithEmailToken(
   localLeaflets: { token: { id: string }; added_at: string }[],
+  redirectRoute?: string,
 ) {
   const client = await pool.connect();
   const db = drizzle(client);
@@ -123,4 +124,5 @@ export async function loginWithEmailToken(
     }
   }
   client.release();
+  if (result?.identity && redirectRoute) redirect(redirectRoute);
 }

@@ -2,7 +2,7 @@
 import { createContext, useContext } from "react";
 import { useReplicache } from "src/replicache";
 
-export const EntitySetContext = createContext({
+const EntitySetContext = createContext({
   set: "",
   permissions: { read: false, write: false },
 });

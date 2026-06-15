@@ -10,8 +10,8 @@ import { mutate } from "swr";
 import { SpeedyLink } from "components/SpeedyLink";
 import { Popover } from "components/Popover";
 import { Modal } from "components/Modal";
-import { InlineUpgradeToPro } from "app/lish/[did]/[publication]/UpgradeModal";
-import { ManageProSubscription } from "app/lish/[did]/[publication]/dashboard/settings/ProSettings";
+import { InlineUpgradeToPro } from "app/(app)/lish/[did]/[publication]/UpgradeModal";
+import { ManageProSubscription } from "app/(app)/lish/[did]/[publication]/dashboard/settings/ProSettings";
 import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
@@ -54,7 +54,7 @@ export const ProfileButton = () => {
       }
     >
       <div className="flex flex-col gap-0.5">
-        {record && (
+        {record?.handle && (
           <>
             <SpeedyLink
               className="no-underline! menuItem -mx-[8px]"

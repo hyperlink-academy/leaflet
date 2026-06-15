@@ -27,7 +27,7 @@ import { useSearchParams } from "next/navigation";
  */
 
 /** Configuration for a single piece of query-synced state. */
-export type QueryParam<T> = {
+type QueryParam<T> = {
   /**
    * Deserialize from query params → state value.
    * Called once on mount to initialize from the URL.

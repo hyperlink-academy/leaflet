@@ -16,6 +16,7 @@ export const Combobox = ({
   trigger,
   triggerClassName,
   className,
+  resultsClassName,
   sideOffset,
   open: openProp,
   zIndex,
@@ -24,6 +25,7 @@ export const Combobox = ({
   trigger?: React.ReactNode;
   triggerClassName?: string;
   className?: string;
+  resultsClassName?: string;
   results: string[];
   onSelect?: () => void;
   onOpenChange?: (open: boolean) => void;
@@ -120,7 +122,7 @@ export const Combobox = ({
         >
           <NestedCardThemeProvider>
             <div
-              className={`commandMenuResults w-full max-h-(--radix-popover-content-available-height) overflow-auto no-scrollbar flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page gap-0.5 border border-border rounded-md shadow-md `}
+              className={`commandMenuResults w-full max-h-(--radix-popover-content-available-height) overflow-auto no-scrollbar flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page gap-0.5 border border-border rounded-md shadow-md ${resultsClassName ?? ""}`}
             >
               {showSearch && setSearchValue ? (
                 <Input

@@ -1,0 +1,58 @@
+import type { PermissionToken } from "src/replicache";
+import { mutate } from "swr";
+
+type HomeDoc = {
+  token: PermissionToken;
+  added_at: string;
+  hidden?: boolean;
+};
+type HomeDocsStorage = {
+  version: number;
+  docs: Array<HomeDoc>;
+};
+let defaultValue: HomeDocsStorage = {
+  version: 1,
+  docs: [],
+};
+const key = "homepageDocs-v1";
+let tokenCache = new Map<string, PermissionToken>();
+export function getHomeDocs() {
+  let homepageDocs: HomeDocsStorage = JSON.parse(
+    window.localStorage.getItem(key) || JSON.stringify(defaultValue),
+  );
+  return homepageDocs.docs.map((d) => {
+    let cachedToken = tokenCache.get(d.token.id);
+    if (!cachedToken) {
+      cachedToken = d.token;
+      tokenCache.set(d.token.id, d.token);
+    }
+    return { ...d, token: cachedToken };
+  });
+}
+
+export function addDocToHome(doc: PermissionToken) {
+  let homepageDocs = getHomeDocs();
+  if (homepageDocs.find((d) => d.token.id === doc.id)) return;
+  homepageDocs.push({ token: doc, added_at: new Date().toISOString() });
+  let newValue: HomeDocsStorage = {
+    version: 1,
+    docs: homepageDocs,
+  };
+  window.localStorage.setItem(key, JSON.stringify(newValue));
+}
+
+export function hideDoc(doc: PermissionToken) {
+  let homepageDocs = getHomeDocs();
+  let newDocs = homepageDocs.filter((d) => d.token.id !== doc.id);
+  newDocs.push({
+    token: doc,
+    added_at: new Date().toISOString(),
+    hidden: true,
+  });
+  let newValue: HomeDocsStorage = {
+    version: 1,
+    docs: newDocs,
+  };
+  window.localStorage.setItem(key, JSON.stringify(newValue));
+  mutate("leaflets");
+}

@@ -13,10 +13,14 @@ export function RenderYJSFragment({
   value,
   wrapper,
   attrs,
+  // Read-only viewers don't see comments, so the anchor highlight markup is
+  // omitted entirely rather than just hidden with CSS
+  renderComments = true,
 }: {
   value: string;
   wrapper: BlockElements;
   attrs?: { [k: string]: any };
+  renderComments?: boolean;
 }) {
   if (!value)
     return <BlockWrapper wrapper={wrapper} attrs={attrs}></BlockWrapper>;
@@ -45,7 +49,7 @@ export function RenderYJSFragment({
                             <a
                               href={d.attributes.link.href}
                               key={index}
-                              {...attributesToStyle(d)}
+                              {...attributesToStyle(d, renderComments)}
                             >
                               {d.insert}
                             </a>
@@ -53,7 +57,7 @@ export function RenderYJSFragment({
                         return (
                           <span
                             key={index}
-                            {...attributesToStyle(d)}
+                            {...attributesToStyle(d, renderComments)}
                             {...attrs}
                           >
                             {d.insert}
@@ -116,7 +120,12 @@ export function RenderYJSFragment({
                   const href = node.getAttribute("href") || undefined;
                   const icon = node.getAttribute("icon") || undefined;
                   return (
-                    <AtMentionLink key={index} atURI={atURI} href={href} icon={icon}>
+                    <AtMentionLink
+                      key={index}
+                      atURI={atURI}
+                      href={href}
+                      icon={icon}
+                    >
                       {text}
                     </AtMentionLink>
                   );
@@ -159,7 +168,7 @@ const BlockWrapper = (props: {
   }
 };
 
-function attributesToStyle(d: Delta) {
+function attributesToStyle(d: Delta, renderComments: boolean = true) {
   let props = {
     style: {},
     className: "",
@@ -184,6 +193,10 @@ function attributesToStyle(d: Delta) {
         : d.attributes.highlight.color === "2"
           ? theme.colors["highlight-2"]
           : theme.colors["highlight-3"];
+  }
+  if (renderComments && d.attributes?.comment) {
+    props.className += " comment-anchor";
+    props["data-comment-id"] = d.attributes.comment.commentID;
   }
 
   return props;

@@ -1,11 +1,10 @@
-import { useLayoutEffect, useRef, useEffect, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
+import type { Node } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { ySyncPlugin } from "y-prosemirror";
-import * as Y from "yjs";
-import * as base64 from "base64-js";
+import { ySyncPlugin, ySyncPluginKey } from "y-prosemirror";
 import { Replicache } from "replicache";
 import { produce } from "immer";
 
@@ -26,11 +25,28 @@ import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
-import {
-  useLinkPopoverStore,
-  scheduleLinkPopoverClose,
-  cancelLinkPopoverClose,
-} from "components/LinkPopover";
+import { useLinkPopoverStore } from "components/LinkPopover";
+import { useCommentSheetStore } from "components/Comments/commentStores";
+import { useCommentPopoverStore } from "components/Comments/CommentPopover";
+import { commentDraftPlugin } from "./commentDraftPlugin";
+import { stripCommentMarks } from "./stripCommentMarks";
+import { useCollabText } from "./useCollabText";
+
+// The comment anchor under an event's target and its comment IDs; null when
+// there is none. Anchors can carry several IDs since overlapping comments
+// share a mark.
+function commentAnchor(event: Event) {
+  let anchor = (event.target as HTMLElement | null)?.closest(
+    ".comment-anchor[data-comment-id]",
+  ) as HTMLElement | null;
+  if (!anchor) return null;
+  let commentIDs = anchor
+    .getAttribute("data-comment-id")!
+    .split(" ")
+    .filter(Boolean);
+  if (commentIDs.length === 0) return null;
+  return { anchor, commentIDs };
+}
 
 export function useMountProsemirror({
   props,
@@ -43,7 +59,7 @@ export function useMountProsemirror({
   let rep = useReplicache();
   let mountRef = useRef<HTMLPreElement | null>(null);
   const repRef = useRef<Replicache<ReplicacheMutators> | null>(null);
-  let value = useYJSValue(entityID);
+  let { yText: value, cursorPlugin, overlay } = useCollabText(entityID);
   let entity_set = useEntitySetContext();
   let alignment =
     useEntity(entityID, "block/text-alignment")?.data.value || "left";
@@ -68,10 +84,12 @@ export function useMountProsemirror({
       schema: schema,
       plugins: [
         ySyncPlugin(value),
+        cursorPlugin,
         keymap(km),
         inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
         highlightSelectionPlugin,
+        commentDraftPlugin,
         autolink({
           type: schema.marks.link,
           shouldAutoLink: () => true,
@@ -85,6 +103,56 @@ export function useMountProsemirror({
       {
         state: editor,
         handlePaste,
+        transformCopied: stripCommentMarks,
+        transformPasted: stripCommentMarks,
+        handleDOMEvents: {
+          // cmd/ctrl+click opens links in a new tab. Handled on the native
+          // click event rather than in handleClickOn: popup blockers trust
+          // window.open from a click handler, and ProseMirror cancels its
+          // click handling when the mouse moves >4px between down and up.
+          click: (_view, event) => {
+            if (!(event.metaKey || event.ctrlKey)) {
+              let target = commentAnchor(event);
+              // Read-only viewers don't see comments, so anchors are inert
+              if (target && propsRef.current.entity_set.permissions.write) {
+                let { anchor, commentIDs } = target;
+                let isDesktop = window.matchMedia(
+                  "(min-width: 1280px)",
+                ).matches;
+                if (!isDesktop) {
+                  // On mobile, show a popover with an excerpt and a button
+                  // that opens the thread in the slide-in sheet
+                  let store = useCommentPopoverStore.getState();
+                  if (store.commentIDs?.join(" ") === commentIDs.join(" ")) {
+                    store.close();
+                  } else {
+                    store.open(commentIDs, anchor);
+                  }
+                  event.preventDefault();
+                  return true;
+                }
+                // On desktop canvas pages there's no side column, so open the
+                // sheet directly; on doc pages the side column thread expands
+                // on hover, so the click just places the cursor.
+                if (propsRef.current.pageType === "canvas") {
+                  useCommentSheetStore
+                    .getState()
+                    .openSheet(propsRef.current.parent, commentIDs[0]);
+                  event.preventDefault();
+                  return true;
+                }
+                return false;
+              }
+              return false;
+            }
+            let anchor = (event.target as HTMLElement | null)?.closest("a");
+            let href = anchor?.getAttribute("href");
+            if (!href) return false;
+            window.open(href, "_blank", "noopener,noreferrer");
+            event.preventDefault();
+            return true;
+          },
+        },
         handleClickOn: (_view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
 
@@ -159,53 +227,20 @@ export function useMountProsemirror({
             nodeAt1?.marks.find((f) => f.type === schema.marks.link) ||
             nodeAt2?.marks.find((f) => f.type === schema.marks.link);
           if (linkMark) {
-            let anchor = (_event.target as HTMLElement).closest("a") as HTMLElement | null;
+            // cmd/ctrl+click opens in a new tab via the click DOM handler
+            // above — don't open the edit popover or let ProseMirror treat
+            // it as a select-node click.
+            if (_event.metaKey || _event.ctrlKey) return true;
+            let anchor = (_event.target as HTMLElement).closest(
+              "a",
+            ) as HTMLElement | null;
             if (anchor) {
-              cancelLinkPopoverClose();
-              useLinkPopoverStore.getState().open(
-                linkMark.attrs.href,
-                anchor,
-                entityID,
-              );
+              useLinkPopoverStore
+                .getState()
+                .open(linkMark.attrs.href, anchor, entityID);
             }
             return;
           }
-        },
-        handleDOMEvents: {
-          mouseover: (() => {
-            let activeTimer: number | null = null;
-            let activeAnchor: HTMLAnchorElement | null = null;
-            let activeLeaveHandler: (() => void) | null = null;
-            return (_view: EditorView, event: MouseEvent) => {
-              let target = event.target as HTMLElement;
-              let anchor = target.closest("a[href]") as HTMLAnchorElement | null;
-              if (!anchor) return false;
-              if (anchor === activeAnchor) return false;
-              if (activeTimer !== null) window.clearTimeout(activeTimer);
-              if (activeAnchor && activeLeaveHandler) {
-                activeAnchor.removeEventListener("mouseleave", activeLeaveHandler);
-              }
-              cancelLinkPopoverClose();
-              activeAnchor = anchor;
-              activeTimer = window.setTimeout(() => {
-                useLinkPopoverStore.getState().open(
-                  anchor.getAttribute("href") || "",
-                  anchor,
-                  entityID,
-                );
-                activeTimer = null;
-              }, 300);
-              activeLeaveHandler = () => {
-                if (activeTimer !== null) window.clearTimeout(activeTimer);
-                activeTimer = null;
-                activeAnchor = null;
-                activeLeaveHandler = null;
-                scheduleLinkPopoverClose();
-              };
-              anchor.addEventListener("mouseleave", activeLeaveHandler, { once: true });
-              return false;
-            };
-          })(),
         },
         dispatchTransaction,
       },
@@ -241,9 +276,14 @@ export function useMountProsemirror({
         let oldEditorState = this.state;
         let newState = this.state.apply(tr);
         let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
+        // Changes synced in from a peer over yjs carry the ySync change origin.
+        // The peer that made the edit already fired the orphan-diff mutations
+        // below, so skip them here to avoid deleting the same footnote/comment
+        // twice from every client.
+        let isRemoteChange = !!tr.getMeta(ySyncPluginKey)?.isChangeOrigin;
 
         // Diff for removed/added footnote nodes
-        if (docHasChanges) {
+        if (docHasChanges && !isRemoteChange) {
           let oldFootnotes = new Set<string>();
           let newFootnotes = new Set<string>();
           oldEditorState.doc.descendants((n) => {
@@ -259,6 +299,35 @@ export function useMountProsemirror({
             if (!newFootnotes.has(id)) {
               repRef.current?.mutate.deleteFootnote({
                 footnoteEntityID: id,
+                blockID: entityID,
+              });
+            }
+          }
+
+          // Diff comment marks: deleting all the commented text deletes the
+          // comment, like removing a footnote node deletes the footnote
+          let collectCommentIDs = (doc: Node, into: Set<string>) => {
+            doc.descendants((n) => {
+              for (let m of n.marks)
+                if (m.type.name === "comment")
+                  for (let id of ((m.attrs.commentID as string) || "").split(
+                    " ",
+                  )) {
+                    if (id) into.add(id);
+                  }
+            });
+          };
+          let oldComments = new Set<string>();
+          let newComments = new Set<string>();
+          collectCommentIDs(oldEditorState.doc, oldComments);
+          collectCommentIDs(newState.doc, newComments);
+          // Resolving a thread strips its anchor mark locally, so this also
+          // fires for a just-resolved comment on the resolver's own client;
+          // deleteComment is idempotent, so the redundant delete is harmless.
+          for (let id of oldComments) {
+            if (!newComments.has(id)) {
+              repRef.current?.mutate.deleteComment({
+                commentEntityID: id,
                 blockID: entityID,
               });
             }
@@ -297,8 +366,8 @@ export function useMountProsemirror({
         };
       });
     }
-  }, [entityID, parent, value, handlePaste, rep]);
-  return { mountRef, actionTimeout };
+  }, [entityID, parent, value, cursorPlugin, handlePaste, rep]);
+  return { mountRef, actionTimeout, overlay };
 }
 
 export function trackUndoRedo(
@@ -325,47 +394,4 @@ export function trackUndoRedo(
 
     undoManager.add({ undo, redo });
   }
-}
-
-export function useYJSValue(entityID: string) {
-  const [ydoc] = useState(new Y.Doc());
-  const docStateFromReplicache = useEntity(entityID, "block/text");
-  let rep = useReplicache();
-  const [yText] = useState(ydoc.getXmlFragment("prosemirror"));
-
-  if (docStateFromReplicache) {
-    const update = base64.toByteArray(docStateFromReplicache.data.value);
-    Y.applyUpdate(ydoc, update);
-  }
-
-  useEffect(() => {
-    if (!rep.rep) return;
-    let timeout = null as null | number;
-    const updateReplicache = async () => {
-      const update = Y.encodeStateAsUpdate(ydoc);
-      await rep.rep?.mutate.assertFact({
-        //These undos are handled above in the Prosemirror context
-        ignoreUndo: true,
-        entity: entityID,
-        attribute: "block/text",
-        data: {
-          value: base64.fromByteArray(update),
-          type: "text",
-        },
-      });
-    };
-    const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
-      if (!transaction.origin) return;
-      if (timeout) clearTimeout(timeout);
-      timeout = window.setTimeout(async () => {
-        updateReplicache();
-      }, 300);
-    };
-
-    yText.observeDeep(f);
-    return () => {
-      yText.unobserveDeep(f);
-    };
-  }, [yText, entityID, rep, ydoc]);
-  return yText;
 }

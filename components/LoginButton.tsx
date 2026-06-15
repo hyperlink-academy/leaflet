@@ -19,7 +19,7 @@ import {
   confirmEmailAuthToken,
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
-import { getHomeDocs } from "app/(home-pages)/(writer)/home/storage";
+import { getHomeDocs } from "app/(app)/(home-pages)/(writer)/home/storage";
 import { mutate } from "swr";
 
 export const LoginModal = (props: {
@@ -116,7 +116,10 @@ export const LoginContent = (props: {
       return;
     }
     const localLeaflets = getHomeDocs();
-    await loginWithEmailToken(localLeaflets.filter((l) => !l.hidden));
+    await loginWithEmailToken(
+      localLeaflets.filter((l) => !l.hidden),
+      props.redirectRoute,
+    );
     mutate("identity");
     toaster({
       content: <div className="font-bold">Logged in! Welcome!</div>,

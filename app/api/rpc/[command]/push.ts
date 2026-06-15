@@ -1,6 +1,12 @@
 import { mutations } from "src/replicache/mutations";
+import { cookies } from "next/headers";
 import { eq, sql } from "drizzle-orm";
-import { permission_token_rights, replicache_clients } from "drizzle/schema";
+import {
+  email_auth_tokens,
+  identities,
+  permission_token_rights,
+  replicache_clients,
+} from "drizzle/schema";
 import { getClientGroup } from "src/replicache/utils";
 import { makeRoute } from "../lib";
 import { z } from "zod";
@@ -57,6 +63,14 @@ export const push = makeRoute({
         result: { error: "VersionNotSupported", versionType: "push" } as const,
       };
     }
+    // Push is same-origin, so the session cookie is sent. Read it here (the
+    // handler doesn't receive the raw Request) and resolve it to a DID once
+    // per push so authenticated-fact writes can be ownership-checked.
+    let cookieStore = await cookies();
+    let authToken =
+      cookieStore.get("auth_token")?.value ||
+      cookieStore.get("external_auth_token")?.value;
+
     let timeWaitingForLock: number;
     let timeWaitingForDbConnection: number;
     let timeProcessingMutations: number = 0;
@@ -95,10 +109,27 @@ export const push = makeRoute({
           .from(permission_token_rights)
           .where(eq(permission_token_rights.token, token.id));
         timeGettingTokenRights = performance.now() - tokenRightsStart;
+
+        // Resolve the session cookie to a DID once per push. The cookie value
+        // is an email_auth_tokens id (a uuid); guard the format so a malformed
+        // cookie doesn't error the transaction. No DID resolves for anonymous
+        // or email-only sessions, in which case authenticated-fact writes are
+        // dropped downstream.
+        let sessionDid: string | null = null;
+        if (authToken && isUuid(authToken)) {
+          let [row] = await tx
+            .select({ atp_did: identities.atp_did })
+            .from(email_auth_tokens)
+            .leftJoin(identities, eq(email_auth_tokens.identity, identities.id))
+            .where(eq(email_auth_tokens.id, authToken));
+          sessionDid = row?.atp_did ?? null;
+        }
+
         let { getContext, flush } = cachedServerMutationContext(
           tx,
           token.id,
           token_rights,
+          sessionDid,
         );
 
         let lastMutations = new Map<string, number>();
@@ -213,3 +244,9 @@ ${mutationTimings
     }
   },
 });
+
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(value: string) {
+  return uuidRegex.test(value);
+}

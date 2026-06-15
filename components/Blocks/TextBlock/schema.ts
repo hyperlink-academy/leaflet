@@ -3,6 +3,13 @@ import { marks } from "prosemirror-schema-basic";
 import { theme } from "tailwind.config";
 import { classifyAtUri } from "src/utils/mentionUtils";
 
+// Bump this whenever the schema changes in a way old clients can't represent:
+// adding a node or mark, or adding a *required* attr to an existing one
+// (prefer attrs with a `default`, which old schemas tolerate). Clients that
+// encounter content from a newer schema version stop editing instead of
+// destroying what they don't understand — see ./schemaVersion.
+export const SCHEMA_VERSION = 1;
+
 let baseSchema = {
   marks: {
     strong: marks.strong,
@@ -84,6 +91,32 @@ let baseSchema = {
         ];
       },
     } as MarkSpec,
+    comment: {
+      attrs: {
+        commentID: {},
+      },
+      inclusive: false,
+      parseDOM: [
+        {
+          tag: "span.comment-anchor",
+          getAttrs(dom: HTMLElement) {
+            return {
+              commentID: dom.getAttribute("data-comment-id"),
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        return [
+          "span",
+          {
+            class: "comment-anchor",
+            "data-comment-id": node.attrs.commentID,
+          },
+          0,
+        ];
+      },
+    } as MarkSpec,
     link: {
       attrs: {
         href: {},
@@ -101,7 +134,16 @@ let baseSchema = {
       ],
       toDOM(node) {
         let { href } = node.attrs;
-        return ["a", { href, target: "_blank", referrerpolicy: "no-referrer", style: "cursor: text" }, 0];
+        return [
+          "a",
+          {
+            href,
+            target: "_blank",
+            referrerpolicy: "no-referrer",
+            style: "cursor: text",
+          },
+          0,
+        ];
       },
     } as MarkSpec,
   },

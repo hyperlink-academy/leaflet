@@ -32,14 +32,6 @@ export async function setPendingMergeToken(tokenID: string) {
   });
 }
 
-export async function removeAuthToken() {
-  let c = await cookies();
-  c.delete({
-    name: AUTH_TOKEN_COOKIE,
-    domain: isProductionDomain() ? ".leaflet.pub" : undefined,
-  });
-}
-
 export async function removePendingMergeToken() {
   let c = await cookies();
   c.delete({

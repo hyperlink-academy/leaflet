@@ -106,12 +106,31 @@ export const RadioMenuItem = (props: {
       value={props.value}
       onSelect={props.onSelect}
       className={` menuItem
-      ${props.selected && "bg-accent-1! text-accent-2!"}
+      ${props.selected && "bg-[var(--accent-light)]! text-accent-contrast! "}
         ${props.className}
         `}
     >
       {props.children}
     </DropdownMenu.RadioItem>
+  );
+};
+
+export const CheckboxMenuItem = (props: {
+  children?: React.ReactNode;
+  className?: string;
+  onSelect?: (e: Event) => void;
+  checked?: boolean;
+}) => {
+  return (
+    <DropdownMenu.CheckboxItem
+      onSelect={props.onSelect}
+      className={`menuItem
+      ${props.checked && "bg-[var(--accent-light)]! border-accent-contrast! text-accent-contrast!"}
+        ${props.className}
+        `}
+    >
+      {props.children}
+    </DropdownMenu.CheckboxItem>
   );
 };
 

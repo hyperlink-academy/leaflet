@@ -1,0 +1,325 @@
+"use client";
+
+import { useEntity, useReplicache } from "src/replicache";
+import { useUIState } from "src/useUIState";
+import { CSSProperties, useRef } from "react";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
+import { PostContent, Block } from "../PostContent";
+import {
+  PubLeafletBlocksHeader,
+  PubLeafletBlocksText,
+  PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
+  PubLeafletPublication,
+} from "lexicons/api";
+import { AppBskyFeedDefs } from "@atproto/api";
+import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import { TextBlock } from "./TextBlock";
+import { useDocument } from "contexts/DocumentContext";
+import { openPage, useOpenPages } from "../postPageState";
+import { openInteractionDrawer } from "../Interactions/Interactions";
+import { CommentTiny } from "components/Icons/CommentTiny";
+import { CanvasBackgroundPattern } from "components/Canvas";
+
+export function PublishedPageLinkBlock(props: {
+  blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
+  parentPageId: string | undefined;
+  pageId: string;
+  did: string;
+  preview?: boolean;
+  className?: string;
+  prerenderedCodeBlocks?: Map<string, string>;
+  bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
+  isCanvas?: boolean;
+  pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+}) {
+  let openPages = useOpenPages();
+  let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
+  return (
+    <div
+      className={`w-full cursor-pointer
+        pageLinkBlockWrapper relative group/pageLinkBlock
+        bg-bg-page shadow-sm
+        flex overflow-clip
+        block-border
+        ${isOpen && "!border-tertiary"}
+        ${props.className}
+        `}
+      onClick={(e) => {
+        if (e.isDefaultPrevented()) return;
+        if (e.shiftKey) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        openPage(
+          props.parentPageId
+            ? { type: "doc", id: props.parentPageId }
+            : undefined,
+          { type: "doc", id: props.pageId },
+        );
+      }}
+    >
+      {props.isCanvas ? (
+        <CanvasLinkBlock
+          blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
+          did={props.did}
+          pageId={props.pageId}
+          bskyPostData={props.bskyPostData}
+          standardSitePostData={props.standardSitePostData}
+          pages={props.pages || []}
+        />
+      ) : (
+        <DocLinkBlock
+          {...props}
+          blocks={props.blocks as PubLeafletPagesLinearDocument.Block[]}
+        />
+      )}
+    </div>
+  );
+}
+function DocLinkBlock(props: {
+  blocks: PubLeafletPagesLinearDocument.Block[];
+  pageId: string;
+  parentPageId?: string;
+  did: string;
+  preview?: boolean;
+  className?: string;
+  prerenderedCodeBlocks?: Map<string, string>;
+  bskyPostData: AppBskyFeedDefs.PostView[];
+}) {
+  let [title, description, thirdLine] = props.blocks
+    .map((b) => b.block)
+    .filter(
+      (b) => PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
+    );
+
+  return (
+    <div
+      style={{ "--list-marker-width": "20px" } as CSSProperties}
+      className={`
+        w-full h-[104px]
+        `}
+    >
+      <>
+        <div className="pageLinkBlockContent w-full flex overflow-clip cursor-pointer h-full">
+          <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip flex flex-col ">
+            <div className="grow">
+              {title && (
+                <div
+                  className={`pageBlockOne outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                >
+                  <TextBlock
+                    facets={title.facets}
+                    plaintext={title.plaintext}
+                    index={[]}
+                    preview
+                  />
+                </div>
+              )}
+              {description && (
+                <div
+                  className={`pageBlockLineTwo outline-none resize-none align-top gap-2 ${description.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                >
+                  <TextBlock
+                    facets={description.facets}
+                    plaintext={description.plaintext}
+                    index={[]}
+                    preview
+                  />
+                </div>
+              )}
+              {thirdLine && (
+                <div
+                  className={`pageBlockLineThree outline-none resize-none align-top gap-2 ${thirdLine.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                >
+                  <TextBlock
+                    facets={thirdLine.facets}
+                    plaintext={thirdLine.plaintext}
+                    index={[]}
+                    preview
+                  />
+                </div>
+              )}
+            </div>
+
+            <Interactions
+              pageId={props.pageId}
+              parentPageId={props.parentPageId}
+            />
+          </div>
+          {!props.preview && (
+            <PagePreview blocks={props.blocks} did={props.did} />
+          )}
+        </div>
+      </>
+    </div>
+  );
+}
+
+function PagePreview(props: {
+  did: string;
+  blocks: PubLeafletPagesLinearDocument.Block[];
+}) {
+  let previewRef = useRef<HTMLDivElement | null>(null);
+  let { rootEntity } = useReplicache();
+  let pageWidth = `var(--page-width-unitless)`;
+  let cardBorderHidden = useCardBorderHidden();
+  return (
+    <div
+      ref={previewRef}
+      className={`pageLinkBlockPreview w-[120px] overflow-clip  mx-3 mt-3 -mb-2  border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center ${cardBorderHidden ? "" : "bg-bg-page"}`}
+    >
+      <div
+        className="absolute top-0 left-0 origin-top-left pointer-events-none "
+        style={{
+          width: `calc(1px * ${pageWidth})`,
+          height: `calc(100vh - 64px)`,
+          transform: `scale(calc((120 / ${pageWidth} )))`,
+          backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+        }}
+      >
+        {!cardBorderHidden && (
+          <div
+            className={`pageLinkBlockBackground
+            absolute top-0 left-0 right-0 bottom-0
+            pointer-events-none
+            `}
+          />
+        )}
+        <PostContent
+          pollData={[]}
+          pages={[]}
+          did={props.did}
+          blocks={props.blocks}
+          preview
+          bskyPostData={[]}
+          standardSitePostData={[]}
+        />
+      </div>
+    </div>
+  );
+}
+
+const Interactions = (props: { pageId: string; parentPageId?: string }) => {
+  const {
+    uri: document_uri,
+    commentsCountByPage,
+    mentions,
+  } = useDocument();
+  let comments = commentsCountByPage[props.pageId] ?? 0;
+  let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
+
+  if (quotes + comments === 0) return null;
+
+  return (
+    <div
+      className={`flex gap-2 text-tertiary text-sm absolute bottom-2 bg-bg-page`}
+    >
+      <button
+        className={`flex gap-1 items-center`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          // Open the subpage itself, then open its interaction panel scoped to
+          // comments — rather than popping a standalone discussion modal.
+          openPage(
+            props.parentPageId
+              ? { type: "doc", id: props.parentPageId }
+              : undefined,
+            { type: "doc", id: props.pageId },
+          );
+          openInteractionDrawer("comments", document_uri, props.pageId);
+        }}
+      >
+        <span className="sr-only">Page discussions</span>
+        <CommentTiny aria-hidden /> {comments + quotes}{" "}
+      </button>
+    </div>
+  );
+};
+
+const CanvasLinkBlock = (props: {
+  blocks: PubLeafletPagesCanvas.Block[];
+  did: string;
+  pageId: string;
+  bskyPostData: AppBskyFeedDefs.PostView[];
+  standardSitePostData: StandardSitePostData[];
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+}) => {
+  let pageWidth = `var(--page-width-unitless)`;
+  let height =
+    props.blocks.length > 0 ? Math.max(...props.blocks.map((b) => b.y), 0) : 0;
+
+  return (
+    <div
+      style={{ contain: "size layout paint" }}
+      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative`}
+    >
+      <div
+        className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
+        style={{
+          width: `calc(1px * ${pageWidth})`,
+          height: "calc(1150px * 2)",
+          transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
+        }}
+      >
+        <div
+          style={{
+            minHeight: height + 512,
+            contain: "size layout paint",
+          }}
+          className="relative h-full w-[1272px]"
+        >
+          <div className="w-full h-full pointer-events-none">
+            <CanvasBackgroundPattern pattern="grid" />
+          </div>
+          {props.blocks
+            .sort((a, b) => {
+              if (a.y === b.y) {
+                return a.x - b.x;
+              }
+              return a.y - b.y;
+            })
+            .map((canvasBlock, index) => {
+              let { x, y, width, rotation } = canvasBlock;
+              let transform = `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`;
+
+              // Wrap the block in a LinearDocument.Block structure for compatibility
+              let linearBlock: PubLeafletPagesLinearDocument.Block = {
+                $type: "pub.leaflet.pages.linearDocument#block",
+                block: canvasBlock.block,
+              };
+
+              return (
+                <div
+                  key={index}
+                  className="absolute rounded-lg flex items-stretch origin-center p-3"
+                  style={{
+                    top: 0,
+                    left: 0,
+                    width,
+                    transform,
+                  }}
+                >
+                  <div className="contents">
+                    <Block
+                      pollData={[]}
+                      pageId={props.pageId}
+                      pages={props.pages}
+                      bskyPostData={props.bskyPostData}
+                      standardSitePostData={props.standardSitePostData}
+                      block={linearBlock}
+                      did={props.did}
+                      index={[index]}
+                      preview={true}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    </div>
+  );
+};

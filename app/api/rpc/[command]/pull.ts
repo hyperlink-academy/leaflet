@@ -64,6 +64,7 @@ export const pull = makeRoute({
 
     let facts = data.facts as {
       attribute: string;
+      author_did: string | null;
       created_at: string;
       data: any;
       entity: string;
@@ -78,6 +79,7 @@ export const pull = makeRoute({
       cover_image: string | null;
       preferences: Json | null;
     }[];
+    let draft_contributors = (data.draft_contributors as string[] | null) ?? [];
     let pub_patch = publication_data?.[0]
       ? [
           {
@@ -136,6 +138,7 @@ export const pull = makeRoute({
           } as const;
         }),
         ...pub_patch,
+        { op: "put", key: "draft_contributors", value: draft_contributors },
       ],
     } as PullResponseV1;
   },

@@ -2,9 +2,9 @@
 import { createContext, useContext } from "react";
 import type { PubLeafletContent } from "lexicons/api";
 
-export type Page = PubLeafletContent.Main["pages"][number];
+type Page = PubLeafletContent.Main["pages"][number];
 
-export type LeafletContentContextValue = {
+type LeafletContentContextValue = {
   pages: Page[];
 };
 
@@ -14,10 +14,6 @@ export function useLeafletContent() {
   const ctx = useContext(LeafletContentContext);
   if (!ctx) throw new Error("useLeafletContent must be used within LeafletContentProvider");
   return ctx;
-}
-
-export function useLeafletContentOptional() {
-  return useContext(LeafletContentContext);
 }
 
 export function LeafletContentProvider({

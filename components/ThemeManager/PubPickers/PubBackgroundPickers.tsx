@@ -213,7 +213,7 @@ const BackgroundImagePicker = (props: {
   );
 };
 
-export const ImageSettings = (props: {
+const ImageSettings = (props: {
   bgImage: ImageState | null;
   setBgImage: (i: ImageState | null) => void;
 }) => {

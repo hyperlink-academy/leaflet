@@ -1,7 +1,7 @@
 "use client";
 import { createContext } from "react";
 
-export type RequestHeaders = {
+type RequestHeaders = {
   country: string | null;
   language: string | null;
   timezone: string | null;

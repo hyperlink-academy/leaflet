@@ -16,6 +16,20 @@ const PageAttributes = {
     type: "page-type-union",
     cardinality: "one",
   },
+  // Publication nav state: root/page entries carry a route and tab title;
+  // entries with page/external-url instead are external link tabs.
+  "page/route": {
+    type: "string",
+    cardinality: "one",
+  },
+  "page/title": {
+    type: "string",
+    cardinality: "one",
+  },
+  "page/external-url": {
+    type: "string",
+    cardinality: "one",
+  },
   "canvas/block": {
     type: "spatial-reference",
     cardinality: "many",
@@ -123,6 +137,40 @@ const BlockAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  "block/comment": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+} as const;
+
+// Comments are authored by authenticated users; their facts carry an
+// author_did so the server can gate writes to the comment's author.
+// Comment content is stored as a YJS doc in a "block/text" fact on the
+// comment entity, like footnotes.
+const CommentAttributes = {
+  "comment/reply": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "comment/author": {
+    type: "string",
+    cardinality: "one",
+  },
+  "comment/created-at": {
+    type: "string",
+    cardinality: "one",
+  },
+  // Snapshot of the anchor range in the block's text at creation time. The
+  // live anchor is the comment mark in the block's YJS doc, which moves with
+  // edits; these are kept as a fallback record of where the comment started.
+  "comment/anchor-start": {
+    type: "number",
+    cardinality: "one",
+  },
+  "comment/anchor-end": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const MailboxAttributes = {
@@ -229,11 +277,11 @@ const PostsListBlockAttributes = {
   },
   "posts-list/filter-tag": {
     type: "string",
-    cardinality: "one",
+    cardinality: "many",
   },
 } as const;
 
-export const ThemeAttributes = {
+const ThemeAttributes = {
   "theme/heading-font": {
     type: "string",
     cardinality: "one",
@@ -259,6 +307,14 @@ export const ThemeAttributes = {
     cardinality: "one",
   },
   "theme/background-image-repeat": {
+    type: "number",
+    cardinality: "one",
+  },
+  "theme/wordmark-image": {
+    type: "image",
+    cardinality: "one",
+  },
+  "theme/wordmark-width": {
     type: "number",
     cardinality: "one",
   },
@@ -316,6 +372,7 @@ export const Attributes = {
   ...RootAttributes,
   ...PageAttributes,
   ...BlockAttributes,
+  ...CommentAttributes,
   ...LinkBlockAttributes,
   ...ThemeAttributes,
   ...MailboxAttributes,
@@ -403,7 +460,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "code"
       | "blockquote"
       | "horizontal-rule"
-      | "posts-list";
+      | "posts-list"
+      | "signup";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
@@ -415,7 +473,7 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "posts-list-view-union": {
     type: "posts-list-view-union";
-    value: "compact" | "full";
+    value: "small" | "medium";
   };
   "standard-site-post-size-union": {
     type: "standard-site-post-size-union";

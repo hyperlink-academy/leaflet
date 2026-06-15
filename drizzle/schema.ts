@@ -37,6 +37,7 @@ export const publications = pgTable("publications", {
 	name: text("name").notNull(),
 	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	record: jsonb("record"),
+	draft_leaflet: uuid("draft_leaflet").references(() => permission_tokens.id),
 },
 (table) => {
 	return {
@@ -49,7 +50,7 @@ export const comments_on_documents = pgTable("comments_on_documents", {
 	record: jsonb("record").notNull(),
 	document: text("document").references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	profile: text("profile").references(() => bsky_profiles.did, { onDelete: "set null", onUpdate: "cascade" } ),
+	profile: text("profile"),
 },
 (table) => {
 	return {
@@ -73,6 +74,7 @@ export const facts = pgTable("facts", {
 	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "restrict" } ),
 	attribute: text("attribute").notNull(),
 	data: jsonb("data").notNull(),
+	author_did: text("author_did"),
 	created_at: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updated_at: timestamp("updated_at", { mode: 'string' }),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
@@ -174,6 +176,8 @@ export const permission_tokens = pgTable("permission_tokens", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	root_entity: uuid("root_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	blocked_by_admin: boolean("blocked_by_admin"),
+	title: text("title"),
+	description: text("description"),
 });
 
 export const user_subscriptions = pgTable("user_subscriptions", {
@@ -412,6 +416,18 @@ export const documents_in_publications = pgTable("documents_in_publications", {
 	}
 });
 
+export const leaflet_contributors = pgTable("leaflet_contributors", {
+	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	contributor_did: text("contributor_did").notNull().references(() => identities.atp_did, { onDelete: "cascade", onUpdate: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		contributor_did_idx: index("leaflet_contributors_contributor_did_idx").on(table.contributor_did),
+		leaflet_contributors_pkey: primaryKey({ columns: [table.leaflet, table.contributor_did], name: "leaflet_contributors_pkey"}),
+	}
+});
+
 export const document_mentions_in_bsky = pgTable("document_mentions_in_bsky", {
 	uri: text("uri").notNull().references(() => bsky_posts.uri, { onDelete: "cascade" } ),
 	link: text("link").notNull(),
@@ -447,6 +463,19 @@ export const publication_domains = pgTable("publication_domains", {
 	return {
 		publication_idx: index("publication_domains_publication_idx").on(table.publication),
 		publication_domains_pkey: primaryKey({ columns: [table.publication, table.domain], name: "publication_domains_pkey"}),
+	}
+});
+
+export const publication_contributors = pgTable("publication_contributors", {
+	publication_uri: text("publication_uri").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	contributor_did: text("contributor_did").notNull().references(() => identities.atp_did, { onDelete: "cascade", onUpdate: "cascade" } ),
+	confirmed: boolean("confirmed").default(false).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		contributor_did_idx: index("publication_contributors_contributor_did_idx").on(table.contributor_did),
+		publication_contributors_pkey: primaryKey({ columns: [table.publication_uri, table.contributor_did], name: "publication_contributors_pkey"}),
 	}
 });
 
@@ -572,12 +601,11 @@ export const publication_pages = pgTable("publication_pages", {
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	id: bigint("id", { mode: "number" }).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	leaflet_src: uuid("leaflet_src").notNull().references(() => permission_tokens.id),
+	page_entity: uuid("page_entity"),
 	document: text("document").references(() => documents.uri),
 	path: text("path"),
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
 	title: text("title").default('').notNull(),
-	metadata: jsonb("metadata").default({}).notNull(),
 	record: jsonb("record"),
 	record_uri: text("record_uri"),
 	sort_order: text("sort_order").notNull(),
@@ -585,5 +613,6 @@ export const publication_pages = pgTable("publication_pages", {
 (table) => {
 	return {
 		publication_pages_pkey: primaryKey({ columns: [table.id, table.publication], name: "publication_pages_pkey"}),
+		publication_pages_publication_page_entity_idx: uniqueIndex("publication_pages_publication_page_entity_idx").on(table.publication, table.page_entity),
 	}
 });

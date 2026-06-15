@@ -1,10 +1,10 @@
 "use client";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import Link from "next/link";
 import { useState } from "react";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
-import { subscribeToPublication } from "app/lish/subscribeToPublication";
+import { subscribeToPublication } from "app/(app)/lish/subscribeToPublication";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
@@ -14,6 +14,9 @@ import { Avatar } from "components/Avatar";
 import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { LinkIdentityModal } from "./LinkIdentityModal";
+import { RSSTiny } from "components/Icons/RSSTiny";
+import { Tooltip } from "components/Tooltip";
+import { SubscribeButtonModeMenu } from "./SubscribeButton";
 const apps = [
   { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
   { name: "Bluesky", logo: "https://leaflet.pub/logos/bluesky.svg" },
@@ -37,9 +40,23 @@ const apps = [
   { name: "Graze", logo: "https://leaflet.pub/logos/graze.svg" },
 ];
 
+// True when this document is running inside an iframe. Reading `window.top`
+// across origins throws a SecurityError, which itself only happens when we're
+// framed by a different origin — so treat that as being framed too.
+const isInIframe = () => {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
 export const SubscribeWithHandle = (props: {
   autoFocus?: boolean;
+  compact?: boolean;
   publicationUri: string;
+  publicationUrl?: string;
   onSubscribed?: () => void;
   onAtSuccess?: () => void;
   leading?: React.ReactNode;
@@ -68,66 +85,147 @@ export const SubscribeWithHandle = (props: {
       action: "subscribe",
       publication: props.publicationUri,
     });
+    let inIframe = isInIframe();
     let url = new URL(window.location.href);
     url.searchParams.set("refreshAuth", "");
+    // When the subscribe form is embedded in an iframe we can't run the oauth
+    // flow in-frame (the PDS login page refuses to be framed), so we pop it into
+    // a new top-level tab. That tab needs to land somewhere that surfaces the
+    // result — `showSubscribeSuccess` is preserved through the oauth callback's
+    // redirect and consumed by SubscribeInput to show the success modal once the
+    // subscription has been written.
+    if (inIframe) url.searchParams.set("showSubscribeSuccess", "true");
     let redirectUrl = encodeURIComponent(url.toString());
     let extra = link ? "&link=true&autoMerge=true" : "";
-    window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
+    let loginUrl = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
+    if (inIframe) {
+      window.open(loginUrl, "_blank", "noopener,noreferrer");
+      // The iframe stays put while the user completes login in the new tab —
+      // clear the pending spinner so the embedded form isn't stuck loading.
+      setLoading(false);
+      return;
+    }
+    window.location.href = loginUrl;
   };
 
+  // Without a handle there's no atproto identity to one-click subscribe with, so
+  // fall through to the logged-out HandleInput form (same as a logged-out user).
   if (props.user.loggedIn && props.user.handle) {
-    return (
-      <div className="flex flex-col gap-2 w-max max-w-full mx-auto">
-        <div className="flex items-center gap-2">
-          <ButtonPrimary
-            className="mx-auto max-w-full grow"
-            disabled={subscribing}
-            onClick={async () => {
-              if (subscribing) return;
-              setSubscribing(true);
-              setOauthError(null);
-              let url = new URL(window.location.href);
-              url.searchParams.set("refreshAuth", "");
-              let result = await subscribeToPublication(
-                props.publicationUri,
-                url.toString(),
-              );
-              if (!result.success) {
-                if (isOAuthSessionError(result.error))
-                  setOauthError(result.error);
-                setSubscribing(false);
-                return;
-              }
-              if (props.onAtSuccess) {
-                props.onAtSuccess();
-              } else {
-                toaster({
-                  content: <div>You're Subscribed!</div>,
-                  type: "success",
-                });
-              }
-              props.onSubscribed?.();
-              setSubscribing(false);
-            }}
-          >
-            {subscribing ? (
-              <DotLoader />
-            ) : (
-              <>
-                {props.leading}
-                <span className="shrink-0">Subscribe as</span>
-                <span className="flex gap-1 items-center max-w-full grow min-w-0">
-                  <Avatar
-                    size="tiny"
-                    src={record?.avatar}
-                    displayName={record?.displayName || record?.handle}
-                  />
-
-                  <div className="grow truncate">{props.user.handle}</div>
+    let tooltipLabel = props.user.handle ? `@${props.user.handle}` : null;
+    let avatar = (
+      <Avatar
+        size="tiny"
+        src={record?.avatar}
+        displayName={record?.displayName || record?.handle}
+      />
+    );
+    const subscribeAtproto = async () => {
+      if (subscribing) return;
+      setSubscribing(true);
+      setOauthError(null);
+      let url = new URL(window.location.href);
+      url.searchParams.set("refreshAuth", "");
+      let result = await subscribeToPublication(
+        props.publicationUri,
+        url.toString(),
+      );
+      if (!result.success) {
+        if (isOAuthSessionError(result.error)) setOauthError(result.error);
+        setSubscribing(false);
+        return;
+      }
+      if (props.onAtSuccess) {
+        props.onAtSuccess();
+      } else {
+        toaster({
+          content: <div>You're Subscribed!</div>,
+          type: "success",
+        });
+      }
+      props.onSubscribed?.();
+      setSubscribing(false);
+    };
+    let subscribeButton = (
+      <ButtonPrimary
+        compact={props.compact}
+        className={`
+          subscribeButton
+          text-sm grow shrink!
+          ${
+            props.compact
+              ? "gap-1! min-w-0 flex items-center rounded-r-none! hover:outline-transparent! focus:outline-transparent!"
+              : ""
+          }`}
+        disabled={subscribing}
+        onClick={subscribeAtproto}
+      >
+        {subscribing ? (
+          <DotLoader />
+        ) : (
+          <>
+            {avatar}
+            <div className="flex grow  min-w-0">
+              <div className="shrink-0 pr-[6px]">Subscribe</div>
+              {!props.compact && (
+                <span className="grow truncate min-w-0">
+                  as {props.user.handle}
                 </span>
-              </>
+              )}
+            </div>
+          </>
+        )}
+      </ButtonPrimary>
+    );
+    return (
+      <div className="flex flex-col gap-2 w-fit max-w-full min-w-0">
+        <div className="flex items-stretch gap-1 min-w-0">
+          <div
+            className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1 shrink-0" : ""}`}
+          >
+            {props.leading && (
+              <div className="shrink-0 flex items-center">{props.leading}</div>
             )}
-          </ButtonPrimary>
+            {props.compact && tooltipLabel ? (
+              <Tooltip
+                asChild
+                delayDuration={0}
+                side="top"
+                trigger={subscribeButton}
+                className="text-sm p-1! text-tertiary"
+              >
+                {tooltipLabel}
+              </Tooltip>
+            ) : (
+              subscribeButton
+            )}
+            {props.compact && (
+              <SubscribeButtonModeMenu
+                disabled={subscribing}
+                publicationUrl={props.publicationUrl}
+                accounts={[
+                  {
+                    value: "atproto",
+                    label: `@${props.user.handle}`,
+                    icon: avatar,
+                    selected: true,
+                    onSelect: subscribeAtproto,
+                  },
+                ]}
+              />
+            )}
+          </div>
+          {!props.compact && (
+            <a
+              href={`${props.publicationUrl}/rss`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`no-underline shrink-0 ${props.compact ? "w-6" : "w-7"}`}
+            >
+              <ButtonPrimary className="h-full! w-auto! py-0! px-0! aspect-square">
+                <RSSTiny />
+              </ButtonPrimary>
+            </a>
+          )}
         </div>
         {oauthError && (
           <OAuthErrorMessage
@@ -139,25 +237,42 @@ export const SubscribeWithHandle = (props: {
     );
   } else
     return (
-      <div className="max-w-sm mx-auto w-full ">
-        <HandleInput
-          autoFocus={props.autoFocus}
-          loading={loading}
-          leading={props.leading}
-          onSubmit={(handle) => {
-            let trimmed = handle.trim();
-            if (!trimmed) return;
-            if (needsLinkConfirmation) {
-              setPendingLinkHandle(trimmed);
-              return;
-            }
-            setLoading(true);
-            redirectToOauthForSubscribe(trimmed, false);
-          }}
-          action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
-            Subscribe
-          </div>
-        />
+      <div className="subscribeHandleInputWrapper max-w-sm mx-auto w-full min-w-0">
+        <div className="flex gap-1 w-full">
+          <HandleInput
+            autoFocus={props.autoFocus}
+            compact={props.compact}
+            loading={loading}
+            leading={props.leading}
+            onSubmit={(handle) => {
+              let trimmed = handle.trim();
+              if (!trimmed) return;
+              if (needsLinkConfirmation) {
+                setPendingLinkHandle(trimmed);
+                return;
+              }
+              setLoading(true);
+              redirectToOauthForSubscribe(trimmed, false);
+            }}
+            action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+              Subscribe
+            </div>
+          />
+          {props.publicationUrl && (
+            <a
+              href={`${props.publicationUrl}/rss`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`no-underlinetext-accent-contrast`}
+            >
+              <ButtonSecondary
+                className={`${props.compact ? "p-[3px]!" : "p-[6px]!"} border-border!`}
+              >
+                <RSSTiny />
+              </ButtonSecondary>
+            </a>
+          )}
+        </div>
         <div className=" pt-1 ">
           <AtmosphericHandleInfo />
         </div>

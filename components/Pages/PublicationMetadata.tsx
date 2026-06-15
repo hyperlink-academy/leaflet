@@ -8,23 +8,24 @@ import { AtUri } from "@atproto/syntax";
 import {
   getBasePublicationURL,
   getPublicationURL,
-} from "app/lish/createPub/getPublicationURL";
+} from "app/(app)/lish/createPub/getPublicationURL";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { timeAgo } from "src/utils/timeAgo";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { TagTiny } from "components/Icons/TagTiny";
 import { Popover } from "components/Popover";
 import { TagSelector } from "components/Tags";
 import { useIdentityData } from "components/IdentityProvider";
-import { PostHeaderLayout } from "app/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
+import { PostHeaderLayout } from "app/(app)/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
 import { Backdater } from "./Backdater";
 import { RecommendTinyEmpty } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { DraftContributorSelector } from "./DraftContributorSelector";
 
 export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
-  let { rep } = useReplicache();
+  let { rep, permission_token } = useReplicache();
+  let leaflet_id = permission_token.id;
   let {
     data: pub,
     normalizedDocument,
@@ -107,30 +108,37 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
       }
       postInfo={
         <>
-          {pub.doc ? (
-            <div className="flex gap-2 items-center">
-              <p className="text-sm text-tertiary">
-                Published{" "}
-                {publishedAt && (
-                  <Backdater publishedAt={publishedAt} docURI={pub.doc} />
-                )}
-              </p>
+          <div className="flex gap-1 items-center">
+            {pub.publications && leaflet_id && (
+              <>
+                <DraftContributorSelector leaflet_id={leaflet_id} />
+              </>
+            )}
+            {pub.doc ? (
+              <div className="flex gap-2 items-center">
+                <p className="text-sm text-tertiary">
+                  Published{" "}
+                  {publishedAt && (
+                    <Backdater publishedAt={publishedAt} docURI={pub.doc} />
+                  )}
+                </p>
 
-              <Link
-                target="_blank"
-                className="text-sm"
-                href={
-                  pub.publications
-                    ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
-                    : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
-                }
-              >
-                View
-              </Link>
-            </div>
-          ) : (
-            <p>Draft</p>
-          )}
+                <Link
+                  target="_blank"
+                  className="text-sm"
+                  href={
+                    pub.publications
+                      ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
+                      : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
+                  }
+                >
+                  View
+                </Link>
+              </div>
+            ) : (
+              <p>Draft</p>
+            )}
+          </div>
           {!props.noInteractions && (
             <div className="flex gap-2 text-border items-center">
               {merged.showRecommends !== false && (
@@ -139,12 +147,8 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
                 </div>
               )}
 
-              {merged.showMentions !== false && (
-                <div className="flex gap-1 items-center">
-                  <QuoteTiny />—
-                </div>
-              )}
-              {merged.showComments !== false && (
+              {(merged.showComments !== false ||
+                merged.showMentions !== false) && (
                 <div className="flex gap-1 items-center">
                   <CommentTiny />—
                 </div>
@@ -167,7 +171,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
   );
 };
 
-export const TextField = ({
+const TextField = ({
   value,
   onChange,
   className,

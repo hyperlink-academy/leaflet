@@ -3,12 +3,10 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Tables, TablesInsert } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
-import { idResolver } from "app/(home-pages)/reader/idResolver";
+import { idResolver, getProfiles, type Profile } from "src/identity";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
-  type NormalizedDocument,
-  type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 
 type NotificationRow = Tables<"notifications">;
@@ -16,6 +14,23 @@ type NotificationRow = Tables<"notifications">;
 export type Notification = Omit<TablesInsert<"notifications">, "data"> & {
   data: NotificationData;
 };
+
+type NotificationProfile = Pick<
+  Profile,
+  "did" | "handle" | "displayName" | "avatar"
+>;
+
+function toNotificationProfile(
+  p: Profile | null | undefined,
+): NotificationProfile | null {
+  if (!p) return null;
+  return {
+    did: p.did,
+    handle: p.handle,
+    displayName: p.displayName,
+    avatar: p.avatar,
+  };
+}
 
 export type NotificationData =
   | { type: "comment"; comment_uri: string; parent_uri?: string }
@@ -93,23 +108,36 @@ async function hydrateCommentNotifications(notifications: NotificationRow[]) {
   const { data: comments } = await supabaseServerClient
     .from("comments_on_documents")
     .select(
-      "*,bsky_profiles(*), documents(*, documents_in_publications(publications(*)))",
+      "*, documents(*, documents_in_publications(publications(*)))",
     )
     .in("uri", commentUris);
 
+  const commenterDids = Array.from(
+    new Set((comments ?? []).map((c) => new AtUri(c.uri).host)),
+  );
+  const profiles = await getProfiles(commenterDids);
+
+  type CommentRow = NonNullable<typeof comments>[number];
+  const attachProfile = (c: CommentRow) => ({
+    ...c,
+    profile: toNotificationProfile(profiles.get(new AtUri(c.uri).host)),
+  });
+
   return commentNotifications
     .map((notification) => {
-      const commentData = comments?.find((c) => c.uri === notification.data.comment_uri);
-      if (!commentData) return null;
+      const commentRow = comments?.find((c) => c.uri === notification.data.comment_uri);
+      if (!commentRow) return null;
+      const commentData = attachProfile(commentRow);
+      const parentRow = notification.data.parent_uri
+        ? comments?.find((c) => c.uri === notification.data.parent_uri)
+        : undefined;
       return {
         id: notification.id,
         recipient: notification.recipient,
         created_at: notification.created_at,
         type: "comment" as const,
         comment_uri: notification.data.comment_uri,
-        parentData: notification.data.parent_uri
-          ? comments?.find((c) => c.uri === notification.data.parent_uri)
-          : undefined,
+        parentData: parentRow ? attachProfile(parentRow) : undefined,
         commentData,
         normalizedDocument: normalizeDocumentRecord(commentData.documents?.data, commentData.documents?.uri),
         normalizedPublication: normalizePublicationRecord(
@@ -142,20 +170,35 @@ async function hydrateSubscribeNotifications(notifications: NotificationRow[]) {
   );
   const { data: subscriptions } = await supabaseServerClient
     .from("publication_subscriptions")
-    .select("*, identities(bsky_profiles(*)), publications(*)")
+    .select("*, identities(atp_did), publications(*)")
     .in("uri", subscriptionUris);
+
+  const subscriberDids = Array.from(
+    new Set(
+      (subscriptions ?? [])
+        .map((s) => s.identities?.atp_did)
+        .filter((d): d is string => !!d),
+    ),
+  );
+  const profiles = await getProfiles(subscriberDids);
 
   return subscribeNotifications
     .map((notification) => {
       const subscriptionData = subscriptions?.find((s) => s.uri === notification.data.subscription_uri);
       if (!subscriptionData) return null;
+      const subscriberDid = subscriptionData.identities?.atp_did ?? null;
       return {
         id: notification.id,
         recipient: notification.recipient,
         created_at: notification.created_at,
         type: "subscribe" as const,
         subscription_uri: notification.data.subscription_uri,
-        subscriptionData,
+        subscriptionData: {
+          ...subscriptionData,
+          profile: subscriberDid
+            ? toNotificationProfile(profiles.get(subscriberDid))
+            : null,
+        },
         normalizedPublication: normalizePublicationRecord(subscriptionData.publications?.record),
       };
     })
@@ -436,29 +479,32 @@ async function hydrateCommentMentionNotifications(notifications: NotificationRow
   const { data: comments } = await supabaseServerClient
     .from("comments_on_documents")
     .select(
-      "*, bsky_profiles(*), documents(*, documents_in_publications(publications(*)))",
+      "*, documents(*, documents_in_publications(publications(*)))",
     )
     .in("uri", commentUris);
 
   // Extract unique DIDs from comment URIs to resolve handles
   const commenterDids = [...new Set(commentUris.map((uri) => new AtUri(uri).host))];
 
-  // Resolve DIDs to handles in parallel
+  // Resolve DIDs to handles in parallel + batch profile fetch
   const didToHandleMap = new Map<string, string | null>();
-  await Promise.all(
-    commenterDids.map(async (did) => {
-      try {
-        const resolved = await idResolver.did.resolve(did);
-        const handle = resolved?.alsoKnownAs?.[0]
-          ? resolved.alsoKnownAs[0].slice(5) // Remove "at://" prefix
-          : null;
-        didToHandleMap.set(did, handle);
-      } catch (error) {
-        console.error(`Failed to resolve DID ${did}:`, error);
-        didToHandleMap.set(did, null);
-      }
-    }),
-  );
+  const [profiles] = await Promise.all([
+    getProfiles(commenterDids),
+    Promise.all(
+      commenterDids.map(async (did) => {
+        try {
+          const resolved = await idResolver.did.resolve(did);
+          const handle = resolved?.alsoKnownAs?.[0]
+            ? resolved.alsoKnownAs[0].slice(5) // Remove "at://" prefix
+            : null;
+          didToHandleMap.set(did, handle);
+        } catch (error) {
+          console.error(`Failed to resolve DID ${did}:`, error);
+          didToHandleMap.set(did, null);
+        }
+      }),
+    ),
+  ]);
 
   // Fetch mentioned publications and documents
   const mentionedPublicationUris = commentMentionNotifications
@@ -486,14 +532,18 @@ async function hydrateCommentMentionNotifications(notifications: NotificationRow
 
   return commentMentionNotifications
     .map((notification) => {
-      const commentData = comments?.find((c) => c.uri === notification.data.comment_uri);
-      if (!commentData) return null;
+      const commentRow = comments?.find((c) => c.uri === notification.data.comment_uri);
+      if (!commentRow) return null;
+      const commenterDid = new AtUri(commentRow.uri).host;
+      const commentData = {
+        ...commentRow,
+        profile: toNotificationProfile(profiles.get(commenterDid)),
+      };
 
       const mentionedUri = notification.data.mention_type !== "did"
         ? (notification.data as Extract<ExtractNotificationType<"comment_mention">, { mentioned_uri: string }>).mentioned_uri
         : undefined;
 
-      const commenterDid = new AtUri(notification.data.comment_uri).host;
       const commenterHandle = didToHandleMap.get(commenterDid) ?? null;
 
       const mentionedPublication = mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined;
@@ -543,7 +593,7 @@ async function hydrateRecommendNotifications(notifications: NotificationRow[]) {
   const [{ data: recommends }, { data: documents }] = await Promise.all([
     supabaseServerClient
       .from("recommends_on_documents")
-      .select("*, identities(bsky_profiles(*))")
+      .select("*")
       .in("uri", recommendUris),
     supabaseServerClient
       .from("documents")
@@ -551,11 +601,26 @@ async function hydrateRecommendNotifications(notifications: NotificationRow[]) {
       .in("uri", documentUris),
   ]);
 
+  const recommenderDids = Array.from(
+    new Set(
+      (recommends ?? [])
+        .map((r) => r.recommender_did)
+        .filter((d): d is string => !!d),
+    ),
+  );
+  const profiles = await getProfiles(recommenderDids);
+
   return recommendNotifications
     .map((notification) => {
-      const recommendData = recommends?.find((r) => r.uri === notification.data.recommend_uri);
+      const recommendRow = recommends?.find((r) => r.uri === notification.data.recommend_uri);
       const document = documents?.find((d) => d.uri === notification.data.document_uri);
-      if (!recommendData || !document) return null;
+      if (!recommendRow || !document) return null;
+      const recommendData = {
+        ...recommendRow,
+        profile: recommendRow.recommender_did
+          ? toNotificationProfile(profiles.get(recommendRow.recommender_did))
+          : null,
+      };
       return {
         id: notification.id,
         recipient: notification.recipient,

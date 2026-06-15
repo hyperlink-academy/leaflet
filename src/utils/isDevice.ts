@@ -50,11 +50,11 @@ export const isMac = cached(function () {
   return testPlatform(/^Mac/i);
 });
 
-export const isIPhone = cached(function () {
+const isIPhone = cached(function () {
   return testPlatform(/^iPhone/i);
 });
 
-export const isIPad = cached(function () {
+const isIPad = cached(function () {
   return (
     testPlatform(/^iPad/i) ||
     // iPadOS 13 lies and says it's a Mac, but we can distinguish by detecting touch support.
@@ -64,24 +64,4 @@ export const isIPad = cached(function () {
 
 export const isIOS = cached(function () {
   return isIPhone() || isIPad();
-});
-
-export const isAppleDevice = cached(function () {
-  return isMac() || isIOS();
-});
-
-export const isWebKit = cached(function () {
-  return testUserAgent(/AppleWebKit/i) && !isChrome();
-});
-
-export const isChrome = cached(function () {
-  return testUserAgent(/Chrome/i);
-});
-
-export const isAndroid = cached(function () {
-  return testUserAgent(/Android/i);
-});
-
-export const isFirefox = cached(function () {
-  return testUserAgent(/Firefox/i);
 });

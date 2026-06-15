@@ -19,7 +19,7 @@ export class Lock {
   }
 }
 
-export function resolver() {
+function resolver() {
   let resolve!: (v: void) => void;
   let reject!: () => void;
   const promise = new Promise<void>((res, rej) => {

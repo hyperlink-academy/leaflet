@@ -200,13 +200,6 @@ export type Database = {
             referencedRelation: "documents"
             referencedColumns: ["uri"]
           },
-          {
-            foreignKeyName: "comments_on_documents_profile_fkey"
-            columns: ["profile"]
-            isOneToOne: false
-            referencedRelation: "bsky_profiles"
-            referencedColumns: ["did"]
-          },
         ]
       }
       custom_domain_routes: {
@@ -520,6 +513,7 @@ export type Database = {
       facts: {
         Row: {
           attribute: string
+          author_did: string | null
           created_at: string
           data: Json
           entity: string
@@ -529,6 +523,7 @@ export type Database = {
         }
         Insert: {
           attribute: string
+          author_did?: string | null
           created_at?: string
           data: Json
           entity: string
@@ -538,6 +533,7 @@ export type Database = {
         }
         Update: {
           attribute?: string
+          author_did?: string | null
           created_at?: string
           data?: Json
           entity?: string
@@ -587,6 +583,39 @@ export type Database = {
           {
             foreignKeyName: "identities_home_page_fkey"
             columns: ["home_page"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaflet_contributors: {
+        Row: {
+          contributor_did: string
+          created_at: string
+          leaflet: string
+        }
+        Insert: {
+          contributor_did: string
+          created_at?: string
+          leaflet: string
+        }
+        Update: {
+          contributor_did?: string
+          created_at?: string
+          leaflet?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaflet_contributors_contributor_did_fkey"
+            columns: ["contributor_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+          {
+            foreignKeyName: "leaflet_contributors_leaflet_fkey"
+            columns: ["leaflet"]
             isOneToOne: false
             referencedRelation: "permission_tokens"
             referencedColumns: ["id"]
@@ -893,18 +922,24 @@ export type Database = {
       permission_tokens: {
         Row: {
           blocked_by_admin: boolean | null
+          description: string | null
           id: string
           root_entity: string
+          title: string | null
         }
         Insert: {
           blocked_by_admin?: boolean | null
+          description?: string | null
           id?: string
           root_entity: string
+          title?: string | null
         }
         Update: {
           blocked_by_admin?: boolean | null
+          description?: string | null
           id?: string
           root_entity?: string
+          title?: string | null
         }
         Relationships: [
           {
@@ -1020,6 +1055,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "entities"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_contributors: {
+        Row: {
+          confirmed: boolean
+          contributor_did: string
+          created_at: string
+          publication_uri: string
+        }
+        Insert: {
+          confirmed?: boolean
+          contributor_did: string
+          created_at?: string
+          publication_uri: string
+        }
+        Update: {
+          confirmed?: boolean
+          contributor_did?: string
+          created_at?: string
+          publication_uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_contributors_contributor_did_fkey"
+            columns: ["contributor_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+          {
+            foreignKeyName: "publication_contributors_publication_uri_fkey"
+            columns: ["publication_uri"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
           },
         ]
       }
@@ -1208,8 +1279,7 @@ export type Database = {
           created_at: string
           document: string | null
           id: number
-          leaflet_src: string
-          metadata: Json
+          page_entity: string | null
           path: string | null
           publication: string
           record: Json | null
@@ -1221,8 +1291,7 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: number
-          leaflet_src: string
-          metadata?: Json
+          page_entity?: string | null
           path?: string | null
           publication: string
           record?: Json | null
@@ -1234,8 +1303,7 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: number
-          leaflet_src?: string
-          metadata?: Json
+          page_entity?: string | null
           path?: string | null
           publication?: string
           record?: Json | null
@@ -1250,13 +1318,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["uri"]
-          },
-          {
-            foreignKeyName: "publication_pages_leaflet_src_fkey"
-            columns: ["leaflet_src"]
-            isOneToOne: false
-            referencedRelation: "permission_tokens"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "publication_pages_publication_fkey"
@@ -1353,6 +1414,7 @@ export type Database = {
       }
       publications: {
         Row: {
+          draft_leaflet: string | null
           identity_did: string
           indexed_at: string
           name: string
@@ -1360,6 +1422,7 @@ export type Database = {
           uri: string
         }
         Insert: {
+          draft_leaflet?: string | null
           identity_did: string
           indexed_at?: string
           name: string
@@ -1367,6 +1430,7 @@ export type Database = {
           uri: string
         }
         Update: {
+          draft_leaflet?: string | null
           identity_did?: string
           indexed_at?: string
           name?: string
@@ -1374,6 +1438,13 @@ export type Database = {
           uri?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "publications_draft_leaflet_fkey"
+            columns: ["draft_leaflet"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "publications_identity_did_fkey"
             columns: ["identity_did"]
@@ -1683,6 +1754,7 @@ export type Database = {
           created_at: string
           updated_at: string
           version: number
+          author_did: string | null
         }[]
       }
       get_facts_with_depth: {
@@ -1691,7 +1763,14 @@ export type Database = {
           max_depth: number
         }
         Returns: {
-          like: unknown
+          id: string
+          entity: string
+          attribute: string
+          data: Json
+          created_at: string
+          updated_at: string
+          version: number
+          author_did: string | null
         }[]
       }
       get_leaflet_page_data: {
@@ -1776,6 +1855,7 @@ export type Database = {
         client_groups: Json | null
         facts: Json | null
         publications: Json | null
+        draft_contributors: Json | null
       }
     }
   }

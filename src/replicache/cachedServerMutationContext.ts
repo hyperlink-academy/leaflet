@@ -16,6 +16,7 @@ export function cachedServerMutationContext(
   tx: PgTransaction<any, any, any>,
   permission_token_id: string,
   token_rights: PermissionToken["permission_token_rights"],
+  sessionDid: string | null,
 ) {
   let writeCache: WriteCacheEntry[] = [];
   let eavCache = new Map<string, DeepReadonly<Fact<Attribute>>[]>();
@@ -41,6 +42,7 @@ export function cachedServerMutationContext(
             data: facts.data,
             entity: facts.entity,
             attribute: facts.attribute,
+            author_did: facts.author_did,
           })
           .from(facts)
           .where(
@@ -73,7 +75,26 @@ export function cachedServerMutationContext(
           ),
       ) as DeepReadonly<Fact<A>>[];
     },
+    async id(factID: string) {
+      let cached = writeCache.find((wc) => wc.fact.id === factID);
+      if (cached)
+        return cached.type === "del"
+          ? undefined
+          : (cached.fact as DeepReadonly<Fact<Attribute>>);
+      let [row] = await tx
+        .select({
+          id: facts.id,
+          data: facts.data,
+          entity: facts.entity,
+          attribute: facts.attribute,
+          author_did: facts.author_did,
+        })
+        .from(facts)
+        .where(driz.eq(facts.id, factID));
+      return row as DeepReadonly<Fact<Attribute>> | undefined;
+    },
   };
+
   let getContext = (clientID: string, mutationID: number) => {
     let ctx: MutationContext & {
       checkPermission: (entity: string) => Promise<boolean>;
@@ -137,12 +158,34 @@ export function cachedServerMutationContext(
         let id = f.id || v7();
         let data = { ...f.data };
         if (!(await this.checkPermission(f.entity))) return;
+
+        let existing: DeepReadonly<Fact<Attribute>> | undefined;
         if (attribute.cardinality === "one") {
           let existingFact = await scanIndex.eav(f.entity, f.attribute);
           if (existingFact[0]) {
             id = existingFact[0].id;
+            existing = existingFact[0];
           }
+        } else if (f.id) {
+          // cardinality "many" update with an explicit id: look up the stored
+          // fact so its author_did can gate the write.
+          existing = await scanIndex.id(f.id);
         }
+
+        // Authentication gate. author_did is immutable once set.
+        let author_did: string | null;
+        if (existing) {
+          // Updating an existing fact: if it's authenticated, only the owning
+          // DID may write it, and the stored DID is preserved regardless of
+          // what the client sends.
+          if (existing.author_did && sessionDid !== existing.author_did) return;
+          author_did = existing.author_did ?? null;
+        } else {
+          // Creating a fact: you may only authenticate it as yourself.
+          if (f.author_did && sessionDid !== f.author_did) return;
+          author_did = f.author_did ?? null;
+        }
+
         writeCache = writeCache.filter((f) => f.fact.id !== id);
         writeCache.push({
           type: "put",
@@ -151,24 +194,15 @@ export function cachedServerMutationContext(
             entity: f.entity,
             data: data,
             attribute: f.attribute,
+            author_did,
           },
         });
       },
       async retractFact(factID) {
-        let cachedFact = writeCache.find(
-          (f) => f.type === "put" && f.fact.id === factID,
-        );
-        let entity: string | undefined;
-        if (cachedFact && cachedFact.type === "put") {
-          entity = cachedFact.fact.entity;
-        } else {
-          let [row] = await tx
-            .select({ entity: facts.entity })
-            .from(facts)
-            .where(driz.eq(facts.id, factID));
-          entity = row?.entity;
-        }
-        if (!entity || !(await this.checkPermission(entity))) return;
+        let existing = await scanIndex.id(factID);
+        if (!existing || !(await this.checkPermission(existing.entity))) return;
+        // Only the owning DID may retract an authenticated fact.
+        if (existing.author_did && sessionDid !== existing.author_did) return;
         writeCache = writeCache.filter((f) => f.fact.id !== factID);
         writeCache.push({ type: "del", fact: { id: factID } });
       },
@@ -206,10 +240,13 @@ export function cachedServerMutationContext(
             entity: f.entity,
             data: driz.sql`${f.data}::jsonb`,
             attribute: f.attribute,
+            author_did: f.author_did ?? null,
           })),
         )
         .onConflictDoUpdate({
           target: facts.id,
+          // author_did is intentionally omitted here: it is immutable, so an
+          // update of an existing fact must never overwrite the stored DID.
           set: {
             data: driz.sql`excluded.data`,
             entity: driz.sql`excluded.entity`,

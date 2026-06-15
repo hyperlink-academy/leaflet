@@ -47,11 +47,30 @@ function isBot(req: NextRequest) {
   if (!ua) return false;
   return botUserAgentRegex.test(ua);
 }
+function isMainSiteHost(hostname: string): boolean {
+  return (
+    hostname === "leaflet.pub" ||
+    hostname.startsWith("localhost") ||
+    hostname.startsWith("127.0.0.1") ||
+    hostname.endsWith(".vercel.app")
+  );
+}
+
 export default async function middleware(req: NextRequest) {
   let hostname = req.headers.get("host")!;
   if (req.nextUrl.pathname === auth_callback_route) return authCallback(req);
   if (req.nextUrl.pathname === receive_auth_callback_route)
     return receiveAuthCallback(req);
+
+  if (req.nextUrl.pathname === "/" && isMainSiteHost(hostname)) {
+    let hasAuth =
+      req.cookies.has("auth_token") || req.cookies.has("external_auth_token");
+    if (hasAuth) {
+      let navState = req.cookies.get("nav-state")?.value;
+      let target = navState === "reader" ? "/reader" : "/home";
+      return NextResponse.redirect(new URL(target, req.url));
+    }
+  }
 
   if (hostname === "leaflet.pub") return;
   if (req.nextUrl.pathname === "/not-found") return;
@@ -80,15 +99,17 @@ export default async function middleware(req: NextRequest) {
       req.nextUrl.pathname.includes("/atom") ||
       req.nextUrl.pathname.includes("/json");
 
-    // Check if we've already completed auth (prevents redirect loop when cookies are disabled)
+    // refreshAuth forces a re-sync (auth changed upstream); auth_completed marks
+    // a sync already attempted, breaking the loop when cookies are disabled.
     let authCompleted = req.nextUrl.searchParams.has("auth_completed");
+    let refreshAuth = req.nextUrl.searchParams.has("refreshAuth");
+    let needsAuthSync = refreshAuth || (!cookie && !authCompleted);
 
     if (
       !isStaticReq &&
       !isBot(req) &&
-      (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
-      !authCompleted &&
-      !hostname.includes("leaflet.pub")
+      !hostname.includes("leaflet.pub") &&
+      needsAuthSync
     ) {
       return initiateAuthCallback(req);
     }

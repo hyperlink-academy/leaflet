@@ -5,41 +5,47 @@ import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,
   PublicationPostItemLarge,
-} from "app/lish/[did]/[publication]/PublicationPostItem";
-import { LocalizedDate } from "app/lish/[did]/[publication]/LocalizedDate";
+} from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
+import { LocalizedDate } from "app/(app)/lish/[did]/[publication]/LocalizedDate";
 import {
   getDocumentURL,
   getPublicationURL,
-} from "app/lish/createPub/getPublicationURL";
+} from "app/(app)/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { PubIcon } from "components/ActionBar/Publications";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import { formatBylineNames } from "src/utils/byline";
 
 export type StandardSitePostSize = "large" | "medium" | "small";
 
 export function StandardSitePostItem({
   uri,
   size = "medium",
-  showPubTheme = true,
   currentPublicationUri,
+  pageWidth,
+  hideInteractions,
 }: {
   uri: string;
   size?: StandardSitePostSize;
-  showPubTheme?: boolean;
   currentPublicationUri?: string | null;
+  pageWidth?: number;
+  hideInteractions?: boolean;
 }) {
   const { data, isLoading } = useStandardSitePost(uri);
   const { rootEntity } = useReplicache();
-  const pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
+  const postPageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
 
   if (isLoading) {
     return (
-      <StandardSitePostItemPlaceholder size={size} pageWidth={pageWidth} />
+      <StandardSitePostItemPlaceholder
+        size={size}
+        pageWidth={pageWidth ? pageWidth : postPageWidth}
+      />
     );
   }
 
@@ -51,8 +57,9 @@ export function StandardSitePostItem({
     <StandardSitePostItemView
       post={data}
       size={size}
-      showPubTheme={showPubTheme}
+      pageWidth={pageWidth}
       currentPublicationUri={currentPublicationUri}
+      hideInteractions={hideInteractions}
     />
   );
 }
@@ -66,19 +73,18 @@ export function WithStandardSitePostPublicationTheme({
   enabled: boolean;
   children: React.ReactNode;
 }) {
-  if (!enabled || !post.publication?.record?.theme) return <>{children}</>;
+  const record = post.publication?.record;
+  if (!enabled || !record || (!record.theme && !record.basicTheme)) {
+    return <>{children}</>;
+  }
   let pubCreator: string;
   try {
-    pubCreator = new AtUri(post.publication.uri).host;
+    pubCreator = new AtUri(post.publication!.uri).host;
   } catch {
     return <>{children}</>;
   }
   return (
-    <PublicationThemeProvider
-      local
-      theme={post.publication.record.theme}
-      pub_creator={pubCreator}
-    >
+    <PublicationThemeProvider local record={record} pub_creator={pubCreator}>
       {children}
     </PublicationThemeProvider>
   );
@@ -94,7 +100,7 @@ function StandardSitePostItemPlaceholder({
   if (size === "small") {
     return (
       <>
-        <div className="flex w-full grow flex-col gap-1 px-3 py-2">
+        <div className="transparent-container flex w-full grow flex-col gap-1 p-3 ">
           <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
           <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
         </div>
@@ -106,8 +112,8 @@ function StandardSitePostItemPlaceholder({
   if (size === "medium") {
     return (
       <>
-        <div className="flex w-full gap-3 items-stretch sm:min-h-36">
-          <div className="flex w-full gap-2 grow flex-col justify-between min-w-0 pl-3 pr-3 py-2">
+        <div className="transparent-container flex w-full gap-3 items-stretch sm:min-h-36">
+          <div className="flex w-full gap-2 grow flex-col justify-between min-w-0 pl-3 p-3">
             <div className="flex flex-col gap-2">
               <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
               <div className="h-4 w-full bg-border-light rounded animate-pulse" />
@@ -126,17 +132,17 @@ function StandardSitePostItemPlaceholder({
   return (
     <>
       <div
-        className={`flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full items-start`}
+        className={`transparent-container flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full items-start`}
       >
         <div
-          className={`bg-border-light rounded animate-pulse shrink-0 ${widePage ? "w-full sm:w-auto sm:h-[244px] aspect-[1.91/1]" : "w-full aspect-[1.91/1]"}`}
+          className={`bg-border-light rounded animate-pulse shrink-0 ${widePage ? "w-full sm:w-auto sm:h-[244px] aspect-[3/2]" : "w-full aspect-[1.91/1]"}`}
         />
         <div
-          className={`flex w-full grow flex-col gap-2 justify-between px-3 py-2 ${widePage ? "sm:pb-3" : ""}`}
+          className={`flex w-full grow flex-col gap-2 justify-between p-3 pb-2 ${widePage ? "sm:pb-3" : ""}`}
         >
           <div className="flex flex-col gap-2">
             <div
-              className={`h-7 w-2/3 bg-border-light rounded animate-pulse ${widePage ? "sm:h-8" : ""}`}
+              className={`h-7 w-1/3 bg-border-light rounded animate-pulse ${widePage ? "sm:h-8" : ""}`}
             />
             <div
               className={`h-5 w-full bg-border-light rounded animate-pulse ${widePage ? "sm:h-6" : ""}`}
@@ -158,22 +164,36 @@ function StandardSitePostItemPlaceholder({
 export function StandardSitePostItemView({
   post,
   size = "medium",
-  showPubTheme = true,
   currentPublicationUri,
+  hideInteractions,
+  pageWidth: pageWidthProp,
 }: {
   post: StandardSitePostData;
   size?: StandardSitePostSize;
-  showPubTheme?: boolean;
   currentPublicationUri?: string | null;
+  hideInteractions?: boolean;
+  pageWidth?: number;
 }) {
   const docUrl = getDocumentURL(
     post.record,
     post.uri,
     post.publication ?? undefined,
   );
+  // Prefer explicit contributors for the byline; fall back to the single
+  // document author when there are none. Use the bare handle (no `@` prefix)
+  // so this list view matches the post page byline.
+  const bylineLabel = (p: {
+    displayName: string | null;
+    handle: string | null;
+  }) => p.displayName || p.handle || undefined;
   const authorLabel =
-    post.author?.displayName ||
-    (post.author?.handle ? `@${post.author.handle}` : undefined);
+    post.contributors.length > 0
+      ? formatBylineNames(
+          post.contributors
+            .map(bylineLabel)
+            .filter((l): l is string => !!l),
+        ) || undefined
+      : bylineLabel(post.author ?? { displayName: null, handle: null });
   const date = post.record.publishedAt ? (
     <LocalizedDate
       dateString={post.record.publishedAt}
@@ -190,11 +210,17 @@ export function StandardSitePostItemView({
   }
   const coverImageSrc =
     post.record.coverImage && postDid
-      ? blobRefToSrc(post.record.coverImage.ref, postDid)
+      ? blobRefToSrc(post.record.coverImage.ref, postDid, undefined, {
+          width:
+            size === "large"
+              ? COVER_THUMBNAIL_WIDTH.large
+              : COVER_THUMBNAIL_WIDTH.medium,
+        })
       : undefined;
 
   const { rootEntity } = useReplicache();
-  const pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
+  const themePageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
+  const pageWidth = pageWidthProp ?? themePageWidth;
 
   const publicationPrefs = post.publication?.record?.preferences;
   const showComments = publicationPrefs?.showComments !== false;
@@ -202,7 +228,7 @@ export function StandardSitePostItemView({
   const showRecommends = publicationPrefs?.showRecommends !== false;
   const commentsCount = showComments ? post.commentsCount : 0;
 
-  const interactions = (
+  const interactions = hideInteractions ? undefined : (
     <InteractionPreview
       quotesCount={post.mentionsCount}
       commentsCount={commentsCount}
@@ -210,6 +236,7 @@ export function StandardSitePostItemView({
       documentUri={post.uri}
       tags={post.record.tags || []}
       postUrl={docUrl}
+      title={post.record.title}
       showComments={showComments}
       showMentions={showMentions}
       showRecommends={showRecommends}
@@ -234,9 +261,8 @@ export function StandardSitePostItemView({
     footer: pubFooter,
   };
 
-  let item: React.ReactNode;
   if (size === "large") {
-    item = (
+    return (
       <PublicationPostItemLarge
         {...commonProps}
         description={description}
@@ -245,8 +271,9 @@ export function StandardSitePostItemView({
         pageWidth={pageWidth}
       />
     );
-  } else if (size === "medium") {
-    item = (
+  }
+  if (size === "medium") {
+    return (
       <PublicationPostItemMedium
         {...commonProps}
         description={description}
@@ -254,15 +281,8 @@ export function StandardSitePostItemView({
         coverImageAlt={post.record.title}
       />
     );
-  } else {
-    item = <PublicationPostItemSmall {...commonProps} />;
   }
-
-  return (
-    <WithStandardSitePostPublicationTheme post={post} enabled={showPubTheme}>
-      {item}
-    </WithStandardSitePostPublicationTheme>
-  );
+  return <PublicationPostItemSmall {...commonProps} />;
 }
 
 function PubFooter({
@@ -273,12 +293,26 @@ function PubFooter({
   if (!publication.record) return null;
   const pubUrl = getPublicationURL(publication);
   return (
-    <Link
-      href={pubUrl}
-      className="flex items-center gap-1.5  text-accent-contrast font-bold no-underline! text-sm -mb-0.5"
-    >
-      <PubIcon tiny record={publication.record} uri={publication.uri} />
-      <span className="min-w-0 truncate">{publication.record.name}</span>
-    </Link>
+    <div className="flex flex-col">
+      <hr className=" border-border-light mt-2 mb-1" />
+      <Link
+        href={pubUrl}
+        className="flex items-center gap-1.5  text-accent-contrast font-bold no-underline! text-sm -mb-0.5"
+      >
+        <PubIcon
+          tiny
+          icon={
+            publication.record.icon
+              ? blobRefToSrc(
+                  publication.record.icon.ref,
+                  new AtUri(publication.uri).host,
+                )
+              : undefined
+          }
+          pubName={publication.record.name}
+        />
+        <span className="min-w-0 truncate">{publication.record.name}</span>
+      </Link>
+    </div>
   );
 }

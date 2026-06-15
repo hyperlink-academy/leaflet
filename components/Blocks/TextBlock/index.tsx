@@ -25,12 +25,13 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
+import { useStaleClient } from "./schemaVersion";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { blockTextSize } from "src/utils/blockTextSize";
 import { getAspectRatio } from "src/utils/aspectRatio";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
-import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
+import { addMentionToEditor } from "app/(app)/[leaflet_id]/publish/BskyPostEditorProsemirror";
 import { v7 } from "uuid";
 import { generateKeyBetween } from "fractional-indexing";
 
@@ -57,10 +58,13 @@ export function TextBlock(
   let initialized = useHasPageLoaded();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
+  // Stale clients (newer-schema content exists; see ./schemaVersion) keep
+  // rendering but must not mount an editor.
+  let stale = useStaleClient((s) => s.stale);
 
   return (
     <>
-      {(!initialized || !permission || props.preview) && (
+      {(!initialized || !permission || props.preview || stale) && (
         <RenderedTextBlock
           type={props.type}
           entityID={props.entityID}
@@ -70,7 +74,7 @@ export function TextBlock(
           previousBlock={props.previousBlock}
         />
       )}
-      {permission && !props.preview && (
+      {permission && !props.preview && !stale && (
         <div
           className={`w-full relative group ${!initialized ? "hidden" : ""}`}
         >
@@ -82,7 +86,7 @@ export function TextBlock(
   );
 }
 
-export function IOSBS(props: BlockProps) {
+function IOSBS(props: BlockProps) {
   let [initialRender, setInitialRender] = useState(true);
   useEffect(() => {
     setInitialRender(false);
@@ -167,7 +171,13 @@ export function RenderedTextBlock(props: {
         </div>
       );
   } else {
-    content = <RenderYJSFragment value={initialFact.data.value} wrapper="p" />;
+    content = (
+      <RenderYJSFragment
+        value={initialFact.data.value}
+        wrapper="p"
+        renderComments={permissions.write}
+      />
+    );
   }
   return (
     <div
@@ -201,7 +211,7 @@ export function RenderedTextBlock(props: {
   );
 }
 
-export function BaseTextBlock(props: BlockProps & { className?: string }) {
+function BaseTextBlock(props: BlockProps & { className?: string }) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =
@@ -239,7 +249,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     handleMentionOpenChange,
   } = useMentionState(props.entityID, props);
 
-  let { mountRef, actionTimeout } = useMountProsemirror({
+  let { mountRef, actionTimeout, overlay } = useMountProsemirror({
     props,
     openMentionAutocomplete,
   });
@@ -257,6 +267,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
               : ""
           }`}
       >
+        {overlay}
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {

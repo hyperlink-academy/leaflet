@@ -6,9 +6,12 @@ import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
+  WithStandardSitePostPublicationTheme,
   type StandardSitePostSize,
 } from "./StandardSitePostItem";
+import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { SmallIcon, MedIcon, LargeIcon } from "../PostSizeIcons";
 
 export const StandardSitePostBlock = (
   props: BlockProps & { preview?: boolean },
@@ -26,25 +29,37 @@ export const StandardSitePostBlock = (
   let showPubTheme = showPubThemeFact?.data.value !== false;
   let editorPub = useLeafletPublicationData();
   let currentPublicationUri = editorPub.data?.publications?.uri ?? null;
+  let { data: post } = useStandardSitePost(uri);
 
   if (!uri) return null;
+
+  if (!post)
+    return (
+      <StandardSitePostItem
+        uri={uri}
+        size={size}
+        currentPublicationUri={currentPublicationUri}
+      />
+    );
 
   return (
     <BlockLayout
       isSelected={!!isSelected}
-      hasBackground="page"
       borderOnHover
       className="standardSitePostBlock p-0!"
       extraOptions={
         <StandardSitePostSettingsButton entityID={props.entityID} />
       }
     >
-      <StandardSitePostItem
-        uri={uri}
-        size={size}
-        showPubTheme={showPubTheme}
-        currentPublicationUri={currentPublicationUri}
-      />
+      <WithStandardSitePostPublicationTheme post={post} enabled={showPubTheme}>
+        <div className="bg-bg-page">
+          <StandardSitePostItem
+            uri={uri}
+            size={size}
+            currentPublicationUri={currentPublicationUri}
+          />
+        </div>
+      </WithStandardSitePostPublicationTheme>
     </BlockLayout>
   );
 };
@@ -58,137 +73,86 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
     "standard-site-post/show-publication-theme",
   );
   let showPubTheme = showPubThemeFact?.data.value !== false;
+  let popoverKey = `${props.entityID}-settings`;
+  let setOpenPopover = useUIState((s) => s.setOpenPopover);
+  let isOpen = useUIState((s) => s.openPopover === popoverKey);
 
   return (
     <Popover
       asChild
       side="top"
       align="end"
-      className="flex flex-col gap-2 w-xs pb-3!"
+      className="p-0!"
+      open={isOpen}
+      onOpenChange={(o) => setOpenPopover(o ? popoverKey : null)}
       onOpenAutoFocus={(e) => e.preventDefault()}
       trigger={
         <SettingsTriggerButton aria-label="Standard Site Post Settings" />
       }
     >
-      <h4>Post Size</h4>
-      <div className="flex flex-col gap-3 w-full">
-        {(
-          [
-            { value: "small", Icon: SmallIcon },
-            { value: "medium", Icon: MedIcon },
-            { value: "large", Icon: LargeIcon },
-          ] as {
-            value: StandardSitePostSize;
-            Icon: (props: { selected: boolean }) => React.ReactNode;
-          }[]
-        ).map((option) => {
-          let selected =
-            size === option.value ||
-            (option.value === "medium" && size !== "small" && size !== "large");
-          return (
-            <button
-              className="text-left"
-              key={option.value}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => {
-                if (!rep) return;
-                rep.mutate.assertFact({
-                  entity: props.entityID,
-                  attribute: "standard-site-post/size",
-                  data: {
-                    type: "standard-site-post-size-union",
-                    value: option.value,
-                  },
-                });
-              }}
-            >
-              <option.Icon selected={selected} />
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-2 w-full sm:w-[1000px] sm:max-w-md pt-1 p-3! overflow-y-auto">
+        <div>
+          <h4>Post Size</h4>
+        </div>
+        <div className="flex sm:flex-row flex-col sm:gap-1 gap-2 w-full items-stretch">
+          {(
+            [
+              { value: "small", Icon: SmallIcon },
+              { value: "medium", Icon: MedIcon },
+              { value: "large", Icon: LargeIcon },
+            ] as {
+              value: StandardSitePostSize;
+              Icon: (props: { selected: boolean }) => React.ReactNode;
+            }[]
+          ).map((option) => {
+            let selected =
+              size === option.value ||
+              (option.value === "medium" &&
+                size !== "small" &&
+                size !== "large");
+            return (
+              <button
+                className={`PostBlockSizeSettingOption text-left flex flex-col flex-1 pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
+                key={option.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => {
+                  if (!rep) return;
+                  rep.mutate.assertFact({
+                    entity: props.entityID,
+                    attribute: "standard-site-post/size",
+                    data: {
+                      type: "standard-site-post-size-union",
+                      value: option.value,
+                    },
+                  });
+                }}
+              >
+                <div className="text-xs font-bold text-secondary uppercase">
+                  {option.value}
+                </div>
+                <div className="flex items-center grow w-full ">
+                  <option.Icon selected={selected} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <hr className="border-border-light my-1" />
+        <Toggle
+          toggle={showPubTheme}
+          onToggle={() => {
+            if (!rep) return;
+            rep.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "standard-site-post/show-publication-theme",
+              data: { type: "boolean", value: !showPubTheme },
+            });
+          }}
+        >
+          <div className="font-bold">Use Publication Theme</div>
+        </Toggle>
       </div>
-      <hr className="border-border-light my-1" />
-      <Toggle
-        toggle={showPubTheme}
-        onToggle={() => {
-          if (!rep) return;
-          rep.mutate.assertFact({
-            entity: props.entityID,
-            attribute: "standard-site-post/show-publication-theme",
-            data: { type: "boolean", value: !showPubTheme },
-          });
-        }}
-      >
-        <div className="font-bold">Use Publication Theme</div>
-      </Toggle>
     </Popover>
   );
 }
-
-const SmallIcon = ({ selected }: { selected: boolean }) => {
-  return (
-    <div
-      className={`flex gap-2 p-2 w-full opaque-container outline-2 outline-offset-1 border-border! ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent"}`}
-    >
-      <div className="flex flex-col gap-1 grow min-w-0">
-        <div className="w-full h-4 bg-tertiary rounded-[2px]" />
-
-        <div className="flex justify-between mt-1 w-full">
-          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
-          <div className="w-6 h-2 bg-border rounded-[2px]" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const MedIcon = ({ selected }: { selected: boolean }) => {
-  return (
-    <div
-      className={`flex gap-2  w-full opaque-container outline-2 outline-offset-1 bg-bg-page overflow-hidden border-border! ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent "}`}
-    >
-      <div className="flex flex-col gap-1 p-2 grow min-w-0">
-        <div className="w-full h-4 bg-tertiary rounded-[2px]" />
-        <div className="w-full h-2 bg-tertiary mt-1 rounded-[2px]" />
-        <div className="w-full h-2 bg-tertiary rounded-[2px]" />
-        <div className="flex justify-between mt-2 w-full">
-          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
-          <div className="w-6 h-2 bg-border rounded-[2px]" />
-        </div>
-      </div>
-      <div
-        className="aspect-square h-[82px] bg-border border-l border-border shrink-0 bg-cover bg-center"
-        style={{
-          backgroundImage: "url(/imagePlaceholder.png)",
-          backgroundBlendMode: "hard-light",
-        }}
-      />
-    </div>
-  );
-};
-
-const LargeIcon = ({ selected }: { selected: boolean }) => {
-  return (
-    <div
-      className={`flex flex-col gap-2 w-full outline-2 outline-offset-1 opaque-container overflow-hidden border-border! ${selected ? "outline-accent-contrast border-accent-contrast!" : "outline-transparent"}`}
-    >
-      <div
-        className="w-full aspect-video bg-border bg-cover bg-center border-b border-border"
-        style={{
-          backgroundImage: "url(/imagePlaceholder.png)",
-          backgroundBlendMode: "hard-light",
-        }}
-      />
-
-      <div className="flex flex-col gap-1 p-2 pt-0.5!">
-        <div className="w-full h-4 bg-tertiary rounded-[2px]" />
-        <div className="w-full h-2 bg-tertiary mt-1 rounded-[2px]" />
-        <div className="flex justify-between mt-2 w-full">
-          <div className="w-[60%]  h-2 bg-border rounded-[2px]" />
-          <div className="w-6 h-2 bg-border rounded-[2px]" />
-        </div>
-      </div>
-    </div>
-  );
-};

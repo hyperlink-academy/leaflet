@@ -1,10 +1,14 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { SubscribeWithHandle, AtSubscribeSuccess } from "./HandleSubscribe";
-import { EmailInput, EmailConfirm } from "./EmailSubscribe";
+import { EmailInput, EmailButton, EmailConfirm } from "./EmailSubscribe";
 import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
 import { LinkIdentityModal } from "./LinkIdentityModal";
+import {
+  SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES,
+  type SubscribeError,
+} from "./subscribeErrors";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
@@ -12,7 +16,8 @@ import { useToaster } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
-import { Menu, RadioMenuGroup, RadioMenuItem } from "components/Menu";
+import { Menu, MenuItem, RadioMenuGroup, RadioMenuItem } from "components/Menu";
+import { RSSTiny } from "components/Icons/RSSTiny";
 import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
@@ -26,6 +31,7 @@ type SubscribeMode = "email" | "atproto";
 
 export type SubscribeProps = {
   autoFocus?: boolean;
+  compact?: boolean;
   publicationUri: string;
   publicationUrl?: string;
   publicationName: string;
@@ -35,16 +41,15 @@ export type SubscribeProps = {
 
 export const SubscribePanel = (props: SubscribeProps) => {
   return (
-    <div className="px-3 sm:px-4 w-full">
-      <div className="accent-container rounded-lg! w-full px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5 text-center justify-center">
+    <div className="subscribePanel accent-container rounded-lg! border-none! p-0! w-full text-center justify-center">
+      <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
         <h3 className="leading-snug text-secondary">{props.publicationName}</h3>
         {props.publicationDescription && (
-          <div className="text-tertiary pb-1">
+          <div className="text-tertiary leading-snug">
             {props.publicationDescription}
           </div>
         )}
-
-        <div className="mx-auto">
+        <div className="w-fit max-w-full mx-auto pt-3">
           <SubscribeInput {...props} />
         </div>
       </div>
@@ -55,6 +60,8 @@ export const SubscribePanel = (props: SubscribeProps) => {
 export const SubscribeInput = (props: SubscribeProps) => {
   let toaster = useToaster();
   let router = useRouter();
+  let pathname = usePathname();
+  let searchParams = useSearchParams();
   const user = useViewerSubscription(props.publicationUri);
   const { identity, mutate: mutateIdentity } = useIdentityData();
   let [email, setEmail] = useState(user.email ?? "");
@@ -82,6 +89,60 @@ export const SubscribeInput = (props: SubscribeProps) => {
   // (or log out) before we send a confirmation code.
   const needsLinkConfirmation = !!viewerAtpDid && !viewerEmail && !!email;
 
+  // Embedded subscribe forms (see /api/subscribe_email) redirect back here
+  // with `subscribe_email=<email>` after sending the confirmation code. Open
+  // the confirm modal so the user can paste the code from their inbox without
+  // re-entering their email. `subscribe_email_confirmed=1` means the user was
+  // already verified server-side and the modal jumps straight to success.
+  useEffect(() => {
+    if (!props.newsletterMode) return;
+    const incomingEmail = searchParams.get("subscribe_email");
+    const alreadyConfirmed =
+      searchParams.get("subscribe_email_confirmed") === "1";
+    const errorCode = searchParams.get("subscribe_email_error");
+    if (!incomingEmail && !errorCode) return;
+
+    if (errorCode) {
+      const message =
+        ERROR_MESSAGES[errorCode as SubscribeError] ??
+        "We couldn't process that subscription. Try again.";
+      toaster({ type: "error", content: message });
+    } else if (incomingEmail) {
+      setEmail(incomingEmail);
+      setConfirmState(alreadyConfirmed ? "success" : "confirm");
+      setConfirmOpen(true);
+      if (alreadyConfirmed) {
+        setLocallySubscribed(true);
+        router.refresh();
+      }
+    }
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("subscribe_email");
+    next.delete("subscribe_email_confirmed");
+    next.delete("subscribe_email_error");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.newsletterMode]);
+
+  // The atproto subscribe flow pops oauth into a new tab when the form is
+  // embedded in an iframe (see HandleSubscribe.redirectToOauthForSubscribe).
+  // The oauth callback writes the subscription and redirects back here with
+  // `showSubscribeSuccess=true`; open the success modal and clear the param.
+  useEffect(() => {
+    if (searchParams.get("showSubscribeSuccess") !== "true") return;
+    setAtSuccessOpen(true);
+    setLocallySubscribed(true);
+    mutateIdentity();
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("showSubscribeSuccess");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const sendRequest = async (link: boolean) => {
     setRequesting(true);
     setLinkToCurrent(link);
@@ -106,12 +167,10 @@ export const SubscribeInput = (props: SubscribeProps) => {
     : user.atprotoSubscribed;
   const isSubscribed = showManage || locallySubscribed;
   const modeMenu = (
-    <SubscribeModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
+    <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
   return (
     <>
-      <div className="h-1 w-full spacer" />
-
       {isSubscribed ? (
         <>
           <ManageSubscription
@@ -134,10 +193,10 @@ export const SubscribeInput = (props: SubscribeProps) => {
               <div className="font-bold">Opt in to get updates via email!</div>
               <div className="max-w-sm w-full mx-auto">
                 <EmailInput
+                  publicationUrl={props.publicationUrl}
                   value={email}
                   onChange={setEmail}
                   disabled={user.loggedIn && !!user.email}
-                  autoFocus={props.autoFocus}
                   loading={requesting}
                   action={
                     <ButtonPrimary
@@ -163,12 +222,20 @@ export const SubscribeInput = (props: SubscribeProps) => {
         </>
       ) : props.newsletterMode ? (
         <div className="max-w-sm w-full mx-auto">
-          {subscribeMode === "email" ? (
+          {user.loggedIn && user.email ? (
+            <EmailButton
+              publicationUri={props.publicationUri}
+              publicationUrl={props.publicationUrl}
+              email={user.email}
+              handle={user.handle}
+              onSubscribed={() => setLocallySubscribed(true)}
+            />
+          ) : subscribeMode === "email" ? (
             <EmailInput
+              publicationUrl={props.publicationUrl}
               value={email}
               onChange={setEmail}
               disabled={user.loggedIn && !!user.email}
-              autoFocus={props.autoFocus}
               loading={requesting}
               leading={modeMenu}
               action={
@@ -191,8 +258,8 @@ export const SubscribeInput = (props: SubscribeProps) => {
           ) : (
             <SubscribeWithHandle
               user={user}
-              autoFocus={props.autoFocus}
               publicationUri={props.publicationUri}
+              publicationUrl={props.publicationUrl}
               onAtSuccess={() => setAtSuccessOpen(true)}
               leading={modeMenu}
             />
@@ -201,8 +268,8 @@ export const SubscribeInput = (props: SubscribeProps) => {
       ) : (
         <SubscribeWithHandle
           user={user}
-          autoFocus={props.autoFocus}
           publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
           onSubscribed={() => setLocallySubscribed(true)}
         />
       )}
@@ -222,21 +289,26 @@ export const SubscribeInput = (props: SubscribeProps) => {
           }}
         />
       )}
+      {/* Shown after an atproto subscribe completes — either inline (the
+          newsletter "subscribe via Atmosphere" branch) or when the oauth flow
+          redirects back with `showSubscribeSuccess` after popping login into a
+          new tab from an embedded iframe. Rendered for every pub, not just
+          newsletters, so the iframe success path works on atproto-only pubs. */}
+      <Modal
+        open={atSuccessOpen}
+        onOpenChange={(open) => {
+          setAtSuccessOpen(open);
+          if (!open) {
+            setLocallySubscribed(true);
+            mutateIdentity();
+            router.refresh();
+          }
+        }}
+      >
+        <AtSubscribeSuccess />
+      </Modal>
       {props.newsletterMode && (
         <>
-          <Modal
-            open={atSuccessOpen}
-            onOpenChange={(open) => {
-              setAtSuccessOpen(open);
-              if (!open) {
-                setLocallySubscribed(true);
-                mutateIdentity();
-                router.refresh();
-              }
-            }}
-          >
-            <AtSubscribeSuccess />
-          </Modal>
           <Modal
             open={confirmOpen}
             onOpenChange={(open) => {
@@ -285,7 +357,71 @@ export const SubscribeInput = (props: SubscribeProps) => {
   );
 };
 
-const SubscribeModeMenu = (props: {
+export const SubscribeButton = (props: SubscribeProps) => {
+  const user = useViewerSubscription(props.publicationUri);
+  let [locallySubscribed, setLocallySubscribed] = useState(false);
+
+  const showManage = props.newsletterMode
+    ? user.emailSubscribed
+    : user.atprotoSubscribed;
+
+  if (showManage || locallySubscribed) {
+    return (
+      <ManageSubscription
+        publicationUri={props.publicationUri}
+        publicationUrl={props.publicationUrl}
+        newsletterMode={props.newsletterMode}
+        user={user}
+      />
+    );
+  }
+
+  if (!props.newsletterMode && user.loggedIn && user.handle) {
+    return (
+      <SubscribeWithHandle
+        compact
+        user={user}
+        publicationUri={props.publicationUri}
+        publicationUrl={props.publicationUrl}
+        onSubscribed={() => setLocallySubscribed(true)}
+      />
+    );
+  }
+
+  if (props.newsletterMode && user.loggedIn && user.email) {
+    return (
+      <EmailButton
+        compact
+        publicationUri={props.publicationUri}
+        publicationUrl={props.publicationUrl}
+        email={user.email}
+        handle={user.handle}
+        onSubscribed={() => setLocallySubscribed(true)}
+      />
+    );
+  }
+
+  // Nothing to one-click with — either logged out, or logged in but missing the
+  // identity this pub needs (a handle for atproto pubs, an email for
+  // newsletters). Both open the full SubscribePanel (pub name/description +
+  // form) in a modal.
+  return (
+    <Modal
+      asChild
+      trigger={
+        <ButtonPrimary compact className="pubPageSubscribe text-sm!">
+          Subscribe
+        </ButtonPrimary>
+      }
+    >
+      <div className="w-md max-w-full">
+        <SubscribePanel {...props} />
+      </div>
+    </Modal>
+  );
+};
+
+const SubscribeInputModeMenu = (props: {
   mode: SubscribeMode;
   onChange: (mode: SubscribeMode) => void;
 }) => {
@@ -294,6 +430,7 @@ const SubscribeModeMenu = (props: {
       <Menu
         align="start"
         asChild
+        className="z-[60]!"
         trigger={
           <button
             type="button"
@@ -329,31 +466,77 @@ const SubscribeModeMenu = (props: {
   );
 };
 
-type SubscribeError =
-  | "invalid_email"
-  | "newsletter_disabled"
-  | "email_send_failed"
-  | "subscriber_not_found"
-  | "invalid_code"
-  | "database_error"
-  | "suppressed_spam_complaint"
-  | "suppression_delete_failed"
-  | "link_invalid_state"
-  | "email_belongs_to_other_account";
+export type SubscribeButtonModeMenuAccount = {
+  value: SubscribeMode;
+  label: string;
+  icon: React.ReactNode;
+  // The account the main button currently subscribes with — marked in the menu.
+  selected: boolean;
+  // Subscribe with this account directly, rather than just toggling selection.
+  onSelect: () => void;
+};
 
-const ERROR_MESSAGES: Record<SubscribeError, string> = {
-  invalid_email: "Please enter a valid email address.",
-  newsletter_disabled: "This publication isn't accepting email subscriptions.",
-  email_send_failed: "We couldn't send the confirmation email. Try again.",
-  subscriber_not_found: "No pending subscription. Start over.",
-  invalid_code: "That code didn't match. Try again.",
-  database_error: "Something went wrong. Try again.",
-  suppressed_spam_complaint:
-    "This address was previously marked as spam and can't be resubscribed. Contact the publication to resolve.",
-  suppression_delete_failed:
-    "We couldn't clear a prior delivery issue on this address. Try again later.",
-  link_invalid_state:
-    "Couldn't link this email to your account. Try logging out and subscribing again.",
-  email_belongs_to_other_account:
-    "This email is already linked to a different Bluesky account. Log out to use that account instead.",
+// The caret dropdown beside the compact subscribe button. Each account is a
+// one-click subscribe (it runs the subscribe action, not just a toggle), and
+// the optional RSS item links the feed. Shared by the atproto (HandleSubscribe)
+// and email (EmailSubscribe) buttons.
+export const SubscribeButtonModeMenu = (props: {
+  disabled: boolean;
+  publicationUrl?: string;
+  accounts: SubscribeButtonModeMenuAccount[];
+}) => {
+  let selectedValue =
+    props.accounts.find((a) => a.selected)?.value ?? props.accounts[0]?.value;
+  return (
+    <Menu
+      align="end"
+      asChild
+      className="text-sm"
+      trigger={
+        <ButtonPrimary
+          compact
+          disabled={props.disabled}
+          aria-label="Choose how to subscribe"
+          className="rounded-l-none! border-l-accent-2! py-0! h-full! hover:outline-transparent! focus:outline-transparent! active:outline-transparent! px-0.5!"
+        >
+          <ArrowDownTiny />
+        </ButtonPrimary>
+      }
+    >
+      <div className="text-tertiary text-sm px-1 pt-0.5 ">Subscribe with…</div>
+      <RadioMenuGroup value={selectedValue ?? ""}>
+        {props.accounts.map((account) => (
+          <RadioMenuItem
+            key={account.value}
+            className="py-0.5! font-normal!"
+            value={account.value}
+            selected={account.selected}
+            onSelect={() => account.onSelect()}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              {account.icon}
+              <span className="truncate">{account.label}</span>
+            </span>
+          </RadioMenuItem>
+        ))}
+      </RadioMenuGroup>
+
+      {props.publicationUrl && (
+        <MenuItem
+          className="py-0.5! font-normal!"
+          onSelect={() =>
+            window.open(
+              `${props.publicationUrl}/rss`,
+              "_blank",
+              "noopener,noreferrer",
+            )
+          }
+        >
+          <span className="flex items-center gap-2">
+            <RSSTiny className="shrink-0 text-tertiary" /> RSS Feed
+          </span>
+        </MenuItem>
+      )}
+    </Menu>
+  );
 };

@@ -9,7 +9,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage, localImages } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
@@ -17,7 +17,10 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { set } from "colorjs.io/fn";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "components/PageSWRDataProvider";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   ImageCoverImage,
@@ -182,23 +185,11 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   );
 }
 
-export const FullBleedSelectionIndicator = () => {
-  return (
-    <div
-      className={`absolute top-3 sm:top-4 bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 border-2 border-bg-page rounded-lg outline-offset-1 outline-solid outline-2 outline-tertiary`}
-    />
-  );
-};
-
-export const ImageBlockContext = createContext({
-  altEditorOpen: false,
-  setAltEditorOpen: (s: boolean) => {},
-});
-
 const CoverImageButton = (props: { entityID: string }) => {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pubData } = useLeafletPublicationData();
+  let publicationPage = useLeafletPublicationPage();
   let coverImage = useSubscribe(rep, (tx) =>
     tx.get<string | null>("publication_cover_image"),
   );
@@ -206,8 +197,14 @@ const CoverImageButton = (props: { entityID: string }) => {
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
 
-  // Only show if focused, in a publication, has write permissions, and no cover image is set
-  if (!isFocused || !pubData?.publications || !entity_set.permissions.write)
+  // Only show if focused, in a publication, has write permissions, and no cover image is set.
+  // Publication pages (e.g. an About page) don't have cover images, so skip them.
+  if (
+    !isFocused ||
+    !pubData?.publications ||
+    !entity_set.permissions.write ||
+    publicationPage
+  )
     return null;
   if (coverImage === props.entityID)
     return (

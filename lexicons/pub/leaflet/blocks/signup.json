@@ -1,0 +1,12 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.signup",
+  "defs": {
+    "main": {
+      "type": "object",
+      "description": "A subscribe/signup form for the publication. Renders the publication's subscribe form; carries no configurable data.",
+      "required": [],
+      "properties": {}
+    }
+  }
+}

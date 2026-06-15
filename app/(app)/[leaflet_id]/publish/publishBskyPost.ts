@@ -1,0 +1,235 @@
+"use server";
+
+import {
+  AppBskyEmbedExternal,
+  AppBskyRichtextFacet,
+  Agent as BskyAgent,
+  UnicodeString,
+} from "@atproto/api";
+import sharp from "sharp";
+import { TID } from "@atproto/common";
+import { AtUri } from "@atproto/syntax";
+import { getIdentityData } from "actions/getIdentityData";
+import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
+import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
+import { supabaseServerClient } from "supabase/serverClient";
+import { Json } from "supabase/database.types";
+import {
+  getMicroLinkOgImage,
+  getWebpageImage,
+} from "src/utils/getMicroLinkOgImage";
+import { fetchAtprotoBlob } from "app/api/atproto_images/route";
+import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
+
+type StrongRef = {
+  $type: "com.atproto.repo.strongRef";
+  uri: string;
+  cid: string;
+};
+
+type PublishBskyResult =
+  | { success: true }
+  | { success: false; error: OAuthSessionError };
+
+export async function publishPostToBsky(args: {
+  text: string;
+  url: string;
+  title: string;
+  description: string;
+  document_record: SiteStandardDocument.Record;
+  rkey: string;
+  facets: AppBskyRichtextFacet.Main[];
+  // When publishing to a publication, the document record lives in the
+  // publication owner's PDS, so the Bluesky cross-post must also be created
+  // from the owner's account. Standalone publishes leave this undefined and
+  // post from the current viewer.
+  ownerDid?: string;
+}): Promise<PublishBskyResult> {
+  let identity = await getIdentityData();
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
+
+  // The post is authored by whichever PDS hosts the document record. For
+  // publications that's the owner; for standalone docs it's the viewer. If a
+  // contributor is publishing and the owner is signed out, this surfaces a
+  // clear "owner needs to sign in again" error rather than silently posting
+  // from the contributor's account.
+  let postAuthorDid = args.ownerDid || identity.atp_did;
+
+  const sessionResult = await restoreOAuthSession(postAuthorDid);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
+
+  // Get image binary - prefer cover image, fall back to screenshot
+  let imageBinary: Blob | null = null;
+
+  if (args.document_record.coverImage) {
+    let cid =
+      (args.document_record.coverImage.ref as unknown as { $link: string })[
+        "$link"
+      ] || args.document_record.coverImage.ref.toString();
+
+    // The cover image blob was uploaded to the post author's PDS alongside
+    // the document record, so fetch it from there.
+    let coverImageResponse = await fetchAtprotoBlob(postAuthorDid, cid);
+    if (coverImageResponse) {
+      imageBinary = await coverImageResponse.blob();
+    }
+  }
+
+  // Fall back to screenshot if no cover image or fetch failed
+  if (!imageBinary) {
+    let preview_image = await getWebpageImage(args.url, {
+      width: 1400,
+      height: 733,
+      noCache: true,
+    });
+    // On failure the screenshot service returns a non-2xx with a JSON error
+    // body, not image bytes (a 422 here usually means the render timed out).
+    // Feeding that to sharp throws "unsupported image format", so guard on .ok.
+    if (preview_image.ok) {
+      imageBinary = await preview_image.blob();
+    } else {
+      console.error(
+        `Screenshot for bsky card failed (${preview_image.status}): ${await preview_image
+          .text()
+          .catch(() => "")}`,
+      );
+    }
+  }
+
+  // Resize and upload. A screenshot hiccup or unexpected image format should
+  // degrade to a card without a thumbnail rather than failing the publish, so
+  // keep `blob` optional and tolerate sharp throwing.
+  let blob:
+    | Awaited<ReturnType<typeof agent.com.atproto.repo.uploadBlob>>
+    | undefined;
+  if (imageBinary) {
+    try {
+      let resizedImage = await sharp(await imageBinary.arrayBuffer())
+        .resize({
+          width: 1200,
+          height: 630,
+          fit: "cover",
+        })
+        .webp({ quality: 85 })
+        .toBuffer();
+
+      blob = await agent.com.atproto.repo.uploadBlob(resizedImage, {
+        headers: { "Content-Type": "image/webp" },
+      });
+    } catch (e) {
+      console.error("Failed to process bsky card thumbnail:", e);
+    }
+  }
+
+  // Reference the document and, when it lives in a publication, the publication
+  // record on the post so the appview can index the relationship. Our DB
+  // doesn't store CIDs, so read each strong ref straight from the author's repo.
+  // (The document ref is the snapshot taken before we write bskyPostRef back to
+  // it below — the post→document→post cycle can't reference its own next CID.)
+  let did = credentialSession.did!;
+  let documentUri = `at://${did}/${args.document_record.$type}/${args.rkey}`;
+
+  let { data: docInPub } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("publication")
+    .eq("document", documentUri)
+    .maybeSingle();
+
+  let associatedRefs: StrongRef[] = [];
+  for (let uri of [documentUri, docInPub?.publication]) {
+    if (!uri) continue;
+    let ref = await getRecordStrongRef(agent, uri);
+    if (ref) associatedRefs.push(ref);
+  }
+
+  // associatedRefs hangs off the external embed card alongside uri/title/etc.
+  // It isn't in the published @atproto/api types yet, so widen External here.
+  let external: AppBskyEmbedExternal.External & {
+    associatedRefs?: StrongRef[];
+  } = {
+    uri: args.url,
+    title: args.title,
+    description: args.description,
+    ...(blob ? { thumb: blob.data.blob } : {}),
+  };
+  if (associatedRefs.length > 0) external.associatedRefs = associatedRefs;
+
+  let bsky = new BskyAgent(credentialSession);
+  let post = await bsky.app.bsky.feed.post.create(
+    {
+      repo: credentialSession.did!,
+      rkey: TID.nextStr(),
+    },
+    {
+      text: args.text,
+      createdAt: new Date().toISOString(),
+      facets: args.facets,
+      embed: {
+        $type: "app.bsky.embed.external",
+        external,
+      },
+    },
+  );
+  let record = args.document_record;
+  record.bskyPostRef = post;
+
+  // The caller hands us the fully inflated record. Large docs would 413 on
+  // putRecord without first offloading pages to a blob (the same offload
+  // publishToPublication did on the initial publish).
+  const recordForPDS = await maybeOffloadPagesToBlob(record, agent);
+
+  let { data: result } = await agent.com.atproto.repo.putRecord({
+    rkey: args.rkey,
+    repo: credentialSession.did!,
+    collection: args.document_record.$type,
+    record: recordForPDS,
+    validate: false, //TODO publish the lexicon so we can validate!
+  });
+  await supabaseServerClient
+    .from("documents")
+    .update({
+      data: record as Json,
+    })
+    .eq("uri", result.uri);
+  return { success: true };
+}
+
+// Resolve a record URI to a strong ref ({ uri, cid }) by reading its current
+// CID from the repo. Returns null if the record is missing or has no CID so a
+// failed lookup degrades to a missing associatedRef rather than blocking the post.
+async function getRecordStrongRef(
+  agent: AtpBaseClient,
+  uri: string,
+): Promise<StrongRef | null> {
+  try {
+    let { host, collection, rkey } = new AtUri(uri);
+    let { data } = await agent.com.atproto.repo.getRecord({
+      repo: host,
+      collection,
+      rkey,
+    });
+    if (!data.cid) return null;
+    return {
+      $type: "com.atproto.repo.strongRef",
+      uri: data.uri,
+      cid: data.cid,
+    };
+  } catch {
+    return null;
+  }
+}

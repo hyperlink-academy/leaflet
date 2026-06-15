@@ -1,33 +1,71 @@
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useState } from "react";
+import type { Color } from "react-aria-components";
 import { pickers, SectionArrow } from "./ThemeSetter";
 import { PubLeafletThemeBackgroundImage } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
-import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
+import { updatePublicationTheme } from "app/(app)/lish/createPub/updatePublication";
 import { PagePickers } from "./PubPickers/PubTextPickers";
 import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
-import { Separator } from "components/Layout";
 
 import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { PubPageWidthSetter } from "./PubPickers/PubPageWidthSetter";
 import { FontPicker } from "./Pickers/TextPickers";
-import { GoToArrow } from "components/Icons/GoToArrow";
-import { ButtonPrimary } from "components/Buttons";
 import { PresetThemePicker } from "./PubPickers/PubPresetPicker";
 
 export type ImageState = {
   src: string;
   file?: File;
   repeat: number | null;
+};
+
+export type PubThemeColorSet = {
+  bgLeaflet: Color;
+  bgPage: Color;
+  primary: Color;
+  accent1: Color;
+  accent2: Color;
+};
+
+// The state PubThemePickerPanel needs; implemented by usePubThemeEditorState
+// (React state + explicit save) and useDraftPubThemeState (draft leaflet facts).
+export type PubThemePanelState = {
+  openPicker: pickers;
+  setOpenPicker: (p: pickers) => void;
+  showPageBackground: boolean;
+  setShowPageBackground: (s: boolean) => void;
+  localPubTheme: PubThemeColorSet & {
+    highlight1?: string;
+    highlight2: Color;
+    highlight3: Color;
+    showPageBackground?: boolean;
+    pageWidth?: number;
+    headingFontId?: string;
+    bodyFontId?: string;
+  };
+  setTheme: (
+    action:
+      | Partial<PubThemeColorSet>
+      | ((t: Partial<PubThemeColorSet>) => Partial<PubThemeColorSet>),
+  ) => void;
+  image: ImageState | null;
+  setImage: (i: ImageState | null) => void;
+  pageWidth: number;
+  setPageWidth: (w: number) => void;
+  headingFont: string | undefined;
+  setHeadingFont: (f: string | undefined) => void;
+  bodyFont: string | undefined;
+  setBodyFont: (f: string | undefined) => void;
+  pubBGImage: string | null;
+  leafletBGRepeat: number | null;
 };
 
 export function usePubThemeEditorState() {
@@ -150,7 +188,7 @@ export function usePubThemeEditorState() {
 
 export type PubThemeEditorState = ReturnType<typeof usePubThemeEditorState>;
 
-export function PubThemePickerPanel(props: { state: PubThemeEditorState }) {
+export function PubThemePickerPanel(props: { state: PubThemePanelState }) {
   let {
     openPicker,
     setOpenPicker,
@@ -262,81 +300,3 @@ export function PubThemePickerPanel(props: { state: PubThemeEditorState }) {
     </div>
   );
 }
-
-export const PubThemeSetter = (props: {
-  backToMenu: () => void;
-  loading: boolean;
-  setLoading: (l: boolean) => void;
-}) => {
-  let [sample, setSample] = useState<"pub" | "post">("pub");
-  let state = usePubThemeEditorState();
-  let {
-    localPubTheme,
-    headingFont,
-    bodyFont,
-    image,
-    pageWidth,
-    pubBGImage,
-    leafletBGRepeat,
-    pub,
-    record,
-    showPageBackground,
-    submitTheme,
-  } = state;
-
-  return (
-    <CardBorderHiddenContext.Provider value={!showPageBackground}>
-      <BaseThemeProvider
-        local
-        {...localPubTheme}
-        headingFontId={headingFont}
-        bodyFontId={bodyFont}
-        hasBackgroundImage={!!image}
-        className="min-h-0!"
-      >
-        <div className="min-h-0 flex-1 flex flex-col pb-0.5">
-          <div className="flex-shrink-0">
-            <button type="button" onClick={props.backToMenu}>
-              <GoToArrow />
-            </button>
-          </div>
-
-          <div className="themeSetterContent flex flex-col w-full overflow-y-scroll min-h-0 -mb-2 pt-2 ">
-            <PubThemePickerPanel state={state} />
-            <div className="flex flex-col mt-4 ">
-              <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
-                <div className="text-sm">Preview</div>
-                <Separator classname="h-4!" />{" "}
-                <button
-                  type="button"
-                  className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
-                  onClick={() => setSample("pub")}
-                >
-                  Pub
-                </button>
-                <button
-                  type="button"
-                  className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
-                  onClick={() => setSample("post")}
-                >
-                  Post
-                </button>
-              </div>
-            </div>
-            <div className="pt-2">
-              <ButtonPrimary
-                fullWidth
-                disabled={props.loading}
-                onClick={async () => {
-                  await submitTheme(props.setLoading);
-                }}
-              >
-                {props.loading ? "Saving..." : "Save Theme"}
-              </ButtonPrimary>
-            </div>
-          </div>
-        </div>
-      </BaseThemeProvider>
-    </CardBorderHiddenContext.Provider>
-  );
-};

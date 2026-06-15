@@ -26,12 +26,14 @@ import { UndoManager } from "@rocicorp/undo";
 import { addShortcut } from "src/shortcuts";
 import { createUndoManager } from "src/undoManager";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { YjsRealtimeProvider } from "src/yjsRealtime";
 
 export type Fact<A extends Attribute> = {
   id: string;
   entity: string;
   attribute: A;
   data: Data<A>;
+  author_did?: string | null;
 };
 
 let ReplicacheContext = createContext({
@@ -194,7 +196,12 @@ export function ReplicacheProvider(props: {
         permission_token: props.token,
       }}
     >
-      {props.children}
+      <YjsRealtimeProvider
+        name={props.name}
+        enabled={!props.initialFactsOnly && !props.disablePull}
+      >
+        {props.children}
+      </YjsRealtimeProvider>
     </ReplicacheContext.Provider>
   );
 }

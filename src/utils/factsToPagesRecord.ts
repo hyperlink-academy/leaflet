@@ -18,6 +18,7 @@ import {
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
+  PubLeafletBlocksSignup,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -68,7 +69,7 @@ export type ProcessBlocksToPagesHooks = {
     | null;
 };
 
-export type ProcessBlocksToPagesResult = {
+type ProcessBlocksToPagesResult = {
   pages: {
     id: string;
     blocks:
@@ -110,6 +111,10 @@ function resolveHighlightColors(
 export async function processBlocksToPages(opts: {
   facts: Fact<Attribute>[];
   root_entity: string;
+  // The page entity to serialize as the record's first page. Defaults to the
+  // leaflet's first root/page; publication drafts pass each nav page here
+  // (theme facts still resolve against root_entity).
+  start_page?: string;
   hooks: ProcessBlocksToPagesHooks;
 }): Promise<ProcessBlocksToPagesResult> {
   const { facts, root_entity, hooks } = opts;
@@ -118,23 +123,24 @@ export async function processBlocksToPages(opts: {
 
   const highlightColors = resolveHighlightColors(scan, root_entity);
 
-  const firstEntity = scan.eav(root_entity, "root/page")?.[0];
-  if (!firstEntity) throw new Error("No root page");
+  const startPage =
+    opts.start_page ?? scan.eav(root_entity, "root/page")?.[0]?.data.value;
+  if (!startPage) throw new Error("No root page");
 
-  const [pageType] = scan.eav(firstEntity.data.value, "page/type");
+  const [pageType] = scan.eav(startPage, "page/type");
 
   if (pageType?.data.value === "canvas") {
-    const canvasBlocks = await canvasBlocksToRecord(firstEntity.data.value);
+    const canvasBlocks = await canvasBlocksToRecord(startPage);
     pages.unshift({
-      id: firstEntity.data.value,
+      id: startPage,
       blocks: canvasBlocks,
       type: "canvas",
     });
   } else {
-    const blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
+    const blocks = getBlocksWithTypeLocal(facts, startPage);
     const b = await blocksToRecord(blocks);
     pages.unshift({
-      id: firstEntity.data.value,
+      id: startPage,
       blocks: b,
       type: "doc",
     });
@@ -560,12 +566,19 @@ export async function processBlocksToPages(opts: {
         b.value,
         "posts-list/highlight-first-post",
       );
-      const [filterTagFact] = scan.eav(b.value, "posts-list/filter-tag");
+      const filterTagFacts = scan.eav(b.value, "posts-list/filter-tag");
+      const filterByTags = filterTagFacts.map((f) => f.data.value);
       const block: $Typed<PubLeafletBlocksPostsList.Main> = {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
-        ...(filterTagFact && { filterByTag: filterTagFact.data.value }),
+        ...(filterByTags.length > 0 && { filterByTags }),
+      };
+      return block;
+    }
+    if (b.type === "signup") {
+      const block: $Typed<PubLeafletBlocksSignup.Main> = {
+        $type: ids.PubLeafletBlocksSignup,
       };
       return block;
     }
@@ -617,11 +630,11 @@ export async function processBlocksToPages(opts: {
   }
 }
 
-export type HighlightColors = Partial<
+type HighlightColors = Partial<
   Record<"1" | "2" | "3", PubLeafletRichtextFacet.Highlight["color"]>
 >;
 
-export function YJSFragmentToFacets(
+function YJSFragmentToFacets(
   node: Y.XmlElement | Y.XmlText | Y.XmlHook,
   byteOffset: number = 0,
   footnoteContentResolver?: (footnoteEntityID: string) => {

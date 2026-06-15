@@ -309,6 +309,114 @@ const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
   await ctx.retractFact(args.factID);
 };
 
+// Add a content page to a publication draft leaflet's nav, seeded with a
+// single empty text block.
+const addPublicationNavPage: Mutation<{
+  rootEntity: string;
+  pageEntity: string;
+  permission_set: string;
+  navFactID: string;
+  route: string;
+  title: string;
+  firstBlockEntity: string;
+  firstBlockFactID: string;
+}> = async (args, ctx) => {
+  let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
+  let last = entries.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[entries.length - 1];
+  await ctx.createEntity({
+    entityID: args.pageEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    id: args.navFactID,
+    entity: args.rootEntity,
+    attribute: "root/page",
+    data: {
+      type: "ordered-reference",
+      value: args.pageEntity,
+      position: generateKeyBetween(last?.data.position || null, null),
+    },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "page/type",
+    data: { type: "page-type-union", value: "doc" },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "page/route",
+    data: { type: "string", value: args.route },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "page/title",
+    data: { type: "string", value: args.title },
+  });
+  await addBlock(
+    {
+      factID: args.firstBlockFactID,
+      permission_set: args.permission_set,
+      newEntityID: args.firstBlockEntity,
+      type: "text",
+      parent: args.pageEntity,
+      position: "a0",
+    },
+    ctx,
+  );
+};
+
+// Add an external link tab: same root/page list as content pages, but with an
+// external url and no content.
+const addPublicationNavLink: Mutation<{
+  rootEntity: string;
+  linkEntity: string;
+  permission_set: string;
+  navFactID: string;
+  url: string;
+  title: string;
+}> = async (args, ctx) => {
+  let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
+  let last = entries.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[entries.length - 1];
+  await ctx.createEntity({
+    entityID: args.linkEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    id: args.navFactID,
+    entity: args.rootEntity,
+    attribute: "root/page",
+    data: {
+      type: "ordered-reference",
+      value: args.linkEntity,
+      position: generateKeyBetween(last?.data.position || null, null),
+    },
+  });
+  await ctx.assertFact({
+    entity: args.linkEntity,
+    attribute: "page/external-url",
+    data: { type: "string", value: args.url },
+  });
+  await ctx.assertFact({
+    entity: args.linkEntity,
+    attribute: "page/title",
+    data: { type: "string", value: args.title },
+  });
+};
+
+const removePublicationNavEntry: Mutation<{
+  rootEntity: string;
+  entity: string;
+}> = async (args, ctx) => {
+  let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
+  let fact = entries.find((f) => f.data.value === args.entity);
+  if (fact) await ctx.retractFact(fact.id);
+  await ctx.deleteEntity(args.entity);
+};
+
 const removeBlock: Mutation<
   { blockEntity: string } | { blockEntity: string }[]
 > = async (args, ctx) => {
@@ -720,6 +828,89 @@ const updatePublicationDraft: Mutation<{
   });
 };
 
+const updateLeafletMetadata: Mutation<{
+  title?: string;
+  description?: string | null;
+}> = async (args, ctx) => {
+  await ctx.runOnServer(async (serverCtx) => {
+    const updates: { title?: string; description?: string | null } = {};
+    if (args.title !== undefined) updates.title = args.title;
+    if (args.description !== undefined) updates.description = args.description;
+    if (Object.keys(updates).length === 0) return;
+
+    const { data: writerToken } = await serverCtx.supabase
+      .from("permission_tokens")
+      .select("root_entity, permission_token_rights(write)")
+      .eq("id", ctx.permission_token_id)
+      .single();
+    if (!writerToken) return;
+    const hasWrite = writerToken.permission_token_rights.some((r) => r.write);
+    if (!hasWrite) return;
+
+    await serverCtx.supabase
+      .from("permission_tokens")
+      .update(updates)
+      .eq("root_entity", writerToken.root_entity);
+  });
+};
+
+// Toggle a draft contributor (the byline for this draft). The selected dids
+// live in the leaflet_contributors table and are pulled into Replicache under
+// the "draft_contributors" key, so the byline syncs live across collaborators.
+const toggleDraftContributor: Mutation<{
+  contributor_did: string;
+  selected: boolean;
+}> = async (args, ctx) => {
+  await ctx.runOnServer(async ({ supabase }) => {
+    let { contributor_did } = args;
+    let leaflet = ctx.permission_token_id;
+
+    if (!args.selected) {
+      await supabase
+        .from("leaflet_contributors")
+        .delete()
+        .eq("leaflet", leaflet)
+        .eq("contributor_did", contributor_did);
+      return;
+    }
+
+    // Adding: the target must be the publication owner or a confirmed contributor.
+    let { data: link } = await supabase
+      .from("leaflets_in_publications")
+      .select("publication, publications(identity_did)")
+      .eq("leaflet", leaflet)
+      .maybeSingle();
+    if (!link?.publication) return;
+
+    let isOwner = contributor_did === link.publications?.identity_did;
+    if (!isOwner) {
+      let { data: pubContrib } = await supabase
+        .from("publication_contributors")
+        .select("confirmed")
+        .eq("publication_uri", link.publication)
+        .eq("contributor_did", contributor_did)
+        .maybeSingle();
+      if (!pubContrib?.confirmed) return;
+    }
+
+    await supabase
+      .from("leaflet_contributors")
+      .upsert(
+        { leaflet, contributor_did },
+        { onConflict: "leaflet,contributor_did", ignoreDuplicates: true },
+      );
+  });
+  await ctx.runOnClient(async ({ tx }) => {
+    let current = (await tx.get<string[]>("draft_contributors")) ?? [];
+    let next = args.selected
+      ? current.includes(args.contributor_did)
+        ? current
+        : [...current, args.contributor_did]
+      : current.filter((d) => d !== args.contributor_did);
+    await tx.set("draft_contributors", next);
+  });
+};
+
 const createFootnote: Mutation<{
   footnoteEntityID: string;
   blockID: string;
@@ -751,6 +942,146 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
+// A comment and a reply share the same body: an entity holding the YJS
+// content plus author/created-at facts, all carrying the author's did so the
+// server's authentication gate (sessionDid must match author_did) verifies
+// authorship. Content is a base64-encoded YJS update, composed locally and
+// only persisted on submit.
+async function createAuthoredEntity(
+  ctx: MutationContext,
+  args: {
+    entityID: string;
+    permission_set: string;
+    authorDid: string;
+    createdAt: string;
+    content: string;
+  },
+) {
+  await ctx.createEntity({
+    entityID: args.entityID,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "block/text",
+    data: { type: "text", value: args.content },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "comment/author",
+    data: { type: "string", value: args.authorDid },
+    author_did: args.authorDid,
+  });
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "comment/created-at",
+    data: { type: "string", value: args.createdAt },
+    author_did: args.authorDid,
+  });
+}
+
+const createComment: Mutation<{
+  commentEntityID: string;
+  blockID: string;
+  permission_set: string;
+  position: string;
+  authorDid: string;
+  createdAt: string;
+  anchorStart: number;
+  anchorEnd: number;
+  content: string;
+}> = async (args, ctx) => {
+  await createAuthoredEntity(ctx, { ...args, entityID: args.commentEntityID });
+  await ctx.assertFact({
+    entity: args.blockID,
+    attribute: "block/comment",
+    data: {
+      type: "ordered-reference",
+      value: args.commentEntityID,
+      position: args.position,
+    },
+  });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "comment/anchor-start",
+    data: { type: "number", value: args.anchorStart },
+  });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "comment/anchor-end",
+    data: { type: "number", value: args.anchorEnd },
+  });
+};
+
+const createCommentReply: Mutation<{
+  replyEntityID: string;
+  commentEntityID: string;
+  permission_set: string;
+  position: string;
+  authorDid: string;
+  createdAt: string;
+  content: string;
+}> = async (args, ctx) => {
+  await createAuthoredEntity(ctx, { ...args, entityID: args.replyEntityID });
+  await ctx.assertFact({
+    entity: args.commentEntityID,
+    attribute: "comment/reply",
+    data: {
+      type: "ordered-reference",
+      value: args.replyEntityID,
+      position: args.position,
+    },
+  });
+};
+
+const deleteComment: Mutation<{
+  commentEntityID: string;
+  blockID: string;
+}> = async (args, ctx) => {
+  // Fired both when a thread is resolved and by the editor's orphan diff when a
+  // comment's anchor text is deleted. Deletes the root comment and all replies.
+  let comments = await ctx.scanIndex.eav(args.blockID, "block/comment");
+  let fact = comments.find((f) => f.data.value === args.commentEntityID);
+  if (fact) await ctx.retractFact(fact.id);
+  let replies = await ctx.scanIndex.eav(args.commentEntityID, "comment/reply");
+  for (let reply of replies) {
+    await ctx.deleteEntity(reply.data.value);
+  }
+  await ctx.deleteEntity(args.commentEntityID);
+};
+
+const deleteCommentReply: Mutation<{
+  replyEntityID: string;
+  commentEntityID: string;
+}> = async (args, ctx) => {
+  let replies = await ctx.scanIndex.eav(args.commentEntityID, "comment/reply");
+  let fact = replies.find((f) => f.data.value === args.replyEntityID);
+  if (fact) await ctx.retractFact(fact.id);
+  await ctx.deleteEntity(args.replyEntityID);
+};
+
+// Replace a comment or reply body in place. Only the original author may
+// edit. The new content is a full YJS doc state with no shared history with
+// the old one, so we retract the existing block/text and assert the new value
+// rather than letting assertFact merge two independent docs together.
+const editComment: Mutation<{
+  entityID: string;
+  authorDid: string;
+  content: string;
+}> = async (args, ctx) => {
+  let author = await ctx.scanIndex.eav(args.entityID, "comment/author");
+  if (author[0]?.data.value !== args.authorDid) return;
+  let existing = await ctx.scanIndex.eav(args.entityID, "block/text");
+  for (let fact of existing) await ctx.retractFact(fact.id);
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "block/text",
+    data: { type: "text", value: args.content },
+    author_did: args.authorDid,
+  });
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -760,6 +1091,9 @@ export const mutations = {
   moveBlockUp,
   moveBlockDown,
   addPageLinkBlock,
+  addPublicationNavPage,
+  addPublicationNavLink,
+  removePublicationNavEntry,
   moveBlock,
   assertFact,
   retractFact,
@@ -774,6 +1108,13 @@ export const mutations = {
   addPollOption,
   removePollOption,
   updatePublicationDraft,
+  updateLeafletMetadata,
+  toggleDraftContributor,
   createFootnote,
   deleteFootnote,
+  createComment,
+  createCommentReply,
+  deleteComment,
+  deleteCommentReply,
+  editComment,
 };
