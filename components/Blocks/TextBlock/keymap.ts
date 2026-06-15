@@ -467,13 +467,15 @@ const enter =
     // Splitting the block to make a new list item / text block runs its
     // mutations asynchronously (see asyncRun below). Open the undo group now and
     // close it once those resolve so the split and the new block undo as one
-    // step. The delete transaction is dispatched as a bulkOp so trackUndoRedo
-    // adds it to this group instead of starting its own timeout-based group.
+    // step. The delete transaction is marked externalUndoGroup so trackUndoRedo
+    // adds it to this group instead of starting its own timeout-based group —
+    // unlike bulkOp this still refocuses the block on undo, so the cursor is
+    // restored to the split point.
     um.startGroup();
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
-    tr.setMeta("bulkOp", true);
+    tr.setMeta("externalUndoGroup", true);
     dispatch?.(tr);
 
     let newEntityID = v7();
