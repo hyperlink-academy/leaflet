@@ -56,6 +56,7 @@ export default async function PublicationEditPage(props: Props) {
   if (!draftLeaflet) {
     draftLeaflet = await createPublicationDraftLeaflet({
       publication_uri: publication.uri,
+      did,
       description: pubRecord?.description,
       theme: resolvePublicationTheme(pubRecord),
     });
