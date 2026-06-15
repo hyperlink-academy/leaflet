@@ -793,11 +793,8 @@ body.cmd-held .ProseMirror a {
    pill via the #yjs-cursor-goo SVG filter. Three layers: a goo-filtered layer
    (the line stub + a small blob that the line melts into at the pill's base),
    the crisp caret line outside the filter, and the crisp name pill carrying
-   the visible text. The goo filter composites the crisp source back on top,
-   so its only net effect is the fillet where two shapes meet — it never needs
-   to span the full pill, which is why the goo box (--goo-pad-x) stays tight to
-   the caret in every state. --cursor-color and the spring easing variables are
-   set inline per cursor by the builder. */
+   the visible text. --cursor-color and the spring easing variables are set
+   inline per cursor by the builder. */
 /* 0×0 positioned anchor next to the editor; carets are positioned inside it
    from viewport-rect deltas, so surrounding layout doesn't matter */
 .yjs-cursor-layer {
@@ -812,12 +809,9 @@ body.cmd-held .ProseMirror a {
   /* how much the caret stretches upward when open, lifting the pill clear
      of the text */
   --cursor-lift: 10px;
-  /* Horizontal half-extent of the goo/overlay boxes. The goo only has to melt
-     the caret line into the base of the pill, so this box only spans that
-     junction near the caret — NOT the full width of the open name pill (which
-     is painted crisply by .yjs-cursor-label). Keeping it tight matters because
-     the box hangs off both sides of the caret; a wide one pushes past the page
-     edge and scrolls the page sideways on iOS Safari. */
+  /* horizontal half-extent of the goo/overlay boxes — spans only the junction
+     near the caret where the line melts into the pill's base; the full-width
+     name pill is painted crisply by .yjs-cursor-label */
   --goo-pad-x: 16px;
   --goo-pad-top: 26px;
   /* left/top/height are set inline per cursor from view.coordsAtPos */
@@ -882,9 +876,8 @@ body.cmd-held .ProseMirror a {
     height 154ms ease,
     top 154ms ease;
 }
-/* the crisp, full-width name pill — this is the visible pill body. The goo
-   layer only renders the small junction blob (see the .yjs-cursor-open rule
-   for .yjs-cursor-goo .yjs-cursor-pill), so the colour lives here. */
+/* the crisp, full-width name pill — the visible pill body (the goo layer
+   renders only the junction blob) */
 .yjs-cursor-label {
   background-color: var(--cursor-color, orange);
   pointer-events: auto;
@@ -941,9 +934,9 @@ body.cmd-held .ProseMirror a {
    stretches upward on the spring, the stub and pill riding the lifted tip
    so the pill sits clear of the text. Never spring the clamped max-width —
    the clipped overshoot flickers — ease it out instead. */
-/* The goo pill stays a small blob: just enough for the caret line to melt
-   into the base of the name pill. The visible full-width pill is the crisp
-   .yjs-cursor-label drawn on top, so the goo box never has to grow wide. */
+/* the goo pill stays a small blob — just the junction the caret line melts
+   into at the pill's base; the visible full-width pill is the crisp
+   .yjs-cursor-label drawn on top */
 .yjs-cursor-open .yjs-cursor-goo .yjs-cursor-pill {
   max-width: 26px;
 }
