@@ -131,15 +131,9 @@ export const TextBlockKeymap = (
       return true;
     },
     Backspace: (state, dispatch, view) =>
-      um.withUndoGroup(() =>
-        backspace(propsRef, repRef)(state, dispatch, view),
-      ),
-    "Shift-Backspace": backspace(propsRef, repRef),
-    Enter: (state, dispatch, view) => {
-      return um.withUndoGroup(() => {
-        return enter(propsRef, repRef)(state, dispatch, view);
-      });
-    },
+      backspace(propsRef, repRef, um)(state, dispatch, view),
+    "Shift-Backspace": backspace(propsRef, repRef, um),
+    Enter: (state, dispatch, view) => enter(propsRef, repRef, um)(state, dispatch, view),
     "Shift-Enter": (state, dispatch, view) => {
       // Insert a hard break
       let hardBreak = schema.nodes.hard_break.create();
@@ -244,62 +238,90 @@ const backspace =
   (
     propsRef: PropsRef,
     repRef: RefObject<Replicache<ReplicacheMutators> | null>,
+    um: UndoManager,
   ) =>
   (
     state: EditorState,
     dispatch?: (tr: Transaction) => void,
     view?: EditorView,
   ) => {
+    // A single backspace can fire several mutations (e.g. reparenting a list
+    // item's children and then removing the block). Each mutation's
+    // undoManager.add runs async — after this returns — so collect the mutation
+    // promises and hold an undo group open until they all settle, making the
+    // whole backspace undo as one step. The group opens lazily on the first
+    // mutation; finish() closes it (or is a no-op when nothing was mutated).
+    let opened = false;
+    let pending: Promise<unknown>[] = [];
+    let mutate = (p: Promise<unknown> | undefined) => {
+      if (!opened) {
+        um.startGroup();
+        opened = true;
+      }
+      if (p) pending.push(p);
+    };
+    let finish = (result: boolean) => {
+      if (opened) Promise.all(pending).finally(() => um.endGroup());
+      return result;
+    };
     // if multiple blocks are selected, don't do anything (handled in SelectionManager)
     if (useUIState.getState().selectedBlocks.length > 1) {
-      return false;
+      return finish(false);
     }
     // if you are selecting text within a block, don't do anything (handled by proseMirror)
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
-      return false;
+      return finish(false);
     }
     // if you are in a list...
     if (propsRef.current.listData) {
       // ...and the item is a checklist item, remove the checklist attribute
       if (propsRef.current.listData.checklist) {
-        repRef.current?.mutate.retractAttribute({
-          entity: propsRef.current.entityID,
-          attribute: "block/check-list",
-        });
-        return true;
+        mutate(
+          repRef.current?.mutate.retractAttribute({
+            entity: propsRef.current.entityID,
+            attribute: "block/check-list",
+          }),
+        );
+        return finish(true);
       }
       // ...move the child list items to next eligible parent (?)
       let depth = propsRef.current.listData.depth;
-      repRef.current?.mutate.moveChildren({
-        oldParent: propsRef.current.entityID,
-        newParent: propsRef.current.previousBlock?.listData
-          ? propsRef.current.previousBlock.value
-          : propsRef.current.listData.parent || propsRef.current.parent,
-        after:
-          propsRef.current.previousBlock?.listData?.path.find(
-            (f) => f.depth === depth,
-          )?.entity ||
-          propsRef.current.previousBlock?.value ||
-          null,
-      });
+      mutate(
+        repRef.current?.mutate.moveChildren({
+          oldParent: propsRef.current.entityID,
+          newParent: propsRef.current.previousBlock?.listData
+            ? propsRef.current.previousBlock.value
+            : propsRef.current.listData.parent || propsRef.current.parent,
+          after:
+            propsRef.current.previousBlock?.listData?.path.find(
+              (f) => f.depth === depth,
+            )?.entity ||
+            propsRef.current.previousBlock?.value ||
+            null,
+        }),
+      );
     }
     // if this is the first block and is it a list, remove list attribute
     if (!propsRef.current.previousBlock) {
       if (propsRef.current.listData) {
-        repRef.current?.mutate.retractAttribute({
-          entity: propsRef.current.entityID,
-          attribute: "block/is-list",
-        });
-        return true;
+        mutate(
+          repRef.current?.mutate.retractAttribute({
+            entity: propsRef.current.entityID,
+            attribute: "block/is-list",
+          }),
+        );
+        return finish(true);
       }
 
       // If the block is a heading, convert it to a text block
       if (propsRef.current.type === "heading") {
-        repRef.current?.mutate.assertFact({
-          entity: propsRef.current.entityID,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "text" },
-        });
+        mutate(
+          repRef.current?.mutate.assertFact({
+            entity: propsRef.current.entityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "text" },
+          }),
+        );
         setTimeout(
           () =>
             focusBlock(
@@ -313,15 +335,17 @@ const backspace =
           10,
         );
 
-        return false;
+        return finish(false);
       }
 
       if (propsRef.current.pageType === "canvas") {
-        repRef.current?.mutate.removeBlock({
-          blockEntity: propsRef.current.entityID,
-        });
+        mutate(
+          repRef.current?.mutate.removeBlock({
+            blockEntity: propsRef.current.entityID,
+          }),
+        );
       }
-      return true;
+      return finish(true);
     }
 
     let block = !!propsRef.current.previousBlock
@@ -335,16 +359,20 @@ const backspace =
       block.editor.doc.textContent.length === 0 &&
       !propsRef.current.previousBlock?.listData
     ) {
-      repRef.current?.mutate.removeBlock({
-        blockEntity: propsRef.current.previousBlock.value,
-      });
-      return true;
+      mutate(
+        repRef.current?.mutate.removeBlock({
+          blockEntity: propsRef.current.previousBlock.value,
+        }),
+      );
+      return finish(true);
     }
 
     if (state.doc.textContent.length === 0) {
-      repRef.current?.mutate.removeBlock({
-        blockEntity: propsRef.current.entityID,
-      });
+      mutate(
+        repRef.current?.mutate.removeBlock({
+          blockEntity: propsRef.current.entityID,
+        }),
+      );
       if (propsRef.current.previousBlock) {
         focusBlock(propsRef.current.previousBlock, { type: "end" });
       } else {
@@ -353,7 +381,7 @@ const backspace =
           entityID: propsRef.current.parent,
         });
       }
-      return true;
+      return finish(true);
     }
 
     if (
@@ -362,14 +390,16 @@ const backspace =
     ) {
       focusBlock(propsRef.current.previousBlock, { type: "end" });
       view?.dom.blur();
-      return true;
+      return finish(true);
     }
 
-    if (!block || !propsRef.current.previousBlock) return false;
+    if (!block || !propsRef.current.previousBlock) return finish(false);
 
-    repRef.current?.mutate.removeBlock({
-      blockEntity: propsRef.current.entityID,
-    });
+    mutate(
+      repRef.current?.mutate.removeBlock({
+        blockEntity: propsRef.current.entityID,
+      }),
+    );
 
     let tr = block.editor.tr;
 
@@ -390,7 +420,7 @@ const backspace =
       editor: newState,
     });
 
-    return true;
+    return finish(true);
   };
 
 const shifttab =
@@ -414,6 +444,7 @@ const enter =
   (
     propsRef: PropsRef,
     repRef: RefObject<Replicache<ReplicacheMutators> | null>,
+    um: UndoManager,
   ) =>
   (
     state: EditorState,
@@ -427,12 +458,22 @@ const enter =
       propsRef.current.pageType !== "canvas" &&
       state.doc.content.size <= 2
     ) {
-      shifttab(propsRef, repRef)();
+      // The outdent's mutations run async, so keep the undo group open until
+      // they resolve instead of closing it synchronously.
+      um.startGroup();
+      shifttab(propsRef, repRef)().finally(() => um.endGroup());
       return true;
     }
+    // Splitting the block to make a new list item / text block runs its
+    // mutations asynchronously (see asyncRun below). Open the undo group now and
+    // close it once those resolve so the split and the new block undo as one
+    // step. The delete transaction is dispatched as a bulkOp so trackUndoRedo
+    // adds it to this group instead of starting its own timeout-based group.
+    um.startGroup();
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
+    tr.setMeta("bulkOp", true);
     dispatch?.(tr);
 
     let newEntityID = v7();
@@ -638,35 +679,37 @@ const enter =
         });
       }
     };
-    asyncRun().then(() => {
-      useUIState.getState().setSelectedBlock({
-        value: newEntityID,
-        parent: propsRef.current.parent,
-      });
+    asyncRun()
+      .finally(() => um.endGroup())
+      .then(() => {
+        useUIState.getState().setSelectedBlock({
+          value: newEntityID,
+          parent: propsRef.current.parent,
+        });
 
-      setTimeout(() => {
-        let block = useEditorStates.getState().editorStates[newEntityID];
-        if (block) {
-          let tr = block.editor.tr;
-          if (newContent.content.size > 2) {
-            tr.replaceWith(0, tr.doc.content.size, newContent.content);
-            tr.setSelection(TextSelection.create(tr.doc, 0));
-            let newState = block.editor.apply(tr);
-            setEditorState(newEntityID, {
-              editor: newState,
-            });
+        setTimeout(() => {
+          let block = useEditorStates.getState().editorStates[newEntityID];
+          if (block) {
+            let tr = block.editor.tr;
+            if (newContent.content.size > 2) {
+              tr.replaceWith(0, tr.doc.content.size, newContent.content);
+              tr.setSelection(TextSelection.create(tr.doc, 0));
+              let newState = block.editor.apply(tr);
+              setEditorState(newEntityID, {
+                editor: newState,
+              });
+            }
+            focusBlock(
+              {
+                value: newEntityID,
+                parent: propsRef.current.parent,
+                type: "text",
+              },
+              { type: "start" },
+            );
           }
-          focusBlock(
-            {
-              value: newEntityID,
-              parent: propsRef.current.parent,
-              type: "text",
-            },
-            { type: "start" },
-          );
-        }
-      }, 10);
-    });
+        }, 10);
+      });
 
     // if you are in the middle of a text block, split the block
     return true;

@@ -83,7 +83,7 @@ export function SelectionManager() {
                 data: { type: "boolean", value: true },
               });
             } else {
-              outdentFull(block, rep);
+              await outdentFull(block, rep);
             }
           }
         },
@@ -378,7 +378,7 @@ export function SelectionManager() {
           }
         };
         if (e.key === "Backspace" || e.key === "Delete") {
-          deleteBlocks();
+          await deleteBlocks();
         }
         if (e.key === "ArrowUp") {
           let [sortedBlocks, siblings] = await getSortedSelectionBound();
@@ -609,7 +609,7 @@ export function SelectionManager() {
             return;
           e.preventDefault();
           await copySelection(rep, selectionWithFoldedChildren);
-          if (e.key === "x") deleteBlocks();
+          if (e.key === "x") await deleteBlocks();
         }
       });
     window.addEventListener("keydown", listener);
