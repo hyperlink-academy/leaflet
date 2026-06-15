@@ -115,13 +115,17 @@ const BlockTypeToHTML: {
         "\\f": "#1f(#2)",
       },
     });
-    return renderToStaticMarkup(
+    // Return the element, not renderToStaticMarkup's string — renderBlock
+    // renders it once. Pre-rendering here would get escaped by that second
+    // pass, so the clipboard would hold the markup as literal text and math
+    // would paste as text instead of a math block.
+    return (
       <div
         data-type="math"
         data-tex={math?.data.value}
         data-alignment={a}
         dangerouslySetInnerHTML={{ __html: html }}
-      />,
+      />
     );
   },
   "horizontal-rule": async () => <hr />,
