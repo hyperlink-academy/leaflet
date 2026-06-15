@@ -9,7 +9,7 @@ import {
 import { EditorState } from "prosemirror-state";
 import { schema } from "./schema";
 import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
-import { addImage } from "src/utils/addImage";
+import { addImage, prepareImage } from "src/utils/addImage";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -176,51 +176,79 @@ export const useHandlePaste = (
         if (item?.type.includes("image")) {
           let file = item.getAsFile();
           if (file) {
-            // Group the block creation/conversion into a single undo step so
-            // one Cmd-Z removes the pasted image. withUndoGroup holds the group
-            // open across the async mutator callbacks; the image facts use
-            // ignoreUndo so they don't add steps on top of the group (reverting
-            // the block removes them anyway). The entity is known synchronously,
-            // so we kick off addImage immediately — in parallel with the
-            // structural mutations — instead of blocking on them. That keeps the
-            // optimistic block/image fact and the service-worker cache populating
-            // as soon as possible, and means a transient mutation rejection can't
-            // skip the upload.
-            let entity: string;
-            if (editorState.editor.doc.textContent.length === 0) {
-              entity = propsRef.current.entityID;
-              undoManager.withUndoGroup(async () => {
-                await rep.mutate.assertFact({
-                  entity: propsRef.current.entityID,
-                  attribute: "block/type",
-                  data: { type: "block-type-union", value: "image" },
-                });
-                await rep.mutate.retractAttribute({
-                  entity: propsRef.current.entityID,
-                  attribute: "block/text",
-                });
-              });
-            } else {
-              entity = v7();
-              undoManager.withUndoGroup(() =>
-                rep.mutate.addBlock({
-                  permission_set: entity_set.set,
-                  factID: v7(),
-                  type: "image",
-                  newEntityID: entity,
-                  parent: propsRef.current.parent,
-                  position: generateKeyBetween(
-                    propsRef.current.position,
-                    propsRef.current.nextPosition,
-                  ),
-                }),
-              );
-            }
-            addImage(file, rep, {
+            // Decode the image FIRST, then commit the block's structural facts
+            // (type / card/block) together with the optimistic block/image fact
+            // in a single transaction. Committing them atomically means the block
+            // never paints as an image-type block with no image — i.e. no empty
+            // "Upload An Image" placeholder flashes before the picture appears.
+            // The whole structural commit is one undo group (one Cmd-Z removes
+            // the pasted image); finishUpload writes the post-upload fact with
+            // ignoreUndo so it doesn't add a stray step on top of the group.
+            const intoEmptyBlock =
+              editorState.editor.doc.textContent.length === 0;
+            const entity = intoEmptyBlock ? propsRef.current.entityID : v7();
+            const parent = propsRef.current.parent;
+            const position = generateKeyBetween(
+              propsRef.current.position,
+              propsRef.current.nextPosition,
+            );
+            prepareImage(file, rep, {
               attribute: "block/image",
               entityID: entity,
               ignoreUndo: true,
-            }).catch(() => {});
+            })
+              .then(async ({ imageFact, finishUpload }) => {
+                // finally → finishUpload guarantees the concurrency slot is
+                // released even if a commit throws.
+                try {
+                  if (intoEmptyBlock) {
+                    await undoManager.withUndoGroup(async () => {
+                      await rep.mutate.assertFact([
+                        {
+                          entity,
+                          attribute: "block/type",
+                          data: { type: "block-type-union", value: "image" },
+                        },
+                        imageFact,
+                      ]);
+                      await rep.mutate.retractAttribute({
+                        entity,
+                        attribute: "block/text",
+                      });
+                    });
+                  } else {
+                    // createEntity first (it renders nothing until referenced),
+                    // then commit the card/block reference, type, and image fact
+                    // in one transaction so the new block appears with its image.
+                    await rep.mutate.createEntity([
+                      { entityID: entity, permission_set: entity_set.set },
+                    ]);
+                    await undoManager.withUndoGroup(() =>
+                      rep.mutate.assertFact([
+                        {
+                          entity: parent,
+                          id: v7(),
+                          attribute: "card/block",
+                          data: {
+                            type: "ordered-reference",
+                            value: entity,
+                            position,
+                          },
+                        },
+                        {
+                          entity,
+                          attribute: "block/type",
+                          data: { type: "block-type-union", value: "image" },
+                        },
+                        imageFact,
+                      ]),
+                    );
+                  }
+                } finally {
+                  await finishUpload();
+                }
+              })
+              .catch(() => {});
           }
           return;
         }
@@ -845,7 +873,12 @@ function buildBlockFromHTML(
   return result;
 }
 
-const LEGACY_FLATTEN_TAGS = new Set([
+// Block-level tags that become their own block when flattening pasted HTML.
+// NOTE: inline/phrasing tags (A, SPAN, I, SUP, …) are deliberately NOT here —
+// they're coalesced into the surrounding text block (see INLINE_FLATTEN_TAGS)
+// so a hyperlink in flowing prose parses as an inline link mark instead of
+// splitting the paragraph and becoming its own (async) link block.
+const BLOCK_FLATTEN_TAGS = new Set([
   "BLOCKQUOTE",
   "P",
   "PRE",
@@ -859,53 +892,115 @@ const LEGACY_FLATTEN_TAGS = new Set([
   "UL",
   "OL",
   "IMG",
-  "A",
-  "SPAN",
   "HR",
 ]);
 
+// Phrasing/inline elements that stay *within* a text block rather than breaking
+// the paragraph. A run of these (plus text nodes) is gathered into one <p>.
+const INLINE_FLATTEN_TAGS = new Set([
+  "A",
+  "SPAN",
+  "I",
+  "B",
+  "EM",
+  "STRONG",
+  "U",
+  "S",
+  "STRIKE",
+  "DEL",
+  "INS",
+  "SUP",
+  "SUB",
+  "CODE",
+  "MARK",
+  "SMALL",
+  "ABBR",
+  "CITE",
+  "Q",
+  "TIME",
+  "FONT",
+  "KBD",
+  "VAR",
+  "SAMP",
+  "BDI",
+  "BDO",
+  "DFN",
+  "BR",
+  "WBR",
+]);
+
 function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
-  function collectHTML(node: Node, htmlBlocks: HTMLElement[]): void {
-    if (node.nodeType === Node.TEXT_NODE) {
-      if (node.textContent && node.textContent.trim() !== "") {
-        let newElement = document.createElement("p");
-        newElement.textContent = node.textContent;
-        htmlBlocks.push(newElement);
+  const htmlBlocks: HTMLElement[] = [];
+
+  const isSpecialBlock = (el: HTMLElement) =>
+    !!el.getAttribute("data-entityid") ||
+    !!el.getAttribute("data-tex") ||
+    !!el.getAttribute("data-bluesky-post");
+
+  // A <p> that only wraps a special block (e.g. inline "$$…$$" math, which
+  // markdown nests inside a paragraph) should yield the inner block rather than
+  // a text block, so we recurse into it instead of pushing the <p>.
+  const wrapsOnlySpecialBlock = (el: HTMLElement) =>
+    el.tagName === "P" &&
+    !isSpecialBlock(el) &&
+    !!el.querySelector("[data-tex], [data-entityid], [data-bluesky-post]") &&
+    !Array.from(el.childNodes).some(
+      (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim() !== "",
+    );
+
+  // Walk a container's children, coalescing consecutive inline content (text
+  // nodes + phrasing elements) into a single <p>. This keeps inline links and
+  // other marks inside one text block instead of fragmenting the paragraph.
+  function walk(container: Node): void {
+    let inlineBuffer: Node[] = [];
+    const flushInline = () => {
+      if (inlineBuffer.length === 0) return;
+      const p = document.createElement("p");
+      for (const n of inlineBuffer) p.appendChild(n.cloneNode(true));
+      inlineBuffer = [];
+      if (p.textContent && p.textContent.trim() !== "") htmlBlocks.push(p);
+    };
+
+    for (const child of Array.from(container.childNodes)) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        inlineBuffer.push(child);
+        continue;
       }
-    }
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const elementNode = node as HTMLElement;
-      const isSpecialBlock =
-        elementNode.getAttribute("data-entityid") ||
-        elementNode.getAttribute("data-tex") ||
-        elementNode.getAttribute("data-bluesky-post");
-      // A <p> that only wraps a special block (e.g. inline "$$…$$" math, which
-      // markdown nests inside a paragraph) should yield the inner block rather
-      // than a text block, so recurse into it instead of pushing the <p>.
-      const wrapsOnlySpecialBlock =
-        elementNode.tagName === "P" &&
-        !isSpecialBlock &&
-        !!elementNode.querySelector(
-          "[data-tex], [data-entityid], [data-bluesky-post]",
-        ) &&
-        !Array.from(elementNode.childNodes).some(
-          (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim() !== "",
-        );
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+      const el = child as HTMLElement;
+      // Explicit buttons keep their own block; plain links stay inline.
+      const isButtonLink =
+        el.tagName === "A" && el.getAttribute("data-type") === "button";
+
       if (
-        (LEGACY_FLATTEN_TAGS.has(elementNode.tagName) || isSpecialBlock) &&
-        !wrapsOnlySpecialBlock
+        (isSpecialBlock(el) ||
+          BLOCK_FLATTEN_TAGS.has(el.tagName) ||
+          isButtonLink) &&
+        !wrapsOnlySpecialBlock(el)
       ) {
-        htmlBlocks.push(elementNode);
+        flushInline();
+        htmlBlocks.push(el);
+      } else if (INLINE_FLATTEN_TAGS.has(el.tagName)) {
+        inlineBuffer.push(el);
       } else {
-        for (let child of node.childNodes) {
-          collectHTML(child, htmlBlocks);
-        }
+        // Non-phrasing container (DIV, SECTION, a special-wrapping <p>, …):
+        // descend so its own inline content coalesces at that level.
+        flushInline();
+        walk(el);
       }
     }
+    flushInline();
   }
 
-  const htmlBlocks: HTMLElement[] = [];
-  collectHTML(element, htmlBlocks);
+  // A block/special element passed directly (e.g. the nested-list lookup in the
+  // LI handler hands us a <ul>/<ol>) is returned as-is.
+  if (
+    element.nodeType === Node.ELEMENT_NODE &&
+    (BLOCK_FLATTEN_TAGS.has(element.tagName) || isSpecialBlock(element))
+  ) {
+    return [element];
+  }
+  walk(element);
   return htmlBlocks;
 }
 
