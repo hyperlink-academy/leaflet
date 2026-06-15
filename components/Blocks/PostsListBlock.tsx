@@ -12,6 +12,7 @@ import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { EmptyState } from "components/EmptyState";
 
 type PostsListView = "small" | "medium";
 
@@ -65,6 +66,14 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
+
+  if (!filteredPosts || filteredPosts.length === 0)
+    return (
+      <EmptyState
+        container="none"
+        description="You haven't published any posts yet! When you do, they'll show here."
+      />
+    );
 
   return (
     <PublicationPostsList
