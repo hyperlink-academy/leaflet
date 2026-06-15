@@ -301,11 +301,12 @@ async function bulkPaste({
   if (activeReuse) {
     const droppedID = firstBuilt.entityID;
     const activeID = propsRef.current.entityID;
-    bulkBlocks = result.blocks.slice(1).map((b) =>
-      b.parent === droppedID ? { ...b, parent: activeID } : b,
-    );
+    bulkBlocks = result.blocks
+      .slice(1)
+      .map((b) => (b.parent === droppedID ? { ...b, parent: activeID } : b));
     for (const f of firstBuilt.facts) {
-      if (f.attribute === "block/type" || f.attribute === "block/text") continue;
+      if (f.attribute === "block/type" || f.attribute === "block/text")
+        continue;
       const remapped: FactInput = { ...f, entity: activeID };
       reuseFacts.push(remapped);
     }
@@ -393,14 +394,12 @@ async function bulkPaste({
       const { oldEditorState, newEditorState } = activeReuseUndo;
       undoManager.add({
         undo: () => {
-          const view =
-            useEditorStates.getState().editorStates[activeID]?.view;
+          const view = useEditorStates.getState().editorStates[activeID]?.view;
           if (view && !view.hasFocus()) view.focus();
           setEditorState(activeID, { editor: oldEditorState });
         },
         redo: () => {
-          const view =
-            useEditorStates.getState().editorStates[activeID]?.view;
+          const view = useEditorStates.getState().editorStates[activeID]?.view;
           if (view && !view.hasFocus()) view.focus();
           setEditorState(activeID, { editor: newEditorState });
         },
@@ -555,8 +554,7 @@ function buildBlockFromHTML(
   if (!baseType) return result;
 
   // Special DIV variants determine final type.
-  const isMath =
-    child.tagName === "DIV" && !!child.getAttribute("data-tex");
+  const isMath = child.tagName === "DIV" && !!child.getAttribute("data-tex");
   const isBlueskyPost =
     child.tagName === "DIV" && !!child.getAttribute("data-bluesky-post");
   const isCardPaste =
@@ -639,14 +637,16 @@ function buildBlockFromHTML(
     ydoc.destroy();
   }
 
-  // PRE → code body
+  // PRE → code body. data-lang is Leaflet's own exact language; fall back to a
+  // language-* class (markdown fenced code) and then data-language.
   if (child.tagName === "PRE" && child.textContent) {
-    let lang = child.getAttribute("data-language") || "plaintext";
-    if (child.firstElementChild && child.firstElementChild.className) {
-      const className = child.firstElementChild.className;
-      const match = className.match(/language-(\w+)/);
+    let lang = child.getAttribute("data-lang");
+    if (!lang && child.firstElementChild?.className) {
+      const match =
+        child.firstElementChild.className.match(/language-([\w.+-]+)/);
       if (match) lang = match[1];
     }
+    if (!lang) lang = child.getAttribute("data-language") || "plaintext";
     facts.push({
       entity: entityID,
       attribute: "block/code-language",
@@ -655,7 +655,12 @@ function buildBlockFromHTML(
     facts.push({
       entity: entityID,
       attribute: "block/code",
-      data: { type: "string", value: child.textContent },
+      // markdown→HTML wraps the body in extra blank lines; strip them so pasted
+      // code doesn't gain leading/trailing empty lines.
+      data: {
+        type: "string",
+        value: child.textContent.replace(/^\n+|\n+$/g, ""),
+      },
     });
   }
 
@@ -690,13 +695,13 @@ function buildBlockFromHTML(
     }
   }
 
-  // DIV with data-tex → math
+  // DIV with data-tex → math (markdown "$$…$$" wraps the tex in newlines)
   if (isMath) {
     const tex = child.getAttribute("data-tex");
     facts.push({
       entity: entityID,
       attribute: "block/math",
-      data: { type: "string", value: tex || "" },
+      data: { type: "string", value: (tex || "").trim() },
     });
   }
 
@@ -803,9 +808,7 @@ function buildBlockFromHTML(
         parent: entityID,
         permission_set,
       });
-      const nestedTopLevel = nested.blocks.filter(
-        (b) => b.parent === entityID,
-      );
+      const nestedTopLevel = nested.blocks.filter((b) => b.parent === entityID);
       if (nestedTopLevel.length > 0) {
         const nestedPositions = generateNKeysBetween(
           null,
@@ -871,11 +874,25 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
     }
     if (node.nodeType === Node.ELEMENT_NODE) {
       const elementNode = node as HTMLElement;
-      if (
-        LEGACY_FLATTEN_TAGS.has(elementNode.tagName) ||
+      const isSpecialBlock =
         elementNode.getAttribute("data-entityid") ||
         elementNode.getAttribute("data-tex") ||
-        elementNode.getAttribute("data-bluesky-post")
+        elementNode.getAttribute("data-bluesky-post");
+      // A <p> that only wraps a special block (e.g. inline "$$…$$" math, which
+      // markdown nests inside a paragraph) should yield the inner block rather
+      // than a text block, so recurse into it instead of pushing the <p>.
+      const wrapsOnlySpecialBlock =
+        elementNode.tagName === "P" &&
+        !isSpecialBlock &&
+        !!elementNode.querySelector(
+          "[data-tex], [data-entityid], [data-bluesky-post]",
+        ) &&
+        !Array.from(elementNode.childNodes).some(
+          (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim() !== "",
+        );
+      if (
+        (LEGACY_FLATTEN_TAGS.has(elementNode.tagName) || isSpecialBlock) &&
+        !wrapsOnlySpecialBlock
       ) {
         htmlBlocks.push(elementNode);
       } else {
@@ -1088,14 +1105,13 @@ const createBlockFromHTMLLegacy = (
     // standalone link block.
   }
   if (child.tagName === "PRE") {
-    let lang = child.getAttribute("data-language") || "plaintext";
-    if (child.firstElementChild && child.firstElementChild.className) {
-      let className = child.firstElementChild.className;
-      let match = className.match(/language-(\w+)/);
-      if (match) {
-        lang = match[1];
-      }
+    let lang = child.getAttribute("data-lang");
+    if (!lang && child.firstElementChild?.className) {
+      let match =
+        child.firstElementChild.className.match(/language-([\w.+-]+)/);
+      if (match) lang = match[1];
     }
+    if (!lang) lang = child.getAttribute("data-language") || "plaintext";
     if (child.textContent) {
       rep.mutate.assertFact([
         {
@@ -1111,7 +1127,10 @@ const createBlockFromHTMLLegacy = (
         {
           entity: entityID,
           attribute: "block/code",
-          data: { type: "string", value: child.textContent },
+          data: {
+            type: "string",
+            value: child.textContent.replace(/^\n+|\n+$/g, ""),
+          },
         },
       ]);
     }
@@ -1142,7 +1161,7 @@ const createBlockFromHTMLLegacy = (
       {
         entity: entityID,
         attribute: "block/math",
-        data: { type: "string", value: tex || "" },
+        data: { type: "string", value: (tex || "").trim() },
       },
     ]);
   }
