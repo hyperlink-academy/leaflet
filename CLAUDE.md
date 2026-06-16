@@ -75,3 +75,7 @@ To add or modify a lexicon:
 - **Inngest functions**: Async jobs in `app/api/inngest/functions/`
 - **Icons**: Icon components live in `components/Icons/`. Each icon is a named export in its own file (e.g. `RefreshSmall.tsx`), imports `Props` from `./Props`, spreads `{...props}` on the `<svg>` element, and uses `fill="currentColor"` instead of hardcoded colors like `fill="black"`.
 - **Popovers and menus**: Use the existing `Popover` (`components/Popover`), `Menu`, and `MenuItem` (`components/Menu`) components — do not create new popover/menu primitives. Avoid using buttons inside Popover or Modal triggers unless using a specific button component. If button is being used as trigger, always add an "asChild" prop to the Menu or Popover
+
+### Comments
+
+Don't describe in a comment what the code already says, and don't capture counterfactuals — comments shouldn't be hysteretic. Don't narrate what changed, what it used to do, what you considered and rejected, or why something isn't done another way. Comment only on the non-obvious why that the code itself can't convey.

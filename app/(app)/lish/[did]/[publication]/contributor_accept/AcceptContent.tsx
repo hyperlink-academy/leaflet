@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
+import { LoginContent } from "components/LoginButton";
 import { acceptContributorInvitation } from "actions/publications/contributors";
 
 type AcceptState =
@@ -16,10 +17,10 @@ type AcceptState =
   | "pending"
   | "already_member";
 
-// The non-pending states all render the same shape: a heading, a paragraph,
-// and a single link button. Only the copy and destination differ.
+// The remaining non-pending states all render the same shape: a heading, a
+// paragraph, and a single link button. Only the copy and destination differ.
 const STATIC_STATES: Record<
-  Exclude<AcceptState, "pending">,
+  Exclude<AcceptState, "pending" | "not_signed_in">,
   {
     title: string;
     body: (name: string) => React.ReactNode;
@@ -33,18 +34,6 @@ const STATIC_STATES: Record<
     body: () => "We couldn't find that publication.",
     href: () => "/home",
     cta: "Back to Home",
-  },
-  not_signed_in: {
-    title: "Sign in to accept your invitation",
-    body: (name) => (
-      <>
-        Sign in with the Bluesky account that received the invitation to
-        contribute to <span className="font-bold">{name}</span>.
-      </>
-    ),
-    href: () => "/login",
-    cta: "Sign In",
-    primary: true,
   },
   not_invited: {
     title: "No invitation found",
@@ -102,7 +91,19 @@ export function AcceptContent(props: {
   };
 
   let body: React.ReactNode;
-  if (props.state === "pending") {
+  if (props.state === "not_signed_in") {
+    body = (
+      <>
+        <h3 className="text-secondary">Sign in to accept your invitation</h3>
+        <p className="text-tertiary leading-snug pb-2">
+          Sign in with the Bluesky account that received the invitation to
+          contribute to{" "}
+          <span className="font-bold">{props.publicationName}</span>.
+        </p>
+        <LoginContent pageView noEmailLogin />
+      </>
+    );
+  } else if (props.state === "pending") {
     body = (
       <>
         <h3 className="text-secondary">

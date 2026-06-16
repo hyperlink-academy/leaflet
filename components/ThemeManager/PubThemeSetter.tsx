@@ -66,6 +66,9 @@ export type PubThemePanelState = {
   setBodyFont: (f: string | undefined) => void;
   pubBGImage: string | null;
   leafletBGRepeat: number | null;
+  // Reset the draft theme back to the published theme; only the draft-leaflet
+  // editor supports this (the legacy editor discards local edits on its own).
+  resetTheme?: () => void;
 };
 
 export function usePubThemeEditorState() {
@@ -206,10 +209,20 @@ export function PubThemePickerPanel(props: { state: PubThemePanelState }) {
     setBodyFont,
     pubBGImage,
     leafletBGRepeat,
+    resetTheme,
   } = props.state;
 
   return (
     <div className="themeSetterContent flex flex-col w-full">
+      {resetTheme && (
+        <button
+          type="button"
+          onClick={resetTheme}
+          className="self-end text-xs text-tertiary hover:text-primary mb-1"
+        >
+          Reset to Published
+        </button>
+      )}
       <div className="themeBGLeaflet flex flex-col">
         <div
           className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
