@@ -61,16 +61,19 @@ export function useBlockKeyboardHandlers(
       if (!AllowedIfTextBlock.includes(e.key) && isTextBlock[props.type])
         return;
 
-      undoManager.startGroup();
-      await command?.({
-        e,
-        props,
-        rep,
-        entity_set,
-        areYouSure,
-        setAreYouSure,
-      });
-      setTimeout(() => undoManager.endGroup(), 100);
+      // withUndoGroup holds the group open until the (async) command's mutations
+      // settle, so a multi-mutation command (e.g. indent/outdent) undoes as one
+      // step. This replaces an earlier 100ms endGroup timeout.
+      await undoManager.withUndoGroup(() =>
+        command?.({
+          e,
+          props,
+          rep,
+          entity_set,
+          areYouSure,
+          setAreYouSure,
+        }),
+      );
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
