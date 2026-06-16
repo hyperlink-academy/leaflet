@@ -8,7 +8,10 @@ import {
   type FactInput,
 } from "src/utils/createLeaflet";
 import { PubThemeDefaults } from "components/ThemeManager/themeDefaults";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { supabaseServerClient } from "supabase/serverClient";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
 
 // Lexicon theme color (or hex default) → the hsba string theme/* facts store.
 function toHsbaString(
@@ -36,7 +39,10 @@ function isLexColor(
 
 // Seed theme/* facts from the published theme so a publish with no edits
 // round-trips it.
-function themeFacts(theme: PubLeafletPublication.Theme | undefined): FactInput[] {
+function themeFacts(
+  theme: PubLeafletPublication.Theme | undefined,
+  did: string,
+): FactInput[] {
   const colors: [string, unknown, string][] = [
     ["theme/page-background", theme?.backgroundColor, PubThemeDefaults.backgroundColor],
     ["theme/card-background", theme?.pageBackground, PubThemeDefaults.pageBackground],
@@ -71,6 +77,23 @@ function themeFacts(theme: PubLeafletPublication.Theme | undefined): FactInput[]
       attribute: "theme/body-font",
       data: { type: "string", value: theme.bodyFont },
     });
+  if (theme?.backgroundImage?.image) {
+    let src = blobRefToSrc(theme.backgroundImage.image.ref, did, APP_URL);
+    facts.push({
+      attribute: "theme/background-image",
+      data: { type: "image", src, fallback: src, width: 0, height: 0 },
+    });
+    // Published `width` is the repeat tile size; its absence with repeat=true
+    // mirrors the picker's default. repeat=false means cover (no fact).
+    let repeatWidth = theme.backgroundImage.repeat
+      ? theme.backgroundImage.width || 500
+      : undefined;
+    if (repeatWidth)
+      facts.push({
+        attribute: "theme/background-image-repeat",
+        data: { type: "number", value: repeatWidth },
+      });
+  }
   return facts;
 }
 
@@ -79,6 +102,7 @@ function themeFacts(theme: PubLeafletPublication.Theme | undefined): FactInput[]
 // existing draft_leaflet — if a concurrent request won, its token is returned.
 export async function createPublicationDraftLeaflet(args: {
   publication_uri: string;
+  did: string;
   description?: string;
   theme?: PubLeafletPublication.Theme;
 }): Promise<string> {
@@ -93,7 +117,7 @@ export async function createPublicationDraftLeaflet(args: {
   const { permTokenId } = await createLeaflet({
     pageType: "doc",
     firstBlocks,
-    rootFacts: themeFacts(args.theme),
+    rootFacts: themeFacts(args.theme, args.did),
     pageFacts: [
       { attribute: "page/type", data: { type: "page-type-union", value: "doc" } },
       { attribute: "page/route", data: { type: "string", value: "/" } },

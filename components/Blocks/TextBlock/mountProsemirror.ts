@@ -246,12 +246,14 @@ export function useMountProsemirror({
       },
     );
 
-    const unsubscribe = useEditorStates.subscribe((s) => {
-      let editorState = s.editorStates[entityID];
-      if (editorState?.initial) return;
-      if (editorState?.editor)
-        editorState.view?.updateState(editorState.editor);
-    });
+    const unsubscribe = useEditorStates.subscribe(
+      (s) => s.editorStates[entityID],
+      (editorState) => {
+        if (editorState?.initial) return;
+        if (editorState?.editor)
+          editorState.view?.updateState(editorState.editor);
+      },
+    );
 
     let editorState = useEditorStates.getState().editorStates[entityID];
     if (editorState?.editor && !editorState.initial)
@@ -377,13 +379,19 @@ export function trackUndoRedo(
 ) {
   let addToHistory = tr.getMeta("addToHistory");
   let isBulkOp = tr.getMeta("bulkOp");
+  // externalUndoGroup: the caller already has an undo group open and is keeping
+  // it open across async mutations (e.g. the Enter handler grouping a block
+  // split with the new block's creation), so skip the timeout-based group
+  // management here and just add the entry. Unlike bulkOp this does NOT suppress
+  // focus on undo (see setState above), so the cursor returns to the block.
+  let skipGroupManagement = isBulkOp || tr.getMeta("externalUndoGroup");
   let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
 
   if (addToHistory !== false && docHasChanges) {
     if (actionTimeout.current) window.clearTimeout(actionTimeout.current);
-    else if (!isBulkOp) undoManager.startGroup();
+    else if (!skipGroupManagement) undoManager.startGroup();
 
-    if (!isBulkOp) {
+    if (!skipGroupManagement) {
       actionTimeout.current = window.setTimeout(() => {
         undoManager.endGroup();
         actionTimeout.current = null;

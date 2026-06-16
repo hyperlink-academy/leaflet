@@ -115,13 +115,17 @@ const BlockTypeToHTML: {
         "\\f": "#1f(#2)",
       },
     });
-    return renderToStaticMarkup(
+    // Return the element, not renderToStaticMarkup's string — renderBlock
+    // renders it once. Pre-rendering here would get escaped by that second
+    // pass, so the clipboard would hold the markup as literal text and math
+    // would paste as text instead of a math block.
+    return (
       <div
         data-type="math"
         data-tex={math?.data.value}
         data-alignment={a}
         dangerouslySetInnerHTML={{ __html: html }}
-      />,
+      />
     );
   },
   "horizontal-rule": async () => <hr />,
@@ -133,7 +137,17 @@ const BlockTypeToHTML: {
   code: async (b, tx, a) => {
     let [code] = await scanIndex(tx).eav(b.value, "block/code");
     let [lang] = await scanIndex(tx).eav(b.value, "block/code-language");
-    return <pre data-lang={lang?.data.value}>{code?.data.value || ""}</pre>;
+    let language = lang?.data.value;
+    // data-lang preserves the exact language for Leaflet→Leaflet paste; the
+    // language-* class on <code> is what htmlToMarkdown turns into a fenced
+    // code block's language, so the language survives the text/plain path too.
+    return (
+      <pre data-lang={language}>
+        <code className={language ? `language-${language}` : undefined}>
+          {code?.data.value || ""}
+        </code>
+      </pre>
+    );
   },
   button: async (b, tx, a) => {
     let [text] = await scanIndex(tx).eav(b.value, "button/text");

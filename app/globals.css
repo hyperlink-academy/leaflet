@@ -789,12 +789,12 @@ body.cmd-held .ProseMirror a {
 
 /* Collaborative cursors (yCursorPlugin + collabCursorBuilder): a caret line
    with a dot on its tip. Hover contracts the caret in anticipation, then
-   springs it open into a name pill, the shapes melting together via the
-   #yjs-cursor-goo SVG filter. Three layers: a goo-filtered layer (line stub
-   + pill blob with transparent sizing text), the crisp caret line outside
-   the filter, and a transparent twin pill carrying the visible text with
-   identical bounds in every state. --cursor-color and the spring easing
-   variables are set inline per cursor by the builder. */
+   springs it open into a name pill, the line melting into the base of the
+   pill via the #yjs-cursor-goo SVG filter. Three layers: a goo-filtered layer
+   (the line stub + a small blob that the line melts into at the pill's base),
+   the crisp caret line outside the filter, and the crisp name pill carrying
+   the visible text. --cursor-color and the spring easing variables are set
+   inline per cursor by the builder. */
 /* 0×0 positioned anchor next to the editor; carets are positioned inside it
    from viewport-rect deltas, so surrounding layout doesn't matter */
 .yjs-cursor-layer {
@@ -809,8 +809,10 @@ body.cmd-held .ProseMirror a {
   /* how much the caret stretches upward when open, lifting the pill clear
      of the text */
   --cursor-lift: 10px;
-  /* the goo layer needs real dimensions or the SVG filter region clips */
-  --goo-pad-x: 130px;
+  /* horizontal half-extent of the goo/overlay boxes — spans only the junction
+     near the caret where the line melts into the pill's base; the full-width
+     name pill is painted crisply by .yjs-cursor-label */
+  --goo-pad-x: 16px;
   --goo-pad-top: 26px;
   /* left/top/height are set inline per cursor from view.coordsAtPos */
   position: absolute;
@@ -874,8 +876,10 @@ body.cmd-held .ProseMirror a {
     height 154ms ease,
     top 154ms ease;
 }
+/* the crisp, full-width name pill — the visible pill body (the goo layer
+   renders only the junction blob) */
 .yjs-cursor-label {
-  background-color: transparent;
+  background-color: var(--cursor-color, orange);
   pointer-events: auto;
 }
 /* invisible enlarged hover target around the 7px dot */
@@ -930,6 +934,12 @@ body.cmd-held .ProseMirror a {
    stretches upward on the spring, the stub and pill riding the lifted tip
    so the pill sits clear of the text. Never spring the clamped max-width —
    the clipped overshoot flickers — ease it out instead. */
+/* the goo pill stays a small blob — just the junction the caret line melts
+   into at the pill's base; the visible full-width pill is the crisp
+   .yjs-cursor-label drawn on top */
+.yjs-cursor-open .yjs-cursor-goo .yjs-cursor-pill {
+  max-width: 26px;
+}
 .yjs-cursor-open .yjs-cursor-line,
 .yjs-cursor-open .yjs-cursor-stub {
   width: 3.45px;

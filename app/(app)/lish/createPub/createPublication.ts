@@ -161,6 +161,7 @@ export async function createPublication({
   // theme; seed it with a home page now so the pages editor is ready to go.
   await createPublicationDraftLeaflet({
     publication_uri: result.uri,
+    did: credentialSession.did!,
     description,
     theme: resolvePublicationTheme(
       normalizePublicationRecord(record as unknown as Json),

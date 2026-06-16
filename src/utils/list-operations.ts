@@ -55,14 +55,14 @@ export async function indent(
   return { success: true };
 }
 
-export function outdentFull(
+export async function outdentFull(
   block: Block,
   rep?: Replicache<ReplicacheMutators> | null,
 ) {
   if (!block.listData) return;
 
   // make this block not a list
-  rep?.mutate.assertFact({
+  await rep?.mutate.assertFact({
     entity: block.value,
     attribute: "block/is-list",
     data: { type: "boolean", value: false },
@@ -70,9 +70,8 @@ export function outdentFull(
 
   let after = block.listData?.path.find((f) => f.depth === 1)?.entity;
 
-  after &&
-    after !== block.value &&
-    rep?.mutate.moveBlock({
+  if (after && after !== block.value)
+    await rep?.mutate.moveBlock({
       block: block.value,
       oldParent: block.listData.parent,
       newParent: block.parent,
@@ -80,7 +79,7 @@ export function outdentFull(
     });
 
   // move all the childen to the be under it as a level 1 list item
-  rep?.mutate.moveChildren({
+  await rep?.mutate.moveChildren({
     oldParent: block.value,
     newParent: block.parent,
     after: block.value,

@@ -76,7 +76,9 @@ export function TextBlock(
       )}
       {permission && !props.preview && !stale && (
         <div
-          className={`w-full relative group ${!initialized ? "hidden" : ""}`}
+          // overflow-x-clip keeps the remote-cursor overlay from making the
+          // page scroll sideways on iOS Safari when a cursor sits at the edge
+          className={`w-full relative group overflow-x-clip ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
           <BaseTextBlock {...props} />

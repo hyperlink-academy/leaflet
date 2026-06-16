@@ -142,7 +142,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     );
   }
 
-  let isLocalUpload = localImages.get(image.data.src);
+  let localSrc = localImages.get(image.data.src);
 
   let blockClassName = `
     relative group/image border-transparent! p-0! w-fit!
@@ -158,12 +158,12 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       className={blockClassName}
       optionsClassName={isFullBleed ? "top-[-8px]! border-none!" : ""}
     >
-      {isLocalUpload || image.data.local ? (
+      {localSrc || image.data.local ? (
         <img
           loading="lazy"
           decoding="async"
           alt={altText}
-          src={isLocalUpload ? image.data.src + "?local" : image.data.fallback}
+          src={localSrc ?? image.data.fallback}
           height={image?.data.height}
           width={image?.data.width}
         />
