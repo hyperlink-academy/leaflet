@@ -71,7 +71,6 @@ function EditableFootnote(props: {
     cursorPlugin,
     overlay,
   } = useCollabText(props.footnoteEntityID);
-  let actionTimeout = useRef<number | null>(null);
   let { pageID } = useFootnoteContext();
 
   useLayoutEffect(() => {
@@ -165,7 +164,6 @@ function EditableFootnote(props: {
           trackUndoRedo(
             tr,
             rep.undoManager,
-            actionTimeout,
             () => {
               this.focus();
               this.updateState(oldState);
