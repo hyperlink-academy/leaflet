@@ -681,37 +681,50 @@ const enter =
         });
       }
     };
+    let focusNewBlock = () => {
+      let block = useEditorStates.getState().editorStates[newEntityID];
+      if (!block) return;
+      let tr = block.editor.tr;
+      if (newContent.content.size > 2) {
+        tr.replaceWith(0, tr.doc.content.size, newContent.content);
+        tr.setSelection(TextSelection.create(tr.doc, 0));
+        let newState = block.editor.apply(tr);
+        setEditorState(newEntityID, {
+          editor: newState,
+        });
+      }
+      focusBlock(
+        {
+          value: newEntityID,
+          parent: propsRef.current.parent,
+          type: "text",
+        },
+        { type: "start" },
+      );
+    };
+
     asyncRun()
-      .finally(() => um.endGroup())
       .then(() => {
         useUIState.getState().setSelectedBlock({
           value: newEntityID,
           parent: propsRef.current.parent,
         });
 
-        setTimeout(() => {
-          let block = useEditorStates.getState().editorStates[newEntityID];
-          if (block) {
-            let tr = block.editor.tr;
-            if (newContent.content.size > 2) {
-              tr.replaceWith(0, tr.doc.content.size, newContent.content);
-              tr.setSelection(TextSelection.create(tr.doc, 0));
-              let newState = block.editor.apply(tr);
-              setEditorState(newEntityID, {
-                editor: newState,
-              });
-            }
-            focusBlock(
-              {
-                value: newEntityID,
-                parent: propsRef.current.parent,
-                type: "text",
-              },
-              { type: "start" },
-            );
-          }
-        }, 10);
-      });
+        // The split's tracked delete transaction refocuses the source block on
+        // undo (see externalUndoGroup above), and its redo would leave the
+        // cursor there too. Register a redo, while the group is still open, that
+        // moves the cursor into the new block — matching where the forward Enter
+        // places it.
+        um.add({
+          undo: () => {},
+          redo: () => {
+            setTimeout(focusNewBlock, 10);
+          },
+        });
+
+        setTimeout(focusNewBlock, 10);
+      })
+      .finally(() => um.endGroup());
 
     // if you are in the middle of a text block, split the block
     return true;
