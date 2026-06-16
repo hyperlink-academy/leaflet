@@ -24,6 +24,7 @@ export const createUndoManager = () => {
   // orphaned blocks on undo).
   let groupDepth = 0; // open explicit command groups (counted so nesting is safe)
   let coalesceOpen = false; // a text-edit coalescing group is open
+  let currentCoalesceKey: string | undefined; // span key of the open group
   let coalesceTimer: ReturnType<typeof setTimeout> | null = null;
   // Serialize undo/redo so rapid keypresses don't re-enter @rocicorp/undo's
   // recursive group walk (it mutates a shared index) and corrupt the stack.
@@ -40,6 +41,7 @@ export const createUndoManager = () => {
     clearCoalesceTimer();
     if (coalesceOpen) {
       coalesceOpen = false;
+      currentCoalesceKey = undefined;
       undoManager.endGroup();
     }
   };
@@ -78,16 +80,22 @@ export const createUndoManager = () => {
       end();
       return r;
     },
-    // Add a text edit, coalescing consecutive edits within COALESCE_MS. If a
-    // command group is open the edit just joins it.
-    addGrouped: (args: Op) => {
+    // Add a text edit that coalesces with adjacent edits sharing the same span
+    // key (e.g. the block/footnote entityID) within COALESCE_MS. A different
+    // key — or a lapsed window — starts a fresh group; an open command group
+    // (groupDepth > 0) just absorbs the edit.
+    addGrouped: (args: Op, coalesceKey?: string) => {
       if (groupDepth > 0) {
         undoManager.add(args);
         return;
       }
+      // A different span finalizes the open group now, independent of the
+      // timer, so edits to two different spans never merge into one undo step.
+      if (coalesceOpen && coalesceKey !== currentCoalesceKey) flushCoalesce();
       if (!coalesceOpen) {
         undoManager.startGroup();
         coalesceOpen = true;
+        currentCoalesceKey = coalesceKey;
       }
       undoManager.add(args);
       clearCoalesceTimer();

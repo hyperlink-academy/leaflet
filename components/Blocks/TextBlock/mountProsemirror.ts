@@ -346,6 +346,7 @@ export function useMountProsemirror({
         trackUndoRedo(
           tr,
           rep.undoManager,
+          entityID,
           setState(oldEditorState),
           setState(newState),
         );
@@ -374,6 +375,7 @@ export function useMountProsemirror({
 export function trackUndoRedo(
   tr: Transaction,
   undoManager: UndoManager,
+  coalesceKey: string,
   undo: () => void,
   redo: () => void,
 ) {
@@ -390,6 +392,6 @@ export function trackUndoRedo(
 
   if (addToHistory !== false && docHasChanges) {
     if (skipGroupManagement) undoManager.add({ undo, redo });
-    else undoManager.addGrouped({ undo, redo });
+    else undoManager.addGrouped({ undo, redo }, coalesceKey);
   }
 }

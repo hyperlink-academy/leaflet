@@ -164,6 +164,7 @@ function EditableFootnote(props: {
           trackUndoRedo(
             tr,
             rep.undoManager,
+            props.footnoteEntityID,
             () => {
               this.focus();
               this.updateState(oldState);
