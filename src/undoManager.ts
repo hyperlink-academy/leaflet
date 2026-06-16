@@ -5,9 +5,8 @@ export type UndoManager = ReturnType<typeof createUndoManager>;
 export const useUndoState = create(() => ({ canUndo: false, canRedo: false }));
 
 // A run of typing coalesces into one undo step until the user pauses for this
-// long (the timer resets on every keystroke, so only an actual gap between
-// keystroke ends a run). 200ms was short enough that any normal-paced gap
-// (typing slower than ~5 cps) flushed between keystrokes, undoing char by char.
+// long. The timer resets on every keystroke, so only an actual gap between
+// keystrokes ends a run.
 const COALESCE_MS = 500;
 
 type Op = { undo: () => Promise<void> | void; redo: () => Promise<void> | void };
@@ -19,13 +18,24 @@ export const createUndoManager = () => {
     },
   });
 
-  // @rocicorp/undo allows only one group open at a time. Three producers share
-  // this single instance — explicit command groups (Tab/Enter/Backspace via
-  // startGroup/withUndoGroup) and coalescing text-edit groups (addGrouped) —
+  // @rocicorp/undo allows only one group open at a time. Two kinds of producer
+  // share this single instance — explicit command groups (Tab/Enter/Backspace
+  // via startGroup/withUndoGroup) and coalescing text-edit groups (addGrouped) —
   // so all grouping state is owned here to keep them from closing each other's
   // groups (which previously split a multi-mutation op across boundaries and
   // orphaned blocks on undo).
-  let groupDepth = 0; // open explicit command groups (counted so nesting is safe)
+  //
+  // Command groups are *lazy*: startGroup only records intent (groupDepth++);
+  // nothing touches the underlying @rocicorp/undo group or the in-progress
+  // typing run until the command records its first entry (see openCommandGroup).
+  // This matters because SelectionManager wraps EVERY keystroke in withUndoGroup
+  // — it only learns which key it handles once inside the callback — so a plain
+  // character opens a command group on every keystroke. If that eagerly flushed
+  // the coalescing run, typing would undo char by char. A no-op command records
+  // nothing and leaves the run untouched; a real command flushes it and becomes
+  // its own step.
+  let groupDepth = 0; // open command groups (counted so nesting is safe)
+  let commandGroupOpen = false; // the raw command group has been materialized
   let coalesceOpen = false; // a text-edit coalescing group is open
   let currentCoalesceKey: string | undefined; // span key of the open group
   let coalesceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -48,23 +58,36 @@ export const createUndoManager = () => {
       undoManager.endGroup();
     }
   };
+  // Materialize the command group on its first recorded entry: flush any
+  // in-progress typing (so the command is its own undo step) and open the single
+  // raw @rocicorp/undo group that every entry until endGroup will join.
+  let openCommandGroup = () => {
+    if (commandGroupOpen) return;
+    flushCoalesce();
+    undoManager.startGroup();
+    commandGroupOpen = true;
+  };
 
   let um = {
     add: (args: Op) => {
+      // Inside a command group, the first entry materializes it (flushing any
+      // adjacent typing) so all of the command's mutations undo as one step.
+      if (groupDepth > 0) openCommandGroup();
       undoManager.add(args);
     },
-    // Open an atomic command group. Finalizes any pending text-edit group first
-    // so a command never merges with adjacent typing, and opens only one raw
-    // group regardless of nesting depth.
+    // Record intent to group. The raw group opens lazily (see openCommandGroup)
+    // only once the command actually records something, so wrapping a no-op
+    // keystroke never disturbs the typing run. Safe to nest.
     startGroup: () => {
-      flushCoalesce();
-      if (groupDepth === 0) undoManager.startGroup();
       groupDepth++;
     },
     endGroup: () => {
       if (groupDepth === 0) return;
       groupDepth--;
-      if (groupDepth === 0) undoManager.endGroup();
+      if (groupDepth === 0 && commandGroupOpen) {
+        undoManager.endGroup();
+        commandGroupOpen = false;
+      }
     },
     withUndoGroup: <T>(cb: () => T): T => {
       um.startGroup();
@@ -85,10 +108,13 @@ export const createUndoManager = () => {
     },
     // Add a text edit that coalesces with adjacent edits sharing the same span
     // key (e.g. the block/footnote entityID) within COALESCE_MS. A different
-    // key — or a lapsed window — starts a fresh group; an open command group
-    // (groupDepth > 0) just absorbs the edit.
+    // key — or a lapsed window — starts a fresh group. While a *materialized*
+    // command group is open the edit just joins it (e.g. the Enter handler's
+    // block split, marked externalUndoGroup, lands in the command's step). A
+    // merely-pending command group (a no-op keystroke wrapper) does not divert
+    // the edit, so it keeps coalescing with the rest of the typing run.
     addGrouped: (args: Op, coalesceKey?: string) => {
-      if (groupDepth > 0) {
+      if (commandGroupOpen) {
         undoManager.add(args);
         return;
       }

@@ -24,3 +24,21 @@ This applies to every kind of list item — unordered, ordered, and checkbox
 **Not affected:** pressing Enter in a list item that has content behaves
 normally — it splits the item / creates a new sibling list item at the same
 depth. Only blank items outdent.
+
+## Undo/redo coalescing of typing runs
+
+While the user is typing continuously in one text block, the characters are
+grouped into a **single** undo step. One **Undo** removes the whole run at once,
+and one **Redo** puts it back — not character by character.
+
+A run ends (so the next characters start a fresh undo step) when:
+
+1. The user **pauses** typing for more than ~half a second.
+2. The user runs a **command** that changes the document — pressing Enter,
+   Tab/Shift-Tab, Backspace at a block boundary, applying a mark, pasting, etc.
+   The command is its own undo step and never merges with the typing before it.
+3. Editing **moves to a different block** (each block coalesces its own run).
+
+**Not affected:** keys that don't change the document — arrow keys, or a
+shortcut the editor ignores — do **not** start a new undo step on their own; the
+run continues.
