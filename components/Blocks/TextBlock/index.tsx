@@ -251,7 +251,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
     handleMentionOpenChange,
   } = useMentionState(props.entityID, props);
 
-  let { mountRef, actionTimeout, overlay } = useMountProsemirror({
+  let { mountRef, overlay } = useMountProsemirror({
     props,
     openMentionAutocomplete,
   });
@@ -283,11 +283,6 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
                 attribute: "block/type",
                 data: { type: "block-type-union", value: "horizontal-rule" },
               });
-            }
-            if (actionTimeout.current) {
-              rep.undoManager.endGroup();
-              window.clearTimeout(actionTimeout.current);
-              actionTimeout.current = null;
             }
           }}
           onFocus={() => {

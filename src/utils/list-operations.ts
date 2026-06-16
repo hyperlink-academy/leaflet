@@ -1,7 +1,6 @@
 import { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
-import { v7 } from "uuid";
 
 export function orderListItems(
   block: Block,
@@ -45,10 +44,13 @@ export async function indent(
   if (!newParent) return { success: false };
   if (foldState && foldState.foldedBlocks.includes(newParent.entity))
     foldState.toggleFold(newParent.entity);
-  rep?.mutate.retractFact({ factID: block.factID });
-  rep?.mutate.addLastBlock({
+  // Reparent the block's existing card/block fact in one mutation (reusing its
+  // factID) rather than retract-old + add-new-id. assertFact moves the fact and
+  // captures the old (parent, position) as the single undo entry, so a split or
+  // mis-grouped undo can't half-apply it and orphan the block.
+  await rep?.mutate.addLastBlock({
     parent: newParent.entity,
-    factID: v7(),
+    factID: block.factID,
     entity: block.value,
   });
 

@@ -76,6 +76,13 @@ const addBlock: Mutation<{
   type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: string;
+  // Set in the same mutation as the type so the block is never briefly a
+  // non-list block — otherwise a racing Enter sees no list data and inserts a
+  // plain paragraph, breaking the list.
+  list?: {
+    listStyle?: Fact<"block/list-style">["data"]["value"];
+    checklist?: boolean;
+  };
 }> = async (args, ctx) => {
   await ctx.createEntity({
     entityID: args.newEntityID,
@@ -96,6 +103,27 @@ const addBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
+  if (args.list) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "block/is-list",
+      data: { type: "boolean", value: true },
+    });
+    if (args.list.listStyle) {
+      await ctx.assertFact({
+        entity: args.newEntityID,
+        attribute: "block/list-style",
+        data: { type: "list-style-union", value: args.list.listStyle },
+      });
+    }
+    if (args.list.checklist !== undefined) {
+      await ctx.assertFact({
+        entity: args.newEntityID,
+        attribute: "block/check-list",
+        data: { type: "boolean", value: args.list.checklist },
+      });
+    }
+  }
 };
 
 const addLastBlock: Mutation<{
@@ -227,6 +255,11 @@ const outdentBlock: Mutation<{
     (f) => f.data.value === args.block,
   );
   if (currentFactIndex === -1) return;
+  // Bail before the retraction below: a missing anchor here is a clean no-op,
+  // but checking after retracting would orphan the block and the siblings
+  // re-parented under it, dropping them from the document.
+  let index = newSiblings.findIndex((f) => f.data.value === args.after);
+  if (index === -1) return;
   // Filter out blocks that are being processed separately (e.g., in multi-select outdent)
   let excludeSet = new Set(args.excludeFromSiblings || []);
   let currentSiblingsAfter = currentSiblings
@@ -253,8 +286,6 @@ const outdentBlock: Mutation<{
     });
   }
 
-  let index = newSiblings.findIndex((f) => f.data.value === args.after);
-  if (index === -1) return;
   let newPosition = generateKeyBetween(
     newSiblings[index]?.data.position,
     newSiblings[index + 1]?.data.position || null,

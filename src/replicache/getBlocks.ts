@@ -52,7 +52,11 @@ export const getBlocksWithType = async (
             ): Promise<Block[]> => {
               let children = (
                 await scan.eav(root.data.value, "card/block")
-              ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+              ).sort((a, b) => {
+                if (a.data.position === b.data.position)
+                  return a.id > b.id ? 1 : -1;
+                return a.data.position > b.data.position ? 1 : -1;
+              });
               let type = (await scan.eav(root.data.value, "block/type"))[0];
               let checklist = await scan.eav(
                 root.data.value,
@@ -131,7 +135,11 @@ export const getBlocksWithTypeLocal = (
         ): Block[] => {
           let children = scan
             .eav(root.data.value, "card/block")
-            .sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+            .sort((a, b) => {
+              if (a.data.position === b.data.position)
+                return a.id > b.id ? 1 : -1;
+              return a.data.position > b.data.position ? 1 : -1;
+            });
           let type = scan.eav(root.data.value, "block/type")[0];
           let listStyle = scan.eav(root.data.value, "block/list-style")[0];
           let listNumber = scan.eav(root.data.value, "block/list-number")[0];
