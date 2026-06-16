@@ -164,7 +164,11 @@ const moveBlock: Mutation<{
   ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
   let block = children.find((f) => f.data.value === args.block);
   if (!block) return;
-  await ctx.retractFact(block.id);
+  // Move by overwriting the block's existing card/block fact in place (reusing
+  // its id) rather than retract-then-assert. assertFact captures the old
+  // (parent, position) as the single undo entry, so undo/redo of a move never
+  // passes through an intermediate state where the fact is gone and the block
+  // disappears.
   let newPosition;
   let pos = args.position;
   switch (pos.type) {
@@ -557,7 +561,9 @@ const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
   if (index === -1) return;
   let next = children[index - 1];
   if (!next) return;
-  await ctx.retractFact(children[index].id);
+  // Reorder by overwriting the block's card/block fact in place (reusing its
+  // id), so the move is a single undo entry and undo/redo never blanks the
+  // block through an intermediate retracted state.
   await ctx.assertFact({
     id: children[index].id,
     entity: args.parent,
@@ -608,7 +614,9 @@ const moveBlockDown: Mutation<{
     );
     return;
   }
-  await ctx.retractFact(children[index].id);
+  // Reorder by overwriting the block's card/block fact in place (reusing its
+  // id), so the move is a single undo entry and undo/redo never blanks the
+  // block through an intermediate retracted state.
   await ctx.assertFact({
     id: children[index].id,
     entity: args.parent,
