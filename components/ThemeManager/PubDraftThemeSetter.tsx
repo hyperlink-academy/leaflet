@@ -9,12 +9,20 @@ import type {
   PubThemeColorSet,
   PubThemePanelState,
 } from "./PubThemeSetter";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { resolvePublicationTheme } from "lexicons/src/normalize";
+import { themeFacts, themeFactAttributes } from "./themeFacts";
 
 // Pub theme editing state backed by theme/* facts on a publication's draft
 // leaflet root; edits persist as draft state and go live on the next publish.
 export function useDraftPubThemeState(): PubThemePanelState {
   let [openPicker, setOpenPicker] = useState<pickers>("null");
   let { rep, rootEntity } = useReplicache();
+  let { data } = usePublicationData();
+  let record = useNormalizedPublicationRecord();
 
   let bgLeaflet = useColorAttribute(rootEntity, "theme/page-background");
   let bgPage = useColorAttribute(rootEntity, "theme/card-background");
@@ -123,6 +131,26 @@ export function useDraftPubThemeState(): PubThemePanelState {
       }
     };
 
+  let resetTheme = async () => {
+    if (!rep) return;
+    let facts = themeFacts(
+      resolvePublicationTheme(record),
+      data?.publication?.identity_did || "",
+    );
+    await rep.mutate.retractAttribute({
+      entity: rootEntity,
+      attribute: [...themeFactAttributes],
+    });
+    await Promise.all(
+      facts.map((f) =>
+        rep.mutate.assertFact({
+          entity: rootEntity,
+          ...f,
+        } as Parameters<typeof rep.mutate.assertFact>[0]),
+      ),
+    );
+  };
+
   return {
     openPicker,
     setOpenPicker,
@@ -149,5 +177,6 @@ export function useDraftPubThemeState(): PubThemePanelState {
     setBodyFont: setFont("theme/body-font"),
     pubBGImage: image?.src ?? null,
     leafletBGRepeat: image?.repeat ?? null,
+    resetTheme,
   };
 }
