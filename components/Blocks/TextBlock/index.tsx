@@ -284,9 +284,6 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
                 data: { type: "block-type-union", value: "horizontal-rule" },
               });
             }
-            // Finalize any open coalescing text-edit group so the next action
-            // (or undo) starts from a clean boundary.
-            rep.undoManager.flushGroup();
           }}
           onFocus={() => {
             handleMentionOpenChange(false);

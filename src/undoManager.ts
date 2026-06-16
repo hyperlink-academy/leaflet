@@ -4,8 +4,11 @@ import { create } from "zustand";
 export type UndoManager = ReturnType<typeof createUndoManager>;
 export const useUndoState = create(() => ({ canUndo: false, canRedo: false }));
 
-// Consecutive text edits within this window coalesce into one undo step.
-const COALESCE_MS = 200;
+// A run of typing coalesces into one undo step until the user pauses for this
+// long (the timer resets on every keystroke, so only an actual gap between
+// keystroke ends a run). 200ms was short enough that any normal-paced gap
+// (typing slower than ~5 cps) flushed between keystrokes, undoing char by char.
+const COALESCE_MS = 500;
 
 type Op = { undo: () => Promise<void> | void; redo: () => Promise<void> | void };
 
@@ -100,10 +103,6 @@ export const createUndoManager = () => {
       undoManager.add(args);
       clearCoalesceTimer();
       coalesceTimer = setTimeout(flushCoalesce, COALESCE_MS);
-    },
-    // Finalize the open coalescing group immediately (e.g. on blur).
-    flushGroup: () => {
-      flushCoalesce();
     },
     undo: () => {
       flushCoalesce();
