@@ -45,8 +45,12 @@ export async function indent(
   if (!newParent) return { success: false };
   if (foldState && foldState.foldedBlocks.includes(newParent.entity))
     foldState.toggleFold(newParent.entity);
-  rep?.mutate.retractFact({ factID: block.factID });
-  rep?.mutate.addLastBlock({
+  // Await both mutations so their undo ops register before the caller's promise
+  // settles; withUndoGroup closes the group on settle, and if these run after
+  // that the retract/add land as separate undo entries — one undo then orphans
+  // the block instead of restoring it to its old position.
+  await rep?.mutate.retractFact({ factID: block.factID });
+  await rep?.mutate.addLastBlock({
     parent: newParent.entity,
     factID: v7(),
     entity: block.value,
