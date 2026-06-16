@@ -509,8 +509,12 @@ const enter =
           let index = siblings.findIndex(
             (sib) => sib.data.value === propsRef.current.entityID,
           );
+          // Lower bound comes from the freshly-read sibling, not
+          // propsRef.current.position (a render-lagged snapshot). Mixing a
+          // stale lower bound with a fresh upper bound could collide with or
+          // sort before the just-created item when Entering quickly.
           position = generateKeyBetween(
-            propsRef.current.position,
+            siblings[index]?.data.position || propsRef.current.position,
             siblings[index + 1]?.data.position || null,
           );
         } else {
@@ -525,6 +529,19 @@ const enter =
             children[0]?.data.position || null,
           );
         }
+        // Read the list facts to inherit from the source block up front, then
+        // create the new item with all of them in a single mutation. Splitting
+        // is-list / list-style / check-list into follow-up assertFacts left a
+        // window where the new block existed but wasn't yet a list item, so a
+        // fast follow-up Enter saw no listData and inserted a plain paragraph.
+        let [listStyle] =
+          (await repRef.current?.query((tx) =>
+            scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+          )) || [];
+        let [checked] =
+          (await repRef.current?.query((tx) =>
+            scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
+          )) || [];
         await repRef.current?.mutate.addBlock({
           newEntityID,
           factID: v7(),
@@ -534,6 +551,14 @@ const enter =
             : propsRef.current.listData.parent,
           type: blockType,
           position,
+          list: {
+            listStyle: listStyle?.data.value,
+            checklist: checked
+              ? state.selection.anchor === 1
+                ? checked.data.value
+                : false
+              : undefined,
+          },
         });
         if (
           !createChild &&
@@ -548,38 +573,6 @@ const enter =
             after: null,
           });
         }
-        await repRef.current?.mutate.assertFact({
-          entity: newEntityID,
-          attribute: "block/is-list",
-          data: { type: "boolean", value: true },
-        });
-        // Copy list style (ordered/unordered) to new list item
-        let listStyle = await repRef.current?.query((tx) =>
-          scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
-        );
-        if (listStyle?.[0]) {
-          await repRef.current?.mutate.assertFact({
-            entity: newEntityID,
-            attribute: "block/list-style",
-            data: {
-              type: "list-style-union",
-              value: listStyle[0].data.value,
-            },
-          });
-        }
-        let checked = await repRef.current?.query((tx) =>
-          scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
-        );
-        if (checked?.[0])
-          await repRef.current?.mutate.assertFact({
-            entity: newEntityID,
-            attribute: "block/check-list",
-            data: {
-              type: "boolean",
-              value:
-                state.selection.anchor === 1 ? checked?.[0].data.value : false,
-            },
-          });
       }
       // if the block is not a list, add a new text block after it
       if (!propsRef.current.listData) {
@@ -644,28 +637,37 @@ const enter =
         parent: propsRef.current.parent,
       });
 
-      setTimeout(() => {
+      // The new block is created by an async mutation and only becomes
+      // focusable once its editor mounts and registers. A single fixed timeout
+      // raced that mount: if the editor wasn't ready, focus was silently
+      // dropped (focusBlock no-ops without a view) and the following keystrokes
+      // landed in the previous block. Retry until the editor registers so the
+      // caret reliably follows the new item.
+      let attempts = 0;
+      let placeContentAndFocus = () => {
         let block = useEditorStates.getState().editorStates[newEntityID];
-        if (block) {
-          let tr = block.editor.tr;
-          if (newContent.content.size > 2) {
-            tr.replaceWith(0, tr.doc.content.size, newContent.content);
-            tr.setSelection(TextSelection.create(tr.doc, 0));
-            let newState = block.editor.apply(tr);
-            setEditorState(newEntityID, {
-              editor: newState,
-            });
-          }
-          focusBlock(
-            {
-              value: newEntityID,
-              parent: propsRef.current.parent,
-              type: "text",
-            },
-            { type: "start" },
-          );
+        if (!block) {
+          if (attempts++ < 50) setTimeout(placeContentAndFocus, 10);
+          return;
         }
-      }, 10);
+        if (newContent.content.size > 2) {
+          let tr = block.editor.tr;
+          tr.replaceWith(0, tr.doc.content.size, newContent.content);
+          tr.setSelection(TextSelection.create(tr.doc, 0));
+          setEditorState(newEntityID, {
+            editor: block.editor.apply(tr),
+          });
+        }
+        focusBlock(
+          {
+            value: newEntityID,
+            parent: propsRef.current.parent,
+            type: "text",
+          },
+          { type: "start" },
+        );
+      };
+      placeContentAndFocus();
     });
 
     // if you are in the middle of a text block, split the block
