@@ -667,43 +667,60 @@ const enter =
         });
       }
     };
+    // focusBlock silently no-ops until the new block's editor mounts, so a
+    // fixed timeout could drop focus and send the next keystrokes to the old
+    // block. Retry until it registers.
+    let focusNewBlock = () => {
+      let attempts = 0;
+      let run = () => {
+        let block = useEditorStates.getState().editorStates[newEntityID];
+        if (!block) {
+          if (attempts++ < 50) setTimeout(run, 10);
+          return;
+        }
+        let tr = block.editor.tr;
+        if (newContent.content.size > 2) {
+          tr.replaceWith(0, tr.doc.content.size, newContent.content);
+          tr.setSelection(TextSelection.create(tr.doc, 0));
+          let newState = block.editor.apply(tr);
+          setEditorState(newEntityID, {
+            editor: newState,
+          });
+        }
+        focusBlock(
+          {
+            value: newEntityID,
+            parent: propsRef.current.parent,
+            type: "text",
+          },
+          { type: "start" },
+        );
+      };
+      run();
+    };
+
     asyncRun()
-      .finally(() => um.endGroup())
       .then(() => {
         useUIState.getState().setSelectedBlock({
           value: newEntityID,
           parent: propsRef.current.parent,
         });
 
-        // focusBlock silently no-ops until the new block's editor mounts, so a
-        // fixed timeout could drop focus and send the next keystrokes to the old
-        // block. Retry until it registers.
-        let attempts = 0;
-        let placeContentAndFocus = () => {
-          let block = useEditorStates.getState().editorStates[newEntityID];
-          if (!block) {
-            if (attempts++ < 50) setTimeout(placeContentAndFocus, 10);
-            return;
-          }
-          if (newContent.content.size > 2) {
-            let tr = block.editor.tr;
-            tr.replaceWith(0, tr.doc.content.size, newContent.content);
-            tr.setSelection(TextSelection.create(tr.doc, 0));
-            setEditorState(newEntityID, {
-              editor: block.editor.apply(tr),
-            });
-          }
-          focusBlock(
-            {
-              value: newEntityID,
-              parent: propsRef.current.parent,
-              type: "text",
-            },
-            { type: "start" },
-          );
-        };
-        placeContentAndFocus();
-      });
+        // The split's tracked delete transaction refocuses the source block on
+        // undo (see externalUndoGroup above), and its redo would leave the
+        // cursor there too. Register a redo, while the group is still open, that
+        // moves the cursor into the new block — matching where the forward Enter
+        // places it.
+        um.add({
+          undo: () => {},
+          redo: () => {
+            setTimeout(focusNewBlock, 10);
+          },
+        });
+
+        setTimeout(focusNewBlock, 10);
+      })
+      .finally(() => um.endGroup());
 
     // if you are in the middle of a text block, split the block
     return true;
