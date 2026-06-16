@@ -75,10 +75,9 @@ const addBlock: Mutation<{
   type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: string;
-  // When set, the new block is created as a list item in the same mutation as
-  // its type, so it is never momentarily a non-list block. Asserting these as
-  // separate follow-up mutations left a window where a racing Enter saw no list
-  // data and inserted a plain paragraph, breaking the list.
+  // Set in the same mutation as the type so the block is never briefly a
+  // non-list block — otherwise a racing Enter sees no list data and inserts a
+  // plain paragraph, breaking the list.
   list?: {
     listStyle?: Fact<"block/list-style">["data"]["value"];
     checklist?: boolean;
@@ -255,12 +254,9 @@ const outdentBlock: Mutation<{
     (f) => f.data.value === args.block,
   );
   if (currentFactIndex === -1) return;
-  // Validate the destination anchor BEFORE mutating anything. `after` and
-  // `newParent` are computed by the caller from React props that can lag the
-  // store; if the anchor isn't present in the (fresh) new parent, bailing here
-  // is a clean no-op. Doing this check after the retraction below would leave
-  // the block — and every sibling re-parented under it — orphaned and dropped
-  // from the document.
+  // Bail before the retraction below: a missing anchor here is a clean no-op,
+  // but checking after retracting would orphan the block and the siblings
+  // re-parented under it, dropping them from the document.
   let index = newSiblings.findIndex((f) => f.data.value === args.after);
   if (index === -1) return;
   // Filter out blocks that are being processed separately (e.g., in multi-select outdent)

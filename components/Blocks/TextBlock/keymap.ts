@@ -509,10 +509,8 @@ const enter =
           let index = siblings.findIndex(
             (sib) => sib.data.value === propsRef.current.entityID,
           );
-          // Lower bound comes from the freshly-read sibling, not
-          // propsRef.current.position (a render-lagged snapshot). Mixing a
-          // stale lower bound with a fresh upper bound could collide with or
-          // sort before the just-created item when Entering quickly.
+          // Use the freshly-read sibling position, not the render-lagged
+          // propsRef snapshot, which can collide with the just-created item.
           position = generateKeyBetween(
             siblings[index]?.data.position || propsRef.current.position,
             siblings[index + 1]?.data.position || null,
@@ -529,11 +527,6 @@ const enter =
             children[0]?.data.position || null,
           );
         }
-        // Read the list facts to inherit from the source block up front, then
-        // create the new item with all of them in a single mutation. Splitting
-        // is-list / list-style / check-list into follow-up assertFacts left a
-        // window where the new block existed but wasn't yet a list item, so a
-        // fast follow-up Enter saw no listData and inserted a plain paragraph.
         let [listStyle] =
           (await repRef.current?.query((tx) =>
             scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
@@ -637,12 +630,9 @@ const enter =
         parent: propsRef.current.parent,
       });
 
-      // The new block is created by an async mutation and only becomes
-      // focusable once its editor mounts and registers. A single fixed timeout
-      // raced that mount: if the editor wasn't ready, focus was silently
-      // dropped (focusBlock no-ops without a view) and the following keystrokes
-      // landed in the previous block. Retry until the editor registers so the
-      // caret reliably follows the new item.
+      // focusBlock silently no-ops until the new block's editor mounts, so a
+      // fixed timeout could drop focus and send the next keystrokes to the old
+      // block. Retry until it registers.
       let attempts = 0;
       let placeContentAndFocus = () => {
         let block = useEditorStates.getState().editorStates[newEntityID];
