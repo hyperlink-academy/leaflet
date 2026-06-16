@@ -2,7 +2,6 @@
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { useRouter } from "next/navigation";
-import { useHasEntitlement } from "src/hooks/useEntitlement";
 
 export function EditPagesNavLink(props: {
   publication: string;
@@ -10,9 +9,6 @@ export function EditPagesNavLink(props: {
   publicationName: string;
 }) {
   let router = useRouter();
-  let editPubPagesEnabled = useHasEntitlement("edit-pub-pages");
-
-  if (!editPubPagesEnabled) return null;
 
   return (
     <ActionButton
