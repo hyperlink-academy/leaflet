@@ -13,8 +13,11 @@ export async function assertStandardSitePostFacts(
   rep: Replicache<ReplicacheMutators>,
   entityID: string,
   uri: string,
+  ignoreUndo?: boolean,
 ) {
-  await rep.mutate.assertFact([
+  let facts: Parameters<typeof rep.mutate.assertFact>[0] & {
+    ignoreUndo?: true;
+  } = [
     {
       entity: entityID,
       attribute: "block/type",
@@ -25,15 +28,28 @@ export async function assertStandardSitePostFacts(
       attribute: "block/standard-site-post",
       data: { type: "string", value: uri },
     },
-  ]);
+  ];
+  if (ignoreUndo) facts.ignoreUndo = true;
+  await rep.mutate.assertFact(facts);
 }
 
 export async function addLinkBlock(
   url: string,
   entityID: string,
   rep?: Replicache<ReplicacheMutators> | null,
+  ignoreUndo?: boolean,
 ) {
   if (!rep) return;
+  let r = rep;
+  // The bulk-paste undo group already reverts these entities wholesale, so
+  // callers there pass ignoreUndo to keep async link enrichment from adding a
+  // stray undo step on top.
+  let assert = (
+    facts: Parameters<typeof r.mutate.assertFact>[0] & { ignoreUndo?: true },
+  ) => {
+    if (ignoreUndo) facts.ignoreUndo = true;
+    return r.mutate.assertFact(facts);
+  };
 
   let res = await fetch("/api/link_previews", {
     headers: { "Content-Type": "application/json" },
@@ -41,7 +57,7 @@ export async function addLinkBlock(
     body: JSON.stringify({ url, type: "meta" } as LinkPreviewBody),
   });
   if (res.status !== 200) {
-    await rep?.mutate.assertFact([
+    await assert([
       {
         entity: entityID,
         attribute: "link/url",
@@ -61,12 +77,17 @@ export async function addLinkBlock(
   let data = await (res.json() as LinkPreviewMetadataResult);
 
   if (data.leafletPost) {
-    await assertStandardSitePostFacts(rep, entityID, data.leafletPost.uri);
+    await assertStandardSitePostFacts(
+      rep,
+      entityID,
+      data.leafletPost.uri,
+      ignoreUndo,
+    );
     return;
   }
 
   if (!data.success) {
-    await rep?.mutate.assertFact([
+    await assert([
       {
         entity: entityID,
         attribute: "link/url",
@@ -121,10 +142,10 @@ export async function addLinkBlock(
         },
       });
     }
-    await rep.mutate.assertFact(facts);
+    await assert(facts);
     return;
   }
-  await rep?.mutate.assertFact([
+  await assert([
     {
       entity: entityID,
       attribute: "link/url",
@@ -163,7 +184,7 @@ export async function addLinkBlock(
 
   let image_data = await (imageRes.json() as LinkPreviewImageResult);
 
-  await rep?.mutate.assertFact({
+  await assert({
     entity: entityID,
     attribute: "link/preview",
     data: {

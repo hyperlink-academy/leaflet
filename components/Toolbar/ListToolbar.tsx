@@ -18,7 +18,7 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
 
   let block = siblings.find((s) => s.value === focusedBlock?.entityID);
 
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
 
   return (
     <div className="flex items-center gap-1">
@@ -47,7 +47,7 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
               data: { value: true, type: "boolean" },
             });
           } else {
-            outdentFull(block, rep);
+            outdentFull(block, rep, undoManager);
           }
         }}
       >
@@ -85,7 +85,7 @@ export const ListToolbar = (props: { onClose: () => void }) => {
   let block = siblings.find((s) => s.value === focusedBlock?.entityID);
   let previousBlock =
     siblings[siblings.findIndex((b) => b.value === focusedBlock?.entityID) - 1];
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
 
   useEffect(() => {
     if (!isList?.data.value) {
@@ -108,7 +108,14 @@ export const ListToolbar = (props: { onClose: () => void }) => {
         }
         onClick={async () => {
           if (!rep || !block) return;
-          await outdent(block, previousBlock, rep, { foldedBlocks, toggleFold });
+          await outdent(
+            block,
+            previousBlock,
+            rep,
+            { foldedBlocks, toggleFold },
+            undefined,
+            undoManager,
+          );
         }}
       >
         <ListIndentDecreaseSmall />
@@ -128,7 +135,13 @@ export const ListToolbar = (props: { onClose: () => void }) => {
         }
         onClick={async () => {
           if (!rep || !block || !previousBlock) return;
-          await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
+          await indent(
+            block,
+            previousBlock,
+            rep,
+            { foldedBlocks, toggleFold },
+            undoManager,
+          );
         }}
       >
         <ListIndentIncreaseSmall />

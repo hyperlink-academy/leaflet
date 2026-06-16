@@ -24,7 +24,7 @@ export const TextBlockTypeToolbar = (props: {
   );
 
   let textSize = useEntity(focusedBlock?.entityID || null, "block/text-size");
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
 
   let setLevel = useCallback(
     async (level: number) => {
@@ -36,20 +36,22 @@ export const TextBlockTypeToolbar = (props: {
       ) {
         return;
       }
-      await rep?.mutate.assertFact({
-        entity: entityID,
-        attribute: "block/heading-level",
-        data: { type: "number", value: level },
-      });
-      if (blockType.data.value === "text") {
+      await undoManager.withUndoGroup(async () => {
         await rep?.mutate.assertFact({
           entity: entityID,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "heading" },
+          attribute: "block/heading-level",
+          data: { type: "number", value: level },
         });
-      }
+        if (blockType.data.value === "text") {
+          await rep?.mutate.assertFact({
+            entity: entityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "heading" },
+          });
+        }
+      });
     },
-    [rep, focusedBlock, blockType],
+    [rep, focusedBlock, blockType, undoManager],
   );
   return (
     // This Toolbar should close once the user starts typing again
@@ -118,31 +120,34 @@ export const TextBlockTypeToolbar = (props: {
       <ToolbarButton
         className={`px-[6px] ${props.className}`}
         onClick={async () => {
-          if (headingLevel)
-            await rep?.mutate.retractFact({ factID: headingLevel.id });
-          if (textSize) await rep?.mutate.retractFact({ factID: textSize.id });
-          if (!focusedBlock || !blockType) return;
-          if (blockType.data.value !== "text") {
-            let existingEditor =
-              useEditorStates.getState().editorStates[focusedBlock.entityID];
-            let selection = existingEditor?.editor.selection;
-            await rep?.mutate.assertFact({
-              entity: focusedBlock?.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "text" },
-            });
+          await undoManager.withUndoGroup(async () => {
+            if (headingLevel)
+              await rep?.mutate.retractFact({ factID: headingLevel.id });
+            if (textSize)
+              await rep?.mutate.retractFact({ factID: textSize.id });
+            if (!focusedBlock || !blockType) return;
+            if (blockType.data.value !== "text") {
+              let existingEditor =
+                useEditorStates.getState().editorStates[focusedBlock.entityID];
+              let selection = existingEditor?.editor.selection;
+              await rep?.mutate.assertFact({
+                entity: focusedBlock?.entityID,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "text" },
+              });
 
-            let newEditor =
-              useEditorStates.getState().editorStates[focusedBlock.entityID];
-            if (!newEditor || !selection) return;
-            newEditor.view?.dispatch(
-              newEditor.editor.tr.setSelection(
-                TextSelection.create(newEditor.editor.doc, selection.anchor),
-              ),
-            );
+              let newEditor =
+                useEditorStates.getState().editorStates[focusedBlock.entityID];
+              if (!newEditor || !selection) return;
+              newEditor.view?.dispatch(
+                newEditor.editor.tr.setSelection(
+                  TextSelection.create(newEditor.editor.doc, selection.anchor),
+                ),
+              );
 
-            newEditor.view?.focus();
-          }
+              newEditor.view?.focus();
+            }
+          });
         }}
         active={
           blockType?.data.value === "text" &&
@@ -157,21 +162,23 @@ export const TextBlockTypeToolbar = (props: {
         className={`px-[6px] text-lg ${props.className}`}
         onClick={async () => {
           if (!focusedBlock || !blockType) return;
-          if (blockType.data.value !== "text") {
-            // Convert to text block first if it's a heading
-            if (headingLevel)
-              await rep?.mutate.retractFact({ factID: headingLevel.id });
+          await undoManager.withUndoGroup(async () => {
+            if (blockType.data.value !== "text") {
+              // Convert to text block first if it's a heading
+              if (headingLevel)
+                await rep?.mutate.retractFact({ factID: headingLevel.id });
+              await rep?.mutate.assertFact({
+                entity: focusedBlock.entityID,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "text" },
+              });
+            }
+            // Set text size to large
             await rep?.mutate.assertFact({
               entity: focusedBlock.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "text" },
+              attribute: "block/text-size",
+              data: { type: "text-size-union", value: "large" },
             });
-          }
-          // Set text size to large
-          await rep?.mutate.assertFact({
-            entity: focusedBlock.entityID,
-            attribute: "block/text-size",
-            data: { type: "text-size-union", value: "large" },
           });
         }}
         active={
@@ -185,21 +192,23 @@ export const TextBlockTypeToolbar = (props: {
         className={`px-[6px] text-sm text-secondary ${props.className}`}
         onClick={async () => {
           if (!focusedBlock || !blockType) return;
-          if (blockType.data.value !== "text") {
-            // Convert to text block first if it's a heading
-            if (headingLevel)
-              await rep?.mutate.retractFact({ factID: headingLevel.id });
+          await undoManager.withUndoGroup(async () => {
+            if (blockType.data.value !== "text") {
+              // Convert to text block first if it's a heading
+              if (headingLevel)
+                await rep?.mutate.retractFact({ factID: headingLevel.id });
+              await rep?.mutate.assertFact({
+                entity: focusedBlock.entityID,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "text" },
+              });
+            }
+            // Set text size to small
             await rep?.mutate.assertFact({
               entity: focusedBlock.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "text" },
+              attribute: "block/text-size",
+              data: { type: "text-size-union", value: "small" },
             });
-          }
-          // Set text size to small
-          await rep?.mutate.assertFact({
-            entity: focusedBlock.entityID,
-            attribute: "block/text-size",
-            data: { type: "text-size-union", value: "small" },
           });
         }}
         active={

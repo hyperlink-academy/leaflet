@@ -10,7 +10,7 @@ export const useHandleDrop = (params: {
   position: string | null;
   nextPosition: string | null;
 }) => {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
 
   return useCallback(
@@ -43,32 +43,41 @@ export const useHandleDrop = (params: {
         return { file, entity, position };
       });
 
-      // Create all blocks in parallel
-      await Promise.all(
-        imageBlocks.map((block) =>
-          rep.mutate.addBlock({
-            parent: params.parent,
-            factID: v7(),
-            permission_set: entity_set.set,
-            type: "image",
-            position: block.position,
-            newEntityID: block.entity,
-          }),
-        ),
-      );
+      await undoManager.withUndoGroup(async () => {
+        // Create all blocks in parallel
+        await Promise.all(
+          imageBlocks.map((block) =>
+            rep.mutate.addBlock({
+              parent: params.parent,
+              factID: v7(),
+              permission_set: entity_set.set,
+              type: "image",
+              position: block.position,
+              newEntityID: block.entity,
+            }),
+          ),
+        );
 
-      // Upload all images in parallel
-      await Promise.all(
-        imageBlocks.map((block) =>
-          addImage(block.file, rep, {
-            entityID: block.entity,
-            attribute: "block/image",
-          }),
-        ),
-      );
+        // Upload all images in parallel
+        await Promise.all(
+          imageBlocks.map((block) =>
+            addImage(block.file, rep, {
+              entityID: block.entity,
+              attribute: "block/image",
+            }),
+          ),
+        );
+      });
 
       return true;
     },
-    [rep, params.position, params.nextPosition, params.parent, entity_set.set],
+    [
+      rep,
+      params.position,
+      params.nextPosition,
+      params.parent,
+      entity_set.set,
+      undoManager,
+    ],
   );
 };

@@ -106,7 +106,7 @@ function PostsListPlaceholder() {
 }
 
 function PostsListSettingsButton(props: { entityID: string }) {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let { data } = usePublicationData();
 
   let viewFact = useEntity(props.entityID, "posts-list/view");
@@ -219,9 +219,11 @@ function PostsListSettingsButton(props: { entityID: string }) {
                 onToggle={() => {
                   if (filterByTagEnabled) {
                     // turning off the filter clears any selected tags
-                    if (rep)
+                    undoManager.withUndoGroup(async () => {
+                      if (!rep) return;
                       for (let fact of filterTagFacts)
-                        rep.mutate.retractFact({ factID: fact.id });
+                        await rep.mutate.retractFact({ factID: fact.id });
+                    });
                     setFilterByTagEnabled(false);
                   } else {
                     setFilterByTagEnabled(true);
@@ -235,11 +237,13 @@ function PostsListSettingsButton(props: { entityID: string }) {
                   type="button"
                   className="text-tertiary hover:text-accent-contrast text-sm"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    if (!rep) return;
-                    for (let fact of filterTagFacts)
-                      rep.mutate.retractFact({ factID: fact.id });
-                  }}
+                  onClick={() =>
+                    undoManager.withUndoGroup(async () => {
+                      if (!rep) return;
+                      for (let fact of filterTagFacts)
+                        await rep.mutate.retractFact({ factID: fact.id });
+                    })
+                  }
                 >
                   clear
                 </button>

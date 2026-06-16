@@ -121,43 +121,45 @@ const BlockLinkInput = (props: BlockProps & { preview?: boolean }) => {
   );
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let submit = async () => {
-    let linkEntity = props.entityID;
-    if (!linkEntity) {
-      linkEntity = v7();
+    await undoManager.withUndoGroup(async () => {
+      let linkEntity = props.entityID;
+      if (!linkEntity) {
+        linkEntity = v7();
 
+        await rep?.mutate.addBlock({
+          permission_set: entity_set.set,
+          factID: v7(),
+          parent: props.parent,
+          type: "card",
+          position: generateKeyBetween(props.position, props.nextPosition),
+          newEntityID: linkEntity,
+        });
+      }
+      let link = linkValue;
+      if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
+      await addLinkBlock(link, linkEntity, rep);
+
+      let textEntity = v7();
       await rep?.mutate.addBlock({
         permission_set: entity_set.set,
         factID: v7(),
         parent: props.parent,
-        type: "card",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: linkEntity,
-      });
-    }
-    let link = linkValue;
-    if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
-    addLinkBlock(link, linkEntity, rep);
-
-    let textEntity = v7();
-    await rep?.mutate.addBlock({
-      permission_set: entity_set.set,
-      factID: v7(),
-      parent: props.parent,
-      type: "text",
-      position: generateKeyBetween(props.position, props.nextPosition),
-      newEntityID: textEntity,
-    });
-
-    focusBlock(
-      {
-        value: textEntity,
         type: "text",
-        parent: props.parent,
-      },
-      { type: "start" },
-    );
+        position: generateKeyBetween(props.position, props.nextPosition),
+        newEntityID: textEntity,
+      });
+
+      focusBlock(
+        {
+          value: textEntity,
+          type: "text",
+          parent: props.parent,
+        },
+        { type: "start" },
+      );
+    });
   };
   let smoker = useSmoker();
 

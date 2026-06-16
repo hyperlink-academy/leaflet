@@ -1,6 +1,7 @@
 import { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
+import type { UndoManager } from "src/undoManager";
 import { v7 } from "uuid";
 
 export function orderListItems(
@@ -35,6 +36,7 @@ export async function indent(
     foldedBlocks: string[];
     toggleFold: (entityID: string) => void;
   },
+  undoManager?: UndoManager,
 ): Promise<{ success: boolean }> {
   if (!block.listData) return { success: false };
 
@@ -45,12 +47,17 @@ export async function indent(
   if (!newParent) return { success: false };
   if (foldState && foldState.foldedBlocks.includes(newParent.entity))
     foldState.toggleFold(newParent.entity);
-  rep?.mutate.retractFact({ factID: block.factID });
-  rep?.mutate.addLastBlock({
-    parent: newParent.entity,
-    factID: v7(),
-    entity: block.value,
-  });
+  let newParentEntity = newParent.entity;
+  let run = async () => {
+    await rep?.mutate.retractFact({ factID: block.factID });
+    await rep?.mutate.addLastBlock({
+      parent: newParentEntity,
+      factID: v7(),
+      entity: block.value,
+    });
+  };
+  if (undoManager) await undoManager.withUndoGroup(run);
+  else await run();
 
   return { success: true };
 }
@@ -58,32 +65,38 @@ export async function indent(
 export async function outdentFull(
   block: Block,
   rep?: Replicache<ReplicacheMutators> | null,
+  undoManager?: UndoManager,
 ) {
   if (!block.listData) return;
+  let listData = block.listData;
 
-  // make this block not a list
-  await rep?.mutate.assertFact({
-    entity: block.value,
-    attribute: "block/is-list",
-    data: { type: "boolean", value: false },
-  });
-
-  let after = block.listData?.path.find((f) => f.depth === 1)?.entity;
-
-  if (after && after !== block.value)
-    await rep?.mutate.moveBlock({
-      block: block.value,
-      oldParent: block.listData.parent,
-      newParent: block.parent,
-      position: { type: "after", entity: after },
+  let run = async () => {
+    // make this block not a list
+    await rep?.mutate.assertFact({
+      entity: block.value,
+      attribute: "block/is-list",
+      data: { type: "boolean", value: false },
     });
 
-  // move all the childen to the be under it as a level 1 list item
-  await rep?.mutate.moveChildren({
-    oldParent: block.value,
-    newParent: block.parent,
-    after: block.value,
-  });
+    let after = listData.path.find((f) => f.depth === 1)?.entity;
+
+    if (after && after !== block.value)
+      await rep?.mutate.moveBlock({
+        block: block.value,
+        oldParent: listData.parent,
+        newParent: block.parent,
+        position: { type: "after", entity: after },
+      });
+
+    // move all the childen to the be under it as a level 1 list item
+    await rep?.mutate.moveChildren({
+      oldParent: block.value,
+      newParent: block.parent,
+      after: block.value,
+    });
+  };
+  if (undoManager) await undoManager.withUndoGroup(run);
+  else await run();
 }
 
 export async function outdent(
@@ -95,22 +108,27 @@ export async function outdent(
     toggleFold: (entityID: string) => void;
   },
   excludeFromSiblings?: string[],
+  undoManager?: UndoManager,
 ): Promise<{ success: boolean }> {
   if (!block.listData) return { success: false };
   let listData = block.listData;
 
   // All lists use parent/child structure - move blocks between parents
   if (listData.depth === 1) {
-    await rep?.mutate.assertFact({
-      entity: block.value,
-      attribute: "block/is-list",
-      data: { type: "boolean", value: false },
-    });
-    await rep?.mutate.moveChildren({
-      oldParent: block.value,
-      newParent: block.parent,
-      after: block.value,
-    });
+    let run = async () => {
+      await rep?.mutate.assertFact({
+        entity: block.value,
+        attribute: "block/is-list",
+        data: { type: "boolean", value: false },
+      });
+      await rep?.mutate.moveChildren({
+        oldParent: block.value,
+        newParent: block.parent,
+        after: block.value,
+      });
+    };
+    if (undoManager) await undoManager.withUndoGroup(run);
+    else await run();
     return { success: true };
   } else {
     // Use block's own path for ancestry lookups - it always has correct info
@@ -147,6 +165,7 @@ export async function multiSelectOutdent(
   siblings: Block[],
   rep: Replicache<ReplicacheMutators>,
   foldState: { foldedBlocks: string[]; toggleFold: (entityID: string) => void },
+  undoManager?: UndoManager,
 ): Promise<void> {
   let pageParent = siblings[0]?.parent;
   if (!pageParent) return;
@@ -159,30 +178,34 @@ export async function multiSelectOutdent(
     (b) => !b.listData || b.listData.depth === 1,
   );
 
-  if (allAtDepth1) {
-    // Convert depth-1 items to plain text (outdent handles this)
-    for (let i = siblings.length - 1; i >= 0; i--) {
-      let block = siblings[i];
-      if (!selectedSet.has(block.value)) continue;
-      if (!block.listData) continue;
-      await outdent(block, null, rep, foldState, selectedEntities);
-    }
-  } else {
-    // Normal outdent: iterate backward through siblings
-    for (let i = siblings.length - 1; i >= 0; i--) {
-      let block = siblings[i];
-      if (!selectedSet.has(block.value)) continue;
-      if (!block.listData) continue;
-      if (block.listData.depth === 1) continue;
-
-      // Skip if parent is selected AND parent's depth > 1
-      let parentEntity = block.listData.parent;
-      if (selectedSet.has(parentEntity)) {
-        let parentBlock = siblings.find((s) => s.value === parentEntity);
-        if (parentBlock?.listData && parentBlock.listData.depth > 1) continue;
+  let run = async () => {
+    if (allAtDepth1) {
+      // Convert depth-1 items to plain text (outdent handles this)
+      for (let i = siblings.length - 1; i >= 0; i--) {
+        let block = siblings[i];
+        if (!selectedSet.has(block.value)) continue;
+        if (!block.listData) continue;
+        await outdent(block, null, rep, foldState, selectedEntities);
       }
+    } else {
+      // Normal outdent: iterate backward through siblings
+      for (let i = siblings.length - 1; i >= 0; i--) {
+        let block = siblings[i];
+        if (!selectedSet.has(block.value)) continue;
+        if (!block.listData) continue;
+        if (block.listData.depth === 1) continue;
 
-      await outdent(block, null, rep, foldState, selectedEntities);
+        // Skip if parent is selected AND parent's depth > 1
+        let parentEntity = block.listData.parent;
+        if (selectedSet.has(parentEntity)) {
+          let parentBlock = siblings.find((s) => s.value === parentEntity);
+          if (parentBlock?.listData && parentBlock.listData.depth > 1) continue;
+        }
+
+        await outdent(block, null, rep, foldState, selectedEntities);
+      }
     }
-  }
+  };
+  if (undoManager) await undoManager.withUndoGroup(run);
+  else await run();
 }

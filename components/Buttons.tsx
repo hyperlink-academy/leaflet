@@ -151,9 +151,9 @@ export const TooltipButton = (props: {
           className={props.className}
           onMouseDown={async (e) => {
             e.preventDefault();
-            undoManager.startGroup();
-            props.onMouseDown && (await props.onMouseDown(e));
-            undoManager.endGroup();
+            await undoManager.withUndoGroup(async () => {
+              props.onMouseDown && (await props.onMouseDown(e));
+            });
           }}
         >
           {props.children}
