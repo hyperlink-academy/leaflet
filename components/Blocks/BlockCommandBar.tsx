@@ -71,15 +71,15 @@ export const BlockCommandBar = ({
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       onSelect={async () => {
-        let command = commandResults.find((c) => c.name === highlighted);
-        if (!command || !rep) return;
-        undoManager.startGroup();
-        await command.onSelect(
-          rep,
-          { ...props, entity_set: entity_set.set },
-          undoManager,
-        );
-        undoManager.endGroup();
+        await undoManager.withUndoGroup(async () => {
+          let command = commandResults.find((c) => c.name === highlighted);
+          if (!command || !rep) return;
+          await command.onSelect(
+            rep,
+            { ...props, entity_set: entity_set.set },
+            undoManager,
+          );
+        });
       }}
       onOpenChange={() => clearCommandSearchText()}
     >
@@ -93,14 +93,16 @@ export const BlockCommandBar = ({
             <ComboboxResult
               className="pl-0!"
               result={result.name}
-              onSelect={() => {
-                rep &&
-                  result.onSelect(
+              onSelect={() =>
+                undoManager.withUndoGroup(async () => {
+                  if (!rep) return;
+                  await result.onSelect(
                     rep,
                     { ...props, entity_set: entity_set.set },
                     undoManager,
                   );
-              }}
+                })
+              }
               highlighted={highlighted}
               setHighlighted={setHighlighted}
             >

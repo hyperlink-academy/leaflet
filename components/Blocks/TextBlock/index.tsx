@@ -251,7 +251,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
     handleMentionOpenChange,
   } = useMentionState(props.entityID, props);
 
-  let { mountRef, actionTimeout, overlay } = useMountProsemirror({
+  let { mountRef, overlay } = useMountProsemirror({
     props,
     openMentionAutocomplete,
   });
@@ -283,11 +283,6 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
                 attribute: "block/type",
                 data: { type: "block-type-union", value: "horizontal-rule" },
               });
-            }
-            if (actionTimeout.current) {
-              rep.undoManager.endGroup();
-              window.clearTimeout(actionTimeout.current);
-              actionTimeout.current = null;
             }
           }}
           onFocus={() => {
@@ -408,32 +403,32 @@ const BlockifyLink = (props: {
       <button
         onClick={async (e) => {
           if (!rep.rep) return;
-          rep.undoManager.startGroup();
-          if (isBlueskyPost) {
-            let success = await addBlueskyPostBlock(
-              editorState.doc.textContent,
-              props.entityID,
-              rep.rep,
-            );
-            if (!success)
-              smoker({
-                error: true,
-                text: "post not found!",
-                position: {
-                  x: e.clientX + 12,
-                  y: e.clientY,
-                },
-              });
-          } else {
-            setLoading(true);
-            await addLinkBlock(
-              editorState.doc.textContent,
-              props.entityID,
-              rep.rep,
-            );
-            setLoading(false);
-          }
-          rep.undoManager.endGroup();
+          await rep.undoManager.withUndoGroup(async () => {
+            if (isBlueskyPost) {
+              let success = await addBlueskyPostBlock(
+                editorState.doc.textContent,
+                props.entityID,
+                rep.rep!,
+              );
+              if (!success)
+                smoker({
+                  error: true,
+                  text: "post not found!",
+                  position: {
+                    x: e.clientX + 12,
+                    y: e.clientY,
+                  },
+                });
+            } else {
+              setLoading(true);
+              await addLinkBlock(
+                editorState.doc.textContent,
+                props.entityID,
+                rep.rep!,
+              );
+              setLoading(false);
+            }
+          });
         }}
         className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
       >
@@ -538,7 +533,7 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
   let viewRef = useRef(view || null);
   viewRef.current = view || null;
 
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let blockPropsRef = useRef(blockProps);
   blockPropsRef.current = blockProps;
@@ -606,8 +601,9 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
   );
 
   const handleMentionEmbed = useCallback(
-    (mention: Mention & { type: "service_result" }) => {
+    async (mention: Mention & { type: "service_result" }) => {
       if (!rep || !mention.embed) return;
+      let embed = mention.embed;
       let props = blockPropsRef.current;
 
       const editorState =
@@ -616,77 +612,80 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
       const blockIsEmpty =
         editorState && editorState.doc.textContent.replace("@", "").trim() === "";
 
-      let targetEntityID: string;
-      if (blockIsEmpty) {
-        // Replace the current block
-        targetEntityID = props.entityID;
-        rep.mutate.assertFact({
-          entity: targetEntityID,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "embed" },
-        });
-        rep.mutate.retractAttribute({
-          entity: targetEntityID,
-          attribute: "block/text",
-        });
-      } else {
-        // Create a new block below
-        targetEntityID = v7();
-        rep.mutate.addBlock({
-          permission_set: entity_set.set,
-          factID: v7(),
-          type: "embed",
-          newEntityID: targetEntityID,
-          parent: props.parent,
-          position: generateKeyBetween(
-            props.position,
-            props.nextPosition,
-          ),
-        });
-        // Remove the @ from the current block's editor
-        const view = useEditorStates.getState().editorStates[entityID]?.view;
-        if (view && mentionInsertPos !== null) {
-          const from = mentionInsertPos - 1;
-          const to = mentionInsertPos;
-          const tr = view.state.tr.delete(from, to);
-          view.dispatch(tr);
+      await undoManager.withUndoGroup(async () => {
+        let targetEntityID: string;
+        if (blockIsEmpty) {
+          // Replace the current block
+          targetEntityID = props.entityID;
+          await rep.mutate.assertFact({
+            entity: targetEntityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "embed" },
+          });
+          await rep.mutate.retractAttribute({
+            entity: targetEntityID,
+            attribute: "block/text",
+          });
+        } else {
+          // Create a new block below
+          targetEntityID = v7();
+          await rep.mutate.addBlock({
+            permission_set: entity_set.set,
+            factID: v7(),
+            type: "embed",
+            newEntityID: targetEntityID,
+            parent: props.parent,
+            position: generateKeyBetween(
+              props.position,
+              props.nextPosition,
+            ),
+          });
+          // Remove the @ from the current block's editor
+          const view = useEditorStates.getState().editorStates[entityID]?.view;
+          if (view && mentionInsertPos !== null) {
+            const from = mentionInsertPos - 1;
+            const to = mentionInsertPos;
+            const tr = view.state.tr.delete(from, to);
+            tr.setMeta("bulkOp", true);
+            view.dispatch(tr);
+          }
         }
-      }
 
-      // Set embed attributes
-      let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
-        {
-          entity: targetEntityID,
-          attribute: "embed/url",
-          data: { type: "string", value: mention.embed.src },
-        },
-      ];
-      let aspectRatio = getAspectRatio(
-        mention.embed.aspectRatio
-          ? mention.embed.aspectRatio
-          : mention.embed.width && mention.embed.height
-            ? { width: mention.embed.width, height: mention.embed.height }
-            : undefined,
-      );
-      if (aspectRatio) {
-        facts.push({
-          entity: targetEntityID,
-          attribute: "embed/aspect-ratio",
-          data: { type: "string", value: aspectRatio },
-        });
-      } else {
-        facts.push({
-          entity: targetEntityID,
-          attribute: "embed/height",
-          data: {
-            type: "number",
-            value: mention.embed.height || 360,
+        // Set embed attributes
+        let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
+          {
+            entity: targetEntityID,
+            attribute: "embed/url",
+            data: { type: "string", value: embed.src },
           },
-        });
-      }
-      rep.mutate.assertFact(facts);
+        ];
+        let aspectRatio = getAspectRatio(
+          embed.aspectRatio
+            ? embed.aspectRatio
+            : embed.width && embed.height
+              ? { width: embed.width, height: embed.height }
+              : undefined,
+        );
+        if (aspectRatio) {
+          facts.push({
+            entity: targetEntityID,
+            attribute: "embed/aspect-ratio",
+            data: { type: "string", value: aspectRatio },
+          });
+        } else {
+          facts.push({
+            entity: targetEntityID,
+            attribute: "embed/height",
+            data: {
+              type: "number",
+              value: embed.height || 360,
+            },
+          });
+        }
+        await rep.mutate.assertFact(facts);
+      });
     },
-    [rep, entityID, entity_set.set, mentionInsertPos],
+    [rep, entityID, entity_set.set, mentionInsertPos, undoManager],
   );
 
   const handleMentionOpenChange = useCallback((open: boolean) => {

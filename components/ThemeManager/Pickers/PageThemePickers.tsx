@@ -166,7 +166,7 @@ const SubpageBackgroundImagePicker = (props: {
   setOpenPicker: (p: pickers) => void;
   setValue: (c: Color) => void;
 }) => {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let bgImage = useEntity(props.entityID, "theme/card-background-image");
   let bgRepeat = useEntity(
     props.entityID,
@@ -239,8 +239,12 @@ const SubpageBackgroundImagePicker = (props: {
         <div className="flex gap-1 text-[#8C8C8C]">
           <button
             onClick={() => {
-              if (bgImage) rep?.mutate.retractFact({ factID: bgImage.id });
-              if (bgRepeat) rep?.mutate.retractFact({ factID: bgRepeat.id });
+              undoManager.withUndoGroup(async () => {
+                if (bgImage)
+                  await rep?.mutate.retractFact({ factID: bgImage.id });
+                if (bgRepeat)
+                  await rep?.mutate.retractFact({ factID: bgRepeat.id });
+              });
             }}
           >
             <DeleteSmall />
@@ -394,7 +398,7 @@ const LeafletBackgroundImagePicker = (props: {
   openPicker: pickers;
   setOpenPicker: (p: pickers) => void;
 }) => {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let bgImage = useEntity(props.entityID, "theme/background-image");
   let bgRepeat = useEntity(props.entityID, "theme/background-image-repeat");
   let bgColor = useColorAttribute(props.entityID, "theme/page-background");
@@ -426,8 +430,12 @@ const LeafletBackgroundImagePicker = (props: {
         <div className="flex gap-1 text-[#8C8C8C]">
           <button
             onClick={() => {
-              if (bgImage) rep?.mutate.retractFact({ factID: bgImage.id });
-              if (bgRepeat) rep?.mutate.retractFact({ factID: bgRepeat.id });
+              undoManager.withUndoGroup(async () => {
+                if (bgImage)
+                  await rep?.mutate.retractFact({ factID: bgImage.id });
+                if (bgRepeat)
+                  await rep?.mutate.retractFact({ factID: bgRepeat.id });
+              });
             }}
           >
             <DeleteSmall />

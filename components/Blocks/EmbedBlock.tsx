@@ -29,7 +29,7 @@ import { assertStandardSitePostFacts } from "src/utils/addLinkBlock";
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let entity_set = useEntitySetContext();
   let { permissions } = entity_set;
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let url = useEntity(props.entityID, "embed/url");
   let isCanvasBlock = props.pageType === "canvas";
 
@@ -115,17 +115,19 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
       assertBlockData(props.entityID, block);
     },
     onAddBelow: async (block) => {
-      if (!rep) return;
-      let newEntityID = v7();
-      await rep.mutate.addBlock({
-        permission_set: entity_set.set,
-        factID: v7(),
-        parent: props.parent,
-        type: block.type === "text" ? "text" : "card",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID,
+      await undoManager.withUndoGroup(async () => {
+        if (!rep) return;
+        let newEntityID = v7();
+        await rep.mutate.addBlock({
+          permission_set: entity_set.set,
+          factID: v7(),
+          parent: props.parent,
+          type: block.type === "text" ? "text" : "card",
+          position: generateKeyBetween(props.position, props.nextPosition),
+          newEntityID,
+        });
+        await assertBlockData(newEntityID, block);
       });
-      await assertBlockData(newEntityID, block);
     },
   });
 
@@ -235,117 +237,119 @@ const BlockLinkInput = (props: BlockProps) => {
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
   let [loading, setLoading] = useState(false);
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let submit = async () => {
-    let entity = props.entityID;
-    if (!entity) {
-      entity = v7();
+    await undoManager.withUndoGroup(async () => {
+      let entity = props.entityID;
+      if (!entity) {
+        entity = v7();
 
-      await rep?.mutate.addBlock({
+        await rep?.mutate.addBlock({
+          permission_set: entity_set.set,
+          factID: v7(),
+          parent: props.parent,
+          type: "card",
+          position: generateKeyBetween(props.position, props.nextPosition),
+          newEntityID: entity,
+        });
+      }
+      let link = linkValue;
+      if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
+      if (!rep) return;
+
+      // Try to get embed URL from iframely, fallback to direct URL
+      setLoading(true);
+      try {
+        let res = await fetch("/api/link_previews", {
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+          body: JSON.stringify({ url: link, type: "meta" } as LinkPreviewBody),
+        });
+
+        let embedUrl = link;
+        let embedHeight = 360;
+        let embedAspectRatio: string | null = null;
+
+        if (res.status === 200) {
+          let data = await (res.json() as LinkPreviewMetadataResult);
+          if (data.leafletPost) {
+            await assertStandardSitePostFacts(rep, entity, data.leafletPost.uri);
+            setLoading(false);
+            return;
+          }
+          if (data.success && data.data.links?.player?.[0]) {
+            let embed = data.data.links.player[0];
+            embedUrl = embed.href;
+            embedHeight = embed.media?.height || 300;
+            embedAspectRatio = getAspectRatio(embed.media);
+          }
+        }
+
+        let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
+          {
+            entity: entity,
+            attribute: "embed/url",
+            data: {
+              type: "string",
+              value: embedUrl,
+            },
+          },
+        ];
+        if (embedAspectRatio) {
+          facts.push({
+            entity: entity,
+            attribute: "embed/aspect-ratio",
+            data: {
+              type: "string",
+              value: embedAspectRatio,
+            },
+          });
+        } else {
+          facts.push({
+            entity: entity,
+            attribute: "embed/height",
+            data: {
+              type: "number",
+              value: embedHeight,
+            },
+          });
+        }
+        await rep.mutate.assertFact(facts);
+      } catch {
+        // On any error, fallback to using the URL directly
+        await rep.mutate.assertFact([
+          {
+            entity: entity,
+            attribute: "embed/url",
+            data: {
+              type: "string",
+              value: link,
+            },
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+
+      let textEntity = v7();
+      await rep.mutate.addBlock({
         permission_set: entity_set.set,
         factID: v7(),
         parent: props.parent,
-        type: "card",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: entity,
-      });
-    }
-    let link = linkValue;
-    if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
-    if (!rep) return;
-
-    // Try to get embed URL from iframely, fallback to direct URL
-    setLoading(true);
-    try {
-      let res = await fetch("/api/link_previews", {
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-        body: JSON.stringify({ url: link, type: "meta" } as LinkPreviewBody),
-      });
-
-      let embedUrl = link;
-      let embedHeight = 360;
-      let embedAspectRatio: string | null = null;
-
-      if (res.status === 200) {
-        let data = await (res.json() as LinkPreviewMetadataResult);
-        if (data.leafletPost) {
-          await assertStandardSitePostFacts(rep, entity, data.leafletPost.uri);
-          setLoading(false);
-          return;
-        }
-        if (data.success && data.data.links?.player?.[0]) {
-          let embed = data.data.links.player[0];
-          embedUrl = embed.href;
-          embedHeight = embed.media?.height || 300;
-          embedAspectRatio = getAspectRatio(embed.media);
-        }
-      }
-
-      let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
-        {
-          entity: entity,
-          attribute: "embed/url",
-          data: {
-            type: "string",
-            value: embedUrl,
-          },
-        },
-      ];
-      if (embedAspectRatio) {
-        facts.push({
-          entity: entity,
-          attribute: "embed/aspect-ratio",
-          data: {
-            type: "string",
-            value: embedAspectRatio,
-          },
-        });
-      } else {
-        facts.push({
-          entity: entity,
-          attribute: "embed/height",
-          data: {
-            type: "number",
-            value: embedHeight,
-          },
-        });
-      }
-      await rep.mutate.assertFact(facts);
-    } catch {
-      // On any error, fallback to using the URL directly
-      await rep.mutate.assertFact([
-        {
-          entity: entity,
-          attribute: "embed/url",
-          data: {
-            type: "string",
-            value: link,
-          },
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-
-    let textEntity = v7();
-    await rep.mutate.addBlock({
-      permission_set: entity_set.set,
-      factID: v7(),
-      parent: props.parent,
-      type: "text",
-      position: generateKeyBetween(props.position, props.nextPosition),
-      newEntityID: textEntity,
-    });
-
-    focusBlock(
-      {
-        value: textEntity,
         type: "text",
-        parent: props.parent,
-      },
-      { type: "start" },
-    );
+        position: generateKeyBetween(props.position, props.nextPosition),
+        newEntityID: textEntity,
+      });
+
+      focusBlock(
+        {
+          value: textEntity,
+          type: "text",
+          parent: props.parent,
+        },
+        { type: "start" },
+      );
+    });
   };
   let smoker = useSmoker();
 

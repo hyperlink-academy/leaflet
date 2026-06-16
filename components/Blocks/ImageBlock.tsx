@@ -34,7 +34,7 @@ import {
 import { CheckTiny } from "components/Icons/CheckTiny";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let image = useEntity(props.value, "block/image");
   let entity_set = useEntitySetContext();
   let isSelected = useUIState((s) =>
@@ -67,26 +67,28 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 
   const handleImageUpload = async (file: File) => {
     if (!rep) return;
-    let entity = props.entityID;
-    if (!entity) {
-      entity = v7();
-      await rep?.mutate.addBlock({
-        parent: props.parent,
-        factID: v7(),
-        permission_set: entity_set.set,
-        type: "text",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: entity,
+    await undoManager.withUndoGroup(async () => {
+      let entity = props.entityID;
+      if (!entity) {
+        entity = v7();
+        await rep?.mutate.addBlock({
+          parent: props.parent,
+          factID: v7(),
+          permission_set: entity_set.set,
+          type: "text",
+          position: generateKeyBetween(props.position, props.nextPosition),
+          newEntityID: entity,
+        });
+      }
+      await rep.mutate.assertFact({
+        entity,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "image" },
       });
-    }
-    await rep.mutate.assertFact({
-      entity,
-      attribute: "block/type",
-      data: { type: "block-type-union", value: "image" },
-    });
-    await addImage(file, rep, {
-      entityID: entity,
-      attribute: "block/image",
+      await addImage(file, rep, {
+        entityID: entity,
+        attribute: "block/image",
+      });
     });
   };
 

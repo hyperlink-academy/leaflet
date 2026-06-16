@@ -76,6 +76,13 @@ const addBlock: Mutation<{
   type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: string;
+  // Set in the same mutation as the type so the block is never briefly a
+  // non-list block — otherwise a racing Enter sees no list data and inserts a
+  // plain paragraph, breaking the list.
+  list?: {
+    listStyle?: Fact<"block/list-style">["data"]["value"];
+    checklist?: boolean;
+  };
 }> = async (args, ctx) => {
   await ctx.createEntity({
     entityID: args.newEntityID,
@@ -96,6 +103,27 @@ const addBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
+  if (args.list) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "block/is-list",
+      data: { type: "boolean", value: true },
+    });
+    if (args.list.listStyle) {
+      await ctx.assertFact({
+        entity: args.newEntityID,
+        attribute: "block/list-style",
+        data: { type: "list-style-union", value: args.list.listStyle },
+      });
+    }
+    if (args.list.checklist !== undefined) {
+      await ctx.assertFact({
+        entity: args.newEntityID,
+        attribute: "block/check-list",
+        data: { type: "boolean", value: args.list.checklist },
+      });
+    }
+  }
 };
 
 const addLastBlock: Mutation<{
@@ -136,7 +164,11 @@ const moveBlock: Mutation<{
   ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
   let block = children.find((f) => f.data.value === args.block);
   if (!block) return;
-  await ctx.retractFact(block.id);
+  // Move by overwriting the block's existing card/block fact in place (reusing
+  // its id) rather than retract-then-assert. assertFact captures the old
+  // (parent, position) as the single undo entry, so undo/redo of a move never
+  // passes through an intermediate state where the fact is gone and the block
+  // disappears.
   let newPosition;
   let pos = args.position;
   switch (pos.type) {
@@ -190,7 +222,10 @@ const moveChildren: Mutation<{
     newSiblings[index + 1]?.data.position || null,
   );
   for (let child of children) {
-    await ctx.retractFact(child.id);
+    // Reparent each child by overwriting its existing card/block fact in place
+    // (reusing its id) rather than retract-then-assert. assertFact captures the
+    // old (parent, position) as the single undo entry, so undo/redo of the move
+    // never passes through an intermediate state where the child fact is gone.
     await ctx.assertFact({
       id: child.id,
       entity: args.newParent,
@@ -227,6 +262,11 @@ const outdentBlock: Mutation<{
     (f) => f.data.value === args.block,
   );
   if (currentFactIndex === -1) return;
+  // Bail before the writes below: a missing anchor here is a clean no-op, but
+  // checking afterward would reparent the siblings under the block while leaving
+  // the block itself unmoved, orphaning them and dropping them from the document.
+  let index = newSiblings.findIndex((f) => f.data.value === args.after);
+  if (index === -1) return;
   // Filter out blocks that are being processed separately (e.g., in multi-select outdent)
   let excludeSet = new Set(args.excludeFromSiblings || []);
   let currentSiblingsAfter = currentSiblings
@@ -237,10 +277,11 @@ const outdentBlock: Mutation<{
   ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
   let lastPosition =
     currentChildren[currentChildren.length - 1]?.data.position || null;
-  await ctx.retractFact(currentSiblings[currentFactIndex].id);
   for (let sib of currentSiblingsAfter) {
-    await ctx.retractFact(sib.id);
     lastPosition = generateKeyBetween(lastPosition, null);
+    // Reparent the sibling under the block by overwriting its card/block fact in
+    // place (reusing its id) rather than retract-then-assert, so undo/redo of the
+    // outdent never passes through an intermediate state where the sibling is gone.
     await ctx.assertFact({
       entity: args.block,
       id: sib.id,
@@ -253,12 +294,14 @@ const outdentBlock: Mutation<{
     });
   }
 
-  let index = newSiblings.findIndex((f) => f.data.value === args.after);
-  if (index === -1) return;
   let newPosition = generateKeyBetween(
     newSiblings[index]?.data.position,
     newSiblings[index + 1]?.data.position || null,
   );
+  // Move the block to its new parent by overwriting its existing card/block fact
+  // in place (reusing its id) rather than retract-then-assert, so undo/redo of
+  // the outdent never passes through an intermediate state where the block is
+  // gone (its reparented children would be momentarily orphaned).
   await ctx.assertFact({
     id: currentSiblings[currentFactIndex].id,
     entity: args.newParent,
@@ -526,7 +569,9 @@ const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
   if (index === -1) return;
   let next = children[index - 1];
   if (!next) return;
-  await ctx.retractFact(children[index].id);
+  // Reorder by overwriting the block's card/block fact in place (reusing its
+  // id), so the move is a single undo entry and undo/redo never blanks the
+  // block through an intermediate retracted state.
   await ctx.assertFact({
     id: children[index].id,
     entity: args.parent,
@@ -577,7 +622,9 @@ const moveBlockDown: Mutation<{
     );
     return;
   }
-  await ctx.retractFact(children[index].id);
+  // Reorder by overwriting the block's card/block fact in place (reusing its
+  // id), so the move is a single undo entry and undo/redo never blanks the
+  // block through an intermediate retracted state.
   await ctx.assertFact({
     id: children[index].id,
     entity: args.parent,

@@ -113,26 +113,28 @@ export async function deleteBlock(
   // close the pages
   pagesToClose.forEach((page) => page && useUIState.getState().closePage(page));
 
-  // Clean up footnotes from blocks being deleted
-  for (let entity of entities) {
-    let footnotes = await rep.query((tx) =>
-      scanIndex(tx).eav(entity, "block/footnote"),
-    );
-    for (let fn of footnotes) {
-      await rep.mutate.deleteFootnote({
-        footnoteEntityID: fn.data.value,
-        blockID: entity,
-      });
+  // Footnote cleanup and block removal together form one undo step.
+  let run = async () => {
+    for (let entity of entities) {
+      let footnotes = await rep.query((tx) =>
+        scanIndex(tx).eav(entity, "block/footnote"),
+      );
+      for (let fn of footnotes) {
+        await rep.mutate.deleteFootnote({
+          footnoteEntityID: fn.data.value,
+          blockID: entity,
+        });
+      }
     }
-  }
 
-  await Promise.all(
-    entities.map((entity) =>
-      rep?.mutate.removeBlock({
-        blockEntity: entity,
-      }),
-    ),
-  );
-
-  undoManager && undoManager.endGroup();
+    await Promise.all(
+      entities.map((entity) =>
+        rep?.mutate.removeBlock({
+          blockEntity: entity,
+        }),
+      ),
+    );
+  };
+  if (undoManager) await undoManager.withUndoGroup(run);
+  else await run();
 }

@@ -67,7 +67,10 @@ To add or modify a lexicon:
 ### Patterns
 
 - **Server actions**: Export async functions with `'use server'` directive, return `Result<T>` from `src/result.ts`
-- **Replicache mutations**: Named handlers in `src/replicache/mutations.ts`, keep server mutations idempotent
+- **Replicache mutations**: Named handlers in `src/replicache/mutations.ts`, keep server mutations idempotent. When adding one:
+  - **Move/replace a fact with a single `assertFact` that reuses the existing fact id** — never `retractFact(id)` then `assertFact({id})`. The retract+assert pair records two undo entries with an intermediate state where the fact is gone, so undo/redo flickers the block out of existence; one `assertFact` (cardinality-`many` + explicit id) captures the old value as a single clean undo entry. Reserve `retractFact` for genuine deletions (usually paired with `deleteEntity`).
+  - **Group a multi-mutation user action into one undo step** with `undoManager.withUndoGroup(async () => { ... })`, awaiting every mutation inside — undo entries are recorded asynchronously in mutator bodies, so a fire-and-forget or un-awaited mutation lands as its own separate Cmd-Z step.
+  - **Pass `ignoreUndo: true`** for derived/follow-up writes that shouldn't be independently undoable (e.g. async link/image enrichment after a paste, the yjs `block/text` doc persistence).
 - **React contexts**: `DocumentProvider`, `LeafletContentProvider` for page-level data
 - **Inngest functions**: Async jobs in `app/api/inngest/functions/`
 - **Icons**: Icon components live in `components/Icons/`. Each icon is a named export in its own file (e.g. `RefreshSmall.tsx`), imports `Props` from `./Props`, spreads `{...props}` on the `<svg>` element, and uses `fill="currentColor"` instead of hardcoded colors like `fill="black"`.

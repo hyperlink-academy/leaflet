@@ -55,7 +55,7 @@ export function useMountProsemirror({
   props: BlockProps;
   openMentionAutocomplete: () => void;
 }) {
-  let { entityID, parent } = props;
+  let { entityID } = props;
   let rep = useReplicache();
   let mountRef = useRef<HTMLPreElement | null>(null);
   const repRef = useRef<Replicache<ReplicacheMutators> | null>(null);
@@ -65,8 +65,6 @@ export function useMountProsemirror({
     useEntity(entityID, "block/text-alignment")?.data.value || "left";
   let propsRef = useRef({ ...props, entity_set, alignment });
   let handlePaste = useHandlePaste(entityID, propsRef);
-
-  const actionTimeout = useRef<number | null>(null);
 
   propsRef.current = { ...props, entity_set, alignment };
   repRef.current = rep.rep;
@@ -348,7 +346,7 @@ export function useMountProsemirror({
         trackUndoRedo(
           tr,
           rep.undoManager,
-          actionTimeout,
+          entityID,
           setState(oldEditorState),
           setState(newState),
         );
@@ -366,38 +364,34 @@ export function useMountProsemirror({
         };
       });
     }
-  }, [entityID, parent, value, cursorPlugin, handlePaste, rep]);
-  return { mountRef, actionTimeout, overlay };
+    // `parent` is intentionally NOT a dependency: indent/outdent change a
+    // block's parent but keep the same entityID, and rebuilding the EditorView
+    // on reparent destroyed the caret (dropping focus to <body> on every
+    // structural edit and its undo/redo). The view reads parent via propsRef.
+  }, [entityID, value, cursorPlugin, handlePaste, rep]);
+  return { mountRef, overlay };
 }
 
 export function trackUndoRedo(
   tr: Transaction,
   undoManager: UndoManager,
-  actionTimeout: { current: number | null },
+  coalesceKey: string,
   undo: () => void,
   redo: () => void,
 ) {
   let addToHistory = tr.getMeta("addToHistory");
   let isBulkOp = tr.getMeta("bulkOp");
-  // externalUndoGroup: the caller already has an undo group open and is keeping
-  // it open across async mutations (e.g. the Enter handler grouping a block
-  // split with the new block's creation), so skip the timeout-based group
-  // management here and just add the entry. Unlike bulkOp this does NOT suppress
-  // focus on undo (see setState above), so the cursor returns to the block.
+  // externalUndoGroup: the caller already holds a command group open across its
+  // async mutations (e.g. the Enter handler grouping a block split with the new
+  // block's creation), so just add to it. bulkOp likewise manages its own
+  // grouping. Otherwise coalesce consecutive text edits into one undo step
+  // (the undo manager owns the coalescing window, so a command can flush it and
+  // never merge with adjacent typing).
   let skipGroupManagement = isBulkOp || tr.getMeta("externalUndoGroup");
   let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
 
   if (addToHistory !== false && docHasChanges) {
-    if (actionTimeout.current) window.clearTimeout(actionTimeout.current);
-    else if (!skipGroupManagement) undoManager.startGroup();
-
-    if (!skipGroupManagement) {
-      actionTimeout.current = window.setTimeout(() => {
-        undoManager.endGroup();
-        actionTimeout.current = null;
-      }, 200);
-    }
-
-    undoManager.add({ undo, redo });
+    if (skipGroupManagement) undoManager.add({ undo, redo });
+    else undoManager.addGrouped({ undo, redo }, coalesceKey);
   }
 }

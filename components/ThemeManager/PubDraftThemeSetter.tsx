@@ -20,7 +20,7 @@ import { themeFacts, themeFactAttributes } from "./themeFacts";
 // leaflet root; edits persist as draft state and go live on the next publish.
 export function useDraftPubThemeState(): PubThemePanelState {
   let [openPicker, setOpenPicker] = useState<pickers>("null");
-  let { rep, rootEntity } = useReplicache();
+  let { rep, undoManager, rootEntity } = useReplicache();
   let { data } = usePublicationData();
   let record = useNormalizedPublicationRecord();
 
@@ -62,15 +62,17 @@ export function useDraftPubThemeState(): PubThemePanelState {
     accent2: "theme/accent-text",
   } as const;
 
-  let setTheme: PubThemePanelState["setTheme"] = (action) => {
+  let setTheme: PubThemePanelState["setTheme"] = async (action) => {
     let next = typeof action === "function" ? action(currentColors) : action;
-    for (let key of Object.keys(
-      colorAttributes,
-    ) as (keyof typeof colorAttributes)[]) {
-      let value = next[key];
-      if (value && value !== currentColors[key])
-        setColor(colorAttributes[key])(value);
-    }
+    await undoManager.withUndoGroup(async () => {
+      for (let key of Object.keys(
+        colorAttributes,
+      ) as (keyof typeof colorAttributes)[]) {
+        let value = next[key];
+        if (value && value !== currentColors[key])
+          await setColor(colorAttributes[key])(value);
+      }
+    });
   };
 
   let setShowPageBackground = (s: boolean) => {
@@ -90,23 +92,25 @@ export function useDraftPubThemeState(): PubThemePanelState {
       });
       return;
     }
-    if (i.file)
-      await addImage(i.file, rep, {
-        entityID: rootEntity,
-        attribute: "theme/background-image",
-      });
-    if (i.repeat) {
-      await rep.mutate.assertFact({
-        entity: rootEntity,
-        attribute: "theme/background-image-repeat",
-        data: { type: "number", value: i.repeat },
-      });
-    } else {
-      await rep.mutate.retractAttribute({
-        entity: rootEntity,
-        attribute: "theme/background-image-repeat",
-      });
-    }
+    await undoManager.withUndoGroup(async () => {
+      if (i.file)
+        await addImage(i.file, rep, {
+          entityID: rootEntity,
+          attribute: "theme/background-image",
+        });
+      if (i.repeat) {
+        await rep.mutate.assertFact({
+          entity: rootEntity,
+          attribute: "theme/background-image-repeat",
+          data: { type: "number", value: i.repeat },
+        });
+      } else {
+        await rep.mutate.retractAttribute({
+          entity: rootEntity,
+          attribute: "theme/background-image-repeat",
+        });
+      }
+    });
   };
 
   let setPageWidth = (w: number) => {
@@ -137,18 +141,22 @@ export function useDraftPubThemeState(): PubThemePanelState {
       resolvePublicationTheme(record),
       data?.publication?.identity_did || "",
     );
-    await rep.mutate.retractAttribute({
-      entity: rootEntity,
-      attribute: [...themeFactAttributes],
+    // Clear all theme facts and write the defaults as one undo step, matching
+    // the other theme setters in this hook.
+    await undoManager.withUndoGroup(async () => {
+      await rep.mutate.retractAttribute({
+        entity: rootEntity,
+        attribute: [...themeFactAttributes],
+      });
+      await Promise.all(
+        facts.map((f) =>
+          rep.mutate.assertFact({
+            entity: rootEntity,
+            ...f,
+          } as Parameters<typeof rep.mutate.assertFact>[0]),
+        ),
+      );
     });
-    await Promise.all(
-      facts.map((f) =>
-        rep.mutate.assertFact({
-          entity: rootEntity,
-          ...f,
-        } as Parameters<typeof rep.mutate.assertFact>[0]),
-      ),
-    );
   };
 
   return {
