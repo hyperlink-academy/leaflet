@@ -146,7 +146,7 @@ export const ImageInput = (props: {
   card?: boolean;
 }) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value;
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   return (
     <input
       type="file"
@@ -155,22 +155,23 @@ export const ImageInput = (props: {
         let file = e.currentTarget.files?.[0];
         if (!file || !rep) return;
 
-        await addImage(file, rep, {
-          entityID: props.entityID,
-          attribute: props.card
-            ? "theme/card-background-image"
-            : "theme/background-image",
-        });
-        props.onChange?.();
+        await undoManager.withUndoGroup(async () => {
+          await addImage(file, rep, {
+            entityID: props.entityID,
+            attribute: props.card
+              ? "theme/card-background-image"
+              : "theme/background-image",
+          });
+          props.onChange?.();
 
-        if (pageType === "canvas") {
-          rep &&
-            rep.mutate.assertFact({
+          if (pageType === "canvas") {
+            await rep.mutate.assertFact({
               entity: props.entityID,
               attribute: "canvas/background-pattern",
               data: { type: "canvas-pattern-union", value: "plain" },
             });
-        }
+          }
+        });
       }}
     />
   );

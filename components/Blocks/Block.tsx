@@ -84,7 +84,7 @@ export const Block = memo(function Block(
   });
   let entity_set = useEntitySetContext();
   let isMobile = useIsMobile();
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
 
   let { isLongPress, longPressHandlers } = useLongPress(() => {
     if (isTextBlock[props.type]) return;
@@ -135,16 +135,29 @@ export const Block = memo(function Block(
       let { foldedBlocks, toggleFold } = useUIState.getState();
       if (mx > 0) {
         if (props.previousBlock) {
-          indent(props, props.previousBlock, rep, {
-            foldedBlocks,
-            toggleFold,
-          });
+          indent(
+            props,
+            props.previousBlock,
+            rep,
+            {
+              foldedBlocks,
+              toggleFold,
+            },
+            undoManager,
+          );
         }
       } else {
-        outdent(props, props.previousBlock, rep, {
-          foldedBlocks,
-          toggleFold,
-        });
+        outdent(
+          props,
+          props.previousBlock,
+          rep,
+          {
+            foldedBlocks,
+            toggleFold,
+          },
+          undefined,
+          undoManager,
+        );
       }
     },
     {
@@ -457,7 +470,7 @@ const NonTextBlockOptions = (props: {
   optionsClassName?: string;
   extraOptions?: React.ReactNode;
 }) => {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let focusedEntity = useUIState((s) => s.focusedEntity);
   let focusedEntityType = useEntity(
@@ -530,10 +543,10 @@ const NonTextBlockOptions = (props: {
                 }, 300);
                 return;
               }
-              await deleteBlock([focusedEntity.entityID], rep);
+              await deleteBlock([focusedEntity.entityID], rep, undoManager);
             }
           } else {
-            await deleteBlock([focusedEntity.entityID], rep);
+            await deleteBlock([focusedEntity.entityID], rep, undoManager);
           }
         }}
       >

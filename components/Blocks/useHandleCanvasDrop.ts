@@ -70,7 +70,7 @@ const processImage = async (
 };
 
 export const useHandleCanvasDrop = (entityID: string) => {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let blocks = useEntity(entityID, "canvas/block");
 
@@ -160,59 +160,61 @@ export const useHandleCanvasDrop = (entityID: string) => {
         };
       });
 
-      // Create all blocks with image facts
-      for (const block of imageBlocks) {
-        localImages.set(block.url, URL.createObjectURL(block.file));
+      await undoManager.withUndoGroup(async () => {
+        // Create all blocks with image facts
+        for (const block of imageBlocks) {
+          localImages.set(block.url, URL.createObjectURL(block.file));
 
-        await rep.mutate.addCanvasBlock({
-          newEntityID: block.entity,
-          parent: entityID,
-          position: block.position,
-          factID: v7(),
-          type: "image",
-          permission_set: entity_set.set,
-        });
-
-        await rep.mutate.assertFact({
-          entity: block.entity,
-          attribute: "block/image",
-          data: {
-            fallback: block.dimensions.thumbhash,
+          await rep.mutate.addCanvasBlock({
+            newEntityID: block.entity,
+            parent: entityID,
+            position: block.position,
+            factID: v7(),
             type: "image",
-            local: rep.clientID,
-            src: block.url,
-            height: block.dimensions.height,
-            width: block.dimensions.width,
-          },
-        });
-      }
+            permission_set: entity_set.set,
+          });
 
-      // Upload all files to storage in parallel
-      await Promise.all(
-        imageBlocks.map(async (block) => {
-          await client.storage
-            .from("minilink-user-assets")
-            .upload(block.fileID, block.file, {
-              cacheControl: "public, max-age=31560000, immutable",
-            });
-
-          // Update fact with final version
           await rep.mutate.assertFact({
             entity: block.entity,
             attribute: "block/image",
             data: {
               fallback: block.dimensions.thumbhash,
               type: "image",
+              local: rep.clientID,
               src: block.url,
               height: block.dimensions.height,
               width: block.dimensions.width,
             },
           });
-        }),
-      );
+        }
+
+        // Upload all files to storage in parallel
+        await Promise.all(
+          imageBlocks.map(async (block) => {
+            await client.storage
+              .from("minilink-user-assets")
+              .upload(block.fileID, block.file, {
+                cacheControl: "public, max-age=31560000, immutable",
+              });
+
+            // Update fact with final version
+            await rep.mutate.assertFact({
+              entity: block.entity,
+              attribute: "block/image",
+              data: {
+                fallback: block.dimensions.thumbhash,
+                type: "image",
+                src: block.url,
+                height: block.dimensions.height,
+                width: block.dimensions.width,
+              },
+            });
+          }),
+        );
+      });
 
       return true;
     },
-    [rep, entityID, entity_set.set, blocks],
+    [rep, entityID, entity_set.set, blocks, undoManager],
   );
 };

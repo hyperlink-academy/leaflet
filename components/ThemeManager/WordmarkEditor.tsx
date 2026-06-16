@@ -15,7 +15,7 @@ const MIN_WORDMARK_WIDTH = 40;
 // Edits persist as draft state and go live on the next publish (see
 // extractThemeFromFacts), mirroring how the background image is handled.
 export function useDraftWordmark() {
-  let { rep, rootEntity } = useReplicache();
+  let { rep, undoManager, rootEntity } = useReplicache();
   let imageFact = useEntity(rootEntity, "theme/wordmark-image");
   let widthFact = useEntity(rootEntity, "theme/wordmark-width");
   let pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value || 624;
@@ -25,17 +25,19 @@ export function useDraftWordmark() {
 
   let setImage = async (file: File) => {
     if (!rep) return;
-    await addImage(file, rep, {
-      entityID: rootEntity,
-      attribute: "theme/wordmark-image",
-    });
-    // Give a sane starting max width so the slider and preview agree.
-    if (width == null)
-      await rep.mutate.assertFact({
-        entity: rootEntity,
-        attribute: "theme/wordmark-width",
-        data: { type: "number", value: DEFAULT_WORDMARK_WIDTH },
+    await undoManager.withUndoGroup(async () => {
+      await addImage(file, rep, {
+        entityID: rootEntity,
+        attribute: "theme/wordmark-image",
       });
+      // Give a sane starting max width so the slider and preview agree.
+      if (width == null)
+        await rep.mutate.assertFact({
+          entity: rootEntity,
+          attribute: "theme/wordmark-width",
+          data: { type: "number", value: DEFAULT_WORDMARK_WIDTH },
+        });
+    });
   };
 
   let setWidth = (w: number) => {

@@ -11,7 +11,7 @@ export const AreYouSure = (props: {
   compact?: boolean;
 }) => {
   let entities = [props.entityID].flat();
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
 
   return (
     <div
@@ -52,7 +52,7 @@ export const AreYouSure = (props: {
             compact
             onClick={async (e) => {
               e.stopPropagation();
-              if (rep) await deleteBlock(entities, rep);
+              if (rep) await deleteBlock(entities, rep, undoManager);
             }}
           >
             Delete

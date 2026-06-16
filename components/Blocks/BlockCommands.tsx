@@ -230,7 +230,7 @@ export const blockCommands: Command[] = [
     icon: <LinkSmall />,
     type: "block",
     onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "link");
+      await createBlockWithType(rep, props, "link");
     },
   },
   {
@@ -313,7 +313,7 @@ export const blockCommands: Command[] = [
     icon: <BlockEmbedSmall />,
     type: "block",
     onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "embed");
+      await createBlockWithType(rep, props, "embed");
     },
   },
   {
@@ -321,7 +321,7 @@ export const blockCommands: Command[] = [
     icon: <BlockBlueskySmall />,
     type: "block",
     onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "bluesky-post");
+      await createBlockWithType(rep, props, "bluesky-post");
     },
   },
   {
@@ -330,7 +330,7 @@ export const blockCommands: Command[] = [
     type: "block",
     hiddenInPublication: false,
     onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "math");
+      await createBlockWithType(rep, props, "math");
     },
   },
   {

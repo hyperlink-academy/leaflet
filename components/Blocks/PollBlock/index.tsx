@@ -344,7 +344,7 @@ const EditPoll = (props: {
   close: () => void;
 }) => {
   let pollOptions = useEntity(props.entityID, "poll/options");
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let permission_set = useEntitySetContext();
   let [localPollOptionNames, setLocalPollOptionNames] = useState<{
     [k: string]: string;
@@ -399,29 +399,31 @@ const EditPoll = (props: {
       <ButtonPrimary
         className="place-self-end"
         onClick={async () => {
-          // remove any poll options that have no name
-          // look through the localPollOptionNames object and remove any options that have no name
-          let emptyOptions = Object.entries(localPollOptionNames).filter(
-            ([optionEntity, optionName]) => optionName === "",
-          );
-          await Promise.all(
-            emptyOptions.map(
-              async ([entity]) =>
-                await rep?.mutate.removePollOption({
-                  optionEntity: entity,
-                }),
-            ),
-          );
+          await undoManager.withUndoGroup(async () => {
+            // remove any poll options that have no name
+            // look through the localPollOptionNames object and remove any options that have no name
+            let emptyOptions = Object.entries(localPollOptionNames).filter(
+              ([optionEntity, optionName]) => optionName === "",
+            );
+            await Promise.all(
+              emptyOptions.map(
+                async ([entity]) =>
+                  await rep?.mutate.removePollOption({
+                    optionEntity: entity,
+                  }),
+              ),
+            );
 
-          await rep?.mutate.assertFact(
-            Object.entries(localPollOptionNames)
-              .filter(([, name]) => !!name)
-              .map(([entity, name]) => ({
-                entity,
-                attribute: "poll-option/name",
-                data: { type: "string", value: name },
-              })),
-          );
+            await rep?.mutate.assertFact(
+              Object.entries(localPollOptionNames)
+                .filter(([, name]) => !!name)
+                .map(([entity, name]) => ({
+                  entity,
+                  attribute: "poll-option/name",
+                  data: { type: "string", value: name },
+                })),
+            );
+          });
           props.close();
         }}
       >

@@ -460,7 +460,7 @@ async function bulkPaste({
   // Kick off async work after the bulk commit so the new blocks are already
   // present locally before image/link metadata arrives.
   for (const task of result.linkTasks) {
-    addLinkBlock(task.url, task.entityID, rep);
+    addLinkBlock(task.url, task.entityID, rep, true);
   }
   for (const task of result.imageTasks) {
     fetch(task.url)

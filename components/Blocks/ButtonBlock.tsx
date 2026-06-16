@@ -58,7 +58,7 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
 };
 
 const ButtonBlockSettings = (props: BlockProps) => {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let smoker = useSmoker();
   let entity_set = useEntitySetContext();
 
@@ -73,69 +73,71 @@ const ButtonBlockSettings = (props: BlockProps) => {
   let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   let submit = async () => {
-    let entity = props.entityID;
-    if (!entity) {
-      entity = v7();
-      await rep?.mutate.addBlock({
+    await undoManager.withUndoGroup(async () => {
+      let entity = props.entityID;
+      if (!entity) {
+        entity = v7();
+        await rep?.mutate.addBlock({
+          permission_set: entity_set.set,
+          factID: v7(),
+          parent: props.parent,
+          type: "card",
+          position: generateKeyBetween(props.position, props.nextPosition),
+          newEntityID: entity,
+        });
+      }
+
+      // if no valid url prefix, default to https
+      if (
+        !urlValue.startsWith("http") &&
+        !urlValue.startsWith("mailto") &&
+        !urlValue.startsWith("tel:")
+      )
+        url = `https://${urlValue}`;
+
+      // these mutations = simpler subset of addLinkBlock
+      if (!rep) return;
+      await rep.mutate.assertFact({
+        entity: entity,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "button" },
+      });
+      await rep?.mutate.assertFact({
+        entity: entity,
+        attribute: "button/text",
+        data: {
+          type: "string",
+          value: text,
+        },
+      });
+      await rep?.mutate.assertFact({
+        entity: entity,
+        attribute: "button/url",
+        data: {
+          type: "string",
+          value: url,
+        },
+      });
+
+      let textEntity = v7();
+      await rep.mutate.addBlock({
         permission_set: entity_set.set,
         factID: v7(),
         parent: props.parent,
-        type: "card",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: entity,
-      });
-    }
-
-    // if no valid url prefix, default to https
-    if (
-      !urlValue.startsWith("http") &&
-      !urlValue.startsWith("mailto") &&
-      !urlValue.startsWith("tel:")
-    )
-      url = `https://${urlValue}`;
-
-    // these mutations = simpler subset of addLinkBlock
-    if (!rep) return;
-    await rep.mutate.assertFact({
-      entity: entity,
-      attribute: "block/type",
-      data: { type: "block-type-union", value: "button" },
-    });
-    await rep?.mutate.assertFact({
-      entity: entity,
-      attribute: "button/text",
-      data: {
-        type: "string",
-        value: text,
-      },
-    });
-    await rep?.mutate.assertFact({
-      entity: entity,
-      attribute: "button/url",
-      data: {
-        type: "string",
-        value: url,
-      },
-    });
-
-    let textEntity = v7();
-    await rep.mutate.addBlock({
-      permission_set: entity_set.set,
-      factID: v7(),
-      parent: props.parent,
-      type: "text",
-      position: generateKeyBetween(props.position, props.nextPosition),
-      newEntityID: textEntity,
-    });
-
-    focusBlock(
-      {
-        value: textEntity,
         type: "text",
-        parent: props.parent,
-      },
-      { type: "start" },
-    );
+        position: generateKeyBetween(props.position, props.nextPosition),
+        newEntityID: textEntity,
+      });
+
+      focusBlock(
+        {
+          value: textEntity,
+          type: "text",
+          parent: props.parent,
+        },
+        { type: "start" },
+      );
+    });
   };
 
   return (

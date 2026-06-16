@@ -162,7 +162,7 @@ export const Toolbar = (props: {
 
 export const ToolbarButton = (props: {
   className?: string;
-  onClick?: (e: React.MouseEvent) => void;
+  onClick?: (e: React.MouseEvent) => unknown;
   tooltipContent: React.ReactNode;
   children: React.ReactNode;
   active?: boolean;
@@ -182,9 +182,9 @@ export const ToolbarButton = (props: {
     return;
   return (
     <TooltipButton
-      onMouseDown={(e) => {
+      onMouseDown={async (e) => {
         e.preventDefault();
-        props.onClick && props.onClick(e);
+        props.onClick && (await props.onClick(e));
       }}
       disabled={isDisabled}
       tooltipContent={props.tooltipContent}

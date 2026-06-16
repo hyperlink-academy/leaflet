@@ -14,7 +14,7 @@ import type {
 // leaflet root; edits persist as draft state and go live on the next publish.
 export function useDraftPubThemeState(): PubThemePanelState {
   let [openPicker, setOpenPicker] = useState<pickers>("null");
-  let { rep, rootEntity } = useReplicache();
+  let { rep, undoManager, rootEntity } = useReplicache();
 
   let bgLeaflet = useColorAttribute(rootEntity, "theme/page-background");
   let bgPage = useColorAttribute(rootEntity, "theme/card-background");
@@ -54,15 +54,17 @@ export function useDraftPubThemeState(): PubThemePanelState {
     accent2: "theme/accent-text",
   } as const;
 
-  let setTheme: PubThemePanelState["setTheme"] = (action) => {
+  let setTheme: PubThemePanelState["setTheme"] = async (action) => {
     let next = typeof action === "function" ? action(currentColors) : action;
-    for (let key of Object.keys(
-      colorAttributes,
-    ) as (keyof typeof colorAttributes)[]) {
-      let value = next[key];
-      if (value && value !== currentColors[key])
-        setColor(colorAttributes[key])(value);
-    }
+    await undoManager.withUndoGroup(async () => {
+      for (let key of Object.keys(
+        colorAttributes,
+      ) as (keyof typeof colorAttributes)[]) {
+        let value = next[key];
+        if (value && value !== currentColors[key])
+          await setColor(colorAttributes[key])(value);
+      }
+    });
   };
 
   let setShowPageBackground = (s: boolean) => {
@@ -82,23 +84,25 @@ export function useDraftPubThemeState(): PubThemePanelState {
       });
       return;
     }
-    if (i.file)
-      await addImage(i.file, rep, {
-        entityID: rootEntity,
-        attribute: "theme/background-image",
-      });
-    if (i.repeat) {
-      await rep.mutate.assertFact({
-        entity: rootEntity,
-        attribute: "theme/background-image-repeat",
-        data: { type: "number", value: i.repeat },
-      });
-    } else {
-      await rep.mutate.retractAttribute({
-        entity: rootEntity,
-        attribute: "theme/background-image-repeat",
-      });
-    }
+    await undoManager.withUndoGroup(async () => {
+      if (i.file)
+        await addImage(i.file, rep, {
+          entityID: rootEntity,
+          attribute: "theme/background-image",
+        });
+      if (i.repeat) {
+        await rep.mutate.assertFact({
+          entity: rootEntity,
+          attribute: "theme/background-image-repeat",
+          data: { type: "number", value: i.repeat },
+        });
+      } else {
+        await rep.mutate.retractAttribute({
+          entity: rootEntity,
+          attribute: "theme/background-image-repeat",
+        });
+      }
+    });
   };
 
   let setPageWidth = (w: number) => {
