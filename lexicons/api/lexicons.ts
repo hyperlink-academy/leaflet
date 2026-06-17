@@ -2307,6 +2307,10 @@ export const schemaDict = {
             type: 'boolean',
             default: true,
           },
+          showFirstLast: {
+            type: 'boolean',
+            default: false,
+          },
           showRecommends: {
             type: 'boolean',
             default: true,
@@ -2891,6 +2895,10 @@ export const schemaDict = {
             type: 'boolean',
           },
           showPrevNext: {
+            default: false,
+            type: 'boolean',
+          },
+          showFirstLast: {
             default: false,
             type: 'boolean',
           },

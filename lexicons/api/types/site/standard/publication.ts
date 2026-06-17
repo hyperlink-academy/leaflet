@@ -40,6 +40,7 @@ export interface Preferences {
   showComments: boolean
   showMentions: boolean
   showPrevNext: boolean
+  showFirstLast: boolean
   showRecommends: boolean
 }
 

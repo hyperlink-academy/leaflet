@@ -33,6 +33,7 @@ export const PubLeafletPublication: LexiconDoc = {
         showComments: { type: "boolean", default: true },
         showMentions: { type: "boolean", default: true },
         showPrevNext: { type: "boolean", default: true },
+        showFirstLast: { type: "boolean", default: false },
         showRecommends: { type: "boolean", default: true },
       },
     },

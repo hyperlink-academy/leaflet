@@ -60,6 +60,10 @@
           "type": "boolean",
           "default": true
         },
+        "showFirstLast": {
+          "type": "boolean",
+          "default": false
+        },
         "showRecommends": {
           "type": "boolean",
           "default": true

@@ -344,6 +344,7 @@ export function normalizePublication(
             showComments: record.preferences.showComments,
             showMentions: record.preferences.showMentions,
             showPrevNext: record.preferences.showPrevNext,
+            showFirstLast: record.preferences.showFirstLast,
             showRecommends: record.preferences.showRecommends,
           }
         : undefined;
