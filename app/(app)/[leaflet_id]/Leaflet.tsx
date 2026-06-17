@@ -14,6 +14,7 @@ import { useUIState } from "src/useUIState";
 import { LeafletLayout } from "components/LeafletLayout";
 import { WelcomeModal } from "./WelcomeModal";
 import { AddToHomeEffect } from "./AddToHomeEffect";
+import { CommentSelectionPopover } from "components/Comments/CommentSelectionPopover";
 
 export function Leaflet(props: {
   token: PermissionToken;
@@ -47,6 +48,7 @@ export function Leaflet(props: {
             <LeafletLayout className="!pb-[64px] sm:!pb-6">
               <Pages rootPage={props.leaflet_id} />
             </LeafletLayout>
+            <CommentSelectionPopover />
             <LeafletFooter entityID={props.leaflet_id} />
           </ThemeBackgroundProvider>
         </ThemeProvider>

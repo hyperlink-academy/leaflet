@@ -3,7 +3,7 @@ import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   encodeQuotePosition,
   decodeQuotePosition,
@@ -15,133 +15,44 @@ import { setInteractionState } from "./Interactions/Interactions";
 import { useDocument } from "contexts/DocumentContext";
 import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
+import { SelectionActionPopover } from "components/SelectionActionPopover";
 
 export function QuoteHandler() {
-  let [position, setPosition] = useState<{
-    top: number;
-    left: number;
-    position: string;
-  } | null>(null);
-  useEffect(() => {
-    const handleSelectionChange = (e: Event) => {
-      const selection = document.getSelection();
-
-      // Check if selection is within any element with postContent class
-      const isWithinPostContent =
-        selection?.rangeCount && selection.rangeCount > 0
-          ? (() => {
-              const range = selection.getRangeAt(0);
-              const ancestor = range.commonAncestorContainer;
-              const element =
-                ancestor.nodeType === Node.ELEMENT_NODE
-                  ? (ancestor as Element)
-                  : ancestor.parentElement;
-              return element?.closest(".postContent") !== null;
-            })()
-          : false;
-
-      if (!selection || !isWithinPostContent || !selection?.toString())
-        return setPosition(null);
-      const quoteRect = selection?.getRangeAt(0).getBoundingClientRect();
-      if (!quoteRect) return setPosition(null);
-
-      let selectionTop = quoteRect.top;
-      let selectionLeft = quoteRect.left;
-      if (selection?.focusNode && selection?.focusOffset) {
-        const range = document.createRange();
-        range.setStart(selection?.focusNode, selection?.focusOffset);
-        range.setEnd(selection?.focusNode, selection?.focusOffset);
-
-        let endCursorRect = range.getBoundingClientRect();
-        selectionLeft = endCursorRect.left - 128;
-      }
-
-      let dir = selection.direction;
-      const range = selection.getRangeAt(0);
-      if (!dir) {
-        const startContainer = range.startContainer;
-        const endContainer = range.endContainer;
-        const startOffset = range.startOffset;
-        const endOffset = range.endOffset;
-
-        if (startContainer === endContainer) {
-          dir = startOffset <= endOffset ? "forward" : "backward";
-        } else {
-          const position = startContainer.compareDocumentPosition(endContainer);
-          dir =
-            (position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
-              ? "forward"
-              : "backward";
-        }
-      }
-
-      if (selection.direction === "backward") {
-        selectionTop -= 28;
-      } else {
-        // forward
-        selectionTop += quoteRect.height + 8;
-      }
-
-      // Ensure tooltip stays within viewport bounds (330px wide + 8px padding)
-      const TOOLTIP_WIDTH = 338;
-      const viewportWidth = window.innerWidth;
-      const maxLeft = viewportWidth - TOOLTIP_WIDTH;
-
-      // Clamp selectionLeft to stay within bounds
-      selectionLeft = Math.max(8, Math.min(selectionLeft, maxLeft));
-
-      let startIndex = findDataIndex(range.startContainer);
-      let endIndex = findDataIndex(range.endContainer);
-      if (!startIndex || !endIndex) return;
-      let startOffset = calculateOffsetFromDataParent(
-        range.startContainer,
-        range.startOffset,
-        startIndex?.element,
-      );
-      let endOffset = calculateOffsetFromDataParent(
-        range.endContainer,
-        range.endOffset,
-        endIndex?.element,
-      );
-      let position: QuotePosition = {
-        ...(startIndex.pageId && { pageId: startIndex.pageId }),
-        start: {
-          block: startIndex?.index.split(".").map((i) => parseInt(i)),
-          offset: startOffset,
-        },
-        end: {
-          block: endIndex.index.split(".").map((i) => parseInt(i)),
-          offset: endOffset,
-        },
-      };
-      setPosition({
-        top: selectionTop,
-        left: selectionLeft,
-        position: encodeQuotePosition(position),
-      });
-    };
-
-    document.addEventListener("selectionchange", handleSelectionChange);
-    return () => {
-      document.removeEventListener("selectionchange", handleSelectionChange);
-    };
-  }, []);
-
-  if (position) {
-    return (
-      <div
-        id="quote-trigger"
-        className={`z-20 accent-container border border-border-light text-accent-contrast px-1 flex gap-1 text-sm justify-center text-center items-center`}
-        style={{
-          position: "absolute",
-          top: position.top,
-          left: position.left,
-        }}
-      >
-        <QuoteOptionButtons position={position.position} />
-      </div>
-    );
-  }
+  return (
+    <SelectionActionPopover
+      id="quote-trigger"
+      containerSelector=".postContent"
+      resolve={({ range }) => {
+        let startIndex = findDataIndex(range.startContainer);
+        let endIndex = findDataIndex(range.endContainer);
+        if (!startIndex || !endIndex) return null;
+        let startOffset = calculateOffsetFromDataParent(
+          range.startContainer,
+          range.startOffset,
+          startIndex.element,
+        );
+        let endOffset = calculateOffsetFromDataParent(
+          range.endContainer,
+          range.endOffset,
+          endIndex.element,
+        );
+        let position: QuotePosition = {
+          ...(startIndex.pageId && { pageId: startIndex.pageId }),
+          start: {
+            block: startIndex.index.split(".").map((i) => parseInt(i)),
+            offset: startOffset,
+          },
+          end: {
+            block: endIndex.index.split(".").map((i) => parseInt(i)),
+            offset: endOffset,
+          },
+        };
+        return encodeQuotePosition(position);
+      }}
+    >
+      {(position) => <QuoteOptionButtons position={position} />}
+    </SelectionActionPopover>
+  );
 }
 
 const QuoteOptionButtons = (props: { position: string }) => {
