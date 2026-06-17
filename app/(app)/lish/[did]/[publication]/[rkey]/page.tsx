@@ -1,6 +1,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { DocumentPageRenderer } from "./DocumentPageRenderer";
+import { fetchPublicationForPage } from "../getPublicationForPage";
 import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
 import {
   normalizeDocumentRecord,
@@ -117,22 +118,9 @@ export default async function Post(props: {
       </div>
     );
 
-  let { data: publications } = await supabaseServerClient
-    .from("publications")
-    .select(
-      `uri, name, identity_did, record,
-       publication_pages(id, path, title, record, record_uri, sort_order),
-       documents_in_publications(documents(uri, data,
-         comments_on_documents(count),
-         document_mentions_in_bsky(count),
-         recommends_on_documents(count)))`,
-    )
-    .eq("identity_did", did)
-    .or(publicationNameOrUriFilter(did, publication_name))
-    .order("uri", { ascending: false })
-    .limit(1);
-  let publication = publications?.[0];
-
+  // A /<rkey> URL is either a published publication page or a post; render the
+  // matching page, else fall back to the single-post renderer.
+  const publication = await fetchPublicationForPage(did, publication_name);
   if (publication) {
     const pageRender = tryRenderPublicationPage({
       did,
@@ -141,6 +129,5 @@ export default async function Post(props: {
     });
     if (pageRender) return pageRender;
   }
-
   return <DocumentPageRenderer did={did} rkey={rkey} />;
 }

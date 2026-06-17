@@ -6,11 +6,11 @@ export type GetLeafletDataReturnType = Awaited<
   ReturnType<(typeof get_leaflet_data)["handler"]>
 >;
 
-const leaflets_in_publications_query = `leaflets_in_publications(*, publications!leaflets_in_publications_publication_fkey(*, publication_contributors(contributor_did, confirmed, created_at)), documents(*))`;
+const leaflets_in_publications_query = `leaflets_in_publications(*, publications!leaflets_in_publications_publication_fkey(*, publication_contributors(contributor_did, confirmed, created_at), publication_newsletter_settings(enabled)), documents(*))`;
 const leaflets_to_documents_query = `leaflets_to_documents(*, documents(*))`;
 // Set when this token is a publication's draft leaflet (the single leaflet
 // holding the publication's draft pages, nav, and theme).
-const draft_publication_query = `publications!publications_draft_leaflet_fkey(*)`;
+const draft_publication_query = `publications!publications_draft_leaflet_fkey(*, publication_newsletter_settings(enabled))`;
 export const get_leaflet_data = makeRoute({
   route: "get_leaflet_data",
   input: z.object({

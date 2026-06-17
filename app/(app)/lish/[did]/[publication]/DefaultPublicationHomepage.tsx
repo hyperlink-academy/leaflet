@@ -34,7 +34,6 @@ export const DefaultPublicationHomepage = ({
     name: string;
     identity_did: string;
     record: unknown;
-    publication_subscriptions: { identity: string }[];
     publication_newsletter_settings: { enabled: boolean } | null;
     publication_pages?: {
       id: number;

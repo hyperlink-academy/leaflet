@@ -1,15 +1,10 @@
-import { supabaseServerClient } from "supabase/serverClient";
-import {
-  getPublicationURL,
-  getDocumentURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
-import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { DefaultPublicationHomepage } from "./DefaultPublicationHomepage";
 import { buildPublicationPosts } from "./buildPublicationPosts";
+import { fetchPublicationForPage } from "./getPublicationForPage";
 import { tryRenderPublicationPage } from "./tryRenderPublicationPage";
 import { getProfiles } from "src/identity";
 import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
@@ -24,53 +19,32 @@ export default async function Publication(props: {
   let params = await props.params;
   const did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
-  const agent = new BskyAgent({ service: "https://public.api.bsky.app" });
   const publication_name = decodeURIComponent(params.publication);
-  const [{ data: publications }, { data: profile }] = await Promise.all([
-    supabaseServerClient
-      .from("publications")
-      .select(
-        `*,
-        publication_subscriptions(*),
-        publication_newsletter_settings(enabled),
-        publication_pages(id, path, title, record, record_uri, sort_order),
-        documents_in_publications(documents(
-          *,
-          comments_on_documents(count),
-          document_mentions_in_bsky(count),
-          recommends_on_documents(count)
-        ))
-      `,
-      )
-      .eq("identity_did", did)
-      .or(publicationNameOrUriFilter(did, publication_name))
-      .order("uri", { ascending: false })
-      .limit(1),
-    agent.getProfile({ actor: did }),
-  ]);
-  const publication = publications?.[0];
 
-  const record = normalizePublicationRecord(publication?.record);
-
-  const showPageBackground = record?.theme?.showPageBackground;
-
+  const publication = await fetchPublicationForPage(did, publication_name);
   if (!publication) return <PubNotFound />;
 
   try {
+    // Render a published "/" page when one exists; otherwise fall back to the
+    // legacy post-listing homepage.
     const homePageRender = tryRenderPublicationPage({
       did,
       publication,
       path: "/",
     });
     if (homePageRender) return homePageRender;
-    // Resolve post bylines server-side so author names are in the SSR HTML.
+
+    const record = normalizePublicationRecord(publication.record);
+    // Resolve the author profile and post bylines server-side so they're in the
+    // SSR HTML.
+    const agent = new BskyAgent({ service: "https://public.api.bsky.app" });
     const homepagePosts = buildPublicationPosts(
       publication.documents_in_publications,
     );
-    const homepagePostsWithByline = attachBylineProfiles(
-      homepagePosts,
-      await getProfiles(bylineDidsForPosts(homepagePosts)),
-    );
+    const [{ data: profile }, bylineProfiles] = await Promise.all([
+      agent.getProfile({ actor: did }),
+      getProfiles(bylineDidsForPosts(homepagePosts)),
+    ]);
     return (
       <PublicationThemeProvider
         record={record}
@@ -85,8 +59,8 @@ export default async function Publication(props: {
             publication={publication}
             did={did}
             profile={profile}
-            showPageBackground={showPageBackground}
-            posts={homepagePostsWithByline}
+            showPageBackground={record?.theme?.showPageBackground}
+            posts={attachBylineProfiles(homepagePosts, bylineProfiles)}
           />
         </PublicationBackgroundProvider>
       </PublicationThemeProvider>

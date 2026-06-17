@@ -1,6 +1,5 @@
 import { useUIState } from "src/useUIState";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { usePublicationData } from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { BlockProps, BlockLayout } from "./Block";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 
@@ -16,11 +15,15 @@ export const SubscribeBlock = (
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let { normalizedPublication } = useLeafletPublicationData();
-  let { data } = usePublicationData();
-  let publicationUri = data?.publication?.uri;
+  // Source publication data from the leaflet editor's provider — the dashboard
+  // PublicationSWRProvider (usePublicationData) isn't mounted in the post
+  // editor, so reading newsletter settings from it always came back empty and
+  // the block fell back to atproto-only subscribe. The published page reads the
+  // same data from getPostPageData via DocumentContext.
+  let { data, normalizedPublication } = useLeafletPublicationData();
+  let publicationUri = data?.publications?.uri;
   let newsletterMode =
-    !!data?.publication?.publication_newsletter_settings?.enabled;
+    !!data?.publications?.publication_newsletter_settings?.enabled;
 
   let publicationName = normalizedPublication?.name || "Subscribe";
   let publicationDescription = normalizedPublication?.description;

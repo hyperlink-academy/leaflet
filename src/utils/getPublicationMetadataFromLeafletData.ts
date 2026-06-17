@@ -32,6 +32,7 @@ export type PublicationMetadata = {
       confirmed: boolean;
       created_at: string;
     }[];
+    publication_newsletter_settings?: { enabled: boolean } | null;
   } | null;
   documents: {
     /** Raw data - use normalizeDocumentRecord() to get typed data */
