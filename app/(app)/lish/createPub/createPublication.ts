@@ -124,6 +124,7 @@ export async function createPublication({
         showMentions: preferences.showMentions,
         showPrevNext: preferences.showPrevNext,
         showRecommends: preferences.showRecommends,
+        showFirstLast: preferences.showFirstLast,
       },
     } satisfies SiteStandardPublication.Record;
   } else {
