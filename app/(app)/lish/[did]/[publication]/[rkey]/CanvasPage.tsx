@@ -219,6 +219,7 @@ const CanvasMetadata = (props: {
     showMentions?: boolean;
     showRecommends?: boolean;
     showPrevNext?: boolean;
+    showFirstLast?: boolean;
   };
   quotesCount: number | undefined;
   commentsCount: number | undefined;

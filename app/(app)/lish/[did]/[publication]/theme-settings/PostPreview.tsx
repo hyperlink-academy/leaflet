@@ -139,6 +139,7 @@ export function PostPreview(props: {
               showMentions: preferences?.showMentions,
               showRecommends: preferences?.showRecommends,
               showPrevNext: preferences?.showPrevNext,
+              showFirstLast: preferences?.showFirstLast,
             }}
             prerenderedCodeBlocks={new Map()}
             bskyPostData={[]}

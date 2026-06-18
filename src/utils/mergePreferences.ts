@@ -3,6 +3,7 @@ type PreferencesInput = {
   showMentions?: boolean;
   showRecommends?: boolean;
   showPrevNext?: boolean;
+  showFirstLast?: boolean;
 } | null;
 
 export function mergePreferences(
@@ -13,6 +14,7 @@ export function mergePreferences(
   showMentions?: boolean;
   showRecommends?: boolean;
   showPrevNext?: boolean;
+  showFirstLast?: boolean;
 } {
   return {
     showComments: documentPrefs?.showComments ?? publicationPrefs?.showComments,
@@ -20,5 +22,6 @@ export function mergePreferences(
     showRecommends:
       documentPrefs?.showRecommends ?? publicationPrefs?.showRecommends,
     showPrevNext: publicationPrefs?.showPrevNext,
+    showFirstLast: publicationPrefs?.showFirstLast,
   };
 }

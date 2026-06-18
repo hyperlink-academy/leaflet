@@ -99,6 +99,7 @@ export function LinearDocumentPage({
         <PublishedFootnoteSection footnotes={footnotes} />
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}
+          showFirstLast={preferences.showFirstLast === true && !isSubpage}
         />
         <ExpandedInteractions
           pageId={pageId}

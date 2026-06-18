@@ -74,6 +74,11 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
       ? true
       : record.preferences.showPrevNext,
   );
+  let [showFirstLast, setShowFirstLast] = useState(
+    record?.preferences?.showFirstLast === undefined
+      ? false
+      : record.preferences.showFirstLast,
+  );
 
   // Sync from server data
   useEffect(() => {
@@ -122,6 +127,12 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         : record.preferences.showPrevNext;
     if (showPrevNext !== savedShowPrevNext) return true;
 
+    let savedShowFirstLast =
+      record.preferences?.showFirstLast === undefined
+        ? false
+        : record.preferences.showFirstLast;
+    if (showFirstLast !== savedShowFirstLast) return true;
+
     return false;
   }, [
     record,
@@ -133,6 +144,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
     showMentions,
     showRecommends,
     showPrevNext,
+    showFirstLast,
   ]);
 
   // Contributors (non-owners) only get the contributor settings — they can't
@@ -154,7 +166,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         e.preventDefault();
         if (!pubData) return;
         setLoading(true);
-        await updatePublication({
+        let result = await updatePublication({
           uri: pubData.uri,
           name: nameValue,
           description: descriptionValue,
@@ -164,12 +176,25 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
             showComments,
             showMentions,
             showPrevNext,
+            showFirstLast,
             showRecommends,
-            showFirstLast: record?.preferences?.showFirstLast ?? false,
           },
         });
-        toast({ type: "success", content: "Settings saved!" });
         setLoading(false);
+
+        if (!result.success) {
+          toast({
+            type: "error",
+            content: isOAuthSessionError(result.error) ? (
+              <OAuthErrorMessage error={result.error} />
+            ) : (
+              "We couldn't save your settings. Please try again!"
+            ),
+          });
+          return;
+        }
+
+        toast({ type: "success", content: "Settings saved!" });
         mutate("publication-data");
       }}
     >
@@ -199,6 +224,8 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           setShowRecommends={setShowRecommends}
           showPrevNext={showPrevNext}
           setShowPrevNext={setShowPrevNext}
+          showFirstLast={showFirstLast}
+          setShowFirstLast={setShowFirstLast}
           showInDiscover={showInDiscover}
           setShowInDiscover={setShowInDiscover}
         />

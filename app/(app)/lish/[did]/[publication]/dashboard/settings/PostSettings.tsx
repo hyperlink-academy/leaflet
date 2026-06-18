@@ -10,6 +10,8 @@ export function PostSettings(props: {
   setShowRecommends: (v: boolean) => void;
   showPrevNext: boolean;
   setShowPrevNext: (v: boolean) => void;
+  showFirstLast: boolean;
+  setShowFirstLast: (v: boolean) => void;
   showInDiscover: boolean;
   setShowInDiscover: (v: boolean) => void;
 }) {
@@ -34,14 +36,25 @@ export function PostSettings(props: {
       </DashboardContainer>
 
       <DashboardContainer section="Post Layout">
-        <Toggle
-          toggle={props.showPrevNext}
-          onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
-        >
-          <div className="font-bold text-secondary">
-            Show Prev/Next Buttons on Post
-          </div>
-        </Toggle>
+        <div className="flex flex-col gap-2">
+          <Toggle
+            toggle={props.showPrevNext}
+            onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
+          >
+            <div className="font-bold text-secondary">
+              Show Prev/Next Buttons on Post
+            </div>
+          </Toggle>
+
+          <Toggle
+            toggle={props.showFirstLast}
+            onToggle={() => props.setShowFirstLast(!props.showFirstLast)}
+          >
+            <div className="font-bold text-secondary">
+              Show First/Last Buttons on Post
+            </div>
+          </Toggle>
+        </div>
       </DashboardContainer>
 
       <DashboardContainer section="Post Interactions">

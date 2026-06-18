@@ -83,6 +83,8 @@ export async function getPostPageData(did: string, rkey: string) {
     | {
         prev?: { uri: string; title: string };
         next?: { uri: string; title: string };
+        first?: { uri: string; title: string };
+        last?: { uri: string; title: string };
       }
     | undefined;
 
@@ -118,6 +120,7 @@ export async function getPostPageData(did: string, rkey: string) {
     );
 
     if (currentIndex !== -1) {
+      const lastIndex = sortedDocs.length - 1;
       prevNext = {
         prev:
           currentIndex > 0
@@ -127,10 +130,24 @@ export async function getPostPageData(did: string, rkey: string) {
               }
             : undefined,
         next:
-          currentIndex < sortedDocs.length - 1
+          currentIndex < lastIndex
             ? {
                 uri: sortedDocs[currentIndex + 1].uri || "",
                 title: sortedDocs[currentIndex + 1].title || "",
+              }
+            : undefined,
+        first:
+          currentIndex > 0
+            ? {
+                uri: sortedDocs[0].uri || "",
+                title: sortedDocs[0].title || "",
+              }
+            : undefined,
+        last:
+          currentIndex < lastIndex
+            ? {
+                uri: sortedDocs[lastIndex].uri || "",
+                title: sortedDocs[lastIndex].title || "",
               }
             : undefined,
       };

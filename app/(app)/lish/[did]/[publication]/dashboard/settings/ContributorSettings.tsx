@@ -46,7 +46,7 @@ export function ContributorSettings() {
   let isOwner = !!identity?.atp_did && identity.atp_did === ownerDid;
   let isPro = useIsPro();
 
-  if (!publicationUri || !publication) return null;
+  if (!publicationUri || !publication || !identity) return null;
 
   // The accept-invitation page lives at the publication's base path.
   let acceptLink =
@@ -429,4 +429,3 @@ function ContributorLeaveSettings(props: {
     </DashboardContainer>
   );
 }
-
