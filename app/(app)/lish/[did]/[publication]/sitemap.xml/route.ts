@@ -2,18 +2,7 @@ import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
-
-// Hosts that serve the main app rather than a single publication. A publication
-// only "owns" the root of its custom domain, so the sitemap is meaningless (and
-// would advertise wrong URLs) anywhere else.
-function isMainSiteHost(hostname: string): boolean {
-  return (
-    hostname === "leaflet.pub" ||
-    hostname.startsWith("localhost") ||
-    hostname.startsWith("127.0.0.1") ||
-    hostname.endsWith(".vercel.app")
-  );
-}
+import { isMainSiteHost } from "src/utils/customDomain";
 
 function xmlEscape(s: string): string {
   return s
