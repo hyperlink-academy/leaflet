@@ -11,9 +11,10 @@ export const config = {
      * 1. /api routes
      * 2. /_next (Next.js internals)
      * 3. /_static (inside /public)
-     * 4. all root files inside /public (e.g. /favicon.ico)
+     * 4. all root files inside /public (e.g. /favicon.ico) — except
+     *    sitemap.xml, which custom-domain publications serve dynamically.
      */
-    "/((?!api/|_next/|_static/|_vercel|[\\w-]+\\.\\w+).*)",
+    "/((?!api/|_next/|_static/|_vercel|(?!sitemap\\.xml)[\\w-]+\\.\\w+).*)",
   ],
 };
 
@@ -97,7 +98,8 @@ export default async function middleware(req: NextRequest) {
     let isStaticReq =
       req.nextUrl.pathname.includes("/rss") ||
       req.nextUrl.pathname.includes("/atom") ||
-      req.nextUrl.pathname.includes("/json");
+      req.nextUrl.pathname.includes("/json") ||
+      req.nextUrl.pathname.includes("/sitemap.xml");
 
     // refreshAuth forces a re-sync (auth changed upstream); auth_completed marks
     // a sync already attempted, breaking the loop when cookies are disabled.
