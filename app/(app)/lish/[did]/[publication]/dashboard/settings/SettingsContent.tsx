@@ -165,6 +165,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
             showMentions,
             showPrevNext,
             showRecommends,
+            showFirstLast: record?.preferences?.showFirstLast ?? false,
           },
         });
         toast({ type: "success", content: "Settings saved!" });
