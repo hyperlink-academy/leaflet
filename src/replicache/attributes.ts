@@ -275,8 +275,9 @@ const GalleryBlockAttributes = {
     type: "number",
     cardinality: "one",
   },
-  "gallery/lightbox": {
-    type: "boolean",
+  // Max width per image in grid view (px); drives how many columns fit.
+  "gallery/max-width": {
+    type: "number",
     cardinality: "one",
   },
 } as const;

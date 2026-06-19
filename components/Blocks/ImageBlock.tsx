@@ -11,12 +11,9 @@ import { addImage, localImages } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
 import { useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
-import { Popover } from "components/Popover";
-import { theme } from "tailwind.config";
 import { EditTiny } from "components/Icons/EditTiny";
-import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { set } from "colorjs.io/fn";
-import { ImageAltSmall } from "components/Icons/ImageAlt";
+import { ImageAltButton } from "./ImageAltButton";
 import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
@@ -179,8 +176,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           width={image?.data.width}
         />
       )}
-      {altText !== undefined && !props.preview ? (
-        <ImageAlt entityID={props.value} />
+      {!props.preview && entity_set.permissions.write ? (
+        <ImageAltButton entityID={props.value} selected={!!isSelected} />
       ) : null}
       {!props.preview ? <CoverImageButton entityID={props.value} /> : null}
     </BlockLayout>
@@ -239,58 +236,5 @@ const CoverImageButton = (props: { entityID: string }) => {
       Use as Cover Image
       <ImageCoverImage />
     </ButtonPrimary>
-  );
-};
-
-const ImageAlt = (props: { entityID: string }) => {
-  let { rep } = useReplicache();
-  let altText = useEntity(props.entityID, "image/alt")?.data.value;
-  let entity_set = useEntitySetContext();
-
-  let setAltEditorOpen = useUIState((s) => s.setOpenPopover);
-  let altEditorOpen = useUIState((s) => s.openPopover === props.entityID);
-
-  if (!entity_set.permissions.write && altText === "") return null;
-  return (
-    <div className="absolute bottom-0 right-2 h-max">
-      <Popover
-        open={altEditorOpen}
-        className="text-sm max-w-xs  min-w-0"
-        side="left"
-        asChild
-        trigger={
-          <button
-            onClick={() =>
-              setAltEditorOpen(altEditorOpen ? null : props.entityID)
-            }
-          >
-            <ImageAltSmall fillColor={theme.colors["bg-page"]} />
-          </button>
-        }
-      >
-        {entity_set.permissions.write ? (
-          <AsyncValueAutosizeTextarea
-            className="text-sm text-secondary outline-hidden bg-transparent min-w-0"
-            value={altText}
-            onFocus={(e) => {
-              e.currentTarget.setSelectionRange(
-                e.currentTarget.value.length,
-                e.currentTarget.value.length,
-              );
-            }}
-            onChange={async (e) => {
-              await rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "image/alt",
-                data: { type: "string", value: e.currentTarget.value },
-              });
-            }}
-            placeholder="add alt text..."
-          />
-        ) : (
-          <div className="text-sm text-secondary w-full"> {altText}</div>
-        )}
-      </Popover>
-    </div>
   );
 };

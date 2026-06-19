@@ -4,6 +4,7 @@ import { localImages } from "src/utils/addImage";
 export type GalleryFormat = "grid" | "carousel" | "strip";
 export const DEFAULT_GAP = 8;
 export const DEFAULT_FORMAT: GalleryFormat = "grid";
+export const DEFAULT_MAX_WIDTH = 300;
 
 // Resolves the best available source for a gallery child image entity. Prefers
 // the in-memory object URL while an upload is in flight, like ImageBlock.

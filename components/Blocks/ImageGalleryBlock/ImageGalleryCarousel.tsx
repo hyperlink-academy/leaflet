@@ -2,9 +2,12 @@ import { useRef, useState } from "react";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { useGalleryImage } from "./shared";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
+import { ImageAltButton } from "../ImageAltButton";
 
 export function ImageGalleryCarousel(props: {
   imageEntities: string[];
+  editable: boolean;
+  selected: boolean;
   onImageClick: (index: number) => void;
 }) {
   let scrollRef = useRef<HTMLDivElement>(null);
@@ -40,6 +43,8 @@ export function ImageGalleryCarousel(props: {
           >
             <GalleryCarouselItem
               entityID={entityID}
+              editable={props.editable}
+              selected={props.selected}
               onClick={() => props.onImageClick(i)}
             />
           </div>
@@ -69,19 +74,29 @@ export function ImageGalleryCarousel(props: {
   );
 }
 
-function GalleryCarouselItem(props: { entityID: string; onClick: () => void }) {
+function GalleryCarouselItem(props: {
+  entityID: string;
+  editable: boolean;
+  selected: boolean;
+  onClick: () => void;
+}) {
   let image = useGalleryImage(props.entityID);
   if (!image) return null;
   return (
-    <button type="button" onClick={props.onClick} className="block ">
-      <img
-        loading="lazy"
-        decoding="async"
-        alt={image.alt}
-        src={image.src}
-        className="w-full max-h-[70vh] object-contain"
-      />
-    </button>
+    <div className="relative group/image">
+      <button type="button" onClick={props.onClick} className="block">
+        <img
+          loading="lazy"
+          decoding="async"
+          alt={image.alt}
+          src={image.src}
+          className="w-full max-h-[70vh] object-contain"
+        />
+      </button>
+      {props.editable && (
+        <ImageAltButton entityID={props.entityID} selected={props.selected} />
+      )}
+    </div>
   );
 }
 

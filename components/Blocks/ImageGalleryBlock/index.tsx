@@ -10,7 +10,7 @@ import { v7 } from "uuid";
 
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 
-import { DEFAULT_GAP, DEFAULT_FORMAT } from "./shared";
+import { DEFAULT_GAP, DEFAULT_FORMAT, DEFAULT_MAX_WIDTH } from "./shared";
 import { ImageGalleryGrid } from "./ImageGalleryGrid";
 import { ImageGalleryStrip } from "./ImageGalleryStrip";
 import { ImageGalleryCarousel } from "./ImageGalleryCarousel";
@@ -28,8 +28,8 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   let format =
     useEntity(props.value, "gallery/format")?.data.value ?? DEFAULT_FORMAT;
   let gap = useEntity(props.value, "gallery/gap")?.data.value ?? DEFAULT_GAP;
-  let lightboxEnabled =
-    useEntity(props.value, "gallery/lightbox")?.data.value ?? true;
+  let maxWidth =
+    useEntity(props.value, "gallery/max-width")?.data.value ?? DEFAULT_MAX_WIDTH;
 
   let [editOpen, setEditOpen] = useState(false);
   let [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -65,12 +65,12 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   // Writers select the block first; a second click on an image opens the
   // lightbox. Readers (no write permission) open it on the first click.
   let canOpenLightbox =
-    lightboxEnabled &&
-    !props.preview &&
-    (!entity_set.permissions.write || !!isSelected);
+    !props.preview && (!entity_set.permissions.write || !!isSelected);
   let openLightbox = (index: number) => {
     if (canOpenLightbox) setLightboxIndex(index);
   };
+
+  let editable = !props.preview && entity_set.permissions.write;
 
   if (imageEntities.length === 0) {
     if (!entity_set.permissions.write) return null;
@@ -96,7 +96,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
             entityID={props.value}
             format={format}
             gap={gap}
-            lightboxEnabled={lightboxEnabled}
+            maxWidth={maxWidth}
             onEditImages={() => setEditOpen(true)}
           />
         ) : undefined
@@ -105,18 +105,25 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
       {format === "carousel" ? (
         <ImageGalleryCarousel
           imageEntities={imageEntities}
+          editable={editable}
+          selected={!!isSelected}
           onImageClick={openLightbox}
         />
       ) : format === "strip" ? (
         <ImageGalleryStrip
           imageEntities={imageEntities}
           gap={gap}
+          editable={editable}
+          selected={!!isSelected}
           onImageClick={openLightbox}
         />
       ) : (
         <ImageGalleryGrid
           imageEntities={imageEntities}
           gap={gap}
+          maxWidth={maxWidth}
+          editable={editable}
+          selected={!!isSelected}
           onImageClick={openLightbox}
         />
       )}
@@ -131,13 +138,11 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
         />
       )}
 
-      {lightboxEnabled && (
-        <ImageGalleryLightbox
-          imageEntities={imageEntities}
-          index={lightboxIndex}
-          onIndexChange={setLightboxIndex}
-        />
-      )}
+      <ImageGalleryLightbox
+        imageEntities={imageEntities}
+        index={lightboxIndex}
+        onIndexChange={setLightboxIndex}
+      />
     </BlockLayout>
   );
 }

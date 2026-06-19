@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { generateKeyBetween } from "fractional-indexing";
+import * as Slider from "@radix-ui/react-slider";
 
 import {
   DndContext,
@@ -24,7 +26,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import { Popover } from "components/Popover";
-import { Toggle } from "components/Toggle";
 import { Modal } from "components/Modal";
 import { MobileSheet } from "components/MobileSheet";
 import { Input } from "components/Input";
@@ -40,7 +41,7 @@ export function ImageGalleryOptions(props: {
   entityID: string;
   format: GalleryFormat;
   gap: number;
-  lightboxEnabled: boolean;
+  maxWidth: number;
   onEditImages: () => void;
 }) {
   let { rep } = useReplicache();
@@ -102,22 +103,13 @@ export function ImageGalleryOptions(props: {
               }}
             />
           </label>
+          {props.format === "grid" && (
+            <MaxWidthControl
+              entityID={props.entityID}
+              maxWidth={props.maxWidth}
+            />
+          )}
         </div>
-
-        <hr className="border-border-light my-1" />
-
-        <Toggle
-          toggle={props.lightboxEnabled}
-          onToggle={() =>
-            rep?.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "gallery/lightbox",
-              data: { type: "boolean", value: !props.lightboxEnabled },
-            })
-          }
-        >
-          <strong>Enable Lightbox</strong>
-        </Toggle>
 
         <hr className="border-border-light my-1" />
 
@@ -131,6 +123,76 @@ export function ImageGalleryOptions(props: {
         </button>
       </div>
     </Popover>
+  );
+}
+
+const MAX_WIDTH_MIN = 100;
+const MAX_WIDTH_MAX = 1000;
+const MAX_WIDTH_STEP = 10;
+
+function MaxWidthControl(props: { entityID: string; maxWidth: number }) {
+  let { rep } = useReplicache();
+  // Interim value lets the slider/input update live; committed to the fact on
+  // release (slider) or blur/Enter (input).
+  let [interim, setInterim] = useState(props.maxWidth);
+  useEffect(() => setInterim(props.maxWidth), [props.maxWidth]);
+
+  let sliderValue = Number.isNaN(interim)
+    ? props.maxWidth
+    : Math.max(MAX_WIDTH_MIN, Math.min(MAX_WIDTH_MAX, interim));
+
+  let commit = (value: number) => {
+    let clamped = Math.max(
+      MAX_WIDTH_MIN,
+      Math.min(MAX_WIDTH_MAX, Number.isNaN(value) ? props.maxWidth : value),
+    );
+    setInterim(clamped);
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      attribute: "gallery/max-width",
+      data: { type: "number", value: clamped },
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="flex items-center justify-between gap-2 text-sm">
+        <span>Max image width</span>
+        <Input
+          type="number"
+          min={MAX_WIDTH_MIN}
+          max={MAX_WIDTH_MAX}
+          className="w-20 input-with-border"
+          value={Number.isNaN(interim) ? "" : String(interim)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onChange={(e) => setInterim(parseInt(e.currentTarget.value))}
+          onBlur={() => commit(interim)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit(interim);
+            }
+          }}
+        />
+      </label>
+      <Slider.Root
+        className="relative flex items-center select-none touch-none w-full h-fit px-1"
+        value={[sliderValue]}
+        min={MAX_WIDTH_MIN}
+        max={MAX_WIDTH_MAX}
+        step={MAX_WIDTH_STEP}
+        onValueChange={(value) => setInterim(value[0])}
+        onValueCommit={(value) => commit(value[0])}
+      >
+        <Slider.Track className="bg-border-light relative grow rounded-full h-[3px] my-2">
+          <Slider.Range className="absolute bg-accent-contrast rounded-full h-full" />
+        </Slider.Track>
+        <Slider.Thumb
+          className="block w-4 h-4 rounded-full border-2 border-bg-page bg-accent-contrast cursor-pointer"
+          aria-label="Max image width"
+        />
+      </Slider.Root>
+    </div>
   );
 }
 

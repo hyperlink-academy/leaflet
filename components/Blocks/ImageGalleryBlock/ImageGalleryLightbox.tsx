@@ -80,8 +80,7 @@ function LightboxContent(props: {
   useEffect(() => {
     let handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") scrollToIndex(Math.min(count - 1, current + 1));
-      else if (e.key === "ArrowLeft")
-        scrollToIndex(Math.max(0, current - 1));
+      else if (e.key === "ArrowLeft") scrollToIndex(Math.max(0, current - 1));
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -98,9 +97,9 @@ function LightboxContent(props: {
         {props.imageEntities.map((entityID) => (
           <div
             key={entityID}
-            className="h-full snap-center snap-always flex items-center justify-center p-4 sm:p-8"
+            className="h-full snap-center snap-always flex flex-col items-center justify-center gap-3 p-4 sm:p-8"
           >
-            <LightboxImage entityID={entityID} />
+            <LightboxSlide entityID={entityID} />
           </div>
         ))}
       </div>
@@ -141,15 +140,27 @@ function LightboxContent(props: {
   );
 }
 
-function LightboxImage(props: { entityID: string }) {
+function LightboxSlide(props: { entityID: string }) {
   let image = useGalleryImage(props.entityID);
   if (!image) return null;
   return (
-    <img
-      alt={image.alt}
-      src={image.src}
-      className="max-w-full max-h-full object-contain"
-      onClick={(e) => e.stopPropagation()}
-    />
+    <>
+      <div className="flex-1 min-h-0 flex items-center justify-center w-full">
+        <img
+          alt={image.alt}
+          src={image.src}
+          className="max-w-full max-h-full object-contain"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+      {image.alt && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0 max-w-full whitespace-pre-wrap bg-bg-page text-primary text-sm rounded-md px-2 py-1 border border-border-light"
+        >
+          {image.alt}
+        </div>
+      )}
+    </>
   );
 }
