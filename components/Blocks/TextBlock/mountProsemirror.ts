@@ -26,8 +26,8 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { useLinkPopoverStore } from "components/LinkPopover";
-import { useCommentSheetStore } from "components/Comments/commentStores";
-import { useCommentPopoverStore } from "components/Comments/CommentPopover";
+import { useEditorCommentSheetStore } from "components/EditorComments/editorCommentStores";
+import { useEditorCommentPopoverStore } from "components/EditorComments/EditorCommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
 import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
@@ -120,7 +120,7 @@ export function useMountProsemirror({
                 if (!isDesktop) {
                   // On mobile, show a popover with an excerpt and a button
                   // that opens the thread in the slide-in sheet
-                  let store = useCommentPopoverStore.getState();
+                  let store = useEditorCommentPopoverStore.getState();
                   if (store.commentIDs?.join(" ") === commentIDs.join(" ")) {
                     store.close();
                   } else {
@@ -133,7 +133,7 @@ export function useMountProsemirror({
                 // sheet directly; on doc pages the side column thread expands
                 // on hover, so the click just places the cursor.
                 if (propsRef.current.pageType === "canvas") {
-                  useCommentSheetStore
+                  useEditorCommentSheetStore
                     .getState()
                     .openSheet(propsRef.current.parent, commentIDs[0]);
                   event.preventDefault();
@@ -321,10 +321,10 @@ export function useMountProsemirror({
           collectCommentIDs(newState.doc, newComments);
           // Resolving a thread strips its anchor mark locally, so this also
           // fires for a just-resolved comment on the resolver's own client;
-          // deleteComment is idempotent, so the redundant delete is harmless.
+          // deleteEditorComment is idempotent, so the redundant delete is harmless.
           for (let id of oldComments) {
             if (!newComments.has(id)) {
-              repRef.current?.mutate.deleteComment({
+              repRef.current?.mutate.deleteEditorComment({
                 commentEntityID: id,
                 blockID: entityID,
               });

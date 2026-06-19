@@ -12,13 +12,14 @@ import { useUIState } from "src/useUIState";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { CheckTiny } from "components/Icons/CheckTiny";
-import { CommentMessageLayout } from "./CommentMessageLayout";
-import { CommentComposer } from "./CommentComposer";
-import { removeCommentMark } from "./commentDraftActions";
-import { CommentLoginPrompt } from "./CommentLoginPrompt";
+import { EditorCommentMessageLayout } from "./EditorCommentMessageLayout";
+import { EditorCommentComposer } from "./EditorCommentComposer";
+import { removeEditorCommentMark } from "./editorCommentDraftActions";
+import { EditorCommentLoginPrompt } from "./EditorCommentLoginPrompt";
 import { EditTiny } from "components/Icons/EditTiny";
+import { ButtonPrimary } from "components/Buttons";
 
-export function CommentThread(props: {
+export function EditorCommentThread(props: {
   commentEntityID: string;
   blockID: string;
   pageID: string;
@@ -29,7 +30,6 @@ export function CommentThread(props: {
   let replies = useEntity(props.commentEntityID, "comment/reply").toSorted(
     (a, b) => (a.data.position > b.data.position ? 1 : -1),
   );
-  let [replying, setReplying] = useState(false);
   // Messages in this thread currently being edited in place; while any is,
   // the Reply affordance is hidden so the two composers don't stack
   let [editingMessages, setEditingMessages] = useState<Set<string>>(
@@ -55,7 +55,7 @@ export function CommentThread(props: {
     // A reply is several facts; undo them as one step
     rep.undoManager.startGroup();
     try {
-      await rep.rep.mutate.createCommentReply({
+      await rep.rep.mutate.createEditorCommentReply({
         replyEntityID: v7(),
         commentEntityID: props.commentEntityID,
         permission_set: entity_set.set,
@@ -67,15 +67,14 @@ export function CommentThread(props: {
     } finally {
       rep.undoManager.endGroup();
     }
-    setReplying(false);
   };
 
   return (
     <div
-      className="comment-thread flex flex-col gap-2"
-      data-comment-thread={props.commentEntityID}
+      className="editor-comment-thread flex flex-col gap-4"
+      data-editor-comment-thread={props.commentEntityID}
     >
-      <CommentMessage
+      <EditorCommentMessage
         entityID={props.commentEntityID}
         onEditingChange={onMessageEditingChange}
         // Resolving a thread deletes the top-level comment and all its replies.
@@ -89,8 +88,8 @@ export function CommentThread(props: {
                 if (!rep.rep) return;
                 rep.undoManager.startGroup();
                 try {
-                  removeCommentMark(props.blockID, props.commentEntityID);
-                  await rep.rep.mutate.deleteComment({
+                  removeEditorCommentMark(props.blockID, props.commentEntityID);
+                  await rep.rep.mutate.deleteEditorComment({
                     commentEntityID: props.commentEntityID,
                     blockID: props.blockID,
                   });
@@ -102,9 +101,10 @@ export function CommentThread(props: {
         }
       />
       {replies.length > 0 && (
-        <div className="comment-thread-replies flex flex-col gap-2 pl-2 border-l border-border-light">
+        <div className="editor-comment-thread-replies flex flex-col gap-4">
+          <hr className="border-border-light -mx-3" />
           {replies.map((r) => (
-            <CommentMessage
+            <EditorCommentMessage
               key={r.data.value}
               entityID={r.data.value}
               onEditingChange={onMessageEditingChange}
@@ -112,7 +112,7 @@ export function CommentThread(props: {
                 // Deleting a reply retracts several facts; undo as one step
                 rep.undoManager.startGroup();
                 try {
-                  await rep.rep?.mutate.deleteCommentReply({
+                  await rep.rep?.mutate.deleteEditorCommentReply({
                     replyEntityID: r.data.value,
                     commentEntityID: props.commentEntityID,
                   });
@@ -124,42 +124,22 @@ export function CommentThread(props: {
           ))}
         </div>
       )}
-      {replies.length > 0 && (
-        <div className="comment-thread-reply-count text-xs text-tertiary">
-          {replies.length} {replies.length === 1 ? "reply" : "replies"}
-        </div>
-      )}
+
       {/* Drop the actions row entirely when empty so it doesn't leave a
           stray flex gap below the thread */}
-      {!entity_set.permissions.write ||
-      (!replying && editingMessages.size > 0) ? null : (
-        <div className="comment-thread-actions">
+      {!entity_set.permissions.write || editingMessages.size > 0 ? null : (
+        <div className="editor-comment-thread-actions">
           {!identity?.atp_did ? (
-            <CommentLoginPrompt action="reply" />
-          ) : replying ? (
-            <CommentComposer
-              placeholder="Reply..."
-              submitLabel="Reply"
-              autoFocus
-              onSubmit={submitReply}
-              onCancel={() => setReplying(false)}
-            />
+            <EditorCommentLoginPrompt action="reply" />
           ) : (
-            <button
-              className="text-xs text-tertiary hover:text-accent-contrast"
-              onClick={() => {
-                setReplying(true);
-                useUIState.setState({
-                  focusedEntity: {
-                    entityType: "comment",
-                    entityID: props.commentEntityID,
-                    parent: props.pageID,
-                  },
-                });
-              }}
-            >
-              Reply
-            </button>
+            <div className="opaque-container p-1 w-full">
+              <EditorCommentComposer
+                placeholder="Reply..."
+                submitLabel="Reply"
+                autoFocus
+                onSubmit={submitReply}
+              />
+            </div>
           )}
         </div>
       )}
@@ -167,7 +147,7 @@ export function CommentThread(props: {
   );
 }
 
-function CommentMessage(props: {
+function EditorCommentMessage(props: {
   entityID: string;
   onDelete?: () => void;
   onResolve?: () => void;
@@ -198,7 +178,7 @@ function CommentMessage(props: {
     // Editing retracts the old body and asserts the new one; undo as one step
     rep.undoManager.startGroup();
     try {
-      await rep.rep?.mutate.editComment({
+      await rep.rep?.mutate.editEditorComment({
         entityID: props.entityID,
         authorDid,
         content: base64.fromByteArray(Y.encodeStateAsUpdate(ydoc)),
@@ -213,13 +193,13 @@ function CommentMessage(props: {
   // touch (no hover) they always stay visible. xl matches the 1280px desktop
   // breakpoint used elsewhere for comments.
   let hoverRevealClass =
-    "shrink-0 text-tertiary hover:text-accent-contrast opacity-100 xl:opacity-0 xl:group-hover/comment-message:opacity-100 xl:focus:opacity-100";
+    "shrink-0 text-tertiary hover:text-accent-contrast opacity-100 xl:opacity-0 xl:group-hover/editor-comment-message:opacity-100 xl:focus:opacity-100";
 
-  // The composer renders the same CommentMessageLayout as the message, so
+  // The composer renders the same EditorCommentMessageLayout as the message, so
   // swapping one for the other doesn't shift the content around
   if (editing)
     return (
-      <CommentComposer
+      <EditorCommentComposer
         autoFocus
         submitLabel="Save"
         initialContent={content?.data.value}
@@ -229,52 +209,57 @@ function CommentMessage(props: {
     );
 
   return (
-    <CommentMessageLayout
+    <EditorCommentMessageLayout
       did={authorDid}
-      className="group/comment-message"
+      className="group/editor-comment-message"
       headerActions={
-        <>
+        <div className=" flex flex-row grow justify-between gap-3 items-center shrink-0">
           {createdAt && (
             <div className="text-xs text-tertiary shrink-0">
-              {formatCommentDate(createdAt.data.value)}
+              {formatEditorCommentDate(createdAt.data.value)}
             </div>
           )}
-          {canModify && (
-            <button
-              className={hoverRevealClass}
-              onClick={() => setEditing(true)}
-              title="Edit comment"
-            >
-              <EditTiny />
-            </button>
-          )}
-          {canModify && props.onDelete && (
-            <button
-              className={hoverRevealClass}
-              onClick={props.onDelete}
-              title="Delete comment"
-            >
-              <DeleteTiny />
-            </button>
-          )}
-          {props.onResolve && (
-            <button
-              className="shrink-0 text-tertiary hover:text-accent-contrast"
-              onClick={props.onResolve}
-              title="Resolve comment"
-            >
-              <CheckTiny />
-            </button>
-          )}
-        </>
+          <div className="flex flex-row shrink-0 gap-1 items-center">
+            {canModify && (
+              <button
+                className={hoverRevealClass}
+                onClick={() => setEditing(true)}
+                title="Edit comment"
+              >
+                <EditTiny />
+              </button>
+            )}
+            {canModify && props.onDelete && (
+              <button
+                className={hoverRevealClass}
+                onClick={props.onDelete}
+                title="Delete comment"
+              >
+                <DeleteTiny />
+              </button>
+            )}
+            {props.onResolve && (
+              <div className="-m-1 p-1">
+                <ButtonPrimary
+                  compact
+                  className="shrink-0 text-xs ml-1 gap-1! hover:outline-transparent!  "
+                  onClick={props.onResolve}
+                  title="Resolve comment"
+                >
+                  Resolve <CheckTiny className="scale-80" />
+                </ButtonPrimary>
+              </div>
+            )}
+          </div>
+        </div>
       }
     >
       <RenderYJSFragment value={content?.data.value || ""} wrapper="p" />
-    </CommentMessageLayout>
+    </EditorCommentMessageLayout>
   );
 }
 
-function formatCommentDate(value: string) {
+function formatEditorCommentDate(value: string) {
   let date = new Date(value);
   if (isNaN(date.getTime())) return "";
   let now = new Date();

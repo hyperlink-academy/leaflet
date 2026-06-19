@@ -6,16 +6,16 @@ import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { SelectionActionPopover } from "components/SelectionActionPopover";
-import { startCommentDraft } from "./commentDraftActions";
-import { useCommentSheetStore } from "./commentStores";
+import { startEditorCommentDraft } from "./editorCommentDraftActions";
+import { useEditorCommentSheetStore } from "./editorCommentStores";
 
 // Selecting text in a document text block floats a popover over the selection
 // with a Comment action. It reuses the published-post selection toolbar
-// (SelectionActionPopover) and mirrors the toolbar's CommentButton so the two
+// (SelectionActionPopover) and mirrors the toolbar's EditorCommentButton so the two
 // entry points start the same comment draft. Mounted once for the whole
 // editor; the `pre[data-entityid]` container scopes it to the document text
 // editors (doc and canvas), not the comment/footnote composers.
-export function CommentSelectionPopover() {
+export function EditorCommentSelectionPopover() {
   let { permissions } = useEntitySetContext();
   // Commenting is a write interaction; hide the affordance without write access
   if (!permissions.write) return null;
@@ -27,12 +27,12 @@ export function CommentSelectionPopover() {
         return blockID ? { blockID } : null;
       }}
     >
-      {() => <CommentSelectionButton />}
+      {() => <EditorCommentSelectionButton />}
     </SelectionActionPopover>
   );
 }
 
-function CommentSelectionButton() {
+function EditorCommentSelectionButton() {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let pageID =
     focusedBlock?.entityType === "block" ? focusedBlock.parent : null;
@@ -42,7 +42,7 @@ function CommentSelectionButton() {
     <button
       className="flex gap-1 items-center hover:font-bold px-1"
       // mousedown + preventDefault keeps the editor's selection from collapsing
-      // before startCommentDraft reads it — the same reason the toolbar buttons
+      // before startEditorCommentDraft reads it — the same reason the toolbar buttons
       // act on mousedown.
       onMouseDown={(e) => {
         e.preventDefault();
@@ -50,7 +50,7 @@ function CommentSelectionButton() {
         let editorState =
           useEditorStates.getState().editorStates[focusedBlock.entityID];
         if (!editorState?.view) return;
-        startCommentDraft(
+        startEditorCommentDraft(
           editorState.view,
           focusedBlock.entityID,
           focusedBlock.parent,
@@ -58,7 +58,7 @@ function CommentSelectionButton() {
         // Where there's no side column (mobile, canvas), draft in the sheet
         let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
         if (!isDesktop || pageType === "canvas") {
-          useCommentSheetStore.getState().openSheet(focusedBlock.parent);
+          useEditorCommentSheetStore.getState().openSheet(focusedBlock.parent);
         }
       }}
     >

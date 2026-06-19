@@ -2,12 +2,12 @@ import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { useEntity } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { startCommentDraft } from "components/Comments/commentDraftActions";
-import { useCommentSheetStore } from "components/Comments/commentStores";
+import { startEditorCommentDraft } from "components/EditorComments/editorCommentDraftActions";
+import { useEditorCommentSheetStore } from "components/EditorComments/editorCommentStores";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { ToolbarButton } from ".";
 
-export function CommentButton() {
+export function EditorCommentButton() {
   let { permissions } = useEntitySetContext();
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let pageID =
@@ -28,7 +28,7 @@ export function CommentButton() {
         let editorState =
           useEditorStates.getState().editorStates[focusedBlock.entityID];
         if (!editorState?.view) return;
-        startCommentDraft(
+        startEditorCommentDraft(
           editorState.view,
           focusedBlock.entityID,
           focusedBlock.parent,
@@ -36,7 +36,7 @@ export function CommentButton() {
         // Where there's no side column (mobile, canvas), draft in the sheet
         let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
         if (!isDesktop || pageType === "canvas") {
-          useCommentSheetStore.getState().openSheet(focusedBlock.parent);
+          useEditorCommentSheetStore.getState().openSheet(focusedBlock.parent);
         }
       }}
     >

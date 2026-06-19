@@ -1033,7 +1033,7 @@ async function createAuthoredEntity(
   });
 }
 
-const createComment: Mutation<{
+const createEditorComment: Mutation<{
   commentEntityID: string;
   blockID: string;
   permission_set: string;
@@ -1066,7 +1066,7 @@ const createComment: Mutation<{
   });
 };
 
-const createCommentReply: Mutation<{
+const createEditorCommentReply: Mutation<{
   replyEntityID: string;
   commentEntityID: string;
   permission_set: string;
@@ -1087,7 +1087,7 @@ const createCommentReply: Mutation<{
   });
 };
 
-const deleteComment: Mutation<{
+const deleteEditorComment: Mutation<{
   commentEntityID: string;
   blockID: string;
 }> = async (args, ctx) => {
@@ -1103,7 +1103,7 @@ const deleteComment: Mutation<{
   await ctx.deleteEntity(args.commentEntityID);
 };
 
-const deleteCommentReply: Mutation<{
+const deleteEditorCommentReply: Mutation<{
   replyEntityID: string;
   commentEntityID: string;
 }> = async (args, ctx) => {
@@ -1117,7 +1117,7 @@ const deleteCommentReply: Mutation<{
 // edit. The new content is a full YJS doc state with no shared history with
 // the old one, so we retract the existing block/text and assert the new value
 // rather than letting assertFact merge two independent docs together.
-const editComment: Mutation<{
+const editEditorComment: Mutation<{
   entityID: string;
   authorDid: string;
   content: string;
@@ -1164,9 +1164,9 @@ export const mutations = {
   toggleDraftContributor,
   createFootnote,
   deleteFootnote,
-  createComment,
-  createCommentReply,
-  deleteComment,
-  deleteCommentReply,
-  editComment,
+  createEditorComment,
+  createEditorCommentReply,
+  deleteEditorComment,
+  deleteEditorCommentReply,
+  editEditorComment,
 };

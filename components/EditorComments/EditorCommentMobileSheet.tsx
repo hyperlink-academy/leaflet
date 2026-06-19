@@ -5,21 +5,28 @@ import { MobileSheet } from "components/MobileSheet";
 import { useEntity } from "src/replicache";
 import { useEditorStates } from "src/state/useEditorState";
 import { getCommentDraftRange } from "components/Blocks/TextBlock/commentDraftPlugin";
-import { useCommentContext } from "./CommentContext";
-import { useCommentDraftStore, useCommentSheetStore } from "./commentStores";
-import { cancelCommentDraft } from "./commentDraftActions";
-import { CommentDraftComposer } from "./AnnotationSideColumn";
-import { CommentThread } from "./CommentThread";
-import { getCommentQuoteText } from "./getCommentQuote";
+import { useEditorCommentContext } from "./EditorCommentContext";
+import {
+  useEditorCommentDraftStore,
+  useEditorCommentSheetStore,
+} from "./editorCommentStores";
+import { cancelEditorCommentDraft } from "./editorCommentDraftActions";
+import { EditorCommentDraftComposer } from "./AnnotationSideColumn";
+import { EditorCommentThread } from "./EditorCommentThread";
+import { getEditorCommentQuoteText } from "./getEditorCommentQuote";
 
 // On mobile (and canvas pages, where there's no side column) comments live in
 // a slide-in panel, like the interactions drawer on published documents.
 // Tapping a commented range opens just that thread; drafting opens the
 // composer. A browse-all-comments flow can layer on top of this later.
-export function CommentMobileSheet() {
-  let { pageID, comments } = useCommentContext();
-  let { pageID: sheetPageID, focusedCommentID, close } = useCommentSheetStore();
-  let draft = useCommentDraftStore((s) => s.draft);
+export function EditorCommentMobileSheet() {
+  let { pageID, comments } = useEditorCommentContext();
+  let {
+    pageID: sheetPageID,
+    focusedCommentID,
+    close,
+  } = useEditorCommentSheetStore();
+  let draft = useEditorCommentDraftStore((s) => s.draft);
 
   let draftOnThisPage = draft?.pageID === pageID;
   let focusedComment = focusedCommentID
@@ -38,28 +45,34 @@ export function CommentMobileSheet() {
       onOpenChange={(o) => {
         if (!o) {
           // Closing the sheet mid-draft discards the draft anchor
-          if (draftOnThisPage) cancelCommentDraft();
+          if (draftOnThisPage) cancelEditorCommentDraft();
           close();
         }
       }}
       title={focusedComment ? "Comment" : "New Comment"}
     >
       {focusedComment ? (
-        <div className="comment-sheet-item border border-border-light rounded-lg bg-bg-page p-2">
-          <CommentQuote
-            commentEntityID={focusedComment.commentEntityID}
-            blockID={focusedComment.blockID}
-          />
-          <CommentThread
+        <div className="editor-comment-sheet-item">
+          <div className="light-container py-1 px-1.5 mb-4">
+            <EditorCommentQuote
+              commentEntityID={focusedComment.commentEntityID}
+              blockID={focusedComment.blockID}
+            />
+          </div>
+          <EditorCommentThread
             commentEntityID={focusedComment.commentEntityID}
             blockID={focusedComment.blockID}
             pageID={pageID}
           />
         </div>
       ) : draft && draft.pageID === pageID ? (
-        <div className="comment-sheet-item border border-border-light rounded-lg bg-bg-page p-2">
-          <DraftQuote blockID={draft.blockID} />
-          <CommentDraftComposer autoFocus />
+        <div className="editor-comment-sheet-item ">
+          <div className="light-container py-1 px-1.5 mb-4">
+            <DraftQuote blockID={draft.blockID} />
+          </div>
+          <div className="opaque-container p-1 w-full">
+            <EditorCommentDraftComposer autoFocus />
+          </div>
         </div>
       ) : null}
     </MobileSheet>
@@ -67,10 +80,13 @@ export function CommentMobileSheet() {
 }
 
 // The text the comment is anchored to, read from the block's YJS doc
-function CommentQuote(props: { commentEntityID: string; blockID: string }) {
+function EditorCommentQuote(props: {
+  commentEntityID: string;
+  blockID: string;
+}) {
   let text = useEntity(props.blockID, "block/text");
   let quote = useMemo(
-    () => getCommentQuoteText(text?.data.value, props.commentEntityID),
+    () => getEditorCommentQuoteText(text?.data.value, props.commentEntityID),
     [text?.data.value, props.commentEntityID],
   );
   return <QuoteDisplay quote={quote} />;
@@ -91,7 +107,7 @@ function DraftQuote(props: { blockID: string }) {
 function QuoteDisplay(props: { quote: string }) {
   if (!props.quote) return null;
   return (
-    <div className="comment-quote border-l-2 border-border pl-2 mb-2 text-sm text-tertiary italic line-clamp-2">
+    <div className="editor-comment-quote  text-sm text-tertiary italic line-clamp-3">
       {props.quote}
     </div>
   );

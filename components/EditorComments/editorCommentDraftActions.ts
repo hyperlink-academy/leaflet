@@ -13,9 +13,9 @@ import {
 } from "components/Blocks/TextBlock/commentDraftPlugin";
 import { useEditorStates } from "src/state/useEditorState";
 import { scanIndex } from "src/replicache/utils";
-import { useCommentDraftStore, useCommentSheetStore } from "./commentStores";
+import { useEditorCommentDraftStore, useEditorCommentSheetStore } from "./editorCommentStores";
 
-export function startCommentDraft(
+export function startEditorCommentDraft(
   view: EditorView,
   blockID: string,
   pageID: string,
@@ -41,12 +41,12 @@ export function startCommentDraft(
     to = parentStart + end;
   }
 
-  let existing = useCommentDraftStore.getState().draft;
+  let existing = useEditorCommentDraftStore.getState().draft;
   if (existing && existing.blockID !== blockID)
     clearDraftDecoration(existing.blockID);
 
   view.dispatch(view.state.tr.setMeta(commentDraftKey, { from, to }));
-  useCommentDraftStore.setState({ draft: { blockID, pageID } });
+  useEditorCommentDraftStore.setState({ draft: { blockID, pageID } });
 }
 
 function clearDraftDecoration(blockID: string) {
@@ -58,14 +58,14 @@ function clearDraftDecoration(blockID: string) {
   }
 }
 
-export function cancelCommentDraft() {
-  let draft = useCommentDraftStore.getState().draft;
+export function cancelEditorCommentDraft() {
+  let draft = useEditorCommentDraftStore.getState().draft;
   if (!draft) return;
   clearDraftDecoration(draft.blockID);
-  useCommentDraftStore.setState({ draft: null });
+  useEditorCommentDraftStore.setState({ draft: null });
 }
 
-export async function submitCommentDraft({
+export async function submitEditorCommentDraft({
   rep,
   undoManager,
   permissionSet,
@@ -78,7 +78,7 @@ export async function submitCommentDraft({
   authorDid: string;
   ydoc: Y.Doc;
 }) {
-  let draft = useCommentDraftStore.getState().draft;
+  let draft = useEditorCommentDraftStore.getState().draft;
   if (!draft) return;
   let view = useEditorStates.getState().editorStates[draft.blockID]?.view;
   if (!view) return;
@@ -101,7 +101,7 @@ export async function submitCommentDraft({
   view.state.doc.descendants((node, pos) => {
     for (let mark of node.marks) {
       if (mark.type === schema.marks.comment) {
-        for (let id of markCommentIDs(mark)) {
+        for (let id of markEditorCommentIDs(mark)) {
           if (anchorPosByEntityID[id] === undefined)
             anchorPosByEntityID[id] = pos;
         }
@@ -126,7 +126,7 @@ export async function submitCommentDraft({
   // group instead of starting its own.
   undoManager.startGroup();
   try {
-    await rep.mutate.createComment({
+    await rep.mutate.createEditorComment({
       commentEntityID,
       blockID: draft.blockID,
       permission_set: permissionSet,
@@ -151,7 +151,7 @@ export async function submitCommentDraft({
       let segTo = Math.min(pos + node.nodeSize, range.to);
       if (segFrom >= segTo) return;
       let existing = node.marks.find((m) => m.type === markType);
-      let ids = existing ? markCommentIDs(existing) : [];
+      let ids = existing ? markEditorCommentIDs(existing) : [];
       if (!ids.includes(commentEntityID)) ids.push(commentEntityID);
       tr.addMark(segFrom, segTo, markType.create({ commentID: ids.join(" ") }));
     });
@@ -162,19 +162,19 @@ export async function submitCommentDraft({
     undoManager.endGroup();
   }
 
-  useCommentDraftStore.setState({ draft: null });
+  useEditorCommentDraftStore.setState({ draft: null });
   return commentEntityID;
 }
 
 // Strip a comment's ID from its block's anchor marks: the mark is removed on
 // segments where it was the only comment, and rewritten to the remaining IDs
-// where comments overlap — the inverse of the merge in submitCommentDraft.
+// where comments overlap — the inverse of the merge in submitEditorCommentDraft.
 // Used when a thread is resolved (deleted) to make the text read as plain
 // everywhere (no mark to render, highlight, or click). Dispatched as a bulkOp
 // so trackUndoRedo joins the open undo group, letting the mark edit and the
 // comment delete undo together. The edit syncs to peers over yjs; only the
 // resolver (whose block editor is mounted) needs to run it.
-export function removeCommentMark(blockID: string, commentEntityID: string) {
+export function removeEditorCommentMark(blockID: string, commentEntityID: string) {
   let view = useEditorStates.getState().editorStates[blockID]?.view;
   if (!view) return;
   let markType = schema.marks.comment;
@@ -185,7 +185,7 @@ export function removeCommentMark(blockID: string, commentEntityID: string) {
     if (!node.isText) return;
     let existing = node.marks.find((m) => m.type === markType);
     if (!existing) return;
-    let ids = markCommentIDs(existing);
+    let ids = markEditorCommentIDs(existing);
     if (!ids.includes(commentEntityID)) return;
     let from = pos;
     let to = pos + node.nodeSize;
@@ -201,7 +201,7 @@ export function removeCommentMark(blockID: string, commentEntityID: string) {
 
 // Anchor marks carry one or more comment IDs, space-separated, so
 // overlapping comments can share a range
-export function markCommentIDs(mark: {
+export function markEditorCommentIDs(mark: {
   attrs: { [key: string]: any };
 }): string[] {
   return ((mark.attrs.commentID as string) || "").split(" ").filter(Boolean);

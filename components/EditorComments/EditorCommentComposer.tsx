@@ -16,13 +16,13 @@ import { applyLinkPaste } from "src/utils/prosemirror/linkOnPaste";
 import { betterIsUrl } from "src/utils/isURL";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
-import { CommentMessageLayout } from "./CommentMessageLayout";
+import { EditorCommentMessageLayout } from "./EditorCommentMessageLayout";
 
 // A local-only editor for drafting comments and replies. The draft is plain
 // ProseMirror state and is never written to Replicache; it's converted to a
 // Y.Doc (the stored comment format) and handed to onSubmit only when the
 // user hits submit.
-export function CommentComposer(props: {
+export function EditorCommentComposer(props: {
   onSubmit: (ydoc: Y.Doc) => void | Promise<void>;
   onCancel?: () => void;
   placeholder?: string;
@@ -31,18 +31,29 @@ export function CommentComposer(props: {
   // base64-encoded YJS state to seed the editor with when editing an
   // existing comment; the doc is decoded back into a ProseMirror document
   initialContent?: string;
+  // Called on unmount with the current draft as base64-encoded YJS state (or
+  // null when empty), so a persistent composer can stash an unsent draft
+  onPersistDraft?: (content: string | null) => void;
 }) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let viewRef = useRef<EditorView | null>(null);
   let [empty, setEmpty] = useState(true);
   let { identity } = useIdentityData();
 
+  // Set up inside the effect, where the plugins are in scope; resets the
+  // editor to an empty doc so a persistent composer (e.g. the reply box)
+  // doesn't keep the just-submitted text around
+  let clearRef = useRef<() => void>(() => {});
+
   let onSubmitRef = useRef(props.onSubmit);
   onSubmitRef.current = props.onSubmit;
+  let onPersistDraftRef = useRef(props.onPersistDraft);
+  onPersistDraftRef.current = props.onPersistDraft;
   let submit = async () => {
     let view = viewRef.current;
     if (!view || view.state.doc.textContent.trim() === "") return;
     await onSubmitRef.current(prosemirrorToYDoc(view.state.doc));
+    clearRef.current();
   };
   let submitRef = useRef(submit);
   submitRef.current = submit;
@@ -50,7 +61,7 @@ export function CommentComposer(props: {
   useLayoutEffect(() => {
     if (!mountRef.current) return;
 
-    // Both Enter and Shift-Enter insert a line break; Mod-Enter submits
+    // Enter submits; Shift-Enter (and Mod-Enter) insert a line break
     let insertHardBreak = (
       state: EditorState,
       dispatch?: (tr: typeof state.tr) => void,
@@ -66,8 +77,8 @@ export function CommentComposer(props: {
       keymap({
         ...formattingKeymap(schema.marks),
         "Shift-Enter": insertHardBreak,
-        Enter: insertHardBreak,
-        "Mod-Enter": () => {
+        "Mod-Enter": insertHardBreak,
+        Enter: () => {
           submitRef.current();
           return true;
         },
@@ -105,6 +116,10 @@ export function CommentComposer(props: {
       },
     );
     viewRef.current = view;
+    clearRef.current = () => {
+      view.updateState(EditorState.create({ schema, plugins }));
+      setEmpty(true);
+    };
     setEmpty(state.doc.textContent.trim() === "");
 
     if (props.autoFocus) {
@@ -112,6 +127,18 @@ export function CommentComposer(props: {
     }
 
     return () => {
+      // Stash whatever's left in the editor before it's torn down, so a draft
+      // survives the popover/drawer closing
+      if (onPersistDraftRef.current) {
+        let empty = view.state.doc.textContent.trim() === "";
+        onPersistDraftRef.current(
+          empty
+            ? null
+            : base64.fromByteArray(
+                Y.encodeStateAsUpdate(prosemirrorToYDoc(view.state.doc)),
+              ),
+        );
+      }
       viewRef.current = null;
       view.destroy();
     };
@@ -119,10 +146,10 @@ export function CommentComposer(props: {
   }, []);
 
   return (
-    <div className="commentComposer flex flex-col gap-2">
-      <CommentMessageLayout did={identity?.atp_did}>
+    <div className="editorCommentComposer flex flex-col gap-2">
+      <EditorCommentMessageLayout did={identity?.atp_did}>
         {empty && (
-          <div className="absolute top-0 left-0 text-tertiary italic pointer-events-none">
+          <div className="absolute top-0 left-5 text-tertiary italic pointer-events-none">
             {props.placeholder || "Add a comment..."}
           </div>
         )}
@@ -130,21 +157,30 @@ export function CommentComposer(props: {
           ref={mountRef}
           className="outline-hidden [&_.ProseMirror]:outline-hidden min-h-[1.5em]"
         />
-      </CommentMessageLayout>
+      </EditorCommentMessageLayout>
       <div className="flex gap-2 justify-end items-center">
         {props.onCancel && (
-          <ButtonTertiary compact type="button" onClick={props.onCancel}>
+          <ButtonTertiary
+            compact
+            type="button"
+            className="text-sm"
+            onClick={() => {
+              clearRef.current();
+              props.onCancel?.();
+            }}
+          >
             Cancel
           </ButtonTertiary>
         )}
         <ButtonPrimary
           compact
           type="button"
+          className="text-sm"
           disabled={empty}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => submit()}
         >
-          {props.submitLabel || "Submit"}
+          {props.submitLabel || "Comment"}
         </ButtonPrimary>
       </div>
     </div>

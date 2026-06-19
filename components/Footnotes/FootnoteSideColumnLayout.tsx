@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, ReactNode } from "react";
 import { useUIState } from "src/useUIState";
-import { useHoveredCommentStore } from "components/Comments/commentStores";
+import { useHoveredEditorCommentStore } from "components/EditorComments/editorCommentStores";
 
 type SideItemBase = {
   id: string;
@@ -200,14 +200,14 @@ function SideItem(props: {
   );
   let focusedClass =
     props.focusKind === "comment"
-      ? "comment-side-focused"
+      ? "editor-comment-side-focused"
       : "footnote-side-focused";
 
   // Two-way comment hover pairing: borders this thread when its anchor is
   // hovered in the text, and tells the text which anchor to border when this
   // thread is hovered. Footnotes don't participate.
   let isComment = props.focusKind === "comment";
-  let isHovered = useHoveredCommentStore(
+  let isHovered = useHoveredEditorCommentStore(
     (s) => isComment && s.hoveredCommentIDs.includes(props.id),
   );
 
@@ -230,12 +230,12 @@ function SideItem(props: {
     <div
       ref={ref}
       data-footnote-side-id={props.id}
-      className={`absolute left-0 text-sm footnote-side-enter ${props.className ?? "right-0 footnote-side-item"}${overflows ? " has-overflow" : ""}${isFocused ? ` ${focusedClass}` : ""}${isHovered ? " comment-side-hovered" : ""}`}
+      className={`absolute left-0 text-sm footnote-side-enter ${props.className ?? "right-0 footnote-side-item"}${overflows ? " has-overflow" : ""}${isFocused ? ` ${focusedClass}` : ""}${isHovered ? " editor-comment-side-hovered" : ""}`}
       style={{ top: props.top }}
       onMouseEnter={
         isComment
           ? () =>
-              useHoveredCommentStore.setState({
+              useHoveredEditorCommentStore.setState({
                 hoveredCommentIDs: [props.id],
               })
           : undefined
@@ -243,7 +243,7 @@ function SideItem(props: {
       onMouseLeave={
         isComment
           ? () =>
-              useHoveredCommentStore.setState({ hoveredCommentIDs: [] })
+              useHoveredEditorCommentStore.setState({ hoveredCommentIDs: [] })
           : undefined
       }
     >

@@ -3,12 +3,12 @@ import { useSubscribe } from "src/replicache/useSubscribe";
 import { scanIndex } from "src/replicache/utils";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
-export type CommentInfo = {
+export type EditorCommentInfo = {
   commentEntityID: string;
   blockID: string;
 };
 
-export function usePageComments(pageID: string) {
+export function usePageEditorComments(pageID: string) {
   let rep = useReplicache();
   let { permissions } = useEntitySetContext();
   let data = useSubscribe(
@@ -31,7 +31,7 @@ export function usePageComments(pageID: string) {
 
       let sorted = [...sortedCardBlocks, ...sortedCanvasBlocks];
 
-      let comments: CommentInfo[] = [];
+      let comments: EditorCommentInfo[] = [];
       for (let block of sorted) {
         let blockComments = await scan.eav(block.value, "block/comment");
         let sortedComments = blockComments.toSorted((a, b) =>
@@ -55,13 +55,13 @@ export function usePageComments(pageID: string) {
   if (!permissions.write)
     return {
       pageID,
-      comments: [] as CommentInfo[],
+      comments: [] as EditorCommentInfo[],
     };
 
   return (
     data || {
       pageID,
-      comments: [] as CommentInfo[],
+      comments: [] as EditorCommentInfo[],
     }
   );
 }

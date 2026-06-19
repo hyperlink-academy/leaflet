@@ -9,12 +9,18 @@ import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
 import { FootnoteEditor } from "components/Footnotes/FootnoteEditor";
 import { deleteFootnoteFromBlock } from "components/Footnotes/deleteFootnoteFromBlock";
 import { FootnoteSideColumnLayout } from "components/Footnotes/FootnoteSideColumnLayout";
-import { useCommentContext } from "./CommentContext";
-import { useCommentDraftStore, useCommentSheetStore } from "./commentStores";
-import { cancelCommentDraft, submitCommentDraft } from "./commentDraftActions";
-import { CommentComposer } from "./CommentComposer";
-import { CommentLoginPrompt } from "./CommentLoginPrompt";
-import { CommentThread } from "./CommentThread";
+import { useEditorCommentContext } from "./EditorCommentContext";
+import {
+  useEditorCommentDraftStore,
+  useEditorCommentSheetStore,
+} from "./editorCommentStores";
+import {
+  cancelEditorCommentDraft,
+  submitEditorCommentDraft,
+} from "./editorCommentDraftActions";
+import { EditorCommentComposer } from "./EditorCommentComposer";
+import { EditorCommentLoginPrompt } from "./EditorCommentLoginPrompt";
+import { EditorCommentThread } from "./EditorCommentThread";
 
 type SideAnnotation =
   | {
@@ -35,8 +41,8 @@ export function AnnotationSideColumn(props: {
   fullPageScroll?: boolean;
 }) {
   let { footnotes } = useFootnoteContext();
-  let { comments } = useCommentContext();
-  let draft = useCommentDraftStore((s) => s.draft);
+  let { comments } = useEditorCommentContext();
+  let draft = useEditorCommentDraftStore((s) => s.draft);
   let { permissions } = useEntitySetContext();
   let rep = useReplicache();
 
@@ -77,8 +83,8 @@ export function AnnotationSideColumn(props: {
   let getItemClassName = useCallback((item: SideAnnotation) => {
     if (item.kind === "footnote") return "w-[250px] footnote-side-item";
     if (item.kind === "draft")
-      return "w-[320px] comment-side-item comment-side-focused";
-    return "w-[320px] comment-side-item";
+      return "w-[320px] editor-comment-side-item editor-comment-side-focused";
+    return "w-[320px] editor-comment-side-item";
   }, []);
 
   let getItemFocusKind = useCallback(
@@ -107,9 +113,9 @@ export function AnnotationSideColumn(props: {
             }
           />
         );
-      if (item.kind === "draft") return <CommentDraftComposer />;
+      if (item.kind === "draft") return <EditorCommentDraftComposer />;
       return (
-        <CommentThread
+        <EditorCommentThread
           commentEntityID={item.commentEntityID}
           blockID={item.blockID}
           pageID={props.pageEntityID}
@@ -133,7 +139,7 @@ export function AnnotationSideColumn(props: {
   );
 }
 
-export function CommentDraftComposer(props: { autoFocus?: boolean }) {
+export function EditorCommentDraftComposer(props: { autoFocus?: boolean }) {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
   let { identity } = useIdentityData();
@@ -141,17 +147,17 @@ export function CommentDraftComposer(props: { autoFocus?: boolean }) {
   // No commenting interactions without write access
   if (!entity_set.permissions.write) return null;
   if (!identity?.atp_did)
-    return <CommentLoginPrompt onCancel={cancelCommentDraft} />;
+    return <EditorCommentLoginPrompt onCancel={cancelEditorCommentDraft} />;
   let atp_did = identity.atp_did;
 
   return (
-    <CommentComposer
+    <EditorCommentComposer
       autoFocus={props.autoFocus ?? true}
       placeholder="Add a comment..."
       submitLabel="Submit"
       onSubmit={async (ydoc: Y.Doc) => {
         if (!rep.rep) return;
-        let commentEntityID = await submitCommentDraft({
+        let commentEntityID = await submitEditorCommentDraft({
           rep: rep.rep,
           undoManager: rep.undoManager,
           permissionSet: entity_set.set,
@@ -159,12 +165,12 @@ export function CommentDraftComposer(props: { autoFocus?: boolean }) {
           ydoc,
         });
         // If drafting in the mobile sheet, show the posted thread there
-        let sheet = useCommentSheetStore.getState();
+        let sheet = useEditorCommentSheetStore.getState();
         if (commentEntityID && sheet.pageID) {
           sheet.openSheet(sheet.pageID, commentEntityID);
         }
       }}
-      onCancel={cancelCommentDraft}
+      onCancel={cancelEditorCommentDraft}
     />
   );
 }

@@ -22,12 +22,12 @@ import { usePageFootnotes } from "components/Footnotes/usePageFootnotes";
 import { FootnoteContext } from "components/Footnotes/FootnoteContext";
 import { FootnoteSection } from "components/Footnotes/FootnoteSection";
 import { FootnotePopover } from "components/Footnotes/FootnotePopover";
-import { usePageComments } from "components/Comments/usePageComments";
-import { CommentContext } from "components/Comments/CommentContext";
-import { AnnotationSideColumn } from "components/Comments/AnnotationSideColumn";
-import { CommentMobileSheet } from "components/Comments/CommentMobileSheet";
-import { CommentPopover } from "components/Comments/CommentPopover";
-import { CommentAnchorHover } from "components/Comments/CommentAnchorHover";
+import { usePageEditorComments } from "components/EditorComments/usePageEditorComments";
+import { EditorCommentContext } from "components/EditorComments/EditorCommentContext";
+import { AnnotationSideColumn } from "components/EditorComments/AnnotationSideColumn";
+import { EditorCommentMobileSheet } from "components/EditorComments/EditorCommentMobileSheet";
+import { EditorCommentPopover } from "components/EditorComments/EditorCommentPopover";
+import { EditorCommentAnchorHover } from "components/EditorComments/EditorCommentAnchorHover";
 import { LinkPopover } from "components/LinkPopover";
 
 export function Page(props: {
@@ -52,7 +52,7 @@ export function Page(props: {
 
   let drawerOpen = useDrawerOpen(props.entityID);
   let footnoteData = usePageFootnotes(props.entityID);
-  let commentData = usePageComments(props.entityID);
+  let commentData = usePageEditorComments(props.entityID);
   let isRightmostPage = useUIState((s) => {
     let pages = s.openPages;
     if (pages.length === 0) return true;
@@ -63,7 +63,7 @@ export function Page(props: {
   return (
     <CardThemeProvider entityID={props.entityID}>
       <FootnoteContext.Provider value={footnoteData}>
-        <CommentContext.Provider value={commentData}>
+        <EditorCommentContext.Provider value={commentData}>
           <PageWrapper
             onClickAction={(e) => {
               if (e.defaultPrevented) return;
@@ -103,11 +103,11 @@ export function Page(props: {
           </PageWrapper>
           <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
           <FootnotePopover />
-          <CommentPopover />
-          <CommentMobileSheet />
-          <CommentAnchorHover />
+          <EditorCommentPopover />
+          <EditorCommentMobileSheet />
+          <EditorCommentAnchorHover />
           <LinkPopover />
-        </CommentContext.Provider>
+        </EditorCommentContext.Provider>
       </FootnoteContext.Provider>
     </CardThemeProvider>
   );

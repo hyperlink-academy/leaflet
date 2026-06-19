@@ -7,11 +7,12 @@ import { AnchoredPopover } from "components/AnchoredPopover";
 import { useEntity } from "src/replicache";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { Avatar } from "components/Avatar";
-import { useCommentContext } from "./CommentContext";
-import { useCommentSheetStore } from "./commentStores";
-import { getCommentPlaintext } from "./getCommentQuote";
+import { useEditorCommentContext } from "./EditorCommentContext";
+import { useEditorCommentSheetStore } from "./editorCommentStores";
+import { getEditorCommentPlaintext } from "./getEditorCommentQuote";
+import { CommentTiny } from "components/Icons/CommentTiny";
 
-type CommentPopoverState = {
+type EditorCommentPopoverState = {
   // An anchor span can carry several comment IDs where comments overlap; the
   // popover shows the first one that still exists
   commentIDs: string[] | null;
@@ -20,19 +21,21 @@ type CommentPopoverState = {
   close: () => void;
 };
 
-export const useCommentPopoverStore = create<CommentPopoverState>((set) => ({
-  commentIDs: null,
-  anchorElement: null,
-  open: (commentIDs, anchor) => set({ commentIDs, anchorElement: anchor }),
-  close: () => set({ commentIDs: null, anchorElement: null }),
-}));
+export const useEditorCommentPopoverStore = create<EditorCommentPopoverState>(
+  (set) => ({
+    commentIDs: null,
+    anchorElement: null,
+    open: (commentIDs, anchor) => set({ commentIDs, anchorElement: anchor }),
+    close: () => set({ commentIDs: null, anchorElement: null }),
+  }),
+);
 
 // On mobile, tapping a commented range shows this popover (like the link
 // popover) with an excerpt of the comment and a button that opens the full
 // thread in the slide-in sheet.
-export function CommentPopover() {
-  let { commentIDs, anchorElement, close } = useCommentPopoverStore();
-  let { pageID, comments } = useCommentContext();
+export function EditorCommentPopover() {
+  let { commentIDs, anchorElement, close } = useEditorCommentPopoverStore();
+  let { pageID, comments } = useEditorCommentContext();
 
   let comment = commentIDs
     ? comments.find((c) => commentIDs.includes(c.commentEntityID))
@@ -44,7 +47,7 @@ export function CommentPopover() {
   let author = useEntity(comment?.commentEntityID ?? null, "comment/author");
   let { data: profile } = useRecordFromDid(author?.data.value);
   let excerpt = useMemo(
-    () => getCommentPlaintext(content?.data.value),
+    () => getEditorCommentPlaintext(content?.data.value),
     [content?.data.value],
   );
 
@@ -111,9 +114,18 @@ export function CommentPopover() {
       rect={rect}
       dismissOnScroll={false}
       dismissOnFocusOutside={false}
-      className="comment-popover px-3 py-1.5"
+      className="editor-comment-popover "
     >
-      <div className="flex items-center gap-2">
+      <button
+        className="flex items-center gap-2 px-2 py-1.5 w-full text-left"
+        title={replies.length > 0 ? "Open thread" : "Open comment"}
+        onClick={() => {
+          useEditorCommentSheetStore
+            .getState()
+            .openSheet(pageID, commentEntityID);
+          close();
+        }}
+      >
         <div className="shrink-0">
           <Avatar
             src={profile?.avatar}
@@ -121,25 +133,15 @@ export function CommentPopover() {
             size="small"
           />
         </div>
-        <div
-          className="grow min-w-0 text-sm text-secondary whitespace-nowrap overflow-hidden"
-          style={{
-            maskImage: "linear-gradient(to right, black 75%, transparent)",
-          }}
-        >
+        <div className="grow min-w-0 text-sm text-secondary whitespace-nowrap overflow-hidden truncate">
           {excerpt}
         </div>
-        <button
-          className="shrink-0 text-accent-contrast"
-          title={replies.length > 0 ? "Open thread" : "Open comment"}
-          onClick={() => {
-            useCommentSheetStore.getState().openSheet(pageID, commentEntityID);
-            close();
-          }}
-        >
-          <ArrowRightTiny />
-        </button>
-      </div>
+
+        <div className="shrink-0 text-accent-contrast flex flex-row text-sm items-center gap-0.5">
+          {replies.length > 0 && replies.length + 1}
+          <CommentTiny />
+        </div>
+      </button>
     </AnchoredPopover>
   );
 }

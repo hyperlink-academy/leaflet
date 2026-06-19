@@ -9,7 +9,7 @@ function decodeYDoc(value: string): Doc {
 }
 
 // Plain text of an encoded YJS doc (e.g. a comment's content), for excerpts
-export function getCommentPlaintext(value: string | undefined): string {
+export function getEditorCommentPlaintext(value: string | undefined): string {
   if (!value) return "";
   return decodeYDoc(value)
     .getXmlElement("prosemirror")
@@ -20,7 +20,7 @@ export function getCommentPlaintext(value: string | undefined): string {
 
 // Extracts the text covered by a comment's mark from a block's encoded YJS
 // doc, for showing the quoted range alongside the comment.
-export function getCommentQuoteText(
+export function getEditorCommentQuoteText(
   value: string | undefined,
   commentID: string,
 ): string {

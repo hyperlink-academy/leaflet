@@ -71,18 +71,6 @@ export function BskyPostContent(props: {
           }}
         />
       )}
-      {/*{props.parent?.type === "thread" && props.parent.uri && (
-        <div className="text-xs  flex  gap-2 px-1  text-tertiary">
-          <div className="flex flex-col shrink-0">
-            <div className="h-4 w-4  mx-0.5 bg-test rounded-full shrink-0" />
-            <div className="w-0.5 h-3 bg-border mx-auto" />
-          </div>
-          <strong> Replying to Eileen </strong>
-          <span className="font-normal text-tertiary">
-            This is a one-liner of content
-          </span>
-        </div>
-      )}*/}
 
       <div
         className={`flex gap-2 text-left w-full pointer-events-none ${props.className}`}
