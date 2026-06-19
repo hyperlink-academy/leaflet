@@ -1,6 +1,7 @@
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { scanIndex } from "src/replicache/utils";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 
 export type FootnoteInfo = {
   footnoteEntityID: string;
@@ -14,12 +15,10 @@ export function usePageFootnotes(pageID: string) {
     rep?.rep,
     async (tx) => {
       let scan = scanIndex(tx);
-      let cardBlocks = await scan.eav(pageID, "card/block");
+      // getBlocksWithType flattens nested list items into document order, so
+      // footnotes inside (nested) list items are numbered with everything else.
+      let cardBlocks = (await getBlocksWithType(tx, pageID)) ?? [];
       let canvasBlocks = await scan.eav(pageID, "canvas/block");
-
-      let sortedCardBlocks = cardBlocks
-        .map((b) => ({ value: b.data.value, position: b.data.position }))
-        .toSorted((a, b) => (a.position > b.position ? 1 : -1));
 
       let sortedCanvasBlocks = canvasBlocks
         .map((b) => ({ value: b.data.value, position: b.data.position }))
@@ -28,7 +27,10 @@ export function usePageFootnotes(pageID: string) {
           return a.position.y - b.position.y;
         });
 
-      let sorted = [...sortedCardBlocks, ...sortedCanvasBlocks];
+      let sorted = [
+        ...cardBlocks.map((b) => ({ value: b.value })),
+        ...sortedCanvasBlocks,
+      ];
 
       let footnotes: FootnoteInfo[] = [];
       let indexMap: Record<string, number> = {};
