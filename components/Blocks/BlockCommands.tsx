@@ -226,6 +226,30 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Image Gallery",
+    // TODO: replace with a dedicated gallery icon once drawn.
+    icon: <BlockImageSmall />,
+    type: "block",
+    alternateNames: ["gallery", "images", "carousel"],
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "image-gallery");
+      setTimeout(() => {
+        let el = document.getElementById(elementId.block(entity).input);
+        el?.focus();
+      }, 100);
+      um.add({
+        undo: () => {
+          focusTextBlock(entity);
+        },
+        redo: () => {
+          let el = document.getElementById(elementId.block(entity).input);
+          el?.focus();
+        },
+      });
+    },
+  },
+  {
     name: "External Link",
     icon: <LinkSmall />,
     type: "block",

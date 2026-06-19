@@ -253,6 +253,32 @@ const ImageBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  // Original filename, shown in the gallery's Edit Images list.
+  "image/name": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
+const GalleryBlockAttributes = {
+  // Child image entities, each carrying their own block/image, image/alt and
+  // image/name facts — mirrors poll/options.
+  "gallery/image": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "gallery/format": {
+    type: "gallery-format-union",
+    cardinality: "one",
+  },
+  "gallery/gap": {
+    type: "number",
+    cardinality: "one",
+  },
+  "gallery/lightbox": {
+    type: "boolean",
+    cardinality: "one",
+  },
 } as const;
 
 const PollBlockAttributes = {
@@ -380,6 +406,7 @@ export const Attributes = {
   ...BlueskyPostBlockAttributes,
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
+  ...GalleryBlockAttributes,
   ...PollBlockAttributes,
   ...PostsListBlockAttributes,
 };
@@ -461,7 +488,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "blockquote"
       | "horizontal-rule"
       | "posts-list"
-      | "signup";
+      | "signup"
+      | "image-gallery";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
@@ -470,6 +498,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "list-style-union": {
     type: "list-style-union";
     value: "ordered" | "unordered";
+  };
+  "gallery-format-union": {
+    type: "gallery-format-union";
+    value: "grid" | "carousel" | "strip";
   };
   "posts-list-view-union": {
     type: "posts-list-view-union";

@@ -818,6 +818,40 @@ const removePollOption: Mutation<{
   await ctx.deleteEntity(args.optionEntity);
 };
 
+const addGalleryImage: Mutation<{
+  galleryEntity: string;
+  imageEntity: string;
+  permission_set: string;
+  factID: string;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.imageEntity,
+    permission_set: args.permission_set,
+  });
+
+  let children = await ctx.scanIndex.eav(args.galleryEntity, "gallery/image");
+  let lastChild = children.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[children.length - 1];
+
+  await ctx.assertFact({
+    entity: args.galleryEntity,
+    id: args.factID,
+    attribute: "gallery/image",
+    data: {
+      type: "ordered-reference",
+      value: args.imageEntity,
+      position: generateKeyBetween(lastChild?.data.position || null, null),
+    },
+  });
+};
+
+const removeGalleryImage: Mutation<{
+  imageEntity: string;
+}> = async (args, ctx) => {
+  await ctx.deleteEntity(args.imageEntity);
+};
+
 const updatePublicationDraft: Mutation<{
   title?: string;
   description?: string;
@@ -1159,6 +1193,8 @@ export const mutations = {
   createEntity,
   addPollOption,
   removePollOption,
+  addGalleryImage,
+  removeGalleryImage,
   updatePublicationDraft,
   updateLeafletMetadata,
   toggleDraftContributor,
