@@ -197,6 +197,22 @@ export const user_subscriptions = pgTable("user_subscriptions", {
 	}
 });
 
+export const stripe_connected_accounts = pgTable("stripe_connected_accounts", {
+	identity_id: uuid("identity_id").primaryKey().notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	stripe_account_id: text("stripe_account_id").notNull(),
+	charges_enabled: boolean("charges_enabled").default(false).notNull(),
+	payouts_enabled: boolean("payouts_enabled").default(false).notNull(),
+	details_submitted: boolean("details_submitted").default(false).notNull(),
+	requirements: jsonb("requirements"),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		stripe_account_id_key: uniqueIndex("stripe_connected_accounts_stripe_account_id_key").on(table.stripe_account_id),
+	}
+});
+
 export const identities = pgTable("identities", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),

@@ -17,6 +17,8 @@ import { WebSmall } from "components/Icons/WebSmall";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { useState } from "react";
 import { LeafletPro } from "components/Icons/LeafletPro";
+import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
+import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 
 export const ProfileButton = () => {
   let { identity } = useIdentityData();
@@ -82,6 +84,24 @@ export const ProfileButton = () => {
               }
             >
               <ManageProSubscription />
+            </Modal>
+            <hr className="border-border-light border-dashed" />
+          </>
+        )}
+        {identity && (
+          <>
+            <Modal
+              trigger={
+                <div className="menuItem -mx-[8px] ">
+                  <AnalyticsSmall />
+                  Payments
+                </div>
+              }
+            >
+              <div className="flex flex-col gap-3 max-w-prose">
+                <div className="font-bold text-primary text-lg">Payments</div>
+                <ConnectPayments />
+              </div>
             </Modal>
             <hr className="border-border-light border-dashed" />
           </>

@@ -41,6 +41,7 @@ async function uncachedGetIdentityData() {
               )
             ),
             user_subscriptions(plan, status, current_period_end),
+            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted),
             user_entitlements(entitlement_key, granted_at, expires_at, source, metadata),
             publications!publications_identity_did_fkey(*),
             leaflet_contributors!leaflet_contributors_contributor_did_fkey(
@@ -88,6 +89,8 @@ async function uncachedGetIdentityData() {
   }
 
   const subscription = auth_res.data.identities.user_subscriptions ?? null;
+  const connectedAccount =
+    auth_res.data.identities.stripe_connected_accounts ?? null;
 
   // Pull the embedded raw rows off the identity. Spreading `identity` below
   // must not leak these raw embeds as extra top-level keys (the public return
@@ -133,6 +136,7 @@ async function uncachedGetIdentityData() {
       contributor_leaflets,
       entitlements,
       subscription,
+      connectedAccount,
     };
   }
 
@@ -144,6 +148,7 @@ async function uncachedGetIdentityData() {
     contributor_leaflets: [],
     entitlements,
     subscription,
+    connectedAccount,
   };
 }
 

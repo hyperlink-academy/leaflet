@@ -25,6 +25,7 @@ import { Input } from "components/Input";
 import { deletePublication } from "./deletePublication";
 import { useRouter } from "next/navigation";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
+import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 
 type SettingsView = "all" | "theme";
 
@@ -237,6 +238,10 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         </DashboardContainer>
 
         <ContributorSettings />
+
+        <DashboardContainer section="Monetization">
+          <ConnectPayments />
+        </DashboardContainer>
 
         {canSeePro && !isPro ? (
           <DashboardContainer section="Leaflet Pro" className="pb-4">
