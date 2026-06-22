@@ -90,7 +90,7 @@ export const Pricing = () => {
             <Link
               href={
                 cadence === "yearly"
-                  ? `/checkout/pro?cadence=year&coupon=SUMMER`
+                  ? `/checkout/pro?cadence=year&coupon=AldrohMq`
                   : `/checkout/pro?cadence=month`
               }
               className="no-underline!"
