@@ -26,7 +26,7 @@ export function DomainList(props: {
     (d) => getDomainAssignment(d).type === "unassigned",
   );
 
-  if (pubDomains.length < 0) {
+  if (domains.length === 0) {
     <EmptyState container="none" title="no domains yet..." />;
   }
 

@@ -20,8 +20,10 @@ import { WebSmall } from "components/Icons/WebSmall";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { useState } from "react";
 import { LeafletPro } from "components/Icons/LeafletPro";
+import { useSidebarStore } from "./Sidebar";
 
 export const ProfileButton = () => {
+  let setSidebarOpen = useSidebarStore((s) => s.setOpen);
   let { identity } = useIdentityData();
   let { data: record } = useRecordFromDid(identity?.atp_did);
   let isMobile = useIsMobile();
@@ -69,7 +71,10 @@ export const ProfileButton = () => {
             <SpeedyLink
               className="no-underline! menuItem -mx-[8px]"
               href={`/p/${record.handle}`}
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                setSidebarOpen(false);
+              }}
             >
               <button type="button" className="flex gap-2 ">
                 <AccountSmall />
@@ -113,6 +118,7 @@ export const ProfileButton = () => {
           className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
           onClick={async () => {
             setOpen(false);
+            setSidebarOpen(false);
             await fetch("/api/auth/logout");
             mutate("identity", null);
           }}
