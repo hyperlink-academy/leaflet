@@ -88,7 +88,11 @@ export const Pricing = () => {
               Serious publishers, serious tools
             </p>
             <Link
-              href={`/checkout/pro?cadence=${cadence === "yearly" ? "year" : "month"}`}
+              href={
+                cadence === "yearly"
+                  ? `/checkout/pro?cadence=year&coupon=SUMMER`
+                  : `/checkout/pro?cadence=month`
+              }
               className="no-underline!"
             >
               <ButtonPrimary

@@ -9,6 +9,7 @@ import { Ok, Err, type Result } from "src/result";
 export async function createCheckoutSession(
   cadence: "month" | "year",
   returnUrl?: string,
+  coupon?: string,
 ): Promise<Result<{ url: string }, string>> {
   const identity = await getIdentityData();
   if (!identity) {
@@ -51,7 +52,11 @@ export async function createCheckoutSession(
       ? { customer: customerId }
       : { customer_email: identity.email || undefined }),
     subscription_data: { metadata: { identity_id: identity.id } },
-    allow_promotion_codes: true,
+    // Stripe rejects discounts and allow_promotion_codes together: a
+    // preset coupon takes the discount slot, otherwise let users enter a code.
+    ...(coupon
+      ? { discounts: [{ coupon }] }
+      : { allow_promotion_codes: true }),
     success_url: successUrl.toString(),
     cancel_url: cancelUrl,
   });
