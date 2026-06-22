@@ -33,7 +33,10 @@ export function EditorCommentMessageLayout(props: {
       </div>
       <div
         className="editor-comment-message-content relative text-sm text-primary pl-5"
-        style={{ wordBreak: "break-word" }}
+        // overflow-wrap:anywhere makes long links/words break within the
+        // flex-column thread layout, where the legacy word-break:break-word
+        // alone lets them overflow the fixed-width side column
+        style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
       >
         {props.children}
       </div>
