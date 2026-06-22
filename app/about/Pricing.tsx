@@ -30,7 +30,7 @@ export const Pricing = () => {
           Get your{" "}
           <a
             target="_blank"
-            href="https://bsky.social/about/blog/06-22-2026-summer-of-standard-site"
+            href="https://lab.leaflet.pub/3movr6hcegc2f"
             className="underline"
           >
             Summer Pass
