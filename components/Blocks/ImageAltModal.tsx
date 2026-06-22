@@ -56,14 +56,18 @@ function ImageAltModalContent(props: {
   let { rep } = useReplicache();
   let image = useEntity(props.entityID, "block/image");
   let altText = useEntity(props.entityID, "image/alt")?.data.value ?? "";
-  let [value, setValue] = useState(altText);
+  // `draft` stays null until the user edits, so the textarea reflects the live
+  // alt text once Replicache's subscription resolves — the first render returns
+  // a stale page-load snapshot that would otherwise get frozen into state.
+  let [draft, setDraft] = useState<string | null>(null);
+  let value = draft ?? altText;
   let src = image ? localImages.get(image.data.src) ?? image.data.src : null;
 
-  let save = async () => {
+  let save = async (next: string = value) => {
     await rep?.mutate.assertFact({
       entity: props.entityID,
       attribute: "image/alt",
-      data: { type: "string", value },
+      data: { type: "string", value: next },
     });
     props.onClose();
   };
@@ -82,7 +86,7 @@ function ImageAltModalContent(props: {
         className="input-with-border w-full resize-none min-h-[64px]  p-2"
         placeholder="Describe this image..."
         value={value}
-        onChange={(e) => setValue(e.currentTarget.value)}
+        onChange={(e) => setDraft(e.currentTarget.value)}
         onKeyDown={(e) => {
           // Enter submits; Shift+Enter inserts a newline.
           if (e.key === "Enter" && !e.shiftKey) {
@@ -92,16 +96,10 @@ function ImageAltModalContent(props: {
         }}
       />
       <div className="flex gap-2 justify-end">
-        <ButtonTertiary
-          compact
-          onClick={() => {
-            setValue("");
-            save();
-          }}
-        >
+        <ButtonTertiary compact onClick={() => save("")}>
           Remove
         </ButtonTertiary>
-        <ButtonPrimary className="self-end" compact onClick={save}>
+        <ButtonPrimary className="self-end" compact onClick={() => save()}>
           Save
         </ButtonPrimary>
       </div>

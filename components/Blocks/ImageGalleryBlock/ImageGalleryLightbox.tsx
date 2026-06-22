@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { useGalleryImage } from "./shared";
+import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 
 export function ImageGalleryLightbox(props: {
   imageEntities: string[];
@@ -79,7 +80,8 @@ function LightboxContent(props: {
   // Left/right arrow keys advance the lightbox.
   useEffect(() => {
     let handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") scrollToIndex(Math.min(count - 1, current + 1));
+      if (e.key === "ArrowRight")
+        scrollToIndex(Math.min(count - 1, current + 1));
       else if (e.key === "ArrowLeft") scrollToIndex(Math.max(0, current - 1));
     };
     window.addEventListener("keydown", handler);
@@ -87,56 +89,59 @@ function LightboxContent(props: {
   }, [current, count]);
 
   return (
-    <>
+    <div className="flex flex-col gap-8 pt-12 pb-12 h-full">
       <div
         ref={scrollRef}
         onScroll={onScroll}
         onClick={props.onClose}
-        className="w-full h-full grid grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory no-scrollbar"
+        className="w-full h-full grid grid-rows-1 grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory no-scrollbar"
       >
         {props.imageEntities.map((entityID) => (
           <div
             key={entityID}
-            className="h-full snap-center snap-always flex flex-col items-center justify-center gap-3 p-4 sm:p-8"
+            className="h-full snap-center snap-always flex flex-col items-center justify-center gap-3"
           >
             <LightboxSlide entityID={entityID} />
           </div>
         ))}
       </div>
 
-      {current > 0 && (
-        <button
-          type="button"
-          aria-label="Previous image"
-          className="fixed left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-full bg-bg-page text-primary border border-border-light"
-          onClick={(e) => {
-            e.stopPropagation();
-            scrollToIndex(current - 1);
-          }}
-        >
-          <ArrowRightTiny className="rotate-180" />
-        </button>
-      )}
-      {current < count - 1 && (
-        <button
-          type="button"
-          aria-label="Next image"
-          className="fixed right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-full bg-bg-page text-primary border border-border-light"
-          onClick={(e) => {
-            e.stopPropagation();
-            scrollToIndex(current + 1);
-          }}
-        >
-          <ArrowRightTiny />
-        </button>
-      )}
-
       {count > 1 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-bg-page text-primary text-sm border border-border-light">
+        <div className="flex items-center gap-4 mx-auto text-border-light text-sm">
+          {current > 0 ? (
+            <button
+              type="button"
+              aria-label="Previous image"
+              className="flex place-items-center justify-center w-6 h-6 rounded-full hover:bg-accent-1 text-border-light hover:text-accent-2 "
+              onClick={(e) => {
+                e.stopPropagation();
+                scrollToIndex(current - 1);
+              }}
+            >
+              <GoToArrowLined className="rotate-180" />
+            </button>
+          ) : (
+            <div className="w-6 h-6" />
+          )}
           {current + 1} / {count}
+          {current < count - 1 ? (
+            <button
+              type="button"
+              aria-label="Next image"
+              className="flex place-items-center justify-center w-6 h-6 rounded-full hover:bg-accent-1 text-border-light hover:text-accent-2 "
+              onClick={(e) => {
+                e.stopPropagation();
+                scrollToIndex(current + 1);
+              }}
+            >
+              <GoToArrowLined className="shrink-0 grow-0" />
+            </button>
+          ) : (
+            <div className="w-6 h-6" />
+          )}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -145,22 +150,22 @@ function LightboxSlide(props: { entityID: string }) {
   if (!image) return null;
   return (
     <>
-      <div className="flex-1 min-h-0 flex items-center justify-center w-full">
+      <div className="flex-1 h-full w-full flex flex-col gap-3 min-h-0 justify-center items-center px-8">
         <img
           alt={image.alt}
           src={image.src}
-          className="max-w-full max-h-full object-contain"
+          className=" min-h-0 max-w-full object-contain"
           onClick={(e) => e.stopPropagation()}
         />
+        {image.alt && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="shrink-0 max-w-full whitespace-pre-wrap text-bg-page text-sm    line-clamp-3"
+          >
+            {image.alt}
+          </div>
+        )}
       </div>
-      {image.alt && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="shrink-0 max-w-full whitespace-pre-wrap bg-bg-page text-primary text-sm rounded-md px-2 py-1 border border-border-light"
-        >
-          {image.alt}
-        </div>
-      )}
     </>
   );
 }
