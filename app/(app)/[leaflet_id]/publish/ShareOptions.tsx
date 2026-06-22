@@ -32,6 +32,8 @@ type Props = {
   publication_uri?: string;
   root_entity: string;
   leaflet_id: string;
+  // localStorage key under which the in-progress Bluesky post is persisted
+  bskyDraftKey?: string;
 };
 
 export function ShareOptions(props: Props) {
@@ -134,6 +136,7 @@ export function ShareOptions(props: Props) {
                 <BlueskyPostEditorProsemirror
                   editorStateRef={props.editorStateRef}
                   onCharCountChange={props.setCharCount}
+                  persistKey={props.bskyDraftKey}
                 />
               </div>
               <div className="opaque-container text-secondary overflow-hidden flex flex-col mt-4 w-full">

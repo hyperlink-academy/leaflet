@@ -47,6 +47,10 @@ import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { Avatar } from "components/Avatar";
+import {
+  loadDraftDoc,
+  saveDraftDoc,
+} from "src/utils/prosemirror/draftPersistence";
 
 const addMentionToEditor = (
   mention: Mention,
@@ -97,6 +101,11 @@ export function CommentBox(props: {
   className?: string;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
+  // Scope the persisted draft to this post, and separately to each reply
+  // composer, so reloading restores the right in-progress comment
+  let draftKey = `comment:${props.doc_uri}${
+    props.replyTo ? `:reply:${props.replyTo}` : ""
+  }`;
   let {
     commentBox: { quote },
   } = useInteractionState(props.doc_uri);
@@ -235,9 +244,19 @@ export function CommentBox(props: {
     }));
   };
 
-  let [editorState, setEditorState] = useState(() =>
-    EditorState.create({
+  let [editorState, setEditorState] = useState(() => {
+    let savedDoc = loadDraftDoc(draftKey);
+    let doc: Node | undefined = undefined;
+    if (savedDoc) {
+      try {
+        doc = multiBlockSchema.nodeFromJSON(savedDoc);
+      } catch {
+        doc = undefined;
+      }
+    }
+    return EditorState.create({
       schema: multiBlockSchema,
+      doc,
       plugins: [
         keymap({
           ...formattingKeymap(multiBlockSchema.marks),
@@ -271,8 +290,8 @@ export function CommentBox(props: {
         }),
         history(),
       ],
-    }),
-  );
+    });
+  });
   useLayoutEffect(() => {
     if (!mountRef.current) return;
     view.current = new EditorView(
@@ -363,6 +382,12 @@ export function CommentBox(props: {
           let newState = this.state.apply(tr);
           setEditorState(newState);
           view.current?.updateState(newState);
+          saveDraftDoc(
+            draftKey,
+            newState.doc.textContent.length === 0
+              ? null
+              : newState.doc.toJSON(),
+          );
         },
       },
     );

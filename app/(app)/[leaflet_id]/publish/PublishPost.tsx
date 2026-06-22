@@ -1,7 +1,9 @@
 "use client";
 import { publishToPublication } from "actions/publishToPublication";
 import { DotLoader } from "components/utils/DotLoader";
-import { useState, useRef, type CSSProperties } from "react";
+import { useState, useRef, useCallback, type CSSProperties } from "react";
+import { useLocalStorageState } from "src/hooks/useLocalStorageState";
+import { clearDraftDoc } from "src/utils/prosemirror/draftPersistence";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -82,16 +84,21 @@ const PublishPostForm = (
   } & Props,
 ) => {
   let editorStateRef = useRef<EditorState | null>(null);
+  // All publish-flow drafts (toggles, tags, backdate, the Bluesky post) are
+  // scoped to this document + destination so each publish keeps its own state
+  let publishKey = `publish:v1:${props.publication_uri ?? "looseleaf"}:${props.root_entity}`;
+  let bskyDraftKey = `${publishKey}:bsky`;
   let [state, setState] = useState<"post-details" | "share-options">(
     "post-details",
   );
   let [charCount, setCharCount] = useState(0);
-  let [shareState, setShareState] = useState<ShareState>({
-    bluesky: true,
-    postToReaders: true,
-    email: true,
-    quiet: false,
-  });
+  let [shareState, setShareState, clearShareState] =
+    useLocalStorageState<ShareState>(`${publishKey}:share`, {
+      bluesky: true,
+      postToReaders: true,
+      email: true,
+      quiet: false,
+    });
   let [isLoading, setIsLoading] = useState(false);
   const nothingSelected =
     !shareState.bluesky &&
@@ -108,11 +115,20 @@ const PublishPostForm = (
   let replicacheTags = useSubscribe(rep, (tx) =>
     tx.get<string[]>("publication_tags"),
   );
-  let [localTags, setLocalTags] = useState<string[]>([]);
-  let [showTagSelector, setShowTagSelector] = useState(false);
+  let [localTags, setLocalTags, clearLocalTags] = useLocalStorageState<
+    string[]
+  >(`${publishKey}:tags`, []);
+  let [showTagSelector, setShowTagSelector, clearShowTagSelector] =
+    useLocalStorageState<boolean>(`${publishKey}:showTags`, false);
 
-  let [localPublishedAt, setLocalPublishedAt] = useState<Date | undefined>(
-    undefined,
+  // Stored as an ISO string (Date isn't JSON-serializable); undefined ⇒ "Now"
+  let [publishedAtISO, setPublishedAtISO, clearPublishedAt] =
+    useLocalStorageState<string | null>(`${publishKey}:publishedAt`, null);
+  let localPublishedAt = publishedAtISO ? new Date(publishedAtISO) : undefined;
+  let setLocalPublishedAt = useCallback(
+    (date: Date | undefined) =>
+      setPublishedAtISO(date ? date.toISOString() : null),
+    [setPublishedAtISO],
   );
   // Get cover image from Replicache
   let replicacheCoverImage = useSubscribe(rep, (tx) =>
@@ -204,6 +220,13 @@ const PublishPostForm = (
       }
     }
     setIsLoading(false);
+    // The post is out; drop the persisted publish draft so a later visit to
+    // this page starts clean rather than restoring stale toggles/text
+    clearShareState();
+    clearLocalTags();
+    clearShowTagSelector();
+    clearPublishedAt();
+    clearDraftDoc(bskyDraftKey);
     props.setPublishState({ state: "success", post_url });
   }
 
@@ -323,6 +346,7 @@ const PublishPostForm = (
                 publication_uri={props.publication_uri}
                 root_entity={props.root_entity}
                 leaflet_id={props.leaflet_id}
+                bskyDraftKey={bskyDraftKey}
               />
               <hr className="border-border mb-2" />
 
