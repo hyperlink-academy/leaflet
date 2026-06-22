@@ -86,7 +86,15 @@ export const UpgradeContent = () => {
                   your first year!{" "}
                 </div>
                 <div className="text-sm font-normal!">
-                  Get your Summer Pass, <br /> only available until July 31
+                  Get your{" "}
+                  <a
+                    target="_blank"
+                    href="https://bsky.social/about/blog/06-22-2026-summer-of-standard-site"
+                    className="underline"
+                  >
+                    Summer Pass
+                  </a>
+                  , <br /> only available until July 31
                 </div>
               </div>
             )}

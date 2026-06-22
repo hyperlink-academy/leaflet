@@ -27,8 +27,15 @@ export const Pricing = () => {
       <div className="accent-container text-base py-3 px-3 mt-4 mb-14 md:mb-8 text-secondary gap-3 text-center leading-snug w-full sm:max-w-sm md:max-w-[800px] mx-auto">
         <h3 className="text-xl! leading-tight">25% off your first year! </h3>
         <div className="text-base font-normal!">
-          Get your Summer Pass today, <br className="sm:hidden" /> only
-          available until July 31
+          Get your{" "}
+          <a
+            target="_blank"
+            href="https://bsky.social/about/blog/06-22-2026-summer-of-standard-site"
+            className="underline"
+          >
+            Summer Pass
+          </a>{" "}
+          today, <br className="sm:hidden" /> only available until July 31
         </div>
       </div>
       <div className="flex md:flex-row flex-col w-fit gap-8 justify-center mx-auto pt-3 items-stretch">
