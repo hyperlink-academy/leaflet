@@ -54,7 +54,14 @@ export const UpgradeContent = () => {
             />
             <div className="flex gap-1 items-baseline justify-center">
               <div className="text-2xl font-bold leading-tight">
-                {cadence === "year" ? "$120" : "$12"}
+                {cadence === "year" ? (
+                  <div className="flex gap-1">
+                    <div className="relative">$120</div>
+                    <div>$90</div>
+                  </div>
+                ) : (
+                  "$12"
+                )}
               </div>
               <div className="text-secondary pb-4">
                 {cadence === "year" ? "/year" : "/month"}
@@ -91,10 +98,17 @@ const UpgradeModal = (props: {
   );
 };
 
-export const InlineUpgradeToPro = (props: { compact?: boolean }) => {
+export const InlineUpgradeToPro = (props: {
+  compact?: boolean;
+  onClick?: () => void;
+}) => {
   return (
     <div className="text-center  text-secondary">
-      <UpgradeToProButton fullWidth compact={props.compact} />
+      <UpgradeToProButton
+        fullWidth
+        compact={props.compact}
+        onClick={props.onClick}
+      />
       <div
         className={`${props.compact ? `text-sm` : "text-base"} leading-snug text-tertiary pt-2`}
       >
@@ -107,20 +121,21 @@ export const InlineUpgradeToPro = (props: { compact?: boolean }) => {
 export const UpgradeToProButton = (props: {
   fullWidth?: boolean;
   compact?: boolean;
+  // When provided, the button defers opening the modal to the caller (used
+  // when the modal must live outside a closing container like a popover).
+  onClick?: () => void;
 }) => {
-  return (
-    <UpgradeModal
-      asChild
-      trigger={
-        <ButtonPrimary
-          type="button"
-          compact={props.compact}
-          fullWidth={props.fullWidth}
-          className={props.compact ? `text-sm` : "text-base"}
-        >
-          Upgrade to Leaflet Pro!
-        </ButtonPrimary>
-      }
-    />
+  let button = (
+    <ButtonPrimary
+      type="button"
+      compact={props.compact}
+      fullWidth={props.fullWidth}
+      className={props.compact ? `text-sm` : "text-base"}
+      onClick={props.onClick}
+    >
+      Upgrade to Leaflet Pro!
+    </ButtonPrimary>
   );
+  if (props.onClick) return button;
+  return <UpgradeModal asChild trigger={button} />;
 };

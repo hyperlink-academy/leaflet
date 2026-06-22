@@ -4,6 +4,7 @@ import { useDomainStatus } from "./useDomainStatus";
 import { getDomainAssignment } from "./domainAssignment";
 import { Identity } from "components/IdentityProvider";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import { EmptyState } from "components/EmptyState";
 
 export type CustomDomain = NonNullable<Identity>["custom_domains"][number];
 
@@ -24,6 +25,10 @@ export function DomainList(props: {
   let unassignedDomains = domains.filter(
     (d) => getDomainAssignment(d).type === "unassigned",
   );
+
+  if (pubDomains.length < 0) {
+    <EmptyState container="none" title="no domains yet..." />;
+  }
 
   return (
     <div className="flex flex-col gap-2 text-secondary">

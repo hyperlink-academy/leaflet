@@ -34,7 +34,7 @@ export const Avatar = (props: {
   else
     return (
       <div
-        className={` relative bg-[var(--accent-light)] flex rounded-full shrink-0 border border-border-light place-items-center justify-center text-accent-1 ${sizeClassName}`}
+        className={` relative bg-[var(--accent-light)] flex rounded-full shrink-0 border border-border-light place-items-center justify-center text-accent-1 ${sizeClassName} ${props.className}`}
       >
         <AccountTiny
           className={
