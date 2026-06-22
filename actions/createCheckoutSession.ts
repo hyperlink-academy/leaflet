@@ -33,16 +33,16 @@ export async function createCheckoutSession(
     customerId = existingSub.stripe_customer_id;
   }
 
-  const successUrl = new URL(
-    "/api/checkout/success",
-    process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub",
-  );
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+
+  const successUrl = new URL("/api/checkout/success", appUrl);
   successUrl.searchParams.set("session_id", "{CHECKOUT_SESSION_ID}");
   if (returnUrl) {
     successUrl.searchParams.set("return", returnUrl);
   }
 
-  const cancelUrl = returnUrl || process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+  // Stripe requires an absolute URL; returnUrl is a relative path like "/home".
+  const cancelUrl = returnUrl ? new URL(returnUrl, appUrl).toString() : appUrl;
 
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
