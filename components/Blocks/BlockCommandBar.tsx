@@ -58,8 +58,15 @@ export const BlockCommandBar = ({
       ) ?? false;
     const matchesSearch = matchesName || matchesAlternate;
     const isVisible = !pub || !command.hiddenInPublication;
-    const allowedInContext = !command.publicationOnly || inPublicationEdit;
-    return matchesSearch && isVisible && allowedInContext;
+    // Publication-only blocks (post list, subscribe) are available on any
+    // leaflet within a publication — both posts and the publication's pages.
+    // pub is also set for standalone published docs (with no publication),
+    // so gate on the joined publication record rather than pub itself.
+    const allowedInContext = !command.publicationOnly || !!pub?.publications;
+    // Subpage/canvas blocks don't belong in a publication's own pages.
+    const allowedOnPage =
+      !command.hiddenOnPublicationPage || !inPublicationEdit;
+    return matchesSearch && isVisible && allowedInContext && allowedOnPage;
   });
 
   return (

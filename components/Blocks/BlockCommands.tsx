@@ -109,6 +109,7 @@ type Command = {
   type: string;
   alternateNames?: string[];
   hiddenInPublication?: boolean;
+  hiddenOnPublicationPage?: boolean;
   publicationOnly?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
@@ -369,6 +370,7 @@ export const blockCommands: Command[] = [
     name: "New Page",
     icon: <BlockDocPageSmall />,
     type: "page",
+    hiddenOnPublicationPage: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");
@@ -408,6 +410,7 @@ export const blockCommands: Command[] = [
     name: "New Canvas",
     icon: <BlockCanvasPageSmall />,
     type: "page",
+    hiddenOnPublicationPage: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");
@@ -443,7 +446,7 @@ export const blockCommands: Command[] = [
     },
   },
 
-  // PUBLICATION BLOCKS — only shown when editing a publication page
+  // PUBLICATION BLOCKS — shown anywhere within a publication (posts and publication pages)
   {
     name: "Post List",
     icon: <PostListSmall />,
