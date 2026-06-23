@@ -395,11 +395,45 @@ const backspace =
 
     if (!block || !propsRef.current.previousBlock) return finish(false);
 
+    let mergedBlock = propsRef.current.previousBlock;
+    let removedBlock = {
+      value: propsRef.current.entityID,
+      type: propsRef.current.type,
+      parent: propsRef.current.parent,
+    };
+
     mutate(
       repRef.current?.mutate.removeBlock({
         blockEntity: propsRef.current.entityID,
       }),
     );
+
+    // Undo recreates the removed block (via removeBlock's undo) but leaves the
+    // caret in the block we merged into; restore it to the start of the
+    // recreated block so undo lands where the backspace began. Added before the
+    // text-merge entry so it runs last on undo — after the block exists again.
+    //
+    // The recreated block's editor mounts with an empty doc and only loads its
+    // text once the restored block/text fact lands and ySync inserts it. Setting
+    // the caret to the start before that insertion lets ySync map the caret to
+    // after the inserted text (the end), so poll until the editor has mounted
+    // and its content has loaded before placing the caret at the start.
+    um.add({
+      undo: () => {
+        let attempts = 0;
+        let run = () => {
+          let editor =
+            useEditorStates.getState().editorStates[removedBlock.value];
+          if (!editor?.view || editor.editor.doc.content.size <= 2) {
+            if (attempts++ < 50) setTimeout(run, 10);
+            return;
+          }
+          focusBlock(removedBlock, { type: "start" });
+        };
+        run();
+      },
+      redo: () => {},
+    });
 
     let tr = block.editor.tr;
 
@@ -415,10 +449,18 @@ const backspace =
       );
     }
 
-    let newState = block.editor.apply(tr);
-    setEditorState(propsRef.current.previousBlock.value, {
-      editor: newState,
-    });
+    // Dispatch through the previous block's view rather than applying the state
+    // directly so its dispatchTransaction records the merged text via
+    // trackUndoRedo; externalUndoGroup folds that entry into this backspace's
+    // undo group. Applying directly left the merged text with no undo entry, so
+    // it survived the undo. Fall back to a direct apply if the view is absent.
+    tr.setMeta("externalUndoGroup", true);
+    if (block.view) {
+      block.view.dispatch(tr);
+    } else {
+      let newState = block.editor.apply(tr);
+      setEditorState(mergedBlock.value, { editor: newState });
+    }
 
     return finish(true);
   };

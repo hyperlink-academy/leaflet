@@ -44,7 +44,11 @@ export const BlockCommandBar = ({
 
     const tr = existingState.editor.tr;
     tr.deleteRange(1, tr.doc.content.size - 1);
-    setEditorState(entityID, { editor: existingState.editor.apply(tr) });
+    // Dispatch through the view so trackUndoRedo records an inverse entry;
+    // a direct apply left the cleared scaffolding text with no inverse and it
+    // reappeared on redo.
+    if (existingState.view) existingState.view.dispatch(tr);
+    else setEditorState(entityID, { editor: existingState.editor.apply(tr) });
   };
 
   let commandResults = blockCommands.filter((command) => {

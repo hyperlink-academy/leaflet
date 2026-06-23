@@ -494,19 +494,11 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
           let editor = useEditorStates.getState().editorStates[props.entityID];
 
           let editorState = editor?.editor;
-          if (editorState) {
-            editor?.view?.focus();
+          if (editorState && editor?.view) {
+            editor.view.focus();
             let tr = editorState.tr.insertText("/", 1);
             tr.setSelection(TextSelection.create(tr.doc, 2));
-            useEditorStates.setState((s) => ({
-              editorStates: {
-                ...s.editorStates,
-                [props.entityID]: {
-                  ...s.editorStates[props.entityID]!,
-                  editor: editorState!.apply(tr),
-                },
-              },
-            }));
+            editor.view.dispatch(tr);
           }
           focusBlock(
             {

@@ -5,7 +5,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
-import { useEditorStates } from "src/state/useEditorState";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
 import { UndoManager } from "src/undoManager";
 import { focusBlock } from "src/utils/focusBlock";
@@ -83,24 +83,18 @@ async function createBlockWithType(
 }
 
 function clearCommandSearchText(entityID: string) {
-  useEditorStates.setState((s) => {
-    let existingState = s.editorStates[entityID];
-    if (!existingState) {
-      return s;
-    }
-
-    let tr = existingState.editor.tr;
-    tr.deleteRange(1, tr.doc.content.size - 1);
-    return {
-      editorStates: {
-        ...s.editorStates,
-        [entityID]: {
-          ...existingState,
-          editor: existingState.editor.apply(tr),
-        },
-      },
-    };
-  });
+  let existingState = useEditorStates.getState().editorStates[entityID];
+  if (!existingState) return;
+  let tr = existingState.editor.tr;
+  tr.deleteRange(1, tr.doc.content.size - 1);
+  // Dispatch through the view so trackUndoRedo records an inverse entry;
+  // a direct apply left the cleared "/query" scaffolding with no inverse and
+  // it reappeared on redo. Fall back to a direct state write if unmounted.
+  if (existingState.view) {
+    existingState.view.dispatch(tr);
+  } else {
+    setEditorState(entityID, { editor: existingState.editor.apply(tr) });
+  }
 }
 
 type Command = {
