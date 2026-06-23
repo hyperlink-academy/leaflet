@@ -666,6 +666,12 @@ const enter =
           type: blockType,
           position,
         });
+        // Splitting a folded heading would drop the new block into its hidden
+        // section; unfold so the freshly created block stays visible.
+        if (
+          useUIState.getState().foldedBlocks.includes(propsRef.current.entityID)
+        )
+          useUIState.getState().toggleFold(propsRef.current.entityID);
       }
       // if you are are the beginning of a heading, move the heading level to the new block
       if (blockType === "heading") {

@@ -6,8 +6,12 @@ import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
-import { getBlocksWithType } from "src/replicache/getBlocks";
-import { indent, outdentFull, multiSelectOutdent } from "src/utils/list-operations";
+import { getBlocksWithType, isBlockHidden } from "src/replicache/getBlocks";
+import {
+  indent,
+  outdentFull,
+  multiSelectOutdent,
+} from "src/utils/list-operations";
 import { addShortcut, Shortcut } from "src/shortcuts";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
@@ -57,14 +61,7 @@ export function SelectionManager() {
               ),
             )) || [];
           let folded = useUIState.getState().foldedBlocks;
-          blocks = blocks.filter(
-            (f) =>
-              !f.listData ||
-              !f.listData.path.find(
-                (path) =>
-                  folded.includes(path.entity) && f.value !== path.entity,
-              ),
-          );
+          blocks = blocks.filter((f) => !isBlockHidden(f, folded));
           let lastBlock = blocks[blocks.length - 1];
           if (lastBlock) focusBlock(lastBlock, { type: "end" });
         },
@@ -261,7 +258,8 @@ export function SelectionManager() {
         key: "Enter",
         handler: async () => {
           let [sortedBlocks, siblings] = await getSortedSelectionBound();
-          if (!sortedBlocks[0].listData) return;
+          if (!sortedBlocks[0].listData && sortedBlocks[0].type !== "heading")
+            return;
           useUIState.getState().toggleFold(sortedBlocks[0].value);
         },
       },
@@ -489,7 +487,10 @@ export function SelectionManager() {
 
           if (e.shiftKey) {
             let { foldedBlocks, toggleFold } = useUIState.getState();
-            await multiSelectOutdent(sortedSelection, siblings, rep, { foldedBlocks, toggleFold });
+            await multiSelectOutdent(sortedSelection, siblings, rep, {
+              foldedBlocks,
+              toggleFold,
+            });
           } else {
             for (let i = 0; i < siblings.length; i++) {
               let block = siblings[i];
@@ -511,7 +512,10 @@ export function SelectionManager() {
               if (!block.listData || !previousBlock.listData) continue;
               let { foldedBlocks, toggleFold } = useUIState.getState();
 
-              await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
+              await indent(block, previousBlock, rep, {
+                foldedBlocks,
+                toggleFold,
+              });
             }
           }
         }

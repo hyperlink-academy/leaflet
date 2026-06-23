@@ -248,7 +248,9 @@ export const inputrules = (
         if (anchorInCodeMark(state, start, end)) return null;
         let tr = state.tr.delete(start, end);
         setTimeout(() => {
-          let view = useEditorStates.getState().editorStates[propsRef.current.entityID]?.view;
+          let view =
+            useEditorStates.getState().editorStates[propsRef.current.entityID]
+              ?.view;
           if (!view || !repRef.current) return;
           insertFootnote(
             view,

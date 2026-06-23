@@ -49,6 +49,10 @@ export type Block = {
   position: string;
   value: string;
   type: Fact<"block/type">["data"]["value"];
+  headingLevel?: number;
+  // Ancestor heading entity IDs whose sections contain this block (outermost
+  // first). The heading-folding analog of listData.path; see computeHeadingSections.
+  headingPath?: string[];
   listData?: {
     checklist?: boolean;
     checked?: boolean;
@@ -68,6 +72,7 @@ export type BlockProps = {
   nextBlock: Block | null;
   previousBlock: Block | null;
   nextPosition: string | null;
+  headingFoldable?: boolean;
 } & Block;
 
 export const Block = memo(function Block(
@@ -188,7 +193,7 @@ export const Block = memo(function Block(
         !props.preview && entity_set.permissions.write ? handleDrop : undefined
       }
       className={`
-        blockWrapper relative
+        blockWrapper group/blockWrapper relative
         flex flex-row gap-2
         px-3 sm:px-4
         z-1 w-full
@@ -235,6 +240,7 @@ function deepEqualsBlockProps(
     prevProps.value !== nextProps.value ||
     prevProps.type !== nextProps.type ||
     prevProps.nextPosition !== nextProps.nextPosition ||
+    prevProps.headingFoldable !== nextProps.headingFoldable ||
     prevProps.preview !== nextProps.preview
   ) {
     return false;
@@ -338,6 +344,9 @@ export const BaseBlock = (
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
     <>
+      {props.type === "heading" && props.headingFoldable && (
+        <HeadingFoldButton {...props} />
+      )}
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -553,6 +562,40 @@ const NonTextBlockOptions = (props: {
         <DeleteTiny />
       </button>
     </div>
+  );
+};
+
+// Disclosure triangle for folding a heading's section. Lives in the left gutter
+// (absolutely positioned in the wrapper padding) so it never shifts the heading
+// text, and only shows on hover unless the heading is currently folded.
+const HeadingFoldButton = (props: { entityID: string }) => {
+  let folded = useUIState((s) => s.foldedBlocks.includes(props.entityID));
+  let headingLevel = useEntity(
+    props.entityID,
+    "block/heading-level",
+  )?.data.value;
+  let top =
+    headingLevel === 1
+      ? "top-[22px]"
+      : headingLevel === 2
+        ? "top-[13px]"
+        : "top-[9px]";
+  return (
+    <button
+      className={`headingFoldButton absolute left-0 ${top} p-1 -ml-1 sm:-ml-0.5 text-tertiary hover:text-secondary transition-opacity
+        ${
+          folded
+            ? "text-secondary opacity-100"
+            : "opacity-0 sm:group-hover/blockWrapper:opacity-100"
+        }`}
+      onClick={() => useUIState.getState().toggleFold(props.entityID)}
+    >
+      <ArrowDownTiny
+        className={`transition-transform ${folded ? "-rotate-90" : ""}`}
+        width={14}
+        height={14}
+      />
+    </button>
   );
 };
 

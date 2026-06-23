@@ -243,6 +243,46 @@ const moveChildren: Mutation<{
   }
 };
 
+// Relocate a contiguous run of blocks (e.g. a folded heading's whole section)
+// under the same parent, packing them just after `after` (or at the start when
+// null) while preserving their relative order. Each block's card/block fact is
+// overwritten in place (reusing its id) so the whole move is one undo entry.
+const moveBlocks: Mutation<{
+  parent: string;
+  blocks: string[];
+  after: string | null;
+}> = async (args, ctx) => {
+  let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
+    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+  );
+  let movingIds = new Set(args.blocks);
+  let moving = args.blocks
+    .map((v) => children.find((c) => c.data.value === v))
+    .filter((c): c is NonNullable<typeof c> => !!c);
+  if (moving.length === 0) return;
+  let rest = children.filter((c) => !movingIds.has(c.data.value));
+  let anchorIndex =
+    args.after === null
+      ? -1
+      : rest.findIndex((c) => c.data.value === args.after);
+  let before = rest[anchorIndex]?.data.position || null;
+  let after = rest[anchorIndex + 1]?.data.position || null;
+  let position = generateKeyBetween(before, after);
+  for (let block of moving) {
+    await ctx.assertFact({
+      id: block.id,
+      entity: args.parent,
+      attribute: "card/block",
+      data: {
+        type: "ordered-reference",
+        value: block.data.value,
+        position,
+      },
+    });
+    position = generateKeyBetween(position, after);
+  }
+};
+
 const outdentBlock: Mutation<{
   oldParent: string;
   newParent: string;
@@ -1147,6 +1187,7 @@ export const mutations = {
   addPublicationNavLink,
   removePublicationNavEntry,
   moveBlock,
+  moveBlocks,
   assertFact,
   retractFact,
   removeBlock,
