@@ -3,9 +3,8 @@ import type Stripe from "stripe";
 import { getStripe } from "stripe/client";
 import { syncConnectedAccountState } from "stripe/connect";
 
-// Connect (Accounts v2) emits "thin" v2 events to the platform's own account
-// scope — a separate endpoint and signing secret from the v1 webhook that
-// handles platform (Leaflet Pro) billing.
+// Connect (Accounts v2) emits v2 events with their own signing secret, separate
+// from the v1 webhook that handles platform (Leaflet Pro) billing.
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
@@ -22,8 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Every v2.core.account[*] event references the account in related_object;
-  // refetch it and persist the latest capability/requirements state.
+  // Account events carry the account in related_object; refetch and persist it.
   const related = (notification as Stripe.Events.UnknownEventNotification)
     .related_object;
   if (

@@ -1,9 +1,8 @@
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 
-// Platform fee (basis points) taken from each payment a publisher collects.
-// Applied as application_fee_amount when the actual payment flows are built;
-// kept here so the rate lives in one place.
+// Platform fee taken from each payment a publisher collects, applied as
+// application_fee_amount on destination charges.
 export const PLATFORM_FEE_BPS = 500; // 5%
 
 export function platformFeeAmount(amountInCents: number): number {
@@ -16,10 +15,11 @@ export type ConnectedAccountState = {
   details_submitted: boolean;
 };
 
-// Create a Stripe Connect (Accounts v2) account configured as a merchant so the
-// publisher can collect payments. Stripe is the fees/losses collector (the
-// Express model); revisit defaults.responsibilities if we ever take on platform
-// liability for negative balances.
+// Stripe Connect (Accounts v2) merchant account so the publisher can collect
+// payments. A "full" dashboard requires both fees_collector and losses_collector
+// to be "stripe"; other combinations are rejected as
+// account_controller_unsupported_configuration. The publisher owns the account
+// and carries loss liability; our platform cut is independent (application_fee_amount).
 export async function createConnectedMerchantAccount(args: {
   email: string;
   displayName?: string;
@@ -28,15 +28,14 @@ export async function createConnectedMerchantAccount(args: {
   return getStripe().v2.core.accounts.create({
     contact_email: args.email,
     display_name: args.displayName,
-    // Country is required to onboard a merchant; defaulting to US until we
-    // collect the publisher's real country for non-US payouts.
+    // Required to onboard; default US until we collect the publisher's country.
     identity: { country: "US" },
     configuration: {
       merchant: {
         capabilities: { card_payments: { requested: true } },
       },
     },
-    dashboard: "express",
+    dashboard: "full",
     defaults: {
       responsibilities: {
         fees_collector: "stripe",
@@ -67,9 +66,8 @@ export async function createOnboardingLink(args: {
   });
 }
 
-// Pull the account's current capability/requirements state from Stripe and
-// persist it. We read via the v1 Accounts endpoint, which returns the familiar
-// charges_enabled/payouts_enabled/details_submitted flags for v2 accounts too.
+// The v1 Accounts endpoint returns the familiar charges_enabled/payouts_enabled/
+// details_submitted flags for v2 accounts too.
 export async function syncConnectedAccountState(
   stripeAccountId: string,
 ): Promise<ConnectedAccountState> {

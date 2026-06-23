@@ -3,22 +3,21 @@
 import { useEffect, useState } from "react";
 import { mutate } from "swr";
 import { ButtonPrimary } from "components/Buttons";
+import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
 import { useIdentityData } from "components/IdentityProvider";
 import { startStripeConnectOnboarding } from "actions/startStripeConnectOnboarding";
 import { refreshStripeConnectAccount } from "actions/refreshStripeConnectAccount";
 
-// Shared status + onboarding control for collecting payments via Stripe Connect.
-// Rendered both in publication settings (Monetization) and account settings.
+// Status + onboarding control for collecting payments via Stripe Connect.
 export function ConnectPayments() {
   let { identity } = useIdentityData();
   let connected = identity?.connectedAccount ?? null;
   let [loading, setLoading] = useState(false);
   let [error, setError] = useState<string | null>(null);
 
-  // Onboarding returns the user to the page they left; refresh a pending
-  // account's status on mount so the UI reflects completion without waiting on
-  // the webhook.
+  // Refresh a pending account's status on mount so returning from onboarding
+  // reflects completion without waiting on the webhook.
   useEffect(() => {
     if (connected && !connected.charges_enabled) {
       refreshStripeConnectAccount().then((r) => {
@@ -50,7 +49,19 @@ export function ConnectPayments() {
           ? "Payments are enabled — readers can pay you, and Leaflet collects a small platform fee on each payment."
           : "Connect a Stripe account to collect payments from your readers. Leaflet takes a small platform fee on each payment."}
       </div>
-      {!active && (
+      {active ? (
+        // Merchant accounts have their own full Stripe dashboard; the publisher
+        // logs in with their own credentials, so a static link is all we hand off.
+        <a
+          href="https://dashboard.stripe.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-max flex gap-1 items-center font-bold text-accent-contrast"
+        >
+          Manage on Stripe
+          <ExternalLinkTiny />
+        </a>
+      ) : (
         <ButtonPrimary
           compact
           className="w-max"
