@@ -153,9 +153,9 @@ export const Pricing = () => {
               </li>
               <hr className="border-border-light" />
               <li>
-                Group Publication{" "}
+                <div>Group Publications</div>
                 <div className="text-tertiary text-base">
-                  Invite unlimited collaborators
+                  Invite unlimited contributors
                 </div>
               </li>
 
@@ -163,8 +163,7 @@ export const Pricing = () => {
               <li>
                 <div>Coming soon!</div>
                 <div className="text-tertiary text-base">
-                  Memberships, group publications, <br />
-                  and more
+                  Memberships and more
                 </div>
               </li>
             </ul>
