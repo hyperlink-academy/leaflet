@@ -341,8 +341,8 @@ export const AtSubscribeSuccess = (props: {}) => {
   return (
     <div className="flex flex-col text-center justify-center p-4 text-secondary max-w-md">
       <h2 className="text-primary pb-1">You've Subscribed!</h2>
-      You'll recieve new posts in the <br />
-      <Link href={"/reader"}>Leaflet Reader</Link>
+      You'll receive new posts in the <br />
+      <Link href={"https://leaflet.pub/reader"}>Leaflet Reader</Link>
       <br />
       <span className="text-tertiary text-sm">
         or any standard.site enabled reader!
