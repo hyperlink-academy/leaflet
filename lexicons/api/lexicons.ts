@@ -1589,6 +1589,11 @@ export const schemaDict = {
               type: 'string',
             },
           },
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            description: 'Show at most this many posts.',
+          },
         },
       },
     },

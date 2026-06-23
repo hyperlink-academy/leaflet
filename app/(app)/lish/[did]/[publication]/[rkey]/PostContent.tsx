@@ -21,10 +21,10 @@ import {
   PubLeafletBlocksButton,
   PubLeafletBlocksSignup,
 } from "lexicons/api";
-import {
-  PublicationPostsList,
-  type PublicationPostsListPost,
-} from "../PublicationPostsList";
+import { type PublicationPostsListPost } from "../PublicationPostsList";
+import { PaginatedPublicationPostsList } from "../PaginatedPublicationPostsList";
+import { postsListFilterKey } from "../postsListPagination";
+import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -59,7 +59,12 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
-  posts: PublicationPostsListPost[];
+  // Per tag-filter signature (postsListFilterKey): the full ordered URI list
+  // plus an SSR-seeded, byline-resolved first batch.
+  initialByFilter: Record<
+    string,
+    { uris: string[]; initialPosts: PublicationPostsListPost[] }
+  >;
 };
 
 export function PostContent({
@@ -308,21 +313,21 @@ export let Block = ({
       if (!postsListData) return null;
       const view: "small" | "medium" =
         b.block.view === "small" ? "small" : "medium";
-      const filterByTags = b.block.filterByTags;
-      const posts =
-        filterByTags && filterByTags.length > 0
-          ? postsListData.posts.filter((p) =>
-              p.record.tags?.some((t) => filterByTags.includes(t)),
-            )
-          : postsListData.posts;
+      const key = postsListFilterKey(b.block.filterByTags);
+      const seed = postsListData.initialByFilter[key];
+      if (!seed) return null;
       return (
         <div className={className} {...blockProps}>
-          <PublicationPostsList
+          <PaginatedPublicationPostsList
             publication={postsListData.publication}
             publicationRecord={postsListData.publicationRecord}
-            posts={posts}
+            listId={`${postsListData.publication.uri}:${key}`}
+            uris={seed.uris}
+            initialPosts={seed.initialPosts}
+            loadBatch={getPostsByUris}
             view={view}
             highlightFirstPost={!!b.block.highlightFirstPost}
+            limit={b.block.limit}
           />
         </div>
       );
