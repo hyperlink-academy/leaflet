@@ -1,25 +1,21 @@
-import { GalleryImageItem } from "./GalleryImageItem";
+import { ReactNode } from "react";
+import { GalleryItemClasses } from "./shared";
 
 export function ImageGalleryStrip(props: {
-  imageEntities: string[];
+  count: number;
   gap: number;
-  editable: boolean;
-  selected: boolean;
-  onImageClick: (index: number) => void;
+  renderItem: (index: number, classes: GalleryItemClasses) => ReactNode;
 }) {
   return (
     <div className="flex flex-col w-full" style={{ gap: `${props.gap}px` }}>
-      {props.imageEntities.map((entityID, i) => (
-        <GalleryImageItem
-          key={entityID}
-          entityID={entityID}
-          editable={props.editable}
-          selected={props.selected}
-          onClick={() => props.onImageClick(i)}
-          className="w-full"
-          buttonClassName="block w-full"
-          imgClassName="w-full h-auto"
-        />
+      {Array.from({ length: props.count }).map((_, i) => (
+        <div key={i} className="contents">
+          {props.renderItem(i, {
+            className: "w-full",
+            buttonClassName: "block w-full",
+            imgClassName: "w-full h-auto",
+          })}
+        </div>
       ))}
     </div>
   );

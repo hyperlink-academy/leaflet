@@ -34,6 +34,7 @@
             "pub.leaflet.blocks.blockquote",
             "pub.leaflet.blocks.header",
             "pub.leaflet.blocks.image",
+            "pub.leaflet.blocks.imageGallery",
             "pub.leaflet.blocks.unorderedList",
             "pub.leaflet.blocks.orderedList",
             "pub.leaflet.blocks.website",

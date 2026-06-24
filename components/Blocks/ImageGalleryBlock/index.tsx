@@ -14,7 +14,11 @@ import { DEFAULT_GAP, DEFAULT_FORMAT, DEFAULT_MAX_WIDTH } from "./shared";
 import { ImageGalleryGrid } from "./ImageGalleryGrid";
 import { ImageGalleryStrip } from "./ImageGalleryStrip";
 import { ImageGalleryCarousel } from "./ImageGalleryCarousel";
-import { ImageGalleryLightbox } from "./ImageGalleryLightbox";
+import {
+  ImageGalleryLightbox,
+  EditorLightboxSlide,
+} from "./ImageGalleryLightbox";
+import { EditorGalleryImageItem } from "./GalleryImageItem";
 import { ImageGalleryOptions, EditGalleryImages } from "./ImageGalleryOptions";
 
 export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
@@ -108,27 +112,45 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
     >
       {format === "carousel" ? (
         <ImageGalleryCarousel
-          imageEntities={imageEntities}
-          editable={editable}
-          selected={!!isSelected}
-          onImageClick={openLightbox}
+          count={imageEntities.length}
+          renderItem={(i, classes) => (
+            <EditorGalleryImageItem
+              entityID={imageEntities[i]}
+              editable={editable}
+              selected={!!isSelected}
+              onClick={() => openLightbox(i)}
+              {...classes}
+            />
+          )}
         />
       ) : format === "strip" ? (
         <ImageGalleryStrip
-          imageEntities={imageEntities}
+          count={imageEntities.length}
           gap={gap}
-          editable={editable}
-          selected={!!isSelected}
-          onImageClick={openLightbox}
+          renderItem={(i, classes) => (
+            <EditorGalleryImageItem
+              entityID={imageEntities[i]}
+              editable={editable}
+              selected={!!isSelected}
+              onClick={() => openLightbox(i)}
+              {...classes}
+            />
+          )}
         />
       ) : (
         <ImageGalleryGrid
-          imageEntities={imageEntities}
+          count={imageEntities.length}
           gap={gap}
           maxWidth={maxWidth}
-          editable={editable}
-          selected={!!isSelected}
-          onImageClick={openLightbox}
+          renderItem={(i, classes) => (
+            <EditorGalleryImageItem
+              entityID={imageEntities[i]}
+              editable={editable}
+              selected={!!isSelected}
+              onClick={() => openLightbox(i)}
+              {...classes}
+            />
+          )}
         />
       )}
 
@@ -143,9 +165,10 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
       )}
 
       <ImageGalleryLightbox
-        imageEntities={imageEntities}
+        count={imageEntities.length}
         index={lightboxIndex}
         onIndexChange={setLightboxIndex}
+        renderSlide={(i) => <EditorLightboxSlide entityID={imageEntities[i]} />}
       />
     </BlockLayout>
   );

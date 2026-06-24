@@ -14,6 +14,7 @@ import type * as PubLeafletBlocksText from '../blocks/text'
 import type * as PubLeafletBlocksBlockquote from '../blocks/blockquote'
 import type * as PubLeafletBlocksHeader from '../blocks/header'
 import type * as PubLeafletBlocksImage from '../blocks/image'
+import type * as PubLeafletBlocksImageGallery from '../blocks/imageGallery'
 import type * as PubLeafletBlocksUnorderedList from '../blocks/unorderedList'
 import type * as PubLeafletBlocksOrderedList from '../blocks/orderedList'
 import type * as PubLeafletBlocksWebsite from '../blocks/website'
@@ -56,6 +57,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksBlockquote.Main>
     | $Typed<PubLeafletBlocksHeader.Main>
     | $Typed<PubLeafletBlocksImage.Main>
+    | $Typed<PubLeafletBlocksImageGallery.Main>
     | $Typed<PubLeafletBlocksUnorderedList.Main>
     | $Typed<PubLeafletBlocksOrderedList.Main>
     | $Typed<PubLeafletBlocksWebsite.Main>

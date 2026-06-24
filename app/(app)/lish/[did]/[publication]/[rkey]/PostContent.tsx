@@ -4,6 +4,7 @@ import {
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
+  PubLeafletBlocksImageGallery,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksOrderedList,
@@ -42,6 +43,7 @@ import {
 } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
+import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
@@ -497,6 +499,13 @@ export let Block = ({
               </Popover>
             </div>
           )}
+        </div>
+      );
+    }
+    case PubLeafletBlocksImageGallery.isMain(b.block): {
+      return (
+        <div className={className} {...blockProps}>
+          <PublishedImageGallery block={b.block} did={did} />
         </div>
       );
     }

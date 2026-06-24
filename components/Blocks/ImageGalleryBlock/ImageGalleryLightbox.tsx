@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { useGalleryImage } from "./shared";
+import { GalleryImage, useGalleryImage } from "./shared";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 
 export function ImageGalleryLightbox(props: {
-  imageEntities: string[];
+  count: number;
   index: number | null;
   onIndexChange: (index: number | null) => void;
+  renderSlide: (index: number) => ReactNode;
 }) {
   let open = props.index !== null;
 
@@ -35,8 +35,9 @@ export function ImageGalleryLightbox(props: {
 
           {open && (
             <LightboxContent
-              imageEntities={props.imageEntities}
+              count={props.count}
               initialIndex={props.index ?? 0}
+              renderSlide={props.renderSlide}
               onClose={() => props.onIndexChange(null)}
             />
           )}
@@ -47,13 +48,14 @@ export function ImageGalleryLightbox(props: {
 }
 
 function LightboxContent(props: {
-  imageEntities: string[];
+  count: number;
   initialIndex: number;
+  renderSlide: (index: number) => ReactNode;
   onClose: () => void;
 }) {
   let scrollRef = useRef<HTMLDivElement>(null);
   let [current, setCurrent] = useState(props.initialIndex);
-  let count = props.imageEntities.length;
+  let count = props.count;
 
   // Jump to the opened image on mount, without a scroll animation.
   useEffect(() => {
@@ -96,12 +98,12 @@ function LightboxContent(props: {
         onClick={props.onClose}
         className="w-full h-full grid grid-rows-1 grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory no-scrollbar"
       >
-        {props.imageEntities.map((entityID) => (
+        {Array.from({ length: count }).map((_, i) => (
           <div
-            key={entityID}
+            key={i}
             className="h-full snap-center snap-always flex flex-col items-center justify-center gap-3"
           >
-            <LightboxSlide entityID={entityID} />
+            {props.renderSlide(i)}
           </div>
         ))}
       </div>
@@ -145,27 +147,32 @@ function LightboxContent(props: {
   );
 }
 
-function LightboxSlide(props: { entityID: string }) {
+// Presentational slide shared by editor and published lightboxes.
+export function LightboxSlide(props: { image: GalleryImage }) {
+  let { image } = props;
+  return (
+    <div className="flex-1 h-full w-full flex flex-col gap-3 min-h-0 justify-center items-center px-8">
+      <img
+        alt={image.alt}
+        src={image.src}
+        className=" min-h-0 max-w-full object-contain"
+        onClick={(e) => e.stopPropagation()}
+      />
+      {image.alt && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0 max-w-full whitespace-pre-wrap text-bg-page text-sm    line-clamp-3"
+        >
+          {image.alt}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Editor variant: resolves the slide image from replicache.
+export function EditorLightboxSlide(props: { entityID: string }) {
   let image = useGalleryImage(props.entityID);
   if (!image) return null;
-  return (
-    <>
-      <div className="flex-1 h-full w-full flex flex-col gap-3 min-h-0 justify-center items-center px-8">
-        <img
-          alt={image.alt}
-          src={image.src}
-          className=" min-h-0 max-w-full object-contain"
-          onClick={(e) => e.stopPropagation()}
-        />
-        {image.alt && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="shrink-0 max-w-full whitespace-pre-wrap text-bg-page text-sm    line-clamp-3"
-          >
-            {image.alt}
-          </div>
-        )}
-      </div>
-    </>
-  );
+  return <LightboxSlide image={image} />;
 }

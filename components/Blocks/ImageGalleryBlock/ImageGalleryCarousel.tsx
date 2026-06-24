@@ -1,16 +1,14 @@
-import { useRef, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
-import { GalleryImageItem } from "./GalleryImageItem";
+import { GalleryItemClasses } from "./shared";
 
 export function ImageGalleryCarousel(props: {
-  imageEntities: string[];
-  editable: boolean;
-  selected: boolean;
-  onImageClick: (index: number) => void;
+  count: number;
+  renderItem: (index: number, classes: GalleryItemClasses) => ReactNode;
 }) {
   let scrollRef = useRef<HTMLDivElement>(null);
   let [current, setCurrent] = useState(0);
-  let count = props.imageEntities.length;
+  let count = props.count;
 
   // Derive the active slide from scroll position so native side-scrolling
   // (touch swipe, trackpad, shift+wheel) and the arrow buttons stay in sync.
@@ -34,19 +32,15 @@ export function ImageGalleryCarousel(props: {
         onScroll={onScroll}
         className="grid grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory no-scrollbar"
       >
-        {props.imageEntities.map((entityID, i) => (
+        {Array.from({ length: count }).map((_, i) => (
           <div
-            key={entityID}
+            key={i}
             className="snap-center snap-always flex items-center justify-center"
           >
-            <GalleryImageItem
-              entityID={entityID}
-              editable={props.editable}
-              selected={props.selected}
-              onClick={() => props.onImageClick(i)}
-              buttonClassName="block"
-              imgClassName="w-full max-h-[70vh] object-contain"
-            />
+            {props.renderItem(i, {
+              buttonClassName: "block",
+              imgClassName: "w-full max-h-[70vh] object-contain",
+            })}
           </div>
         ))}
       </div>

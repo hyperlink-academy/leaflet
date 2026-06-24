@@ -1,13 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { GalleryImageItem } from "./GalleryImageItem";
+import { ReactNode, useEffect, useRef, useState } from "react";
+import { GalleryItemClasses } from "./shared";
 
 export function ImageGalleryGrid(props: {
-  imageEntities: string[];
+  count: number;
   gap: number;
   maxWidth: number;
-  editable: boolean;
-  selected: boolean;
-  onImageClick: (index: number) => void;
+  renderItem: (index: number, classes: GalleryItemClasses) => ReactNode;
 }) {
   let containerRef = useRef<HTMLDivElement>(null);
   let [containerWidth, setContainerWidth] = useState(0);
@@ -29,12 +27,9 @@ export function ImageGalleryGrid(props: {
     containerWidth > 0
       ? Math.max(
           1,
-          Math.min(
-            Math.ceil(containerWidth / props.maxWidth),
-            props.imageEntities.length,
-          ),
+          Math.min(Math.ceil(containerWidth / props.maxWidth), props.count),
         )
-      : Math.min(props.imageEntities.length, 3);
+      : Math.min(props.count, 3);
 
   // Cap the grid's own width so that when there are fewer images than columns
   // would otherwise fit, each image stays at maxWidth rather than stretching.
@@ -54,21 +49,20 @@ export function ImageGalleryGrid(props: {
           gap: `${props.gap}px`,
         }}
       >
-        {props.imageEntities.map((entityID, i) => (
+        {Array.from({ length: props.count }).map((_, i) => (
           // Aspect ratio reserves each cell's natural height; align-items:
           // stretch makes every cell in a row match the tallest, and
           // object-cover fills the shorter ones.
-          <GalleryImageItem
-            key={entityID}
-            entityID={entityID}
-            editable={props.editable}
-            selected={props.selected}
-            onClick={() => props.onImageClick(i)}
-            className="w-full"
-            buttonClassName="relative w-full overflow-hidde flex place-items-center"
-            imgClassName="absolute inset-0 max-w-full max-h-full object-cover m-auto"
-            useAspectRatio
-          />
+          <div key={i} className="contents">
+            {props.renderItem(i, {
+              className: "w-full",
+              buttonClassName:
+                "relative w-full overflow-hidde flex place-items-center",
+              imgClassName:
+                "absolute inset-0 max-w-full max-h-full object-cover m-auto",
+              useAspectRatio: true,
+            })}
+          </div>
         ))}
       </div>
     </div>

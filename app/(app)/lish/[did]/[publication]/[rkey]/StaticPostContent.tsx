@@ -4,6 +4,7 @@ import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksImage,
+  PubLeafletBlocksImageGallery,
   PubLeafletBlocksMath,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
@@ -118,6 +119,26 @@ let Block = async ({
           width={b.block.aspectRatio?.width}
           src={blobRefToSrc(b.block.image.ref, did)}
         />
+      );
+    }
+    case PubLeafletBlocksImageGallery.isMain(b.block): {
+      // Feeds/email render statically: no interactivity, just a stack of the
+      // gallery's images.
+      return (
+        <div
+          className="flex flex-col w-full"
+          style={{ gap: `${b.block.gap ?? 8}px` }}
+        >
+          {b.block.images.map((image, index) => (
+            <img
+              key={index}
+              alt={image.alt}
+              height={image.aspectRatio.height}
+              width={image.aspectRatio.width}
+              src={blobRefToSrc(image.image.ref, did)}
+            />
+          ))}
+        </div>
       );
     }
     case PubLeafletBlocksText.isMain(b.block):

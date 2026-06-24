@@ -1,22 +1,19 @@
-import { useGalleryImage } from "./shared";
+import { ReactNode } from "react";
+import { GalleryImage, GalleryItemClasses, useGalleryImage } from "./shared";
 import { ImageAltButton } from "../ImageAltButton";
 
-// The image-plus-alt-overlay unit shared by every gallery format. Each format
-// supplies its own wrapper/button/img classes; the click-to-open button and the
-// ImageAltButton overlay are common.
-export function GalleryImageItem(props: {
-  entityID: string;
-  editable: boolean;
-  selected: boolean;
-  onClick: () => void;
-  className?: string;
-  buttonClassName?: string;
-  imgClassName?: string;
-  // Grid sizes each cell by the image's aspect ratio so cells in a row align.
-  useAspectRatio?: boolean;
-}) {
-  let image = useGalleryImage(props.entityID);
-  if (!image) return null;
+// The image-plus-overlay unit shared by every gallery format, editor and
+// published alike. Each format supplies its own wrapper/button/img classes; the
+// click-to-open button is common. `overlay` is the only per-context slot — the
+// editor passes its alt-edit button, published passes a read-only alt popover.
+export function GalleryImageItem(
+  props: {
+    image: GalleryImage;
+    onClick?: () => void;
+    overlay?: ReactNode;
+  } & GalleryItemClasses,
+) {
+  let { image } = props;
   return (
     <div className={`relative group/image ${props.className ?? ""}`}>
       <button
@@ -39,11 +36,38 @@ export function GalleryImageItem(props: {
           className={props.imgClassName}
         />
       </button>
-      <ImageAltButton
-        entityID={props.entityID}
-        selected={props.selected}
-        canEdit={props.editable}
-      />
+      {props.overlay}
     </div>
+  );
+}
+
+// Editor variant: resolves the image from replicache (preferring the in-flight
+// object URL) and overlays the alt-text editor.
+export function EditorGalleryImageItem(
+  props: {
+    entityID: string;
+    editable: boolean;
+    selected: boolean;
+    onClick: () => void;
+  } & GalleryItemClasses,
+) {
+  let image = useGalleryImage(props.entityID);
+  if (!image) return null;
+  return (
+    <GalleryImageItem
+      image={image}
+      onClick={props.onClick}
+      className={props.className}
+      buttonClassName={props.buttonClassName}
+      imgClassName={props.imgClassName}
+      useAspectRatio={props.useAspectRatio}
+      overlay={
+        <ImageAltButton
+          entityID={props.entityID}
+          selected={props.selected}
+          canEdit={props.editable}
+        />
+      }
+    />
   );
 }

@@ -14,7 +14,10 @@ import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { EditTiny } from "components/Icons/EditTiny";
 import { set } from "colorjs.io/fn";
 import { ImageAltButton } from "./ImageAltButton";
-import { ImageGalleryLightbox } from "./ImageGalleryBlock/ImageGalleryLightbox";
+import {
+  ImageGalleryLightbox,
+  EditorLightboxSlide,
+} from "./ImageGalleryBlock/ImageGalleryLightbox";
 import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
@@ -195,9 +198,10 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       </button>
       {!props.preview && (
         <ImageGalleryLightbox
-          imageEntities={[props.value]}
+          count={1}
           index={lightboxOpen ? 0 : null}
           onIndexChange={(i) => setLightboxOpen(i !== null)}
+          renderSlide={() => <EditorLightboxSlide entityID={props.value} />}
         />
       )}
       {!props.preview ? (
