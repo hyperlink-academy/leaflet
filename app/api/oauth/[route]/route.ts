@@ -75,9 +75,6 @@ export async function GET(
         );
         let sessionDid = existing?.identity.atp_did;
         if (existing && sessionDid) {
-          // No specific handle requested → reuse the session. A handle was
-          // requested → reuse only if it resolves to the same identity;
-          // a different or unresolvable handle falls through to the PDS.
           if (!handle)
             return handleAction(action, redirect || "/", existing.tokenId, true);
           if ((await resolveToDid(handle)) === sessionDid)
@@ -319,27 +316,39 @@ const handleAction = async (
   // retry rather than dropping the user back unsubscribed with no error.
   reauthOnSubscribeFailure = false,
 ) => {
-  let isAbsolute = redirectPath.includes("://");
-  let url = new URL(
-    redirectPath,
-    isAbsolute ? undefined : "https://example.com",
-  );
+  // Treat redirectPath as cross-domain only when it parses as an absolute
+  // http(s) URL — the same notion of "absolute" postAuthRedirect uses. A bare
+  // "://" substring test misreads a relative path that carries a URL in a query
+  // value, then throws in `new URL`.
+  let absoluteTarget: URL | null = null;
+  try {
+    let parsed = new URL(redirectPath);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:")
+      absoluteTarget = parsed;
+  } catch {}
+  let url = absoluteTarget ?? new URL(redirectPath, "https://example.com");
 
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
-    if (!result.success && reauthOnSubscribeFailure)
-      return redirect(
-        buildOauthLoginUrl({
-          reauth: true,
-          action: encodeActionToSearchParam(action),
-          redirect: redirectPath,
-        }),
-      );
-    if (result.success && result.hasFeed === false)
+    if (!result.success) {
+      if (reauthOnSubscribeFailure)
+        return redirect(
+          buildOauthLoginUrl({
+            reauth: true,
+            action: encodeActionToSearchParam(action),
+            redirect: redirectPath,
+          }),
+        );
+      // Retry exhausted or a normal post-PDS failure — surface the error rather
+      // than redirecting as though the subscribe had succeeded.
+      url.searchParams.set("showSubscribeError", "true");
+    } else if (result.hasFeed === false) {
       url.searchParams.set("showSubscribeSuccess", "true");
+    }
   }
 
-  if (isAbsolute) return redirect(await postAuthRedirect(url.toString(), authTokenId));
+  if (absoluteTarget)
+    return redirect(await postAuthRedirect(url.toString(), authTokenId));
   let path = url.pathname;
   if (url.search) path += url.search;
   if (url.hash) path += url.hash;

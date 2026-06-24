@@ -7,10 +7,14 @@ import {
 } from "src/crossSiteAuth";
 
 async function isRegisteredCustomDomain(host: string): Promise<boolean> {
+  // Only a confirmed (DNS-verified) custom domain is a host we actually serve;
+  // an unconfirmed row is a claim the publisher hasn't proven control of, so
+  // the auth token must never be handed to it.
   let { data } = await supabaseServerClient
     .from("custom_domains")
     .select("domain")
     .eq("domain", host)
+    .eq("confirmed", true)
     .maybeSingle();
   return !!data;
 }
@@ -21,9 +25,9 @@ async function isRegisteredCustomDomain(host: string): Promise<boolean> {
 // returned unchanged. `finalUrl` must be absolute (callers guarantee it).
 //
 // The session token is only ever attached to a host we actually serve as a
-// publication custom domain — never to an arbitrary redirect_url, which would
-// otherwise exfiltrate the auth_token to an attacker-controlled origin. An
-// unrecognized host falls back to the main site root.
+// confirmed publication custom domain — never to an arbitrary redirect_url,
+// which would otherwise exfiltrate the auth_token to an attacker-controlled
+// origin. An unrecognized host falls back to the main site root.
 export async function postAuthRedirect(
   finalUrl: string,
   authToken: string | null,

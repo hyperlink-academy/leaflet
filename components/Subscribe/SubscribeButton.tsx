@@ -143,6 +143,23 @@ export const SubscribeInput = (props: SubscribeProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The oauth callback redirects back with `showSubscribeError=true` when the
+  // subscribe write failed even after a fresh PDS login; surface it instead of
+  // silently landing the user unsubscribed.
+  useEffect(() => {
+    if (searchParams.get("showSubscribeError") !== "true") return;
+    toaster({
+      type: "error",
+      content: "Subscription failed, please try again.",
+    });
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("showSubscribeError");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const sendRequest = async (link: boolean) => {
     setRequesting(true);
     setLinkToCurrent(link);
