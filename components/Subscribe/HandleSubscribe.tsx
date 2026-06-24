@@ -1,5 +1,5 @@
 "use client";
-import { mainSiteAuthBase } from "src/utils/customDomain";
+import { buildOauthLoginUrl } from "src/utils/customDomain";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import Link from "next/link";
@@ -95,9 +95,13 @@ export const SubscribeWithHandle = (props: {
     // redirect and consumed by SubscribeInput to show the success modal once the
     // subscription has been written.
     if (inIframe) url.searchParams.set("showSubscribeSuccess", "true");
-    let redirectUrl = encodeURIComponent(url.toString());
-    let extra = link ? "&link=true&autoMerge=true" : "";
-    let loginUrl = `${mainSiteAuthBase()}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
+    let loginUrl = buildOauthLoginUrl({
+      handle,
+      redirect: url.toString(),
+      action,
+      link,
+      autoMerge: link,
+    });
     if (inIframe) {
       window.open(loginUrl, "_blank", "noopener,noreferrer");
       // The iframe stays put while the user completes login in the new tab —
@@ -319,8 +323,10 @@ export const LinkHandle = (props: { compact?: boolean }) => {
             let trimmed = handle.trim();
             if (!trimmed) return;
             setLoading(true);
-            let redirectUrl = encodeURIComponent(window.location.href);
-            window.location.href = `${mainSiteAuthBase()}/api/oauth/login?handle=${encodeURIComponent(trimmed)}&redirect_url=${redirectUrl}`;
+            window.location.href = buildOauthLoginUrl({
+              handle: trimmed,
+              redirect: window.location.href,
+            });
           }}
           action={
             <div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">

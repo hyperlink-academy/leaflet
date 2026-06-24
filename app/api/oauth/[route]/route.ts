@@ -17,12 +17,14 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { URLSearchParams } from "url";
 import {
   ActionAfterSignIn,
+  encodeActionToSearchParam,
   parseActionFromSearchParam,
 } from "./afterSignInActions";
 import { inngest } from "app/api/inngest/client";
 import { idResolver } from "src/identity";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
-import { postAuthRedirect } from "src/crossSiteAuth";
+import { postAuthRedirect } from "src/postAuthRedirect";
+import { buildOauthLoginUrl } from "src/utils/customDomain";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -51,9 +53,9 @@ export async function GET(
       const signup = searchParams.get("signup") === "true";
       const link = searchParams.get("link") === "true";
       const autoMerge = searchParams.get("autoMerge") === "true";
-      // Put originating page here!
+      // Put originating page here! searchParams.get already percent-decodes
+      // once, matching the single encode at the call sites — don't decode again.
       let redirect = searchParams.get("redirect_url");
-      if (redirect) redirect = decodeURIComponent(redirect);
       let action = parseActionFromSearchParam(searchParams.get("action"));
       // Forces the PDS round-trip even with a valid session — used to refresh an
       // expired atproto OAuth session whose leaflet auth_token is still good.
@@ -76,9 +78,10 @@ export async function GET(
           // No specific handle requested → reuse the session. A handle was
           // requested → reuse only if it resolves to the same identity;
           // a different or unresolvable handle falls through to the PDS.
-          if (!handle) return handleAction(action, redirect || "/", existing.tokenId);
+          if (!handle)
+            return handleAction(action, redirect || "/", existing.tokenId, true);
           if ((await resolveToDid(handle)) === sessionDid)
-            return handleAction(action, redirect || "/", existing.tokenId);
+            return handleAction(action, redirect || "/", existing.tokenId, true);
         }
       }
 
@@ -109,7 +112,7 @@ export async function GET(
       try {
         const { session, state } = await client.callback(params);
         let s: OauthRequestClientState = JSON.parse(state || "{}");
-        redirectPath = decodeURIComponent(s.redirect || "/");
+        redirectPath = s.redirect || "/";
         let { data: identity } = await supabaseServerClient
           .from("identities")
           .select()
@@ -311,26 +314,34 @@ const handleAction = async (
   action: ActionAfterSignIn | null,
   redirectPath: string,
   authTokenId: string | null,
+  // The session-reuse fast-path skips the PDS round-trip, so a stale atproto
+  // session surfaces here as a failed subscribe. Force a fresh PDS login and
+  // retry rather than dropping the user back unsubscribed with no error.
+  reauthOnSubscribeFailure = false,
 ) => {
-  let parsePath = decodeURIComponent(redirectPath);
-  if (!parsePath.includes("://")) {
-    let url = new URL(parsePath, "https://example.com");
-    if (action?.action === "subscribe") {
-      let result = await subscribeToPublication(action.publication);
-      if (result.success && result.hasFeed === false)
-        url.searchParams.set("showSubscribeSuccess", "true");
-    }
-    let path = url.pathname;
-    if (url.search) path += url.search;
-    if (url.hash) path += url.hash;
-    return redirect(path);
-  }
+  let isAbsolute = redirectPath.includes("://");
+  let url = new URL(
+    redirectPath,
+    isAbsolute ? undefined : "https://example.com",
+  );
 
-  let url = new URL(parsePath);
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
+    if (!result.success && reauthOnSubscribeFailure)
+      return redirect(
+        buildOauthLoginUrl({
+          reauth: true,
+          action: encodeActionToSearchParam(action),
+          redirect: redirectPath,
+        }),
+      );
     if (result.success && result.hasFeed === false)
       url.searchParams.set("showSubscribeSuccess", "true");
   }
-  return redirect(await postAuthRedirect(url.toString(), authTokenId));
+
+  if (isAbsolute) return redirect(await postAuthRedirect(url.toString(), authTokenId));
+  let path = url.pathname;
+  if (url.search) path += url.search;
+  if (url.hash) path += url.hash;
+  return redirect(path);
 };

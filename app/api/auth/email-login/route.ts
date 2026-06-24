@@ -2,7 +2,7 @@ import { requestAuthEmailToken } from "actions/emailAuth";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_TOKEN_COOKIE, resolveAuthToken } from "src/auth";
-import { postAuthRedirect } from "src/crossSiteAuth";
+import { postAuthRedirect } from "src/postAuthRedirect";
 
 // Custom-domain email login bounces here first. If the user already has a
 // session on the main site for this same email we hand it straight back to the
@@ -11,10 +11,12 @@ import { postAuthRedirect } from "src/crossSiteAuth";
 // so the canonical session is minted first-party here before bouncing back.
 export async function GET(req: NextRequest) {
   let email = req.nextUrl.searchParams.get("email");
-  let redirect = req.nextUrl.searchParams.get("redirect") || "/";
+  // Callers pass an absolute redirect (window.location.href); default to the
+  // main-site origin so postAuthRedirect and NextResponse.redirect never get a
+  // relative URL.
+  let redirect = req.nextUrl.searchParams.get("redirect") || req.nextUrl.origin;
 
-  if (!email)
-    return NextResponse.redirect(new URL(redirect, req.nextUrl.origin));
+  if (!email) return NextResponse.redirect(redirect);
 
   let existing = await resolveAuthToken(
     (await cookies()).get(AUTH_TOKEN_COOKIE)?.value,

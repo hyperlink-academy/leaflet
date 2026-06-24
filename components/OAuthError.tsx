@@ -2,7 +2,7 @@
 
 import { OAuthSessionError } from "src/atproto-oauth";
 import { useIdentityData } from "components/IdentityProvider";
-import { mainSiteAuthBase } from "src/utils/customDomain";
+import { buildOauthLoginUrl } from "src/utils/customDomain";
 
 export function OAuthErrorMessage({
   error,
@@ -15,7 +15,11 @@ export function OAuthErrorMessage({
   // reauth=true forces the PDS round-trip: the atproto session expired even
   // though the leaflet auth_token is still valid, so the session-check skip must
   // not short-circuit it.
-  let signInUrl = `${mainSiteAuthBase()}/api/oauth/login?reauth=true&redirect_url=${encodeURIComponent(window.location.href)}${error.did ? `&handle=${encodeURIComponent(error.did)}` : ""}`;
+  let signInUrl = buildOauthLoginUrl({
+    reauth: true,
+    redirect: window.location.href,
+    handle: error.did || undefined,
+  });
   let isOtherUser =
     !!error.did && !!identity?.atp_did && error.did !== identity.atp_did;
 

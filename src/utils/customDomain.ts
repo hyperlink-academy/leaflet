@@ -26,3 +26,30 @@ export function mainSiteAuthBase(hostname?: string): string {
   if (!host || isMainSiteHost(host)) return "";
   return MAIN_SITE_URL;
 }
+
+// Single assembly point for the main-site oauth login URL. Encodes every param
+// through URLSearchParams so call sites can't drift on ad-hoc escaping. `action`
+// is the already-encoded value from encodeActionToSearchParam. Pass the Host
+// header server-side; falls back to window on the client (see mainSiteAuthBase).
+export function buildOauthLoginUrl(
+  params: {
+    handle?: string;
+    redirect?: string;
+    action?: string;
+    link?: boolean;
+    signup?: boolean;
+    autoMerge?: boolean;
+    reauth?: boolean;
+  },
+  hostname?: string,
+): string {
+  let q = new URLSearchParams();
+  if (params.handle) q.set("handle", params.handle);
+  if (params.redirect) q.set("redirect_url", params.redirect);
+  if (params.action) q.set("action", params.action);
+  if (params.link) q.set("link", "true");
+  if (params.signup) q.set("signup", "true");
+  if (params.autoMerge) q.set("autoMerge", "true");
+  if (params.reauth) q.set("reauth", "true");
+  return `${mainSiteAuthBase(hostname)}/api/oauth/login?${q}`;
+}

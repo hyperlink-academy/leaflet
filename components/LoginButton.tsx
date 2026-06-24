@@ -21,7 +21,7 @@ import {
 import { loginWithEmailToken } from "actions/login";
 import { getHomeDocs } from "app/(app)/(home-pages)/(writer)/home/storage";
 import { mutate } from "swr";
-import { mainSiteAuthBase } from "src/utils/customDomain";
+import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
 
 export const LoginModal = (props: {
   noEmailLogin?: boolean;
@@ -182,8 +182,10 @@ export const LoginContent = (props: {
               loading={loading}
               onSubmit={(handle) => {
                 setLoading(true);
-                let redirectUrl = props.redirectRoute || window.location.href;
-                window.location.href = `${mainSiteAuthBase()}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}`;
+                window.location.href = buildOauthLoginUrl({
+                  handle,
+                  redirect: props.redirectRoute || window.location.href,
+                });
               }}
             />
             {props.noEmailLogin ? null : (
@@ -265,11 +267,10 @@ export const LoginContent = (props: {
             <ButtonPrimary
               className="mx-auto mb-1"
               onClick={() => {
-                let params = new URLSearchParams({
-                  redirect_url: props.redirectRoute || "/",
-                  signup: "true",
+                window.location.href = buildOauthLoginUrl({
+                  redirect: props.redirectRoute || "/",
+                  signup: true,
                 });
-                window.location.href = `${mainSiteAuthBase()}/api/oauth/login?${params}`;
               }}
             >
               <BlueskyTiny /> Sign up via Bluesky
@@ -312,8 +313,11 @@ const LinkAtmosphereContent = (props: {
         loading={loading}
         onSubmit={(handle) => {
           setLoading(true);
-          let redirectUrl = props.redirectRoute || window.location.href;
-          window.location.href = `${mainSiteAuthBase()}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}&link=true`;
+          window.location.href = buildOauthLoginUrl({
+            handle,
+            redirect: props.redirectRoute || window.location.href,
+            link: true,
+          });
         }}
       />
       <hr className="border-border-light mt-2 mb-1" />
@@ -321,12 +325,11 @@ const LinkAtmosphereContent = (props: {
         type="button"
         className="text-sm text-accent-contrast flex gap-1 items-center mx-auto"
         onClick={() => {
-          let params = new URLSearchParams({
-            redirect_url: props.redirectRoute || "/",
-            signup: "true",
-            link: "true",
+          window.location.href = buildOauthLoginUrl({
+            redirect: props.redirectRoute || "/",
+            signup: true,
+            link: true,
           });
-          window.location.href = `${mainSiteAuthBase()}/api/oauth/login?${params}`;
         }}
       >
         <BlueskyTiny /> or sign up via Bluesky

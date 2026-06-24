@@ -14,12 +14,16 @@ export default function LoginConfirmPage() {
   let toaster = useToaster();
   let token = params.get("token");
   let email = params.get("email") ?? "";
-  let redirect = params.get("redirect") || "/";
+  // Absolute by contract (the email-login route always sets it); the origin
+  // fallback is applied in the handlers below — where window is defined — so
+  // confirmEmailLogin never hands postAuthRedirect a relative URL.
+  let redirectParam = params.get("redirect");
   let [loading, setLoading] = useState(false);
 
   let onSubmit = async (code: string) => {
     if (!token) return;
     setLoading(true);
+    let redirect = redirectParam || window.location.origin;
     let res = await confirmEmailLogin(token, code, redirect);
     if (!res.ok) {
       setLoading(false);
@@ -41,7 +45,7 @@ export default function LoginConfirmPage() {
           loading={loading}
           onSubmit={onSubmit}
           onBack={() => {
-            window.location.href = redirect;
+            window.location.href = redirectParam || window.location.origin;
           }}
         />
       </div>
