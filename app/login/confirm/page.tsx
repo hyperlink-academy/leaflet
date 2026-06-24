@@ -7,6 +7,7 @@ import {
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { supabaseServerClient } from "supabase/serverClient";
+import { Suspense } from "react";
 import { LoginConfirmForm } from "./LoginConfirmForm";
 
 // Where custom-domain email login lands when the user has no existing main-site
@@ -52,7 +53,9 @@ export default async function LoginConfirmPage(props: {
                   <PubIcon icon={iconUrl} pubName={record.name} small />
                   <h4 className="grow min-w-0 text-primary">{record.name}</h4>
                 </div>
-                <LoginConfirmForm />
+                <Suspense>
+                  <LoginConfirmForm />
+                </Suspense>
               </div>
             </div>
           </PublicationBackgroundProvider>
@@ -64,7 +67,9 @@ export default async function LoginConfirmPage(props: {
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh p-4">
       <div className="accent-container p-4 py-5">
-        <LoginConfirmForm />
+        <Suspense>
+          <LoginConfirmForm />
+        </Suspense>
       </div>
     </div>
   );
