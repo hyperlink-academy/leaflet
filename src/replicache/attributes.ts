@@ -6,6 +6,13 @@ const RootAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  // Links a standalone cover image (uploaded from the publish page, not an
+  // in-document image block) to the root so it's reachable by get_facts and
+  // its blob gets uploaded on publish.
+  "root/cover-image": {
+    type: "reference",
+    cardinality: "one",
+  },
 } as const;
 const PageAttributes = {
   "card/block": {

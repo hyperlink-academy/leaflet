@@ -56,7 +56,6 @@ export async function publishToPublication({
   title,
   description,
   tags,
-  cover_image,
   entitiesToDelete,
   publishedAt,
   postPreferences,
@@ -69,7 +68,6 @@ export async function publishToPublication({
   title?: string;
   description?: string;
   tags?: string[];
-  cover_image?: string | null;
   entitiesToDelete?: string[];
   publishedAt?: string;
   postPreferences?: {
@@ -228,15 +226,20 @@ export async function publishToPublication({
   let theme: PubLeafletPublication.Theme | undefined;
   if (!publication_uri) {
     let extracted = await extractThemeFromFacts(facts, root_entity, agent);
-    if (Object.keys(extracted).length > 1 || extracted.showPageBackground !== true)
+    if (
+      Object.keys(extracted).length > 1 ||
+      extracted.showPageBackground !== true
+    )
       theme = extracted;
   }
 
-  // Upload cover image if provided
   let coverImageBlob: BlobRef | undefined;
-  if (cover_image) {
+  {
     let scan = scanIndexLocal(facts);
-    let [imageData] = scan.eav(cover_image, "block/image");
+    let coverRef = scan.eav(root_entity, "root/cover-image")[0];
+    let [imageData] = coverRef
+      ? scan.eav(coverRef.data.value, "block/image")
+      : [];
     if (imageData) {
       let imageResponse = await fetch(imageData.data.src);
       if (imageResponse.status === 200) {
@@ -381,7 +384,6 @@ export async function publishToPublication({
         title: title,
         description: description,
         tags: resolvedTags ?? [],
-        cover_image: cover_image ?? null,
       }),
     ]);
   } else {
@@ -392,7 +394,6 @@ export async function publishToPublication({
       title: title || "",
       description: description || "",
       tags: resolvedTags ?? [],
-      cover_image: cover_image ?? null,
     });
 
     // Heuristic: Remove title entities if this is the first time publishing standalone

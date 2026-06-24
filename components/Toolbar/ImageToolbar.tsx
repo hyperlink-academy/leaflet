@@ -7,11 +7,12 @@ import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
 } from "components/PageSWRDataProvider";
-import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   ImageCoverImage,
   ImageCoverImageRemove,
 } from "components/Icons/ImageCoverImage";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { setCoverImageFromEntity } from "src/utils/setCoverImageFromEntity";
 import { Separator } from "components/Layout";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
 
@@ -69,31 +70,40 @@ const ImageFullBleedButton = (props: {}) => {
 };
 
 const ImageCoverButton = () => {
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
+  let entity_set = useEntitySetContext();
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
-  let hasSrc = useEntity(focusedBlock, "block/image")?.data;
+  let image = useEntity(focusedBlock, "block/image");
+  let alt = useEntity(focusedBlock, "image/alt")?.data.value;
+  let coverEntity = useEntity(rootEntity, "root/cover-image")?.data.value;
+  let coverImage = useEntity(coverEntity ?? null, "block/image");
   let { data: pubData } = useLeafletPublicationData();
   let publicationPage = useLeafletPublicationPage();
-  let coverImage = useSubscribe(rep, (tx) =>
-    tx.get<string | null>("publication_cover_image"),
-  );
 
   // Only show if in a publication and has an image. Publication pages
   // (e.g. an About page) don't have cover images, so skip them.
-  if (!pubData?.publications || !hasSrc || publicationPage) return null;
+  if (!pubData?.publications || !image || publicationPage) return null;
 
-  let isCoverImage = coverImage === focusedBlock;
+  // The cover is a standalone copy sharing this block's src, so a matching src
+  // means this block is the current cover.
+  let isCoverImage = !!coverImage && coverImage.data.src === image.data.src;
 
   return (
     <ToolbarButton
       active={isCoverImage}
       onClick={async (e) => {
         e.preventDefault();
-        if (rep && focusedBlock) {
-          await rep.mutate.updatePublicationDraft({
-            cover_image: isCoverImage ? null : focusedBlock,
+        if (!rep || !image) return;
+        if (isCoverImage) {
+          if (coverEntity)
+            await rep.mutate.deleteEntity({ entity: coverEntity });
+        } else
+          await setCoverImageFromEntity(rep, {
+            rootEntity,
+            permission_set: entity_set.set,
+            image: image.data,
+            alt,
           });
-        }
       }}
       tooltipContent={
         <div>{isCoverImage ? "Remove Cover Image" : "Use as Cover Image"}</div>

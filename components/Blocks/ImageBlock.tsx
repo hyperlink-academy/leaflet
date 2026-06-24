@@ -8,6 +8,7 @@ import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage, localImages } from "src/utils/addImage";
+import { setCoverImageFromEntity } from "src/utils/setCoverImageFromEntity";
 import { elementId } from "src/utils/elementId";
 import { useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
@@ -22,7 +23,6 @@ import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
 } from "components/PageSWRDataProvider";
-import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   ImageCoverImage,
   ImageCoverImageRemove,
@@ -217,36 +217,41 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 }
 
 const CoverImageButton = (props: { entityID: string }) => {
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pubData } = useLeafletPublicationData();
   let publicationPage = useLeafletPublicationPage();
-  let coverImage = useSubscribe(rep, (tx) =>
-    tx.get<string | null>("publication_cover_image"),
-  );
+  let image = useEntity(props.entityID, "block/image");
+  let alt = useEntity(props.entityID, "image/alt")?.data.value;
+  let coverEntity = useEntity(rootEntity, "root/cover-image")?.data.value;
+  let coverImage = useEntity(coverEntity ?? null, "block/image");
   let isFocused = useUIState(
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
 
-  // Only show if focused, in a publication, has write permissions, and no cover image is set.
-  // Publication pages (e.g. an About page) don't have cover images, so skip them.
+  // Only show if focused, in a publication, with write permissions, and an
+  // image to copy. Publication pages (e.g. an About page) have no cover image.
   if (
     !isFocused ||
     !pubData?.publications ||
     !entity_set.permissions.write ||
-    publicationPage
+    publicationPage ||
+    !image
   )
     return null;
-  if (coverImage === props.entityID)
+
+  // The cover is a standalone copy sharing this block's src, so a matching src
+  // means this block is the current cover.
+  let isCoverImage = !!coverImage && coverImage.data.src === image.data.src;
+  if (isCoverImage)
     return (
       <ButtonSecondary
         className="absolute top-2 right-2"
         onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          await rep?.mutate.updatePublicationDraft({
-            cover_image: null,
-          });
+          if (coverEntity)
+            await rep?.mutate.deleteEntity({ entity: coverEntity });
         }}
       >
         Remove Cover Image
@@ -260,8 +265,12 @@ const CoverImageButton = (props: { entityID: string }) => {
       onClick={async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        await rep?.mutate.updatePublicationDraft({
-          cover_image: props.entityID,
+        if (!rep) return;
+        await setCoverImageFromEntity(rep, {
+          rootEntity,
+          permission_set: entity_set.set,
+          image: image.data,
+          alt,
         });
       }}
     >

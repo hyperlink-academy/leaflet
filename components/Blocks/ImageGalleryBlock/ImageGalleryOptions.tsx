@@ -96,7 +96,7 @@ export function ImageGalleryOptions(props: {
               );
             })}
           </div>
-          {props.format === "carousel" || props.format === "grid" ? (
+          {props.format === "strip" || props.format === "grid" ? (
             <>
               <hr className="border-border-light " />
               <GapControl entityID={props.entityID} gap={props.gap} />

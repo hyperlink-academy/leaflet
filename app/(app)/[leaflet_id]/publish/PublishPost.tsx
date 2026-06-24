@@ -14,6 +14,8 @@ import { AtUri } from "@atproto/syntax";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
+import { addImage, localImages } from "src/utils/addImage";
+import { v7 } from "uuid";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { editorStateToFacetedText } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
@@ -114,10 +116,10 @@ const PublishPostForm = (
   let [localPublishedAt, setLocalPublishedAt] = useState<Date | undefined>(
     undefined,
   );
-  // Get cover image from Replicache
-  let replicacheCoverImage = useSubscribe(rep, (tx) =>
-    tx.get<string | null>("publication_cover_image"),
-  );
+  // The cover image lives on the document root as a root/cover-image reference,
+  // set from the draft editor.
+  let coverImageEntity =
+    useEntity(props.root_entity, "root/cover-image")?.data.value ?? null;
 
   // Get post preferences from Replicache state
   let postPreferences = useSubscribe(rep, (tx) =>
@@ -158,7 +160,6 @@ const PublishPostForm = (
       title: props.title,
       description: props.description,
       tags: currentTags,
-      cover_image: replicacheCoverImage,
       entitiesToDelete: props.entitiesToDelete,
       publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
       postPreferences,
@@ -258,32 +259,38 @@ const PublishPostForm = (
               <hr className="border-border-light" />
               <div className="flex justify-between sm:flex-row flex-col gap-4">
                 <div className="text-tertiary shrink-0">Social Preview</div>
-                <div className="opaque-container !border-border overflow-hidden flex flex-col w-full sm:max-w-sm rounded-lg!">
-                  <SocialPreviewImage
-                    rootEntity={props.root_entity}
-                    did={props.profile.did}
-                    coverImageEntity={replicacheCoverImage ?? null}
-                    publication_uri={props.publication_uri}
-                    record={props.record}
-                  />
-                  <hr className="border-border" />
-                  <div className="flex flex-col p-2 gap-0.5">
-                    <div className="font-bold line-clamp-1">
-                      {props.title || "Untitled"}
-                    </div>
-                    {props.description && (
-                      <div className="text-sm text-tertiary line-clamp-2">
-                        {props.description}
+                <div className="flex flex-col gap-1.5 w-full sm:max-w-sm">
+                  <div className="opaque-container !border-border overflow-hidden flex flex-col w-full rounded-lg!">
+                    <SocialPreviewImage
+                      rootEntity={props.root_entity}
+                      did={props.profile.did}
+                      coverImageEntity={coverImageEntity}
+                      publication_uri={props.publication_uri}
+                      record={props.record}
+                    />
+                    <hr className="border-border" />
+                    <div className="flex flex-col p-2 gap-0.5">
+                      <div className="font-bold line-clamp-1">
+                        {props.title || "Untitled"}
                       </div>
-                    )}
-                    <hr className="border-border-light mt-1 mb-0.5" />
-                    <div className="text-xs text-tertiary">
-                      {(props.record?.url || "leaflet.pub").replace(
-                        /^https?:\/\//,
-                        "",
+                      {props.description && (
+                        <div className="text-sm text-tertiary line-clamp-2">
+                          {props.description}
+                        </div>
                       )}
+                      <hr className="border-border-light mt-1 mb-0.5" />
+                      <div className="text-xs text-tertiary">
+                        {(props.record?.url || "leaflet.pub").replace(
+                          /^https?:\/\//,
+                          "",
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <CoverImageControls
+                    rootEntity={props.root_entity}
+                    coverImageEntity={coverImageEntity}
+                  />
                 </div>
               </div>
               <hr className="border-border mb-2" />
@@ -362,6 +369,69 @@ const PublishPostForm = (
   );
 };
 
+const CoverImageControls = (props: {
+  rootEntity: string;
+  coverImageEntity: string | null;
+}) => {
+  let { rep, permission_token } = useReplicache();
+  let permission_set = permission_token.permission_token_rights[0]?.entity_set;
+
+  const handleFile = async (file: File) => {
+    if (!rep || !permission_set || !file.type.startsWith("image/")) return;
+    let imageEntity = v7();
+    await rep.mutate.createEntity([{ entityID: imageEntity, permission_set }]);
+    await addImage(file, rep, {
+      entityID: imageEntity,
+      attribute: "block/image",
+      ignoreUndo: true,
+    });
+    await rep.mutate.assertFact({
+      entity: props.rootEntity,
+      attribute: "root/cover-image",
+      data: { type: "reference", value: imageEntity },
+      ignoreUndo: true,
+    });
+  };
+
+  if (!permission_set) return null;
+
+  return (
+    <div className="flex gap-3 justify-end items-center text-border text-sm">
+      {props.coverImageEntity && (
+        <>
+          <button
+            type="button"
+            className="hover:underlin text-accent-contrast"
+            onClick={() => {
+              if (props.coverImageEntity)
+                rep?.mutate.deleteEntity({ entity: props.coverImageEntity });
+            }}
+          >
+            Remove
+          </button>
+          |
+        </>
+      )}
+      <label
+        className="hover:underline hover:cursor-pointer text-accent-contrast"
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        Change Cover
+        <input
+          className="hidden"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            let file = e.currentTarget.files?.[0];
+            if (file) handleFile(file);
+            e.currentTarget.value = "";
+          }}
+        />
+      </label>
+    </div>
+  );
+};
+
 const SocialPreviewImage = (props: {
   rootEntity: string;
   did: string;
@@ -376,7 +446,9 @@ const SocialPreviewImage = (props: {
   if (props.coverImageEntity && coverImage) {
     return (
       <img
-        src={coverImage.data.src}
+        // Prefer the in-memory object URL while a freshly uploaded cover is
+        // still uploading, so the preview shows immediately.
+        src={localImages.get(coverImage.data.src) ?? coverImage.data.src}
         className="w-full object-cover aspect-video"
         alt=""
       />
