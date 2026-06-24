@@ -8,6 +8,8 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePath } from "next/cache";
 import { AtUri } from "@atproto/syntax";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { buildOauthLoginUrl } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import {
   Notification,
@@ -29,7 +31,13 @@ export async function subscribeToPublication(
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
     return redirect(
-      `/api/oauth/login?redirect_url=${redirectRoute}&action=${encodeActionToSearchParam({ action: "subscribe", publication })}`,
+      buildOauthLoginUrl(
+        {
+          redirect: redirectRoute || "/",
+          action: encodeActionToSearchParam({ action: "subscribe", publication }),
+        },
+        (await headers()).get("host") ?? undefined,
+      ),
     );
   }
 
