@@ -4,6 +4,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { setAuthToken } from "src/auth";
+import { recordEmailSubscription } from "src/emailSubscription";
 import { PubConfirmEmail } from "emails/pubConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
 import {
@@ -87,15 +88,19 @@ export async function requestPublicationEmailSubscription(
     if (!deleted) return Err("suppression_delete_failed");
   }
 
-  // Fast path: the caller is already authenticated with this email (they
-  // previously confirmed it on this or another publication), so we can skip
-  // the confirmation code round-trip.
-  const verifiedIdentity =
-    identity && identity.email?.toLowerCase() === email ? identity : null;
-  const pendingCode = generateConfirmationCode();
+  // Fast path: already authenticated with this email — skip the code round-trip.
+  if (identity && identity.email?.toLowerCase() === email) {
+    const res = await recordEmailSubscription(
+      publicationUri,
+      email,
+      identity.id,
+    );
+    if (!res.ok) return Err(res.error);
+    return Ok({ confirmed: true });
+  }
 
-  // Check the existing row first — a previous `unsubscribed` row means the
-  // first event we append is `resubscribed` rather than `subscribe_requested`.
+  // A previous `unsubscribed` row makes the first event `resubscribed`.
+  const pendingCode = generateConfirmationCode();
   const { data: existing } = await supabaseServerClient
     .from("publication_email_subscribers")
     .select("state")
@@ -104,28 +109,19 @@ export async function requestPublicationEmailSubscription(
     .maybeSingle();
   const wasUnsubscribed = existing?.state === "unsubscribed";
 
-  const subscriberRow = verifiedIdentity
-    ? {
-        publication: publicationUri,
-        email,
-        identity_id: verifiedIdentity.id,
-        state: "confirmed",
-        confirmation_code: null,
-        confirmed_at: new Date().toISOString(),
-        unsubscribed_at: null,
-      }
-    : {
+  const { data: subscriber, error } = await supabaseServerClient
+    .from("publication_email_subscribers")
+    .upsert(
+      {
         publication: publicationUri,
         email,
         identity_id: identity?.id ?? null,
         state: "pending",
         confirmation_code: pendingCode,
         unsubscribed_at: null,
-      };
-
-  const { data: subscriber, error } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .upsert(subscriberRow, { onConflict: "publication,email" })
+      },
+      { onConflict: "publication,email" },
+    )
     .select("id")
     .single();
   if (error || !subscriber) {
@@ -144,22 +140,12 @@ export async function requestPublicationEmailSubscription(
       {
         subscriber: subscriber.id,
         publication: publicationUri,
-        event_type: verifiedIdentity ? "confirmed" : "confirmation_sent",
+        event_type: "confirmation_sent",
       },
     ]);
   if (eventsError) {
     console.error("[subscribeEmail] insert events failed:", eventsError);
     return Err("database_error");
-  }
-
-  if (verifiedIdentity) {
-    if (verifiedIdentity.atp_did) {
-      await publishAtprotoSubscriptionForDid(
-        verifiedIdentity.atp_did,
-        publicationUri,
-      );
-    }
-    return Ok({ confirmed: true });
   }
 
   const sent = await sendConfirmationEmail({
@@ -202,17 +188,20 @@ export async function confirmPublicationEmailSubscription(
   if (!matchesConfirmationCode(subscriber.confirmation_code, code))
     return Err("invalid_code");
 
-  // The confirmation code proves ownership of `email`. Issue (or look up) an
-  // auth token for it so the subscriber is logged in and can one-click
-  // subscribe to other publications from the same device.
   let identityId: string | null;
   if (linkToCurrent) {
     const linkResult = await linkEmailToCurrentIdentity(email);
     if (!linkResult.ok) return linkResult;
     identityId = linkResult.value;
   } else {
-    identityId = await ensureAuthTokenForEmail(email);
-    if (!identityId) return Err("database_error");
+    const current = await getIdentityData();
+    if (current) {
+      identityId = current.id;
+    } else {
+      // Logged-out confirm (embedded /api/subscribe_email form): create a session.
+      identityId = await createEmailSession(email);
+      if (!identityId) return Err("database_error");
+    }
   }
 
   const [{ error: updateError }, { error: eventError }] = await Promise.all([
@@ -386,10 +375,10 @@ async function linkEmailToCurrentIdentity(
   return Ok(current.id);
 }
 
-async function ensureAuthTokenForEmail(email: string): Promise<string | null> {
-  const existingIdentity = await getIdentityData();
-  if (existingIdentity) return existingIdentity.id;
-
+// Logs in an email whose ownership is already proven by a confirmation code:
+// ensures an identity, issues a pre-confirmed auth token, and sets the cookie.
+// Not exported — a "use server" export would be a client-callable endpoint.
+async function createEmailSession(email: string): Promise<string | null> {
   const { data: identity, error: identityError } = await supabaseServerClient
     .from("identities")
     .upsert({ email }, { onConflict: "email" })
@@ -400,8 +389,6 @@ async function ensureAuthTokenForEmail(email: string): Promise<string | null> {
     return null;
   }
 
-  // Cover any sibling subscriber rows (e.g. CSV-imported entries on other
-  // publications) so this confirmation also adopts them under the new identity.
   await linkOrphanedEmailSubscribers(identity.id, email);
 
   const { data: token, error: tokenError } = await supabaseServerClient
@@ -410,8 +397,6 @@ async function ensureAuthTokenForEmail(email: string): Promise<string | null> {
       email,
       identity: identity.id,
       confirmed: true,
-      // Required NOT NULL column; this token is already confirmed so the code
-      // is never consulted, but we still give it a random value.
       confirmation_code: generateConfirmationCode(),
     })
     .select("id")
@@ -424,3 +409,4 @@ async function ensureAuthTokenForEmail(email: string): Promise<string | null> {
   await setAuthToken(token.id);
   return identity.id;
 }
+

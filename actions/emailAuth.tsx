@@ -7,6 +7,7 @@ import { email_auth_tokens, identities } from "drizzle/schema";
 import { and, desc, eq, gt } from "drizzle-orm";
 import { setAuthToken } from "src/auth";
 import { postAuthRedirect } from "src/postAuthRedirect";
+import { applyAfterSignInAction } from "src/emailSubscription";
 import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
@@ -149,8 +150,16 @@ export async function confirmEmailLogin(
   tokenId: string,
   code: string,
   redirect: string,
+  action: string | null = null,
 ): Promise<{ ok: false } | { ok: true; url: string }> {
   let confirmed = await confirmEmailAuthToken(tokenId, code);
   if (!confirmed) return { ok: false };
-  return { ok: true, url: await postAuthRedirect(redirect, confirmed.id) };
+
+  let finalRedirect = await applyAfterSignInAction(
+    action,
+    redirect,
+    confirmed.email,
+    confirmed.identity,
+  );
+  return { ok: true, url: await postAuthRedirect(finalRedirect, confirmed.id) };
 }

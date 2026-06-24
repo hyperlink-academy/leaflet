@@ -14,13 +14,14 @@ export function LoginConfirmForm() {
   // fallback is applied in the handlers below — where window is defined — so
   // confirmEmailLogin never hands postAuthRedirect a relative URL.
   let redirectParam = params.get("redirect");
+  let action = params.get("action");
   let [loading, setLoading] = useState(false);
 
   let onSubmit = async (code: string) => {
     if (!token) return;
     setLoading(true);
     let redirect = redirectParam || window.location.origin;
-    let res = await confirmEmailLogin(token, code, redirect);
+    let res = await confirmEmailLogin(token, code, redirect, action);
     if (!res.ok) {
       setLoading(false);
       toaster({

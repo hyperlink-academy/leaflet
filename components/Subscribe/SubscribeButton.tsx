@@ -22,12 +22,29 @@ import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
 } from "actions/publications/subscribeEmail";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import { mainSiteAuthBase } from "src/utils/customDomain";
 
 import { useViewerSubscription } from "./viewerSubscription";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 
 type SubscribeMode = "email" | "atproto";
+
+// Logged-out email subscribe goes through the main-site email-login flow with a
+// `subscribe` after-sign-in action, so the session is minted on the main site
+// and handed back to the custom domain (see postAuthRedirect).
+function redirectToEmailSubscribe(email: string, publicationUri: string) {
+  let base = mainSiteAuthBase() || window.location.origin;
+  let url = new URL("/api/auth/email-login", base);
+  url.searchParams.set("email", email);
+  url.searchParams.set("redirect", window.location.href);
+  url.searchParams.set(
+    "action",
+    encodeActionToSearchParam({ action: "subscribe", publication: publicationUri }),
+  );
+  window.location.href = url.toString();
+}
 
 export type SubscribeProps = {
   autoFocus?: boolean;
@@ -259,13 +276,13 @@ export const SubscribeInput = (props: SubscribeProps) => {
                 <ButtonPrimary
                   compact
                   className="leading-tight! outline-none! text-sm!"
-                  onClick={async () => {
+                  onClick={() => {
                     if (!email || requesting) return;
                     if (needsLinkConfirmation) {
                       setLinkModalOpen(true);
                       return;
                     }
-                    await sendRequest(false);
+                    redirectToEmailSubscribe(email, props.publicationUri);
                   }}
                 >
                   Subscribe
