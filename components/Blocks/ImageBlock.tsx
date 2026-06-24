@@ -14,6 +14,7 @@ import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { EditTiny } from "components/Icons/EditTiny";
 import { set } from "colorjs.io/fn";
 import { ImageAltButton } from "./ImageAltButton";
+import { ImageGalleryLightbox } from "./ImageGalleryBlock/ImageGalleryLightbox";
 import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
@@ -42,6 +43,13 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let isLast = props.nextBlock === null;
 
   let altText = useEntity(props.value, "image/alt")?.data.value;
+
+  let [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Writers select the block first; a second click on the image opens the
+  // lightbox. Readers (no write permission) open it on the first click.
+  let canOpenLightbox =
+    !props.preview && (!entity_set.permissions.write || !!isSelected);
 
   let nextIsFullBleed = useEntity(
     props.nextBlock && props.nextBlock.value,
@@ -157,27 +165,47 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       className={blockClassName}
       optionsClassName={isFullBleed ? "top-[-8px]! border-none!" : ""}
     >
-      {localSrc || image.data.local ? (
-        <img
-          loading="lazy"
-          decoding="async"
-          alt={altText}
-          src={localSrc ?? image.data.fallback}
-          height={image?.data.height}
-          width={image?.data.width}
-        />
-      ) : (
-        <Image
-          alt={altText || ""}
-          src={
-            "/" + new URL(image.data.src).pathname.split("/").slice(5).join("/")
-          }
-          height={image?.data.height}
-          width={image?.data.width}
+      <button
+        type="button"
+        className={`block w-fit ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
+        onClick={() => {
+          if (canOpenLightbox) setLightboxOpen(true);
+        }}
+      >
+        {localSrc || image.data.local ? (
+          <img
+            loading="lazy"
+            decoding="async"
+            alt={altText}
+            src={localSrc ?? image.data.fallback}
+            height={image?.data.height}
+            width={image?.data.width}
+          />
+        ) : (
+          <Image
+            alt={altText || ""}
+            src={
+              "/" +
+              new URL(image.data.src).pathname.split("/").slice(5).join("/")
+            }
+            height={image?.data.height}
+            width={image?.data.width}
+          />
+        )}
+      </button>
+      {!props.preview && (
+        <ImageGalleryLightbox
+          imageEntities={[props.value]}
+          index={lightboxOpen ? 0 : null}
+          onIndexChange={(i) => setLightboxOpen(i !== null)}
         />
       )}
-      {!props.preview && entity_set.permissions.write ? (
-        <ImageAltButton entityID={props.value} selected={!!isSelected} />
+      {!props.preview ? (
+        <ImageAltButton
+          entityID={props.value}
+          selected={!!isSelected}
+          canEdit={entity_set.permissions.write}
+        />
       ) : null}
       {!props.preview ? <CoverImageButton entityID={props.value} /> : null}
     </BlockLayout>

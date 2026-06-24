@@ -29,7 +29,8 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
     useEntity(props.value, "gallery/format")?.data.value ?? DEFAULT_FORMAT;
   let gap = useEntity(props.value, "gallery/gap")?.data.value ?? DEFAULT_GAP;
   let maxWidth =
-    useEntity(props.value, "gallery/max-width")?.data.value ?? DEFAULT_MAX_WIDTH;
+    useEntity(props.value, "gallery/max-width")?.data.value ??
+    DEFAULT_MAX_WIDTH;
 
   let [editOpen, setEditOpen] = useState(false);
   let [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -81,7 +82,10 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
         borderOnHover
         className="group/gallery-block text-tertiary hover:text-accent-contrast hover:font-bold h-[104px] border-dashed rounded-lg"
       >
-        <GalleryUploadLabel onAddFiles={handleFiles} isSelected={!!isSelected} />
+        <GalleryUploadLabel
+          onAddFiles={handleFiles}
+          isSelected={!!isSelected}
+        />
       </BlockLayout>
     );
   }
@@ -89,7 +93,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   return (
     <BlockLayout
       isSelected={!!isSelected}
-      className="border-transparent! p-0! w-full"
+      className="border-transparent! p-0! w-full rounded-none!"
       extraOptions={
         !props.preview ? (
           <ImageGalleryOptions

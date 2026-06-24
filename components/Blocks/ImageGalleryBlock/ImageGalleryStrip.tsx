@@ -1,5 +1,4 @@
-import { useGalleryImage } from "./shared";
-import { ImageAltButton } from "../ImageAltButton";
+import { GalleryImageItem } from "./GalleryImageItem";
 
 export function ImageGalleryStrip(props: {
   imageEntities: string[];
@@ -11,42 +10,17 @@ export function ImageGalleryStrip(props: {
   return (
     <div className="flex flex-col w-full" style={{ gap: `${props.gap}px` }}>
       {props.imageEntities.map((entityID, i) => (
-        <GalleryStripItem
+        <GalleryImageItem
           key={entityID}
           entityID={entityID}
           editable={props.editable}
           selected={props.selected}
           onClick={() => props.onImageClick(i)}
+          className="w-full"
+          buttonClassName="block w-full"
+          imgClassName="w-full h-auto"
         />
       ))}
-    </div>
-  );
-}
-
-function GalleryStripItem(props: {
-  entityID: string;
-  editable: boolean;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  let image = useGalleryImage(props.entityID);
-  if (!image) return null;
-  return (
-    <div className="relative group/image w-full">
-      <button type="button" onClick={props.onClick} className="block w-full">
-        <img
-          loading="lazy"
-          decoding="async"
-          alt={image.alt}
-          src={image.src}
-          width={image.width}
-          height={image.height}
-          className="w-full h-auto"
-        />
-      </button>
-      {props.editable && (
-        <ImageAltButton entityID={props.entityID} selected={props.selected} />
-      )}
     </div>
   );
 }

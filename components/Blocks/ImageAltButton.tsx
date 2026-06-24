@@ -10,11 +10,15 @@ import useMeasure from "react-use-measure";
 // Overlaid on an image; visible on hover (within a `group/image`), while the
 // containing block is selected, or whenever alt text already exists. Opens the
 // alt-text modal. Shared by ImageBlock and the image gallery.
+// Readers (canEdit === false) get only the "ALT" toggle to reveal existing alt
+// text — the edit/add-alt trigger is hidden.
 export function ImageAltButton(props: {
   entityID: string;
   selected: boolean;
+  canEdit?: boolean;
   className?: string;
 }) {
+  let canEdit = props.canEdit ?? true;
   let hasAlt = !!useEntity(props.entityID, "image/alt")?.data.value;
   let alt = useEntity(props.entityID, "image/alt")?.data.value;
   let [showAlt, setShowAlt] = useState(false);
@@ -24,6 +28,10 @@ export function ImageAltButton(props: {
     opacity: showAlt ? 1 : 0,
     config: { tension: 280, friction: 30 },
   });
+
+  // Readers have nothing to interact with when there's no alt text.
+  if (!canEdit && !hasAlt) return null;
+
   return (
     <div
       // Hide the alt preview only when focus leaves the whole group — moving
@@ -43,27 +51,29 @@ export function ImageAltButton(props: {
       } ${props.className || ""}`}
     >
       <div className="flex gap-1 items-center justify-end">
-        <ImageAltModal
-          trigger={
-            <div
-              aria-label="Edit alt text"
-              // Keep focus on the ALT button through the click so the preview
-              // doesn't blur-close and reflow the buttons mid-click.
-              onMouseDown={(e) => e.preventDefault()}
-              className="hover:cursor-pointer  opaque-container border-2! border-secondary! rounded-md! h-5 text-secondary"
-            >
-              {hasAlt ? (
-                <EditTiny />
-              ) : (
-                <div className="text-xs font-bold px-1 leading-tight ">
-                  ADD ALT
-                </div>
-              )}
-            </div>
-          }
-          entityID={props.entityID}
-          title={hasAlt ? "Edit Alt Text" : "Add Alt Text"}
-        />
+        {canEdit && (
+          <ImageAltModal
+            trigger={
+              <div
+                aria-label="Edit alt text"
+                // Keep focus on the ALT button through the click so the preview
+                // doesn't blur-close and reflow the buttons mid-click.
+                onMouseDown={(e) => e.preventDefault()}
+                className="hover:cursor-pointer  opaque-container border-2! border-secondary! rounded-md! h-5 text-secondary"
+              >
+                {hasAlt ? (
+                  <EditTiny />
+                ) : (
+                  <div className="text-xs font-bold px-1 leading-tight ">
+                    ADD ALT
+                  </div>
+                )}
+              </div>
+            }
+            entityID={props.entityID}
+            title={hasAlt ? "Edit Alt Text" : "Add Alt Text"}
+          />
+        )}
         {hasAlt && (
           <button
             onMouseDown={(e) => {
@@ -78,11 +88,10 @@ export function ImageAltButton(props: {
         )}
       </div>
       <animated.div style={{ ...altStyle, overflow: "hidden" }}>
-        <div
-          ref={altRef}
-          className="frosted-container leading-snug text-secondary border-none! line-clamp-2 text-sm px-1.5 p-1 shrink-0 mt-1"
-        >
-          {alt}
+        <div className="pt-1" ref={altRef}>
+          <div className="frosted-container leading-snug text-secondary border-none! line-clamp-2 text-sm px-1.5 p-1 shrink-0">
+            {alt}
+          </div>
         </div>
       </animated.div>
     </div>

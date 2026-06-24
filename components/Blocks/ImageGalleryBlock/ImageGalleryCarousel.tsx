@@ -1,8 +1,6 @@
 import { useRef, useState } from "react";
-import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
-import { useGalleryImage } from "./shared";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
-import { ImageAltButton } from "../ImageAltButton";
+import { GalleryImageItem } from "./GalleryImageItem";
 
 export function ImageGalleryCarousel(props: {
   imageEntities: string[];
@@ -41,11 +39,13 @@ export function ImageGalleryCarousel(props: {
             key={entityID}
             className="snap-center snap-always flex items-center justify-center"
           >
-            <GalleryCarouselItem
+            <GalleryImageItem
               entityID={entityID}
               editable={props.editable}
               selected={props.selected}
               onClick={() => props.onImageClick(i)}
+              buttonClassName="block"
+              imgClassName="w-full max-h-[70vh] object-contain"
             />
           </div>
         ))}
@@ -70,32 +70,6 @@ export function ImageGalleryCarousel(props: {
           <div className="w-4 h-4" />
         )}
       </div>
-    </div>
-  );
-}
-
-function GalleryCarouselItem(props: {
-  entityID: string;
-  editable: boolean;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  let image = useGalleryImage(props.entityID);
-  if (!image) return null;
-  return (
-    <div className="relative group/image">
-      <button type="button" onClick={props.onClick} className="block">
-        <img
-          loading="lazy"
-          decoding="async"
-          alt={image.alt}
-          src={image.src}
-          className="w-full max-h-[70vh] object-contain"
-        />
-      </button>
-      {props.editable && (
-        <ImageAltButton entityID={props.entityID} selected={props.selected} />
-      )}
     </div>
   );
 }

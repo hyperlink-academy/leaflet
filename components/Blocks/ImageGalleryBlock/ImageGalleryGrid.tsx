@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useGalleryImage } from "./shared";
-import { ImageAltButton } from "../ImageAltButton";
+import { GalleryImageItem } from "./GalleryImageItem";
 
 export function ImageGalleryGrid(props: {
   imageEntities: string[];
@@ -56,51 +55,22 @@ export function ImageGalleryGrid(props: {
         }}
       >
         {props.imageEntities.map((entityID, i) => (
-          <GalleryGridItem
+          // Aspect ratio reserves each cell's natural height; align-items:
+          // stretch makes every cell in a row match the tallest, and
+          // object-cover fills the shorter ones.
+          <GalleryImageItem
             key={entityID}
             entityID={entityID}
             editable={props.editable}
             selected={props.selected}
             onClick={() => props.onImageClick(i)}
+            className="w-full"
+            buttonClassName="relative w-full overflow-hidde flex place-items-center"
+            imgClassName="absolute inset-0 max-w-full max-h-full object-cover m-auto"
+            useAspectRatio
           />
         ))}
       </div>
-    </div>
-  );
-}
-
-function GalleryGridItem(props: {
-  entityID: string;
-  editable: boolean;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  let image = useGalleryImage(props.entityID);
-  if (!image) return null;
-  return (
-    <div className="relative group/image w-full">
-      <button
-        type="button"
-        onClick={props.onClick}
-        // Aspect ratio reserves each cell's natural height; align-items: stretch
-        // makes every cell in a row match the tallest, and object-cover fills the
-        // shorter ones.
-        className="relative w-full overflow-hidde flex place-items-center"
-        style={{ aspectRatio: `${image.width} / ${image.height}` }}
-      >
-        <img
-          loading="lazy"
-          decoding="async"
-          width={image.width}
-          height={image.height}
-          alt={image.alt}
-          src={image.src}
-          className="absolute inset-0 max-w-full max-h-full object-cover m-auto"
-        />
-      </button>
-      {props.editable && (
-        <ImageAltButton entityID={props.entityID} selected={props.selected} />
-      )}
     </div>
   );
 }

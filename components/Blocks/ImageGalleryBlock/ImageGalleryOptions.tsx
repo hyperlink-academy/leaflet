@@ -34,8 +34,12 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import { AddSmall } from "components/Icons/AddSmall";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
+import { GridSmall } from "components/Icons/GridSmall";
+import { CarouselSmall } from "components/Icons/CarouselSmall";
+import { StripSmall } from "components/Icons/StripSmall";
 
 import { GalleryFormat, useGalleryImage } from "./shared";
+import { ButtonPrimary } from "components/Buttons";
 
 export function ImageGalleryOptions(props: {
   entityID: string;
@@ -56,73 +60,140 @@ export function ImageGalleryOptions(props: {
   return (
     <Popover
       asChild
-      side="top"
       align="end"
       sideOffset={6}
+      className=" w-full sm:w-md"
       trigger={<SettingsTriggerButton aria-label="Image Gallery Settings" />}
     >
       <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <h3>Format Images</h3>
-          <div className="flex gap-1 w-full">
-            {(["grid", "carousel", "strip"] as GalleryFormat[]).map((value) => {
+          <div className="flex gap-2 w-full">
+            {(
+              [
+                { value: "grid", Icon: GridSmall },
+                { value: "carousel", Icon: CarouselSmall },
+                { value: "strip", Icon: StripSmall },
+              ] as { value: GalleryFormat; Icon: typeof GridSmall }[]
+            ).map(({ value, Icon }) => {
               let selected = props.format === value;
               return (
                 <button
                   key={value}
                   type="button"
+                  aria-label={value}
                   aria-pressed={selected}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setFormat(value)}
-                  className={`flex-1 capitalize text-sm py-1.5 px-2 border outline-2 outline-offset-1 ${
+                  className={`flex-1 flex items-center justify-center py-1.5 px-2 border rounded-md outline-2 ${
                     selected
-                      ? "accent-container outline-accent-contrast border-accent-contrast"
-                      : "opaque-container outline-transparent"
+                      ? "bg-[var(--accent-light)] border-accent-contrast text-accent-contrast outline-accent-contrast outline-offset-1"
+                      : "opaque-container border-transparent text-tertiary outline-transparent"
                   }`}
                 >
-                  {value}
+                  <Icon />
                 </button>
               );
             })}
           </div>
-          <label className="flex items-center justify-between gap-2 text-sm">
-            <span>Gap</span>
-            <Input
-              type="number"
-              min={0}
-              className="w-20 input-with-border"
-              value={String(props.gap)}
-              onMouseDown={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                let value = Math.max(0, Number(e.currentTarget.value) || 0);
-                rep?.mutate.assertFact({
-                  entity: props.entityID,
-                  attribute: "gallery/gap",
-                  data: { type: "number", value },
-                });
-              }}
-            />
-          </label>
+          {props.format === "carousel" || props.format === "grid" ? (
+            <>
+              <hr className="border-border-light " />
+              <GapControl entityID={props.entityID} gap={props.gap} />
+            </>
+          ) : null}
           {props.format === "grid" && (
-            <MaxWidthControl
-              entityID={props.entityID}
-              maxWidth={props.maxWidth}
-            />
+            <>
+              <hr className="border-border-light " />
+
+              <MaxWidthControl
+                entityID={props.entityID}
+                maxWidth={props.maxWidth}
+              />
+            </>
           )}
         </div>
 
         <hr className="border-border-light my-1" />
 
-        <button
+        <ButtonPrimary
+          fullWidth
           type="button"
-          className="text-left text-sm text-accent-contrast"
+          className=""
           onMouseDown={(e) => e.preventDefault()}
           onClick={props.onEditImages}
         >
           Edit Images
-        </button>
+        </ButtonPrimary>
       </div>
     </Popover>
+  );
+}
+
+const GAP_MIN = 0;
+const GAP_MAX = 240;
+const GAP_STEP = 1;
+
+function GapControl(props: { entityID: string; gap: number }) {
+  let { rep } = useReplicache();
+  // Interim value lets the slider/input update live; committed to the fact on
+  // release (slider) or blur/Enter (input).
+  let [interim, setInterim] = useState(props.gap);
+  useEffect(() => setInterim(props.gap), [props.gap]);
+
+  let sliderValue = Number.isNaN(interim)
+    ? props.gap
+    : Math.max(GAP_MIN, Math.min(GAP_MAX, interim));
+
+  let commit = (value: number) => {
+    // Slider caps at GAP_MAX, but the input accepts any value above the floor.
+    let clamped = Math.max(GAP_MIN, Number.isNaN(value) ? props.gap : value);
+    setInterim(clamped);
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      attribute: "gallery/gap",
+      data: { type: "number", value: clamped },
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="flex items-center justify-between gap-2 text-sm">
+        <span className="font-bold">Gap</span>
+        <Input
+          type="number"
+          min={GAP_MIN}
+          className="w-20 input-with-border"
+          value={Number.isNaN(interim) ? "" : String(interim)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onChange={(e) => setInterim(parseInt(e.currentTarget.value))}
+          onBlur={() => commit(interim)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit(interim);
+            }
+          }}
+        />
+      </label>
+      <Slider.Root
+        className="relative flex items-center select-none touch-none w-full h-fit px-1"
+        value={[sliderValue]}
+        min={GAP_MIN}
+        max={GAP_MAX}
+        step={GAP_STEP}
+        onValueChange={(value) => setInterim(value[0])}
+        onValueCommit={(value) => commit(value[0])}
+      >
+        <Slider.Track className="bg-border-light relative grow rounded-full h-[3px] my-2">
+          <Slider.Range className="absolute bg-accent-contrast rounded-full h-full" />
+        </Slider.Track>
+        <Slider.Thumb
+          className="block w-4 h-4 rounded-full border-2 border-bg-page bg-accent-contrast cursor-pointer"
+          aria-label="Gap"
+        />
+      </Slider.Root>
+    </div>
   );
 }
 
@@ -157,7 +228,7 @@ function MaxWidthControl(props: { entityID: string; maxWidth: number }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="flex items-center justify-between gap-2 text-sm">
-        <span>Max image width</span>
+        <span className="font-bold ">Max Width</span>
         <Input
           type="number"
           min={MAX_WIDTH_MIN}
@@ -249,7 +320,9 @@ function EditGalleryImagesContent(props: {
   function handleDragEnd(event: DragEndEvent) {
     let { active, over } = event;
     if (!over || active.id === over.id) return;
-    let oldIndex = props.imageFacts.findIndex((f) => f.data.value === active.id);
+    let oldIndex = props.imageFacts.findIndex(
+      (f) => f.data.value === active.id,
+    );
     let newIndex = props.imageFacts.findIndex((f) => f.data.value === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
@@ -308,14 +381,8 @@ function EditGalleryImagesContent(props: {
 
 function SortableImageRow(props: { entityID: string }) {
   let { rep } = useReplicache();
-  let {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: props.entityID });
+  let { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: props.entityID });
   let image = useGalleryImage(props.entityID);
   let name =
     useEntity(props.entityID, "image/name")?.data.value || "Untitled image";
