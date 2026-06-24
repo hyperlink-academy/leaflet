@@ -5,9 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Database } from "supabase/database.types";
 import { isMainSiteHost } from "src/utils/customDomain";
 import {
-  CROSS_SITE_AUTH_RESPONSE,
   receive_auth_callback_route,
-  signCrossSiteToken,
+  decryptCrossSiteToken,
 } from "src/crossSiteAuth";
 
 export const config = {
@@ -103,21 +102,14 @@ export default async function middleware(req: NextRequest) {
 }
 
 async function receiveAuthCallback(req: NextRequest) {
-  let payload = req.nextUrl.searchParams.get("payload");
-  let signature = req.nextUrl.searchParams.get("signature");
+  let token = req.nextUrl.searchParams.get("token");
+  if (typeof token !== "string") return new NextResponse(null, { status: 401 });
 
-  if (typeof payload !== "string" || typeof signature !== "string")
-    return new NextResponse(null, { status: 401 });
-  payload = decodeURIComponent(payload);
-  signature = decodeURIComponent(signature);
+  let payload = await decryptCrossSiteToken(token);
+  if (!payload) return new NextResponse(null, { status: 401 });
 
-  let verifySig = await signCrossSiteToken(payload);
-  if (verifySig !== signature) return new NextResponse(null, { status: 401 });
-
-  let token: CROSS_SITE_AUTH_RESPONSE = JSON.parse(atob(payload));
-
-  let url = new URL(token.redirect);
+  let url = new URL(payload.redirect);
   let response = NextResponse.redirect(url.toString());
-  response.cookies.set("external_auth_token", token.auth_token || "null");
+  response.cookies.set("external_auth_token", payload.auth_token || "null");
   return response;
 }
