@@ -27,42 +27,43 @@ export function ImageGalleryCarousel(props: {
 
   return (
     <div className="relative w-full">
-      <div
-        ref={scrollRef}
-        onScroll={onScroll}
-        className="grid grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory no-scrollbar"
-      >
-        {Array.from({ length: count }).map((_, i) => (
-          <div
-            key={i}
-            className="snap-center snap-always flex items-center justify-center"
-          >
-            {props.renderItem(i, {
-              buttonClassName: "block",
-              imgClassName: "w-full max-h-[70vh] object-contain",
-            })}
-          </div>
-        ))}
-      </div>
+      <div className="relative w-full">
+        <div
+          ref={scrollRef}
+          onScroll={onScroll}
+          className="grid grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory no-scrollbar"
+        >
+          {Array.from({ length: count }).map((_, i) => (
+            <div
+              key={i}
+              className="snap-center snap-always flex items-center justify-center"
+            >
+              {props.renderItem(i, {
+                buttonClassName: "block",
+                imgClassName: "w-full max-h-[70vh] object-contain",
+              })}
+            </div>
+          ))}
+        </div>
 
-      <div className="imageGalleryCarouselControls flex flex-row gap-2 px-2 py-0.5 text-tertiary text-sm text-center mx-auto justify-center pt-2">
-        {current !== 0 ? (
+        {current !== 0 && (
           <CarouselArrow
             direction="left"
+            className="absolute left-2 top-1/2 -translate-y-1/2"
             onClick={() => scrollToIndex(current - 1)}
           />
-        ) : (
-          <div className="w-4 h-4" />
         )}
-        {current + 1} / {count}{" "}
-        {current < count - 1 ? (
+        {current < count - 1 && (
           <CarouselArrow
             direction="right"
+            className="absolute right-2 top-1/2 -translate-y-1/2"
             onClick={() => scrollToIndex(current + 1)}
           />
-        ) : (
-          <div className="w-4 h-4" />
         )}
+      </div>
+
+      <div className="imageGalleryCarouselControls px-2 py-0.5 text-tertiary text-sm text-center mx-auto pt-2">
+        {current + 1} / {count}
       </div>
     </div>
   );
@@ -70,6 +71,7 @@ export function ImageGalleryCarousel(props: {
 
 function CarouselArrow(props: {
   direction: "left" | "right";
+  className?: string;
   onClick: () => void;
 }) {
   return (
@@ -81,7 +83,7 @@ function CarouselArrow(props: {
         props.onClick();
       }}
       onMouseDown={(e) => e.preventDefault()}
-      className={`text-teriary hover:text-accent-contrast`}
+      className={`light-container hover:text-accent-contrast hover:border-accent-contrast rounded-full! p-1 ${props.className ?? ""}`}
     >
       <GoToArrowLined
         className={props.direction === "left" ? "rotate-180" : ""}
