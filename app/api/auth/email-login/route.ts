@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_TOKEN_COOKIE, resolveAuthToken } from "src/auth";
 import { postAuthRedirect } from "src/postAuthRedirect";
+import { publicationUriForHost } from "src/utils/publicationForHost";
 
 // Custom-domain email login bounces here first. If the user already has a
 // session on the main site for this same email we hand it straight back to the
@@ -34,5 +35,9 @@ export async function GET(req: NextRequest) {
   confirmUrl.searchParams.set("token", tokenId);
   confirmUrl.searchParams.set("email", email);
   confirmUrl.searchParams.set("redirect", redirect);
+  // When the login was started on a publication's custom domain, hand its uri
+  // to the confirm page so it can render in that publication's theme.
+  let publicationUri = await publicationUriForHost(new URL(redirect).host);
+  if (publicationUri) confirmUrl.searchParams.set("publication", publicationUri);
   return NextResponse.redirect(confirmUrl.toString());
 }

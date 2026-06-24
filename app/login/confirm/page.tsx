@@ -1,53 +1,70 @@
-"use client";
-import { confirmEmailLogin } from "actions/emailAuth";
-import { EmailConfirm } from "components/Subscribe/EmailSubscribe";
-import { useToaster } from "components/Toast";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { AtUri } from "@atproto/api";
+import { PubIcon } from "components/ActionBar/Publications";
+import {
+  PublicationThemeProvider,
+  PublicationBackgroundProvider,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { supabaseServerClient } from "supabase/serverClient";
+import { LoginConfirmForm } from "./LoginConfirmForm";
 
 // Where custom-domain email login lands when the user has no existing main-site
 // session (see /api/auth/email-login). Collecting the code here mints the
 // canonical auth_token first-party on the main site; on success confirmEmailLogin
-// hands the session to the originating domain's receive_auth_callback.
-export default function LoginConfirmPage() {
-  let params = useSearchParams();
-  let toaster = useToaster();
-  let token = params.get("token");
-  let email = params.get("email") ?? "";
-  // Absolute by contract (the email-login route always sets it); the origin
-  // fallback is applied in the handlers below — where window is defined — so
-  // confirmEmailLogin never hands postAuthRedirect a relative URL.
-  let redirectParam = params.get("redirect");
-  let [loading, setLoading] = useState(false);
+// hands the session to the originating domain's receive_auth_callback. When the
+// login started on a publication's custom domain, the route forwards that
+// publication's uri so the page renders in the publication's theme.
+export default async function LoginConfirmPage(props: {
+  searchParams: Promise<{ publication?: string }>;
+}) {
+  let { publication: publicationUri } = await props.searchParams;
 
-  let onSubmit = async (code: string) => {
-    if (!token) return;
-    setLoading(true);
-    let redirect = redirectParam || window.location.origin;
-    let res = await confirmEmailLogin(token, code, redirect);
-    if (!res.ok) {
-      setLoading(false);
-      toaster({
-        content: <div className="font-bold">Incorrect code!</div>,
-        type: "error",
-      });
-      return;
+  if (publicationUri) {
+    let { data: publication } = await supabaseServerClient
+      .from("publications")
+      .select("*")
+      .eq("uri", publicationUri)
+      .maybeSingle();
+    let record = normalizePublicationRecord(publication?.record);
+    if (publication && record) {
+      let iconUrl = record.icon
+        ? blobRefToSrc(record.icon.ref, new AtUri(publication.uri).host)
+        : undefined;
+      return (
+        <PublicationThemeProvider
+          record={record}
+          pub_creator={publication.identity_did}
+        >
+          <PublicationBackgroundProvider
+            record={record}
+            pub_creator={publication.identity_did}
+            className="min-h-screen"
+          >
+            <div className="w-full min-h-screen flex items-center justify-center p-4">
+              <div
+                className="flex flex-col items-center w-full max-w-sm text-primary
+                  bg-[rgba(var(--bg-page),var(--bg-page-alpha))]
+                  border border-border-light rounded-lg shadow-md
+                  p-6"
+              >
+                <div className="flex flex-row gap-2 items-center pb-4">
+                  <PubIcon icon={iconUrl} pubName={record.name} small />
+                  <h4 className="grow min-w-0 text-primary">{record.name}</h4>
+                </div>
+                <LoginConfirmForm />
+              </div>
+            </div>
+          </PublicationBackgroundProvider>
+        </PublicationThemeProvider>
+      );
     }
-    window.location.href = res.url;
-  };
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh p-4">
       <div className="accent-container p-4 py-5">
-        <EmailConfirm
-          autoFocus
-          emailValue={email}
-          loading={loading}
-          onSubmit={onSubmit}
-          onBack={() => {
-            window.location.href = redirectParam || window.location.origin;
-          }}
-        />
+        <LoginConfirmForm />
       </div>
     </div>
   );
