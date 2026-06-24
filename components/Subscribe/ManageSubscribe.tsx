@@ -187,12 +187,14 @@ export const ManageSubscription = (props: {
               value={email}
               onChange={setEmail}
               loading={linkRequesting}
+              onSubmit={onRequestLink}
               action={
                 <Modal
                   open={linkEmailOpen}
                   onOpenChange={setLinkEmailOpen}
                   trigger={
                     <ButtonPrimary
+                      type="button"
                       compact
                       disabled={linkRequesting || !email}
                       onClick={onRequestLink}

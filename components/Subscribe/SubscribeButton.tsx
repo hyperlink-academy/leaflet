@@ -232,19 +232,20 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   onChange={setEmail}
                   disabled={user.loggedIn && !!user.email}
                   loading={requesting}
+                  onSubmit={async () => {
+                    if (requesting || !email) return;
+                    if (needsLinkConfirmation) {
+                      setLinkModalOpen(true);
+                      return;
+                    }
+                    await sendRequest(false);
+                  }}
                   action={
                     <ButtonPrimary
+                      type="submit"
                       compact
                       className="leading-tight! outline-none! text-sm!"
                       disabled={requesting || !email}
-                      onClick={async () => {
-                        if (requesting) return;
-                        if (needsLinkConfirmation) {
-                          setLinkModalOpen(true);
-                          return;
-                        }
-                        await sendRequest(false);
-                      }}
                     >
                       Get Emails
                     </ButtonPrimary>
@@ -272,18 +273,19 @@ export const SubscribeInput = (props: SubscribeProps) => {
               disabled={user.loggedIn && !!user.email}
               loading={requesting}
               leading={modeMenu}
+              onSubmit={() => {
+                if (!email || requesting) return;
+                if (needsLinkConfirmation) {
+                  setLinkModalOpen(true);
+                  return;
+                }
+                redirectToEmailSubscribe(email, props.publicationUri);
+              }}
               action={
                 <ButtonPrimary
+                  type="submit"
                   compact
                   className="leading-tight! outline-none! text-sm!"
-                  onClick={() => {
-                    if (!email || requesting) return;
-                    if (needsLinkConfirmation) {
-                      setLinkModalOpen(true);
-                      return;
-                    }
-                    redirectToEmailSubscribe(email, props.publicationUri);
-                  }}
                 >
                   Subscribe
                 </ButtonPrimary>

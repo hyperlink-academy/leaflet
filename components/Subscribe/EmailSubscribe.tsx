@@ -31,9 +31,12 @@ export const EmailInput = (props: {
   disabled?: boolean;
   loading?: boolean;
   publicationUrl?: string;
+  // When set, the input is wrapped in a form so Enter submits. Callers that
+  // provide their own outer form (e.g. LoginButton) should omit this.
+  onSubmit?: () => void;
 }) => {
-  return (
-    <div className="flex gap-1 w-full min-w-0">
+  let content = (
+    <>
       <div
         className={` input-with-border flex gap-2 w-full items-center mx-auto py-0! min-w-0 ${props.large && "px-2!"} `}
         style={
@@ -81,7 +84,20 @@ export const EmailInput = (props: {
           </ButtonSecondary>
         </a>
       )}
-    </div>
+    </>
+  );
+  return props.onSubmit ? (
+    <form
+      className="flex gap-1 w-full min-w-0"
+      onSubmit={(e) => {
+        e.preventDefault();
+        props.onSubmit?.();
+      }}
+    >
+      {content}
+    </form>
+  ) : (
+    <div className="flex gap-1 w-full min-w-0">{content}</div>
   );
 };
 
