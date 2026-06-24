@@ -21,6 +21,7 @@ import {
 import { loginWithEmailToken } from "actions/login";
 import { getHomeDocs } from "app/(app)/(home-pages)/(writer)/home/storage";
 import { mutate } from "swr";
+import { mainSiteAuthBase } from "src/utils/customDomain";
 
 export const LoginModal = (props: {
   noEmailLogin?: boolean;
@@ -86,6 +87,18 @@ export const LoginContent = (props: {
   const handleEmailSubmit = async () => {
     setLoading(true);
     try {
+      // On a custom domain, complete email auth on the main site: it checks for
+      // an existing session and hands it back if found, otherwise it emails a
+      // code and collects it there before bouncing back. This keeps the
+      // canonical session first-party on the main site.
+      let base = mainSiteAuthBase();
+      if (base) {
+        let loginUrl = new URL("/api/auth/email-login", base);
+        loginUrl.searchParams.set("email", loginEmail);
+        loginUrl.searchParams.set("redirect", window.location.href);
+        window.location.href = loginUrl.toString();
+        return;
+      }
       const id = await requestAuthEmailToken(loginEmail);
       setTokenId(id);
       setState("email confirm");
@@ -169,15 +182,8 @@ export const LoginContent = (props: {
               loading={loading}
               onSubmit={(handle) => {
                 setLoading(true);
-                let redirectUrl: string;
-                if (props.redirectRoute) {
-                  redirectUrl = props.redirectRoute;
-                } else {
-                  let url = new URL(window.location.href);
-                  url.searchParams.set("refreshAuth", "");
-                  redirectUrl = url.toString();
-                }
-                window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}`;
+                let redirectUrl = props.redirectRoute || window.location.href;
+                window.location.href = `${mainSiteAuthBase()}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}`;
               }}
             />
             {props.noEmailLogin ? null : (
@@ -256,17 +262,18 @@ export const LoginContent = (props: {
             <div className="text-secondary pb-3">
               Create an Atmosphere account on Bluesky to get started!
             </div>
-            <form action="/api/oauth/login" method="GET">
-              <input
-                type="hidden"
-                name="redirect_url"
-                value={props.redirectRoute || "/"}
-              />
-              <input type="hidden" name="signup" value="true" />
-              <ButtonPrimary className="mx-auto mb-1">
-                <BlueskyTiny /> Sign up via Bluesky
-              </ButtonPrimary>
-            </form>
+            <ButtonPrimary
+              className="mx-auto mb-1"
+              onClick={() => {
+                let params = new URLSearchParams({
+                  redirect_url: props.redirectRoute || "/",
+                  signup: "true",
+                });
+                window.location.href = `${mainSiteAuthBase()}/api/oauth/login?${params}`;
+              }}
+            >
+              <BlueskyTiny /> Sign up via Bluesky
+            </ButtonPrimary>
             <AtmosphericHandleInfo />
           </div>
         )}
@@ -305,33 +312,25 @@ const LinkAtmosphereContent = (props: {
         loading={loading}
         onSubmit={(handle) => {
           setLoading(true);
-          let redirectUrl: string;
-          if (props.redirectRoute) {
-            redirectUrl = props.redirectRoute;
-          } else {
-            let url = new URL(window.location.href);
-            url.searchParams.set("refreshAuth", "");
-            redirectUrl = url.toString();
-          }
-          window.location.href = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}&link=true`;
+          let redirectUrl = props.redirectRoute || window.location.href;
+          window.location.href = `${mainSiteAuthBase()}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${encodeURIComponent(redirectUrl)}&link=true`;
         }}
       />
       <hr className="border-border-light mt-2 mb-1" />
-      <form action="/api/oauth/login" method="GET">
-        <input
-          type="hidden"
-          name="redirect_url"
-          value={props.redirectRoute || "/"}
-        />
-        <input type="hidden" name="signup" value="true" />
-        <input type="hidden" name="link" value="true" />
-        <button
-          type="submit"
-          className="text-sm text-accent-contrast flex gap-1 items-center mx-auto"
-        >
-          <BlueskyTiny /> or sign up via Bluesky
-        </button>
-      </form>
+      <button
+        type="button"
+        className="text-sm text-accent-contrast flex gap-1 items-center mx-auto"
+        onClick={() => {
+          let params = new URLSearchParams({
+            redirect_url: props.redirectRoute || "/",
+            signup: "true",
+            link: "true",
+          });
+          window.location.href = `${mainSiteAuthBase()}/api/oauth/login?${params}`;
+        }}
+      >
+        <BlueskyTiny /> or sign up via Bluesky
+      </button>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 "use client";
+import { mainSiteAuthBase } from "src/utils/customDomain";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import Link from "next/link";
@@ -87,7 +88,6 @@ export const SubscribeWithHandle = (props: {
     });
     let inIframe = isInIframe();
     let url = new URL(window.location.href);
-    url.searchParams.set("refreshAuth", "");
     // When the subscribe form is embedded in an iframe we can't run the oauth
     // flow in-frame (the PDS login page refuses to be framed), so we pop it into
     // a new top-level tab. That tab needs to land somewhere that surfaces the
@@ -97,7 +97,7 @@ export const SubscribeWithHandle = (props: {
     if (inIframe) url.searchParams.set("showSubscribeSuccess", "true");
     let redirectUrl = encodeURIComponent(url.toString());
     let extra = link ? "&link=true&autoMerge=true" : "";
-    let loginUrl = `/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
+    let loginUrl = `${mainSiteAuthBase()}/api/oauth/login?handle=${encodeURIComponent(handle)}&redirect_url=${redirectUrl}&action=${action}${extra}`;
     if (inIframe) {
       window.open(loginUrl, "_blank", "noopener,noreferrer");
       // The iframe stays put while the user completes login in the new tab —
@@ -123,11 +123,9 @@ export const SubscribeWithHandle = (props: {
       if (subscribing) return;
       setSubscribing(true);
       setOauthError(null);
-      let url = new URL(window.location.href);
-      url.searchParams.set("refreshAuth", "");
       let result = await subscribeToPublication(
         props.publicationUri,
-        url.toString(),
+        window.location.href,
       );
       if (!result.success) {
         if (isOAuthSessionError(result.error)) setOauthError(result.error);
@@ -321,10 +319,8 @@ export const LinkHandle = (props: { compact?: boolean }) => {
             let trimmed = handle.trim();
             if (!trimmed) return;
             setLoading(true);
-            let url = new URL(window.location.href);
-            url.searchParams.set("refreshAuth", "");
-            let redirectUrl = encodeURIComponent(url.toString());
-            window.location.href = `/api/oauth/login?handle=${encodeURIComponent(trimmed)}&redirect_url=${redirectUrl}`;
+            let redirectUrl = encodeURIComponent(window.location.href);
+            window.location.href = `${mainSiteAuthBase()}/api/oauth/login?handle=${encodeURIComponent(trimmed)}&redirect_url=${redirectUrl}`;
           }}
           action={
             <div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">

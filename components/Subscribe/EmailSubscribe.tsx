@@ -124,11 +124,9 @@ export const EmailButton = (props: {
   };
 
   const subscribeAtproto = async () => {
-    let url = new URL(window.location.href);
-    url.searchParams.set("refreshAuth", "");
     let res = await subscribeToPublication(
       props.publicationUri,
-      url.toString(),
+      window.location.href,
     );
     if (!res.success) {
       toaster({

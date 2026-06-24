@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createOauthClient } from "src/atproto-oauth";
 import {
   AUTH_TOKEN_COOKIE,
+  resolveAuthToken,
   setAuthToken,
   setPendingMergeToken,
 } from "src/auth";
@@ -19,7 +20,9 @@ import {
   parseActionFromSearchParam,
 } from "./afterSignInActions";
 import { inngest } from "app/api/inngest/client";
+import { idResolver } from "src/identity";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
+import { postAuthRedirect } from "src/crossSiteAuth";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -52,6 +55,33 @@ export async function GET(
       let redirect = searchParams.get("redirect_url");
       if (redirect) redirect = decodeURIComponent(redirect);
       let action = parseActionFromSearchParam(searchParams.get("action"));
+      // Forces the PDS round-trip even with a valid session — used to refresh an
+      // expired atproto OAuth session whose leaflet auth_token is still good.
+      const reauth = searchParams.get("reauth") === "true";
+
+      // Already authenticated on the main site with a full atproto session: skip
+      // the PDS round-trip and hand the session straight back to the originating
+      // domain (handleAction delivers it cross-domain via postAuthRedirect).
+      // Requires atp_did so email-only sessions still reach the PDS (e.g.
+      // subscribe needs atproto); link/signup/reauth always fall through. If a
+      // specific handle was requested, only reuse the session when it resolves
+      // to that same identity — otherwise the user is choosing a different
+      // account and must authenticate fresh.
+      if (!link && !signup && !reauth) {
+        let existing = await resolveAuthToken(
+          (await cookies()).get(AUTH_TOKEN_COOKIE)?.value,
+        );
+        let sessionDid = existing?.identity.atp_did;
+        if (existing && sessionDid) {
+          // No specific handle requested → reuse the session. A handle was
+          // requested → reuse only if it resolves to the same identity;
+          // a different or unresolvable handle falls through to the PDS.
+          if (!handle) return handleAction(action, redirect || "/", existing.tokenId);
+          if ((await resolveToDid(handle)) === sessionDid)
+            return handleAction(action, redirect || "/", existing.tokenId);
+        }
+      }
+
       let state: OauthRequestClientState = {
         redirect,
         action,
@@ -123,7 +153,7 @@ export async function GET(
               currentIdentity.id,
               session.did,
             );
-            return handleAction(s.action, redirectPath);
+            return handleAction(s.action, redirectPath, currentAuthToken ?? null);
           }
           if (identity.id !== currentIdentity.id) {
             if (s.autoMerge) {
@@ -161,7 +191,7 @@ export async function GET(
               currentIdentity.id,
               session.did,
             );
-            return handleAction(s.action, redirectPath);
+            return handleAction(s.action, redirectPath, currentAuthToken ?? null);
           }
           const { data } = await supabaseServerClient
             .from("identities")
@@ -213,14 +243,13 @@ export async function GET(
           })
           .select()
           .single();
-        console.log({ token });
         if (token) await setAuthToken(token.id);
 
-        // Process successful authentication here
-        console.log("authorize() was called with state:", state);
-
-        console.log("User authenticated as:", session.did);
-        return handleAction(s.action, redirectPath);
+        return handleAction(
+          s.action,
+          redirectPath,
+          token?.id ?? currentAuthToken ?? null,
+        );
       } catch (e) {
         // `redirect()` throws a NEXT_REDIRECT error that Next.js needs to see
         // at the framework boundary — don't swallow it.
@@ -263,22 +292,45 @@ const stagePendingMerge = async (identityId: string, redirectPath: string) => {
   redirect(`/merge-accounts?redirect=${encodeURIComponent(redirectPath)}`);
 };
 
+// Resolves a requested handle (or passthrough did) to a did so it can be
+// compared against the current session's identity. Returns null when the handle
+// can't be resolved, so the caller falls through to a fresh PDS login rather
+// than reusing a session that may not match.
+const resolveToDid = async (handle: string): Promise<string | null> => {
+  let trimmed = handle.trim().replace(/^@/, "");
+  if (!trimmed) return null;
+  if (trimmed.startsWith("did:")) return trimmed;
+  try {
+    return (await idResolver.handle.resolve(trimmed)) ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const handleAction = async (
   action: ActionAfterSignIn | null,
   redirectPath: string,
+  authTokenId: string | null,
 ) => {
   let parsePath = decodeURIComponent(redirectPath);
-  let url;
-  if (parsePath.includes("://")) url = new URL(parsePath);
-  else url = new URL(decodeURIComponent(redirectPath), "https://example.com");
+  if (!parsePath.includes("://")) {
+    let url = new URL(parsePath, "https://example.com");
+    if (action?.action === "subscribe") {
+      let result = await subscribeToPublication(action.publication);
+      if (result.success && result.hasFeed === false)
+        url.searchParams.set("showSubscribeSuccess", "true");
+    }
+    let path = url.pathname;
+    if (url.search) path += url.search;
+    if (url.hash) path += url.hash;
+    return redirect(path);
+  }
+
+  let url = new URL(parsePath);
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
     if (result.success && result.hasFeed === false)
       url.searchParams.set("showSubscribeSuccess", "true");
   }
-
-  let path = url.pathname;
-  if (url.search) path += url.search;
-  if (url.hash) path += url.hash;
-  return parsePath.includes("://") ? redirect(url.toString()) : redirect(path);
+  return redirect(await postAuthRedirect(url.toString(), authTokenId));
 };
