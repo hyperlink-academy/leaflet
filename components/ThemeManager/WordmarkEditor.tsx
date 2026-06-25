@@ -132,8 +132,7 @@ export function WordmarkEditor() {
             <div className="font-bold text-primary flex flex-col w-full">
               Use Wordmark
               <div className="text-sm font-normal text-tertiary!">
-                Upload an styled image your publication name to show on the
-                homepage.
+                A styled image of your publication name to show on the homepage
               </div>
             </div>
           </Radio>
