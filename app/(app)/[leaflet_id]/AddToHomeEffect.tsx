@@ -6,6 +6,7 @@ import { mutate as swrMutate } from "swr";
 import { addDocToHome } from "app/(app)/(home-pages)/(writer)/home/storage";
 import { useIdentityData } from "components/IdentityProvider";
 import { useReplicache } from "src/replicache";
+import { replaceWithoutParams } from "src/utils/replaceWithoutParams";
 
 export function useAddToHomeParam() {
   return useSearchParams().has("addToHome");
@@ -31,10 +32,7 @@ export function AddToHomeEffect() {
       swrMutate("leaflets");
     }
 
-    let params = new URLSearchParams(searchParams.toString());
-    params.delete("addToHome");
-    let qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname);
+    replaceWithoutParams(router, pathname, searchParams, ["addToHome"]);
   }, [shouldAdd, identity, permission_token, router, pathname, searchParams]);
 
   return null;

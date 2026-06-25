@@ -99,7 +99,6 @@ export async function applyAfterSignInAction(
       await recordEmailSubscription(parsed.publication, email, identityId);
       const target = new URL(redirect);
       target.searchParams.set("subscribe_email", email);
-      target.searchParams.set("subscribe_email_confirmed", "1");
       return target.toString();
     }
     default:

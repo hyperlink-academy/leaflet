@@ -3,7 +3,6 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
-import { setAuthToken } from "src/auth";
 import { recordEmailSubscription } from "src/emailSubscription";
 import { PubConfirmEmail } from "emails/pubConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
@@ -195,13 +194,8 @@ export async function confirmPublicationEmailSubscription(
     identityId = linkResult.value;
   } else {
     const current = await getIdentityData();
-    if (current) {
-      identityId = current.id;
-    } else {
-      // Logged-out confirm (embedded /api/subscribe_email form): create a session.
-      identityId = await createEmailSession(email);
-      if (!identityId) return Err("database_error");
-    }
+    if (!current) return Err("subscriber_not_found");
+    identityId = current.id;
   }
 
   const [{ error: updateError }, { error: eventError }] = await Promise.all([
@@ -373,40 +367,5 @@ async function linkEmailToCurrentIdentity(
   });
   if (!merged.ok) return Err("database_error");
   return Ok(current.id);
-}
-
-// Logs in an email whose ownership is already proven by a confirmation code:
-// ensures an identity, issues a pre-confirmed auth token, and sets the cookie.
-// Not exported — a "use server" export would be a client-callable endpoint.
-async function createEmailSession(email: string): Promise<string | null> {
-  const { data: identity, error: identityError } = await supabaseServerClient
-    .from("identities")
-    .upsert({ email }, { onConflict: "email" })
-    .select("id")
-    .single();
-  if (identityError || !identity) {
-    console.error("[subscribeEmail] identity upsert failed:", identityError);
-    return null;
-  }
-
-  await linkOrphanedEmailSubscribers(identity.id, email);
-
-  const { data: token, error: tokenError } = await supabaseServerClient
-    .from("email_auth_tokens")
-    .insert({
-      email,
-      identity: identity.id,
-      confirmed: true,
-      confirmation_code: generateConfirmationCode(),
-    })
-    .select("id")
-    .single();
-  if (tokenError || !token) {
-    console.error("[subscribeEmail] token insert failed:", tokenError);
-    return null;
-  }
-
-  await setAuthToken(token.id);
-  return identity.id;
 }
 

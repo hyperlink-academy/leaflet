@@ -6,6 +6,7 @@ import { useIdentityData } from "./IdentityProvider";
 import { Modal } from "./Modal";
 import { ButtonPrimary } from "./Buttons";
 import { theme } from "tailwind.config";
+import { replaceWithoutParams } from "src/utils/replaceWithoutParams";
 
 export function SubscriptionSuccessModal() {
   let searchParams = useSearchParams();
@@ -27,10 +28,9 @@ export function SubscriptionSuccessModal() {
   function handleOpenChange(next: boolean) {
     setOpen(next);
     if (!next) {
-      let params = new URLSearchParams(searchParams.toString());
-      params.delete("upgrade");
-      let qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      replaceWithoutParams(router, pathname, searchParams, ["upgrade"], {
+        scroll: false,
+      });
     }
   }
 

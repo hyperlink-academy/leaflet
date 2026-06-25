@@ -5,6 +5,7 @@ import { AUTH_TOKEN_COOKIE, resolveAuthToken } from "src/auth";
 import { postAuthRedirect } from "src/postAuthRedirect";
 import { publicationUriForHost } from "src/utils/publicationForHost";
 import { applyAfterSignInAction } from "src/emailSubscription";
+import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 
 // Custom-domain email login bounces here first. If the user already has a
 // session on the main site for this same email we hand it straight back to the
@@ -48,9 +49,9 @@ export async function GET(req: NextRequest) {
   confirmUrl.searchParams.set("email", email);
   confirmUrl.searchParams.set("redirect", redirect);
   if (action) confirmUrl.searchParams.set("action", action);
-  // When the login was started on a publication's custom domain, hand its uri
-  // to the confirm page so it can render in that publication's theme.
-  let publicationUri = await publicationUriForHost(new URL(redirect).host);
+  let publicationUri =
+    parseActionFromSearchParam(action)?.publication ||
+    (await publicationUriForHost(new URL(redirect).host));
   if (publicationUri) confirmUrl.searchParams.set("publication", publicationUri);
   return NextResponse.redirect(confirmUrl.toString());
 }

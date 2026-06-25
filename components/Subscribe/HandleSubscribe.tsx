@@ -88,12 +88,6 @@ export const SubscribeWithHandle = (props: {
     });
     let inIframe = isInIframe();
     let url = new URL(window.location.href);
-    // When the subscribe form is embedded in an iframe we can't run the oauth
-    // flow in-frame (the PDS login page refuses to be framed), so we pop it into
-    // a new top-level tab. That tab needs to land somewhere that surfaces the
-    // result — `showSubscribeSuccess` is preserved through the oauth callback's
-    // redirect and consumed by SubscribeInput to show the success modal once the
-    // subscription has been written.
     if (inIframe) url.searchParams.set("showSubscribeSuccess", "true");
     let loginUrl = buildOauthLoginUrl({
       handle,
