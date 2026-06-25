@@ -71,7 +71,12 @@ export function SubscribeConfirmationModal() {
       </Modal>
       <Modal
         open={!!emailSuccess}
-        onOpenChange={(open) => open || setEmailSuccess(null)}
+        onOpenChange={(open) => {
+          if (open) return;
+          setEmailSuccess(null);
+          mutateIdentity();
+          router.refresh();
+        }}
       >
         <EmailSubscribeSuccess
           email={emailSuccess ?? undefined}

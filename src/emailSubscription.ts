@@ -1,15 +1,12 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { publishAtprotoSubscriptionForDid } from "app/(app)/lish/subscribeToPublication";
 import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import {
+  getSuppression,
+  deleteSuppression,
+} from "src/utils/postmarkSuppressions";
 import { Ok, Err, type Result } from "src/result";
 
-// Internal server-side helpers, NOT server actions: recordEmailSubscription
-// trusts its identityId, so exporting it from a "use server" file would expose it
-// as a client-callable endpoint.
-
-// Marks an already-authenticated identity as a confirmed email subscriber and
-// mirrors it to atproto. Shared by the logged-in one-click subscribe and the
-// after-sign-in subscribe; callers must have authenticated identityId.
 export async function recordEmailSubscription(
   publicationUri: string,
   email: string,
@@ -78,6 +75,38 @@ export async function recordEmailSubscription(
   return Ok(null);
 }
 
+export async function checkEmailSubscriptionAllowed(
+  publicationUri: string,
+  email: string,
+): Promise<
+  Result<
+    null,
+    | "newsletter_disabled"
+    | "suppressed_spam_complaint"
+    | "suppression_delete_failed"
+  >
+> {
+  const { data: settings } = await supabaseServerClient
+    .from("publication_newsletter_settings")
+    .select("enabled")
+    .eq("publication", publicationUri)
+    .maybeSingle();
+  if (!settings?.enabled) return Err("newsletter_disabled");
+
+  const suppression = await getSuppression(email);
+  if (suppression?.reason === "SpamComplaint") {
+    return Err("suppressed_spam_complaint");
+  }
+  if (
+    suppression?.reason === "HardBounce" ||
+    suppression?.reason === "ManualSuppression"
+  ) {
+    const deleted = await deleteSuppression(email);
+    if (!deleted) return Err("suppression_delete_failed");
+  }
+  return Ok(null);
+}
+
 // Runs the after-sign-in action (parsed from the `action` search param) for a
 // just-authenticated email identity and returns where to send the browser. When
 // there is no action — or no authenticated identity — the redirect is returned
@@ -96,8 +125,24 @@ export async function applyAfterSignInAction(
 
   switch (parsed.action) {
     case "subscribe": {
-      await recordEmailSubscription(parsed.publication, email, identityId);
       const target = new URL(redirect);
+      const allowed = await checkEmailSubscriptionAllowed(
+        parsed.publication,
+        email,
+      );
+      if (!allowed.ok) {
+        target.searchParams.set("subscribe_email_error", allowed.error);
+        return target.toString();
+      }
+      const recorded = await recordEmailSubscription(
+        parsed.publication,
+        email,
+        identityId,
+      );
+      if (!recorded.ok) {
+        target.searchParams.set("subscribe_email_error", recorded.error);
+        return target.toString();
+      }
       target.searchParams.set("subscribe_email", email);
       return target.toString();
     }

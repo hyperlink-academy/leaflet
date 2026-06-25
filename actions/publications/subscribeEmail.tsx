@@ -3,7 +3,10 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
-import { recordEmailSubscription } from "src/emailSubscription";
+import {
+  recordEmailSubscription,
+  checkEmailSubscriptionAllowed,
+} from "src/emailSubscription";
 import { PubConfirmEmail } from "emails/pubConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
 import {
@@ -13,10 +16,6 @@ import {
   sendConfirmationEmail,
   type ConfirmationError,
 } from "src/utils/confirmationEmail";
-import {
-  getSuppression,
-  deleteSuppression,
-} from "src/utils/postmarkSuppressions";
 import {
   backfillAtprotoSubscriptionsForIdentity,
   publishAtprotoSubscriptionForDid,
@@ -51,41 +50,19 @@ export async function requestPublicationEmailSubscription(
   const email = emailRaw.trim().toLowerCase();
   if (!EMAIL_REGEX.test(email)) return Err("invalid_email");
 
-  const [{ data: settings }, { data: publication }, identity] =
-    await Promise.all([
-      supabaseServerClient
-        .from("publication_newsletter_settings")
-        .select("enabled")
-        .eq("publication", publicationUri)
-        .maybeSingle(),
-      supabaseServerClient
-        .from("publications")
-        .select("record")
-        .eq("uri", publicationUri)
-        .maybeSingle(),
-      getIdentityData(),
-    ]);
-  if (!settings?.enabled) return Err("newsletter_disabled");
+  const [allowed, { data: publication }, identity] = await Promise.all([
+    checkEmailSubscriptionAllowed(publicationUri, email),
+    supabaseServerClient
+      .from("publications")
+      .select("record")
+      .eq("uri", publicationUri)
+      .maybeSingle(),
+    getIdentityData(),
+  ]);
+  if (!allowed.ok) return Err(allowed.error);
   const normalizedPub = normalizePublicationRecord(publication?.record);
   const pubName = normalizedPub?.name;
   const pubUrl = normalizedPub?.url;
-
-  // Postmark suppression check: the broadcast stream is shared across all
-  // pubs, so a prior SpamComplaint or HardBounce on ANY publication blocks
-  // this one too. Spam complaints are permanent on Postmark's side (they
-  // refuse deletion) — surface a terminal error. Hard bounces / manual
-  // suppressions we clear now so the upcoming broadcast will deliver.
-  const suppression = await getSuppression(email);
-  if (suppression?.reason === "SpamComplaint") {
-    return Err("suppressed_spam_complaint");
-  }
-  if (
-    suppression?.reason === "HardBounce" ||
-    suppression?.reason === "ManualSuppression"
-  ) {
-    const deleted = await deleteSuppression(email);
-    if (!deleted) return Err("suppression_delete_failed");
-  }
 
   // Fast path: already authenticated with this email — skip the code round-trip.
   if (identity && identity.email?.toLowerCase() === email) {
