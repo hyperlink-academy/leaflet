@@ -264,8 +264,8 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
           ${
             props.type === "blockquote"
               ? props.previousBlock?.type === "blockquote" && !props.listData
-                ? "blockquote pt-3"
-                : "blockquote"
+                ? "blockquote w-auto pt-3"
+                : "blockquote w-auto"
               : ""
           }`}
       >
@@ -602,7 +602,8 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
         useEditorStates.getState().editorStates[entityID]?.editor;
       // Check if the block is empty (only the @ character)
       const blockIsEmpty =
-        editorState && editorState.doc.textContent.replace("@", "").trim() === "";
+        editorState &&
+        editorState.doc.textContent.replace("@", "").trim() === "";
 
       await undoManager.withUndoGroup(async () => {
         let targetEntityID: string;
@@ -627,10 +628,7 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
             type: "embed",
             newEntityID: targetEntityID,
             parent: props.parent,
-            position: generateKeyBetween(
-              props.position,
-              props.nextPosition,
-            ),
+            position: generateKeyBetween(props.position, props.nextPosition),
           });
           // Remove the @ from the current block's editor
           const view = useEditorStates.getState().editorStates[entityID]?.view;
