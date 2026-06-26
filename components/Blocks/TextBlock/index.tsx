@@ -259,14 +259,14 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
   return (
     <>
       <div
-        className={`flex items-center justify-between w-full
+        className={`flex items-center justify-between
           ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
           ${
             props.type === "blockquote"
               ? props.previousBlock?.type === "blockquote" && !props.listData
                 ? "blockquote w-auto pt-3"
                 : "blockquote w-auto"
-              : ""
+              : "w-full"
           }`}
       >
         {overlay}
