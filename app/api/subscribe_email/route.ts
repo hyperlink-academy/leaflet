@@ -6,6 +6,7 @@ import {
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import { mainSiteAuthBase } from "src/utils/customDomain";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.redirect(returnUrl.toString(), 303);
   }
 
-  const loginUrl = new URL("/api/auth/email-login", returnUrl.origin);
+  // Email login must complete first-party on the main site (where the canonical
+  // auth_token cookie lives), not on the publication's domain — it bounces the
+  // session back via receive_auth_callback. `redirect` still points at the
+  // publication so the success modal shows there.
+  const authBase = mainSiteAuthBase(req.headers.get("host") ?? undefined) || requestOrigin;
+  const loginUrl = new URL("/api/auth/email-login", authBase);
   loginUrl.searchParams.set("email", email);
   loginUrl.searchParams.set("redirect", returnUrl.toString());
   loginUrl.searchParams.set(
