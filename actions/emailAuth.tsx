@@ -11,8 +11,18 @@ import { applyAfterSignInAction } from "src/emailSubscription";
 import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
+import { PubConfirmEmail } from "emails/pubConfirmEmail";
 import { sendConfirmationEmail } from "src/utils/confirmationEmail";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
+
+// When the email-login flow is entered as part of subscribing to a publication
+// (the embedded subscribe form and the in-app subscribe button both route
+// through it), the confirmation code is sent with a subscription-specific email
+// instead of the generic "sign in" one.
+export type AuthEmailSubscription = {
+  publicationName?: string;
+  publicationUrl?: string;
+};
 
 async function sendAuthCode(email: string, code: string) {
   await sendConfirmationEmail({
@@ -32,6 +42,28 @@ async function sendAuthCode(email: string, code: string) {
   });
 }
 
+async function sendSubscriptionAuthCode(
+  email: string,
+  code: string,
+  subscription: AuthEmailSubscription,
+) {
+  await sendConfirmationEmail({
+    to: email,
+    subject: `Your subscription code is ${code}`,
+    template: (
+      <PubConfirmEmail
+        code={code}
+        publicationName={subscription.publicationName}
+        publicationUrl={subscription.publicationUrl}
+        assetsBaseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"}
+      />
+    ),
+    text: `Paste this code to confirm your subscription:\n\n${code}\n`,
+    devLogTag: "subscriber",
+    code,
+  });
+}
+
 // Throttle window for sending auth codes to a given email. Exposed via an
 // unauthenticated GET endpoint (see app/api/auth/email-login), so without this a
 // crafted link could spam a victim's inbox. Within the window we hand back the
@@ -39,7 +71,10 @@ async function sendAuthCode(email: string, code: string) {
 // the code from the first email still works.
 const AUTH_CODE_THROTTLE_MS = 60 * 1000;
 
-export async function requestAuthEmailToken(emailNonNormalized: string) {
+export async function requestAuthEmailToken(
+  emailNonNormalized: string,
+  subscription?: AuthEmailSubscription,
+) {
   let email = emailNonNormalized.toLowerCase();
   const client = await pool.connect();
   const db = drizzle(client);
@@ -73,7 +108,11 @@ export async function requestAuthEmailToken(emailNonNormalized: string) {
         id: email_auth_tokens.id,
       });
 
-    await sendAuthCode(email, code);
+    if (subscription) {
+      await sendSubscriptionAuthCode(email, code, subscription);
+    } else {
+      await sendAuthCode(email, code);
+    }
 
     return token.id;
   } finally {
