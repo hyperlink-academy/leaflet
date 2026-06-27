@@ -6,6 +6,8 @@ import { postAuthRedirect } from "src/postAuthRedirect";
 import { publicationUriForHost } from "src/utils/publicationForHost";
 import { applyAfterSignInAction } from "src/emailSubscription";
 import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import { supabaseServerClient } from "supabase/serverClient";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 // Custom-domain email login bounces here first. If the user already has a
 // session on the main site for this same email we hand it straight back to the
@@ -43,15 +45,36 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  let tokenId = await requestAuthEmailToken(email);
+  // A `subscribe` action means the user is subscribing, not just signing in —
+  // send the subscription confirmation email (publication name/url) instead of
+  // the generic auth code.
+  let subscribePublication = parseActionFromSearchParam(action)?.publication;
+  let subscription = subscribePublication
+    ? await resolveSubscriptionEmailContext(subscribePublication)
+    : undefined;
+
+  let tokenId = await requestAuthEmailToken(email, subscription);
   let confirmUrl = new URL("/login/confirm", req.nextUrl.origin);
   confirmUrl.searchParams.set("token", tokenId);
   confirmUrl.searchParams.set("email", email);
   confirmUrl.searchParams.set("redirect", redirect);
   if (action) confirmUrl.searchParams.set("action", action);
   let publicationUri =
-    parseActionFromSearchParam(action)?.publication ||
+    subscribePublication ||
     (await publicationUriForHost(new URL(redirect).host));
   if (publicationUri) confirmUrl.searchParams.set("publication", publicationUri);
   return NextResponse.redirect(confirmUrl.toString());
+}
+
+async function resolveSubscriptionEmailContext(publicationUri: string) {
+  const { data: publication } = await supabaseServerClient
+    .from("publications")
+    .select("record")
+    .eq("uri", publicationUri)
+    .maybeSingle();
+  const normalized = normalizePublicationRecord(publication?.record);
+  return {
+    publicationName: normalized?.name,
+    publicationUrl: normalized?.url,
+  };
 }
