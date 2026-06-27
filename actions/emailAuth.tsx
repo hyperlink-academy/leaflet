@@ -22,6 +22,7 @@ import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscri
 export type AuthEmailSubscription = {
   publicationName?: string;
   publicationUrl?: string;
+  publicationIcon?: string;
 };
 
 async function sendAuthCode(email: string, code: string) {
@@ -55,6 +56,7 @@ async function sendSubscriptionAuthCode(
         code={code}
         publicationName={subscription.publicationName}
         publicationUrl={subscription.publicationUrl}
+        publicationIcon={subscription.publicationIcon}
         assetsBaseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"}
       />
     ),
