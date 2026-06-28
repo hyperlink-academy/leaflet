@@ -63,7 +63,7 @@ export function ImageGalleryGrid(props: {
             {props.renderItem(i, {
               className: "w-full",
               buttonClassName:
-                "relative w-full overflow-hidde flex place-items-center",
+                "relative w-full overflow-hidden flex place-items-center",
               imgClassName:
                 "absolute inset-0 max-w-full max-h-full object-cover m-auto",
               useAspectRatio: true,

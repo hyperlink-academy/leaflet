@@ -865,6 +865,24 @@ const addGalleryImage: Mutation<{
 const removeGalleryImage: Mutation<{
   imageEntity: string;
 }> = async (args, ctx) => {
+  let [image] = await ctx.scanIndex.eav(args.imageEntity, "block/image");
+  await ctx.runOnServer(async ({ supabase }) => {
+    if (image) {
+      let paths = image.data.src.split("/");
+      await supabase.storage
+        .from("minilink-user-assets")
+        .remove([paths[paths.length - 1]]);
+    }
+  });
+  await ctx.runOnClient(async ({ tx }) => {
+    if (image) {
+      let localSrc = localImages.get(image.data.src);
+      if (localSrc) {
+        URL.revokeObjectURL(localSrc);
+        localImages.delete(image.data.src);
+      }
+    }
+  });
   await ctx.deleteEntity(args.imageEntity);
 };
 

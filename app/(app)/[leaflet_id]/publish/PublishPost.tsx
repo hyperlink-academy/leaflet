@@ -16,8 +16,8 @@ import { AtUri } from "@atproto/syntax";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
-import { addImage, localImages } from "src/utils/addImage";
-import { v7 } from "uuid";
+import { localImages } from "src/utils/addImage";
+import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { editorStateToFacetedText } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
@@ -401,19 +401,11 @@ const CoverImageControls = (props: {
   let permission_set = permission_token.permission_token_rights[0]?.entity_set;
 
   const handleFile = async (file: File) => {
-    if (!rep || !permission_set || !file.type.startsWith("image/")) return;
-    let imageEntity = v7();
-    await rep.mutate.createEntity([{ entityID: imageEntity, permission_set }]);
-    await addImage(file, rep, {
-      entityID: imageEntity,
-      attribute: "block/image",
-      ignoreUndo: true,
-    });
-    await rep.mutate.assertFact({
-      entity: props.rootEntity,
-      attribute: "root/cover-image",
-      data: { type: "reference", value: imageEntity },
-      ignoreUndo: true,
+    if (!rep || !permission_set) return;
+    await uploadCoverImage(rep, file, {
+      rootEntity: props.rootEntity,
+      permission_set,
+      existingCoverEntity: props.coverImageEntity,
     });
   };
 
@@ -425,7 +417,7 @@ const CoverImageControls = (props: {
         <>
           <button
             type="button"
-            className="hover:underlin text-accent-contrast"
+            className="hover:underline text-accent-contrast"
             onClick={() => {
               if (props.coverImageEntity)
                 rep?.mutate.deleteEntity({ entity: props.coverImageEntity });

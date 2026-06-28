@@ -3,8 +3,8 @@ import Image from "next/image";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useRef, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
-import { v7 } from "uuid";
-import { addImage, localImages } from "src/utils/addImage";
+import { localImages } from "src/utils/addImage";
+import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { CoverImageTiny } from "components/Icons/CoverImageTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
@@ -335,21 +335,11 @@ export const AddCoverImage = () => {
   let replaceInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFile = async (file: File) => {
-    if (!rep || !file.type.startsWith("image/")) return;
-    let imageEntity = v7();
-    await rep.mutate.createEntity([
-      { entityID: imageEntity, permission_set: entity_set.set },
-    ]);
-    await addImage(file, rep, {
-      entityID: imageEntity,
-      attribute: "block/image",
-      ignoreUndo: true,
-    });
-    await rep.mutate.assertFact({
-      entity: rootEntity,
-      attribute: "root/cover-image",
-      data: { type: "reference", value: imageEntity },
-      ignoreUndo: true,
+    if (!rep) return;
+    await uploadCoverImage(rep, file, {
+      rootEntity,
+      permission_set: entity_set.set,
+      existingCoverEntity: coverEntity,
     });
   };
 

@@ -284,22 +284,26 @@ function PostSendStatus(props: {
     );
   }
   if (status === "sending" || status === "pending") {
-    <div className="light-container font-bold text-accent-contrast text-xs px-1.5">
-      SENDING…
-    </div>;
+    return (
+      <div className="light-container font-bold text-accent-contrast text-xs px-1.5">
+        SENDING…
+      </div>
+    );
   }
   if (status === "failed") {
-    <Popover
-      trigger={
-        <div className="accent-container font-bold text-accent-2! bg-accent-1! text-xs px-1.5">
-          FAILED
-        </div>
-      }
-    >
-      <p className="text-sm text-tertiary">
-        Something went wrong… Try republishing and sending again.
-      </p>
-    </Popover>;
+    return (
+      <Popover
+        trigger={
+          <div className="accent-container font-bold text-accent-2! bg-accent-1! text-xs px-1.5">
+            FAILED
+          </div>
+        }
+      >
+        <p className="text-sm text-tertiary">
+          Something went wrong… Try republishing and sending again.
+        </p>
+      </Popover>
+    );
   }
   return null;
 }
