@@ -1,11 +1,10 @@
 import { useEntity } from "src/replicache";
-import { ImageAltSmall } from "components/Icons/ImageAlt";
-import { theme } from "tailwind.config";
 import { ImageAltModal } from "./ImageAltModal";
 import { EditTiny } from "components/Icons/EditTiny";
 import { useState } from "react";
 import { useSpring, animated } from "@react-spring/web";
 import useMeasure from "react-use-measure";
+import { ReadOnlyAltText } from "./ReadOnlyAltText";
 
 // Overlaid on an image; visible on hover (within a `group/image`), while the
 // containing block is selected, or whenever alt text already exists. Opens the
@@ -26,11 +25,14 @@ export function ImageAltButton(props: {
   let altStyle = useSpring({
     height: showAlt ? altHeight : 0,
     opacity: showAlt ? 1 : 0,
-    config: { tension: 280, friction: 30 },
+    config: { tension: 450, friction: 30 },
   });
 
   // Readers have nothing to interact with when there's no alt text.
   if (!canEdit && !hasAlt) return null;
+  // Readers get the plain ALT pill + preview, shared with published posts.
+  if (!canEdit)
+    return <ReadOnlyAltText alt={alt ?? ""} className={props.className} />;
 
   return (
     <div
@@ -89,7 +91,7 @@ export function ImageAltButton(props: {
       </div>
       <animated.div style={{ ...altStyle, overflow: "hidden" }}>
         <div className="pt-1" ref={altRef}>
-          <div className="frosted-container leading-snug text-secondary border-none! line-clamp-2 text-sm px-1.5 p-1 shrink-0">
+          <div className="opaque-container leading-snug text-secondary border-none! line-clamp-4 text-sm px-1.5 p-1 shrink-0">
             {alt}
           </div>
         </div>

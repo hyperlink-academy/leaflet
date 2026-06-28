@@ -20,14 +20,20 @@ export function ImageGalleryGrid(props: {
     return () => observer.disconnect();
   }, []);
 
-  // Pick the column count whose resulting column width lands as close to
-  // maxWidth as possible without exceeding it; one fewer column would push each
-  // image over maxWidth. Cap at the image count so we never render empty cells.
+  // Largest column count whose column width stays within maxWidth, accounting
+  // for the gaps between columns. The 1px slack absorbs sub-pixel ResizeObserver
+  // measurements so a gallery sized to its container doesn't tip into an extra
+  // column. Cap at the image count so we never render empty cells.
   let columns =
     containerWidth > 0
       ? Math.max(
           1,
-          Math.min(Math.ceil(containerWidth / props.maxWidth), props.count),
+          Math.min(
+            Math.ceil(
+              (containerWidth - 1 + props.gap) / (props.maxWidth + props.gap),
+            ),
+            props.count,
+          ),
         )
       : Math.min(props.count, 3);
 

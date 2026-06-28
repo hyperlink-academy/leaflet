@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import * as Slider from "@radix-ui/react-slider";
 
@@ -131,7 +132,7 @@ export function ImageGalleryOptions(props: {
 }
 
 const GAP_MIN = 0;
-const GAP_MAX = 240;
+const GAP_MAX = 64;
 const GAP_STEP = 1;
 
 function GapControl(props: { entityID: string; gap: number }) {
@@ -197,16 +198,24 @@ function GapControl(props: { entityID: string; gap: number }) {
   );
 }
 
-const MAX_WIDTH_MIN = 100;
-const MAX_WIDTH_MAX = 1000;
-const MAX_WIDTH_STEP = 10;
-
 function MaxWidthControl(props: { entityID: string; maxWidth: number }) {
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
+  let { data: pubData, normalizedPublication } = useLeafletPublicationData();
+  // Publication drafts carry page width on the publication record, not on the
+  // leaflet's theme facts; standalone docs use the leaflet theme.
+  let entityPageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
+  let pageWidth =
+    (pubData?.publications
+      ? normalizedPublication?.theme?.pageWidth
+      : entityPageWidth) || 624;
   // Interim value lets the slider/input update live; committed to the fact on
   // release (slider) or blur/Enter (input).
   let [interim, setInterim] = useState(props.maxWidth);
   useEffect(() => setInterim(props.maxWidth), [props.maxWidth]);
+
+  const MAX_WIDTH_MIN = 100;
+  const MAX_WIDTH_MAX = pageWidth;
+  const MAX_WIDTH_STEP = 10;
 
   let sliderValue = Number.isNaN(interim)
     ? props.maxWidth

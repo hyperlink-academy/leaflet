@@ -18,6 +18,7 @@ import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { ImageGallerySmall } from "components/Icons/ImageGallerySmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { BlockPollSmall } from "components/Icons/BlockPollSmall";
 import { PostListSmall } from "components/Icons/PostListSmall";
@@ -227,8 +228,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Image Gallery",
-    // TODO: replace with a dedicated gallery icon once drawn.
-    icon: <BlockImageSmall />,
+    icon: <ImageGallerySmall />,
     type: "block",
     alternateNames: ["gallery", "images", "carousel"],
     onSelect: async (rep, props, um) => {

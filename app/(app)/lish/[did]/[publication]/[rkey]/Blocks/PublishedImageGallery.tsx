@@ -2,9 +2,7 @@
 import { useMemo, useState } from "react";
 import { PubLeafletBlocksImageGallery } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { Popover } from "components/Popover";
-import { theme } from "tailwind.config";
-import { ImageAltSmall } from "components/Icons/ImageAlt";
+import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import {
   DEFAULT_FORMAT,
   DEFAULT_GAP,
@@ -50,7 +48,7 @@ export function PublishedImageGallery(props: {
     <GalleryImageItem
       image={images[i]}
       onClick={() => openLightbox(i)}
-      overlay={<AltPopover alt={images[i].alt} />}
+      overlay={<ReadOnlyAltText alt={images[i].alt} />}
       {...classes}
     />
   );
@@ -80,22 +78,6 @@ export function PublishedImageGallery(props: {
         onIndexChange={setLightboxIndex}
         renderSlide={(i) => <LightboxSlide image={images[i]} />}
       />
-    </div>
-  );
-}
-
-// Read-only alt overlay, mirroring the published single-image block.
-function AltPopover(props: { alt: string }) {
-  if (!props.alt) return null;
-  return (
-    <div className="absolute bottom-1.5 right-2 h-max">
-      <Popover
-        className="text-sm max-w-xs min-w-0"
-        side="left"
-        trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
-      >
-        <div className="text-sm text-secondary w-full">{props.alt}</div>
-      </Popover>
     </div>
   );
 }
