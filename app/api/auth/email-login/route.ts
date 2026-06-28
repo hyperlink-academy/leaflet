@@ -8,6 +8,8 @@ import { applyAfterSignInAction } from "src/emailSubscription";
 import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { AtUri } from "@atproto/api";
 
 // Custom-domain email login bounces here first. If the user already has a
 // session on the main site for this same email we hand it straight back to the
@@ -73,8 +75,16 @@ async function resolveSubscriptionEmailContext(publicationUri: string) {
     .eq("uri", publicationUri)
     .maybeSingle();
   const normalized = normalizePublicationRecord(publication?.record);
+  const assetsBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
   return {
     publicationName: normalized?.name,
     publicationUrl: normalized?.url,
+    publicationIcon: normalized?.icon
+      ? blobRefToSrc(
+          normalized.icon.ref,
+          new AtUri(publicationUri).host,
+          assetsBaseUrl,
+        )
+      : undefined,
   };
 }

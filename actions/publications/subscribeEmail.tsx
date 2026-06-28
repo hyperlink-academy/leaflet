@@ -24,6 +24,8 @@ import {
 import type { OAuthSessionError } from "src/atproto-oauth";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { AtUri } from "@atproto/api";
 
 type RequestError =
   | "invalid_email"
@@ -63,6 +65,14 @@ export async function requestPublicationEmailSubscription(
   const normalizedPub = normalizePublicationRecord(publication?.record);
   const pubName = normalizedPub?.name;
   const pubUrl = normalizedPub?.url;
+  const assetsBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+  const pubIcon = normalizedPub?.icon
+    ? blobRefToSrc(
+        normalizedPub.icon.ref,
+        new AtUri(publicationUri).host,
+        assetsBaseUrl,
+      )
+    : undefined;
 
   // Fast path: already authenticated with this email — skip the code round-trip.
   if (identity && identity.email?.toLowerCase() === email) {
@@ -132,7 +142,8 @@ export async function requestPublicationEmailSubscription(
         code={pendingCode}
         publicationName={pubName}
         publicationUrl={pubUrl}
-        assetsBaseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"}
+        publicationIcon={pubIcon}
+        assetsBaseUrl={assetsBaseUrl}
       />
     ),
     text: `Paste this code to confirm your subscription:\n\n${pendingCode}\n`,

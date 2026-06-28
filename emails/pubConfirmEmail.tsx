@@ -21,6 +21,7 @@ export const PubConfirmEmail = (props: {
   assetsBaseUrl?: string;
   publicationName?: string;
   publicationUrl?: string;
+  publicationIcon?: string;
 }) => {
   const staticUrl = makeStaticUrl(
     props.assetsBaseUrl ?? "https://leaflet.pub",
@@ -44,7 +45,7 @@ export const PubConfirmEmail = (props: {
                 <Img
                   width={24}
                   height={24}
-                  src={staticUrl("leaflet.png")}
+                  src={props.publicationIcon ?? staticUrl("leaflet.png")}
                   className="rounded-full"
                 />
               </Column>
