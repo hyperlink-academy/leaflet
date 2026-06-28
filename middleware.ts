@@ -3,6 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import { getCache } from "@vercel/functions";
 import { NextRequest, NextResponse } from "next/server";
 import { Database } from "supabase/database.types";
+import { isMainSiteHost } from "src/utils/customDomain";
+import {
+  receive_auth_callback_route,
+  decryptCrossSiteToken,
+} from "src/crossSiteAuth";
 
 export const config = {
   matcher: [
@@ -38,29 +43,8 @@ async function getDomainRoutes(hostname: string) {
 }
 type DomainRoutes = Awaited<ReturnType<typeof getDomainRoutes>>;
 
-const auth_callback_route = "/auth_callback";
-const receive_auth_callback_route = "/receive_auth_callback";
-
-const botUserAgentRegex =
-  /bot|crawler|spider|crawling|facebookexternalhit|facebookcatalog|whatsapp|telegram|slackbot|discordbot|linkedinbot|twitterbot|embedly|quora link preview|pinterest|redditbot|applebot|duckduckbot|baiduspider|yandex|bingpreview|vkshare|w3c_validator|mastodon|pleroma|misskey|iframely|skypeuripreview|google-inspectiontool|chrome-lighthouse/i;
-
-function isBot(req: NextRequest) {
-  let ua = req.headers.get("user-agent");
-  if (!ua) return false;
-  return botUserAgentRegex.test(ua);
-}
-function isMainSiteHost(hostname: string): boolean {
-  return (
-    hostname === "leaflet.pub" ||
-    hostname.startsWith("localhost") ||
-    hostname.startsWith("127.0.0.1") ||
-    hostname.endsWith(".vercel.app")
-  );
-}
-
 export default async function middleware(req: NextRequest) {
   let hostname = req.headers.get("host")!;
-  if (req.nextUrl.pathname === auth_callback_route) return authCallback(req);
   if (req.nextUrl.pathname === receive_auth_callback_route)
     return receiveAuthCallback(req);
 
@@ -95,36 +79,6 @@ export default async function middleware(req: NextRequest) {
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {
     if (req.nextUrl.pathname.startsWith("/lish")) return;
-    let cookie = req.cookies.get("external_auth_token");
-    let isStaticReq =
-      req.nextUrl.pathname.includes("/rss") ||
-      req.nextUrl.pathname.includes("/atom") ||
-      req.nextUrl.pathname.includes("/json") ||
-      req.nextUrl.pathname.includes("/sitemap.xml") ||
-      req.nextUrl.pathname.includes("/robots.txt");
-
-    // refreshAuth forces a re-sync (auth changed upstream); auth_completed marks
-    // a sync already attempted, breaking the loop when cookies are disabled.
-    let authCompleted = req.nextUrl.searchParams.has("auth_completed");
-    let refreshAuth = req.nextUrl.searchParams.has("refreshAuth");
-    let needsAuthSync = refreshAuth || (!cookie && !authCompleted);
-
-    if (
-      !isStaticReq &&
-      !isBot(req) &&
-      !hostname.includes("leaflet.pub") &&
-      needsAuthSync
-    ) {
-      return initiateAuthCallback(req);
-    }
-
-    // If auth was completed but we still don't have a cookie, cookies might be disabled
-    // Continue without auth rather than looping
-    if (authCompleted && !cookie) {
-      console.warn(
-        "Auth completed but no cookie set - cookies may be disabled",
-      );
-    }
     let aturi = new AtUri(pub?.uri);
     return NextResponse.rewrite(
       new URL(
@@ -147,94 +101,15 @@ export default async function middleware(req: NextRequest) {
   }
 }
 
-type CROSS_SITE_AUTH_REQUEST = { redirect: string; ts: string };
-type CROSS_SITE_AUTH_RESPONSE = {
-  redirect: string;
-  auth_token: string | null;
-  ts: string;
-};
-async function initiateAuthCallback(req: NextRequest) {
-  let redirectUrl = new URL(req.url);
-  redirectUrl.searchParams.delete("refreshAuth");
-  let token: CROSS_SITE_AUTH_REQUEST = {
-    redirect: redirectUrl.toString(),
-    ts: new Date().toISOString(),
-  };
-  let payload = btoa(JSON.stringify(token));
-  let signature = await signCrossSiteToken(payload);
-  return NextResponse.redirect(
-    `https://leaflet.pub${auth_callback_route}?payload=${encodeURIComponent(payload)}&signature=${encodeURIComponent(signature)}`,
-  );
-}
-
-async function authCallback(req: NextRequest) {
-  let payload = req.nextUrl.searchParams.get("payload");
-  let signature = req.nextUrl.searchParams.get("signature");
-
-  if (typeof payload !== "string" || typeof signature !== "string")
-    return new NextResponse("Payload or Signature not string", { status: 401 });
-
-  payload = decodeURIComponent(payload);
-  signature = decodeURIComponent(signature);
-
-  let verifySig = await signCrossSiteToken(payload);
-  if (verifySig !== signature)
-    return new NextResponse("Incorrect Signature", { status: 401 });
-
-  let token: CROSS_SITE_AUTH_REQUEST = JSON.parse(atob(payload));
-  let auth_token = req.cookies.get("auth_token")?.value || null;
-  let redirect_url = new URL(token.redirect);
-  let response_token: CROSS_SITE_AUTH_RESPONSE = {
-    redirect: token.redirect,
-    auth_token,
-    ts: new Date().toISOString(),
-  };
-
-  let response_payload = btoa(JSON.stringify(response_token));
-  let sig = await signCrossSiteToken(response_payload);
-  return NextResponse.redirect(
-    `https://${redirect_url.host}${receive_auth_callback_route}?payload=${encodeURIComponent(response_payload)}&signature=${encodeURIComponent(sig)}`,
-  );
-}
-
 async function receiveAuthCallback(req: NextRequest) {
-  let payload = req.nextUrl.searchParams.get("payload");
-  let signature = req.nextUrl.searchParams.get("signature");
+  let token = req.nextUrl.searchParams.get("token");
+  if (typeof token !== "string") return new NextResponse(null, { status: 401 });
 
-  if (typeof payload !== "string" || typeof signature !== "string")
-    return new NextResponse(null, { status: 401 });
-  payload = decodeURIComponent(payload);
-  signature = decodeURIComponent(signature);
+  let payload = await decryptCrossSiteToken(token);
+  if (!payload) return new NextResponse(null, { status: 401 });
 
-  let verifySig = await signCrossSiteToken(payload);
-  if (verifySig !== signature) return new NextResponse(null, { status: 401 });
-
-  let token: CROSS_SITE_AUTH_RESPONSE = JSON.parse(atob(payload));
-
-  let url = new URL(token.redirect);
-  url.searchParams.set("auth_completed", "true");
+  let url = new URL(payload.redirect);
   let response = NextResponse.redirect(url.toString());
-  response.cookies.set("external_auth_token", token.auth_token || "null");
+  response.cookies.set("external_auth_token", payload.auth_token || "null");
   return response;
 }
-
-const signCrossSiteToken = async (input: string) => {
-  if (!process.env.CROSS_SITE_AUTH_SECRET)
-    throw new Error("Environment variable CROSS_SITE_AUTH_SECRET not set ");
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const secretKey = process.env.CROSS_SITE_AUTH_SECRET;
-  const keyData = encoder.encode(secretKey);
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    keyData,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  const signature = await crypto.subtle.sign("HMAC", key, data);
-
-  return btoa(String.fromCharCode(...new Uint8Array(signature)));
-};

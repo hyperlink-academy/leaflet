@@ -9,6 +9,7 @@ import { Ok, Err, type Result } from "src/result";
 export async function createCheckoutSession(
   cadence: "month" | "year",
   returnUrl?: string,
+  coupon?: string,
 ): Promise<Result<{ url: string }, string>> {
   const identity = await getIdentityData();
   if (!identity) {
@@ -32,16 +33,16 @@ export async function createCheckoutSession(
     customerId = existingSub.stripe_customer_id;
   }
 
-  const successUrl = new URL(
-    "/api/checkout/success",
-    process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub",
-  );
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+
+  const successUrl = new URL("/api/checkout/success", appUrl);
   successUrl.searchParams.set("session_id", "{CHECKOUT_SESSION_ID}");
   if (returnUrl) {
     successUrl.searchParams.set("return", returnUrl);
   }
 
-  const cancelUrl = returnUrl || process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+  // Stripe requires an absolute URL; returnUrl is a relative path like "/home".
+  const cancelUrl = returnUrl ? new URL(returnUrl, appUrl).toString() : appUrl;
 
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
@@ -51,7 +52,11 @@ export async function createCheckoutSession(
       ? { customer: customerId }
       : { customer_email: identity.email || undefined }),
     subscription_data: { metadata: { identity_id: identity.id } },
-    allow_promotion_codes: true,
+    // Stripe rejects discounts and allow_promotion_codes together: a
+    // preset coupon takes the discount slot, otherwise let users enter a code.
+    ...(coupon
+      ? { discounts: [{ coupon }] }
+      : { allow_promotion_codes: true }),
     success_url: successUrl.toString(),
     cancel_url: cancelUrl,
   });

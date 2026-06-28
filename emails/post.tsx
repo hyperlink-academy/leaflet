@@ -1478,6 +1478,8 @@ const RichTextSpans = ({
             ...baseStyle,
             color: theme.accentBackground,
             textDecoration: baseStyle.textDecoration ?? "none",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
           }}
         >
           {content}
@@ -1492,6 +1494,8 @@ const RichTextSpans = ({
             ...baseStyle,
             color: theme.accentBackground,
             textDecoration: baseStyle.textDecoration ?? "none",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
           }}
         >
           {content}
@@ -1506,6 +1510,8 @@ const RichTextSpans = ({
             ...baseStyle,
             color: theme.accentBackground,
             textDecoration: baseStyle.textDecoration ?? "underline",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
           }}
         >
           {content}

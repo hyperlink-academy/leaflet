@@ -10,24 +10,36 @@ import { mutate } from "swr";
 import { SpeedyLink } from "components/SpeedyLink";
 import { Popover } from "components/Popover";
 import { Modal } from "components/Modal";
-import { InlineUpgradeToPro } from "app/(app)/lish/[did]/[publication]/UpgradeModal";
+import {
+  InlineUpgradeToPro,
+  UpgradeContent,
+} from "app/(app)/lish/[did]/[publication]/UpgradeModal";
 import { ManageProSubscription } from "app/(app)/lish/[did]/[publication]/dashboard/settings/ProSettings";
 import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { useState } from "react";
 import { LeafletPro } from "components/Icons/LeafletPro";
+import { useSidebarStore } from "./Sidebar";
 
 export const ProfileButton = () => {
+  let setSidebarOpen = useSidebarStore((s) => s.setOpen);
   let { identity } = useIdentityData();
   let { data: record } = useRecordFromDid(identity?.atp_did);
   let isMobile = useIsMobile();
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
+  let [open, setOpen] = useState(false);
+  let [domainsOpen, setDomainsOpen] = useState(false);
+  let [proOpen, setProOpen] = useState(false);
+  let [upgradeOpen, setUpgradeOpen] = useState(false);
 
   return (
+    <>
     <Popover
       asChild
+      open={open}
+      onOpenChange={setOpen}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       className="w-xs py-1! z-[60]!"
@@ -59,6 +71,10 @@ export const ProfileButton = () => {
             <SpeedyLink
               className="no-underline! menuItem -mx-[8px]"
               href={`/p/${record.handle}`}
+              onClick={() => {
+                setOpen(false);
+                setSidebarOpen(false);
+              }}
             >
               <button type="button" className="flex gap-2 ">
                 <AccountSmall />
@@ -68,21 +84,32 @@ export const ProfileButton = () => {
           </>
         )}
 
-        <ManageDomains />
+        <button
+          type="button"
+          className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
+          onClick={() => {
+            setOpen(false);
+            setDomainsOpen(true);
+          }}
+        >
+          <WebSmall />
+          Domain Settings
+        </button>
         <hr className="border-border-light border-dashed" />
 
         {canSeePro && isPro && (
           <>
-            <Modal
-              trigger={
-                <div className="menuItem -mx-[8px] ">
-                  <LeafletPro />
-                  Manage Pro Subscription
-                </div>
-              }
+            <button
+              type="button"
+              className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
+              onClick={() => {
+                setOpen(false);
+                setProOpen(true);
+              }}
             >
-              <ManageProSubscription />
-            </Modal>
+              <LeafletPro />
+              Manage Pro Subscription
+            </button>
             <hr className="border-border-light border-dashed" />
           </>
         )}
@@ -90,6 +117,8 @@ export const ProfileButton = () => {
           type="button"
           className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
           onClick={async () => {
+            setOpen(false);
+            setSidebarOpen(false);
             await fetch("/api/auth/logout");
             mutate("identity", null);
           }}
@@ -103,12 +132,38 @@ export const ProfileButton = () => {
             <hr className="border-border-light border-dashed" />
             <div className="py-2">
               <div className="p-2 accent-container">
-                <InlineUpgradeToPro compact />
+                <InlineUpgradeToPro
+                  compact
+                  onClick={() => {
+                    setOpen(false);
+                    setUpgradeOpen(true);
+                  }}
+                />
               </div>
             </div>
           </>
         )}
       </div>
     </Popover>
+    <ManageDomains open={domainsOpen} onOpenChange={setDomainsOpen} />
+    {canSeePro && isPro && (
+      <Modal
+        className="w-md max-w-full"
+        open={proOpen}
+        onOpenChange={setProOpen}
+      >
+        <ManageProSubscription />
+      </Modal>
+    )}
+    {canSeePro && !isPro && (
+      <Modal
+        className="sm:w-fit w-[90vw]"
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+      >
+        <UpgradeContent />
+      </Modal>
+    )}
+    </>
   );
 };

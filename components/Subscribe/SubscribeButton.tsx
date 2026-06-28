@@ -1,14 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { SubscribeWithHandle, AtSubscribeSuccess } from "./HandleSubscribe";
 import { EmailInput, EmailButton, EmailConfirm } from "./EmailSubscribe";
 import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
 import { LinkIdentityModal } from "./LinkIdentityModal";
-import {
-  SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES,
-  type SubscribeError,
-} from "./subscribeErrors";
+import { SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES } from "./subscribeErrors";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
@@ -22,12 +19,29 @@ import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
 } from "actions/publications/subscribeEmail";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import { mainSiteAuthBase } from "src/utils/customDomain";
 
 import { useViewerSubscription } from "./viewerSubscription";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 
 type SubscribeMode = "email" | "atproto";
+
+// Logged-out email subscribe goes through the main-site email-login flow with a
+// `subscribe` after-sign-in action, so the session is minted on the main site
+// and handed back to the custom domain (see postAuthRedirect).
+function redirectToEmailSubscribe(email: string, publicationUri: string) {
+  let base = mainSiteAuthBase() || window.location.origin;
+  let url = new URL("/api/auth/email-login", base);
+  url.searchParams.set("email", email);
+  url.searchParams.set("redirect", window.location.href);
+  url.searchParams.set(
+    "action",
+    encodeActionToSearchParam({ action: "subscribe", publication: publicationUri }),
+  );
+  window.location.href = url.toString();
+}
 
 export type SubscribeProps = {
   autoFocus?: boolean;
@@ -60,26 +74,24 @@ export const SubscribePanel = (props: SubscribeProps) => {
 export const SubscribeInput = (props: SubscribeProps) => {
   let toaster = useToaster();
   let router = useRouter();
-  let pathname = usePathname();
-  let searchParams = useSearchParams();
   const user = useViewerSubscription(props.publicationUri);
   const { identity, mutate: mutateIdentity } = useIdentityData();
   let [email, setEmail] = useState(user.email ?? "");
+  let [requesting, setRequesting] = useState(false);
+  let [confirming, setConfirming] = useState(false);
+  let [confirmOpen, setConfirmOpen] = useState(false);
   let [confirmState, setConfirmState] = useState<"confirm" | "success">(
     "confirm",
   );
-  let [confirmOpen, setConfirmOpen] = useState(false);
-  let [requesting, setRequesting] = useState(false);
-  let [confirming, setConfirming] = useState(false);
+  let [atSuccessOpen, setAtSuccessOpen] = useState(false);
+  // Tracks that the user passed through LinkIdentityModal — when they enter the
+  // confirmation code we attach the email to their current atp identity (or
+  // merge from any existing email-only identity) instead of creating a
+  // disconnected email-only account.
+  let [linkToCurrent, setLinkToCurrent] = useState(false);
   let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [linkModalOpen, setLinkModalOpen] = useState(false);
   let [subscribeMode, setSubscribeMode] = useState<SubscribeMode>("email");
-  let [atSuccessOpen, setAtSuccessOpen] = useState(false);
-  // Tracks that the user passed through LinkIdentityModal — when they enter
-  // the confirmation code we attach the email to their current atp identity
-  // (or merge from any existing email-only identity) instead of creating a
-  // disconnected email-only account.
-  let [linkToCurrent, setLinkToCurrent] = useState(false);
 
   const viewerHandle = identity?.bsky_profiles?.handle;
   const viewerAtpDid = identity?.atp_did;
@@ -88,60 +100,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
   // account with no email yet. The modal asks them to link the typed email
   // (or log out) before we send a confirmation code.
   const needsLinkConfirmation = !!viewerAtpDid && !viewerEmail && !!email;
-
-  // Embedded subscribe forms (see /api/subscribe_email) redirect back here
-  // with `subscribe_email=<email>` after sending the confirmation code. Open
-  // the confirm modal so the user can paste the code from their inbox without
-  // re-entering their email. `subscribe_email_confirmed=1` means the user was
-  // already verified server-side and the modal jumps straight to success.
-  useEffect(() => {
-    if (!props.newsletterMode) return;
-    const incomingEmail = searchParams.get("subscribe_email");
-    const alreadyConfirmed =
-      searchParams.get("subscribe_email_confirmed") === "1";
-    const errorCode = searchParams.get("subscribe_email_error");
-    if (!incomingEmail && !errorCode) return;
-
-    if (errorCode) {
-      const message =
-        ERROR_MESSAGES[errorCode as SubscribeError] ??
-        "We couldn't process that subscription. Try again.";
-      toaster({ type: "error", content: message });
-    } else if (incomingEmail) {
-      setEmail(incomingEmail);
-      setConfirmState(alreadyConfirmed ? "success" : "confirm");
-      setConfirmOpen(true);
-      if (alreadyConfirmed) {
-        setLocallySubscribed(true);
-        router.refresh();
-      }
-    }
-
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("subscribe_email");
-    next.delete("subscribe_email_confirmed");
-    next.delete("subscribe_email_error");
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.newsletterMode]);
-
-  // The atproto subscribe flow pops oauth into a new tab when the form is
-  // embedded in an iframe (see HandleSubscribe.redirectToOauthForSubscribe).
-  // The oauth callback writes the subscription and redirects back here with
-  // `showSubscribeSuccess=true`; open the success modal and clear the param.
-  useEffect(() => {
-    if (searchParams.get("showSubscribeSuccess") !== "true") return;
-    setAtSuccessOpen(true);
-    setLocallySubscribed(true);
-    mutateIdentity();
-
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("showSubscribeSuccess");
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const sendRequest = async (link: boolean) => {
     setRequesting(true);
@@ -198,19 +156,20 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   onChange={setEmail}
                   disabled={user.loggedIn && !!user.email}
                   loading={requesting}
+                  onSubmit={async () => {
+                    if (requesting || !email) return;
+                    if (needsLinkConfirmation) {
+                      setLinkModalOpen(true);
+                      return;
+                    }
+                    await sendRequest(false);
+                  }}
                   action={
                     <ButtonPrimary
+                      type="submit"
                       compact
                       className="leading-tight! outline-none! text-sm!"
                       disabled={requesting || !email}
-                      onClick={async () => {
-                        if (requesting) return;
-                        if (needsLinkConfirmation) {
-                          setLinkModalOpen(true);
-                          return;
-                        }
-                        await sendRequest(false);
-                      }}
                     >
                       Get Emails
                     </ButtonPrimary>
@@ -238,18 +197,19 @@ export const SubscribeInput = (props: SubscribeProps) => {
               disabled={user.loggedIn && !!user.email}
               loading={requesting}
               leading={modeMenu}
+              onSubmit={() => {
+                if (!email || requesting) return;
+                if (needsLinkConfirmation) {
+                  setLinkModalOpen(true);
+                  return;
+                }
+                redirectToEmailSubscribe(email, props.publicationUri);
+              }}
               action={
                 <ButtonPrimary
+                  type="submit"
                   compact
                   className="leading-tight! outline-none! text-sm!"
-                  onClick={async () => {
-                    if (!email || requesting) return;
-                    if (needsLinkConfirmation) {
-                      setLinkModalOpen(true);
-                      return;
-                    }
-                    await sendRequest(false);
-                  }}
                 >
                   Subscribe
                 </ButtonPrimary>
@@ -289,11 +249,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
           }}
         />
       )}
-      {/* Shown after an atproto subscribe completes — either inline (the
-          newsletter "subscribe via Atmosphere" branch) or when the oauth flow
-          redirects back with `showSubscribeSuccess` after popping login into a
-          new tab from an embedded iframe. Rendered for every pub, not just
-          newsletters, so the iframe success path works on atproto-only pubs. */}
       <Modal
         open={atSuccessOpen}
         onOpenChange={(open) => {
@@ -308,50 +263,45 @@ export const SubscribeInput = (props: SubscribeProps) => {
         <AtSubscribeSuccess />
       </Modal>
       {props.newsletterMode && (
-        <>
-          <Modal
-            open={confirmOpen}
-            onOpenChange={(open) => {
-              setConfirmOpen(open);
-              if (!open) {
-                if (confirmState === "success") setLocallySubscribed(true);
-                setConfirmState("confirm");
-                setLinkToCurrent(false);
-              }
-            }}
-          >
-            {confirmState === "success" ? (
-              <EmailSubscribeSuccess email={email} handle={user.handle} />
-            ) : (
-              <EmailConfirm
-                autoFocus
-                loading={confirming}
-                onBack={() => setConfirmOpen(false)}
-                emailValue={email}
-                onSubmit={async (code) => {
-                  if (confirming) return;
-                  setConfirming(true);
-                  let res = await confirmPublicationEmailSubscription(
-                    props.publicationUri,
-                    email,
-                    code,
-                    linkToCurrent,
-                  );
-                  setConfirming(false);
-                  if (!res.ok) {
-                    toaster({
-                      type: "error",
-                      content: ERROR_MESSAGES[res.error],
-                    });
-                    return;
-                  }
-                  setConfirmState("success");
-                  router.refresh();
-                }}
-              />
-            )}
-          </Modal>
-        </>
+        <Modal
+          open={confirmOpen}
+          onOpenChange={(open) => {
+            setConfirmOpen(open);
+            if (!open) {
+              if (confirmState === "success") setLocallySubscribed(true);
+              setConfirmState("confirm");
+              setLinkToCurrent(false);
+            }
+          }}
+        >
+          {confirmState === "success" ? (
+            <EmailSubscribeSuccess email={email} handle={user.handle} />
+          ) : (
+            <EmailConfirm
+              autoFocus
+              loading={confirming}
+              onBack={() => setConfirmOpen(false)}
+              emailValue={email}
+              onSubmit={async (code) => {
+                if (confirming) return;
+                setConfirming(true);
+                let res = await confirmPublicationEmailSubscription(
+                  props.publicationUri,
+                  email,
+                  code,
+                  linkToCurrent,
+                );
+                setConfirming(false);
+                if (!res.ok) {
+                  toaster({ type: "error", content: ERROR_MESSAGES[res.error] });
+                  return;
+                }
+                setConfirmState("success");
+                router.refresh();
+              }}
+            />
+          )}
+        </Modal>
       )}
     </>
   );

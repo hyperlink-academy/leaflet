@@ -44,7 +44,11 @@ export const BlockCommandBar = ({
 
     const tr = existingState.editor.tr;
     tr.deleteRange(1, tr.doc.content.size - 1);
-    setEditorState(entityID, { editor: existingState.editor.apply(tr) });
+    // Dispatch through the view so trackUndoRedo records an inverse entry;
+    // a direct apply left the cleared scaffolding text with no inverse and it
+    // reappeared on redo.
+    if (existingState.view) existingState.view.dispatch(tr);
+    else setEditorState(entityID, { editor: existingState.editor.apply(tr) });
   };
 
   let commandResults = blockCommands.filter((command) => {
@@ -58,8 +62,15 @@ export const BlockCommandBar = ({
       ) ?? false;
     const matchesSearch = matchesName || matchesAlternate;
     const isVisible = !pub || !command.hiddenInPublication;
-    const allowedInContext = !command.publicationOnly || inPublicationEdit;
-    return matchesSearch && isVisible && allowedInContext;
+    // Publication-only blocks (post list, subscribe) are available on any
+    // leaflet within a publication — both posts and the publication's pages.
+    // pub is also set for standalone published docs (with no publication),
+    // so gate on the joined publication record rather than pub itself.
+    const allowedInContext = !command.publicationOnly || !!pub?.publications;
+    // Subpage/canvas blocks don't belong in a publication's own pages.
+    const allowedOnPage =
+      !command.hiddenOnPublicationPage || !inPublicationEdit;
+    return matchesSearch && isVisible && allowedInContext && allowedOnPage;
   });
 
   return (

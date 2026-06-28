@@ -37,6 +37,11 @@ export function DashboardShell(props: DashboardShellProps) {
               className="mobile-sidebar-content fixed z-50 left-0 top-0 h-dvh outline-none"
               onClick={(e) => {
                 const target = e.target as HTMLElement;
+                // Clicks inside portaled layers (popovers, modals) bubble here
+                // through the React tree even though their DOM lives outside the
+                // sidebar — ignore them so opening a modal from a menu doesn't
+                // close (and unmount) the sidebar out from under it.
+                if (!e.currentTarget.contains(target)) return;
                 const interactive = target.closest("a, button");
                 if (!interactive) return;
                 if (interactive.getAttribute("aria-haspopup")) return;

@@ -8,6 +8,7 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { PRODUCT_DEFINITION } from "stripe/products";
 import { DashboardContainer } from "./SettingsContent";
 import { Modal } from "components/Modal";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { EmailConfirm } from "components/Subscribe/EmailSubscribe";
 import { Input } from "components/Input";
 import {
@@ -263,7 +264,10 @@ export const NewsletterSettings = () => {
 
         <hr className="border-border-light" />
 
-        <EmbedFormSnippet publicationUri={publicationUri} />
+        <EmbedFormSnippet
+          publicationUri={publicationUri}
+          publicationUrl={record?.url}
+        />
       </div>
 
       <Modal
@@ -304,12 +308,21 @@ export const NewsletterSettings = () => {
   );
 };
 
-const EmbedFormSnippet = (props: { publicationUri: string }) => {
+const EmbedFormSnippet = (props: {
+  publicationUri: string;
+  publicationUrl?: string;
+}) => {
   let toaster = useToaster();
   let appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
-  let actionUrl = `${appUrl.replace(/\/$/, "")}/api/subscribe_email`;
-  let snippet = `<form action="${actionUrl}" method="post">
-  <input type="hidden" name="publication" value="${props.publicationUri}" />
+  let actionUrl = `${appUrl.replace(/\/$/, "")}/api/auth/email-login`;
+  let action = encodeActionToSearchParam({
+    action: "subscribe",
+    publication: props.publicationUri,
+  });
+  let redirect = props.publicationUrl || appUrl;
+  let snippet = `<form action="${actionUrl}" method="get">
+  <input type="hidden" name="action" value="${action}" />
+  <input type="hidden" name="redirect" value="${redirect}" />
   <input type="email" name="email" placeholder="you@example.com" required />
   <button type="submit">Subscribe</button>
 </form>`;

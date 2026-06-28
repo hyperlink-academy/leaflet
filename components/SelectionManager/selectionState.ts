@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getBlocksWithType, isBlockHidden } from "src/replicache/getBlocks";
 
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
@@ -36,13 +36,7 @@ export const getSortedSelection = async (
   });
   return [
     sortedBlocks,
-    siblings.filter(
-      (f) =>
-        !f.listData ||
-        !f.listData.path.find(
-          (p) => foldedBlocks.includes(p.entity) && p.entity !== f.value,
-        ),
-    ),
+    siblings.filter((f) => !isBlockHidden(f, foldedBlocks)),
     sortedBlocksWithChildren,
   ];
 };

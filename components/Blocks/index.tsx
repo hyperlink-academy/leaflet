@@ -3,6 +3,7 @@
 import { Fact, useEntity, useReplicache } from "src/replicache";
 
 import { useUIState } from "src/useUIState";
+import { isBlockHidden } from "src/replicache/getBlocks";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -14,7 +15,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 
 import { Block } from "./Block";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { addShortcut } from "src/shortcuts";
 import { useHandleDrop } from "./useHandleDrop";
 import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
@@ -33,6 +34,10 @@ export function Blocks(props: { entityID: string }) {
   let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
   let foldedBlocks = useUIState((s) => s.foldedBlocks);
+  let foldableHeadings = useMemo(
+    () => new Set(blocks.flatMap((b) => b.headingPath ?? [])),
+    [blocks],
+  );
   useEffect(() => {
     if (!isPageFocused) return;
     return addShortcut([
@@ -42,13 +47,7 @@ export function Blocks(props: { entityID: string }) {
         key: "ArrowUp",
         shift: true,
         handler: () => {
-          let allParents = blocks.reduce((acc, block) => {
-            if (!block.listData) return acc;
-            block.listData.path.forEach((p) =>
-              !acc.includes(p.entity) ? acc.push(p.entity) : null,
-            );
-            return acc;
-          }, [] as string[]);
+          let allParents = foldableParents(blocks);
           useUIState.setState((s) => {
             let foldedBlocks = [...s.foldedBlocks];
             allParents.forEach((p) => {
@@ -64,13 +63,7 @@ export function Blocks(props: { entityID: string }) {
         key: "ArrowDown",
         shift: true,
         handler: () => {
-          let allParents = blocks.reduce((acc, block) => {
-            if (!block.listData) return acc;
-            block.listData.path.forEach((p) =>
-              !acc.includes(p.entity) ? acc.push(p.entity) : null,
-            );
-            return acc;
-          }, [] as string[]);
+          let allParents = foldableParents(blocks);
           useUIState.setState((s) => {
             let foldedBlocks = [...s.foldedBlocks].filter(
               (f) => !allParents.includes(f),
@@ -87,11 +80,7 @@ export function Blocks(props: { entityID: string }) {
   );
 
   let lastVisibleBlock = blocks.findLast(
-    (f) =>
-      !f.listData ||
-      !f.listData.path.find(
-        (path) => foldedBlocks.includes(path.entity) && f.value !== path.entity,
-      ),
+    (f) => !isBlockHidden(f, foldedBlocks),
   );
 
   let { footnotes } = useFootnoteContext();
@@ -114,6 +103,12 @@ export function Blocks(props: { entityID: string }) {
             (lastVisibleBlock.type !== "text" &&
               lastVisibleBlock.type !== "heading")
           ) {
+            // Appending lands after the last root block; if that sits inside a
+            // folded heading section, unfold it so the new block is visible.
+            lastRootBlock?.headingPath?.forEach((h) => {
+              if (useUIState.getState().foldedBlocks.includes(h))
+                useUIState.getState().toggleFold(h);
+            });
             let newEntityID = v7();
             await rep.rep?.mutate.addBlock({
               parent: props.entityID,
@@ -139,14 +134,7 @@ export function Blocks(props: { entityID: string }) {
       }}
     >
       {blocks
-        .filter(
-          (f) =>
-            !f.listData ||
-            !f.listData.path.find(
-              (path) =>
-                foldedBlocks.includes(path.entity) && f.value !== path.entity,
-            ),
-        )
+        .filter((f) => !isBlockHidden(f, foldedBlocks))
         .map((f, index, arr) => {
           let nextBlock = arr[index + 1];
           let depth = f.listData?.depth || 1;
@@ -164,6 +152,7 @@ export function Blocks(props: { entityID: string }) {
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}
               nextPosition={nextPosition}
+              headingFoldable={foldableHeadings.has(f.value)}
             />
           );
         })}
@@ -180,6 +169,20 @@ export function Blocks(props: { entityID: string }) {
       />
     </div>
   );
+}
+
+// Every foldable ancestor (list parents and enclosing headings) referenced by
+// any block, deduped — the set fold-all/unfold-all toggles.
+function foldableParents(blocks: Block[]): string[] {
+  return blocks.reduce((acc, block) => {
+    [
+      ...(block.listData?.path.map((p) => p.entity) ?? []),
+      ...(block.headingPath ?? []),
+    ].forEach((p) => {
+      if (!acc.includes(p)) acc.push(p);
+    });
+    return acc;
+  }, [] as string[]);
 }
 
 function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {

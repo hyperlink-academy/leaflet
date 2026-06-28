@@ -313,6 +313,10 @@ const PostsListBlockAttributes = {
     type: "string",
     cardinality: "many",
   },
+  "posts-list/limit": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const ThemeAttributes = {

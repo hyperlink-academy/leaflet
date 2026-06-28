@@ -8,12 +8,14 @@ export function SpeedyLink(props: {
   style?: React.CSSProperties;
   children?: React.ReactNode;
   target?: string;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }) {
   let [prefetch, setPrefetch] = useState(false);
   return (
     <Link
       onMouseEnter={() => setPrefetch(true)}
       onPointerDown={() => setPrefetch(true)}
+      onClick={props.onClick}
       style={props.style}
       prefetch={prefetch}
       href={props.href}

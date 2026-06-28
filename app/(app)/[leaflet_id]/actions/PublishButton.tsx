@@ -46,10 +46,26 @@ import { LoginModal } from "components/LoginButton";
 
 export const PublishButton = (props: { entityID: string }) => {
   let { data: pub } = useLeafletPublicationData();
+  let { identity } = useIdentityData();
   let params = useParams();
   let router = useRouter();
 
   if (!pub) return <PublishToPublicationButton entityID={props.entityID} />;
+
+  // Once a leaflet lives in a publication, only the publication owner or a
+  // confirmed contributor may publish/update it — others viewing the draft
+  // shouldn't see the button at all.
+  let publication = pub.publications;
+  if (publication) {
+    let isOwnerOrContributor =
+      !!identity?.atp_did &&
+      (identity.atp_did === publication.identity_did ||
+        !!publication.publication_contributors?.some(
+          (c) => c.contributor_did === identity.atp_did && c.confirmed,
+        ));
+    if (!isOwnerOrContributor) return null;
+  }
+
   if (!pub?.doc)
     return (
       <ActionButton

@@ -53,7 +53,6 @@ export function CommentsDrawerContent(props: {
   let redirectRoute = useMemo(() => {
     if (typeof window === "undefined") return;
     let url = new URL(pathname, window.location.origin);
-    url.searchParams.set("refreshAuth", "");
     url.searchParams.set("interactionDrawer", "comments");
     url.hash = "commentsDrawer";
     return url.toString();

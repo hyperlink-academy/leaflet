@@ -6,8 +6,10 @@ import { DotLoader } from "components/utils/DotLoader";
 
 export function ProCheckoutTrigger({
   cadence,
+  coupon,
 }: {
   cadence: "month" | "year";
+  coupon?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
@@ -16,14 +18,14 @@ export function ProCheckoutTrigger({
     if (started.current) return;
     started.current = true;
     (async () => {
-      const result = await createCheckoutSession(cadence, "/home");
+      const result = await createCheckoutSession(cadence, "/home", coupon);
       if (result.ok) {
         window.location.href = result.value.url;
       } else {
         setError(result.error);
       }
     })();
-  }, [cadence]);
+  }, [cadence, coupon]);
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 text-center max-w-sm w-full mx-auto">

@@ -430,6 +430,11 @@ export const PubLeafletBlocksPostsList: LexiconDoc = {
         view: { type: "string", knownValues: ["small", "medium"] },
         highlightFirstPost: { type: "boolean" },
         filterByTags: { type: "array", items: { type: "string" } },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          description: "Show at most this many posts.",
+        },
       },
     },
   },
