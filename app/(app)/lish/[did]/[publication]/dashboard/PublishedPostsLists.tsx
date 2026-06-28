@@ -20,6 +20,8 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(app)/(home-pages)/(writer)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
+import { EmailTiny } from "components/Icons/EmailTiny";
+import { Popover } from "components/Popover";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -145,11 +147,14 @@ function PublishedPostItem(props: {
           {doc.record.description ? (
             <p className="italic text-secondary">{doc.record.description}</p>
           ) : null}
-          <div className="text-sm text-tertiary flex gap-3 justify-between sm:justify-start items-center pt-3">
-            {doc.record.publishedAt ? (
-              <PublishedDate dateString={doc.record.publishedAt} />
-            ) : null}
-            {doc.postSend ? <PostSendStatus send={doc.postSend} /> : null}
+          <div className="text-sm text-tertiary flex gap-3 justify-between items-center pt-3">
+            <div className="flex items-center gap-2">
+              {doc.record.publishedAt ? (
+                <PublishedDate dateString={doc.record.publishedAt} />
+              ) : null}
+              {doc.postSend ? <PostSendStatus send={doc.postSend} /> : null}
+            </div>
+
             <InteractionPreview
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
@@ -253,7 +258,7 @@ function PublishedDate(props: { dateString: string }) {
     day: "2-digit",
   });
 
-  return <p className="text-sm text-tertiary">Published {formattedDate}</p>;
+  return <p className="text-sm text-tertiary"> {formattedDate}</p>;
 }
 
 function PostSendStatus(props: {
@@ -262,19 +267,43 @@ function PostSendStatus(props: {
   const { status, subscriber_count } = props.send;
   if (status === "sent") {
     return (
-      <p className="text-sm text-tertiary">
-        Emailed{" "}
-        {subscriber_count !== null
-          ? `${subscriber_count.toLocaleString()} ${subscriber_count === 1 ? "subscriber" : "subscribers"}`
-          : "subscribers"}
-      </p>
+      <Popover
+        trigger={
+          <div className="accent-container font-bold text-accent-contrast text-xs px-1.5 h-full">
+            SENT
+          </div>
+        }
+      >
+        <p className="text-sm text-tertiary">
+          Sent to{" "}
+          {subscriber_count !== null
+            ? `${subscriber_count.toLocaleString()} ${subscriber_count === 1 ? "subscriber" : "subscribers"}`
+            : "subscribers"}
+        </p>
+      </Popover>
     );
   }
   if (status === "sending" || status === "pending") {
-    return <p className="text-sm text-tertiary italic">Email sending…</p>;
+    return (
+      <div className="light-container font-bold text-accent-contrast text-xs px-1.5">
+        SENDING…
+      </div>
+    );
   }
   if (status === "failed") {
-    return <p className="text-sm text-accent-contrast">Email failed</p>;
+    return (
+      <Popover
+        trigger={
+          <div className="accent-container font-bold text-accent-2! bg-accent-1! text-xs px-1.5">
+            FAILED
+          </div>
+        }
+      >
+        <p className="text-sm text-tertiary">
+          Something went wrong… Try republishing and sending again.
+        </p>
+      </Popover>
+    );
   }
   return null;
 }

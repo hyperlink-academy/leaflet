@@ -99,11 +99,6 @@ export const pull = makeRoute({
           },
           {
             op: "put",
-            key: "publication_cover_image",
-            value: publication_data[0].cover_image || null,
-          },
-          {
-            op: "put",
             key: "post_preferences",
             value: publication_data[0].preferences || null,
           },

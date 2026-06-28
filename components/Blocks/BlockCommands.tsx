@@ -18,6 +18,7 @@ import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { ImageGallerySmall } from "components/Icons/ImageGallerySmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { BlockPollSmall } from "components/Icons/BlockPollSmall";
 import { PostListSmall } from "components/Icons/PostListSmall";
@@ -205,6 +206,29 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "image");
+      setTimeout(() => {
+        let el = document.getElementById(elementId.block(entity).input);
+        el?.focus();
+      }, 100);
+      um.add({
+        undo: () => {
+          focusTextBlock(entity);
+        },
+        redo: () => {
+          let el = document.getElementById(elementId.block(entity).input);
+          el?.focus();
+        },
+      });
+    },
+  },
+  {
+    name: "Image Gallery",
+    icon: <ImageGallerySmall />,
+    type: "block",
+    alternateNames: ["gallery", "images", "carousel"],
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "image-gallery");
       setTimeout(() => {
         let el = document.getElementById(elementId.block(entity).input);
         el?.focus();

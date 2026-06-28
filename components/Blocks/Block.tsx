@@ -13,6 +13,7 @@ import { indent, outdent } from "src/utils/list-operations";
 import { useDrag } from "@use-gesture/react";
 import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
+import { ImageGalleryBlock } from "./ImageGalleryBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock } from "./EmbedBlock";
@@ -375,6 +376,7 @@ const BlockTypeComponents: {
   blockquote: TextBlock,
   heading: TextBlock,
   image: ImageBlock,
+  "image-gallery": ImageGalleryBlock,
   link: ExternalLinkBlock,
   embed: EmbedBlock,
   mailbox: MailboxBlock,

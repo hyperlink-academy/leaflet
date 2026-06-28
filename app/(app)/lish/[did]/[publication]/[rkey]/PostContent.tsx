@@ -4,6 +4,7 @@ import {
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
+  PubLeafletBlocksImageGallery,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksOrderedList,
@@ -29,9 +30,7 @@ import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./Blocks/TextBlock";
-import { Popover } from "components/Popover";
-import { theme } from "tailwind.config";
-import { ImageAltSmall } from "components/Icons/ImageAlt";
+import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
@@ -42,6 +41,7 @@ import {
 } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
+import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
@@ -479,29 +479,26 @@ export let Block = ({
 
       return (
         <div
-          className={`imageBlock relative flex ${isFullBleed ? "" : alignment} ${fullBleedClassName}`}
+          className={`imageBlock flex ${isFullBleed ? "" : alignment} ${fullBleedClassName}`}
           {...blockProps}
         >
-          <img
-            alt={b.block.alt}
-            height={b.block.aspectRatio?.height}
-            width={b.block.aspectRatio?.width}
-            className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-            src={blobRefToSrc(b.block.image.ref, did)}
-          />
-          {b.block.alt && (
-            <div className="absolute bottom-1.5 right-2 h-max">
-              <Popover
-                className="text-sm max-w-xs  min-w-0"
-                side="left"
-                trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
-              >
-                <div className="text-sm text-secondary w-full">
-                  {b.block.alt}
-                </div>
-              </Popover>
-            </div>
-          )}
+          <div className={`relative ${isFullBleed ? "w-full" : "w-fit"} h-fit`}>
+            <img
+              alt={b.block.alt}
+              height={b.block.aspectRatio?.height}
+              width={b.block.aspectRatio?.width}
+              className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
+              src={blobRefToSrc(b.block.image.ref, did)}
+            />
+            {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
+          </div>
+        </div>
+      );
+    }
+    case PubLeafletBlocksImageGallery.isMain(b.block): {
+      return (
+        <div className={className} {...blockProps}>
+          <PublishedImageGallery block={b.block} did={did} />
         </div>
       );
     }

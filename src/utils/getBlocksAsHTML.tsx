@@ -134,6 +134,25 @@ const BlockTypeToHTML: {
     if (!src) return "";
     return <img src={src.data.src} data-alignment={a} />;
   },
+  "image-gallery": async (b, tx, a) => {
+    let images = (await scanIndex(tx).eav(b.value, "gallery/image")).sort(
+      (x, y) => (x.data.position > y.data.position ? 1 : -1),
+    );
+    let sources = await Promise.all(
+      images.map(async (img) => {
+        let [src] = await scanIndex(tx).eav(img.data.value, "block/image");
+        let [alt] = await scanIndex(tx).eav(img.data.value, "image/alt");
+        return src ? { src: src.data.src, alt: alt?.data.value } : null;
+      }),
+    );
+    return (
+      <div data-type="image-gallery">
+        {sources.map((s, i) =>
+          s ? <img key={i} src={s.src} alt={s.alt} /> : null,
+        )}
+      </div>
+    );
+  },
   code: async (b, tx, a) => {
     let [code] = await scanIndex(tx).eav(b.value, "block/code");
     let [lang] = await scanIndex(tx).eav(b.value, "block/code-language");
