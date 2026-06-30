@@ -1,7 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useRef, useState } from "react";
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
+import { localImages } from "src/utils/addImage";
+import { uploadCoverImage } from "src/utils/uploadCoverImage";
+import { CoverImageTiny } from "components/Icons/CoverImageTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
 import { AtUri } from "@atproto/syntax";
@@ -22,6 +26,7 @@ import { Backdater } from "./Backdater";
 import { RecommendTinyEmpty } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { DraftContributorSelector } from "./DraftContributorSelector";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 
 export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
   let { rep, permission_token } = useReplicache();
@@ -161,6 +166,9 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
                     <Separator classname="h-4!" />
                   ) : null}
                   <AddTags />
+                  <Separator classname="h-4!" />
+
+                  <AddCoverImage />
                 </>
               )}
             </div>
@@ -302,13 +310,128 @@ export const AddTags = () => {
       trigger={
         <div className="addTagTrigger flex gap-1 hover:underline text-sm items-center text-tertiary">
           <TagTiny />{" "}
-          {tags.length > 0
-            ? `${tags.length} Tag${tags.length === 1 ? "" : "s"}`
-            : "Add Tags"}
+          {tags.length > 0 ? (
+            `${tags.length} Tag${tags.length === 1 ? "" : "s"}`
+          ) : (
+            <div className="sm:block hidden">Add Tags</div>
+          )}
         </div>
       }
     >
       <TagSelector selectedTags={tags} setSelectedTags={handleTagsChange} />
+    </Popover>
+  );
+};
+
+export const AddCoverImage = () => {
+  let { rep, rootEntity } = useReplicache();
+  let entity_set = useEntitySetContext();
+  let { data: pub } = useLeafletPublicationData();
+
+  let coverEntity =
+    useEntity(rootEntity, "root/cover-image")?.data.value ?? null;
+  let coverImage = useEntity(coverEntity, "block/image");
+  let localSrc = coverImage ? localImages.get(coverImage.data.src) : undefined;
+  let replaceInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFile = async (file: File) => {
+    if (!rep) return;
+    await uploadCoverImage(rep, file, {
+      rootEntity,
+      permission_set: entity_set.set,
+      existingCoverEntity: coverEntity,
+    });
+  };
+
+  // Cover images are a publication-post concept, and only editors can set one.
+  if (!pub?.publications || !entity_set.permissions.write) return null;
+
+  if (!coverEntity)
+    return (
+      <label
+        className="addCoverImageTrigger flex gap-1 hover:underline text-sm items-center text-tertiary hover:cursor-pointer"
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        <CoverImageTiny />
+        Add Cover
+        <input
+          className="hidden"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            let file = e.currentTarget.files?.[0];
+            if (file) handleFile(file);
+            e.currentTarget.value = "";
+          }}
+        />
+      </label>
+    );
+
+  return (
+    <Popover
+      className="w-sm flex flex-col gap-2"
+      trigger={
+        <div className="flex flex-row gap-1 shrink-0 items-center hover:underline text-tertiary">
+          <CoverImageTiny />
+          <div className="sm:block hidden">Edit Cover</div>
+        </div>
+      }
+    >
+      {coverImage &&
+        (localSrc || coverImage.data.local ? (
+          <img
+            loading="lazy"
+            decoding="async"
+            src={localSrc ?? coverImage.data.fallback}
+            className="w-full aspect-video object-cover rounded-md border border-border-light"
+            alt=""
+          />
+        ) : (
+          <Image
+            src={
+              "/" +
+              new URL(coverImage.data.src).pathname
+                .split("/")
+                .slice(5)
+                .join("/")
+            }
+            width={coverImage.data.width}
+            height={coverImage.data.height}
+            className="w-full aspect-video object-cover rounded-md border border-border-light"
+            alt=""
+          />
+        ))}
+      <div className="flex gap-2 place-self-end">
+        <ButtonTertiary
+          compact
+          type="button"
+          className="text-sm "
+          onClick={() => rep?.mutate.deleteEntity({ entity: coverEntity })}
+        >
+          Remove
+        </ButtonTertiary>
+
+        <ButtonPrimary
+          compact
+          type="button"
+          className="changeCoverImageTrigger text-sm "
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => replaceInputRef.current?.click()}
+        >
+          Change Cover Image
+        </ButtonPrimary>
+        <input
+          ref={replaceInputRef}
+          className="hidden"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            let file = e.currentTarget.files?.[0];
+            if (file) handleFile(file);
+            e.currentTarget.value = "";
+          }}
+        />
+      </div>
     </Popover>
   );
 };

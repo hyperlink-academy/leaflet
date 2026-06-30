@@ -13,6 +13,7 @@ import {
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksIframe,
   PubLeafletBlocksImage,
+  PubLeafletBlocksImageGallery,
   PubLeafletBlocksMath,
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksPage,
@@ -479,6 +480,48 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     }
+    if (b.type === "image-gallery") {
+      const imageFacts = scan
+        .eav(b.value, "gallery/image")
+        .toSorted((a, c) => (a.data.position > c.data.position ? 1 : -1));
+      const images = (
+        await Promise.all(
+          imageFacts.map(async (f) => {
+            const imageEntity = f.data.value;
+            const [image] = scan.eav(imageEntity, "block/image");
+            if (!image) return null;
+            const [alt] = scan.eav(imageEntity, "image/alt");
+            const blobref = await hooks.uploadImage(image.data.src);
+            if (!blobref) return null;
+            const galleryImage: PubLeafletBlocksImageGallery.Image = {
+              $type: "pub.leaflet.blocks.imageGallery#image",
+              image: blobref,
+              aspectRatio: {
+                width: Math.floor(image.data.width),
+                height: Math.floor(image.data.height),
+              },
+              ...(alt ? { alt: alt.data.value } : {}),
+            };
+            return galleryImage;
+          }),
+        )
+      ).filter((i): i is PubLeafletBlocksImageGallery.Image => i !== null);
+      if (images.length === 0) return;
+
+      const [format] = scan.eav(b.value, "gallery/format");
+      const [gap] = scan.eav(b.value, "gallery/gap");
+      const [maxWidth] = scan.eav(b.value, "gallery/max-width");
+      const block: $Typed<PubLeafletBlocksImageGallery.Main> = {
+        $type: "pub.leaflet.blocks.imageGallery",
+        images,
+        ...(format && { format: format.data.value }),
+        ...(gap !== undefined && { gap: Math.floor(gap.data.value) }),
+        ...(maxWidth !== undefined && {
+          maxWidth: Math.floor(maxWidth.data.value),
+        }),
+      };
+      return block;
+    }
     if (b.type === "link") {
       const [previewImage] = scan.eav(b.value, "link/preview");
       const [description] = scan.eav(b.value, "link/description");
@@ -568,11 +611,14 @@ export async function processBlocksToPages(opts: {
       );
       const filterTagFacts = scan.eav(b.value, "posts-list/filter-tag");
       const filterByTags = filterTagFacts.map((f) => f.data.value);
+      const [limitFact] = scan.eav(b.value, "posts-list/limit");
+      const limit = limitFact?.data.value;
       const block: $Typed<PubLeafletBlocksPostsList.Main> = {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
         ...(filterByTags.length > 0 && { filterByTags }),
+        ...(limit && limit > 0 && { limit }),
       };
       return block;
     }

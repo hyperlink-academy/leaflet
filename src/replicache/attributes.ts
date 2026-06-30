@@ -6,6 +6,13 @@ const RootAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  // Links a standalone cover image (uploaded from the publish page, not an
+  // in-document image block) to the root so it's reachable by get_facts and
+  // its blob gets uploaded on publish.
+  "root/cover-image": {
+    type: "reference",
+    cardinality: "one",
+  },
 } as const;
 const PageAttributes = {
   "card/block": {
@@ -253,6 +260,33 @@ const ImageBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  // Original filename, shown in the gallery's Edit Images list.
+  "image/name": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
+const GalleryBlockAttributes = {
+  // Child image entities, each carrying their own block/image, image/alt and
+  // image/name facts — mirrors poll/options.
+  "gallery/image": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "gallery/format": {
+    type: "gallery-format-union",
+    cardinality: "one",
+  },
+  "gallery/gap": {
+    type: "number",
+    cardinality: "one",
+  },
+  // Max width per image in grid view (px); drives how many columns fit.
+  "gallery/max-width": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const PollBlockAttributes = {
@@ -278,6 +312,10 @@ const PostsListBlockAttributes = {
   "posts-list/filter-tag": {
     type: "string",
     cardinality: "many",
+  },
+  "posts-list/limit": {
+    type: "number",
+    cardinality: "one",
   },
 } as const;
 
@@ -380,6 +418,7 @@ export const Attributes = {
   ...BlueskyPostBlockAttributes,
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
+  ...GalleryBlockAttributes,
   ...PollBlockAttributes,
   ...PostsListBlockAttributes,
 };
@@ -461,7 +500,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "blockquote"
       | "horizontal-rule"
       | "posts-list"
-      | "signup";
+      | "signup"
+      | "image-gallery";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
@@ -470,6 +510,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "list-style-union": {
     type: "list-style-union";
     value: "ordered" | "unordered";
+  };
+  "gallery-format-union": {
+    type: "gallery-format-union";
+    value: "grid" | "carousel" | "strip";
   };
   "posts-list-view-union": {
     type: "posts-list-view-union";

@@ -243,6 +243,46 @@ const moveChildren: Mutation<{
   }
 };
 
+// Relocate a contiguous run of blocks (e.g. a folded heading's whole section)
+// under the same parent, packing them just after `after` (or at the start when
+// null) while preserving their relative order. Each block's card/block fact is
+// overwritten in place (reusing its id) so the whole move is one undo entry.
+const moveBlocks: Mutation<{
+  parent: string;
+  blocks: string[];
+  after: string | null;
+}> = async (args, ctx) => {
+  let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
+    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+  );
+  let movingIds = new Set(args.blocks);
+  let moving = args.blocks
+    .map((v) => children.find((c) => c.data.value === v))
+    .filter((c): c is NonNullable<typeof c> => !!c);
+  if (moving.length === 0) return;
+  let rest = children.filter((c) => !movingIds.has(c.data.value));
+  let anchorIndex =
+    args.after === null
+      ? -1
+      : rest.findIndex((c) => c.data.value === args.after);
+  let before = rest[anchorIndex]?.data.position || null;
+  let after = rest[anchorIndex + 1]?.data.position || null;
+  let position = generateKeyBetween(before, after);
+  for (let block of moving) {
+    await ctx.assertFact({
+      id: block.id,
+      entity: args.parent,
+      attribute: "card/block",
+      data: {
+        type: "ordered-reference",
+        value: block.data.value,
+        position,
+      },
+    });
+    position = generateKeyBetween(position, after);
+  }
+};
+
 const outdentBlock: Mutation<{
   oldParent: string;
   newParent: string;
@@ -472,24 +512,6 @@ const removeBlock: Mutation<
         await supabase.storage
           .from("minilink-user-assets")
           .remove([paths[paths.length - 1]]);
-
-        // Clear cover image if this block is the cover image
-        // First try leaflets_in_publications
-        const { data: pubResult } = await supabase
-          .from("leaflets_in_publications")
-          .update({ cover_image: null })
-          .eq("leaflet", ctx.permission_token_id)
-          .eq("cover_image", block.blockEntity)
-          .select("leaflet");
-
-        // If no rows updated, try leaflets_to_documents
-        if (!pubResult || pubResult.length === 0) {
-          await supabase
-            .from("leaflets_to_documents")
-            .update({ cover_image: null })
-            .eq("leaflet", ctx.permission_token_id)
-            .eq("cover_image", block.blockEntity);
-        }
       }
     });
     await ctx.runOnClient(async ({ tx }) => {
@@ -499,12 +521,6 @@ const removeBlock: Mutation<
         if (localSrc) {
           URL.revokeObjectURL(localSrc);
           localImages.delete(image.data.src);
-        }
-
-        // Clear cover image in client state if this block was the cover image
-        let currentCoverImage = await tx.get("publication_cover_image");
-        if (currentCoverImage === block.blockEntity) {
-          await tx.set("publication_cover_image", null);
         }
       }
     });
@@ -818,11 +834,62 @@ const removePollOption: Mutation<{
   await ctx.deleteEntity(args.optionEntity);
 };
 
+const addGalleryImage: Mutation<{
+  galleryEntity: string;
+  imageEntity: string;
+  permission_set: string;
+  factID: string;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.imageEntity,
+    permission_set: args.permission_set,
+  });
+
+  let children = await ctx.scanIndex.eav(args.galleryEntity, "gallery/image");
+  let lastChild = children.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[children.length - 1];
+
+  await ctx.assertFact({
+    entity: args.galleryEntity,
+    id: args.factID,
+    attribute: "gallery/image",
+    data: {
+      type: "ordered-reference",
+      value: args.imageEntity,
+      position: generateKeyBetween(lastChild?.data.position || null, null),
+    },
+  });
+};
+
+const removeGalleryImage: Mutation<{
+  imageEntity: string;
+}> = async (args, ctx) => {
+  let [image] = await ctx.scanIndex.eav(args.imageEntity, "block/image");
+  await ctx.runOnServer(async ({ supabase }) => {
+    if (image) {
+      let paths = image.data.src.split("/");
+      await supabase.storage
+        .from("minilink-user-assets")
+        .remove([paths[paths.length - 1]]);
+    }
+  });
+  await ctx.runOnClient(async ({ tx }) => {
+    if (image) {
+      let localSrc = localImages.get(image.data.src);
+      if (localSrc) {
+        URL.revokeObjectURL(localSrc);
+        localImages.delete(image.data.src);
+      }
+    }
+  });
+  await ctx.deleteEntity(args.imageEntity);
+};
+
 const updatePublicationDraft: Mutation<{
   title?: string;
   description?: string;
   tags?: string[];
-  cover_image?: string | null;
   localPublishedAt?: string | null;
   preferences?: {
     showComments?: boolean;
@@ -835,7 +902,6 @@ const updatePublicationDraft: Mutation<{
       description?: string;
       title?: string;
       tags?: string[];
-      cover_image?: string | null;
       preferences?: {
         showComments?: boolean;
         showMentions?: boolean;
@@ -845,7 +911,6 @@ const updatePublicationDraft: Mutation<{
     if (args.description !== undefined) updates.description = args.description;
     if (args.title !== undefined) updates.title = args.title;
     if (args.tags !== undefined) updates.tags = args.tags;
-    if (args.cover_image !== undefined) updates.cover_image = args.cover_image;
     if (args.preferences !== undefined) updates.preferences = args.preferences;
 
     if (Object.keys(updates).length > 0) {
@@ -871,8 +936,6 @@ const updatePublicationDraft: Mutation<{
     if (args.description !== undefined)
       await tx.set("publication_description", args.description);
     if (args.tags !== undefined) await tx.set("publication_tags", args.tags);
-    if (args.cover_image !== undefined)
-      await tx.set("publication_cover_image", args.cover_image);
     if (args.localPublishedAt !== undefined)
       await tx.set("publication_local_published_at", args.localPublishedAt);
     if (args.preferences !== undefined)
@@ -1147,6 +1210,7 @@ export const mutations = {
   addPublicationNavLink,
   removePublicationNavEntry,
   moveBlock,
+  moveBlocks,
   assertFact,
   retractFact,
   removeBlock,
@@ -1159,6 +1223,8 @@ export const mutations = {
   createEntity,
   addPollOption,
   removePollOption,
+  addGalleryImage,
+  removeGalleryImage,
   updatePublicationDraft,
   updateLeafletMetadata,
   toggleDraftContributor,

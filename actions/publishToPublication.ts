@@ -56,7 +56,6 @@ export async function publishToPublication({
   title,
   description,
   tags,
-  cover_image,
   entitiesToDelete,
   publishedAt,
   postPreferences,
@@ -69,7 +68,6 @@ export async function publishToPublication({
   title?: string;
   description?: string;
   tags?: string[];
-  cover_image?: string | null;
   entitiesToDelete?: string[];
   publishedAt?: string;
   postPreferences?: {
@@ -228,15 +226,20 @@ export async function publishToPublication({
   let theme: PubLeafletPublication.Theme | undefined;
   if (!publication_uri) {
     let extracted = await extractThemeFromFacts(facts, root_entity, agent);
-    if (Object.keys(extracted).length > 1 || extracted.showPageBackground !== true)
+    if (
+      Object.keys(extracted).length > 1 ||
+      extracted.showPageBackground !== true
+    )
       theme = extracted;
   }
 
-  // Upload cover image if provided
   let coverImageBlob: BlobRef | undefined;
-  if (cover_image) {
+  {
     let scan = scanIndexLocal(facts);
-    let [imageData] = scan.eav(cover_image, "block/image");
+    let coverRef = scan.eav(root_entity, "root/cover-image")[0];
+    let [imageData] = coverRef
+      ? scan.eav(coverRef.data.value, "block/image")
+      : [];
     if (imageData) {
       let imageResponse = await fetch(imageData.data.src);
       if (imageResponse.status === 200) {
@@ -381,7 +384,6 @@ export async function publishToPublication({
         title: title,
         description: description,
         tags: resolvedTags ?? [],
-        cover_image: cover_image ?? null,
       }),
     ]);
   } else {
@@ -392,7 +394,6 @@ export async function publishToPublication({
       title: title || "",
       description: description || "",
       tags: resolvedTags ?? [],
-      cover_image: cover_image ?? null,
     });
 
     // Heuristic: Remove title entities if this is the first time publishing standalone
@@ -414,10 +415,13 @@ export async function publishToPublication({
     );
   }
 
-  // Fire newsletter broadcast on first publish to a newsletter-enabled pub.
+  // On first publish to a newsletter-enabled pub, claim the post's send slot.
   // The composite PK on publication_post_sends is the real idempotency guard —
-  // ignoreDuplicates makes re-publishes and concurrent runs a no-op.
-  if (publication_uri && !existingDocUri && sendEmail) {
+  // ignoreDuplicates makes re-publishes and concurrent runs a no-op. Claiming
+  // the slot even when not sending (status "skipped") is also what stops the
+  // firehose-driven broadcast in sync_document_metadata from emailing a post the
+  // author opted out of: it finds the row already present and skips.
+  if (publication_uri && !existingDocUri) {
     const { data: settings } = await supabaseServerClient
       .from("publication_newsletter_settings")
       .select("enabled")
@@ -430,12 +434,12 @@ export async function publishToPublication({
           {
             publication: publication_uri,
             document: result.uri,
-            status: "pending",
+            status: sendEmail ? "pending" : "skipped",
           },
           { onConflict: "publication,document", ignoreDuplicates: true },
         )
         .select();
-      if (inserted && inserted.length > 0) {
+      if (sendEmail && inserted && inserted.length > 0) {
         await inngest.send({
           name: "newsletter/post.send.requested",
           data: {

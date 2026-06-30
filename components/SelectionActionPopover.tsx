@@ -59,10 +59,11 @@ export function SelectionActionPopover<T>(props: {
 
   let { containerSelector } = props;
   useEffect(() => {
-    const handleSelectionChange = () => {
+    // Locate the live selection if it falls inside a matching container.
+    const locate = (): SelectionContext | null => {
       const selection = document.getSelection();
       if (!selection || selection.rangeCount === 0 || !selection.toString())
-        return setState(null);
+        return null;
 
       const range = selection.getRangeAt(0);
       const ancestor = range.commonAncestorContainer;
@@ -71,38 +72,70 @@ export function SelectionActionPopover<T>(props: {
           ? (ancestor as Element)
           : ancestor.parentElement;
       const container = element?.closest(containerSelector) ?? null;
-      if (!container) return setState(null);
+      if (!container) return null;
+      return { selection, range, container };
+    };
 
-      const selectionRect = range.getBoundingClientRect();
-      let top = selectionRect.top;
+    // Geometry only — viewport-relative, so re-running it on scroll re-pins the
+    // popover to the selection without re-resolving the (unchanged) data.
+    const measure = (selection: Selection, range: Range) => {
+      // Per-line rects, so we can anchor on the line the selection's focus sits
+      // on (the last line for a forward selection, the first for a backward
+      // one) rather than the multi-line bounding box — whose midpoint can land
+      // far from the text, e.g. at the screen edge on a select-all (ctrl+a).
+      const rects = range.getClientRects();
+      const backward = selection.direction === "backward";
+      const focusRect =
+        (backward ? rects[0] : rects[rects.length - 1]) ??
+        range.getBoundingClientRect();
 
-      // Center horizontally on the focus caret (where the drag ended) when
-      // available, otherwise on the selection's midpoint. The actual left is
-      // resolved against the rendered width in the layout effect above.
-      let centerX = selectionRect.left + selectionRect.width / 2;
-      if (selection.focusNode) {
-        const caret = document.createRange();
-        caret.setStart(selection.focusNode, selection.focusOffset);
-        caret.setEnd(selection.focusNode, selection.focusOffset);
-        centerX = caret.getBoundingClientRect().left;
-      }
-
+      // Anchor on the focus edge of that line (where the drag ended): the right
+      // edge for a forward selection, the left for a backward one. The actual
+      // left is resolved against the rendered width in the layout effect above.
+      const centerX = backward ? focusRect.left : focusRect.right;
       // Backward selections end at the top, so float above; forward selections
       // end at the bottom, so float below.
-      if (selection.direction === "backward") {
-        top -= 28;
-      } else {
-        top += selectionRect.height + 8;
-      }
+      const top = backward ? focusRect.top - 28 : focusRect.bottom + 8;
+      return { top, centerX };
+    };
 
-      const data = resolveRef.current({ selection, range, container });
+    const handleSelectionChange = () => {
+      const ctx = locate();
+      if (!ctx) return setState(null);
+      const data = resolveRef.current(ctx);
       if (data === null || data === undefined) return setState(null);
-      setState({ top, centerX, data });
+      setState({ ...measure(ctx.selection, ctx.range), data });
+    };
+
+    // Keep a visible popover pinned to the selection as the page (or any nested
+    // scroll container) scrolls. The selection is unchanged, so we only
+    // re-measure and reuse the resolved data; throttled to a frame since scroll
+    // fires rapidly.
+    let frame = 0;
+    const reposition = () => {
+      frame = 0;
+      setState((prev) => {
+        if (!prev) return prev;
+        const ctx = locate();
+        if (!ctx) return prev;
+        return { ...prev, ...measure(ctx.selection, ctx.range) };
+      });
+    };
+    const handleScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(reposition);
     };
 
     document.addEventListener("selectionchange", handleSelectionChange);
-    return () =>
+    // Capture so scrolls on inner containers (which don't bubble) are caught.
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleScroll);
+    return () => {
       document.removeEventListener("selectionchange", handleSelectionChange);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [containerSelector]);
 
   if (!state) return null;

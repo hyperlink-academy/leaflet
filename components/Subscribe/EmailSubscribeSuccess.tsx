@@ -8,9 +8,9 @@ export const EmailSubscribeSuccess = (props: {
   handle: string | undefined;
 }) => {
   return (
-    <div className="flex flex-col text-center justify-center pt-4 text-secondary w-md max-w-full">
+    <div className="flex flex-col text-center justify-center py-3 text-secondary w-md max-w-full">
       <h2 className="text-primary pb-1">You've Subscribed!</h2>
-      You'll recieve new posts to <br />
+      You'll receive new posts to <br />
       <span className="italic">{props.email ? props.email : "your email"}</span>
       {!props.handle ? (
         <>
@@ -25,7 +25,10 @@ export const EmailSubscribeSuccess = (props: {
 
           <div>
             You also get updates in the <br />
-            <SpeedyLink href={"/reader"} className="font-bold">
+            <SpeedyLink
+              href={"https://leaflet.pub/reader"}
+              className="font-bold"
+            >
               Leaflet Reader
             </SpeedyLink>
           </div>

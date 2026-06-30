@@ -6,7 +6,15 @@ import {
   usePublicationData,
   useNormalizedPublicationRecord,
 } from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
-import { PublicationPostsList } from "app/(app)/lish/[did]/[publication]/PublicationPostsList";
+import { PaginatedPublicationPostsList } from "app/(app)/lish/[did]/[publication]/PaginatedPublicationPostsList";
+import {
+  POSTS_LIST_PAGE_SIZE,
+  postsListFilterKey,
+  sortPostsForList,
+  filterPostsByTags,
+  type LoadPostsBatch,
+} from "app/(app)/lish/[did]/[publication]/postsListPagination";
+import type { PublicationPostsListPost } from "app/(app)/lish/[did]/[publication]/buildPublicationPosts";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "./SettingsTriggerButton";
@@ -54,20 +62,44 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
   let highlightFirst = highlightFirstFact?.data.value ?? false;
 
   let filterTagFacts = useEntity(entityID, "posts-list/filter-tag");
+  let filterTags = useMemo(
+    () => filterTagFacts.map((f) => f.data.value),
+    [filterTagFacts],
+  );
 
-  let filteredPosts = useMemo(() => {
-    if (!data?.documents) return data?.documents;
-    let filterTags = filterTagFacts.map((f) => f.data.value);
-    if (filterTags.length === 0) return data.documents;
-    return data.documents.filter((d) =>
-      d.record.tags?.some((t) => filterTags.includes(t)),
-    );
-  }, [data?.documents, filterTagFacts]);
+  let limitFact = useEntity(entityID, "posts-list/limit");
+  let limit = limitFact?.data.value;
+
+  // The dashboard already loads every document, so order/filter that in-memory
+  // set, hand the paginated list the full URI ordering, and resolve each batch
+  // locally — no extra round trips, just windowed rendering.
+  let listData = useMemo(() => {
+    if (!data?.documents) return null;
+    let posts: PublicationPostsListPost[] = sortPostsForList(
+      filterPostsByTags(data.documents, filterTags),
+    ).map((d) => ({
+      uri: d.uri,
+      record: d.record,
+      commentsCount: d.commentsCount,
+      mentionsCount: d.mentionsCount,
+      recommendsCount: d.recommendsCount,
+    }));
+    let byUri = new Map(posts.map((p) => [p.uri, p]));
+    let loadBatch: LoadPostsBatch = async (batch) =>
+      batch
+        .map((u) => byUri.get(u))
+        .filter((p): p is PublicationPostsListPost => p !== undefined);
+    return {
+      uris: posts.map((p) => p.uri),
+      initialPosts: posts.slice(0, POSTS_LIST_PAGE_SIZE),
+      loadBatch,
+    };
+  }, [data?.documents, filterTags]);
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
 
-  if (!filteredPosts || filteredPosts.length === 0)
+  if (!listData || listData.uris.length === 0)
     return (
       <EmptyState
         container="none"
@@ -76,12 +108,16 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
     );
 
   return (
-    <PublicationPostsList
+    <PaginatedPublicationPostsList
       publication={data.publication}
       publicationRecord={publicationRecord}
-      posts={filteredPosts}
+      listId={`${data.publication.uri}:${postsListFilterKey(filterTags)}`}
+      uris={listData.uris}
+      initialPosts={listData.initialPosts}
+      loadBatch={listData.loadBatch}
       view={view}
       highlightFirstPost={highlightFirst}
+      limit={limit}
     />
   );
 }
@@ -124,9 +160,26 @@ function PostsListSettingsButton(props: { entityID: string }) {
     [filterTagFacts],
   );
 
+  let limitFact = useEntity(props.entityID, "posts-list/limit");
+  let limit = limitFact?.data.value;
+
   let [filterByTagEnabled, setFilterByTagEnabled] = useState(
     () => selectedTags.length > 0,
   );
+  let [limitEnabled, setLimitEnabled] = useState(() => !!limit && limit > 0);
+
+  let setLimit = (value: number) => {
+    if (!rep) return;
+    rep.mutate.assertFact({
+      entity: props.entityID,
+      attribute: "posts-list/limit",
+      data: { type: "number", value },
+    });
+  };
+  let clearLimit = () => {
+    if (!rep || !limitFact) return;
+    rep.mutate.retractFact({ factID: limitFact.id });
+  };
 
   let allTags = useMemo(() => {
     let tagSet = new Set<string>();
@@ -208,6 +261,39 @@ function PostsListSettingsButton(props: { entityID: string }) {
         >
           <strong>Highlight First Post</strong>
         </Toggle>
+        <div className="flex flex-col gap-1">
+          <Toggle
+            toggle={limitEnabled}
+            onToggle={() => {
+              if (limitEnabled) {
+                clearLimit();
+                setLimitEnabled(false);
+              } else {
+                setLimitEnabled(true);
+                if (!limit || limit < 1) setLimit(5);
+              }
+            }}
+          >
+            <strong>Limit Posts</strong>
+          </Toggle>
+          {limitEnabled && (
+            <div className="flex items-center gap-2 ml-8 text-secondary text-sm">
+              <span>Show only</span>
+              <input
+                type="number"
+                min={1}
+                value={limit ?? 5}
+                onMouseDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  let next = Math.max(1, Math.floor(Number(e.target.value)));
+                  if (Number.isFinite(next)) setLimit(next);
+                }}
+                className="input-tag w-16 border border-border rounded px-1 py-0.5 bg-bg-page"
+              />
+              <span>posts</span>
+            </div>
+          )}
+        </div>
         <hr className="border-border-light my-1" />
 
         <div className="flex flex-col gap-2">

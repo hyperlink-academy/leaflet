@@ -89,6 +89,7 @@ export function BskyPostContent(props: {
 
         <div
           className={`bskyPostContent flex flex-col grow text-left w-full min-w-0 ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
+          style={{ wordBreak: "break-word" }}
         >
           <PostInfo
             displayName={post.author.displayName}

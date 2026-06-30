@@ -20,6 +20,12 @@ import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { DocumentProvider } from "contexts/DocumentContext";
 import type { DocumentContextValue } from "contexts/DocumentContext";
 import { buildPublicationPosts } from "../buildPublicationPosts";
+import {
+  POSTS_LIST_PAGE_SIZE,
+  postsListFilterKey,
+  sortPostsForList,
+  filterPostsByTags,
+} from "../postsListPagination";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -101,27 +107,44 @@ export async function PublicationPageRenderer({
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
 
-  const hasPostsList = allBlocks.some((b) =>
+  const postsListBlocks = allBlocks.filter((b) =>
     PubLeafletBlocksPostsList.isMain(b.block),
   );
-  const postsListPosts = hasPostsList
+
+  // The page query already loaded every document, so build the list in memory.
+  // Per distinct tag-filter signature, ship the full ordered URI list plus a
+  // byline-resolved first batch (in the SSR HTML); the client hydrates later
+  // batches by URI on scroll via getPostsByUris.
+  const allPosts = postsListBlocks.length
     ? buildPublicationPosts(publication.documents_in_publications)
     : [];
+  const distinctFilters = new Map<string, string[] | undefined>();
+  for (const b of postsListBlocks) {
+    const filterByTags = (b.block as PubLeafletBlocksPostsList.Main)
+      .filterByTags;
+    distinctFilters.set(postsListFilterKey(filterByTags), filterByTags);
+  }
+  const initialByFilterEntries = await Promise.all(
+    Array.from(distinctFilters.entries()).map(async ([key, tags]) => {
+      const ordered = sortPostsForList(filterPostsByTags(allPosts, tags));
+      const firstBatch = ordered.slice(0, POSTS_LIST_PAGE_SIZE);
+      const initialPosts = attachBylineProfiles(
+        firstBatch,
+        await getProfiles(bylineDidsForPosts(firstBatch)),
+      );
+      return [
+        key,
+        { uris: ordered.map((p) => p.uri), initialPosts },
+      ] as const;
+    }),
+  );
 
-  // Resolve bylines server-side so post-list author names are in the SSR HTML.
-  const postsListPostsWithByline = hasPostsList
-    ? attachBylineProfiles(
-        postsListPosts,
-        await getProfiles(bylineDidsForPosts(postsListPosts)),
-      )
-    : postsListPosts;
-
-  const postsListData = hasPostsList
+  const postsListData = postsListBlocks.length
     ? {
         publication: { uri: publication.uri, record: publication.record },
         publicationRecord:
           normalizedPublication as NormalizedPublication | null,
-        posts: postsListPostsWithByline,
+        initialByFilter: Object.fromEntries(initialByFilterEntries),
       }
     : undefined;
 

@@ -59,6 +59,7 @@ export function PublicationPostsList({
   fakePosts,
   view = "medium",
   highlightFirstPost = false,
+  preSorted = false,
   className,
 }: {
   publication: PublicationForURL;
@@ -67,6 +68,9 @@ export function PublicationPostsList({
   fakePosts?: PublicationPostsListFakePost[];
   view?: PublicationPostsListView;
   highlightFirstPost?: boolean;
+  // Posts already arrive newest-first (server keyset order). Skip the local
+  // publishedAt sort so paginated pages keep the order their cursor assumes.
+  preSorted?: boolean;
   className?: string;
 }) {
   // Resolve a byline name per post: the post's explicit contributors when
@@ -114,18 +118,18 @@ export function PublicationPostsList({
               date={post.date}
             />
           ))
-        : posts
-            ?.slice()
-            .sort((a, b) => {
-              const aDate = a.record.publishedAt
-                ? new Date(a.record.publishedAt)
-                : new Date(0);
-              const bDate = b.record.publishedAt
-                ? new Date(b.record.publishedAt)
-                : new Date(0);
-              return bDate.getTime() - aDate.getTime();
-            })
-            .map((post, index) => {
+        : (preSorted
+            ? posts
+            : posts?.slice().sort((a, b) => {
+                const aDate = a.record.publishedAt
+                  ? new Date(a.record.publishedAt)
+                  : new Date(0);
+                const bDate = b.record.publishedAt
+                  ? new Date(b.record.publishedAt)
+                  : new Date(0);
+                return bDate.getTime() - aDate.getTime();
+              })
+          )?.map((post, index) => {
               const doc_record = post.record;
               const quotes = post.mentionsCount;
               const comments =

@@ -215,6 +215,59 @@ export const PubLeafletBlocksImage: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksImageGallery: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.imageGallery",
+  defs: {
+    main: {
+      type: "object",
+      required: ["images"],
+      properties: {
+        images: {
+          type: "array",
+          items: { type: "ref", ref: "#image" },
+        },
+        format: {
+          type: "string",
+          knownValues: ["grid", "carousel", "strip"],
+        },
+        gap: {
+          type: "integer",
+          description: "Gap between images in pixels.",
+        },
+        maxWidth: {
+          type: "integer",
+          description:
+            "Max width per image in grid view (px); drives how many columns fit.",
+        },
+      },
+    },
+    image: {
+      type: "object",
+      required: ["image", "aspectRatio"],
+      properties: {
+        image: { type: "blob", accept: ["image/*"], maxSize: 1000000 },
+        alt: {
+          type: "string",
+          description: "Alt text description of the image, for accessibility.",
+        },
+        aspectRatio: {
+          type: "ref",
+          ref: "#aspectRatio",
+        },
+      },
+    },
+    aspectRatio: {
+      type: "object",
+      required: ["width", "height"],
+      properties: {
+        width: { type: "integer" },
+        height: { type: "integer" },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksOrderedList: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.orderedList",
@@ -377,6 +430,11 @@ export const PubLeafletBlocksPostsList: LexiconDoc = {
         view: { type: "string", knownValues: ["small", "medium"] },
         highlightFirstPost: { type: "boolean" },
         filterByTags: { type: "array", items: { type: "string" } },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          description: "Show at most this many posts.",
+        },
       },
     },
   },
@@ -402,6 +460,7 @@ export const BlockLexicons = [
   PubLeafletBlocksBlockQuote,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
+  PubLeafletBlocksImageGallery,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksWebsite,

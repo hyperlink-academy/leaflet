@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requestPublicationEmailSubscription } from "actions/publications/subscribeEmail";
 import { supabaseServerClient } from "supabase/serverClient";
 import {
   getPublicationURL,
   getBasePublicationURL,
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import { mainSiteAuthBase } from "src/utils/customDomain";
 
 export const dynamic = "force-dynamic";
 
-const SUBSCRIBE_QUERY = "subscribe_email";
 const ERROR_QUERY = "subscribe_email_error";
 
+// Subscribe forms embedded out in the wild POST here (form-encoded or JSON).
+// Rather than minting a half-confirmed subscription, hand off to the same
+// email-login flow the in-app subscribe button uses: it confirms the email,
+// records the subscription via the `subscribe` after-sign-in action, and
+// bounces back to the publication with `subscribe_email=<email>` so the success
+// modal celebrates only once the subscription is actually live.
 export async function POST(req: NextRequest) {
   const contentType = req.headers.get("content-type") || "";
   let email: string | null = null;
@@ -26,8 +32,7 @@ export async function POST(req: NextRequest) {
       email = typeof body.email === "string" ? body.email : null;
       publicationUri =
         typeof body.publication === "string" ? body.publication : null;
-      returnTo =
-        typeof body.return_to === "string" ? body.return_to : null;
+      returnTo = typeof body.return_to === "string" ? body.return_to : null;
     }
   } else {
     const form = await req.formData();
@@ -43,52 +48,32 @@ export async function POST(req: NextRequest) {
     return new NextResponse("Missing publication", { status: 400 });
   }
   const requestOrigin = new URL(req.url).origin;
-  if (!email) {
-    return redirectWithError(
-      publicationUri,
-      returnTo,
-      requestOrigin,
-      "invalid_email",
-    );
-  }
-
-  const result = await requestPublicationEmailSubscription(
+  const returnUrl = await resolveReturnUrl(
     publicationUri,
-    email,
+    returnTo,
+    requestOrigin,
   );
-
-  if (!result.ok) {
-    return redirectWithError(
-      publicationUri,
-      returnTo,
-      requestOrigin,
-      result.error,
-    );
-  }
-
-  const target = await resolveReturnUrl(publicationUri, returnTo, requestOrigin);
-  if (!target) {
+  if (!returnUrl) {
     return new NextResponse("Publication not found", { status: 404 });
   }
-  target.searchParams.set(SUBSCRIBE_QUERY, email);
-  if (result.value.confirmed) {
-    target.searchParams.set("subscribe_email_confirmed", "1");
+  if (!email) {
+    returnUrl.searchParams.set(ERROR_QUERY, "invalid_email");
+    return NextResponse.redirect(returnUrl.toString(), 303);
   }
-  return NextResponse.redirect(target.toString(), 303);
-}
 
-async function redirectWithError(
-  publicationUri: string,
-  returnTo: string | null,
-  requestOrigin: string,
-  error: string,
-) {
-  const target = await resolveReturnUrl(publicationUri, returnTo, requestOrigin);
-  if (!target) {
-    return new NextResponse(`Subscription failed: ${error}`, { status: 400 });
-  }
-  target.searchParams.set(ERROR_QUERY, error);
-  return NextResponse.redirect(target.toString(), 303);
+  // Email login must complete first-party on the main site (where the canonical
+  // auth_token cookie lives), not on the publication's domain — it bounces the
+  // session back via receive_auth_callback. `redirect` still points at the
+  // publication so the success modal shows there.
+  const authBase = mainSiteAuthBase(req.headers.get("host") ?? undefined) || requestOrigin;
+  const loginUrl = new URL("/api/auth/email-login", authBase);
+  loginUrl.searchParams.set("email", email);
+  loginUrl.searchParams.set("redirect", returnUrl.toString());
+  loginUrl.searchParams.set(
+    "action",
+    encodeActionToSearchParam({ action: "subscribe", publication: publicationUri }),
+  );
+  return NextResponse.redirect(loginUrl.toString(), 303);
 }
 
 async function resolveReturnUrl(

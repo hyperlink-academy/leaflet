@@ -1,9 +1,11 @@
 "use client";
+import { useState } from "react";
 import {
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
+  PubLeafletBlocksImageGallery,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksOrderedList,
@@ -21,17 +23,15 @@ import {
   PubLeafletBlocksButton,
   PubLeafletBlocksSignup,
 } from "lexicons/api";
-import {
-  PublicationPostsList,
-  type PublicationPostsListPost,
-} from "../PublicationPostsList";
+import { type PublicationPostsListPost } from "../PublicationPostsList";
+import { PaginatedPublicationPostsList } from "../PaginatedPublicationPostsList";
+import { postsListFilterKey } from "../postsListPagination";
+import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./Blocks/TextBlock";
-import { Popover } from "components/Popover";
-import { theme } from "tailwind.config";
-import { ImageAltSmall } from "components/Icons/ImageAlt";
+import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
@@ -42,6 +42,11 @@ import {
 } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
+import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
+import {
+  ImageGalleryLightbox,
+  LightboxSlide,
+} from "components/Blocks/ImageGalleryBlock/ImageGalleryLightbox";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
@@ -59,7 +64,12 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
-  posts: PublicationPostsListPost[];
+  // Per tag-filter signature (postsListFilterKey): the full ordered URI list
+  // plus an SSR-seeded, byline-resolved first batch.
+  initialByFilter: Record<
+    string,
+    { uris: string[]; initialPosts: PublicationPostsListPost[] }
+  >;
 };
 
 export function PostContent({
@@ -159,6 +169,7 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
+  let [imageLightboxOpen, setImageLightboxOpen] = useState(false);
   let document = useDocumentOptional();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
@@ -308,21 +319,21 @@ export let Block = ({
       if (!postsListData) return null;
       const view: "small" | "medium" =
         b.block.view === "small" ? "small" : "medium";
-      const filterByTags = b.block.filterByTags;
-      const posts =
-        filterByTags && filterByTags.length > 0
-          ? postsListData.posts.filter((p) =>
-              p.record.tags?.some((t) => filterByTags.includes(t)),
-            )
-          : postsListData.posts;
+      const key = postsListFilterKey(b.block.filterByTags);
+      const seed = postsListData.initialByFilter[key];
+      if (!seed) return null;
       return (
         <div className={className} {...blockProps}>
-          <PublicationPostsList
+          <PaginatedPublicationPostsList
             publication={postsListData.publication}
             publicationRecord={postsListData.publicationRecord}
-            posts={posts}
+            listId={`${postsListData.publication.uri}:${key}`}
+            uris={seed.uris}
+            initialPosts={seed.initialPosts}
+            loadBatch={getPostsByUris}
             view={view}
             highlightFirstPost={!!b.block.highlightFirstPost}
+            limit={b.block.limit}
           />
         </div>
       );
@@ -454,6 +465,7 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksImage.isMain(b.block): {
+      let imageBlock = b.block;
       let isFullBleed = b.block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -474,29 +486,47 @@ export let Block = ({
 
       return (
         <div
-          className={`imageBlock relative flex ${isFullBleed ? "" : alignment} ${fullBleedClassName}`}
+          className={`imageBlock flex ${isFullBleed ? "" : alignment} ${fullBleedClassName}`}
           {...blockProps}
         >
-          <img
-            alt={b.block.alt}
-            height={b.block.aspectRatio?.height}
-            width={b.block.aspectRatio?.width}
-            className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-            src={blobRefToSrc(b.block.image.ref, did)}
-          />
-          {b.block.alt && (
-            <div className="absolute bottom-1.5 right-2 h-max">
-              <Popover
-                className="text-sm max-w-xs  min-w-0"
-                side="left"
-                trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
-              >
-                <div className="text-sm text-secondary w-full">
-                  {b.block.alt}
-                </div>
-              </Popover>
-            </div>
-          )}
+          <div className={`relative ${isFullBleed ? "w-full" : "w-fit"} h-fit`}>
+            <button
+              type="button"
+              className={`block ${isFullBleed ? "w-full" : "w-fit"} cursor-zoom-in`}
+              onClick={() => setImageLightboxOpen(true)}
+            >
+              <img
+                alt={b.block.alt}
+                height={b.block.aspectRatio?.height}
+                width={b.block.aspectRatio?.width}
+                className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
+                src={blobRefToSrc(b.block.image.ref, did)}
+              />
+            </button>
+            {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
+            <ImageGalleryLightbox
+              count={1}
+              index={imageLightboxOpen ? 0 : null}
+              onIndexChange={(i) => setImageLightboxOpen(i !== null)}
+              renderSlide={() => (
+                <LightboxSlide
+                  image={{
+                    src: blobRefToSrc(imageBlock.image.ref, did),
+                    alt: imageBlock.alt || "",
+                    width: imageBlock.aspectRatio?.width ?? 0,
+                    height: imageBlock.aspectRatio?.height ?? 0,
+                  }}
+                />
+              )}
+            />
+          </div>
+        </div>
+      );
+    }
+    case PubLeafletBlocksImageGallery.isMain(b.block): {
+      return (
+        <div className={className} {...blockProps}>
+          <PublishedImageGallery block={b.block} did={did} />
         </div>
       );
     }

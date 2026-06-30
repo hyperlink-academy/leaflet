@@ -5,7 +5,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
-import { useEditorStates } from "src/state/useEditorState";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
 import { UndoManager } from "src/undoManager";
 import { focusBlock } from "src/utils/focusBlock";
@@ -18,6 +18,7 @@ import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { ImageGallerySmall } from "components/Icons/ImageGallerySmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { BlockPollSmall } from "components/Icons/BlockPollSmall";
 import { PostListSmall } from "components/Icons/PostListSmall";
@@ -83,24 +84,18 @@ async function createBlockWithType(
 }
 
 function clearCommandSearchText(entityID: string) {
-  useEditorStates.setState((s) => {
-    let existingState = s.editorStates[entityID];
-    if (!existingState) {
-      return s;
-    }
-
-    let tr = existingState.editor.tr;
-    tr.deleteRange(1, tr.doc.content.size - 1);
-    return {
-      editorStates: {
-        ...s.editorStates,
-        [entityID]: {
-          ...existingState,
-          editor: existingState.editor.apply(tr),
-        },
-      },
-    };
-  });
+  let existingState = useEditorStates.getState().editorStates[entityID];
+  if (!existingState) return;
+  let tr = existingState.editor.tr;
+  tr.deleteRange(1, tr.doc.content.size - 1);
+  // Dispatch through the view so trackUndoRedo records an inverse entry;
+  // a direct apply left the cleared "/query" scaffolding with no inverse and
+  // it reappeared on redo. Fall back to a direct state write if unmounted.
+  if (existingState.view) {
+    existingState.view.dispatch(tr);
+  } else {
+    setEditorState(entityID, { editor: existingState.editor.apply(tr) });
+  }
 }
 
 type Command = {
@@ -109,6 +104,7 @@ type Command = {
   type: string;
   alternateNames?: string[];
   hiddenInPublication?: boolean;
+  hiddenOnPublicationPage?: boolean;
   publicationOnly?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
@@ -210,6 +206,29 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "image");
+      setTimeout(() => {
+        let el = document.getElementById(elementId.block(entity).input);
+        el?.focus();
+      }, 100);
+      um.add({
+        undo: () => {
+          focusTextBlock(entity);
+        },
+        redo: () => {
+          let el = document.getElementById(elementId.block(entity).input);
+          el?.focus();
+        },
+      });
+    },
+  },
+  {
+    name: "Image Gallery",
+    icon: <ImageGallerySmall />,
+    type: "block",
+    alternateNames: ["gallery", "images", "carousel"],
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "image-gallery");
       setTimeout(() => {
         let el = document.getElementById(elementId.block(entity).input);
         el?.focus();
@@ -369,6 +388,7 @@ export const blockCommands: Command[] = [
     name: "New Page",
     icon: <BlockDocPageSmall />,
     type: "page",
+    hiddenOnPublicationPage: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");
@@ -408,6 +428,7 @@ export const blockCommands: Command[] = [
     name: "New Canvas",
     icon: <BlockCanvasPageSmall />,
     type: "page",
+    hiddenOnPublicationPage: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");
@@ -443,7 +464,7 @@ export const blockCommands: Command[] = [
     },
   },
 
-  // PUBLICATION BLOCKS — only shown when editing a publication page
+  // PUBLICATION BLOCKS — shown anywhere within a publication (posts and publication pages)
   {
     name: "Post List",
     icon: <PostListSmall />,

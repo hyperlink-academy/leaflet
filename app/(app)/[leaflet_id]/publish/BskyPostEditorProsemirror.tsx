@@ -3,7 +3,7 @@ import { AppBskyRichtextFacet, UnicodeString } from "@atproto/api";
 import { useState, useCallback, useRef, useLayoutEffect } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { Schema, MarkSpec, Mark } from "prosemirror-model";
+import { Schema, MarkSpec, Mark, Node } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { history, undo, redo } from "prosemirror-history";
@@ -12,6 +12,7 @@ import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { IOSBS } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/Comments/CommentBox";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { Mention, MentionAutocomplete } from "components/Mention";
+import { loadDraftDoc, saveDraftDoc } from "src/utils/prosemirror/draftPersistence";
 
 // Schema with only links, mentions, and hashtags marks
 const bskyPostSchema = new Schema({
@@ -130,6 +131,9 @@ function createHashtagInputRule() {
 export function BlueskyPostEditorProsemirror(props: {
   editorStateRef: React.RefObject<EditorState | null>;
   initialContent?: string;
+  // When set, the in-progress post is persisted to localStorage under this key
+  // (scoped to the document/publication being published) and restored on reload.
+  persistKey?: string;
   onCharCountChange?: (count: number) => void;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -237,17 +241,30 @@ export function BlueskyPostEditorProsemirror(props: {
       },
     );
 
+    // A persisted draft takes precedence over initialContent, so a reload
+    // restores whatever the user was last typing
+    let initialDoc: Node | undefined = undefined;
+    let savedDoc = loadDraftDoc(props.persistKey);
+    if (savedDoc) {
+      try {
+        initialDoc = bskyPostSchema.nodeFromJSON(savedDoc);
+      } catch {
+        initialDoc = undefined;
+      }
+    }
+    if (!initialDoc && props.initialContent) {
+      initialDoc = bskyPostSchema.nodeFromJSON({
+        type: "doc",
+        content: props.initialContent.split("\n").map((line) => ({
+          type: "paragraph",
+          content: line ? [{ type: "text", text: line }] : undefined,
+        })),
+      });
+    }
+
     const initialState = EditorState.create({
       schema: bskyPostSchema,
-      doc: props.initialContent
-        ? bskyPostSchema.nodeFromJSON({
-            type: "doc",
-            content: props.initialContent.split("\n").map((line) => ({
-              type: "paragraph",
-              content: line ? [{ type: "text", text: line }] : undefined,
-            })),
-          })
-        : undefined,
+      doc: initialDoc,
       plugins: [
         inputRules({ rules: [createHashtagInputRule(), mentionInputRule] }),
         keymap({
@@ -267,6 +284,11 @@ export function BlueskyPostEditorProsemirror(props: {
 
     setEditorState(initialState);
     props.editorStateRef.current = initialState;
+    props.onCharCountChange?.(
+      initialState.doc.textContent.length +
+        initialState.doc.children.length -
+        1,
+    );
 
     const view = new EditorView(
       { mount: mountRef.current },
@@ -279,6 +301,12 @@ export function BlueskyPostEditorProsemirror(props: {
           props.editorStateRef.current = newState;
           props.onCharCountChange?.(
             newState.doc.textContent.length + newState.doc.children.length - 1,
+          );
+          saveDraftDoc(
+            props.persistKey,
+            newState.doc.textContent.length === 0
+              ? null
+              : newState.doc.toJSON(),
           );
         },
       },

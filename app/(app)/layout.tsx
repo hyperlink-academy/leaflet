@@ -4,6 +4,7 @@ import { IdentityProviderServer } from "components/IdentityProviderServer";
 import { RequestHeadersProvider } from "components/Providers/RequestHeadersProvider";
 import { RouteUIStateManager } from "components/RouteUIStateManger";
 import { SubscriptionSuccessModal } from "components/SubscriptionSuccessModal";
+import { SubscribeConfirmationModal } from "components/Subscribe/SubscribeConfirmationModal";
 
 export default async function AppLayout({
   children,
@@ -24,6 +25,7 @@ export default async function AppLayout({
         {children}
         <Suspense>
           <SubscriptionSuccessModal />
+          <SubscribeConfirmationModal />
         </Suspense>
         <RouteUIStateManager />
       </RequestHeadersProvider>

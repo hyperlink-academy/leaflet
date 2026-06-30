@@ -1464,6 +1464,70 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksImageGallery: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.imageGallery',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['images'],
+        properties: {
+          images: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.imageGallery#image',
+            },
+          },
+          format: {
+            type: 'string',
+            knownValues: ['grid', 'carousel', 'strip'],
+          },
+          gap: {
+            type: 'integer',
+            description: 'Gap between images in pixels.',
+          },
+          maxWidth: {
+            type: 'integer',
+            description:
+              'Max width per image in grid view (px); drives how many columns fit.',
+          },
+        },
+      },
+      image: {
+        type: 'object',
+        required: ['image', 'aspectRatio'],
+        properties: {
+          image: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          alt: {
+            type: 'string',
+            description:
+              'Alt text description of the image, for accessibility.',
+          },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.blocks.imageGallery#aspectRatio',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksMath: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.math',
@@ -1588,6 +1652,11 @@ export const schemaDict = {
             items: {
               type: 'string',
             },
+          },
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            description: 'Show at most this many posts.',
           },
         },
       },
@@ -2005,6 +2074,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
+              'lex:pub.leaflet.blocks.imageGallery',
               'lex:pub.leaflet.blocks.unorderedList',
               'lex:pub.leaflet.blocks.orderedList',
               'lex:pub.leaflet.blocks.website',
@@ -2110,6 +2180,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
+              'lex:pub.leaflet.blocks.imageGallery',
               'lex:pub.leaflet.blocks.unorderedList',
               'lex:pub.leaflet.blocks.orderedList',
               'lex:pub.leaflet.blocks.website',
@@ -3053,6 +3124,7 @@ export const ids = {
   PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
   PubLeafletBlocksIframe: 'pub.leaflet.blocks.iframe',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
+  PubLeafletBlocksImageGallery: 'pub.leaflet.blocks.imageGallery',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
   PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',

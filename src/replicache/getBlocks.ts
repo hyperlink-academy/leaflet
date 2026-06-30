@@ -3,6 +3,41 @@ import { ReadTransaction } from "replicache";
 import { Fact } from "src/replicache";
 import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 
+// Headings own the blocks that follow them in document order until the next
+// heading of equal-or-higher level (Obsidian-style sections). That ownership is
+// positional, not structural, so we derive it here and hang a headingPath on
+// each block — the heading-folding analog of listData.path.
+//
+// Only assign headingPath when there's an enclosing section: an explicit
+// `headingPath: undefined` would add an own-key that Replicache's deepEqual
+// (which compares by own-key count) counts, masking a real change like
+// text→list and silently suppressing the subscription update.
+function computeHeadingSections(blocks: Block[]): void {
+  let stack: { entity: string; level: number }[] = [];
+  for (let block of blocks) {
+    let isHeading = block.type === "heading" && !block.listData;
+    let level = block.headingLevel ?? 1;
+    if (isHeading)
+      while (stack.length > 0 && stack[stack.length - 1].level >= level)
+        stack.pop();
+    if (stack.length) block.headingPath = stack.map((s) => s.entity);
+    if (isHeading) stack.push({ entity: block.value, level });
+  }
+}
+
+// A block is hidden when collapsed by a fold: either a folded list ancestor on
+// its own listData.path (excluding itself, so the folded row stays visible), or
+// a folded heading whose section contains it.
+export function isBlockHidden(block: Block, foldedBlocks: string[]): boolean {
+  return (
+    (block.listData?.path.some(
+      (p) => foldedBlocks.includes(p.entity) && p.entity !== block.value,
+    ) ??
+      false) ||
+    (block.headingPath?.some((h) => foldedBlocks.includes(h)) ?? false)
+  );
+}
+
 function computeDisplayNumbers(blocks: Block[]): void {
   let counters = new Map<string, number>();
   for (let block of blocks) {
@@ -42,6 +77,11 @@ export const getBlocksWithType = async (
           let type = (await scan.eav(b.data.value, "block/type"))[0];
           let isList = await scan.eav(b.data.value, "block/is-list");
           if (!type) return null;
+          let headingLevel =
+            type.data.value === "heading"
+              ? (await scan.eav(b.data.value, "block/heading-level"))[0]?.data
+                  .value
+              : undefined;
           // All lists use recursive structure
           if (isList[0]?.data.value) {
             const getChildren = async (
@@ -62,8 +102,12 @@ export const getBlocksWithType = async (
                 root.data.value,
                 "block/check-list",
               );
-              let listStyle = (await scan.eav(root.data.value, "block/list-style"))[0];
-              let listNumber = (await scan.eav(root.data.value, "block/list-number"))[0];
+              let listStyle = (
+                await scan.eav(root.data.value, "block/list-style")
+              )[0];
+              let listNumber = (
+                await scan.eav(root.data.value, "block/list-number")
+              )[0];
               if (!type) return [];
               let newPath = [...path, { entity: root.data.value, depth }];
               let childBlocks = await Promise.all(
@@ -98,6 +142,7 @@ export const getBlocksWithType = async (
               factID: b.id,
               type: type.data.value,
               parent: b.entity,
+              ...(headingLevel !== undefined && { headingLevel }),
             },
           ] as Block[];
         }),
@@ -106,6 +151,7 @@ export const getBlocksWithType = async (
     .flat()
     .filter((f) => f !== null);
 
+  computeHeadingSections(result);
   computeDisplayNumbers(result);
   return result;
 };
@@ -125,6 +171,10 @@ export const getBlocksWithTypeLocal = (
       let type = scan.eav(b.data.value, "block/type")[0];
       let isList = scan.eav(b.data.value, "block/is-list");
       if (!type) return null;
+      let headingLevel =
+        type.data.value === "heading"
+          ? scan.eav(b.data.value, "block/heading-level")[0]?.data.value
+          : undefined;
       // All lists use recursive structure
       if (isList[0]?.data.value) {
         const getChildren = (
@@ -173,12 +223,14 @@ export const getBlocksWithTypeLocal = (
           factID: b.id,
           type: type.data.value,
           parent: b.entity,
+          ...(headingLevel !== undefined && { headingLevel }),
         },
       ] as Block[];
     })
     .flat()
     .filter((f) => f !== null);
 
+  computeHeadingSections(result);
   computeDisplayNumbers(result);
   return result;
 };

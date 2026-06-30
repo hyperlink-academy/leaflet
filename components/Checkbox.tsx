@@ -47,7 +47,7 @@ export function Radio(
   return (
     <label
       htmlFor={props.id}
-      className={`flex gap-2 items-start cursor-pointer shrink-0 ${props.checked ? "text-primary font-bold " : " text-tertiary font-normal"}`}
+      className={`flex gap-2 items-start cursor-pointer shrink-0 max-w-full ${props.checked ? "text-primary font-bold " : " text-tertiary font-normal"}`}
     >
       <input
         type="radio"

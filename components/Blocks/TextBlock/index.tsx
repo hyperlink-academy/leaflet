@@ -259,14 +259,14 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
   return (
     <>
       <div
-        className={`flex items-center justify-between w-full
+        className={`flex items-center justify-between
           ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
           ${
             props.type === "blockquote"
               ? props.previousBlock?.type === "blockquote" && !props.listData
-                ? "blockquote pt-3"
-                : "blockquote"
-              : ""
+                ? "blockquote w-auto pt-3"
+                : "blockquote w-auto"
+              : "w-full"
           }`}
       >
         {overlay}
@@ -374,7 +374,17 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
   );
 }
 
-const blueskyclients = ["blacksky.community/", "bsky.app/", "witchsky.app/"];
+const blueskyclients = [
+  "blacksky.community/",
+  "bsky.app/",
+  "witchsky.app/",
+  "anisota.net/",
+  "mu.social/",
+  "bluepy.social/",
+  "reddwarf.app/",
+  "catsky.social/",
+  "deer.social/",
+];
 
 const BlockifyLink = (props: {
   entityID: string;
@@ -494,19 +504,11 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
           let editor = useEditorStates.getState().editorStates[props.entityID];
 
           let editorState = editor?.editor;
-          if (editorState) {
-            editor?.view?.focus();
+          if (editorState && editor?.view) {
+            editor.view.focus();
             let tr = editorState.tr.insertText("/", 1);
             tr.setSelection(TextSelection.create(tr.doc, 2));
-            useEditorStates.setState((s) => ({
-              editorStates: {
-                ...s.editorStates,
-                [props.entityID]: {
-                  ...s.editorStates[props.entityID]!,
-                  editor: editorState!.apply(tr),
-                },
-              },
-            }));
+            editor.view.dispatch(tr);
           }
           focusBlock(
             {
@@ -610,7 +612,8 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
         useEditorStates.getState().editorStates[entityID]?.editor;
       // Check if the block is empty (only the @ character)
       const blockIsEmpty =
-        editorState && editorState.doc.textContent.replace("@", "").trim() === "";
+        editorState &&
+        editorState.doc.textContent.replace("@", "").trim() === "";
 
       await undoManager.withUndoGroup(async () => {
         let targetEntityID: string;
@@ -635,10 +638,7 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
             type: "embed",
             newEntityID: targetEntityID,
             parent: props.parent,
-            position: generateKeyBetween(
-              props.position,
-              props.nextPosition,
-            ),
+            position: generateKeyBetween(props.position, props.nextPosition),
           });
           // Remove the @ from the current block's editor
           const view = useEditorStates.getState().editorStates[entityID]?.view;

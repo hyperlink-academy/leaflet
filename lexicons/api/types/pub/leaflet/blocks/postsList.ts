@@ -19,6 +19,8 @@ export interface Main {
   view?: 'small' | 'medium' | (string & {})
   highlightFirstPost?: boolean
   filterByTags?: string[]
+  /** Show at most this many posts. */
+  limit?: number
 }
 
 const hashMain = 'main'

@@ -8,20 +8,21 @@ import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage, localImages } from "src/utils/addImage";
+import { setCoverImageFromEntity } from "src/utils/setCoverImageFromEntity";
 import { elementId } from "src/utils/elementId";
 import { useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
-import { Popover } from "components/Popover";
-import { theme } from "tailwind.config";
 import { EditTiny } from "components/Icons/EditTiny";
-import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { set } from "colorjs.io/fn";
-import { ImageAltSmall } from "components/Icons/ImageAlt";
+import { ImageAltButton } from "./ImageAltButton";
+import {
+  ImageGalleryLightbox,
+  EditorLightboxSlide,
+} from "./ImageGalleryBlock/ImageGalleryLightbox";
 import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
 } from "components/PageSWRDataProvider";
-import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   ImageCoverImage,
   ImageCoverImageRemove,
@@ -45,6 +46,13 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let isLast = props.nextBlock === null;
 
   let altText = useEntity(props.value, "image/alt")?.data.value;
+
+  let [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Writers select the block first; a second click on the image opens the
+  // lightbox. Readers (no write permission) open it on the first click.
+  let canOpenLightbox =
+    !props.preview && (!entity_set.permissions.write || !!isSelected);
 
   let nextIsFullBleed = useEntity(
     props.nextBlock && props.nextBlock.value,
@@ -160,27 +168,48 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       className={blockClassName}
       optionsClassName={isFullBleed ? "top-[-8px]! border-none!" : ""}
     >
-      {localSrc || image.data.local ? (
-        <img
-          loading="lazy"
-          decoding="async"
-          alt={altText}
-          src={localSrc ?? image.data.fallback}
-          height={image?.data.height}
-          width={image?.data.width}
-        />
-      ) : (
-        <Image
-          alt={altText || ""}
-          src={
-            "/" + new URL(image.data.src).pathname.split("/").slice(5).join("/")
-          }
-          height={image?.data.height}
-          width={image?.data.width}
+      <button
+        type="button"
+        className={`block w-fit ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
+        onClick={() => {
+          if (canOpenLightbox) setLightboxOpen(true);
+        }}
+      >
+        {localSrc || image.data.local ? (
+          <img
+            loading="lazy"
+            decoding="async"
+            alt={altText}
+            src={localSrc ?? image.data.fallback}
+            height={image?.data.height}
+            width={image?.data.width}
+          />
+        ) : (
+          <Image
+            alt={altText || ""}
+            src={
+              "/" +
+              new URL(image.data.src).pathname.split("/").slice(5).join("/")
+            }
+            height={image?.data.height}
+            width={image?.data.width}
+          />
+        )}
+      </button>
+      {!props.preview && (
+        <ImageGalleryLightbox
+          count={1}
+          index={lightboxOpen ? 0 : null}
+          onIndexChange={(i) => setLightboxOpen(i !== null)}
+          renderSlide={() => <EditorLightboxSlide entityID={props.value} />}
         />
       )}
-      {altText !== undefined && !props.preview ? (
-        <ImageAlt entityID={props.value} />
+      {!props.preview ? (
+        <ImageAltButton
+          entityID={props.value}
+          selected={!!isSelected}
+          canEdit={entity_set.permissions.write}
+        />
       ) : null}
       {!props.preview ? <CoverImageButton entityID={props.value} /> : null}
     </BlockLayout>
@@ -188,36 +217,41 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 }
 
 const CoverImageButton = (props: { entityID: string }) => {
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pubData } = useLeafletPublicationData();
   let publicationPage = useLeafletPublicationPage();
-  let coverImage = useSubscribe(rep, (tx) =>
-    tx.get<string | null>("publication_cover_image"),
-  );
+  let image = useEntity(props.entityID, "block/image");
+  let alt = useEntity(props.entityID, "image/alt")?.data.value;
+  let coverEntity = useEntity(rootEntity, "root/cover-image")?.data.value;
+  let coverImage = useEntity(coverEntity ?? null, "block/image");
   let isFocused = useUIState(
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
 
-  // Only show if focused, in a publication, has write permissions, and no cover image is set.
-  // Publication pages (e.g. an About page) don't have cover images, so skip them.
+  // Only show if focused, in a publication, with write permissions, and an
+  // image to copy. Publication pages (e.g. an About page) have no cover image.
   if (
     !isFocused ||
     !pubData?.publications ||
     !entity_set.permissions.write ||
-    publicationPage
+    publicationPage ||
+    !image
   )
     return null;
-  if (coverImage === props.entityID)
+
+  // The cover is a standalone copy sharing this block's src, so a matching src
+  // means this block is the current cover.
+  let isCoverImage = !!coverImage && coverImage.data.src === image.data.src;
+  if (isCoverImage)
     return (
       <ButtonSecondary
         className="absolute top-2 right-2"
         onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          await rep?.mutate.updatePublicationDraft({
-            cover_image: null,
-          });
+          if (coverEntity)
+            await rep?.mutate.deleteEntity({ entity: coverEntity });
         }}
       >
         Remove Cover Image
@@ -231,66 +265,17 @@ const CoverImageButton = (props: { entityID: string }) => {
       onClick={async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        await rep?.mutate.updatePublicationDraft({
-          cover_image: props.entityID,
+        if (!rep) return;
+        await setCoverImageFromEntity(rep, {
+          rootEntity,
+          permission_set: entity_set.set,
+          image: image.data,
+          alt,
         });
       }}
     >
       Use as Cover Image
       <ImageCoverImage />
     </ButtonPrimary>
-  );
-};
-
-const ImageAlt = (props: { entityID: string }) => {
-  let { rep } = useReplicache();
-  let altText = useEntity(props.entityID, "image/alt")?.data.value;
-  let entity_set = useEntitySetContext();
-
-  let setAltEditorOpen = useUIState((s) => s.setOpenPopover);
-  let altEditorOpen = useUIState((s) => s.openPopover === props.entityID);
-
-  if (!entity_set.permissions.write && altText === "") return null;
-  return (
-    <div className="absolute bottom-0 right-2 h-max">
-      <Popover
-        open={altEditorOpen}
-        className="text-sm max-w-xs  min-w-0"
-        side="left"
-        asChild
-        trigger={
-          <button
-            onClick={() =>
-              setAltEditorOpen(altEditorOpen ? null : props.entityID)
-            }
-          >
-            <ImageAltSmall fillColor={theme.colors["bg-page"]} />
-          </button>
-        }
-      >
-        {entity_set.permissions.write ? (
-          <AsyncValueAutosizeTextarea
-            className="text-sm text-secondary outline-hidden bg-transparent min-w-0"
-            value={altText}
-            onFocus={(e) => {
-              e.currentTarget.setSelectionRange(
-                e.currentTarget.value.length,
-                e.currentTarget.value.length,
-              );
-            }}
-            onChange={async (e) => {
-              await rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "image/alt",
-                data: { type: "string", value: e.currentTarget.value },
-              });
-            }}
-            placeholder="add alt text..."
-          />
-        ) : (
-          <div className="text-sm text-secondary w-full"> {altText}</div>
-        )}
-      </Popover>
-    </div>
   );
 };

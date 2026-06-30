@@ -114,11 +114,6 @@ const UpdateButton = () => {
     ? tags
     : normalizedDocument?.tags ?? [];
 
-  // Get cover image from Replicache state
-  let coverImage = useSubscribe(rep, (tx) =>
-    tx.get<string | null>("publication_cover_image"),
-  );
-
   // Get post preferences from Replicache state
   let postPreferences = useSubscribe(rep, (tx) =>
     tx.get<{
@@ -136,7 +131,7 @@ const UpdateButton = () => {
   return (
     <ActionButton
       primary
-      className="w-fit!"
+      className="w-fit! sm:w-fill!"
       labelOnMobile
       icon={<PublishSmall className="shrink-0" />}
       label={isLoading ? <DotLoader /> : "Update!"}
@@ -150,7 +145,6 @@ const UpdateButton = () => {
           title: currentTitle,
           description: currentDescription,
           tags: currentTags,
-          cover_image: coverImage,
           publishedAt: publishedAt?.toISOString(),
           postPreferences,
         });
@@ -178,7 +172,7 @@ const UpdateButton = () => {
           content: (
             <div className="font-bold">
               {pub.doc ? "Updated! " : "Published! "}
-              <SpeedyLink className="underline" href={docUrl}>
+              <SpeedyLink className="underline text-accent-2!" href={docUrl}>
                 See Published Post
               </SpeedyLink>
             </div>

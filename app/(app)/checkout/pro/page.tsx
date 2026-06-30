@@ -10,9 +10,9 @@ export const metadata = {
 export default async function ProCheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cadence?: string }>;
+  searchParams: Promise<{ cadence?: string; coupon?: string }>;
 }) {
-  const { cadence: rawCadence } = await searchParams;
+  const { cadence: rawCadence, coupon } = await searchParams;
   const cadence: "month" | "year" = rawCadence === "month" ? "month" : "year";
 
   const identity = await getIdentityData();
@@ -21,7 +21,7 @@ export default async function ProCheckoutPage({
     redirect("/home?upgrade=already-pro");
   }
 
-  const redirectRoute = `/checkout/pro?cadence=${cadence}`;
+  const redirectRoute = `/checkout/pro?cadence=${cadence}${coupon ? `&coupon=${coupon}` : ""}`;
 
   return (
     <div className="proCheckoutPage relative w-full min-h-[100dvh] flex items-center justify-center bg-bg-leaflet p-4">
@@ -34,7 +34,7 @@ export default async function ProCheckoutPage({
           <ProCheckoutLogin redirectRoute={redirectRoute} />
         </div>
       ) : (
-        <ProCheckoutTrigger cadence={cadence} />
+        <ProCheckoutTrigger cadence={cadence} coupon={coupon} />
       )}
     </div>
   );

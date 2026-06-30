@@ -129,7 +129,12 @@ export function WordmarkEditor() {
               setMode("wordmark");
             }}
           >
-            <div className="font-bold text-primary">Use Wordmark</div>
+            <div className="font-bold text-primary flex flex-col w-full">
+              Use Wordmark
+              <div className="text-sm font-normal text-tertiary!">
+                A styled image of your publication name to show on the homepage
+              </div>
+            </div>
           </Radio>
           {mode === "wordmark" && src && (
             <button
