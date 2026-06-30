@@ -1,8 +1,3 @@
-// Draw an already-decoded bitmap onto a canvas and encode it as WebP. Pass
-// maxDimension to downscale so the longest edge is at most that many pixels
-// (aspect ratio preserved, never upscaled). Re-encoding through a canvas also
-// bakes EXIF orientation into the pixels, which Supabase and the PDS otherwise
-// strip without applying.
 export async function encodeBitmapToWebP(
   bitmap: ImageBitmap,
   opts: { quality: number; maxDimension?: number },

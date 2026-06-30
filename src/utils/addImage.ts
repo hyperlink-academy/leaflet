@@ -99,8 +99,6 @@ export async function prepareImage(
 
     const finishUpload = async () => {
       try {
-        // Animated formats (GIF, APNG, animated WebP) pass through untouched to
-        // keep their frames; everything else is re-encoded to WebP.
         const uploadBlob = isAnimated
           ? file
           : await encodeBitmapToWebP(bitmap, { quality: 0.92 });
