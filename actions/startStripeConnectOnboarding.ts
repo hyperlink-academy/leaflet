@@ -27,25 +27,43 @@ export async function startStripeConnectOnboarding(
   if (existing?.stripe_account_id) {
     stripeAccountId = existing.stripe_account_id;
   } else {
-    const account = await createConnectedMerchantAccount({
-      email: identity.email,
-      displayName: identity.bsky_profiles?.handle || identity.email,
-      identityId: identity.id,
-    });
+    let account;
+    try {
+      account = await createConnectedMerchantAccount({
+        email: identity.email,
+        displayName: identity.bsky_profiles?.handle || identity.email,
+        identityId: identity.id,
+      });
+    } catch (e) {
+      console.error("Stripe Connect account creation failed:", e);
+      return Err("Couldn't set up payments. Please try again.");
+    }
     stripeAccountId = account.id;
+    // Upsert (ignore conflicts) so a concurrent request that already saved its
+    // account id — which the idempotency key guarantees is the same one — leaves
+    // this write as a no-op rather than a duplicate-key error.
     const { error } = await supabaseServerClient
       .from("stripe_connected_accounts")
-      .insert({
-        identity_id: identity.id,
-        stripe_account_id: stripeAccountId,
-      });
+      .upsert(
+        {
+          identity_id: identity.id,
+          stripe_account_id: stripeAccountId,
+        },
+        { onConflict: "identity_id", ignoreDuplicates: true },
+      );
     if (error) return Err("Failed to save connected account");
   }
 
-  const link = await createOnboardingLink({
-    accountId: stripeAccountId,
-    refreshUrl: returnUrl,
-    returnUrl,
-  });
+  let link;
+  try {
+    link = await createOnboardingLink({
+      accountId: stripeAccountId,
+      refreshUrl: returnUrl,
+      returnUrl,
+    });
+  } catch (e) {
+    console.error("Stripe Connect onboarding link creation failed:", e);
+    return Err("Couldn't set up payments. Please try again.");
+  }
   return Ok({ url: link.url });
 }

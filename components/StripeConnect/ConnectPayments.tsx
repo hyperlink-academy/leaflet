@@ -30,11 +30,18 @@ export function ConnectPayments() {
   async function startOnboarding() {
     setLoading(true);
     setError(null);
-    let result = await startStripeConnectOnboarding(window.location.href);
-    if (result.ok) {
-      window.location.href = result.value.url;
-    } else {
-      setError(result.error);
+    try {
+      let result = await startStripeConnectOnboarding(window.location.href);
+      if (result.ok) {
+        // Keep `loading` set: we're navigating away, so the button should stay
+        // disabled through the redirect.
+        window.location.href = result.value.url;
+      } else {
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   }

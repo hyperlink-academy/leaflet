@@ -25,26 +25,31 @@ export async function createConnectedMerchantAccount(args: {
   displayName?: string;
   identityId: string;
 }) {
-  return getStripe().v2.core.accounts.create({
-    contact_email: args.email,
-    display_name: args.displayName,
-    // Required to onboard; default US until we collect the publisher's country.
-    identity: { country: "US" },
-    configuration: {
-      merchant: {
-        capabilities: { card_payments: { requested: true } },
+  return getStripe().v2.core.accounts.create(
+    {
+      contact_email: args.email,
+      display_name: args.displayName,
+      // Required to onboard; default US until we collect the publisher's country.
+      identity: { country: "US" },
+      configuration: {
+        merchant: {
+          capabilities: { card_payments: { requested: true } },
+        },
       },
-    },
-    dashboard: "full",
-    defaults: {
-      responsibilities: {
-        fees_collector: "stripe",
-        losses_collector: "stripe",
+      dashboard: "full",
+      defaults: {
+        responsibilities: {
+          fees_collector: "stripe",
+          losses_collector: "stripe",
+        },
       },
+      metadata: { identity_id: args.identityId },
+      include: ["configuration.merchant", "requirements"],
     },
-    metadata: { identity_id: args.identityId },
-    include: ["configuration.merchant", "requirements"],
-  });
+    // Keyed on the identity so a retried or concurrent onboarding call returns
+    // the account already created instead of orphaning a second one.
+    { idempotencyKey: `connect-account-${args.identityId}` },
+  );
 }
 
 // Single-use hosted onboarding link for the connected account.
