@@ -14,7 +14,11 @@ import { InlineUpgradeToPro } from "app/(app)/lish/[did]/[publication]/UpgradeMo
 import { ManageProSubscription } from "app/(app)/lish/[did]/[publication]/dashboard/settings/ProSettings";
 import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
-import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
+import {
+  useIsPro,
+  useCanSeePro,
+  useCanSeePayments,
+} from "src/hooks/useEntitlement";
 import { useState } from "react";
 import { LeafletPro } from "components/Icons/LeafletPro";
 import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
@@ -26,6 +30,7 @@ export const ProfileButton = () => {
   let isMobile = useIsMobile();
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
+  let canSeePayments = useCanSeePayments();
 
   return (
     <Popover
@@ -88,7 +93,7 @@ export const ProfileButton = () => {
             <hr className="border-border-light border-dashed" />
           </>
         )}
-        {identity && (
+        {identity && canSeePayments && (
           <>
             <Modal
               trigger={

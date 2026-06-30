@@ -17,7 +17,11 @@ import { ThemeSettings } from "./ThemeSettings";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { ManageProSubscription, NewsletterSettings } from "./ProSettings";
 import { ContributorSettings } from "./ContributorSettings";
-import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
+import {
+  useIsPro,
+  useCanSeePro,
+  useCanSeePayments,
+} from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
@@ -37,6 +41,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
     !!identity?.atp_did && identity.atp_did === pubData?.identity_did;
   let isPro = useIsPro();
   let canSeePro = useCanSeePro();
+  let canSeePayments = useCanSeePayments();
   let record = useNormalizedPublicationRecord();
   let [loading, setLoading] = useState(false);
   let toast = useToaster();
@@ -239,9 +244,11 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
 
         <ContributorSettings />
 
-        <DashboardContainer section="Monetization">
-          <ConnectPayments />
-        </DashboardContainer>
+        {canSeePayments && (
+          <DashboardContainer section="Monetization">
+            <ConnectPayments />
+          </DashboardContainer>
+        )}
 
         {canSeePro && !isPro ? (
           <DashboardContainer section="Leaflet Pro" className="pb-4">
