@@ -50,9 +50,10 @@ FROM "public"."documents" d,
 WHERE jsonb_typeof(d.data->'tags') = 'array'
 ON CONFLICT DO NOTHING;
 
--- The old GIN index on data->'tags' supported containment lookups, not the
--- substring search this function does, so nothing relied on it for search_tags.
--- Leave it in place for any other consumers.
+-- The old GIN index on data->'tags' only supported containment lookups for the
+-- previous search_tags implementation, which no longer exists. Nothing else
+-- queries data->'tags' through it, so drop it.
+DROP INDEX IF EXISTS idx_documents_tags;
 
 CREATE OR REPLACE FUNCTION search_tags(search_query text)
 RETURNS TABLE (name text, document_count bigint) AS $$
