@@ -5,7 +5,7 @@ import type { FilterAttributes } from "src/replicache/attributes";
 import type { FactInput } from "src/replicache/mutations";
 import { rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 import { v7 } from "uuid";
-import { encodeBitmapToWebP } from "./encodeBitmapToWebP";
+import { encodeBitmapToWebP } from "./imageEncoding";
 
 // Maps a public image src to an in-memory object URL, for optimistic display
 // before the upload completes.

@@ -14,7 +14,7 @@ import { string } from "zod";
 import { DotLoader } from "components/utils/DotLoader";
 import { Checkbox } from "components/Checkbox";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
-import { prepareIconFile } from "src/utils/prepareIconFile";
+import { encodeIconFile } from "src/utils/imageEncoding";
 
 type DomainState =
   | { status: "empty" }
@@ -122,7 +122,7 @@ export const CreatePubForm = () => {
             if (!file) return;
             setLogoError(null);
             try {
-              const processed = await prepareIconFile(file);
+              const processed = await encodeIconFile(file);
               setLogoFile(processed);
               setLogoPreview(URL.createObjectURL(processed));
             } catch {

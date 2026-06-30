@@ -3,7 +3,7 @@ import { Input } from "components/Input";
 import { AddTiny } from "components/Icons/AddTiny";
 import { DashboardContainer } from "./SettingsContent";
 import { EditTiny } from "components/Icons/EditTiny";
-import { prepareIconFile } from "src/utils/prepareIconFile";
+import { encodeIconFile } from "src/utils/imageEncoding";
 
 export function GeneralSettings(props: {
   nameValue: string;
@@ -57,7 +57,7 @@ export function GeneralSettings(props: {
             const file = e.target.files?.[0];
             if (!file) return;
             try {
-              const processed = await prepareIconFile(file);
+              const processed = await encodeIconFile(file);
               props.setIconFile(processed);
               props.setIconPreview(URL.createObjectURL(processed));
             } catch {
