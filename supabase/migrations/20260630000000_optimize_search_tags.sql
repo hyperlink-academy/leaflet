@@ -4,6 +4,10 @@
 -- timeout (error 57014). Replace it with a normalized, lowercased tag table kept
 -- in sync by a trigger, with a trigram index so substring search is index-backed.
 
+-- pg_trgm lives in the extensions schema on Supabase, which is not on the
+-- search_path during `supabase db push`. Ensure gin_trgm_ops resolves below.
+SET LOCAL search_path = public, extensions;
+
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS "public"."document_tags" (
