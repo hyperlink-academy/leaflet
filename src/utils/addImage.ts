@@ -5,6 +5,7 @@ import type { FilterAttributes } from "src/replicache/attributes";
 import type { FactInput } from "src/replicache/mutations";
 import { rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 import { v7 } from "uuid";
+import { encodeBitmapToWebP } from "./imageEncoding";
 
 // Maps a public image src to an in-memory object URL, for optimistic display
 // before the upload completes.
@@ -98,18 +99,9 @@ export async function prepareImage(
 
     const finishUpload = async () => {
       try {
-        // Animated formats (GIF, APNG, animated WebP) pass through untouched to
-        // keep their frames; everything else is re-encoded through canvas to bake
-        // EXIF orientation into the pixels (Supabase strips it without applying).
         const uploadBlob = isAnimated
           ? file
-          : await new Promise<Blob>((resolve) =>
-              normalizeOrientation(bitmap).canvas.toBlob(
-                (b) => resolve(b!),
-                "image/webp",
-                0.92,
-              ),
-            );
+          : await encodeBitmapToWebP(bitmap, { quality: 0.92 });
         bitmap.close();
         await client.storage
           .from("minilink-user-assets")
@@ -206,13 +198,4 @@ async function isAnimatedFormat(file: File): Promise<boolean> {
     }
   }
   return false;
-}
-
-function normalizeOrientation(bitmap: ImageBitmap): { canvas: HTMLCanvasElement } {
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, 0, 0);
-  return { canvas };
 }

@@ -166,20 +166,30 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         e.preventDefault();
         if (!pubData) return;
         setLoading(true);
-        let result = await updatePublication({
-          uri: pubData.uri,
-          name: nameValue,
-          description: descriptionValue,
-          iconFile: iconFile,
-          preferences: {
-            showInDiscover,
-            showComments,
-            showMentions,
-            showPrevNext,
-            showFirstLast,
-            showRecommends,
-          },
-        });
+        let result;
+        try {
+          result = await updatePublication({
+            uri: pubData.uri,
+            name: nameValue,
+            description: descriptionValue,
+            iconFile: iconFile,
+            preferences: {
+              showInDiscover,
+              showComments,
+              showMentions,
+              showPrevNext,
+              showFirstLast,
+              showRecommends,
+            },
+          });
+        } catch {
+          setLoading(false);
+          toast({
+            type: "error",
+            content: "We couldn't save your settings. Please try again!",
+          });
+          return;
+        }
         setLoading(false);
 
         if (!result.success) {
@@ -208,6 +218,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           iconPreview={iconPreview}
           setIconPreview={setIconPreview}
           setIconFile={setIconFile}
+          onIconError={(content) => toast({ type: "error", content })}
         />
 
         <DashboardContainer section="Theme and Layout">
