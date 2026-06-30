@@ -374,7 +374,17 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
   );
 }
 
-const blueskyclients = ["blacksky.community/", "bsky.app/", "witchsky.app/"];
+const blueskyclients = [
+  "blacksky.community/",
+  "bsky.app/",
+  "witchsky.app/",
+  "anisota.net/",
+  "mu.social/",
+  "bluepy.social/",
+  "reddwarf.app/",
+  "catsky.social/",
+  "deer.social/",
+];
 
 const BlockifyLink = (props: {
   entityID: string;
