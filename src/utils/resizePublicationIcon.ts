@@ -14,6 +14,12 @@ export async function resizePublicationIcon(
   file: File,
 ): Promise<{ data: Uint8Array; encoding: string }> {
   const original = new Uint8Array(await file.arrayBuffer());
+  // Rasterizing an SVG sends libvips through librsvg/fontconfig, which is both a
+  // server-side render of untrusted markup and noisy in environments without a
+  // fontconfig config. Skip sharp entirely and return the bytes untouched.
+  if (file.type === "image/svg+xml" || /\.svg$/i.test(file.name)) {
+    return { data: original, encoding: file.type || "image/svg+xml" };
+  }
   try {
     const resized = await sharp(Buffer.from(original))
       .resize(MAX_ICON_SIZE, MAX_ICON_SIZE, {

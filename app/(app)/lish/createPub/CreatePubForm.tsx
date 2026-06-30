@@ -29,6 +29,7 @@ export const CreatePubForm = () => {
   let [showInDiscover, setShowInDiscover] = useState(true);
   let [logoFile, setLogoFile] = useState<File | null>(null);
   let [logoPreview, setLogoPreview] = useState<string | null>(null);
+  let [logoError, setLogoError] = useState<string | null>(null);
   let [domainValue, setDomainValue] = useState("");
   let [domainState, setDomainState] = useState<DomainState>({
     status: "empty",
@@ -102,21 +103,29 @@ export const CreatePubForm = () => {
         </div>
         <input
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
           className="hidden"
           ref={fileInputRef}
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) {
-              setLogoFile(file);
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                setLogoPreview(e.target?.result as string);
-              };
-              reader.readAsDataURL(file);
+            if (!file) return;
+            if (isSVG(file)) {
+              setLogoError("SVG logos aren't supported — please use a PNG, JPEG, or WebP.");
+              e.target.value = "";
+              return;
             }
+            setLogoError(null);
+            setLogoFile(file);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              setLogoPreview(e.target?.result as string);
+            };
+            reader.readAsDataURL(file);
           }}
         />
+        {logoError && (
+          <p className="text-sm text-accent-1 text-center">{logoError}</p>
+        )}
       </div>
       <InputWithLabel
         type="text"
@@ -188,6 +197,9 @@ let subdomainValidator = string()
   .min(3)
   .max(63)
   .regex(/^[a-z0-9-]+$/);
+
+let isSVG = (file: File) =>
+  file.type === "image/svg+xml" || /\.svg$/i.test(file.name);
 function DomainInput(props: {
   domain: string;
   setDomain: (d: string) => void;
