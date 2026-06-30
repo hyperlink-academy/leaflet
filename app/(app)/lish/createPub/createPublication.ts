@@ -13,7 +13,6 @@ import { Vercel } from "@vercel/sdk";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { string } from "zod";
 import { getPublicationType } from "src/utils/collectionHelpers";
-import { resizePublicationIcon } from "src/utils/resizePublicationIcon";
 import { PubThemeDefaultsRGB } from "components/ThemeManager/themeDefaults";
 import { createPublicationDraftLeaflet } from "actions/createPublicationDraftLeaflet";
 import { resolvePublicationTheme } from "lexicons/src/normalize";
@@ -85,10 +84,10 @@ export async function createPublication({
 
   // Upload the icon if provided
   if (iconFile && iconFile.size > 0) {
-    const { data, encoding } = await resizePublicationIcon(iconFile);
-    const uploadResult = await agent.com.atproto.repo.uploadBlob(data, {
-      encoding,
-    });
+    const uploadResult = await agent.com.atproto.repo.uploadBlob(
+      new Uint8Array(await iconFile.arrayBuffer()),
+      { encoding: iconFile.type },
+    );
     iconBlob = uploadResult.data.blob;
   }
 
