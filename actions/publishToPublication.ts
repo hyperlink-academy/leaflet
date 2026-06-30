@@ -415,10 +415,13 @@ export async function publishToPublication({
     );
   }
 
-  // Fire newsletter broadcast on first publish to a newsletter-enabled pub.
+  // On first publish to a newsletter-enabled pub, claim the post's send slot.
   // The composite PK on publication_post_sends is the real idempotency guard —
-  // ignoreDuplicates makes re-publishes and concurrent runs a no-op.
-  if (publication_uri && !existingDocUri && sendEmail) {
+  // ignoreDuplicates makes re-publishes and concurrent runs a no-op. Claiming
+  // the slot even when not sending (status "skipped") is also what stops the
+  // firehose-driven broadcast in sync_document_metadata from emailing a post the
+  // author opted out of: it finds the row already present and skips.
+  if (publication_uri && !existingDocUri) {
     const { data: settings } = await supabaseServerClient
       .from("publication_newsletter_settings")
       .select("enabled")
@@ -431,12 +434,12 @@ export async function publishToPublication({
           {
             publication: publication_uri,
             document: result.uri,
-            status: "pending",
+            status: sendEmail ? "pending" : "skipped",
           },
           { onConflict: "publication,document", ignoreDuplicates: true },
         )
         .select();
-      if (inserted && inserted.length > 0) {
+      if (sendEmail && inserted && inserted.length > 0) {
         await inngest.send({
           name: "newsletter/post.send.requested",
           data: {
