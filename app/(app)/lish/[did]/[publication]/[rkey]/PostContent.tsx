@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import {
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
@@ -42,6 +43,10 @@ import {
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
+import {
+  ImageGalleryLightbox,
+  LightboxSlide,
+} from "components/Blocks/ImageGalleryBlock/ImageGalleryLightbox";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
@@ -164,6 +169,7 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
+  let [imageLightboxOpen, setImageLightboxOpen] = useState(false);
   let document = useDocumentOptional();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
@@ -459,6 +465,7 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksImage.isMain(b.block): {
+      let imageBlock = b.block;
       let isFullBleed = b.block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -483,14 +490,35 @@ export let Block = ({
           {...blockProps}
         >
           <div className={`relative ${isFullBleed ? "w-full" : "w-fit"} h-fit`}>
-            <img
-              alt={b.block.alt}
-              height={b.block.aspectRatio?.height}
-              width={b.block.aspectRatio?.width}
-              className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-              src={blobRefToSrc(b.block.image.ref, did)}
-            />
+            <button
+              type="button"
+              className={`block ${isFullBleed ? "w-full" : "w-fit"} cursor-zoom-in`}
+              onClick={() => setImageLightboxOpen(true)}
+            >
+              <img
+                alt={b.block.alt}
+                height={b.block.aspectRatio?.height}
+                width={b.block.aspectRatio?.width}
+                className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
+                src={blobRefToSrc(b.block.image.ref, did)}
+              />
+            </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
+            <ImageGalleryLightbox
+              count={1}
+              index={imageLightboxOpen ? 0 : null}
+              onIndexChange={(i) => setImageLightboxOpen(i !== null)}
+              renderSlide={() => (
+                <LightboxSlide
+                  image={{
+                    src: blobRefToSrc(imageBlock.image.ref, did),
+                    alt: imageBlock.alt || "",
+                    width: imageBlock.aspectRatio?.width ?? 0,
+                    height: imageBlock.aspectRatio?.height ?? 0,
+                  }}
+                />
+              )}
+            />
           </div>
         </div>
       );
