@@ -86,6 +86,21 @@ export async function addLinkBlock(
     return;
   }
 
+  if (data.blueskyPost) {
+    let host = "bsky.app";
+    try {
+      host = new URL(url).host;
+    } catch {}
+    let success = await assertBlueskyPostFacts(
+      data.blueskyPost.uri,
+      host,
+      entityID,
+      rep,
+      ignoreUndo,
+    );
+    if (success) return;
+  }
+
   if (!data.success) {
     await assert([
       {
@@ -210,10 +225,22 @@ export async function addBlueskyPostBlock(
   let postId = urlParts ? urlParts[6] : "";
   let uri = `at://${userDidOrHandle}/${collection}/${postId}`;
 
+  return assertBlueskyPostFacts(uri, host, entityID, rep);
+}
+
+export async function assertBlueskyPostFacts(
+  uri: string,
+  host: string,
+  entityID: string,
+  rep: Replicache<ReplicacheMutators>,
+  ignoreUndo?: boolean,
+) {
   let post = await getBlueskyPost(uri);
   if (!post || post === undefined) return false;
 
-  await rep.mutate.assertFact([
+  let facts: Parameters<typeof rep.mutate.assertFact>[0] & {
+    ignoreUndo?: true;
+  } = [
     {
       entity: entityID,
       attribute: "block/type",
@@ -236,7 +263,9 @@ export async function addBlueskyPostBlock(
         value: host,
       },
     },
-  ]);
+  ];
+  if (ignoreUndo) facts.ignoreUndo = true;
+  await rep.mutate.assertFact(facts);
   return true;
 }
 async function getBlueskyPost(uri: string) {
