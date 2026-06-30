@@ -14,6 +14,7 @@ import { string } from "zod";
 import { DotLoader } from "components/utils/DotLoader";
 import { Checkbox } from "components/Checkbox";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
+import { prepareIconFile } from "src/utils/prepareIconFile";
 
 type DomainState =
   | { status: "empty" }
@@ -29,6 +30,7 @@ export const CreatePubForm = () => {
   let [showInDiscover, setShowInDiscover] = useState(true);
   let [logoFile, setLogoFile] = useState<File | null>(null);
   let [logoPreview, setLogoPreview] = useState<string | null>(null);
+  let [logoError, setLogoError] = useState<string | null>(null);
   let [domainValue, setDomainValue] = useState("");
   let [domainState, setDomainState] = useState<DomainState>({
     status: "empty",
@@ -48,20 +50,30 @@ export const CreatePubForm = () => {
         if (!subdomainValidator.safeParse(domainValue).success) return;
         setFormState("loading");
         setOauthError(null);
-        let result = await createPublication({
-          name: nameValue,
-          description: descriptionValue,
-          iconFile: logoFile,
-          subdomain: domainValue,
-          preferences: {
-            showInDiscover,
-            showComments: true,
-            showMentions: true,
-            showPrevNext: true,
-            showRecommends: true,
-            showFirstLast: false,
-          },
-        });
+        setLogoError(null);
+        let result;
+        try {
+          result = await createPublication({
+            name: nameValue,
+            description: descriptionValue,
+            iconFile: logoFile,
+            subdomain: domainValue,
+            preferences: {
+              showInDiscover,
+              showComments: true,
+              showMentions: true,
+              showPrevNext: true,
+              showRecommends: true,
+              showFirstLast: false,
+            },
+          });
+        } catch {
+          setFormState("normal");
+          setLogoError(
+            "Something went wrong creating your publication. Please try again.",
+          );
+          return;
+        }
 
         if (!result.success) {
           setFormState("normal");
@@ -105,18 +117,26 @@ export const CreatePubForm = () => {
           accept="image/*"
           className="hidden"
           ref={fileInputRef}
-          onChange={(e) => {
+          onChange={async (e) => {
             const file = e.target.files?.[0];
-            if (file) {
-              setLogoFile(file);
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                setLogoPreview(e.target?.result as string);
-              };
-              reader.readAsDataURL(file);
+            if (!file) return;
+            setLogoError(null);
+            try {
+              const processed = await prepareIconFile(file);
+              setLogoFile(processed);
+              setLogoPreview(URL.createObjectURL(processed));
+            } catch {
+              setLogoFile(null);
+              setLogoPreview(null);
+              setLogoError(
+                "We couldn't process that image. Try a JPEG, PNG, or WebP.",
+              );
             }
           }}
         />
+        {logoError && (
+          <p className="text-sm text-accent-1 text-center">{logoError}</p>
+        )}
       </div>
       <InputWithLabel
         type="text"

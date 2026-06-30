@@ -3,6 +3,7 @@ import { Input } from "components/Input";
 import { AddTiny } from "components/Icons/AddTiny";
 import { DashboardContainer } from "./SettingsContent";
 import { EditTiny } from "components/Icons/EditTiny";
+import { prepareIconFile } from "src/utils/prepareIconFile";
 
 export function GeneralSettings(props: {
   nameValue: string;
@@ -12,6 +13,7 @@ export function GeneralSettings(props: {
   iconPreview: string | null;
   setIconPreview: (v: string | null) => void;
   setIconFile: (f: File | null) => void;
+  onIconError: (message: string) => void;
 }) {
   let fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,15 +53,18 @@ export function GeneralSettings(props: {
           accept="image/*"
           className="hidden"
           ref={fileInputRef}
-          onChange={(e) => {
+          onChange={async (e) => {
             const file = e.target.files?.[0];
-            if (file) {
-              props.setIconFile(file);
-              const reader = new FileReader();
-              reader.onload = (ev) => {
-                props.setIconPreview(ev.target?.result as string);
-              };
-              reader.readAsDataURL(file);
+            if (!file) return;
+            try {
+              const processed = await prepareIconFile(file);
+              props.setIconFile(processed);
+              props.setIconPreview(URL.createObjectURL(processed));
+            } catch {
+              props.setIconFile(null);
+              props.onIconError(
+                "We couldn't process that image. Try a JPEG, PNG, or WebP.",
+              );
             }
           }}
         />
