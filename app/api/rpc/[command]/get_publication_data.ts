@@ -3,6 +3,7 @@ import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { AtUri } from "@atproto/syntax";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { getIdentityData } from "actions/getIdentityData";
 import { ids } from "lexicons/api/lexicons";
 
 export type GetPublicationDataReturnType = Awaited<
@@ -32,11 +33,13 @@ export const get_publication_data = makeRoute({
         publication_name,
       ).toString();
     }
-    let { data: publication } = await supabase
-      .from("publications")
-      .select(
-        `*,
-        documents_in_publications(documents(
+    let [identity, { data: publication }] = await Promise.all([
+      getIdentityData(),
+      supabase
+        .from("publications")
+        .select(
+          `*,
+        documents_in_publications(members_only, documents(
           *,
           comments_on_documents(count),
           document_mentions_in_bsky(count),
@@ -47,6 +50,8 @@ export const get_publication_data = makeRoute({
         publication_email_subscribers(*, identities(atp_did)),
         publication_domains(*),
         publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at),
+        publication_membership_settings(enabled),
+        publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order),
         leaflets_in_publications(*,
           documents(*),
           permission_tokens(*,
@@ -57,14 +62,31 @@ export const get_publication_data = makeRoute({
         ),
         publication_contributors(contributor_did, confirmed, created_at),
         publication_pages(*)`,
-      )
-      .or(
-        `name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`,
-      )
-      .eq("identity_did", did)
-      .order("uri", { ascending: false })
-      .limit(1)
-      .single();
+        )
+        .or(
+          `name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`,
+        )
+        .eq("identity_did", did)
+        .order("uri", { ascending: false })
+        .limit(1)
+        .single(),
+    ]);
+
+    // This data is for the publication dashboard only — it includes subscriber
+    // emails and draft permission tokens — so it's gated to the owner and
+    // confirmed contributors. Everyone else gets the same shape as a
+    // nonexistent publication.
+    const viewerDid = identity?.atp_did;
+    const canAccess =
+      !!publication &&
+      !!viewerDid &&
+      (publication.identity_did === viewerDid ||
+        publication.publication_contributors.some(
+          (c) => c.contributor_did === viewerDid && c.confirmed,
+        ));
+    if (!canAccess) {
+      return { result: { publication: null, documents: [], drafts: [] } };
+    }
 
     // Pre-normalize documents from documents_in_publications
     const documents = (publication?.documents_in_publications || [])
@@ -78,6 +100,7 @@ export const get_publication_data = makeRoute({
         return {
           uri: dip.documents.uri,
           record: normalized,
+          membersOnly: dip.members_only,
           indexed_at: dip.documents.indexed_at,
           sort_date: dip.documents.sort_date,
           data: dip.documents.data,
