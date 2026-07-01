@@ -1809,6 +1809,23 @@ export type Database = {
           facts: Json
         }[]
       }
+      get_documents_by_tag: {
+        Args: {
+          p_tag: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          data: Json
+          sort_date: string
+          comments_count: number
+          mentions_count: number
+          recommends_count: number
+          publication_uri: string
+          publication_record: Json
+          publication_name: string
+        }[]
+      }
       get_profile_posts: {
         Args: {
           p_did: string

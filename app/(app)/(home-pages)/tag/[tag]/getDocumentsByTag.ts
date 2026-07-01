@@ -15,22 +15,16 @@ import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 export async function getDocumentsByTag(
   tag: string,
 ): Promise<{ posts: Post[] }> {
-  // Query documents that have this tag via the normalized document_tags table,
-  // which stores lowercased tags and is indexed. Tag links are lowercased (they
-  // come from search_tags), so match against the lowercased tag.
-  const { data: rawDocuments, error } = await supabaseServerClient
-    .from("documents")
-    .select(
-      `*,
-      comments_on_documents(count),
-      document_mentions_in_bsky(count),
-      recommends_on_documents(count),
-      documents_in_publications(publications(*)),
-      document_tags!inner(tag)`,
-    )
-    .eq("document_tags.tag", tag.toLowerCase())
-    .order("sort_date", { ascending: false })
-    .limit(50);
+  // Fetch tagged documents through a SQL function that drives the query from the
+  // indexed document_tags table. A plain PostgREST filter with ORDER BY sort_date
+  // + LIMIT lets the planner walk the sort_date index probing for tag matches,
+  // which scans most of the documents table for rare tags and hits the statement
+  // timeout. Tags in document_tags are lowercased, and tag links are lowercased
+  // (they come from search_tags), so match against the lowercased tag.
+  const { data: rawDocuments, error } = await supabaseServerClient.rpc(
+    "get_documents_by_tag",
+    { p_tag: tag.toLowerCase(), p_limit: 50 },
+  );
 
   if (error) {
     console.error("Error fetching documents by tag:", error);
@@ -42,43 +36,36 @@ export async function getDocumentsByTag(
 
   const posts = await Promise.all(
     documents.map(async (doc) => {
-      const pub = doc.documents_in_publications[0]?.publications;
-
-      // Skip if document doesn't have a publication
-      if (!pub) {
-        return null;
-      }
-
-      // Skip if document has no sort_date
-      if (!doc.sort_date) {
-        return null;
-      }
-
       // Normalize the document data - skip unrecognized formats
       const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
       if (!normalizedData) {
         return null;
       }
 
-      const normalizedPubRecord = normalizePublicationRecord(pub?.record);
+      const normalizedPubRecord = normalizePublicationRecord(
+        doc.publication_record,
+      );
 
       const uri = new AtUri(doc.uri);
       const handle = await idResolver.did.resolve(uri.host);
 
       const post: Post = {
         publication: {
-          href: getPublicationURL(pub),
+          href: getPublicationURL({
+            uri: doc.publication_uri,
+            record: doc.publication_record,
+          }),
           pubRecord: normalizedPubRecord,
-          uri: pub?.uri || "",
+          uri: doc.publication_uri,
         },
         author: handle?.alsoKnownAs?.[0]
           ? `@${handle.alsoKnownAs[0].slice(5)}`
           : null,
         contributors: await resolveBylineProfiles(normalizedData, uri.host),
         documents: {
-          comments_on_documents: doc.comments_on_documents,
-          document_mentions_in_bsky: doc.document_mentions_in_bsky,
-          recommends_on_documents: doc.recommends_on_documents,
+          comments_on_documents: [{ count: Number(doc.comments_count) }],
+          document_mentions_in_bsky: [{ count: Number(doc.mentions_count) }],
+          recommends_on_documents: [{ count: Number(doc.recommends_count) }],
           data: normalizedData,
           uri: doc.uri,
           sort_date: doc.sort_date,
@@ -88,7 +75,7 @@ export async function getDocumentsByTag(
     }),
   );
 
-  // Filter out null entries (documents without publications)
+  // Filter out null entries (documents with unrecognized data formats)
   return {
     posts: posts.filter((p): p is Post => p !== null),
   };
