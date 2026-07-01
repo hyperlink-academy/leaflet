@@ -21,7 +21,6 @@ Leaflet is a full-stack TypeScript web app for shared writing and social publish
 npm run dev                     # Start Next.js dev server (port 3000)
 npm run start-appview-dev       # Start AT Protocol appview service
 npm run start-feed-service-dev  # Start feed subscription service
-npm run lint                    # ESLint
 npx tsc                         # TypeScript type checking (used in CI)
 npm run generate-db-types       # Regenerate Supabase types after schema changes
 npm run lexgen                  # Regenerate AT Protocol types from lexicons

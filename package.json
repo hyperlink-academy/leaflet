@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "next lint",
     "dev": "TZ=UTC next dev --turbo -H 127.0.0.1",
     "publish-lexicons": "tsx lexicons/publish.ts",
     "generate-db-types": "supabase gen types --local > supabase/database.types.ts && drizzle-kit introspect && rm -rf ./drizzle/*.sql ./drizzle/meta",
@@ -125,8 +124,6 @@
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.21.2",
     "esbuild": "^0.25.4",
-    "eslint": "^9.39.1",
-    "eslint-config-next": "16.0.3",
     "postcss": "^8.4.38",
     "prettier": "3.2.5",
     "supabase": "^1.187.3",
