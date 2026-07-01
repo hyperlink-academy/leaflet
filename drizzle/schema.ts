@@ -229,6 +229,61 @@ export const identities = pgTable("identities", {
 	}
 });
 
+export const publication_membership_settings = pgTable("publication_membership_settings", {
+	publication: text("publication").primaryKey().notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	enabled: boolean("enabled").default(false).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		enabled_idx: index("publication_membership_settings_enabled_idx").on(table.publication),
+	}
+});
+
+export const publication_membership_tiers = pgTable("publication_membership_tiers", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	name: text("name").notNull(),
+	description: text("description"),
+	monthly_price_cents: integer("monthly_price_cents").notNull(),
+	annual_price_cents: integer("annual_price_cents"),
+	currency: text("currency").default('usd').notNull(),
+	stripe_product_id: text("stripe_product_id"),
+	stripe_price_monthly_id: text("stripe_price_monthly_id"),
+	stripe_price_annual_id: text("stripe_price_annual_id"),
+	active: boolean("active").default(true).notNull(),
+	sort_order: integer("sort_order").default(0).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		publication_idx: index("publication_membership_tiers_publication_idx").on(table.publication),
+	}
+});
+
+export const publication_memberships = pgTable("publication_memberships", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	identity_id: uuid("identity_id").notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	tier: uuid("tier").references(() => publication_membership_tiers.id, { onDelete: "set null" } ),
+	stripe_customer_id: text("stripe_customer_id"),
+	stripe_subscription_id: text("stripe_subscription_id"),
+	status: text("status"),
+	current_period_end: timestamp("current_period_end", { withTimezone: true, mode: 'string' }),
+	cancel_at_period_end: boolean("cancel_at_period_end").default(false).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		identity_idx: index("publication_memberships_identity_idx").on(table.identity_id),
+		publication_identity_key: unique("publication_memberships_publication_identity_key").on(table.publication, table.identity_id),
+		stripe_subscription_id_key: uniqueIndex("publication_memberships_stripe_subscription_id_key").on(table.stripe_subscription_id),
+	}
+});
+
 export const phone_number_auth_tokens = pgTable("phone_number_auth_tokens", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -423,6 +478,7 @@ export const documents_in_publications = pgTable("documents_in_publications", {
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	members_only: boolean("members_only").default(false).notNull(),
 },
 (table) => {
 	return {

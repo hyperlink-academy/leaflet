@@ -383,16 +383,19 @@ export type Database = {
         Row: {
           document: string
           indexed_at: string
+          members_only: boolean
           publication: string
         }
         Insert: {
           document: string
           indexed_at?: string
+          members_only?: boolean
           publication: string
         }
         Update: {
           document?: string
           indexed_at?: string
+          members_only?: boolean
           publication?: string
         }
         Relationships: [
@@ -1256,6 +1259,158 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "publications"
             referencedColumns: ["uri"]
+          },
+        ]
+      }
+      publication_membership_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          publication: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          publication: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          publication?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_membership_settings_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: true
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      publication_membership_tiers: {
+        Row: {
+          active: boolean
+          annual_price_cents: number | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          monthly_price_cents: number
+          name: string
+          publication: string
+          sort_order: number
+          stripe_price_annual_id: string | null
+          stripe_price_monthly_id: string | null
+          stripe_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          annual_price_cents?: number | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          monthly_price_cents: number
+          name: string
+          publication: string
+          sort_order?: number
+          stripe_price_annual_id?: string | null
+          stripe_price_monthly_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          annual_price_cents?: number | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          monthly_price_cents?: number
+          name?: string
+          publication?: string
+          sort_order?: number
+          stripe_price_annual_id?: string | null
+          stripe_price_monthly_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_membership_tiers_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      publication_memberships: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          id: string
+          identity_id: string
+          publication: string
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          identity_id: string
+          publication: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          identity_id?: string
+          publication?: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_memberships_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_memberships_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "publication_memberships_tier_fkey"
+            columns: ["tier"]
+            isOneToOne: false
+            referencedRelation: "publication_membership_tiers"
+            referencedColumns: ["id"]
           },
         ]
       }
