@@ -1,5 +1,5 @@
 import { useIdentityData } from "components/IdentityProvider";
-import { hasEntitlement, isPro } from "src/entitlements";
+import { canSeePayments, hasEntitlement, isPro } from "src/entitlements";
 
 export function useHasEntitlement(key: string): boolean {
   const { identity } = useIdentityData();
@@ -13,4 +13,11 @@ export function useIsPro(): boolean {
 
 export function useCanSeePro(): boolean {
   return true;
+}
+
+// Gates the in-progress Stripe Connect payments UI behind a per-user
+// entitlement, so it can be enabled for specific publishers before launch.
+export function useCanSeePayments(): boolean {
+  const { identity } = useIdentityData();
+  return canSeePayments(identity?.entitlements);
 }
