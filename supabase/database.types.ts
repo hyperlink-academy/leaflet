@@ -1812,6 +1812,8 @@ export type Database = {
       get_documents_by_tag: {
         Args: {
           p_tag: string
+          p_cursor_sort_date?: string
+          p_cursor_uri?: string
           p_limit?: number
         }
         Returns: {

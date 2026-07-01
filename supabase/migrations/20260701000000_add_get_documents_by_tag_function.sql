@@ -11,6 +11,8 @@
 
 CREATE OR REPLACE FUNCTION get_documents_by_tag(
   p_tag text,
+  p_cursor_sort_date timestamptz DEFAULT NULL,
+  p_cursor_uri text DEFAULT NULL,
   p_limit int DEFAULT 50
 )
 RETURNS TABLE (
@@ -48,6 +50,11 @@ AS $$
   ) pub ON true
   WHERE dt.tag = p_tag
     AND d.sort_date IS NOT NULL
+    AND (
+      p_cursor_sort_date IS NULL
+      OR d.sort_date < p_cursor_sort_date
+      OR (d.sort_date = p_cursor_sort_date AND d.uri < p_cursor_uri)
+    )
   ORDER BY d.sort_date DESC, d.uri DESC
   LIMIT p_limit;
 $$;

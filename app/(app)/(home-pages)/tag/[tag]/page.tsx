@@ -1,6 +1,6 @@
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
-import { PostListing } from "components/PostListing";
 import { getDocumentsByTag } from "./getDocumentsByTag";
+import { TagContent } from "./TagContent";
 import { Metadata } from "next";
 
 export async function generateMetadata(props: {
@@ -16,7 +16,7 @@ export default async function TagPage(props: {
 }) {
   const params = await props.params;
   const decodedTag = decodeURIComponent(params.tag);
-  const { posts } = await getDocumentsByTag(decodedTag);
+  const { posts, nextCursor } = await getDocumentsByTag(decodedTag);
 
   return (
     <DashboardPageLayout
@@ -24,43 +24,7 @@ export default async function TagPage(props: {
       scrollKey="dashboard-tag-default"
       showHeader={false}
     >
-      <TagContent tag={decodedTag} posts={posts} />
+      <TagContent tag={decodedTag} posts={posts} nextCursor={nextCursor} />
     </DashboardPageLayout>
   );
 }
-
-const TagContent = (props: {
-  tag: string;
-  posts: Awaited<ReturnType<typeof getDocumentsByTag>>["posts"];
-}) => {
-  return (
-    <div className="max-w-prose w-full grow shrink-0">
-      <h1 className="sm:text-xl text-lg">Tag: {props.tag}</h1>
-
-      <div className="pt-4 flex flex-col gap-4">
-        {props.posts.length === 0 ? (
-          <NoPostsForTag tag={props.tag} />
-        ) : (
-          <>
-            <div className="text-tertiary text-sm px-3">
-              {props.posts.length} {props.posts.length === 1 ? "post" : "posts"}
-            </div>
-            {props.posts.map((post) => (
-              <PostListing key={post.documents.uri} {...post} />
-            ))}
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const NoPostsForTag = (props: { tag: string }) => {
-  return (
-    <div className="flex flex-col gap-2 items-center justify-center p-8 text-center">
-      <div className="text-tertiary">
-        No posts found with the tag "{props.tag}"
-      </div>
-    </div>
-  );
-};

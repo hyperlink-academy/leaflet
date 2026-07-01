@@ -12,9 +12,17 @@ import {
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 
+export type Cursor = {
+  sort_date: string;
+  uri: string;
+};
+
+const PAGE_SIZE = 50;
+
 export async function getDocumentsByTag(
   tag: string,
-): Promise<{ posts: Post[] }> {
+  cursor?: Cursor | null,
+): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   // Fetch tagged documents through a SQL function that drives the query from the
   // indexed document_tags table. A plain PostgREST filter with ORDER BY sort_date
   // + LIMIT lets the planner walk the sort_date index probing for tag matches,
@@ -23,16 +31,31 @@ export async function getDocumentsByTag(
   // (they come from search_tags), so match against the lowercased tag.
   const { data: rawDocuments, error } = await supabaseServerClient.rpc(
     "get_documents_by_tag",
-    { p_tag: tag.toLowerCase(), p_limit: 50 },
+    {
+      p_tag: tag.toLowerCase(),
+      p_cursor_sort_date: cursor?.sort_date ?? undefined,
+      p_cursor_uri: cursor?.uri ?? undefined,
+      p_limit: PAGE_SIZE,
+    },
   );
 
   if (error) {
     console.error("Error fetching documents by tag:", error);
-    return { posts: [] };
+    return { posts: [], nextCursor: null };
   }
 
+  const rows = rawDocuments || [];
+
+  // Base the cursor on the raw rows (before dedup/normalization drops any), so
+  // pagination doesn't stop early when a page loses rows to client-side filtering.
+  const lastRow = rows[rows.length - 1];
+  const nextCursor: Cursor | null =
+    rows.length === PAGE_SIZE && lastRow
+      ? { sort_date: lastRow.sort_date, uri: lastRow.uri }
+      : null;
+
   // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
-  const documents = deduplicateByUriOrdered(rawDocuments || []);
+  const documents = deduplicateByUriOrdered(rows);
 
   const posts = await Promise.all(
     documents.map(async (doc) => {
@@ -78,5 +101,6 @@ export async function getDocumentsByTag(
   // Filter out null entries (documents with unrecognized data formats)
   return {
     posts: posts.filter((p): p is Post => p !== null),
+    nextCursor,
   };
 }
