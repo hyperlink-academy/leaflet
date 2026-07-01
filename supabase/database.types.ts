@@ -326,6 +326,29 @@ export type Database = {
           },
         ]
       }
+      document_tags: {
+        Row: {
+          tag: string
+          uri: string
+        }
+        Insert: {
+          tag: string
+          uri: string
+        }
+        Update: {
+          tag?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_tags_uri_fkey"
+            columns: ["uri"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       documents: {
         Row: {
           bsky_like_count: number

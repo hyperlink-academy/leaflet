@@ -15,7 +15,9 @@ import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 export async function getDocumentsByTag(
   tag: string,
 ): Promise<{ posts: Post[] }> {
-  // Query documents that have this tag
+  // Query documents that have this tag via the normalized document_tags table,
+  // which stores lowercased tags and is indexed. Tag links are lowercased (they
+  // come from search_tags), so match against the lowercased tag.
   const { data: rawDocuments, error } = await supabaseServerClient
     .from("documents")
     .select(
@@ -23,9 +25,10 @@ export async function getDocumentsByTag(
       comments_on_documents(count),
       document_mentions_in_bsky(count),
       recommends_on_documents(count),
-      documents_in_publications(publications(*))`,
+      documents_in_publications(publications(*)),
+      document_tags!inner(tag)`,
     )
-    .contains("data->tags", `["${tag}"]`)
+    .eq("document_tags.tag", tag.toLowerCase())
     .order("sort_date", { ascending: false })
     .limit(50);
 
