@@ -7,10 +7,8 @@ import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
-import {
-  documentUriFilter,
-  publicationNameOrUriFilter,
-} from "src/utils/uriHelpers";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
+import { resolveDocumentFilter } from "../resolveDocumentFilter";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { findPublishedPage } from "src/utils/publishedPageMetadata";
 
@@ -43,7 +41,7 @@ export async function generateMetadata(props: {
     supabaseServerClient
       .from("documents")
       .select("*, documents_in_publications(publications(*))")
-      .or(documentUriFilter(did, params.rkey))
+      .or(await resolveDocumentFilter(did, publication_name, rkey))
       .order("uri", { ascending: false })
       .limit(1),
   ]);
@@ -129,5 +127,7 @@ export default async function Post(props: {
     });
     if (pageRender) return pageRender;
   }
-  return <DocumentPageRenderer did={did} rkey={rkey} />;
+  return (
+    <DocumentPageRenderer did={did} rkey={rkey} publication={publication_name} />
+  );
 }

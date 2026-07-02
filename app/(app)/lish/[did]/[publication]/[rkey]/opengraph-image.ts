@@ -3,7 +3,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { jsonToLex } from "@atproto/lexicon";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
-import { documentUriFilter } from "src/utils/uriHelpers";
+import { resolveDocumentFilter } from "../resolveDocumentFilter";
 
 export const revalidate = 60;
 
@@ -12,12 +12,14 @@ export default async function OpenGraphImage(props: {
 }) {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
+  let publication = decodeURIComponent(params.publication);
+  let rkey = decodeURIComponent(params.rkey);
 
   // Try to get the document's cover image
   let { data: documents } = await supabaseServerClient
     .from("documents")
     .select("data")
-    .or(documentUriFilter(did, params.rkey))
+    .or(await resolveDocumentFilter(did, publication, rkey))
     .order("uri", { ascending: false })
     .limit(1);
   let document = documents?.[0];
