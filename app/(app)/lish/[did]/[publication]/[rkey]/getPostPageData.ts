@@ -12,8 +12,16 @@ import {
 } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { resolveDocumentFilter } from "../resolveDocumentFilter";
 
-export async function getPostPageData(did: string, rkey: string) {
+export async function getPostPageData(
+  did: string,
+  rkey: string,
+  publicationName?: string,
+) {
+  let filter = publicationName
+    ? await resolveDocumentFilter(did, publicationName, rkey)
+    : documentUriFilter(did, rkey);
   let { data: documents } = await supabaseServerClient
     .from("documents")
     .select(
@@ -32,7 +40,7 @@ export async function getPostPageData(did: string, rkey: string) {
         recommends_on_documents(count)
         `,
     )
-    .or(documentUriFilter(did, rkey))
+    .or(filter)
     .order("uri", { ascending: false })
     .limit(1);
   let document = documents?.[0];
