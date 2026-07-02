@@ -15,9 +15,26 @@ import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 export async function getDocumentsByTag(
   tag: string,
 ): Promise<{ posts: Post[] }> {
-  // Query documents that have this tag via the normalized document_tags table,
-  // which stores lowercased tags and is indexed. Tag links are lowercased (they
-  // come from search_tags), so match against the lowercased tag.
+  // Resolve the tag to document uris first via a function whose plan is
+  // pinned to the document_tags tag index. Ordering by sort_date with a limit
+  // while joining in one query lets the planner walk the sort_date index and
+  // probe every document for the tag — a full table scan for rare tags.
+  // document_tags stores lowercased tags (tag links come from search_tags),
+  // so match on the lowercased tag.
+  const { data: tagged, error: tagError } = await supabaseServerClient.rpc(
+    "get_tag_page_document_uris",
+    { tag_query: tag.toLowerCase(), max_count: 50 },
+  );
+
+  if (tagError) {
+    console.error("Error fetching documents by tag:", tagError);
+    return { posts: [] };
+  }
+  const uris = (tagged || []).map((row) => row.uri);
+  if (uris.length === 0) {
+    return { posts: [] };
+  }
+
   const { data: rawDocuments, error } = await supabaseServerClient
     .from("documents")
     .select(
@@ -25,12 +42,10 @@ export async function getDocumentsByTag(
       comments_on_documents(count),
       document_mentions_in_bsky(count),
       recommends_on_documents(count),
-      documents_in_publications(publications(*)),
-      document_tags!inner(tag)`,
+      documents_in_publications(publications(*))`,
     )
-    .eq("document_tags.tag", tag.toLowerCase())
-    .order("sort_date", { ascending: false })
-    .limit(50);
+    .in("uri", uris)
+    .order("sort_date", { ascending: false });
 
   if (error) {
     console.error("Error fetching documents by tag:", error);
