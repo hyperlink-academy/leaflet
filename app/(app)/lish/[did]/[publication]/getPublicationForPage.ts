@@ -1,3 +1,5 @@
+import { cacheTag } from "next/cache";
+import { pubTag } from "src/cacheTags";
 import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 
@@ -20,6 +22,8 @@ export async function fetchPublicationForPage(
     .or(publicationNameOrUriFilter(did, publicationName))
     .order("uri", { ascending: false })
     .limit(1);
+  // Runs inside the calling page's "use cache" scope.
+  if (data?.[0]) cacheTag(pubTag(data[0].uri));
   return data?.[0] ?? null;
 }
 

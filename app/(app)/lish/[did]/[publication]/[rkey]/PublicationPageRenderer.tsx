@@ -86,14 +86,9 @@ export async function PublicationPageRenderer({
       ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
       : [];
 
-  const agent = new AtpAgent({
-    service: "https://public.api.bsky.app",
-    fetch: (...args) =>
-      fetch(args[0], {
-        ...args[1],
-        next: { revalidate: 3600 },
-      }),
-  });
+  // Plain fetches: this renders inside a "use cache" page scope, whose
+  // cacheLife supersedes per-fetch revalidation.
+  const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
 
   const resourcePages =
     firstPage && firstPage.$type === "pub.leaflet.pages.linearDocument"

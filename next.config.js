@@ -32,6 +32,7 @@ const nextConfig = {
     ],
   },
   reactCompiler: true,
+  cacheComponents: true,
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",

@@ -1,5 +1,3 @@
-export const runtime = "nodejs";
-
 import { IdResolver } from "@atproto/identity";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";

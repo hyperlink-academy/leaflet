@@ -1,9 +1,6 @@
 import { getMicroLinkOgImage } from "src/utils/getMicroLinkOgImage";
 import { decodeQuotePosition } from "app/(app)/lish/[did]/[publication]/[rkey]/quotePosition";
 
-export const runtime = "edge";
-export const revalidate = 60;
-
 export default async function OpenGraphImage(props: {
   params: Promise<{ didOrHandle: string; rkey: string; quote: string }>;
 }) {

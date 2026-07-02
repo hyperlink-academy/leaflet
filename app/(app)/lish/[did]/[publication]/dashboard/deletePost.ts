@@ -9,7 +9,8 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isConfirmedContributor } from "src/contributorPermissions";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+import { docRouteTag, docTag, pubTag } from "src/cacheTags";
 
 // An authorization failure, distinct from a (recoverable) expired OAuth
 // session. Callers surface session errors with a "sign in again" affordance;
@@ -83,6 +84,13 @@ export async function deletePost(
   );
   let uri = new AtUri(document_uri);
 
+  // Look up the post's publication(s) before the delete cascades the join rows
+  // away, so their cached pages can be invalidated below.
+  let { data: docPubs } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("publication")
+    .eq("document", document_uri);
+
   await Promise.all([
     // Delete from both PDS collections (document exists in one or the other)
     agent.pub.leaflet.document.delete({
@@ -100,6 +108,9 @@ export async function deletePost(
       .eq("doc", document_uri),
   ]);
 
+  updateTag(docTag(document_uri));
+  updateTag(docRouteTag(uri.host, uri.rkey));
+  for (const p of docPubs ?? []) updateTag(pubTag(p.publication));
   revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
   return { success: true };
 }
@@ -135,6 +146,13 @@ export async function unpublishPost(
   );
   let uri = new AtUri(document_uri);
 
+  // Look up the post's publication(s) before the delete cascades the join rows
+  // away, so their cached pages can be invalidated below.
+  let { data: docPubs } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("publication")
+    .eq("document", document_uri);
+
   await Promise.all([
     // Delete from both PDS collections (document exists in one or the other)
     agent.pub.leaflet.document.delete({
@@ -147,6 +165,9 @@ export async function unpublishPost(
     }).catch(() => {}),
     supabaseServerClient.from("documents").delete().eq("uri", document_uri),
   ]);
+  updateTag(docTag(document_uri));
+  updateTag(docRouteTag(uri.host, uri.rkey));
+  for (const p of docPubs ?? []) updateTag(pubTag(p.publication));
   revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
   return { success: true };
 }

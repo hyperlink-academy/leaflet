@@ -1,9 +1,6 @@
 import { NextRequest } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";
-export const runtime = "edge";
 export const preferredRegion = [];
-export const dynamic = "force-dynamic";
-
 export async function GET(req: NextRequest) {
   const host = req.headers.get("host");
   const response = new Response("Logged out successfully", {

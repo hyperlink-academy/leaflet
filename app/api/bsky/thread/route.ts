@@ -2,14 +2,14 @@ import { lexToJson } from "@atproto/api";
 import { NextRequest } from "next/server";
 import { getAgent } from "../agent";
 
-export const runtime = "nodejs";
-
 export async function GET(req: NextRequest) {
+  // Read the request outside the try: catching the prerender-interrupt Next
+  // throws here would bake the error response as a static route.
+  const searchParams = req.nextUrl.searchParams;
+  const uri = searchParams.get("uri");
+  const depth = searchParams.get("depth");
+  const parentHeight = searchParams.get("parentHeight");
   try {
-    const searchParams = req.nextUrl.searchParams;
-    const uri = searchParams.get("uri");
-    const depth = searchParams.get("depth");
-    const parentHeight = searchParams.get("parentHeight");
 
     if (!uri) {
       return Response.json(

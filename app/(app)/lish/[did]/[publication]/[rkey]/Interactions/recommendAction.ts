@@ -1,4 +1,6 @@
 "use server";
+import { updateTag } from "next/cache";
+import { docTag } from "src/cacheTags";
 
 import { AtpBaseClient, SiteStandardGraphRecommend } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
@@ -89,6 +91,8 @@ export async function recommendAction(args: {
     await pingIdentityToUpdateNotification(documentOwner);
   }
 
+  updateTag(docTag(args.document));
+
   return {
     success: true,
     uri: uri.toString(),
@@ -153,6 +157,8 @@ export async function unrecommendAction(args: {
     .from("recommends_on_documents")
     .delete()
     .eq("uri", existingRecommend.uri);
+
+  updateTag(docTag(args.document));
 
   return {
     success: true,

@@ -1,3 +1,7 @@
+"use cache";
+
+import { cacheLife, cacheTag } from "next/cache";
+import { pubRouteTag } from "src/cacheTags";
 import { BskyAgent } from "@atproto/api";
 import React from "react";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
@@ -18,8 +22,10 @@ export default async function Publication(props: {
 }) {
   let params = await props.params;
   const did = decodeURIComponent(params.did);
-  if (!did) return <PubNotFound />;
   const publication_name = decodeURIComponent(params.publication);
+  cacheLife("hours");
+  cacheTag(pubRouteTag(did, publication_name));
+  if (!did) return <PubNotFound />;
 
   const publication = await fetchPublicationForPage(did, publication_name);
   if (!publication) return <PubNotFound />;

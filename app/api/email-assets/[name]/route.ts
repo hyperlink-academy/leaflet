@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 
-export const runtime = "nodejs";
-
 // Path data mirrors `components/Icons/QuoteTiny.tsx` and
 // `components/Icons/CommentTiny.tsx`. The icon components use
 // `fill="currentColor"` for the web; here we bake the color in directly so

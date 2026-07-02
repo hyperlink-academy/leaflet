@@ -1,4 +1,6 @@
 "use server";
+import { updateTag } from "next/cache";
+import { pollTag } from "src/cacheTags";
 
 import {
   restoreOAuthSession,
@@ -60,6 +62,8 @@ export async function voteOnPublishedPoll(
       rkey,
       record: voteRecord,
     });
+
+    updateTag(pollTag(pollUri));
 
     return { success: true };
   } catch (error) {

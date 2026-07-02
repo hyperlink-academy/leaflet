@@ -13,7 +13,8 @@ import {
 } from "drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 import { pool } from "supabase/pool";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+import { docTag, pubTag } from "src/cacheTags";
 
 export async function deletePublication(
   publication_uri: string,
@@ -119,6 +120,8 @@ export async function deletePublication(
     .delete()
     .eq("uri", publication_uri);
 
+  updateTag(pubTag(publication_uri));
+  for (const docUri of documentUris) updateTag(docTag(docUri));
   revalidatePath("/lish/[did]/[publication]", "layout");
   return { success: true };
 }

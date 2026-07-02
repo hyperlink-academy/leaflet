@@ -1,6 +1,6 @@
 "use client";
 import { getIdentityData } from "actions/getIdentityData";
-import { createContext, useContext, useEffect } from "react";
+import { createContext, Suspense, use, useContext, useEffect } from "react";
 import useSWR, { KeyedMutator, mutate } from "swr";
 import type { DashboardState } from "./PageLayouts/dashboardState";
 import { supabaseBrowserClient } from "supabase/browserClient";
@@ -30,18 +30,15 @@ export function mutateIdentityData(
 }
 export function IdentityContextProvider(props: {
   children: React.ReactNode;
-  initialValue: Identity;
+  identityPromise: Promise<Identity>;
 }) {
   let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
-    fallbackData: props.initialValue,
+    fallbackData: null,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     revalidateIfStale: false,
     revalidateOnMount: false,
   });
-  useEffect(() => {
-    mutate(props.initialValue);
-  }, [props.initialValue]);
   useEffect(() => {
     if (!identity?.atp_did) return;
     let supabase = supabaseBrowserClient();
@@ -57,6 +54,26 @@ export function IdentityContextProvider(props: {
   return (
     <IdentityContext.Provider value={{ identity, mutate }}>
       {props.children}
+      {/* The identity streams in from the server after the static shell; the
+          resolver lives in its own Suspense boundary so nothing else waits on
+          it, and consumers render their logged-out state until it lands. */}
+      <Suspense fallback={null}>
+        <IdentityStreamResolver
+          identityPromise={props.identityPromise}
+          mutate={mutate}
+        />
+      </Suspense>
     </IdentityContext.Provider>
   );
+}
+
+function IdentityStreamResolver(props: {
+  identityPromise: Promise<Identity>;
+  mutate: KeyedMutator<Identity>;
+}) {
+  const identity = use(props.identityPromise);
+  useEffect(() => {
+    props.mutate(identity, { revalidate: false });
+  }, [identity, props.mutate]);
+  return null;
 }

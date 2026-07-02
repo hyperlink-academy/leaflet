@@ -1,5 +1,7 @@
 "use server";
 
+import { updateTag } from "next/cache";
+import { docRouteTag, docTag, pubTag } from "src/cacheTags";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import {
@@ -451,6 +453,12 @@ export async function publishToPublication({
       }
     }
   }
+
+  // Bust the cached published pages: the post page itself (including a
+  // previously cached 404 at these coordinates) and the publication's pages.
+  updateTag(docTag(result.uri));
+  updateTag(docRouteTag(pdsDid, rkey));
+  if (publication_uri) updateTag(pubTag(publication_uri));
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
 }

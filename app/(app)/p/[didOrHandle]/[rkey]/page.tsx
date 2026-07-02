@@ -1,3 +1,7 @@
+"use cache";
+
+import { cacheLife, cacheTag } from "next/cache";
+import { docRouteTag } from "src/cacheTags";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { idResolver } from "src/identity";
@@ -12,6 +16,7 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
   let params = await props.params;
   let didOrHandle = decodeURIComponent(params.didOrHandle);
+  cacheLife("hours");
 
   // Resolve handle to DID if necessary
   let did = didOrHandle;
@@ -23,6 +28,7 @@ export async function generateMetadata(props: {
       return { title: "404" };
     }
   }
+  cacheTag(docRouteTag(did, params.rkey));
 
   let { data: documents } = await supabaseServerClient
     .from("documents")
@@ -64,6 +70,7 @@ export default async function StandaloneDocumentPage(props: {
 }) {
   let params = await props.params;
   let didOrHandle = decodeURIComponent(params.didOrHandle);
+  cacheLife("hours");
 
   // Resolve handle to DID if necessary
   let did = didOrHandle;
@@ -95,5 +102,6 @@ export default async function StandaloneDocumentPage(props: {
     }
   }
 
+  cacheTag(docRouteTag(did, params.rkey));
   return <DocumentPageRenderer did={did} rkey={params.rkey} />;
 }

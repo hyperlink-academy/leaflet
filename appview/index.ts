@@ -29,6 +29,13 @@ import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
 import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
+import {
+  docRouteTag,
+  docTag,
+  pollTag,
+  pubRouteTag,
+  pubTag,
+} from "src/cacheTags";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -51,6 +58,32 @@ class RedisProfileCache {
 const profileCache: RedisProfileCache | null = redisClient
   ? new RedisProfileCache(redisClient)
   : null;
+
+const revalidateEndpoint =
+  process.env.REVALIDATE_URL || "https://leaflet.pub/api/revalidate";
+
+// Tell the Next.js app to drop cached published pages after we write to
+// Postgres. Best-effort: an error here only delays freshness until the
+// pages' cacheLife expires them.
+async function revalidateCacheTags(tags: (string | null | undefined)[]) {
+  const secret = process.env.REVALIDATE_SECRET;
+  const valid = tags.filter((t): t is string => !!t);
+  if (!secret || valid.length === 0) return;
+  try {
+    const res = await fetch(revalidateEndpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({ tags: valid }),
+    });
+    if (!res.ok)
+      console.error("[revalidate] failed:", res.status, await res.text());
+  } catch (err) {
+    console.error("[revalidate] failed:", err);
+  }
+}
 
 const QUOTE_PARAM = "/l-quote/";
 async function main() {
@@ -164,9 +197,24 @@ async function handleEvent(evt: Event) {
         if (docInPublicationResult.error)
           console.log(docInPublicationResult.error);
       }
+      await revalidateCacheTags([
+        docTag(evt.uri.toString()),
+        docRouteTag(evt.uri.host, evt.uri.rkey),
+        record.value.publication ? pubTag(record.value.publication) : null,
+      ]);
     }
     if (evt.event === "delete") {
+      // Look up the publication before the delete cascades the join row away.
+      let { data: docPubs } = await supabase
+        .from("documents_in_publications")
+        .select("publication")
+        .eq("document", evt.uri.toString());
       await supabase.from("documents").delete().eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        docTag(evt.uri.toString()),
+        docRouteTag(evt.uri.host, evt.uri.rkey),
+        ...(docPubs ?? []).map((p) => pubTag(p.publication)),
+      ]);
     }
   }
   if (evt.collection === ids.PubLeafletPublication) {
@@ -182,12 +230,21 @@ async function handleEvent(evt: Event) {
         name: record.value.name,
         record: record.value as Json,
       });
+      await revalidateCacheTags([
+        pubTag(evt.uri.toString()),
+        pubRouteTag(evt.did, evt.uri.rkey),
+        pubRouteTag(evt.did, record.value.name),
+      ]);
     }
     if (evt.event === "delete") {
       await supabase
         .from("publications")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        pubTag(evt.uri.toString()),
+        pubRouteTag(evt.did, evt.uri.rkey),
+      ]);
     }
   }
   if (evt.collection === ids.PubLeafletComment) {
@@ -200,12 +257,21 @@ async function handleEvent(evt: Event) {
         document: record.value.subject,
         record: record.value as Json,
       });
+      await revalidateCacheTags([docTag(record.value.subject)]);
     }
     if (evt.event === "delete") {
+      let { data: existing } = await supabase
+        .from("comments_on_documents")
+        .select("document")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("comments_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        existing?.document ? docTag(existing.document) : null,
+      ]);
     }
   }
   if (evt.collection === ids.PubLeafletPollVote) {
@@ -219,12 +285,21 @@ async function handleEvent(evt: Event) {
         poll_cid: record.value.poll.cid,
         record: record.value as Json,
       });
+      await revalidateCacheTags([pollTag(record.value.poll.uri)]);
     }
     if (evt.event === "delete") {
+      let { data: existing } = await supabase
+        .from("atp_poll_votes")
+        .select("poll_uri")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("atp_poll_votes")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        existing ? pollTag(existing.poll_uri) : null,
+      ]);
     }
   }
   if (evt.collection === ids.PubLeafletPollDefinition) {
@@ -237,12 +312,14 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log("Error upserting poll definition:", error);
+      await revalidateCacheTags([pollTag(evt.uri.toString())]);
     }
     if (evt.event === "delete") {
       await supabase
         .from("atp_poll_records")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([pollTag(evt.uri.toString())]);
     }
   }
   if (evt.collection === ids.PubLeafletInteractionsRecommend) {
@@ -259,12 +336,21 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log("Error upserting recommend:", error);
+      await revalidateCacheTags([docTag(record.value.subject)]);
     }
     if (evt.event === "delete") {
+      let { data: existing } = await supabase
+        .from("recommends_on_documents")
+        .select("document")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("recommends_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        existing?.document ? docTag(existing.document) : null,
+      ]);
     }
   }
   if (evt.collection === ids.PubLeafletGraphSubscription) {
@@ -280,12 +366,21 @@ async function handleEvent(evt: Event) {
         publication: record.value.publication,
         record: record.value as Json,
       });
+      await revalidateCacheTags([pubTag(record.value.publication)]);
     }
     if (evt.event === "delete") {
+      let { data: existing } = await supabase
+        .from("publication_subscriptions")
+        .select("publication")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("publication_subscriptions")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        existing ? pubTag(existing.publication) : null,
+      ]);
     }
   }
   // site.standard.document records go into the main "documents" table
@@ -346,9 +441,26 @@ async function handleEvent(evt: Event) {
         if (docInPublicationResult.error)
           console.log(docInPublicationResult.error);
       }
+      await revalidateCacheTags([
+        docTag(evt.uri.toString()),
+        docRouteTag(evt.uri.host, evt.uri.rkey),
+        record.value.site && record.value.site.startsWith("at://")
+          ? pubTag(record.value.site)
+          : null,
+      ]);
     }
     if (evt.event === "delete") {
+      // Look up the publication before the delete cascades the join row away.
+      let { data: docPubs } = await supabase
+        .from("documents_in_publications")
+        .select("publication")
+        .eq("document", evt.uri.toString());
       await supabase.from("documents").delete().eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        docTag(evt.uri.toString()),
+        docRouteTag(evt.uri.host, evt.uri.rkey),
+        ...(docPubs ?? []).map((p) => pubTag(p.publication)),
+      ]);
     }
   }
 
@@ -369,12 +481,21 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log(error);
+      await revalidateCacheTags([
+        pubTag(evt.uri.toString()),
+        pubRouteTag(evt.did, evt.uri.rkey),
+        pubRouteTag(evt.did, record.value.name),
+      ]);
     }
     if (evt.event === "delete") {
       await supabase
         .from("publications")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        pubTag(evt.uri.toString()),
+        pubRouteTag(evt.did, evt.uri.rkey),
+      ]);
     }
   }
 
@@ -393,12 +514,21 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log("Error upserting recommend:", error);
+      await revalidateCacheTags([docTag(record.value.document)]);
     }
     if (evt.event === "delete") {
+      let { data: existing } = await supabase
+        .from("recommends_on_documents")
+        .select("document")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("recommends_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        existing?.document ? docTag(existing.document) : null,
+      ]);
     }
   }
 
@@ -416,12 +546,21 @@ async function handleEvent(evt: Event) {
         publication: record.value.publication,
         record: record.value as Json,
       });
+      await revalidateCacheTags([pubTag(record.value.publication)]);
     }
     if (evt.event === "delete") {
+      let { data: existing } = await supabase
+        .from("publication_subscriptions")
+        .select("publication")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("publication_subscriptions")
         .delete()
         .eq("uri", evt.uri.toString());
+      await revalidateCacheTags([
+        existing ? pubTag(existing.publication) : null,
+      ]);
     }
   }
   if (evt.collection === ids.AppBskyActorProfile) {

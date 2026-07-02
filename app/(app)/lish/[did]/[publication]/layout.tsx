@@ -1,3 +1,7 @@
+"use cache";
+
+import { cacheLife, cacheTag } from "next/cache";
+import { pubRouteTag } from "src/cacheTags";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
@@ -17,6 +21,8 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
+  cacheLife("hours");
+  cacheTag(pubRouteTag(did, decodeURIComponent(params.publication)));
   if (!params.did || !params.publication) return { title: "Publication 404" };
 
   let publication_name = decodeURIComponent(params.publication);

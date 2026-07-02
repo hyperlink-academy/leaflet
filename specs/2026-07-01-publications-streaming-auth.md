@@ -1,6 +1,10 @@
 # Static Publication Pages with Streamed-In Identity
 
-**Status**: evaluation / proposal
+**Status**: implemented — Phase 2 was built directly (no Phase 1 route-group
+split): `cacheComponents` is on, the shared layout streams identity as a
+promise, published pages are `"use cache"`d with tags from `src/cacheTags.ts`,
+and invalidation flows from server actions (`updateTag`) and the appview via
+`POST /api/revalidate` (`REVALIDATE_SECRET`, optional `REVALIDATE_URL`).
 
 ## Goal
 

@@ -15,8 +15,6 @@ import sharp from "sharp";
 
 const idResolver = new IdResolver();
 
-export const runtime = "nodejs";
-
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const bgColor = searchParams.get("bg") || "#57822B";

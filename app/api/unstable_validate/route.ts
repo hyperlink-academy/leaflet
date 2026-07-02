@@ -11,8 +11,10 @@ import {
 const didResolver = new DidResolver({});
 
 export async function GET(request: NextRequest) {
+  // Read the request outside the try: catching the prerender-interrupt Next
+  // throws here would bake the error response as a static route.
+  const atUriString = request.nextUrl.searchParams.get("uri");
   try {
-    const atUriString = request.nextUrl.searchParams.get("uri");
 
     if (!atUriString) {
       return NextResponse.json(

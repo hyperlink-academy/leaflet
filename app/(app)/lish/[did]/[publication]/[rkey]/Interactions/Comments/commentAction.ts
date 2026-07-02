@@ -1,4 +1,6 @@
 "use server";
+import { updateTag } from "next/cache";
+import { docTag } from "src/cacheTags";
 
 import { AtpBaseClient, PubLeafletComment } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
@@ -125,6 +127,8 @@ export async function publishComment(args: {
       uniqueRecipients.map((r) => pingIdentityToUpdateNotification(r)),
     );
   }
+
+  updateTag(docTag(args.document));
 
   return {
     success: true,

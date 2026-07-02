@@ -8,8 +8,6 @@ import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 
 let idResolver = new IdResolver();
 
-export const dynamic = "force-dynamic";
-
 export async function GET(
   request: NextRequest,
   props: { params: Promise<{ did: string; publication: string }> },

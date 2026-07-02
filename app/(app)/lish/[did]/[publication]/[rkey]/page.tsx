@@ -1,3 +1,7 @@
+"use cache";
+
+import { cacheLife, cacheTag } from "next/cache";
+import { docRouteTag, pubRouteTag } from "src/cacheTags";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { DocumentPageRenderer } from "./DocumentPageRenderer";
@@ -21,6 +25,8 @@ export async function generateMetadata(props: {
   let did = decodeURIComponent(params.did);
   let publication_name = decodeURIComponent(params.publication);
   let rkey = decodeURIComponent(params.rkey);
+  cacheLife("hours");
+  cacheTag(docRouteTag(did, rkey), pubRouteTag(did, publication_name));
   if (!did) return { title: "Publication 404" };
 
   let { data: pubs } = await supabaseServerClient
@@ -106,6 +112,10 @@ export default async function Post(props: {
   let did = decodeURIComponent(params.did);
   let publication_name = decodeURIComponent(params.publication);
   let rkey = decodeURIComponent(params.rkey);
+  cacheLife("hours");
+  // Route-coordinate tags cover the not-found case (nothing else to tag) and
+  // records the appview ingests later at the same coordinates.
+  cacheTag(docRouteTag(did, rkey), pubRouteTag(did, publication_name));
 
   if (!did)
     return (

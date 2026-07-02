@@ -2,12 +2,12 @@ import { Agent, lexToJson } from "@atproto/api";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { NextRequest } from "next/server";
 
-export const runtime = "nodejs";
-
 export async function GET(req: NextRequest) {
+  // Read the request outside the try: catching the prerender-interrupt Next
+  // throws here would bake the error response as a static route.
+  const searchParams = req.nextUrl.searchParams;
+  const urisParam = searchParams.get("uris");
   try {
-    const searchParams = req.nextUrl.searchParams;
-    const urisParam = searchParams.get("uris");
 
     if (!urisParam) {
       return Response.json(

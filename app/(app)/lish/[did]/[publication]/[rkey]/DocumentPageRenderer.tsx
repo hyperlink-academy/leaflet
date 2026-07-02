@@ -33,14 +33,9 @@ export async function DocumentPageRenderer({
   did: string;
   rkey: string;
 }) {
-  let agent = new AtpAgent({
-    service: "https://public.api.bsky.app",
-    fetch: (...args) =>
-      fetch(args[0], {
-        ...args[1],
-        next: { revalidate: 3600 },
-      }),
-  });
+  // Plain fetches: this renders inside a "use cache" page scope, whose
+  // cacheLife supersedes per-fetch revalidation.
+  let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
 
   let [document, profile] = await Promise.all([
     getPostPageData(did, rkey),

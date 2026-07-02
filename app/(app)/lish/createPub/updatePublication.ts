@@ -1,4 +1,6 @@
 "use server";
+import { updateTag } from "next/cache";
+import { pubTag } from "src/cacheTags";
 import {
   AtpBaseClient,
   PubLeafletPublication,
@@ -116,6 +118,8 @@ async function withPublicationUpdate(
     .eq("uri", uri)
     .select()
     .single();
+
+  updateTag(pubTag(uri));
 
   return { success: true, publication };
 }

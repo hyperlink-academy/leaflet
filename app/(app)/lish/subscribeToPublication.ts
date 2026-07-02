@@ -5,7 +5,8 @@ import { getIdentityData } from "actions/getIdentityData";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
+import { pubTag } from "src/cacheTags";
 import { AtUri } from "@atproto/syntax";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -57,7 +58,7 @@ export async function subscribeToPublication(
     .eq("publication", publication)
     .maybeSingle();
   if (existingSubscription) {
-    revalidatePath("/lish/[did]/[publication]", "layout");
+    updateTag(pubTag(publication));
     return { success: true, hasFeed: true };
   }
 
@@ -91,7 +92,7 @@ export async function subscribeToPublication(
     await pingIdentityToUpdateNotification(publicationOwner);
   }
 
-  revalidatePath("/lish/[did]/[publication]", "layout");
+  updateTag(pubTag(publication));
   return {
     success: true,
     hasFeed: true,
@@ -230,6 +231,6 @@ export async function unsubscribeToPublication(
     .delete()
     .eq("identity", identity.atp_did)
     .eq("publication", publication);
-  revalidatePath("/lish/[did]/[publication]", "layout");
+  updateTag(pubTag(publication));
   return { success: true };
 }

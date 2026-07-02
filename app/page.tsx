@@ -7,8 +7,6 @@ export const metadata: Metadata = {
     "A simple and powerful platform for social publishing — blogs, newsletters, and more!",
 };
 
-export const revalidate = 3600;
-
 export default function RootPage() {
   return <AboutPage />;
 }

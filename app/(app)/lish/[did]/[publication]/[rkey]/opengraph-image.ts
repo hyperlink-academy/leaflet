@@ -5,8 +5,6 @@ import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { documentUriFilter } from "src/utils/uriHelpers";
 
-export const revalidate = 60;
-
 export default async function OpenGraphImage(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {

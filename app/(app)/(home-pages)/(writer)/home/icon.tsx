@@ -7,11 +7,7 @@ import { parseHSBToRGB } from "src/utils/parseHSB";
 import { cookies } from "next/headers";
 
 // Route segment config
-export const revalidate = 0;
 export const preferredRegion = ["sfo1"];
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-
 // Image metadata
 export const size = {
   width: 32,

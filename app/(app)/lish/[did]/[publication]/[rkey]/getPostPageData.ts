@@ -1,3 +1,5 @@
+import { cacheTag } from "next/cache";
+import { docTag, pubTag } from "src/cacheTags";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import {
@@ -38,6 +40,13 @@ export async function getPostPageData(did: string, rkey: string) {
   let document = documents?.[0];
 
   if (!document) return null;
+
+  // Runs inside the page's "use cache" scope: tag the entry so document edits
+  // and publication-wide changes (theme, pages, subscriptions) can invalidate
+  // every cached page that rendered from this data.
+  cacheTag(docTag(document.uri));
+  const rawPubUri = document.documents_in_publications[0]?.publications?.uri;
+  if (rawPubUri) cacheTag(pubTag(rawPubUri));
 
   // Normalize the document record - this is the primary way consumers should access document data
   const normalizedDocument = normalizeDocumentRecord(
@@ -222,13 +231,11 @@ export async function getConstellationBacklinks(
       `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri")}`,
     );
 
+    // Plain fetches: this runs inside the page's "use cache" scope, whose
+    // cacheLife supersedes per-fetch revalidation.
     let [links, embeds] = (await Promise.all([
-      fetch(linkFacets, { headers, next: { revalidate: 3600 } }).then((req) =>
-        req.json(),
-      ),
-      fetch(externalEmbeds, { headers, next: { revalidate: 3600 } }).then(
-        (req) => req.json(),
-      ),
+      fetch(linkFacets, { headers }).then((req) => req.json()),
+      fetch(externalEmbeds, { headers }).then((req) => req.json()),
     ])) as ConstellationResponse[];
 
     let uris = [...links.records, ...embeds.records].map((i) =>

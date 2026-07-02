@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
+import { pubTag } from "src/cacheTags";
 import { TID } from "@atproto/common";
 import { AtUri } from "@atproto/syntax";
 import { AtpBaseClient } from "lexicons/api";
@@ -247,7 +248,7 @@ export async function publishPublicationPages({
 
   // Bust the cached reader routes so edits to existing pages show up — without
   // this only brand-new (uncached) page paths would reflect the latest content.
-  revalidatePath("/lish/[did]/[publication]", "layout");
+  updateTag(pubTag(publication_uri));
 
   return { success: true, published };
 }

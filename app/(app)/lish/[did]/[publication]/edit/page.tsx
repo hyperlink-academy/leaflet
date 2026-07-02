@@ -19,9 +19,6 @@ import { PublicationSWRDataProvider } from "../dashboard/PublicationSWRProvider"
 import { PublicationDraftEditor } from "./PublicationDraftEditor";
 
 export const preferredRegion = ["sfo1"];
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
 }): Promise<Metadata> {

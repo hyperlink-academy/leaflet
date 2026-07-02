@@ -1,8 +1,10 @@
+import { revalidateTag } from "next/cache";
 import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtpAgent, AtUri } from "@atproto/api";
 import { idResolver } from "src/identity";
 import type { Json } from "supabase/database.types";
+import { docRouteTag, docTag } from "src/cacheTags";
 
 // 1m, 2m, 4m, 8m, 16m, 32m, 1h, 2h, 4h, 8h, 8h, 8h (~37h total)
 const SLEEP_INTERVALS = [
@@ -119,6 +121,14 @@ export const sync_document_metadata = inngest.createFunction(
         .update({ indexed: true })
         .eq("uri", document_uri)
         .select();
+    });
+
+    // The firehose-side revalidation fired before blob-page inflation; bust
+    // the cached page again now that documents.data is fully inflated.
+    await step.run("revalidate-cache", async () => {
+      const uri = new AtUri(document_uri);
+      revalidateTag(docTag(document_uri), "max");
+      revalidateTag(docRouteTag(uri.host, uri.rkey), "max");
     });
 
     // Only fire newsletter broadcasts on first-time document creation. An

@@ -8,8 +8,6 @@ import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { mainSiteAuthBase } from "src/utils/customDomain";
 
-export const dynamic = "force-dynamic";
-
 const ERROR_QUERY = "subscribe_email_error";
 
 // Subscribe forms embedded out in the wild POST here (form-encoded or JSON).

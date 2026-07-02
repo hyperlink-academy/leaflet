@@ -7,9 +7,6 @@ import { AtpAgent } from "@atproto/api";
 import { ReplicacheProvider } from "src/replicache";
 
 export const preferredRegion = ["sfo1"];
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-
 type Props = {
   // this is now a token id not leaflet! Should probs rename
   params: Promise<{ leaflet_id: string }>;

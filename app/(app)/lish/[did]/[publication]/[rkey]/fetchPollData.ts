@@ -1,6 +1,5 @@
-"use server";
-
-import { getIdentityData } from "actions/getIdentityData";
+import { cacheTag } from "next/cache";
+import { pollTag } from "src/cacheTags";
 import { Json } from "supabase/database.types";
 import { supabaseServerClient } from "supabase/serverClient";
 
@@ -11,10 +10,11 @@ export type PollData = {
   atp_poll_votes: { record: Json; voter_did: string }[];
 };
 
+// Viewer-independent: which vote (if any) belongs to the viewer is derived
+// client-side from the identity context. Runs inside the page's "use cache"
+// scope, so tag per poll to let vote ingestion invalidate the page.
 export async function fetchPollData(pollUris: string[]): Promise<PollData[]> {
-  // Get current user's identity to check if they've voted
-  const identity = await getIdentityData();
-  const userDid = identity?.atp_did;
+  for (const uri of pollUris) cacheTag(pollTag(uri));
 
   const { data } = await supabaseServerClient
     .from("atp_poll_records")
