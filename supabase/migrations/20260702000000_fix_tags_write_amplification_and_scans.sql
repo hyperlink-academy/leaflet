@@ -159,3 +159,12 @@ $$ LANGUAGE sql STABLE SET enable_seqscan = off;
 REVOKE INSERT, UPDATE, DELETE ON TABLE "public"."document_tags" FROM "anon", "authenticated";
 GRANT SELECT ON TABLE "public"."tag_counts" TO "anon", "authenticated";
 GRANT ALL ON TABLE "public"."tag_counts" TO "service_role";
+
+-- tag_counts was just created and backfilled, so it has no statistics until
+-- autoanalyze runs; document_tags stats predate the trigger churn. Refresh
+-- both so the new plans are chosen from the first query. (VACUUM can't run
+-- here — migrations execute inside a transaction — so reclaiming the bloat
+-- the old trigger left in document_tags stays with autovacuum, or a one-off
+-- manual `VACUUM public.document_tags` to speed it up.)
+ANALYZE "public"."document_tags";
+ANALYZE "public"."tag_counts";
