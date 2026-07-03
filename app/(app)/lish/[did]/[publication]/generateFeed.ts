@@ -13,6 +13,19 @@ import {
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
+// The feed library pretty-prints, leaving `<link>url</link>` followed by a
+// newline and indentation. `<link>` is a void element in HTML, so consumers
+// that parse RSS with an HTML parser drop the closing tag and read the URL
+// merged with the trailing indentation — then request paths like
+// "/{rkey}%0A%20%20...". Collapsing inter-tag whitespace (outside CDATA,
+// which holds post content) leaves those parsers a clean URL.
+export function collapseInterTagWhitespace(xml: string): string {
+  return xml
+    .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
+    .map((part, i) => (i % 2 === 1 ? part : part.replace(/>\s+</g, "><")))
+    .join("");
+}
+
 export async function generateFeed(
   did: string,
   publication_name: string,
