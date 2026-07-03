@@ -1,10 +1,16 @@
 "use client";
 import { getIdentityData } from "actions/getIdentityData";
+import { getCurrentSessionToken } from "actions/savedAccounts";
 import { createContext, useContext, useEffect } from "react";
 import useSWR, { KeyedMutator, mutate } from "swr";
 import type { DashboardState } from "./PageLayouts/dashboardState";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { produce, Draft } from "immer";
+import {
+  mutateSavedAccounts,
+  readSavedAccountEntries,
+  upsertSavedAccountEntry,
+} from "src/hooks/useSavedAccounts";
 
 export type InterfaceState = {
   dashboards: { [id: string]: DashboardState | undefined };
@@ -42,6 +48,20 @@ export function IdentityContextProvider(props: {
   useEffect(() => {
     mutate(props.initialValue);
   }, [props.initialValue]);
+  // Remember the current session in the saved-accounts list so the account
+  // switcher can offer it later. The auth_token cookie is httpOnly, so the
+  // token has to be fetched from the server; skip that round trip when the
+  // list already leads with this identity.
+  useEffect(() => {
+    if (!identity?.id) return;
+    if (readSavedAccountEntries()[0]?.identity === identity.id) return;
+    let identityId = identity.id;
+    getCurrentSessionToken().then((session) => {
+      if (session?.identity !== identityId) return;
+      upsertSavedAccountEntry({ token: session.token, identity: identityId });
+      mutateSavedAccounts();
+    });
+  }, [identity?.id]);
   useEffect(() => {
     if (!identity?.atp_did) return;
     let supabase = supabaseBrowserClient();

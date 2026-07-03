@@ -17,7 +17,10 @@ export async function GET(req: NextRequest) {
   const domain = host?.includes(":") ? host.split(":")[0] : host;
   let token = req.cookies.get("auth_token");
   if (token)
-    supabaseServerClient.from("email_auth_tokens").delete().eq("id", token);
+    await supabaseServerClient
+      .from("email_auth_tokens")
+      .delete()
+      .eq("id", token.value);
 
   // Clear the auth_token cookie on both the base domain and the domain with a leading dot
   response.headers.append(
