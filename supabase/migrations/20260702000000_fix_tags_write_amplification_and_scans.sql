@@ -32,6 +32,11 @@ BEGIN;
 
 SET LOCAL search_path = public, extensions;
 SET LOCAL lock_timeout = '15s';
+-- The role's default statement timeout (~2min) killed the second deploy
+-- attempt mid-backfill; the tables this scans keep growing, so give the
+-- migration its own generous budget. lock_timeout above still bounds any
+-- lock wait.
+SET LOCAL statement_timeout = '10min';
 
 -- Take both exclusive locks up front, documents first — the same order the
 -- write path locks them (a documents write fires the sync trigger, which then
@@ -88,15 +93,14 @@ CREATE TRIGGER document_tags_sync_counts
     AFTER INSERT OR DELETE ON "public"."document_tags"
     FOR EACH ROW EXECUTE FUNCTION sync_tag_counts();
 
+-- Rebuild the rollup from scratch: a partial earlier apply may have left rows
+-- for tags that no longer exist, and reconciling those with a NOT EXISTS
+-- anti-join timed out in production — probing for a vanished tag crawls the
+-- dead index entries the old churny trigger left behind. Deleting the small
+-- rollup wholesale and re-aggregating does one predictable pass instead.
+DELETE FROM "public"."tag_counts";
 INSERT INTO "public"."tag_counts" (tag, document_count)
-SELECT tag, COUNT(*) FROM "public"."document_tags" GROUP BY tag
-ON CONFLICT (tag) DO UPDATE SET document_count = EXCLUDED.document_count;
--- On a re-run the table may hold counts from the earlier partial apply for
--- tags that have since disappeared; the insert above can't remove those.
-DELETE FROM "public"."tag_counts" tc
-WHERE NOT EXISTS (
-    SELECT 1 FROM "public"."document_tags" dt WHERE dt.tag = tc.tag
-);
+SELECT tag, COUNT(*) FROM "public"."document_tags" GROUP BY tag;
 
 -- ---------------------------------------------------------------------------
 -- Differential document_tags sync, gated on tags actually changing.
