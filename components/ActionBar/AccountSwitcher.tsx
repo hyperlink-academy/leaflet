@@ -7,6 +7,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
 import { switchAccount, type SavedAccount } from "actions/savedAccounts";
 import {
+  accountSwitcherEnabled,
   mutateSavedAccounts,
   removeSavedAccountEntry,
   upsertSavedAccountEntry,
@@ -38,6 +39,8 @@ export const AccountSwitcher = (props: {
   let otherAccounts = (accounts ?? []).filter(
     (a) => a.identity.id !== identity?.id,
   );
+
+  if (!accountSwitcherEnabled(identity?.email, accounts)) return null;
 
   const onSwitch = async (account: SavedAccount) => {
     if (pendingToken) return;
@@ -102,6 +105,7 @@ export const AccountSwitcher = (props: {
         <AddSmall />
         Add Account
       </button>
+      <hr className="border-border-light border-dashed" />
     </>
   );
 };

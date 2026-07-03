@@ -29,8 +29,9 @@ import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { useSidebarStore } from "./Sidebar";
 import { AccountSwitcher } from "./AccountSwitcher";
 import { LoginContent } from "components/LoginButton";
-import { switchAccount } from "actions/savedAccounts";
+import { resolveSavedAccounts, switchAccount } from "actions/savedAccounts";
 import {
+  accountSwitcherEnabled,
   mutateSavedAccounts,
   readSavedAccountEntries,
   removeSavedAccountEntry,
@@ -154,7 +155,6 @@ export const ProfileButton = () => {
           }}
           onAddAccount={() => setAddAccountOpen(true)}
         />
-        <hr className="border-border-light border-dashed" />
         <button
           type="button"
           className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
@@ -162,21 +162,31 @@ export const ProfileButton = () => {
             setOpen(false);
             setSidebarOpen(false);
             let currentIdentity = identity?.id;
+            let currentEmail = identity?.email;
             await fetch("/api/auth/logout");
             if (currentIdentity) removeSavedAccountEntry(currentIdentity);
             mutateSavedAccounts();
-            // Logging out of this account falls through to the next saved
-            // session, mirroring the switcher; skip entries that no longer
-            // authenticate. Fully logged out only when none are left.
-            for (let entry of readSavedAccountEntries()) {
-              let result = await switchAccount(entry.token);
-              if (result.ok) {
-                window.location.href = "/home";
-                return;
+            // When the switcher flag is on, logging out of this account falls
+            // through to the next saved session, mirroring the switcher; skip
+            // entries that no longer authenticate. Fully logged out only when
+            // none are left (or the flag is off).
+            let entries = readSavedAccountEntries();
+            if (entries.length > 0) {
+              let accounts = await resolveSavedAccounts(
+                entries.map((e) => e.token),
+              );
+              if (accountSwitcherEnabled(currentEmail, accounts)) {
+                for (let account of accounts) {
+                  let result = await switchAccount(account.token);
+                  if (result.ok) {
+                    window.location.href = "/home";
+                    return;
+                  }
+                  removeSavedAccountEntry(account.identity.id);
+                }
+                mutateSavedAccounts();
               }
-              removeSavedAccountEntry(entry.identity);
             }
-            mutateSavedAccounts();
             mutate("identity", null);
           }}
         >
