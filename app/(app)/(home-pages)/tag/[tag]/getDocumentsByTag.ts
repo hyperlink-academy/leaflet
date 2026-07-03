@@ -26,11 +26,27 @@ export async function getDocumentsByTag(
     { tag_query: tag.toLowerCase(), max_count: 50 },
   );
 
+  let uris: string[];
   if (tagError) {
-    console.error("Error fetching documents by tag:", tagError);
-    return { posts: [] };
+    // The function ships in a migration that deploys separately from this
+    // code; if it isn't there (yet), degrade to querying document_tags
+    // directly rather than rendering an empty page. The cap keeps the .in()
+    // filter below URL length limits, so a very popular tag may miss some of
+    // its newest posts until the function exists.
+    console.error("Error fetching tag document uris:", tagError);
+    const { data: fallback, error: fallbackError } = await supabaseServerClient
+      .from("document_tags")
+      .select("uri")
+      .eq("tag", tag.toLowerCase())
+      .limit(200);
+    if (fallbackError) {
+      console.error("Error fetching documents by tag:", fallbackError);
+      return { posts: [] };
+    }
+    uris = (fallback || []).map((row) => row.uri);
+  } else {
+    uris = (tagged || []).map((row) => row.uri);
   }
-  const uris = (tagged || []).map((row) => row.uri);
   if (uris.length === 0) {
     return { posts: [] };
   }
@@ -45,7 +61,8 @@ export async function getDocumentsByTag(
       documents_in_publications(publications(*))`,
     )
     .in("uri", uris)
-    .order("sort_date", { ascending: false });
+    .order("sort_date", { ascending: false })
+    .limit(50);
 
   if (error) {
     console.error("Error fetching documents by tag:", error);

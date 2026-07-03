@@ -23,8 +23,25 @@
 -- maintain a small tag_counts rollup so tag search never aggregates; move the
 -- trigram index to the rollup; and serve the tag page from a function whose
 -- plan is fenced to start from the tag index.
+--
+-- The CI supabase CLI applies migration statements in autocommit mode (its
+-- first attempt at this file half-applied and then deadlocked against the
+-- firehose), so the transaction is explicit. Every statement is idempotent
+-- so the file is safe to re-run over the partially applied state.
+BEGIN;
 
 SET LOCAL search_path = public, extensions;
+SET LOCAL lock_timeout = '15s';
+
+-- Take both exclusive locks up front, documents first — the same order the
+-- write path locks them (a documents write fires the sync trigger, which then
+-- writes document_tags). The first attempt locked document_tags first via
+-- CREATE TRIGGER and then requested documents for DROP TRIGGER, forming a
+-- lock-order cycle with an in-flight firehose upsert: deadlock. Acquiring in
+-- write-path order just waits for in-flight writers instead of deadlocking,
+-- and lock_timeout bounds the wait (on timeout everything rolls back and the
+-- deploy can be re-run).
+LOCK TABLE "public"."documents", "public"."document_tags" IN ACCESS EXCLUSIVE MODE;
 
 -- ---------------------------------------------------------------------------
 -- Tag count rollup: one row per distinct tag, maintained by trigger.
@@ -63,9 +80,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Creating the trigger takes an exclusive lock on document_tags, so the
--- backfill below sees a consistent snapshot: rows written after this
--- migration commits go through the trigger, rows before it are aggregated.
+-- The exclusive lock held on document_tags means the backfill below sees a
+-- consistent snapshot: rows written after this migration commits go through
+-- the trigger, rows before it are aggregated.
 DROP TRIGGER IF EXISTS document_tags_sync_counts ON "public"."document_tags";
 CREATE TRIGGER document_tags_sync_counts
     AFTER INSERT OR DELETE ON "public"."document_tags"
@@ -74,6 +91,12 @@ CREATE TRIGGER document_tags_sync_counts
 INSERT INTO "public"."tag_counts" (tag, document_count)
 SELECT tag, COUNT(*) FROM "public"."document_tags" GROUP BY tag
 ON CONFLICT (tag) DO UPDATE SET document_count = EXCLUDED.document_count;
+-- On a re-run the table may hold counts from the earlier partial apply for
+-- tags that have since disappeared; the insert above can't remove those.
+DELETE FROM "public"."tag_counts" tc
+WHERE NOT EXISTS (
+    SELECT 1 FROM "public"."document_tags" dt WHERE dt.tag = tc.tag
+);
 
 -- ---------------------------------------------------------------------------
 -- Differential document_tags sync, gated on tags actually changing.
@@ -168,3 +191,5 @@ GRANT ALL ON TABLE "public"."tag_counts" TO "service_role";
 -- manual `VACUUM public.document_tags` to speed it up.)
 ANALYZE "public"."document_tags";
 ANALYZE "public"."tag_counts";
+
+COMMIT;
