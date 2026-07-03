@@ -283,8 +283,13 @@ export async function publishToPublication({
     description !== undefined ? description : existingRecord.description;
   const resolvedTags = tags !== undefined ? tags : existingRecord.tags;
   const resolvedCoverImage = coverImageBlob ?? existingRecord.coverImage;
+  // Feeds and sort orders choke on unparseable dates, so only accept a
+  // publishedAt that parses.
+  const isValidDate = (v: string | undefined) =>
+    !!v && !isNaN(new Date(v).getTime());
   const resolvedPublishedAt =
-    publishedAt || existingRecord.publishedAt || new Date().toISOString();
+    [publishedAt, existingRecord.publishedAt].find(isValidDate) ||
+    new Date().toISOString();
 
   // Create record based on the document type
   let record: PubLeafletDocument.Record | SiteStandardDocument.Record;
