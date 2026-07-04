@@ -109,10 +109,7 @@ export async function generateFeed(
     })
     .slice(0, FEED_ITEM_LIMIT);
 
-  const newest = docs.reduce<Date | null>((acc, d) => {
-    const t = parseDate(d.documents?.sort_date);
-    return t && (!acc || t > acc) ? t : acc;
-  }, null);
+  const newest = parseDate(docs[0]?.documents?.sort_date);
 
   const feed = new Feed({
     title: stripInvalidXmlChars(name),
@@ -170,19 +167,7 @@ export async function generateFeed(
           baseUrl: pubUrl,
         }),
       );
-      const reader = stream.getReader();
-      const decoder = new TextDecoder();
-      const chunks: string[] = [];
-
-      let done, value;
-      while (!done) {
-        ({ done, value } = await reader.read());
-        if (value) {
-          chunks.push(decoder.decode(value, { stream: true }));
-        }
-      }
-
-      content = chunks.join("");
+      content = await new Response(stream).text();
       // Strip <link> preload tags injected by React SSR — they trigger
       // security warnings in RSS validators and aren't useful in feeds.
       content = content.replace(/<link\b[^>]*>/gi, "");
