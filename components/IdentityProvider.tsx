@@ -67,15 +67,19 @@ export function IdentityContextProvider(props: {
       upsertSavedAccountEntry({ ...existing, ...snapshot });
       return;
     }
-    getCurrentSessionToken().then((session) => {
-      if (session?.identity !== identityId) return;
-      upsertSavedAccountEntry({
-        token: session.token,
-        identity: identityId,
-        ...snapshot,
-      });
-      mutateSavedAccounts();
-    });
+    getCurrentSessionToken()
+      .then((session) => {
+        if (session?.identity !== identityId) return;
+        upsertSavedAccountEntry({
+          token: session.token,
+          identity: identityId,
+          ...snapshot,
+        });
+        mutateSavedAccounts();
+      })
+      // Recording is best-effort bookkeeping — a failed call must never
+      // surface; the entry is written on a later load instead.
+      .catch(() => {});
   }, [identity?.id]);
   useEffect(() => {
     if (!identity?.atp_did) return;
