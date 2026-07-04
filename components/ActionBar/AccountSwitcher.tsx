@@ -8,21 +8,15 @@ import { useToaster } from "components/Toast";
 import { switchAccount } from "actions/savedAccounts";
 import {
   accountSwitcherEnabled,
-  type SavedAccount,
-  entryFromAccount,
   mutateSavedAccounts,
   removeSavedAccountEntry,
   upsertSavedAccountEntry,
   useSavedAccounts,
+  type SavedAccountEntry,
 } from "src/hooks/useSavedAccounts";
 
-export function savedAccountLabel(account: SavedAccount) {
-  return (
-    account.profile?.displayName ||
-    account.profile?.handle ||
-    account.identity.email ||
-    "Account"
-  );
+export function savedAccountLabel(entry: SavedAccountEntry) {
+  return entry.displayName || entry.handle || entry.email || "Account";
 }
 
 // Menu rows for switching to the other sessions this browser holds, plus an
@@ -34,28 +28,28 @@ export const AccountSwitcher = (props: {
   onClose: () => void;
 }) => {
   let { identity } = useIdentityData();
-  let { data: accounts } = useSavedAccounts();
+  let { data: entries } = useSavedAccounts();
   let [pendingToken, setPendingToken] = useState<string | null>(null);
   let toaster = useToaster();
 
-  let otherAccounts = (accounts ?? []).filter(
-    (a) => a.identity.id !== identity?.id,
+  let otherAccounts = (entries ?? []).filter(
+    (e) => e.identity !== identity?.id,
   );
 
-  if (!accountSwitcherEnabled(identity?.email, accounts)) return null;
+  if (!accountSwitcherEnabled(identity?.email, entries)) return null;
 
-  const onSwitch = async (account: SavedAccount) => {
+  const onSwitch = async (entry: SavedAccountEntry) => {
     if (pendingToken) return;
-    setPendingToken(account.token);
-    let result = await switchAccount(account.token);
+    setPendingToken(entry.token);
+    let result = await switchAccount(entry.token);
     if (result.ok) {
-      upsertSavedAccountEntry(entryFromAccount(account));
+      upsertSavedAccountEntry(entry);
       // Full navigation instead of mutating in place: Replicache, SWR caches,
       // and realtime channels are all keyed to the previous identity.
       window.location.href = "/home";
       return;
     }
-    removeSavedAccountEntry(account.identity.id);
+    removeSavedAccountEntry(entry.identity);
     mutateSavedAccounts();
     setPendingToken(null);
     toaster({
@@ -68,27 +62,24 @@ export const AccountSwitcher = (props: {
 
   return (
     <>
-      {otherAccounts.map((account) => (
+      {otherAccounts.map((entry) => (
         <button
-          key={account.token}
+          key={entry.token}
           type="button"
           disabled={!!pendingToken}
           className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
-          onClick={() => onSwitch(account)}
+          onClick={() => onSwitch(entry)}
         >
-          <Avatar
-            src={account.profile?.avatar}
-            displayName={savedAccountLabel(account)}
-          />
+          <Avatar src={entry.avatar} displayName={savedAccountLabel(entry)} />
           <div className="flex flex-col leading-tight min-w-0 grow">
-            <span className="truncate">{savedAccountLabel(account)}</span>
-            {account.profile?.handle && (
+            <span className="truncate">{savedAccountLabel(entry)}</span>
+            {entry.handle && (
               <span className="text-xs text-secondary truncate">
-                @{account.profile.handle}
+                @{entry.handle}
               </span>
             )}
           </div>
-          {pendingToken === account.token && (
+          {pendingToken === entry.token && (
             <LoadingTiny className="animate-spin shrink-0" />
           )}
         </button>

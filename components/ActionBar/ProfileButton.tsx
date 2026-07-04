@@ -29,7 +29,7 @@ import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { useSidebarStore } from "./Sidebar";
 import { AccountSwitcher } from "./AccountSwitcher";
 import { LoginContent } from "components/LoginButton";
-import { resolveSavedAccounts, switchAccount } from "actions/savedAccounts";
+import { switchAccount } from "actions/savedAccounts";
 import {
   accountSwitcherEnabled,
   mutateSavedAccounts,
@@ -167,25 +167,18 @@ export const ProfileButton = () => {
             if (currentIdentity) removeSavedAccountEntry(currentIdentity);
             mutateSavedAccounts();
             // When the switcher flag is on, logging out of this account falls
-            // through to the next saved session, mirroring the switcher; skip
-            // entries that no longer authenticate. Fully logged out only when
-            // none are left (or the flag is off).
+            // through to the most recent saved session. If that one switch
+            // fails (revoked elsewhere), drop it and land on logged-out.
             let entries = readSavedAccountEntries();
-            if (entries.length > 0) {
-              let accounts = await resolveSavedAccounts(
-                entries.map((e) => e.token),
-              );
-              if (accountSwitcherEnabled(currentEmail, accounts)) {
-                for (let account of accounts) {
-                  let result = await switchAccount(account.token);
-                  if (result.ok) {
-                    window.location.href = "/home";
-                    return;
-                  }
-                  removeSavedAccountEntry(account.identity.id);
-                }
-                mutateSavedAccounts();
+            let next = entries[0];
+            if (next && accountSwitcherEnabled(currentEmail, entries)) {
+              let result = await switchAccount(next.token);
+              if (result.ok) {
+                window.location.href = "/home";
+                return;
               }
+              removeSavedAccountEntry(next.identity);
+              mutateSavedAccounts();
             }
             mutate("identity", null);
           }}
