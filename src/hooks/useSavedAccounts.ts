@@ -1,8 +1,17 @@
 "use client";
 import useSWR, { mutate } from "swr";
-import { resolveSavedAccounts, type SavedAccount } from "actions/savedAccounts";
+import {
+  resolveSavedAccounts,
+  type ResolvedAccount,
+} from "actions/savedAccounts";
 
-export type { SavedAccount };
+export type SavedAccount = ResolvedAccount & {
+  profile: {
+    handle: string | null;
+    displayName: string | null;
+    avatar: string | null;
+  } | null;
+};
 
 // Sessions this browser can switch between, newest first. Each entry's token
 // is an email_auth_tokens id — possession is the credential, so the list only
@@ -104,7 +113,7 @@ export const ACCOUNT_SWITCHER_FLAG_EMAIL = "jared@hyperlink.academy";
 
 export function accountSwitcherEnabled(
   currentEmail: string | null | undefined,
-  accounts: SavedAccount[] | undefined,
+  accounts: ResolvedAccount[] | undefined,
 ) {
   return (
     currentEmail === ACCOUNT_SWITCHER_FLAG_EMAIL ||
@@ -120,12 +129,21 @@ export function useSavedAccounts() {
     async () => {
       const entries = readSavedAccountEntries();
       if (entries.length === 0) return [];
-      const accounts = await resolveSavedAccounts(entries.map((e) => e.token));
-      // Refresh the display snapshots, and drop entries whose token no longer
-      // authenticates (logged out elsewhere) or that collapsed into another
-      // entry's identity via an account merge.
-      writeSavedAccountEntries(accounts.map(entryFromAccount));
-      return accounts;
+      const resolved = new Map(
+        (await resolveSavedAccounts(entries.map((e) => e.token))).map((a) => [
+          a.token,
+          a,
+        ]),
+      );
+      // Drop entries whose token no longer authenticates (logged out
+      // elsewhere). Display snapshots are kept as-is — stale until the account
+      // is next active.
+      const kept = entries.filter((e) => resolved.has(e.token));
+      if (kept.length !== entries.length) writeSavedAccountEntries(kept);
+      return kept.map((e) => ({
+        ...resolved.get(e.token)!,
+        profile: accountFromEntry(e).profile,
+      }));
     },
     // The cached snapshots render the list immediately while the authoritative
     // resolve is in flight.

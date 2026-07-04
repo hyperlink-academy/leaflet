@@ -3,7 +3,6 @@
 import { cookies } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
 import { resolveAuthToken, setAuthToken } from "src/auth";
-import { getProfiles, type Profile } from "src/identity";
 import { Err, Ok } from "src/result";
 
 const UUID_REGEX =
@@ -25,24 +24,19 @@ export async function getCurrentSessionToken() {
   return { token: resolved.tokenId, identity: resolved.identity.id };
 }
 
-export type SavedAccount = {
+export type ResolvedAccount = {
   token: string;
   identity: { id: string; email: string | null; atp_did: string | null };
-  profile: {
-    handle: string | null;
-    displayName: string | null;
-    avatar: string | null;
-  } | null;
 };
 
-// Resolves client-held session tokens into display data for the switcher.
-// Returns only tokens that still authenticate, in the caller's (MRU) order,
-// collapsing entries that resolve to the same identity (e.g. after an account
-// merge reassigns tokens). Possession of a token id is the credential — this
-// never returns tokens the caller didn't already hold.
+// Resolves client-held session tokens to the identities they still
+// authenticate, in the caller's order. Possession of a token id is the
+// credential — this never returns tokens the caller didn't already hold.
+// Display data (handle/avatar) is not resolved here; the client renders the
+// snapshot taken when the account was last active.
 export async function resolveSavedAccounts(
   tokenIds: string[],
-): Promise<SavedAccount[]> {
+): Promise<ResolvedAccount[]> {
   const ids = [...new Set(tokenIds)]
     .filter((id) => UUID_REGEX.test(id))
     .slice(0, MAX_SAVED_ACCOUNTS);
@@ -55,41 +49,23 @@ export async function resolveSavedAccounts(
   const byToken = new Map(
     (data ?? [])
       .filter((row) => row.confirmed && row.identities)
-      .map((row) => [row.id, row]),
+      .map((row) => [row.id, row.identities!]),
   );
 
-  const dids = [...byToken.values()]
-    .map((row) => row.identities!.atp_did)
-    .filter((did): did is string => !!did);
-  const profiles: Map<string, Profile | null> =
-    dids.length > 0 ? await getProfiles(dids) : new Map();
-
-  const seenIdentities = new Set<string>();
-  const accounts: SavedAccount[] = [];
-  for (const id of ids) {
-    const row = byToken.get(id);
-    if (!row?.identities || seenIdentities.has(row.identities.id)) continue;
-    seenIdentities.add(row.identities.id);
-    const profile = row.identities.atp_did
-      ? (profiles.get(row.identities.atp_did) ?? null)
-      : null;
-    accounts.push({
-      token: row.id,
-      identity: {
-        id: row.identities.id,
-        email: row.identities.email,
-        atp_did: row.identities.atp_did,
+  return ids.flatMap((id) => {
+    const identity = byToken.get(id);
+    if (!identity) return [];
+    return [
+      {
+        token: id,
+        identity: {
+          id: identity.id,
+          email: identity.email,
+          atp_did: identity.atp_did,
+        },
       },
-      profile: profile
-        ? {
-            handle: profile.handle,
-            displayName: profile.displayName,
-            avatar: profile.avatar,
-          }
-        : null,
-    });
-  }
-  return accounts;
+    ];
+  });
 }
 
 export async function switchAccount(tokenId: string) {

@@ -5,9 +5,10 @@ import { AddSmall } from "components/Icons/AddSmall";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
-import { switchAccount, type SavedAccount } from "actions/savedAccounts";
+import { switchAccount } from "actions/savedAccounts";
 import {
   accountSwitcherEnabled,
+  type SavedAccount,
   entryFromAccount,
   mutateSavedAccounts,
   removeSavedAccountEntry,
