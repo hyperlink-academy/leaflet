@@ -134,11 +134,12 @@ export const LoginContent = (props: {
       });
       return;
     }
-    const localLeaflets = getHomeDocs();
-    await loginWithEmailToken(
-      localLeaflets.filter((l) => !l.hidden),
-      props.redirectRoute,
-    );
+    // Local pre-login drafts belong to whoever first signs in on this browser,
+    // never to an additional account added alongside an existing session.
+    const localLeaflets = props.addAccount
+      ? []
+      : getHomeDocs().filter((l) => !l.hidden);
+    await loginWithEmailToken(localLeaflets, props.redirectRoute);
     if (props.addAccount) {
       // The session cookie now points at the added account; navigate rather
       // than mutate in place since page state is keyed to the old identity.

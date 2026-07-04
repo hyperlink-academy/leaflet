@@ -8,7 +8,6 @@ import { supabaseBrowserClient } from "supabase/browserClient";
 import { produce, Draft } from "immer";
 import {
   mutateSavedAccounts,
-  readSavedAccountEntries,
   upsertSavedAccountEntry,
 } from "src/hooks/useSavedAccounts";
 
@@ -49,9 +48,9 @@ export function IdentityContextProvider(props: {
     mutate(props.initialValue);
   }, [props.initialValue]);
   // Remember the current session in the saved-accounts list so the account
-  // switcher can offer it later. The auth_token cookie is httpOnly, so the
-  // token has to be fetched from the server; when the list already leads with
-  // this identity, skip that round trip and just refresh the display snapshot.
+  // switcher can offer it later. The token is always re-fetched — the cookie
+  // is httpOnly, and a re-login mints a fresh token for the same identity, so
+  // a shortcut that trusts the stored entry would pin a dead token forever.
   useEffect(() => {
     if (!identity?.id) return;
     let identityId = identity.id;
@@ -62,11 +61,6 @@ export function IdentityContextProvider(props: {
       displayName: identity.bsky_profiles?.record.displayName ?? null,
       avatar: identity.bsky_profiles?.record.avatar ?? null,
     };
-    let existing = readSavedAccountEntries()[0];
-    if (existing?.identity === identityId) {
-      upsertSavedAccountEntry({ ...existing, ...snapshot });
-      return;
-    }
     getCurrentSessionToken()
       .then((session) => {
         if (session?.identity !== identityId) return;
