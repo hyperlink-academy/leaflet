@@ -6,9 +6,49 @@ export type { SavedAccount };
 
 // Sessions this browser can switch between, newest first. Each entry's token
 // is an email_auth_tokens id — possession is the credential, so the list only
-// ever contains sessions this browser itself logged into. Display data is not
-// stored here; it's resolved fresh through resolveSavedAccounts.
-export type SavedAccountEntry = { token: string; identity: string };
+// ever contains sessions this browser itself logged into. The display fields
+// are a snapshot so the switcher renders instantly; they're refreshed from the
+// server on every resolve and session recording, never trusted as current.
+export type SavedAccountEntry = {
+  token: string;
+  identity: string;
+  email?: string | null;
+  did?: string | null;
+  handle?: string | null;
+  displayName?: string | null;
+  avatar?: string | null;
+};
+
+export function entryFromAccount(account: SavedAccount): SavedAccountEntry {
+  return {
+    token: account.token,
+    identity: account.identity.id,
+    email: account.identity.email,
+    did: account.identity.atp_did,
+    handle: account.profile?.handle ?? null,
+    displayName: account.profile?.displayName ?? null,
+    avatar: account.profile?.avatar ?? null,
+  };
+}
+
+function accountFromEntry(entry: SavedAccountEntry): SavedAccount {
+  return {
+    token: entry.token,
+    identity: {
+      id: entry.identity,
+      email: entry.email ?? null,
+      atp_did: entry.did ?? null,
+    },
+    profile:
+      entry.handle || entry.displayName || entry.avatar
+        ? {
+            handle: entry.handle ?? null,
+            displayName: entry.displayName ?? null,
+            avatar: entry.avatar ?? null,
+          }
+        : null,
+  };
+}
 
 const STORAGE_KEY = "leaflet-saved-accounts";
 const MAX_ENTRIES = 12;
@@ -75,15 +115,20 @@ export function accountSwitcherEnabled(
 }
 
 export function useSavedAccounts() {
-  return useSWR("saved-accounts", async () => {
-    const entries = readSavedAccountEntries();
-    if (entries.length === 0) return [];
-    const accounts = await resolveSavedAccounts(entries.map((e) => e.token));
-    // Prune entries whose token no longer authenticates (logged out elsewhere)
-    // or that collapsed into another entry's identity via an account merge.
-    const valid = new Set(accounts.map((a) => a.token));
-    if (entries.some((e) => !valid.has(e.token)))
-      writeSavedAccountEntries(entries.filter((e) => valid.has(e.token)));
-    return accounts;
-  });
+  return useSWR(
+    "saved-accounts",
+    async () => {
+      const entries = readSavedAccountEntries();
+      if (entries.length === 0) return [];
+      const accounts = await resolveSavedAccounts(entries.map((e) => e.token));
+      // Refresh the display snapshots, and drop entries whose token no longer
+      // authenticates (logged out elsewhere) or that collapsed into another
+      // entry's identity via an account merge.
+      writeSavedAccountEntries(accounts.map(entryFromAccount));
+      return accounts;
+    },
+    // The cached snapshots render the list immediately while the authoritative
+    // resolve is in flight.
+    { fallbackData: readSavedAccountEntries().map(accountFromEntry) },
+  );
 }

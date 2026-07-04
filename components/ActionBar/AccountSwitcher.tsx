@@ -8,6 +8,7 @@ import { useToaster } from "components/Toast";
 import { switchAccount, type SavedAccount } from "actions/savedAccounts";
 import {
   accountSwitcherEnabled,
+  entryFromAccount,
   mutateSavedAccounts,
   removeSavedAccountEntry,
   upsertSavedAccountEntry,
@@ -47,10 +48,7 @@ export const AccountSwitcher = (props: {
     setPendingToken(account.token);
     let result = await switchAccount(account.token);
     if (result.ok) {
-      upsertSavedAccountEntry({
-        token: account.token,
-        identity: account.identity.id,
-      });
+      upsertSavedAccountEntry(entryFromAccount(account));
       // Full navigation instead of mutating in place: Replicache, SWR caches,
       // and realtime channels are all keyed to the previous identity.
       window.location.href = "/home";
