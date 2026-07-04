@@ -36,7 +36,7 @@ export function publicationNameOrUriFilter(
   nameOrRkey: string,
 ): string {
   let standard, legacy;
-  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(nameOrRkey)) {
+  if (/^(?!\.$|\.\.$)[A-Za-z0-9._:~-]{1,512}$/.test(nameOrRkey)) {
     standard = AtUri.make(
       did,
       ids.SiteStandardPublication,
@@ -44,5 +44,8 @@ export function publicationNameOrUriFilter(
     ).toString();
     legacy = AtUri.make(did, ids.PubLeafletPublication, nameOrRkey).toString();
   }
-  return `name.eq."${nameOrRkey}"",uri.eq."${standard}",uri.eq."${legacy}"`;
+  // The name comes straight from the URL path; escape PostgREST's
+  // quoted-value metacharacters so it can't break the filter grammar.
+  const quotedName = `"${nameOrRkey.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  return `name.eq.${quotedName},uri.eq."${standard}",uri.eq."${legacy}"`;
 }
