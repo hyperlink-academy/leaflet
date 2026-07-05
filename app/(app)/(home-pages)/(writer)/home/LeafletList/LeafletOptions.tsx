@@ -31,6 +31,10 @@ import {
 } from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
+import {
+  EditableLinkCopyModal,
+  shouldSkipEditableLinkCopyModal,
+} from "components/EditableLinkCopyModal";
 
 export const LeafletOptions = (props: {
   archived?: boolean | null;
@@ -39,9 +43,18 @@ export const LeafletOptions = (props: {
   const pubStatus = useLeafletPublicationStatus();
   let [state, setState] = useState<"normal" | "areYouSure">("normal");
   let [open, setOpen] = useState(false);
+  let [editLinkModalOpen, setEditLinkModalOpen] = useState(false);
   let { identity } = useIdentityData();
   let isPublicationOwner =
     !!identity?.atp_did && !!pubStatus?.documentUri?.includes(identity.atp_did);
+  let interceptEditLinkCopy = pubStatus?.draftInPublication
+    ? () => {
+        if (shouldSkipEditableLinkCopyModal()) return false;
+        setOpen(false);
+        setEditLinkModalOpen(true);
+        return true;
+      }
+    : undefined;
   return (
     <>
       <Menu
@@ -65,16 +78,28 @@ export const LeafletOptions = (props: {
       >
         {state === "normal" ? (
           !props.loggedIn ? (
-            <LoggedOutOptions setState={setState} />
+            <LoggedOutOptions
+              setState={setState}
+              interceptEditLinkCopy={interceptEditLinkCopy}
+            />
           ) : pubStatus?.documentUri && isPublicationOwner ? (
             <PublishedPostOptions setState={setState} />
           ) : (
-            <DefaultOptions setState={setState} archived={props.archived} />
+            <DefaultOptions
+              setState={setState}
+              archived={props.archived}
+              interceptEditLinkCopy={interceptEditLinkCopy}
+            />
           )
         ) : state === "areYouSure" ? (
           <DeleteAreYouSureForm backToMenu={() => setState("normal")} />
         ) : null}
       </Menu>
+      <EditableLinkCopyModal
+        open={editLinkModalOpen}
+        onOpenChange={setEditLinkModalOpen}
+        link={pubStatus?.shareLink ?? null}
+      />
     </>
   );
 };
@@ -82,6 +107,7 @@ export const LeafletOptions = (props: {
 const DefaultOptions = (props: {
   setState: (s: "areYouSure") => void;
   archived?: boolean | null;
+  interceptEditLinkCopy?: () => boolean;
 }) => {
   const pubStatus = useLeafletPublicationStatus();
   const toaster = useToaster();
@@ -97,7 +123,10 @@ const DefaultOptions = (props: {
 
   return (
     <>
-      <EditLinkShareButton link={pubStatus?.shareLink ?? ""} />
+      <EditLinkShareButton
+        link={pubStatus?.shareLink ?? ""}
+        onCopyIntercept={props.interceptEditLinkCopy}
+      />
       <hr className="border-border-light" />
       <MenuItem
         onSelect={async () => {
@@ -151,13 +180,19 @@ const DefaultOptions = (props: {
   );
 };
 
-const LoggedOutOptions = (props: { setState: (s: "areYouSure") => void }) => {
+const LoggedOutOptions = (props: {
+  setState: (s: "areYouSure") => void;
+  interceptEditLinkCopy?: () => boolean;
+}) => {
   const pubStatus = useLeafletPublicationStatus();
   const toaster = useToaster();
 
   return (
     <>
-      <EditLinkShareButton link={`/${pubStatus?.shareLink ?? ""}`} />
+      <EditLinkShareButton
+        link={`/${pubStatus?.shareLink ?? ""}`}
+        onCopyIntercept={props.interceptEditLinkCopy}
+      />
       <hr className="border-border-light" />
       <MenuItem
         onSelect={() => {
@@ -278,7 +313,10 @@ const DeleteAreYouSureForm = (props: { backToMenu: () => void }) => {
 };
 
 // Shared menu items
-const EditLinkShareButton = (props: { link: string }) => (
+const EditLinkShareButton = (props: {
+  link: string;
+  onCopyIntercept?: () => boolean;
+}) => (
   <ShareButton
     text={
       <div className="flex gap-2">
@@ -290,6 +328,7 @@ const EditLinkShareButton = (props: { link: string }) => (
     smokerText="Link copied!"
     id="get-link"
     link={props.link}
+    onIntercept={props.onCopyIntercept}
   />
 );
 

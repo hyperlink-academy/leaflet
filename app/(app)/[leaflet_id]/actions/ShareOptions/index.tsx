@@ -21,6 +21,10 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { useIsMobile } from "src/hooks/isMobile";
 import { LoginModal } from "components/LoginButton";
+import {
+  EditableLinkCopyModal,
+  shouldSkipEditableLinkCopyModal,
+} from "components/EditableLinkCopyModal";
 
 type ShareMenuStates = "default" | "domain";
 
@@ -48,38 +52,55 @@ export let useReadOnlyShareLink = () => {
 
 export function ShareOptions() {
   let [menuState, setMenuState] = useState<ShareMenuStates>("default");
+  let [menuOpen, setMenuOpen] = useState(false);
+  let [editableLinkModal, setEditableLinkModal] = useState<null | string>(null);
   let { data: pub } = useLeafletPublicationData();
   let isMobile = useIsMobile();
 
   return (
-    <Menu
-      asChild
-      side={isMobile ? "top" : "right"}
-      align={isMobile ? "center" : "start"}
-      className="max-w-xs"
-      onOpenChange={() => {
-        setMenuState("default");
-      }}
-      trigger={
-        <ActionButton
-          icon=<ShareSmall />
-          className="sm:w-full! w-fit!"
-          secondary
-          label={`Share ${pub ? "Draft" : ""}`}
-          labelOnMobile
-        />
-      }
-    >
-      {menuState === "domain" ? (
-        <CustomDomainMenu setShareMenuState={setMenuState} />
-      ) : (
-        <ShareMenu
-          setMenuState={setMenuState}
-          domainConnected={false}
-          isPub={!!pub}
-        />
-      )}
-    </Menu>
+    <>
+      <Menu
+        asChild
+        side={isMobile ? "top" : "right"}
+        align={isMobile ? "center" : "start"}
+        className="max-w-xs"
+        open={menuOpen}
+        onOpenChange={(open) => {
+          setMenuOpen(open);
+          setMenuState("default");
+        }}
+        trigger={
+          <ActionButton
+            icon=<ShareSmall />
+            className="sm:w-full! w-fit!"
+            secondary
+            label={`Share ${pub ? "Draft" : ""}`}
+            labelOnMobile
+          />
+        }
+      >
+        {menuState === "domain" ? (
+          <CustomDomainMenu setShareMenuState={setMenuState} />
+        ) : (
+          <ShareMenu
+            setMenuState={setMenuState}
+            domainConnected={false}
+            isPub={!!pub}
+            openEditableLinkModal={(link) => {
+              setMenuOpen(false);
+              setEditableLinkModal(link);
+            }}
+          />
+        )}
+      </Menu>
+      <EditableLinkCopyModal
+        open={editableLinkModal !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditableLinkModal(null);
+        }}
+        link={editableLinkModal}
+      />
+    </>
   );
 }
 
@@ -87,6 +108,7 @@ const ShareMenu = (props: {
   setMenuState: (state: ShareMenuStates) => void;
   domainConnected: boolean;
   isPub?: boolean;
+  openEditableLinkModal: (link: string) => void;
 }) => {
   let { permission_token } = useReplicache();
   let { data: pub, normalizedDocument } = useLeafletPublicationData();
@@ -115,6 +137,15 @@ const ShareMenu = (props: {
         smokerText="Edit link copied!"
         id="get-edit-link"
         link={collabLink}
+        onIntercept={
+          props.isPub
+            ? () => {
+                if (shouldSkipEditableLinkCopyModal()) return false;
+                props.openEditableLinkModal(collabLink ?? "");
+                return true;
+              }
+            : undefined
+        }
       />
       <ShareButton
         text={`Share ${postLink ? "Draft" : ""} View Link`}
@@ -172,6 +203,9 @@ export const ShareButton = (props: {
   link: null | string;
   fullLink?: string;
   className?: string;
+  // called before copying; return true to take over the click (the copy is
+  // skipped and the intercept is responsible for closing the menu)
+  onIntercept?: () => boolean;
 }) => {
   let smoker = useSmoker();
 
@@ -179,7 +213,11 @@ export const ShareButton = (props: {
     <MenuItem
       id={props.id}
       onSelect={(e) => {
+        // preventDefault keeps radix from auto-closing the menu, so the
+        // smoker anchors to a live item and an intercept can close the
+        // menu itself without racing the modal's focus trap
         e.preventDefault();
+        if (props.onIntercept?.()) return;
         let rect = document.getElementById(props.id)?.getBoundingClientRect();
         if (props.link || props.fullLink) {
           navigator.clipboard.writeText(
