@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { IdResolver } from "@atproto/identity";
+import { ensureValidDid } from "@atproto/syntax";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";
 
@@ -25,13 +26,25 @@ export async function fetchAtprotoBlob(
   cid: string,
 ): Promise<Response | null> {
   if (!did || !cid) return null;
+  // Both values arrive unvalidated from the query string on the public API
+  // route: reject anything that isn't a DID before it reaches the resolver
+  // (which throws on malformed input), and anything that isn't CID-shaped
+  // before it's used in a storage path and the getBlob URL.
+  try {
+    ensureValidDid(did);
+  } catch {
+    return null;
+  }
+  if (!/^[a-zA-Z0-9]+$/.test(cid)) return null;
 
-  let identity = await idResolver.did.resolve(did);
+  // The resolver still throws on DID methods it doesn't support; a blob we
+  // can't locate is a missing blob, not a server error.
+  let identity = await idResolver.did.resolve(did).catch(() => null);
   let service = identity?.service?.find((f) => f.id === "#atproto_pds");
   if (!service) return null;
 
   const response = await fetch(
-    `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${cid}`,
+    `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${cid}`,
     {
       headers: {
         "Accept-Encoding": "gzip, deflate, br, zstd",
