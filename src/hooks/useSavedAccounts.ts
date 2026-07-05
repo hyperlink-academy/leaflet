@@ -63,22 +63,6 @@ export function mutateSavedAccounts() {
   mutate("saved-accounts");
 }
 
-// Feature flag while the switcher is dogfooded: the UI (and the
-// logout-falls-through-to-next-account behavior) only activates when the
-// active identity or one of the saved accounts is this email. Sessions are
-// still recorded for everyone so the flag can be discovered from the list.
-export const ACCOUNT_SWITCHER_FLAG_EMAIL = "jared@hyperlink.academy";
-
-export function accountSwitcherEnabled(
-  currentEmail: string | null | undefined,
-  entries: SavedAccountEntry[] | undefined,
-) {
-  return (
-    currentEmail === ACCOUNT_SWITCHER_FLAG_EMAIL ||
-    !!entries?.some((e) => e.email === ACCOUNT_SWITCHER_FLAG_EMAIL)
-  );
-}
-
 export async function switchToSavedAccount(
   entry: SavedAccountEntry,
   opts?: { logoutCurrent?: boolean },

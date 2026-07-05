@@ -30,7 +30,6 @@ import { useSidebarStore } from "./Sidebar";
 import { AccountList, SwitchAccountItem } from "./AccountSwitcher";
 import { LoginContent } from "components/LoginButton";
 import {
-  accountSwitcherEnabled,
   mutateSavedAccounts,
   readSavedAccountEntries,
   removeSavedAccountEntry,
@@ -178,14 +177,14 @@ export const ProfileButton = () => {
             setOpen(false);
             setSidebarOpen(false);
             let currentIdentity = identity?.id;
-            // When the switcher flag is on, logging out of this account falls
-            // through to the most recent other saved session. Revoking the old
-            // session and installing the next happens in one request so the
-            // open page never sits on a cleared cookie, which flashed an error
-            // before the navigation landed.
+            // Logging out of this account falls through to the most recent
+            // other saved session. Revoking the old session and installing the
+            // next happens in one request so the open page never sits on a
+            // cleared cookie, which flashed an error before the navigation
+            // landed.
             let entries = readSavedAccountEntries();
             let next = entries.find((e) => e.identity !== currentIdentity);
-            if (next && accountSwitcherEnabled(identity?.email, entries)) {
+            if (next) {
               let ok = await switchToSavedAccount(next, {
                 logoutCurrent: true,
               });

@@ -9,7 +9,6 @@ import { RefreshSmall } from "components/Icons/RefreshSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
 import {
-  accountSwitcherEnabled,
   mutateSavedAccounts,
   removeSavedAccountEntry,
   switchToSavedAccount,
@@ -37,8 +36,7 @@ export const SwitchAccountItem = (props: {
   onAddAccount: () => void;
   onClose: () => void;
 }) => {
-  let { identity, entries, otherAccounts } = useOtherAccounts();
-  if (!accountSwitcherEnabled(identity?.email, entries)) return null;
+  let { otherAccounts } = useOtherAccounts();
   return (
     <>
       <button
