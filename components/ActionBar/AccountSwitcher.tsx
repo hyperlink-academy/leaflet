@@ -8,11 +8,11 @@ import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { RefreshSmall } from "components/Icons/RefreshSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
-import { switchAccount } from "actions/savedAccounts";
 import {
   accountSwitcherEnabled,
   mutateSavedAccounts,
   removeSavedAccountEntry,
+  switchToSavedAccount,
   upsertSavedAccountEntry,
   useSavedAccounts,
   type SavedAccountEntry,
@@ -74,8 +74,8 @@ export const AccountList = (props: {
   const onSwitch = async (entry: SavedAccountEntry) => {
     if (pendingToken) return;
     setPendingToken(entry.token);
-    let result = await switchAccount(entry.token);
-    if (result.ok) {
+    let ok = await switchToSavedAccount(entry);
+    if (ok) {
       upsertSavedAccountEntry(entry);
       // Full navigation instead of mutating in place: Replicache, SWR caches,
       // and realtime channels are all keyed to the previous identity.

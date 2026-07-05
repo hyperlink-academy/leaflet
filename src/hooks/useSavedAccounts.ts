@@ -79,6 +79,27 @@ export function accountSwitcherEnabled(
   );
 }
 
+export async function switchToSavedAccount(
+  entry: SavedAccountEntry,
+  opts?: { logoutCurrent?: boolean },
+): Promise<boolean> {
+  try {
+    let res = await fetch("/api/auth/switch-account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: entry.token,
+        logoutCurrent: !!opts?.logoutCurrent,
+      }),
+    });
+    if (!res.ok) return false;
+    let body = (await res.json()) as { ok?: boolean };
+    return body.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 export function useSavedAccounts() {
   return useSWR("saved-accounts", () => readSavedAccountEntries(), {
     fallbackData: readSavedAccountEntries(),

@@ -29,12 +29,12 @@ import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { useSidebarStore } from "./Sidebar";
 import { AccountList, SwitchAccountItem } from "./AccountSwitcher";
 import { LoginContent } from "components/LoginButton";
-import { switchAccount } from "actions/savedAccounts";
 import {
   accountSwitcherEnabled,
   mutateSavedAccounts,
   readSavedAccountEntries,
   removeSavedAccountEntry,
+  switchToSavedAccount,
 } from "src/hooks/useSavedAccounts";
 
 export const ProfileButton = () => {
@@ -178,24 +178,29 @@ export const ProfileButton = () => {
             setOpen(false);
             setSidebarOpen(false);
             let currentIdentity = identity?.id;
-            let currentEmail = identity?.email;
-            await fetch("/api/auth/logout");
-            if (currentIdentity) removeSavedAccountEntry(currentIdentity);
-            mutateSavedAccounts();
             // When the switcher flag is on, logging out of this account falls
-            // through to the most recent saved session. If that one switch
-            // fails (revoked elsewhere), drop it and land on logged-out.
+            // through to the most recent other saved session. Revoking the old
+            // session and installing the next happens in one request so the
+            // open page never sits on a cleared cookie, which flashed an error
+            // before the navigation landed.
             let entries = readSavedAccountEntries();
-            let next = entries[0];
-            if (next && accountSwitcherEnabled(currentEmail, entries)) {
-              let result = await switchAccount(next.token);
-              if (result.ok) {
+            let next = entries.find((e) => e.identity !== currentIdentity);
+            if (next && accountSwitcherEnabled(identity?.email, entries)) {
+              let ok = await switchToSavedAccount(next, {
+                logoutCurrent: true,
+              });
+              if (ok) {
+                if (currentIdentity) removeSavedAccountEntry(currentIdentity);
                 window.location.href = "/home";
                 return;
               }
+              // The fallback session was revoked elsewhere — drop it and log
+              // out normally.
               removeSavedAccountEntry(next.identity);
-              mutateSavedAccounts();
             }
+            await fetch("/api/auth/logout");
+            if (currentIdentity) removeSavedAccountEntry(currentIdentity);
+            mutateSavedAccounts();
             mutate("identity", null);
           }}
         >
