@@ -27,14 +27,14 @@ import { LeafletPro } from "components/Icons/LeafletPro";
 import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { useSidebarStore } from "./Sidebar";
-import { AccountSwitcher } from "./AccountSwitcher";
+import { AccountList, SwitchAccountItem } from "./AccountSwitcher";
 import { LoginContent } from "components/LoginButton";
-import { switchAccount } from "actions/savedAccounts";
 import {
   accountSwitcherEnabled,
   mutateSavedAccounts,
   readSavedAccountEntries,
   removeSavedAccountEntry,
+  switchToSavedAccount,
 } from "src/hooks/useSavedAccounts";
 
 export const ProfileButton = () => {
@@ -48,6 +48,7 @@ export const ProfileButton = () => {
   let [open, setOpen] = useState(false);
   let [domainsOpen, setDomainsOpen] = useState(false);
   let [addAccountOpen, setAddAccountOpen] = useState(false);
+  let [showAccounts, setShowAccounts] = useState(false);
   let [proOpen, setProOpen] = useState(false);
   let [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -56,7 +57,10 @@ export const ProfileButton = () => {
     <Popover
       asChild
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setShowAccounts(false);
+      }}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       className="w-xs py-1! z-[60]!"
@@ -82,6 +86,17 @@ export const ProfileButton = () => {
         />
       }
     >
+      {showAccounts ? (
+        <AccountList
+          onBack={() => setShowAccounts(false)}
+          onClose={() => {
+            setOpen(false);
+            setSidebarOpen(false);
+            setShowAccounts(false);
+          }}
+          onAddAccount={() => setAddAccountOpen(true)}
+        />
+      ) : (
       <div className="flex flex-col gap-0.5">
         {record?.handle && (
           <>
@@ -148,7 +163,8 @@ export const ProfileButton = () => {
             <hr className="border-border-light border-dashed" />
           </>
         )}
-        <AccountSwitcher
+        <SwitchAccountItem
+          onShowAccounts={() => setShowAccounts(true)}
           onClose={() => {
             setOpen(false);
             setSidebarOpen(false);
@@ -162,24 +178,29 @@ export const ProfileButton = () => {
             setOpen(false);
             setSidebarOpen(false);
             let currentIdentity = identity?.id;
-            let currentEmail = identity?.email;
-            await fetch("/api/auth/logout");
-            if (currentIdentity) removeSavedAccountEntry(currentIdentity);
-            mutateSavedAccounts();
             // When the switcher flag is on, logging out of this account falls
-            // through to the most recent saved session. If that one switch
-            // fails (revoked elsewhere), drop it and land on logged-out.
+            // through to the most recent other saved session. Revoking the old
+            // session and installing the next happens in one request so the
+            // open page never sits on a cleared cookie, which flashed an error
+            // before the navigation landed.
             let entries = readSavedAccountEntries();
-            let next = entries[0];
-            if (next && accountSwitcherEnabled(currentEmail, entries)) {
-              let result = await switchAccount(next.token);
-              if (result.ok) {
+            let next = entries.find((e) => e.identity !== currentIdentity);
+            if (next && accountSwitcherEnabled(identity?.email, entries)) {
+              let ok = await switchToSavedAccount(next, {
+                logoutCurrent: true,
+              });
+              if (ok) {
+                if (currentIdentity) removeSavedAccountEntry(currentIdentity);
                 window.location.href = "/home";
                 return;
               }
+              // The fallback session was revoked elsewhere — drop it and log
+              // out normally.
               removeSavedAccountEntry(next.identity);
-              mutateSavedAccounts();
             }
+            await fetch("/api/auth/logout");
+            if (currentIdentity) removeSavedAccountEntry(currentIdentity);
+            mutateSavedAccounts();
             mutate("identity", null);
           }}
         >
@@ -204,6 +225,7 @@ export const ProfileButton = () => {
           </>
         )}
       </div>
+      )}
     </Popover>
     <ManageDomains open={domainsOpen} onOpenChange={setDomainsOpen} />
     <Modal
