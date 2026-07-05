@@ -27,19 +27,18 @@ export async function fetchAtprotoBlob(
 ): Promise<Response | null> {
   if (!did || !cid) return null;
   // Both values arrive unvalidated from the query string on the public API
-  // route: reject anything that isn't a DID before it reaches the resolver
-  // (which throws on malformed input), and anything that isn't CID-shaped
+  // route: reject anything the resolver throws on (malformed DIDs and DID
+  // methods it has no resolver for), and anything that isn't CID-shaped
   // before it's used in a storage path and the getBlob URL.
   try {
     ensureValidDid(did);
   } catch {
     return null;
   }
+  if (!(did.split(":")[1] in idResolver.did.methods)) return null;
   if (!/^[a-zA-Z0-9]+$/.test(cid)) return null;
 
-  // The resolver still throws on DID methods it doesn't support; a blob we
-  // can't locate is a missing blob, not a server error.
-  let identity = await idResolver.did.resolve(did).catch(() => null);
+  let identity = await idResolver.did.resolve(did);
   let service = identity?.service?.find((f) => f.id === "#atproto_pds");
   if (!service) return null;
 
