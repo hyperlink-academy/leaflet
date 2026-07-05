@@ -2,7 +2,10 @@
 import { useState } from "react";
 import { Avatar } from "components/Avatar";
 import { AddSmall } from "components/Icons/AddSmall";
+import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
+import { GoBackTiny } from "components/Icons/GoBackTiny";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
+import { RefreshSmall } from "components/Icons/RefreshSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
 import { switchAccount } from "actions/savedAccounts";
@@ -19,24 +22,62 @@ export function savedAccountLabel(entry: SavedAccountEntry) {
   return entry.displayName || entry.handle || entry.email || "Account";
 }
 
-// Menu rows for switching to the other sessions this browser holds, plus an
-// entry to log into an additional account. Rendered inside the ProfileButton
-// popover; the add-account modal lives outside the popover (which unmounts its
-// content on close), so opening it is delegated to the parent.
-export const AccountSwitcher = (props: {
+function useOtherAccounts() {
+  let { identity } = useIdentityData();
+  let { data: entries } = useSavedAccounts();
+  return {
+    identity,
+    entries,
+    otherAccounts: (entries ?? []).filter((e) => e.identity !== identity?.id),
+  };
+}
+
+// The "Switch Account" row in the ProfileButton menu. With no other saved
+// sessions it opens the login screen directly; otherwise it flips the popover
+// to the AccountList view.
+export const SwitchAccountItem = (props: {
+  onShowAccounts: () => void;
   onAddAccount: () => void;
   onClose: () => void;
 }) => {
-  let { identity } = useIdentityData();
-  let { data: entries } = useSavedAccounts();
+  let { identity, entries, otherAccounts } = useOtherAccounts();
+  if (!accountSwitcherEnabled(identity?.email, entries)) return null;
+  return (
+    <>
+      <button
+        type="button"
+        className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
+        onClick={() => {
+          if (otherAccounts.length > 0) {
+            props.onShowAccounts();
+          } else {
+            props.onClose();
+            props.onAddAccount();
+          }
+        }}
+      >
+        <RefreshSmall />
+        Switch Account
+        {otherAccounts.length > 0 && <ArrowRightTiny className="ml-auto" />}
+      </button>
+      <hr className="border-border-light border-dashed" />
+    </>
+  );
+};
+
+// The account-list view the popover switches to: the other sessions this
+// browser holds plus an entry to log into an additional account. Only
+// reachable through the flag-gated SwitchAccountItem. The add-account modal
+// lives outside the popover (which unmounts its content on close), so opening
+// it is delegated to the parent.
+export const AccountList = (props: {
+  onBack: () => void;
+  onAddAccount: () => void;
+  onClose: () => void;
+}) => {
+  let { otherAccounts } = useOtherAccounts();
   let [pendingToken, setPendingToken] = useState<string | null>(null);
   let toaster = useToaster();
-
-  let otherAccounts = (entries ?? []).filter(
-    (e) => e.identity !== identity?.id,
-  );
-
-  if (!accountSwitcherEnabled(identity?.email, entries)) return null;
 
   const onSwitch = async (entry: SavedAccountEntry) => {
     if (pendingToken) return;
@@ -61,7 +102,16 @@ export const AccountSwitcher = (props: {
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-0.5">
+      <button
+        type="button"
+        className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
+        onClick={props.onBack}
+      >
+        <GoBackTiny />
+        Back
+      </button>
+      <hr className="border-border-light border-dashed" />
       {otherAccounts.map((entry) => (
         <button
           key={entry.token}
@@ -95,7 +145,6 @@ export const AccountSwitcher = (props: {
         <AddSmall />
         Add Account
       </button>
-      <hr className="border-border-light border-dashed" />
-    </>
+    </div>
   );
 };

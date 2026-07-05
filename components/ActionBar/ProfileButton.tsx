@@ -27,7 +27,7 @@ import { LeafletPro } from "components/Icons/LeafletPro";
 import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { useSidebarStore } from "./Sidebar";
-import { AccountSwitcher } from "./AccountSwitcher";
+import { AccountList, SwitchAccountItem } from "./AccountSwitcher";
 import { LoginContent } from "components/LoginButton";
 import { switchAccount } from "actions/savedAccounts";
 import {
@@ -48,6 +48,7 @@ export const ProfileButton = () => {
   let [open, setOpen] = useState(false);
   let [domainsOpen, setDomainsOpen] = useState(false);
   let [addAccountOpen, setAddAccountOpen] = useState(false);
+  let [showAccounts, setShowAccounts] = useState(false);
   let [proOpen, setProOpen] = useState(false);
   let [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -56,7 +57,10 @@ export const ProfileButton = () => {
     <Popover
       asChild
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setShowAccounts(false);
+      }}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       className="w-xs py-1! z-[60]!"
@@ -82,6 +86,17 @@ export const ProfileButton = () => {
         />
       }
     >
+      {showAccounts ? (
+        <AccountList
+          onBack={() => setShowAccounts(false)}
+          onClose={() => {
+            setOpen(false);
+            setSidebarOpen(false);
+            setShowAccounts(false);
+          }}
+          onAddAccount={() => setAddAccountOpen(true)}
+        />
+      ) : (
       <div className="flex flex-col gap-0.5">
         {record?.handle && (
           <>
@@ -148,7 +163,8 @@ export const ProfileButton = () => {
             <hr className="border-border-light border-dashed" />
           </>
         )}
-        <AccountSwitcher
+        <SwitchAccountItem
+          onShowAccounts={() => setShowAccounts(true)}
           onClose={() => {
             setOpen(false);
             setSidebarOpen(false);
@@ -204,6 +220,7 @@ export const ProfileButton = () => {
           </>
         )}
       </div>
+      )}
     </Popover>
     <ManageDomains open={domainsOpen} onOpenChange={setDomainsOpen} />
     <Modal
