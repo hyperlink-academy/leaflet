@@ -32,9 +32,6 @@ function useOtherAccounts() {
   };
 }
 
-// The "Switch Account" row in the ProfileButton menu. With no other saved
-// sessions it opens the login screen directly; otherwise it flips the popover
-// to the AccountList view.
 export const SwitchAccountItem = (props: {
   onShowAccounts: () => void;
   onAddAccount: () => void;
@@ -65,11 +62,6 @@ export const SwitchAccountItem = (props: {
   );
 };
 
-// The account-list view the popover switches to: the other sessions this
-// browser holds plus an entry to log into an additional account. Only
-// reachable through the flag-gated SwitchAccountItem. The add-account modal
-// lives outside the popover (which unmounts its content on close), so opening
-// it is delegated to the parent.
 export const AccountList = (props: {
   onBack: () => void;
   onAddAccount: () => void;
