@@ -63,6 +63,10 @@ export const LoginContent = (props: {
   open?: boolean;
   onSuccess?: () => void;
   className?: string;
+  // Logging into an additional account from the switcher while a session is
+  // still active: render the normal login form (not the link/merge prompts)
+  // and keep the new session fully separate from the current identity.
+  addAccount?: boolean;
 }) => {
   let identityData = useIdentityData();
   let [state, setState] = useState<
@@ -73,15 +77,17 @@ export const LoginContent = (props: {
   let [loading, setLoading] = useState(false);
   let toaster = useToaster();
 
-  if (identityData.identity?.atp_did) return null;
-  if (identityData.identity?.email && !identityData.identity.atp_did) {
-    return (
-      <LinkAtmosphereContent
-        pageView={props.pageView}
-        redirectRoute={props.redirectRoute}
-        open={props.open}
-      />
-    );
+  if (!props.addAccount) {
+    if (identityData.identity?.atp_did) return null;
+    if (identityData.identity?.email && !identityData.identity.atp_did) {
+      return (
+        <LinkAtmosphereContent
+          pageView={props.pageView}
+          redirectRoute={props.redirectRoute}
+          open={props.open}
+        />
+      );
+    }
   }
 
   const handleEmailSubmit = async () => {
@@ -128,11 +134,18 @@ export const LoginContent = (props: {
       });
       return;
     }
-    const localLeaflets = getHomeDocs();
-    await loginWithEmailToken(
-      localLeaflets.filter((l) => !l.hidden),
-      props.redirectRoute,
-    );
+    // Local pre-login drafts belong to whoever first signs in on this browser,
+    // never to an additional account added alongside an existing session.
+    const localLeaflets = props.addAccount
+      ? []
+      : getHomeDocs().filter((l) => !l.hidden);
+    await loginWithEmailToken(localLeaflets, props.redirectRoute);
+    if (props.addAccount) {
+      // The session cookie now points at the added account; navigate rather
+      // than mutate in place since page state is keyed to the old identity.
+      window.location.href = "/home";
+      return;
+    }
     mutate("identity");
     toaster({
       content: <div className="font-bold">Logged in! Welcome!</div>,
@@ -185,6 +198,7 @@ export const LoginContent = (props: {
                 window.location.href = buildOauthLoginUrl({
                   handle,
                   redirect: props.redirectRoute || window.location.href,
+                  addAccount: props.addAccount,
                 });
               }}
             />
@@ -270,6 +284,7 @@ export const LoginContent = (props: {
                 window.location.href = buildOauthLoginUrl({
                   redirect: props.redirectRoute || "/",
                   signup: true,
+                  addAccount: props.addAccount,
                 });
               }}
             >

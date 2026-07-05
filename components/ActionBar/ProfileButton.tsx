@@ -27,6 +27,15 @@ import { LeafletPro } from "components/Icons/LeafletPro";
 import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { useSidebarStore } from "./Sidebar";
+import { AccountSwitcher } from "./AccountSwitcher";
+import { LoginContent } from "components/LoginButton";
+import { switchAccount } from "actions/savedAccounts";
+import {
+  accountSwitcherEnabled,
+  mutateSavedAccounts,
+  readSavedAccountEntries,
+  removeSavedAccountEntry,
+} from "src/hooks/useSavedAccounts";
 
 export const ProfileButton = () => {
   let setSidebarOpen = useSidebarStore((s) => s.setOpen);
@@ -38,6 +47,7 @@ export const ProfileButton = () => {
   let canSeePayments = useCanSeePayments();
   let [open, setOpen] = useState(false);
   let [domainsOpen, setDomainsOpen] = useState(false);
+  let [addAccountOpen, setAddAccountOpen] = useState(false);
   let [proOpen, setProOpen] = useState(false);
   let [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -138,13 +148,38 @@ export const ProfileButton = () => {
             <hr className="border-border-light border-dashed" />
           </>
         )}
+        <AccountSwitcher
+          onClose={() => {
+            setOpen(false);
+            setSidebarOpen(false);
+          }}
+          onAddAccount={() => setAddAccountOpen(true)}
+        />
         <button
           type="button"
           className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
           onClick={async () => {
             setOpen(false);
             setSidebarOpen(false);
+            let currentIdentity = identity?.id;
+            let currentEmail = identity?.email;
             await fetch("/api/auth/logout");
+            if (currentIdentity) removeSavedAccountEntry(currentIdentity);
+            mutateSavedAccounts();
+            // When the switcher flag is on, logging out of this account falls
+            // through to the most recent saved session. If that one switch
+            // fails (revoked elsewhere), drop it and land on logged-out.
+            let entries = readSavedAccountEntries();
+            let next = entries[0];
+            if (next && accountSwitcherEnabled(currentEmail, entries)) {
+              let result = await switchAccount(next.token);
+              if (result.ok) {
+                window.location.href = "/home";
+                return;
+              }
+              removeSavedAccountEntry(next.identity);
+              mutateSavedAccounts();
+            }
             mutate("identity", null);
           }}
         >
@@ -171,6 +206,17 @@ export const ProfileButton = () => {
       </div>
     </Popover>
     <ManageDomains open={domainsOpen} onOpenChange={setDomainsOpen} />
+    <Modal
+      open={addAccountOpen}
+      onOpenChange={setAddAccountOpen}
+      className="w-full!"
+    >
+      <LoginContent
+        addAccount
+        open={addAccountOpen}
+        onSuccess={() => setAddAccountOpen(false)}
+      />
+    </Modal>
     {canSeePro && isPro && (
       <Modal
         className="w-md max-w-full"

@@ -1,10 +1,15 @@
 "use client";
 import { getIdentityData } from "actions/getIdentityData";
+import { getCurrentSessionToken } from "actions/savedAccounts";
 import { createContext, useContext, useEffect } from "react";
 import useSWR, { KeyedMutator, mutate } from "swr";
 import type { DashboardState } from "./PageLayouts/dashboardState";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { produce, Draft } from "immer";
+import {
+  mutateSavedAccounts,
+  upsertSavedAccountEntry,
+} from "src/hooks/useSavedAccounts";
 
 export type InterfaceState = {
   dashboards: { [id: string]: DashboardState | undefined };
@@ -42,6 +47,34 @@ export function IdentityContextProvider(props: {
   useEffect(() => {
     mutate(props.initialValue);
   }, [props.initialValue]);
+  // Remember the current session in the saved-accounts list so the account
+  // switcher can offer it later. The token is always re-fetched — the cookie
+  // is httpOnly, and a re-login mints a fresh token for the same identity, so
+  // a shortcut that trusts the stored entry would pin a dead token forever.
+  useEffect(() => {
+    if (!identity?.id) return;
+    let identityId = identity.id;
+    let snapshot = {
+      email: identity.email,
+      did: identity.atp_did,
+      handle: identity.bsky_profiles?.record.handle ?? null,
+      displayName: identity.bsky_profiles?.record.displayName ?? null,
+      avatar: identity.bsky_profiles?.record.avatar ?? null,
+    };
+    getCurrentSessionToken()
+      .then((session) => {
+        if (session?.identity !== identityId) return;
+        upsertSavedAccountEntry({
+          token: session.token,
+          identity: identityId,
+          ...snapshot,
+        });
+        mutateSavedAccounts();
+      })
+      // Recording is best-effort bookkeeping — a failed call must never
+      // surface; the entry is written on a later load instead.
+      .catch(() => {});
+  }, [identity?.id]);
   useEffect(() => {
     if (!identity?.atp_did) return;
     let supabase = supabaseBrowserClient();
