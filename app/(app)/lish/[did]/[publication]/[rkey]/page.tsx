@@ -106,6 +106,7 @@ export default async function Post(props: {
   let did = decodeURIComponent(params.did);
   let publication_name = decodeURIComponent(params.publication);
   let rkey = decodeURIComponent(params.rkey);
+  console.log("yo what");
 
   if (!did)
     return (
@@ -121,6 +122,7 @@ export default async function Post(props: {
   // A /<rkey> URL is either a published publication page or a post; render the
   // matching page, else fall back to the single-post renderer.
   const publication = await fetchPublicationForPage(did, publication_name);
+  console.log(publication);
   if (publication) {
     const pageRender = tryRenderPublicationPage({
       did,

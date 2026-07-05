@@ -1,5 +1,6 @@
 import React from "react";
 import { SpeedyLink } from "components/SpeedyLink";
+import { LockTiny } from "components/Icons/LockTiny";
 
 type CommonProps = {
   href?: string;
@@ -10,7 +11,17 @@ type CommonProps = {
   interactions?: React.ReactNode;
   footer?: React.ReactNode;
   inList?: boolean;
+  membersOnly?: boolean;
 };
+
+function MembersBadge() {
+  return (
+    <span className="membersBadge inline-flex items-center gap-0.5 align-middle ml-1.5 text-xs font-bold text-accent-contrast whitespace-nowrap">
+      <LockTiny className="w-3 h-3 shrink-0" />
+      Members
+    </span>
+  );
+}
 
 type LargeProps = CommonProps & {
   coverImageSrc?: string;
@@ -85,7 +96,10 @@ export function PublicationPostItemSmall(props: CommonProps) {
     >
       <PostLink href={props.href}>
         {props.title && (
-          <h3 className="text-primary leading-snug pb-1">{props.title}</h3>
+          <h3 className="text-primary leading-snug pb-1">
+            {props.title}
+            {props.membersOnly && <MembersBadge />}
+          </h3>
         )}
       </PostLink>
       <MetaRow
@@ -112,6 +126,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
             {props.title && (
               <h3 className="text-primary leading-snug line-clamp-2 pb-1">
                 {props.title}
+                {props.membersOnly && <MembersBadge />}
               </h3>
             )}
             <p className="text-secondary line-clamp-3 grow mb-2">
@@ -178,6 +193,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
               className={`text-primary leading-snug text-lg pb-1  clamp-2 ${widePage ? "sm:text-xl " : ""}`}
             >
               {props.title}
+              {props.membersOnly && <MembersBadge />}
             </h3>
           )}
           <p

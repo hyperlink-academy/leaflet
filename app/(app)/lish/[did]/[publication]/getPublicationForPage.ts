@@ -11,7 +11,7 @@ export async function fetchPublicationForPage(
       `uri, name, identity_did, record,
        publication_newsletter_settings(enabled),
        publication_pages(id, path, title, record, record_uri, sort_order),
-       documents_in_publications(documents(uri, data,
+       documents_in_publications(members_only, documents(uri, data,
          comments_on_documents(count),
          document_mentions_in_bsky(count),
          recommends_on_documents(count)))`,

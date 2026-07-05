@@ -3,9 +3,11 @@ import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { getConstellationBacklinks } from "app/(app)/lish/[did]/[publication]/[rkey]/getPostPageData";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import {
+  getDocumentPages,
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import { truncatePagesAtMembersDelimiter } from "src/membership";
 import { idResolver } from "src/identity";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 import type { Post } from "./getReaderFeed";
@@ -39,6 +41,11 @@ export async function enrichDocumentToPost(
     console.log("[enrichPost] normalizeDocumentRecord returned null for:", doc.uri);
     return null;
   }
+
+  // The reader feed has no per-user membership context, so members-only posts
+  // only surface their preview; the post page itself unlocks for members.
+  const docPages = getDocumentPages(normalizedData);
+  if (docPages) truncatePagesAtMembersDelimiter(docPages);
 
   const normalizedPubRecord = pub
     ? normalizePublicationRecord(pub.record)

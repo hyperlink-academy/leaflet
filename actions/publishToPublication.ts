@@ -29,6 +29,7 @@ import {
   makePublishUploadHooks,
 } from "src/utils/publishHelpers";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
+import { pageHasMembersDelimiter } from "src/membership";
 import {
   normalizeDocumentRecord,
   type NormalizedDocument,
@@ -376,6 +377,7 @@ export async function publishToPublication({
       supabaseServerClient.from("documents_in_publications").upsert({
         publication: publication_uri,
         document: result.uri,
+        members_only: pageHasMembersDelimiter(pagesArray[0]),
       }),
       supabaseServerClient.from("leaflets_in_publications").upsert({
         doc: result.uri,

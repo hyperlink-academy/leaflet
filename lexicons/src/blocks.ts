@@ -440,6 +440,20 @@ export const PubLeafletBlocksPostsList: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksMembersOnlyDelimiter: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.membersOnlyDelimiter",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership.",
+      required: [],
+      properties: {},
+    },
+  },
+};
+
 export const PubLeafletBlocksSignup: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.signup",
@@ -474,6 +488,7 @@ export const BlockLexicons = [
   PubLeafletBlocksButton,
   PubLeafletBlocksPostsList,
   PubLeafletBlocksSignup,
+  PubLeafletBlocksMembersOnlyDelimiter,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

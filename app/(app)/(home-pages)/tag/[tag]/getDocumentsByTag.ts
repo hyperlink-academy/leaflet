@@ -6,9 +6,11 @@ import { AtUri } from "@atproto/api";
 import { idResolver } from "src/identity";
 import type { Post } from "app/(app)/(home-pages)/reader/getReaderFeed";
 import {
+  getDocumentPages,
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import { truncatePagesAtMembersDelimiter } from "src/membership";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 
@@ -59,6 +61,11 @@ export async function getDocumentsByTag(
       if (!normalizedData) {
         return null;
       }
+
+      // Public listing with no membership context — serve only the preview of
+      // members-only posts.
+      const docPages = getDocumentPages(normalizedData);
+      if (docPages) truncatePagesAtMembersDelimiter(docPages);
 
       const normalizedPubRecord = normalizePublicationRecord(pub?.record);
 

@@ -23,6 +23,7 @@ import {
   formatBylineProfiles,
 } from "src/utils/byline";
 import type { Json } from "supabase/database.types";
+import { truncateBlocksAtMembersDelimiter } from "src/membership";
 
 const BATCH_SIZE = 500;
 // Distinctive URL used once at render-time and string-replaced per recipient
@@ -59,7 +60,7 @@ export const send_post_broadcast = inngest.createFunction(
         supabaseServerClient
           .from("publications")
           .select(
-            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at)",
+            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled)",
           )
           .eq("uri", publication_uri)
           .maybeSingle(),
@@ -149,10 +150,14 @@ export const send_post_broadcast = inngest.createFunction(
     // email body — the email renders an empty postContent section and falls
     // back to the "See Full Post" link.
     const firstPage = docRecord ? getDocumentPages(docRecord)?.[0] : undefined;
-    const blocks: PubLeafletPagesLinearDocument.Block[] =
+    let blocks: PubLeafletPagesLinearDocument.Block[] =
       firstPage?.$type === "pub.leaflet.pages.linearDocument"
         ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
         : [];
+    // Newsletter recipients are free subscribers, not necessarily members —
+    // email only the preview above the delimiter (the post link paywalls).
+    if (loaded.pub.publication_membership_settings?.enabled)
+      blocks = truncateBlocksAtMembersDelimiter(blocks);
 
     const subscribers = await step.run("snapshot-subscribers", async () => {
       const { data } = await supabaseServerClient

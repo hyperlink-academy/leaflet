@@ -83,6 +83,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
       commentsCount: d.commentsCount,
       mentionsCount: d.mentionsCount,
       recommendsCount: d.recommendsCount,
+      membersOnly: d.membersOnly,
     }));
     let byUri = new Map(posts.map((p) => [p.uri, p]));
     let loadBatch: LoadPostsBatch = async (batch) =>

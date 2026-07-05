@@ -18,6 +18,31 @@ export async function handleCheckoutCompleted(sessionId: string) {
     throw new Error("Missing client_reference_id or subscription");
   }
 
+  // Publication membership checkouts (reader → publisher, destination charge)
+  // settle on the platform account too; they're disambiguated from Leaflet Pro
+  // by metadata.kind.
+  if (s.metadata?.kind === "publication_membership") {
+    const publication = s.metadata.publication;
+    if (!publication) throw new Error("Membership checkout missing publication");
+    await supabaseServerClient.from("publication_memberships").upsert(
+      {
+        publication,
+        identity_id: identityId,
+        tier: s.metadata.tier_id || null,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subId,
+        status: subStatus,
+        current_period_end: periodEnd
+          ? new Date(periodEnd * 1000).toISOString()
+          : null,
+        cancel_at_period_end: sub?.cancel_at_period_end ?? false,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "publication,identity_id" },
+    );
+    return;
+  }
+
   const entitlements = parseEntitlements(PRODUCT_DEFINITION.metadata);
 
   await supabaseServerClient.from("user_subscriptions").upsert(

@@ -197,6 +197,7 @@ export function PublicationPostsList({
                     <PublicationPostItemLarge
                       inList
                       href={docUrl}
+                      membersOnly={post.membersOnly}
                       title={doc_record.title}
                       description={
                         doc_record.description || getFirstParagraph(doc_record)
@@ -219,6 +220,7 @@ export function PublicationPostsList({
                     <PublicationPostItemSmall
                       inList
                       href={docUrl}
+                      membersOnly={post.membersOnly}
                       title={doc_record.title}
                       author={authorByUri.get(post.uri)}
                       date={date}
@@ -234,6 +236,7 @@ export function PublicationPostsList({
                   <PublicationPostItemMedium
                     inList
                     href={docUrl}
+                    membersOnly={post.membersOnly}
                     title={doc_record.title}
                     description={
                       doc_record.description || getFirstParagraph(doc_record)

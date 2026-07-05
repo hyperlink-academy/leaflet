@@ -29,6 +29,7 @@ import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
 import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
+import { pageHasMembersDelimiter } from "src/membership";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -154,6 +155,7 @@ async function handleEvent(evt: Event) {
           .upsert({
             publication: record.value.publication,
             document: evt.uri.toString(),
+            members_only: pageHasMembersDelimiter(record.value.pages?.[0]),
           });
         await supabase
           .from("documents_in_publications")
@@ -336,6 +338,16 @@ async function handleEvent(evt: Event) {
           .upsert({
             publication: record.value.site,
             document: evt.uri.toString(),
+            // With offloaded blob pages the firehose record has `pages: []`,
+            // so we can't tell whether a delimiter exists — leave the flag
+            // publishToPublication wrote untouched.
+            ...(!hasBlobPages && PubLeafletContent.isMain(record.value.content)
+              ? {
+                  members_only: pageHasMembersDelimiter(
+                    record.value.content.pages?.[0],
+                  ),
+                }
+              : {}),
           });
         await supabase
           .from("documents_in_publications")

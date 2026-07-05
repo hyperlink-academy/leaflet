@@ -25,7 +25,8 @@ export async function getPostsByUris(
       `uri, data,
        comments_on_documents(count),
        document_mentions_in_bsky(count),
-       recommends_on_documents(count)`,
+       recommends_on_documents(count),
+       documents_in_publications(members_only)`,
     )
     .in("uri", uris);
 
@@ -35,7 +36,10 @@ export async function getPostsByUris(
   }
 
   const posts = buildPublicationPosts(
-    (data ?? []).map((documents) => ({ documents })),
+    (data ?? []).map(({ documents_in_publications, ...documents }) => ({
+      members_only: documents_in_publications?.[0]?.members_only,
+      documents,
+    })),
   );
   const withByline = attachBylineProfiles(
     posts,

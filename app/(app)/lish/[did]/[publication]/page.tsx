@@ -16,12 +16,14 @@ import {
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
 }) {
+  console.log("are we getting here??");
   let params = await props.params;
   const did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
   const publication_name = decodeURIComponent(params.publication);
 
   const publication = await fetchPublicationForPage(did, publication_name);
+  console.log(publication);
   if (!publication) return <PubNotFound />;
 
   try {

@@ -342,6 +342,14 @@ const handleAction = async (
       // Retry exhausted or a normal post-PDS failure — surface the error rather
       // than redirecting as though the subscribe had succeeded.
       url.searchParams.set("showSubscribeError", "true");
+    } else if (result.joinUrl) {
+      // Memberships are enabled for this publication — land the new subscriber
+      // on the tier page instead of back where they started.
+      try {
+        let joined = new URL(result.joinUrl, url);
+        if (/^https?:\/\//.test(result.joinUrl)) absoluteTarget = joined;
+        url = joined;
+      } catch {}
     } else if (result.hasFeed === false) {
       url.searchParams.set("showSubscribeSuccess", "true");
     }

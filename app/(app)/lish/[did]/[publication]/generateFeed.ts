@@ -12,6 +12,7 @@ import {
 } from "src/utils/normalizeRecords";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { truncateBlocksAtMembersDelimiter } from "src/membership";
 
 export async function generateFeed(
   did: string,
@@ -25,6 +26,7 @@ export async function generateFeed(
     .select(
       `*,
         publication_subscriptions(*),
+        publication_membership_settings(enabled),
       documents_in_publications(documents(*))
       `,
     )
@@ -79,6 +81,9 @@ export async function generateFeed(
         blocks = firstPage.blocks || [];
       }
     }
+    // The feed is public, so members-only posts only syndicate their preview.
+    if (publication.publication_membership_settings?.enabled)
+      blocks = truncateBlocksAtMembersDelimiter(blocks);
     const stream = await renderToReadableStream(
       createElement(StaticPostContent, { blocks, did: uri.host }),
     );

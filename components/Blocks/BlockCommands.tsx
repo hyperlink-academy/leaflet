@@ -37,7 +37,9 @@ import {
 import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
+import { LockTiny } from "components/Icons/LockTiny";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 
 type Props = {
   parent: string;
@@ -106,6 +108,10 @@ type Command = {
   hiddenInPublication?: boolean;
   hiddenOnPublicationPage?: boolean;
   publicationOnly?: boolean;
+  // Only shown when the publication has paid memberships enabled, the current
+  // page is the post's first page, and no delimiter exists yet (gating is
+  // computed against the served first page, and one delimiter is enough).
+  membersOnlyDelimiter?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
     props: Props & { entity_set: string },
@@ -485,6 +491,31 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "signup");
+    },
+  },
+  {
+    name: "Members Only Divider",
+    icon: <LockTiny />,
+    type: "publication",
+    alternateNames: ["members", "membership", "paywall", "premium"],
+    publicationOnly: true,
+    hiddenOnPublicationPage: true,
+    membersOnlyDelimiter: true,
+    onSelect: async (rep, props, um) => {
+      // The command is hidden once a delimiter exists, but re-check before
+      // inserting in case the filter is working off stale data.
+      let existing = await rep.query((tx) =>
+        getBlocksWithType(tx, props.parent),
+      );
+      if (existing?.some((b) => b.type === "members-only-delimiter")) return;
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "members-only-delimiter");
+      um.add({
+        undo: () => {
+          props.entityID && focusTextBlock(props.entityID);
+        },
+        redo: () => {},
+      });
     },
   },
 ];

@@ -1,0 +1,12 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.membersOnlyDelimiter",
+  "defs": {
+    "main": {
+      "type": "object",
+      "description": "Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership.",
+      "required": [],
+      "properties": {}
+    }
+  }
+}
