@@ -22,6 +22,7 @@ export type MergedSubscriber = {
   email: string | undefined;
   created_at: string;
   status: SubscriberStatus;
+  memberTier?: string;
 };
 
 export function PublicationSubscribers(props: {
@@ -31,8 +32,10 @@ export function PublicationSubscribers(props: {
   showPageBackground: boolean;
 }) {
   let smoker = useSmoker();
-  let { subscriberStatus } = useDashboardState();
-  let filtered = props.subscribers.filter((s) => subscriberStatus[s.status]);
+  let { subscriberStatus, membersOnly } = useDashboardState();
+  let filtered = props.subscribers.filter(
+    (s) => subscriberStatus[s.status] && (!membersOnly || !!s.memberTier),
+  );
 
   let activeStatuses = (
     Object.keys(subscriberStatus) as SubscriberStatus[]
@@ -109,6 +112,7 @@ export function PublicationSubscribers(props: {
                     email={subscriber.email}
                     createdAt={subscriber.created_at}
                     status={subscriber.status}
+                    memberTier={subscriber.memberTier}
                   />
                   <hr className="border-border-light mt-2 last:hidden" />
                 </div>
@@ -126,6 +130,7 @@ const SubscriberListItem = (props: {
   email: string | undefined;
   createdAt: string;
   status: SubscriberStatus;
+  memberTier?: string;
 }) => {
   let contactClassName =
     "flex flex-row gap-2 items-center border rounded-md px-1 text-sm w-full max-w-fit no-underline! hover:bg-[var(--accent-light)] hover:border-accent-contrast ";
@@ -160,7 +165,12 @@ const SubscriberListItem = (props: {
           </a>
         )}
       </div>
-      <div className="flex flex-row gap-2 shrink-0">
+      <div className="flex flex-row gap-2 shrink-0 items-center">
+        {props.memberTier && (
+          <span className="text-sm font-bold bg-accent-1 text-accent-2 rounded-md px-1 py-0.5 leading-none">
+            {props.memberTier}
+          </span>
+        )}
         {props.status !== "subscribed" && (
           <span className="text-sm italic text-tertiary">
             {props.status === "unconfirmed" ? "unconfirmed" : "unsubscribed"}
@@ -186,9 +196,11 @@ function SubscriberDate(props: { createdAt: string }) {
 }
 
 const SubscriberStatusFilter = () => {
-  let { subscriberStatus } = useDashboardState();
+  let { subscriberStatus, membersOnly } = useDashboardState();
   let setState = useSetDashboardState();
-  let count = Object.values(subscriberStatus).filter(Boolean).length;
+  let count =
+    Object.values(subscriberStatus).filter(Boolean).length +
+    (membersOnly ? 1 : 0);
 
   return (
     <Popover
@@ -240,6 +252,14 @@ const SubscriberStatusFilter = () => {
         }
       >
         Unsubscribed
+      </Checkbox>
+      <hr className="border-border-light my-1" />
+      <Checkbox
+        small
+        checked={membersOnly}
+        onChange={(e) => setState({ membersOnly: !!e.target.checked })}
+      >
+        Members
       </Checkbox>
     </Popover>
   );

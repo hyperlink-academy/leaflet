@@ -10,7 +10,6 @@ import { usePublicationData } from "../PublicationSWRProvider";
 import { DashboardContainer } from "./SettingsContent";
 import {
   enableMemberships,
-  disableMemberships,
   upsertMembershipTier,
   deleteMembershipTier,
   type MembershipTierInput,
@@ -48,7 +47,6 @@ export const MembershipSettings = () => {
   let chargesEnabled = !!identity?.connectedAccount?.charges_enabled;
 
   let [enabling, setEnabling] = useState(false);
-  let [disabling, setDisabling] = useState(false);
   let [editingTier, setEditingTier] = useState<Tier | "new" | null>(null);
 
   if (!publicationUri) return null;
@@ -117,32 +115,11 @@ export const MembershipSettings = () => {
       className="pb-4"
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="text-secondary leading-snug">
-            Memberships are enabled. Readers can join a tier below to unlock
-            members-only content.
-          </div>
-          <ButtonSecondary
-            type="button"
-            disabled={disabling}
-            onClick={async () => {
-              if (!publicationUri || disabling) return;
-              setDisabling(true);
-              let res = await disableMemberships(publicationUri);
-              setDisabling(false);
-              if (!res.ok) {
-                toaster({
-                  type: "error",
-                  content: "Failed to disable memberships.",
-                });
-                return;
-              }
-              toaster({ type: "success", content: "Memberships disabled." });
-              await mutate();
-            }}
-          >
-            {disabling ? <DotLoader /> : "Disable"}
-          </ButtonSecondary>
+        <div className="text-secondary leading-snug">
+          Memberships are enabled. Readers can join a tier below to unlock
+          members-only content. Member payments are charged on your connected
+          account, so subscriptions, customers, payouts, and disputes all appear
+          in your own Stripe dashboard.
         </div>
 
         <hr className="border-border-light" />

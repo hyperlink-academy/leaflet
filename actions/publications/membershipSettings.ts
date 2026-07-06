@@ -8,11 +8,13 @@ import { Ok, Err, type Result } from "src/result";
 type ToggleError =
   | "unauthorized"
   | "no_connected_account"
+  | "unsupported"
   | "database_error";
 type TierError =
   | "unauthorized"
   | "invalid_tier"
   | "tier_not_found"
+  | "no_connected_account"
   | "database_error"
   | "stripe_error";
 
@@ -58,24 +60,12 @@ export async function enableMemberships(
   return Ok(null);
 }
 
+// Disabling is not supported: active members hold direct-charge subscriptions on
+// the publisher's connected account, so there is no safe "off" switch here yet.
 export async function disableMemberships(
-  publicationUri: string,
+  _publicationUri: string,
 ): Promise<Result<null, ToggleError>> {
-  if (!(await assertPublicationOwner(publicationUri)))
-    return Err("unauthorized");
-
-  const { error } = await supabaseServerClient
-    .from("publication_membership_settings")
-    .update({
-      enabled: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("publication", publicationUri);
-  if (error) {
-    console.error("[membershipSettings] disable update failed:", error);
-    return Err("database_error");
-  }
-  return Ok(null);
+  return Err("unsupported");
 }
 
 export type MembershipTierInput = {
@@ -110,9 +100,14 @@ export async function upsertMembershipTier(
   publicationUri: string,
   tier: MembershipTierInput,
 ): Promise<Result<{ id: string }, TierError>> {
-  if (!(await assertPublicationOwner(publicationUri)))
-    return Err("unauthorized");
+  const owner = await assertPublicationOwner(publicationUri);
+  if (!owner) return Err("unauthorized");
   if (!validTierInput(tier)) return Err("invalid_tier");
+
+  // Products and prices are provisioned on the publisher's connected account
+  // (direct-charge model), so we need that account before touching Stripe.
+  const stripeAccount = owner.connectedAccount?.stripe_account_id;
+  if (!stripeAccount) return Err("no_connected_account");
 
   const name = tier.name.trim();
   const description = tier.description?.trim() || null;
@@ -158,14 +153,13 @@ export async function upsertMembershipTier(
   let annualPriceId = existing?.stripe_price_annual_id ?? null;
 
   try {
-    // Prices live on the platform account (destination-charge model), so the
-    // Product does too.
     if (productId) {
       if (name !== existing?.name || description !== existing?.description) {
-        await stripe.products.update(productId, {
-          name,
-          description: description ?? "",
-        });
+        await stripe.products.update(
+          productId,
+          { name, description: description ?? "" },
+          { stripeAccount },
+        );
       }
     } else {
       const product = await stripe.products.create(
@@ -178,7 +172,7 @@ export async function upsertMembershipTier(
             tier_id: rowId,
           },
         },
-        { idempotencyKey: `membership-tier-product-${rowId}` },
+        { idempotencyKey: `membership-tier-product-${rowId}`, stripeAccount },
       );
       productId = product.id;
     }
@@ -193,23 +187,34 @@ export async function upsertMembershipTier(
     ): Promise<string | null> => {
       if (newAmount == null) {
         if (currentPriceId)
-          await stripe.prices.update(currentPriceId, { active: false });
+          await stripe.prices.update(
+            currentPriceId,
+            { active: false },
+            { stripeAccount },
+          );
         return null;
       }
       if (currentPriceId && currentAmount === newAmount) return currentPriceId;
       if (currentPriceId)
-        await stripe.prices.update(currentPriceId, { active: false });
-      const price = await stripe.prices.create({
-        product: productId!,
-        unit_amount: newAmount,
-        currency: "usd",
-        recurring: { interval },
-        metadata: {
-          kind: "publication_membership_tier",
-          publication: publicationUri,
-          tier_id: rowId!,
+        await stripe.prices.update(
+          currentPriceId,
+          { active: false },
+          { stripeAccount },
+        );
+      const price = await stripe.prices.create(
+        {
+          product: productId!,
+          unit_amount: newAmount,
+          currency: "usd",
+          recurring: { interval },
+          metadata: {
+            kind: "publication_membership_tier",
+            publication: publicationUri,
+            tier_id: rowId!,
+          },
         },
-      });
+        { stripeAccount },
+      );
       return price.id;
     };
 
@@ -258,8 +263,10 @@ export async function deleteMembershipTier(
   publicationUri: string,
   tierId: string,
 ): Promise<Result<null, TierError>> {
-  if (!(await assertPublicationOwner(publicationUri)))
-    return Err("unauthorized");
+  const owner = await assertPublicationOwner(publicationUri);
+  if (!owner) return Err("unauthorized");
+  const stripeAccount = owner.connectedAccount?.stripe_account_id;
+  if (!stripeAccount) return Err("no_connected_account");
 
   const { data: existing } = await supabaseServerClient
     .from("publication_membership_tiers")
@@ -275,12 +282,19 @@ export async function deleteMembershipTier(
       existing.stripe_price_monthly_id,
       existing.stripe_price_annual_id,
     ]) {
-      if (priceId) await stripe.prices.update(priceId, { active: false });
+      if (priceId)
+        await stripe.prices.update(
+          priceId,
+          { active: false },
+          { stripeAccount },
+        );
     }
     if (existing.stripe_product_id)
-      await stripe.products.update(existing.stripe_product_id, {
-        active: false,
-      });
+      await stripe.products.update(
+        existing.stripe_product_id,
+        { active: false },
+        { stripeAccount },
+      );
   } catch (e) {
     console.error("[membershipSettings] stripe deactivate failed:", e);
     return Err("stripe_error");

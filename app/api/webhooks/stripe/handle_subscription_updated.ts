@@ -10,26 +10,9 @@ export async function handleSubscriptionUpdated(subscriptionId: string) {
   const status = sub.cancel_at_period_end ? "canceling" : sub.status;
   const metadataIdentityId = sub.metadata.identity_id ?? null;
 
-  // Publication membership subscriptions track their own table; without this
-  // branch a reader's membership would be written into user_subscriptions and
-  // grant them Leaflet Pro entitlements.
-  if (sub.metadata.kind === "publication_membership") {
-    const { error } = await supabaseServerClient
-      .from("publication_memberships")
-      .update({
-        status: sub.status,
-        current_period_end: periodEnd
-          ? new Date(periodEnd * 1000).toISOString()
-          : null,
-        cancel_at_period_end: sub.cancel_at_period_end,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("stripe_subscription_id", sub.id);
-    if (error)
-      console.error("[stripe webhook] membership update failed:", error);
-    return;
-  }
-
+  // Membership subscriptions live on publishers' connected accounts and are
+  // handled by the connect-events webhook, never here (this endpoint only sees
+  // the platform account's own Leaflet Pro subscriptions).
   const entitlements = parseEntitlements(PRODUCT_DEFINITION.metadata);
 
   // Find the identity by stripe_customer_id

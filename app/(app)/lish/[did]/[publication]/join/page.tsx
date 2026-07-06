@@ -64,8 +64,19 @@ export default async function JoinPage(props: {
     }));
 
   const identity = await getIdentityData();
-  const membership = identity
-    ? await getReaderMembership(publication.uri, identity.id)
+  const [membership, wallet] = identity
+    ? await Promise.all([
+        getReaderMembership(publication.uri, identity.id),
+        supabaseServerClient
+          .from("stripe_wallets")
+          .select("card_brand, card_last4")
+          .eq("identity_id", identity.id)
+          .maybeSingle()
+          .then((r) => r.data),
+      ])
+    : [null, null];
+  const walletCard = wallet?.card_last4
+    ? { brand: wallet.card_brand, last4: wallet.card_last4 }
     : null;
 
   return (
@@ -89,6 +100,8 @@ export default async function JoinPage(props: {
               identity.atp_did === publication.identity_did
             }
             isMember={isActiveMembership(membership)}
+            hasEmail={!!identity?.email}
+            walletCard={walletCard}
           />
         </div>
       </PublicationBackgroundProvider>
