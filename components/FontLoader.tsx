@@ -1,6 +1,8 @@
 // Server-side font loading component
 // Following Google's best practices: https://web.dev/articles/font-best-practices
-// - Preconnect to font origins for early connection
+// - Inline the Google Fonts CSS so the browser doesn't make a render-blocking
+//   request to fonts.googleapis.com (saves a DNS+TLS+request round trip)
+// - Preconnect to fonts.gstatic.com for the font files themselves
 // - Use font-display: swap (shows fallback immediately, swaps when ready)
 // - Don't block rendering - some FOUT is acceptable and better UX than invisible text
 
@@ -12,12 +14,32 @@ import {
   defaultFontId,
 } from "src/fonts";
 
+// Google Fonts varies its CSS response by User-Agent; pin a modern Chrome UA
+// so we always get woff2 sources with unicode-range subsets.
+const GOOGLE_FONTS_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+async function fetchGoogleFontsCss(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": GOOGLE_FONTS_UA },
+      next: { revalidate: 60 * 60 * 24 },
+    });
+    if (!res.ok) return null;
+    const css = await res.text();
+    if (!css.includes("@font-face")) return null;
+    return css;
+  } catch {
+    return null;
+  }
+}
+
 type FontLoaderProps = {
   headingFontId: string | undefined;
   bodyFontId: string | undefined;
 };
 
-export function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps) {
+export async function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps) {
   const headingFont = getFontConfig(headingFontId);
   const bodyFont = getFontConfig(bodyFontId);
 
@@ -58,19 +80,41 @@ export function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps) {
     ? `.leafletWrapper {\n${fontVariableLines.join("\n")}\n}`
     : "";
 
+  // Inline the Google Fonts CSS server-side so the browser skips the
+  // render-blocking stylesheet request to fonts.googleapis.com. The fetch is
+  // cached in the Next.js data cache for a day. If the fetch fails, fall back
+  // to the stylesheet link.
+  const fontCss = await Promise.all(
+    googleFontsUrls.map(async (url) => ({
+      url,
+      css: await fetchGoogleFontsCss(url),
+    }))
+  );
+  const inlinedFonts = fontCss.filter((f) => f.css !== null);
+  const fallbackFonts = fontCss.filter((f) => f.css === null);
+
   return (
     <>
       {/*
-        Google Fonts best practice: preconnect to both origins
-        - fonts.googleapis.com serves the CSS
+        Preconnect to the font origins:
         - fonts.gstatic.com serves the font files (needs crossorigin for CORS)
+        - fonts.googleapis.com serves the CSS (only needed on fallback)
         Place these as early as possible in <head>
       */}
       {googleFontsUrls.length > 0 && (
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      )}
+      {inlinedFonts.map(({ url, css }) => (
+        <style
+          key={url}
+          data-google-fonts={url}
+          dangerouslySetInnerHTML={{ __html: css! }}
+        />
+      ))}
+      {fallbackFonts.length > 0 && (
         <>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          {googleFontsUrls.map((url) => (
+          {fallbackFonts.map(({ url }) => (
             <link key={url} rel="stylesheet" href={url} />
           ))}
         </>
