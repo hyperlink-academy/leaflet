@@ -238,6 +238,42 @@ export async function subscribeToTier(args: {
       return Err("stripe_error");
     }
 
+    // Concurrent joins (different tier/cadence, so different idempotency keys)
+    // can each create a live subscription while only one row survives the
+    // upsert. Cancel any older live subscription for this reader+publication so
+    // exactly one keeps billing; ties break by id so racing requests can't
+    // cancel each other. The connect-events webhook reconciles the row if the
+    // survivor isn't the one it points at.
+    try {
+      const siblings = await stripe.subscriptions.list(
+        { customer: connectedCustomerId, status: "all", limit: 100 },
+        { stripeAccount },
+      );
+      for (const other of siblings.data) {
+        if (other.id === subscription.id) continue;
+        if (other.metadata?.kind !== "publication_membership") continue;
+        if (other.metadata?.publication !== args.publicationUri) continue;
+        if (other.status === "canceled" || other.status === "incomplete_expired")
+          continue;
+        if (
+          other.created > subscription.created ||
+          (other.created === subscription.created &&
+            other.id > subscription.id)
+        )
+          continue;
+        await stripe.subscriptions
+          .cancel(other.id, undefined, { stripeAccount })
+          .catch((e) =>
+            console.error(
+              `[joinMembership] failed to cancel duplicate subscription ${other.id}:`,
+              e,
+            ),
+          );
+      }
+    } catch (e) {
+      console.error("[joinMembership] duplicate subscription sweep failed:", e);
+    }
+
     if (subscription.status === "active" || subscription.status === "trialing")
       return Ok({ status: "active", hostedInvoiceUrl: null });
 
