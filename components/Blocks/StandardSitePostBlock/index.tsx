@@ -46,7 +46,7 @@ export const StandardSitePostBlock = (
     <BlockLayout
       isSelected={!!isSelected}
       borderOnHover
-      className="standardSitePostBlock p-0!"
+      className="standardSitePostBlock p-0! overflow-hidden!"
       extraOptions={
         <StandardSitePostSettingsButton entityID={props.entityID} />
       }

@@ -146,8 +146,8 @@ function PublicationDraftEditorContent(props: {
 
   return (
     <div
-      className={`pubPageContent py-6 h-full ${
-        showPageBackground && "mx-auto"
+      className={`pubPageContent  h-full ${
+        showPageBackground ? "mx-auto py-6" : "pt-6"
       }`}
     >
       <Page
