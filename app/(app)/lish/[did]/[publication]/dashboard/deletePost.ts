@@ -84,8 +84,6 @@ export async function deletePost(
   );
   let uri = new AtUri(document_uri);
 
-  // Look up the post's publication(s) before the delete cascades the join rows
-  // away, so their cached pages can be invalidated below.
   let { data: docPubs } = await supabaseServerClient
     .from("documents_in_publications")
     .select("publication")
@@ -146,8 +144,6 @@ export async function unpublishPost(
   );
   let uri = new AtUri(document_uri);
 
-  // Look up the post's publication(s) before the delete cascades the join rows
-  // away, so their cached pages can be invalidated below.
   let { data: docPubs } = await supabaseServerClient
     .from("documents_in_publications")
     .select("publication")

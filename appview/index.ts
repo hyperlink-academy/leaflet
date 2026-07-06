@@ -62,9 +62,6 @@ const profileCache: RedisProfileCache | null = redisClient
 const revalidateEndpoint =
   process.env.REVALIDATE_URL || "https://leaflet.pub/api/revalidate";
 
-// Tell the Next.js app to drop cached published pages after we write to
-// Postgres. Best-effort: an error here only delays freshness until the
-// pages' cacheLife expires them.
 async function revalidateCacheTags(tags: (string | null | undefined)[]) {
   const secret = process.env.REVALIDATE_SECRET;
   const valid = tags.filter((t): t is string => !!t);
@@ -204,7 +201,6 @@ async function handleEvent(evt: Event) {
       ]);
     }
     if (evt.event === "delete") {
-      // Look up the publication before the delete cascades the join row away.
       let { data: docPubs } = await supabase
         .from("documents_in_publications")
         .select("publication")
@@ -450,7 +446,6 @@ async function handleEvent(evt: Event) {
       ]);
     }
     if (evt.event === "delete") {
-      // Look up the publication before the delete cascades the join row away.
       let { data: docPubs } = await supabase
         .from("documents_in_publications")
         .select("publication")

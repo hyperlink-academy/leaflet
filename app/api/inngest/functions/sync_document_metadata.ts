@@ -123,8 +123,6 @@ export const sync_document_metadata = inngest.createFunction(
         .select();
     });
 
-    // The firehose-side revalidation fired before blob-page inflation; bust
-    // the cached page again now that documents.data is fully inflated.
     await step.run("revalidate-cache", async () => {
       const uri = new AtUri(document_uri);
       revalidateTag(docTag(document_uri), "max");

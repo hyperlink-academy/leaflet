@@ -111,8 +111,6 @@ export default async function Post(props: {
   let publication_name = decodeURIComponent(params.publication);
   let rkey = decodeURIComponent(params.rkey);
   cacheLife("hours");
-  // Route-coordinate tags cover the not-found case (nothing else to tag) and
-  // records the appview ingests later at the same coordinates.
   cacheTag(docRouteTag(did, rkey), pubRouteTag(did, publication_name));
 
   if (!did)

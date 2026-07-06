@@ -49,9 +49,6 @@ export async function getPostPageData(
 
   if (!document) return null;
 
-  // Runs inside the page's "use cache" scope: tag the entry so document edits
-  // and publication-wide changes (theme, pages, subscriptions) can invalidate
-  // every cached page that rendered from this data.
   cacheTag(docTag(document.uri));
   const rawPubUri = document.documents_in_publications[0]?.publications?.uri;
   if (rawPubUri) cacheTag(pubTag(rawPubUri));
@@ -239,8 +236,6 @@ export async function getConstellationBacklinks(
       `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri")}`,
     );
 
-    // Plain fetches: this runs inside the page's "use cache" scope, whose
-    // cacheLife supersedes per-fetch revalidation.
     let [links, embeds] = (await Promise.all([
       fetch(linkFacets, { headers }).then((req) => req.json()),
       fetch(externalEmbeds, { headers }).then((req) => req.json()),

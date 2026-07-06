@@ -459,8 +459,6 @@ export async function publishToPublication({
     }
   }
 
-  // Bust the cached published pages: the post page itself (including a
-  // previously cached 404 at these coordinates) and the publication's pages.
   updateTag(docTag(result.uri));
   updateTag(docRouteTag(pdsDid, rkey));
   if (publication_uri) updateTag(pubTag(publication_uri));

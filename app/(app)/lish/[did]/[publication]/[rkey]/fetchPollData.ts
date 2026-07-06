@@ -11,8 +11,7 @@ export type PollData = {
 };
 
 // Viewer-independent: which vote (if any) belongs to the viewer is derived
-// client-side from the identity context. Runs inside the page's "use cache"
-// scope, so tag per poll to let vote ingestion invalidate the page.
+// client-side from the identity context.
 export async function fetchPollData(pollUris: string[]): Promise<PollData[]> {
   for (const uri of pollUris) cacheTag(pollTag(uri));
 
