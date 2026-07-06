@@ -91,9 +91,15 @@ const TagSearchInput = (props: {
 
   let inputWidth = placeholderInputRef.current?.clientWidth;
 
-  // Fetch tags whenever the input value changes
+  // Fetch tags whenever the input value changes. Results are only shown from
+  // 3 characters on, so don't issue a search for shorter inputs — notably the
+  // empty string this effect fires with on mount.
   useDebouncedEffect(
     async () => {
+      if (tagInputValue.trim().length < 3) {
+        setSearchResults([]);
+        return;
+      }
       setIsSearching(true);
       const results = await searchTags(tagInputValue);
       if (results) {

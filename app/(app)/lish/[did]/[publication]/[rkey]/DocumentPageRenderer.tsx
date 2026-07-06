@@ -29,16 +29,18 @@ import {
 export async function DocumentPageRenderer({
   did,
   rkey,
+  publication,
 }: {
   did: string;
   rkey: string;
+  publication?: string;
 }) {
   // Plain fetches: this renders inside a "use cache" page scope, whose
   // cacheLife supersedes per-fetch revalidation.
   let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
 
   let [document, profile] = await Promise.all([
-    getPostPageData(did, rkey),
+    getPostPageData(did, rkey, publication),
     agent.getProfile({ actor: did }).then(
       (res) => res.data,
       () => undefined,

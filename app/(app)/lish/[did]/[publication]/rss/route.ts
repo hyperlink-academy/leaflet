@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateFeed } from "../generateFeed";
+import { collapseInterTagWhitespace, generateFeed } from "../generateFeed";
 
 export async function GET(
   req: Request,
@@ -16,7 +16,7 @@ export async function GET(
     return feed;
   }
 
-  return new Response(feed.rss2(), {
+  return new Response(collapseInterTagWhitespace(feed.rss2()), {
     headers: {
       "Content-Type": "application/rss+xml",
       "Cache-Control": "s-maxage=300, stale-while-revalidate=3600",

@@ -11,7 +11,12 @@ export async function searchTags(
 ): Promise<TagSearchResult[] | null> {
   const searchQuery = query.trim().toLowerCase();
 
-  // Use raw SQL query to extract and aggregate tags
+  // 1-2 character patterns can't use the trigram index (and the UI only
+  // shows results from 3 characters), so don't hit the database for them.
+  if (searchQuery.length > 0 && searchQuery.length < 3) {
+    return [];
+  }
+
   const { data, error } = await supabaseServerClient.rpc("search_tags", {
     search_query: searchQuery,
   });

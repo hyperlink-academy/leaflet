@@ -27,6 +27,14 @@ import { LeafletPro } from "components/Icons/LeafletPro";
 import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { useSidebarStore } from "./Sidebar";
+import { AccountList, SwitchAccountItem } from "./AccountSwitcher";
+import { LoginContent } from "components/LoginButton";
+import {
+  mutateSavedAccounts,
+  readSavedAccountEntries,
+  removeSavedAccountEntry,
+  switchToSavedAccount,
+} from "src/hooks/useSavedAccounts";
 
 export const ProfileButton = () => {
   let setSidebarOpen = useSidebarStore((s) => s.setOpen);
@@ -38,6 +46,8 @@ export const ProfileButton = () => {
   let canSeePayments = useCanSeePayments();
   let [open, setOpen] = useState(false);
   let [domainsOpen, setDomainsOpen] = useState(false);
+  let [addAccountOpen, setAddAccountOpen] = useState(false);
+  let [showAccounts, setShowAccounts] = useState(false);
   let [proOpen, setProOpen] = useState(false);
   let [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -46,7 +56,10 @@ export const ProfileButton = () => {
     <Popover
       asChild
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setShowAccounts(false);
+      }}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       className="w-xs py-1! z-[60]!"
@@ -72,6 +85,17 @@ export const ProfileButton = () => {
         />
       }
     >
+      {showAccounts ? (
+        <AccountList
+          onBack={() => setShowAccounts(false)}
+          onClose={() => {
+            setOpen(false);
+            setSidebarOpen(false);
+            setShowAccounts(false);
+          }}
+          onAddAccount={() => setAddAccountOpen(true)}
+        />
+      ) : (
       <div className="flex flex-col gap-0.5">
         {record?.handle && (
           <>
@@ -138,13 +162,44 @@ export const ProfileButton = () => {
             <hr className="border-border-light border-dashed" />
           </>
         )}
+        <SwitchAccountItem
+          onShowAccounts={() => setShowAccounts(true)}
+          onClose={() => {
+            setOpen(false);
+            setSidebarOpen(false);
+          }}
+          onAddAccount={() => setAddAccountOpen(true)}
+        />
         <button
           type="button"
           className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
           onClick={async () => {
             setOpen(false);
             setSidebarOpen(false);
+            let currentIdentity = identity?.id;
+            // Logging out of this account falls through to the most recent
+            // other saved session. Revoking the old session and installing the
+            // next happens in one request so the open page never sits on a
+            // cleared cookie, which flashed an error before the navigation
+            // landed.
+            let entries = readSavedAccountEntries();
+            let next = entries.find((e) => e.identity !== currentIdentity);
+            if (next) {
+              let ok = await switchToSavedAccount(next, {
+                logoutCurrent: true,
+              });
+              if (ok) {
+                if (currentIdentity) removeSavedAccountEntry(currentIdentity);
+                window.location.href = "/home";
+                return;
+              }
+              // The fallback session was revoked elsewhere — drop it and log
+              // out normally.
+              removeSavedAccountEntry(next.identity);
+            }
             await fetch("/api/auth/logout");
+            if (currentIdentity) removeSavedAccountEntry(currentIdentity);
+            mutateSavedAccounts();
             mutate("identity", null);
           }}
         >
@@ -169,8 +224,20 @@ export const ProfileButton = () => {
           </>
         )}
       </div>
+      )}
     </Popover>
     <ManageDomains open={domainsOpen} onOpenChange={setDomainsOpen} />
+    <Modal
+      open={addAccountOpen}
+      onOpenChange={setAddAccountOpen}
+      className="w-full!"
+    >
+      <LoginContent
+        addAccount
+        open={addAccountOpen}
+        onSuccess={() => setAddAccountOpen(false)}
+      />
+    </Modal>
     {canSeePro && isPro && (
       <Modal
         className="w-md max-w-full"

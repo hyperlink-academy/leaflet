@@ -34,6 +34,10 @@ type OauthRequestClientState = {
   // Set when the caller already showed an in-context "link this account?"
   // confirmation (e.g. the subscribe-flow LinkIdentityModal).
   autoMerge?: boolean;
+  // Logging into an additional account from the switcher: the existing session
+  // must be ignored entirely — no session reuse, and never link/attach/merge
+  // the new DID into the identity that's currently signed in.
+  addAccount?: boolean;
 };
 
 export async function GET(
@@ -53,6 +57,7 @@ export async function GET(
       const signup = searchParams.get("signup") === "true";
       const link = searchParams.get("link") === "true";
       const autoMerge = searchParams.get("autoMerge") === "true";
+      const addAccount = searchParams.get("addAccount") === "true";
       // Put originating page here! searchParams.get already percent-decodes
       // once, matching the single encode at the call sites — don't decode again.
       let redirect = searchParams.get("redirect_url");
@@ -69,7 +74,7 @@ export async function GET(
       // specific handle was requested, only reuse the session when it resolves
       // to that same identity — otherwise the user is choosing a different
       // account and must authenticate fresh.
-      if (!link && !signup && !reauth) {
+      if (!link && !signup && !reauth && !addAccount) {
         let existing = await resolveAuthToken(
           (await cookies()).get(AUTH_TOKEN_COOKIE)?.value,
         );
@@ -87,6 +92,7 @@ export async function GET(
         action,
         link,
         autoMerge,
+        addAccount,
       };
 
       // Revoke any pending authentication requests if the connection is closed (optional)
@@ -133,6 +139,11 @@ export async function GET(
           if (currentTokenRow?.confirmed)
             currentIdentity = currentTokenRow.identities;
         }
+
+        // Adding a separate account alongside the current session: behave like
+        // a fresh login. Every link/attach/merge branch below keys off
+        // currentIdentity, so dropping it here disables them all at once.
+        if (s.addAccount) currentIdentity = null;
 
         // Explicit link flow from the LoginModal for an email-only user. Never
         // fall through to a normal DID login — we must either attach the atp_did

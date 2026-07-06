@@ -27,14 +27,18 @@ function StaticBaseTextBlock(props: Omit<TextBlockCoreProps, "renderers">) {
 export function StaticPostContent({
   blocks,
   did,
+  baseUrl,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   did: string;
+  // Absolute origin for blob image URLs — feed contexts have no document
+  // origin to resolve relative /api/atproto_images paths against.
+  baseUrl?: string;
 }) {
   return (
     <div className="postContent footnote-scope flex flex-col">
       {blocks.map((b, index) => {
-        return <Block block={b} did={did} key={index} />;
+        return <Block block={b} did={did} baseUrl={baseUrl} key={index} />;
       })}
     </div>
   );
@@ -43,10 +47,12 @@ export function StaticPostContent({
 let Block = async ({
   block,
   did,
+  baseUrl,
   isList,
 }: {
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
+  baseUrl?: string;
   isList?: boolean;
 }) => {
   let b = block;
@@ -89,7 +95,7 @@ let Block = async ({
       return (
         <ul>
           {b.block.children.map((child, index) => (
-            <ListItem item={child} did={did} key={index} />
+            <ListItem item={child} did={did} baseUrl={baseUrl} key={index} />
           ))}
         </ul>
       );
@@ -103,7 +109,7 @@ let Block = async ({
             <div
               className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
-                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did)})`,
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, baseUrl)})`,
                 backgroundPosition: "center",
               }}
             />
@@ -117,7 +123,7 @@ let Block = async ({
           alt={b.block.alt}
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
-          src={blobRefToSrc(b.block.image.ref, did)}
+          src={blobRefToSrc(b.block.image.ref, did, baseUrl)}
         />
       );
     }
@@ -135,7 +141,7 @@ let Block = async ({
               alt={image.alt}
               height={image.aspectRatio.height}
               width={image.aspectRatio.width}
-              src={blobRefToSrc(image.image.ref, did)}
+              src={blobRefToSrc(image.image.ref, did, baseUrl)}
             />
           ))}
         </div>
@@ -186,6 +192,7 @@ let Block = async ({
 function ListItem(props: {
   item: PubLeafletBlocksUnorderedList.ListItem;
   did: string;
+  baseUrl?: string;
   className?: string;
 }) {
   let isChecklist = props.item.checked !== undefined;
@@ -200,13 +207,19 @@ function ListItem(props: {
         </div>
       )}
       <div className="flex flex-col">
-        <Block block={{ block: props.item.content }} did={props.did} isList />
+        <Block
+          block={{ block: props.item.content }}
+          did={props.did}
+          baseUrl={props.baseUrl}
+          isList
+        />
         {props.item.children?.length ? (
           <ul className="-ml-[7px] sm:ml-[7px]">
             {props.item.children.map((child, index) => (
               <ListItem
                 item={child}
                 did={props.did}
+                baseUrl={props.baseUrl}
                 key={index}
                 className={props.className}
               />
