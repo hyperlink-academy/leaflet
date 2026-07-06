@@ -1,3 +1,68 @@
+---
+name: tests-posts
+description: Generate a manual preview/test harness page for the post-item list components. Use when you want to visually preview PublicationPostItem Small/Medium/Large across the PostsListBlock, StandardSitePostBlock, and reader feed layouts, with toggles for highlight-first-post, card border, cover image, publication footer, and a page-width slider.
+user-invocable: true
+---
+
+# Posts List Test Harness
+
+Scaffolds a client-side preview page that renders the three
+`PublicationPostItem` leaf components (`Small` / `Medium` / `Large`) driven by
+fake data, so every size / highlight / layout variant can be eyeballed without
+the Replicache / SWR provider stack.
+
+## What to produce
+
+Create `app/test/posts/page.tsx` (a folder called `posts` under `app/test/`)
+with the exact contents in **Reference implementation** below. The page is a
+self-contained `"use client"` component — no routing or data fetching required.
+Visit it at `/test/posts`.
+
+If the file already exists, overwrite it so it matches the reference verbatim.
+
+## Structure
+
+The page is organized into three sections, each with its own controls row:
+
+- **PostsListBlock** — mirrors `PublicationPostsList`. Page-width slider +
+  "Highlight First Post" toggle (first post renders `large`, the rest follow
+  `view`). Shows `Medium` and `Small` list variants.
+- **StandardSitePostBlock** — mirrors `StandardSitePostItemView` for a single
+  post with the publication footer. Page-width slider + "Card Border Hidden"
+  toggle. Shows `Large`, `Medium`, and `Small`.
+- **Reader Post Link** — mirrors the reader feed's `PostListing` card. Page-width
+  slider + "Selected" / "Cover Image" / "Publication Footer" toggles.
+
+## Source components
+
+- `app/(app)/lish/[did]/[publication]/PublicationPostItem` exports
+  `PublicationPostItemSmall`, `PublicationPostItemMedium`, and
+  `PublicationPostItemLarge`.
+- Icons come from `components/Icons/`: `CommentTiny`, `TagTiny`, `ShareTiny`,
+  `ExternalLinkTiny`, `RecommendTinyEmpty`.
+
+## How the mock works
+
+`FAKE_POSTS` is a small array of `FakePost` records (title, description, author,
+date, optional cover image, comment count, tags) that exercises the edge cases —
+one post with no cover image and no interactions, one with several tags.
+
+The real list components consume `<InteractionPreview>` and `PubIcon`, which drag
+in Replicache and the toast/recommend stack. `FakeInteractions` and `FakeFooter`
+mirror their visual shape with plain markup so nothing needs the provider tree.
+`ReaderPostLink` likewise reproduces `PostListing`'s markup directly rather than
+importing it.
+
+`PublicationPostItemLarge` uses `pageWidth` to decide between its wide
+(side-by-side) and stacked layouts — `>= 768` triggers the wide layout — so each
+section drives it with the page-width slider and renders inside a `Variant` box
+sized to that width (capped to the viewport).
+
+## Reference implementation
+
+Write `app/test/posts/page.tsx` with exactly this:
+
+```tsx
 "use client";
 import React, { useState } from "react";
 import {
@@ -504,3 +569,4 @@ export default function PostsPreviewPage() {
     </div>
   );
 }
+```
