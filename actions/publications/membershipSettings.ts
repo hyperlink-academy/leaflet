@@ -137,6 +137,9 @@ export async function upsertMembershipTier(
         monthly_price_cents: tier.monthly_price_cents,
         annual_price_cents: tier.annual_price_cents ?? null,
         sort_order: tier.sort_order ?? 0,
+        // Not offered to readers until Stripe provisioning succeeds; the
+        // final update below flips it on.
+        active: false,
       })
       .select("id")
       .single();
@@ -151,6 +154,7 @@ export async function upsertMembershipTier(
   let productId = existing?.stripe_product_id ?? null;
   let monthlyPriceId = existing?.stripe_price_monthly_id ?? null;
   let annualPriceId = existing?.stripe_price_annual_id ?? null;
+  const pricesToArchive: string[] = [];
 
   try {
     if (productId) {
@@ -179,28 +183,26 @@ export async function upsertMembershipTier(
 
     // Stripe Prices are immutable: an amount change means a new Price and
     // deactivating the old one (existing subscriptions keep their old price).
+    // Replaced prices are only archived after the DB points at their
+    // successors: a leaked active price is harmless (checkout only uses ids
+    // from the DB), but a DB row pointing at an archived price bricks the
+    // tier for new members.
     const syncPrice = async (
       currentPriceId: string | null,
       currentAmount: number | null,
       newAmount: number | null,
       interval: "month" | "year",
     ): Promise<string | null> => {
-      if (newAmount == null) {
-        if (currentPriceId)
-          await stripe.prices.update(
-            currentPriceId,
-            { active: false },
-            { stripeAccount },
-          );
-        return null;
+      if (currentPriceId && currentAmount === newAmount && newAmount != null) {
+        // A previous sync failure may have left this price archived; verify
+        // before reusing so re-saving the same amount repairs the tier.
+        const current = await stripe.prices.retrieve(currentPriceId, {
+          stripeAccount,
+        });
+        if (current.active) return currentPriceId;
       }
-      if (currentPriceId && currentAmount === newAmount) return currentPriceId;
-      if (currentPriceId)
-        await stripe.prices.update(
-          currentPriceId,
-          { active: false },
-          { stripeAccount },
-        );
+      if (currentPriceId) pricesToArchive.push(currentPriceId);
+      if (newAmount == null) return null;
       const price = await stripe.prices.create(
         {
           product: productId!,
@@ -253,6 +255,14 @@ export async function upsertMembershipTier(
   if (error) {
     console.error("[membershipSettings] tier update failed:", error);
     return Err("database_error");
+  }
+
+  for (const priceId of pricesToArchive) {
+    await stripe.prices
+      .update(priceId, { active: false }, { stripeAccount })
+      .catch((e) =>
+        console.error("[membershipSettings] price archive failed:", e),
+      );
   }
   return Ok({ id: rowId });
 }

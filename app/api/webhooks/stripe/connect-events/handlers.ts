@@ -1,13 +1,8 @@
 import type Stripe from "stripe";
 import { render } from "@react-email/render";
-import { AtUri } from "@atproto/syntax";
-import { v7 } from "uuid";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
-import {
-  type Notification,
-  pingIdentityToUpdateNotification,
-} from "src/notifications";
+import { notifyNewMember } from "src/notifications";
 import MembershipPaymentFailed from "emails/membershipPaymentFailed";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
@@ -27,9 +22,9 @@ function isActiveStatus(status: string | null | undefined): boolean {
 export async function handleMembershipSubscriptionEvent(
   sub: Stripe.Subscription,
   stripeAccount: string | undefined,
+  opts?: { fresh?: boolean },
 ) {
   if (!isMembershipSub(sub)) return;
-  const periodEnd = sub.items.data[0]?.current_period_end ?? 0;
 
   const { data: existing, error: readError } = await supabaseServerClient
     .from("publication_memberships")
@@ -43,6 +38,15 @@ export async function handleMembershipSubscriptionEvent(
     await reconcileUntrackedSubscription(sub, stripeAccount);
     return;
   }
+
+  // Event payloads are point-in-time snapshots and delivery order isn't
+  // guaranteed — a delayed `updated` (active) processed after `deleted`
+  // (canceled) would resurrect the membership. Write the subscription's
+  // current truth instead, unless the caller already re-fetched it.
+  if (!opts?.fresh && stripeAccount) {
+    sub = await getStripe().subscriptions.retrieve(sub.id, { stripeAccount });
+  }
+  const periodEnd = sub.items.data[0]?.current_period_end ?? 0;
 
   const wasActive = isActiveStatus(existing.status);
 
@@ -194,7 +198,7 @@ export async function handleMembershipInvoiceSucceeded(
   const sub = await getStripe().subscriptions.retrieve(subscriptionId, {
     stripeAccount,
   });
-  await handleMembershipSubscriptionEvent(sub, stripeAccount);
+  await handleMembershipSubscriptionEvent(sub, stripeAccount, { fresh: true });
 }
 
 export async function handleMembershipInvoiceFailed(
@@ -208,27 +212,13 @@ export async function handleMembershipInvoiceFailed(
 
   // No grace period: a failed renewal re-gates members-only content immediately
   // (isActiveMembership treats past_due as inactive); Stripe retries then cancels.
-  await supabaseServerClient
+  const { error } = await supabaseServerClient
     .from("publication_memberships")
     .update({ status: "past_due", updated_at: new Date().toISOString() })
     .eq("stripe_subscription_id", sub.id);
+  if (error) throw error;
 
   await sendPaymentFailedEmail(sub);
-}
-
-async function notifyNewMember(
-  publication: string | undefined,
-  membershipId: string,
-) {
-  if (!publication) return;
-  const recipient = new AtUri(publication).host;
-  const notification: Notification = {
-    id: v7(),
-    recipient,
-    data: { type: "new_member", publication, membership_id: membershipId },
-  };
-  await supabaseServerClient.from("notifications").insert(notification);
-  await pingIdentityToUpdateNotification(recipient);
 }
 
 async function sendPaymentFailedEmail(sub: Stripe.Subscription) {
@@ -236,7 +226,7 @@ async function sendPaymentFailedEmail(sub: Stripe.Subscription) {
   const identityId = sub.metadata.identity_id;
   if (!identityId) return;
 
-  const [{ data: identity }, { data: pub }] = await Promise.all([
+  const [identityRes, pubRes] = await Promise.all([
     supabaseServerClient
       .from("identities")
       .select("email")
@@ -248,8 +238,13 @@ async function sendPaymentFailedEmail(sub: Stripe.Subscription) {
           .select("name")
           .eq("uri", publication)
           .maybeSingle()
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
   ]);
+  // Throw so Stripe redelivers rather than silently dropping the email.
+  if (identityRes.error) throw identityRes.error;
+  if (pubRes.error) throw pubRes.error;
+  const identity = identityRes.data;
+  const pub = pubRes.data;
   if (!identity?.email) return;
 
   const updateCardUrl = new URL("/memberships", APP_URL).toString();
