@@ -38,6 +38,23 @@ async function fetchGoogleFontsCss(url: string): Promise<string | null> {
   }
 }
 
+// In-memory memo in front of the Next.js data cache: repeat renders on a warm
+// server instance skip the cache round trip entirely. Google Fonts CSS is
+// stable enough that instance-lifetime staleness is fine. Failures aren't
+// memoized so a transient fetch error doesn't stick until instance recycle.
+const googleFontsCssMemo = new Map<string, Promise<string | null>>();
+function getGoogleFontsCss(url: string): Promise<string | null> {
+  let cached = googleFontsCssMemo.get(url);
+  if (!cached) {
+    cached = fetchGoogleFontsCss(url).then((css) => {
+      if (css === null) googleFontsCssMemo.delete(url);
+      return css;
+    });
+    googleFontsCssMemo.set(url, cached);
+  }
+  return cached;
+}
+
 // Pull the upright latin-subset woff2 URLs out of Google's CSS so they can be
 // preloaded — these cover the initially-rendered text, so on most connections
 // the font arrives before first paint and there's no visible swap. Italic and
@@ -108,7 +125,7 @@ export async function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps)
   const fontCss = await Promise.all(
     googleFontsUrls.map(async (url) => ({
       url,
-      css: await fetchGoogleFontsCss(url),
+      css: await getGoogleFontsCss(url),
     }))
   );
   const inlinedFonts = fontCss.filter((f) => f.css !== null);
