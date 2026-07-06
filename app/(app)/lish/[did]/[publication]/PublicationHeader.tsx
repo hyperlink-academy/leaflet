@@ -142,7 +142,7 @@ export function NewPublicationHeader(props: {
             </>
           )}
           {props.edit && (
-            <div className="absolute -top-2 -left-3 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/wordmark:opacity-100 sm:focus-within:opacity-100 sm:-active:opacity-100 sm:has-[[data-state=open]]:opacity-100">
+            <div className="absolute -top-2 -left-3">
               <Popover
                 className="pb-3!"
                 trigger={
