@@ -2,9 +2,12 @@
 // Following Google's best practices: https://web.dev/articles/font-best-practices
 // - Inline the Google Fonts CSS so the browser doesn't make a render-blocking
 //   request to fonts.googleapis.com (saves a DNS+TLS+request round trip)
-// - Preconnect to fonts.gstatic.com for the font files themselves
-// - Use font-display: swap (shows fallback immediately, swaps when ready)
-// - Don't block rendering - some FOUT is acceptable and better UX than invisible text
+// - Preconnect to fonts.gstatic.com and preload the latin woff2 files so the
+//   fonts usually arrive before first paint (no visible swap)
+// - Use font-display: swap (shows fallback immediately, swaps when ready) —
+//   never block rendering on fonts
+// - Metric-matched local fallbacks so a swap that does happen doesn't shift
+//   layout (see src/fontMetricFallbacks.ts)
 
 import {
   getFontConfig,
@@ -13,6 +16,7 @@ import {
   getFontBaseSize,
   defaultFontId,
 } from "src/fonts";
+import { getMetricFallbackFace } from "src/fontMetricFallbacks";
 
 // Google Fonts varies its CSS response by User-Agent; pin a modern Chrome UA
 // so we always get woff2 sources with unicode-range subsets.
@@ -32,6 +36,23 @@ async function fetchGoogleFontsCss(url: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+// Pull the upright latin-subset woff2 URLs out of Google's CSS so they can be
+// preloaded — these cover the initially-rendered text, so on most connections
+// the font arrives before first paint and there's no visible swap. Italic and
+// non-latin subsets load on demand as usual.
+function extractLatinWoff2Urls(css: string): string[] {
+  const urls: string[] = [];
+  const blocks = css.matchAll(/\/\*\s*latin\s*\*\/\s*@font-face\s*\{([^}]+)\}/g);
+  for (const [, block] of blocks) {
+    if (!/font-style:\s*normal/.test(block)) continue;
+    const src = block.match(
+      /url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.woff2)\)/
+    );
+    if (src) urls.push(src[1]);
+  }
+  return urls;
 }
 
 type FontLoaderProps = {
@@ -93,6 +114,17 @@ export async function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps)
   const inlinedFonts = fontCss.filter((f) => f.css !== null);
   const fallbackFonts = fontCss.filter((f) => f.css === null);
 
+  const preloadUrls = [
+    ...new Set(inlinedFonts.flatMap(({ css }) => extractLatinWoff2Urls(css!))),
+  ];
+
+  // Metric-matched local fallbacks (see src/fontMetricFallbacks.ts) so that
+  // when the swap does happen, it doesn't shift layout
+  const metricFallbackCSS = fontsToLoad
+    .map((font) => getMetricFallbackFace(font))
+    .filter(Boolean)
+    .join("\n");
+
   return (
     <>
       {/*
@@ -104,6 +136,16 @@ export async function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps)
       {googleFontsUrls.length > 0 && (
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       )}
+      {preloadUrls.map((url) => (
+        <link
+          key={url}
+          rel="preload"
+          href={url}
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      ))}
       {inlinedFonts.map(({ url, css }) => (
         <style
           key={url}
@@ -118,6 +160,9 @@ export async function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps)
             <link key={url} rel="stylesheet" href={url} />
           ))}
         </>
+      )}
+      {metricFallbackCSS && (
+        <style dangerouslySetInnerHTML={{ __html: metricFallbackCSS }} />
       )}
       {/* CSS variables scoped to .leafletWrapper for SSR (before client hydration) */}
       {fontVariableCSS && (
