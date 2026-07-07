@@ -116,16 +116,10 @@ export function NewPublicationHeader(props: {
   hasNav?: boolean;
   edit?: boolean;
 }) {
-  let title = (
-    <h2 className={`sm:text-xl text-[1.5rem] text-accent-contrast`}>
-      {props.subscribe?.publicationName}
-    </h2>
-  );
-
   return (
     <div className="group/wordmark publicationHeader flex flex-col gap-2 sm:px-4 px-3 sm:pt-10 sm:pb-3 pt-6 pb-0 ">
       <div className="mx-auto">
-        <div className="publicationName relative flex sm:flex-row flex-col items-center justify-center sm:gap-3 gap-1 w-max">
+        <div className="publicationName relative flex sm:flex-row flex-col items-start justify-center sm:gap-3 gap-1">
           {props.wordmark ? (
             <Wordmark
               wordmark={props.wordmark}
@@ -135,12 +129,16 @@ export function NewPublicationHeader(props: {
             <>
               {props.iconUrl && (
                 <PubIcon
-                  className="sm:w-8! sm:h-8! w-12! h-12!"
+                  className="sm:w-8! sm:h-8! sm:mt-1 w-12! h-12! mx-auto"
                   icon={props.iconUrl}
                   pubName={props.subscribe?.publicationName}
                 />
               )}
-              {title}
+              <h2
+                className={`sm:text-xl text-[1.5rem] text-accent-contrast sm:text-left text-center leading-snug`}
+              >
+                {props.subscribe?.publicationName}
+              </h2>
             </>
           )}
           {props.edit && (

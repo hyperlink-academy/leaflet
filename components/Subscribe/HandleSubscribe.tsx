@@ -250,7 +250,7 @@ export const SubscribeWithHandle = (props: {
               setLoading(true);
               redirectToOauthForSubscribe(trimmed, false);
             }}
-            action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+            action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm min-w-20 shrink-0">
               Subscribe
             </div>
           />
