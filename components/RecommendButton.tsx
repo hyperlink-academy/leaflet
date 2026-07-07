@@ -138,17 +138,11 @@ export function RecommendButton(props: {
       ) : (
         <RecommendTinyEmpty />
       )}
-      <div className="flex gap-2 items-center">
-        {count > 0 && (
-          <>
-            <span className={`${displayRecommended && "text-accent-contrast"}`}>
-              {count}
-            </span>
-            <Separator classname="h-4! text-accent-contrast!" />
-          </>
-        )}
-        {displayRecommended ? "Recommended!" : "Recommend"}
-      </div>
+      {count > 0 && (
+        <span className={`${displayRecommended && "text-accent-contrast"}`}>
+          {count}
+        </span>
+      )}
     </ButtonSecondary>
   ) : (
     <button

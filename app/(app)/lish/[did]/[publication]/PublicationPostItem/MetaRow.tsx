@@ -43,13 +43,13 @@ export function MetaRow({
 
   let metaRow = (
     <div
-      className={`metaRow flex gap-3 w-full items-center text-tertiary ${textClassName}`}
+      className={`metaRow flex sm:flex-row flex-col sm:gap-3 gap-2 w-full sm:items-center text-tertiary ${textClassName}`}
     >
       {authorDate}
 
       {interactions && (
         <>
-          <Separator classname="h-3!" />
+          <Separator classname="h-3! sm:block hidden" />
           {interactions}
         </>
       )}
