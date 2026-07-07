@@ -1,6 +1,6 @@
 import { Props } from "./Props";
 
-export const RecommendTinyFilled = (props: Props) => {
+export const RecommendFilledTiny = (props: Props) => {
   return (
     <svg
       width="16"
@@ -18,7 +18,7 @@ export const RecommendTinyFilled = (props: Props) => {
   );
 };
 
-export const RecommendTinyEmpty = (props: Props) => {
+export const RecommendEmptyTiny = (props: Props) => {
   return (
     <svg
       width="16"

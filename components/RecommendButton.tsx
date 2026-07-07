@@ -3,7 +3,7 @@
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import { create, windowScheduler } from "@yornaath/batshit";
-import { RecommendTinyEmpty, RecommendTinyFilled } from "./Icons/RecommendTiny";
+import { RecommendEmptyTiny, RecommendFilledTiny } from "./Icons/RecommendTiny";
 import {
   recommendAction,
   unrecommendAction,
@@ -11,8 +11,6 @@ import {
 import { callRPC } from "app/api/rpc/client";
 import { useSmoker, useToaster } from "./Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "./OAuthError";
-import { ButtonSecondary } from "./Buttons";
-import { Separator } from "./Layout";
 import { useIdentityData } from "./IdentityProvider";
 import { LoginModal } from "./LoginButton";
 
@@ -51,20 +49,15 @@ function mutateRecommendation(documentUri: string, hasRecommended: boolean) {
 }
 
 /**
- * RecommendButton that fetches the user's recommendation status asynchronously.
- * Uses SWR with batched requests for efficient fetching when many buttons are rendered.
+ * Encapsulates the recommendation state and toggle handler so multiple button
+ * styles (the tiny inline button and the expanded ButtonSecondary) can share
+ * the same optimistic logic. Fetches the user's status asynchronously via SWR
+ * with batched requests for efficient fetching when many buttons are rendered.
  */
-export function RecommendButton(props: {
-  documentUri: string;
-  recommendsCount: number;
-  className?: string;
-  expanded?: boolean;
-}) {
-  const { hasRecommended, isLoading } = useUserRecommendation(
-    props.documentUri,
-  );
+export function useRecommendPost(documentUri: string, recommendsCount: number) {
+  const { hasRecommended, isLoading } = useUserRecommendation(documentUri);
   const { identity } = useIdentityData();
-  const [count, setCount] = useState(props.recommendsCount);
+  const [count, setCount] = useState(recommendsCount);
   const [isPending, setIsPending] = useState(false);
   const [optimisticRecommended, setOptimisticRecommended] = useState<
     boolean | null
@@ -77,7 +70,10 @@ export function RecommendButton(props: {
   const displayRecommended =
     optimisticRecommended !== null ? optimisticRecommended : hasRecommended;
 
-  const handleClick = async (e: React.MouseEvent) => {
+  const recommendPost = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (isPending || isLoading) return;
     if (!identity?.atp_did) {
       setLoginOpen(true);
@@ -100,8 +96,8 @@ export function RecommendButton(props: {
     }
 
     const result = currentlyRecommended
-      ? await unrecommendAction({ document: props.documentUri })
-      : await recommendAction({ document: props.documentUri });
+      ? await unrecommendAction({ document: documentUri })
+      : await recommendAction({ document: documentUri });
     if (!result.success) {
       // Revert optimistic update
       setOptimisticRecommended(null);
@@ -120,52 +116,46 @@ export function RecommendButton(props: {
     }
 
     // Update the SWR cache to match the new state
-    mutateRecommendation(props.documentUri, !currentlyRecommended);
+    mutateRecommendation(documentUri, !currentlyRecommended);
     setOptimisticRecommended(null);
     setIsPending(false);
   };
 
-  const onClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleClick(e);
+  return {
+    displayRecommended,
+    count,
+    recommendPost,
+    loginOpen,
+    setLoginOpen,
   };
+}
 
-  const button = props.expanded ? (
-    <ButtonSecondary onClick={onClick}>
-      {displayRecommended ? (
-        <RecommendTinyFilled className="text-accent-contrast" />
-      ) : (
-        <RecommendTinyEmpty />
-      )}
-      {count > 0 && (
-        <span className={`${displayRecommended && "text-accent-contrast"}`}>
-          {count}
-        </span>
-      )}
-    </ButtonSecondary>
-  ) : (
-    <button
-      onClick={onClick}
-      className={`recommendButton relative flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
-      aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
-    >
-      {displayRecommended ? (
-        <RecommendTinyFilled className="text-accent-contrast" />
-      ) : (
-        <RecommendTinyEmpty />
-      )}
-      {count > 0 && (
-        <span className={`${displayRecommended && "text-accent-contrast"}`}>
-          {count}
-        </span>
-      )}
-    </button>
-  );
+export function RecommendButton(props: {
+  documentUri: string;
+  recommendsCount: number;
+  className?: string;
+}) {
+  const { displayRecommended, count, recommendPost, loginOpen, setLoginOpen } =
+    useRecommendPost(props.documentUri, props.recommendsCount);
 
   return (
     <>
-      {button}
+      <button
+        onClick={recommendPost}
+        className={`recommendButton relative flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
+        aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
+      >
+        {displayRecommended ? (
+          <RecommendFilledTiny className="text-accent-contrast" />
+        ) : (
+          <RecommendEmptyTiny />
+        )}
+        {count > 0 && (
+          <span className={`${displayRecommended && "text-accent-contrast"}`}>
+            {count}
+          </span>
+        )}
+      </button>
       {loginOpen && (
         <LoginModal noEmailLogin open={loginOpen} onOpenChange={setLoginOpen} />
       )}

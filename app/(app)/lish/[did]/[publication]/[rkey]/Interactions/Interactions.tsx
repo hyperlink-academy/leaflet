@@ -15,12 +15,17 @@ import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { EditTiny } from "components/Icons/EditTiny";
-import { RecommendButton } from "components/RecommendButton";
+import { RecommendButton, useRecommendPost } from "components/RecommendButton";
+import { LoginModal } from "components/LoginButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
 import type { DrawerThread } from "./drawerThreadContext";
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
 import { InteractionShareButton } from "components/InteractionsPreview";
+import { CommentFilledSmall } from "components/Icons/CommentFilledSmall";
+import { CommentEmptySmall } from "components/Icons/CommentEmptySmall";
+import { RecommendFilledSmall } from "components/Icons/RecommendFilledSmall";
+import { RecommendEmptySmall } from "components/Icons/RecommendEmptySmall";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -286,6 +291,9 @@ export const ExpandedInteractions = (props: {
       ? "comments"
       : "quotes";
 
+  const { displayRecommended, count, recommendPost, loginOpen, setLoginOpen } =
+    useRecommendPost(document_uri, props.recommendsCount);
+
   let noInteractions = !discussionsAvailable && !props.showRecommends;
 
   return (
@@ -301,80 +309,77 @@ export const ExpandedInteractions = (props: {
       )}
 
       <hr className="border-border-light mb-3 " />
-
-      <div className="flex gap-2 justify-between">
+      <div className="expandedInteractions flex gap-2 justify-between">
         {noInteractions ? (
           <div />
         ) : (
-          <div className="flex flex-col gap-2 just">
-            <div className="flex gap-2 sm:flex-row flex-col">
-              {props.showRecommends === false ? null : (
-                <RecommendButton
-                  documentUri={document_uri}
-                  recommendsCount={props.recommendsCount}
-                  expanded
-                />
-              )}
-              {!discussionsAvailable ? null : (
-                <ButtonSecondary
-                  onClick={() => {
-                    if (
-                      !drawerOpen ||
-                      (drawer !== "comments" && drawer !== "quotes") ||
-                      pageId !== props.pageId
-                    )
-                      openInteractionDrawer(
-                        defaultDiscussionTab,
-                        document_uri,
-                        props.pageId,
-                      );
-                    else
-                      setInteractionState(document_uri, { drawerOpen: false });
-                  }}
-                  onMouseEnter={handleQuotePrefetch}
-                  onTouchStart={handleQuotePrefetch}
-                  aria-label="Discussions"
-                >
-                  <CommentTiny aria-hidden />
-                  {props.quotesCount + props.commentsCount !== 0 && (
-                    <>{props.quotesCount + props.commentsCount} </>
-                  )}
-                </ButtonSecondary>
-              )}
-              <InteractionShareButton
-                postUrl={
-                  typeof window !== "undefined" ? window.location.href : ""
-                }
-                type="strong"
-              />
-            </div>
+          <div className="flex justify-between gap-2">
+            {props.showRecommends === false ? null : (
+              <button
+                className="flex gap-1 items-center text-accent-contrast"
+                onClick={recommendPost}
+              >
+                {displayRecommended ? (
+                  <RecommendFilledSmall className="text-accent-contrast" />
+                ) : (
+                  <RecommendEmptySmall />
+                )}
+                {count > 0 && (
+                  <span
+                    className={`${displayRecommended && "text-accent-contrast"}`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            )}
+            {!discussionsAvailable ? null : (
+              <button
+                className="flex gap-1 items-center text-accent-contrast"
+                onClick={() => {
+                  if (
+                    !drawerOpen ||
+                    (drawer !== "comments" && drawer !== "quotes") ||
+                    pageId !== props.pageId
+                  )
+                    openInteractionDrawer(
+                      defaultDiscussionTab,
+                      document_uri,
+                      props.pageId,
+                    );
+                  else setInteractionState(document_uri, { drawerOpen: false });
+                }}
+                onMouseEnter={handleQuotePrefetch}
+                onTouchStart={handleQuotePrefetch}
+                aria-label="Discussions"
+              >
+                {props.quotesCount + props.commentsCount !== 0 ? (
+                  <>
+                    <CommentFilledSmall aria-hidden />
+                    {props.quotesCount + props.commentsCount}{" "}
+                  </>
+                ) : (
+                  <>
+                    <CommentEmptySmall aria-hidden />
+                  </>
+                )}
+              </button>
+            )}
+
+            <InteractionShareButton
+              postUrl={
+                typeof window !== "undefined" ? window.location.href : ""
+              }
+              type="strong"
+            />
+            <EditButton publication={publication} leafletId={leafletId} />
           </div>
         )}
-
-        <EditButton publication={publication} leafletId={leafletId} />
       </div>
+      {loginOpen && (
+        <LoginModal noEmailLogin open={loginOpen} onOpenChange={setLoginOpen} />
+      )}
     </div>
-  );
-};
-
-const TagPopover = (props: {
-  tagCount: number;
-  tags: string[] | undefined;
-}) => {
-  return (
-    <Popover
-      className="p-2! max-w-xs"
-      trigger={
-        <div
-          className="tags flex gap-1 items-center"
-          aria-label={`${props.tagCount} tag${props.tagCount === 1 ? "" : "s"}`}
-        >
-          <TagTiny aria-hidden /> {props.tagCount}
-        </div>
-      }
-    >
-      <TagList tags={props.tags} className="text-secondary!" />
-    </Popover>
   );
 };
 
@@ -431,7 +436,8 @@ const EditButton = (props: {
         href={`https://leaflet.pub/${props.leafletId}`}
         className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-md !border-accent-1 !outline-accent-1 h-fit"
       >
-        <EditTiny /> Edit Post
+        Edit
+        <EditTiny />
       </a>
     );
   return null;

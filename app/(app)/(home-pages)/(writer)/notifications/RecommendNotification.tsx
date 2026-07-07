@@ -1,6 +1,6 @@
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedRecommendNotification } from "src/notifications";
-import { RecommendTinyFilled } from "components/Icons/RecommendTiny";
+import { RecommendFilledTiny } from "components/Icons/RecommendTiny";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 export const RecommendNotification = (
@@ -20,7 +20,7 @@ export const RecommendNotification = (
     <Notification
       timestamp={props.created_at}
       href={href}
-      icon={<RecommendTinyFilled />}
+      icon={<RecommendFilledTiny />}
       actionText={<>{displayName} recommended your post</>}
       content={
         <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
