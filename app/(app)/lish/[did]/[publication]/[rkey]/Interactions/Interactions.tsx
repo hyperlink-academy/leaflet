@@ -26,6 +26,7 @@ import { CommentFilledSmall } from "components/Icons/CommentFilledSmall";
 import { CommentEmptySmall } from "components/Icons/CommentEmptySmall";
 import { RecommendFilledSmall } from "components/Icons/RecommendFilledSmall";
 import { RecommendEmptySmall } from "components/Icons/RecommendEmptySmall";
+import { ShareSmall } from "components/Icons/ShareSmall";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -295,6 +296,8 @@ export const ExpandedInteractions = (props: {
     useRecommendPost(document_uri, props.recommendsCount);
 
   let noInteractions = !discussionsAvailable && !props.showRecommends;
+  let interactionButtonClassName =
+    "flex gap-1 items-center text-accent-contrast py-1 px-2 rounded-full border border-accent-contrast shrink-0 sm:hover:bg-accent-1 hover:text-accent-2";
 
   return (
     <div
@@ -309,14 +312,14 @@ export const ExpandedInteractions = (props: {
       )}
 
       <hr className="border-border-light mb-3 " />
-      <div className="expandedInteractions flex gap-2 justify-between">
+      <div className="expandedInteractions flex gap-4 justify-start font-bold mx-auto">
         {noInteractions ? (
           <div />
         ) : (
-          <div className="flex justify-between gap-2">
+          <>
             {props.showRecommends === false ? null : (
               <button
-                className="flex gap-1 items-center text-accent-contrast"
+                className={interactionButtonClassName}
                 onClick={recommendPost}
               >
                 {displayRecommended ? (
@@ -326,7 +329,7 @@ export const ExpandedInteractions = (props: {
                 )}
                 {count > 0 && (
                   <span
-                    className={`${displayRecommended && "text-accent-contrast"}`}
+                    className={`${displayRecommended && "text-accent-contrast"} pr-1`}
                   >
                     {count}
                   </span>
@@ -335,7 +338,7 @@ export const ExpandedInteractions = (props: {
             )}
             {!discussionsAvailable ? null : (
               <button
-                className="flex gap-1 items-center text-accent-contrast"
+                className={interactionButtonClassName}
                 onClick={() => {
                   if (
                     !drawerOpen ||
@@ -356,7 +359,10 @@ export const ExpandedInteractions = (props: {
                 {props.quotesCount + props.commentsCount !== 0 ? (
                   <>
                     <CommentFilledSmall aria-hidden />
-                    {props.quotesCount + props.commentsCount}{" "}
+
+                    <div className="pr-1">
+                      {props.quotesCount + props.commentsCount}
+                    </div>
                   </>
                 ) : (
                   <>
@@ -371,9 +377,15 @@ export const ExpandedInteractions = (props: {
                 typeof window !== "undefined" ? window.location.href : ""
               }
               type="strong"
+              trigger={
+                <div className={interactionButtonClassName}>
+                  <ShareSmall className="text-inherit" />
+                  <div className="pr-1 text-base!">Share</div>
+                </div>
+              }
             />
             <EditButton publication={publication} leafletId={leafletId} />
-          </div>
+          </>
         )}
       </div>
       {loginOpen && (
@@ -436,8 +448,8 @@ const EditButton = (props: {
         href={`https://leaflet.pub/${props.leafletId}`}
         className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-md !border-accent-1 !outline-accent-1 h-fit"
       >
-        Edit
         <EditTiny />
+        Edit
       </a>
     );
   return null;

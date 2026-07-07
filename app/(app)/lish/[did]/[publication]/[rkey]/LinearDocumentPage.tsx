@@ -112,7 +112,7 @@ export function LinearDocumentPage({
         />
         <div className={`spacer h-4 w-full`} />
         {document.publication?.uri && (
-          <div className="px-3 sm:px-4 w-full">
+          <div className="px-3 sm:px-4 w-full pt-4">
             <SubscribePanel
               publicationUri={document.publication.uri}
               publicationUrl={props.pubRecord?.url}
