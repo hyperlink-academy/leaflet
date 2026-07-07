@@ -1,13 +1,5 @@
 // Server-side font loading component
 // Following Google's best practices: https://web.dev/articles/font-best-practices
-// - Inline the Google Fonts CSS so the browser doesn't make a render-blocking
-//   request to fonts.googleapis.com (saves a DNS+TLS+request round trip)
-// - Preconnect to fonts.gstatic.com and preload the latin woff2 files so the
-//   fonts usually arrive before first paint (no visible swap)
-// - Use font-display: swap (shows fallback immediately, swaps when ready) —
-//   never block rendering on fonts
-// - Metric-matched local fallbacks so a swap that does happen doesn't shift
-//   layout (see src/fontMetricFallbacks.ts)
 
 import {
   getFontConfig,
@@ -38,10 +30,9 @@ async function fetchGoogleFontsCss(url: string): Promise<string | null> {
   }
 }
 
-// In-memory memo in front of the Next.js data cache: repeat renders on a warm
-// server instance skip the cache round trip entirely. Google Fonts CSS is
-// stable enough that instance-lifetime staleness is fine. Failures aren't
-// memoized so a transient fetch error doesn't stick until instance recycle.
+// Google Fonts CSS is stable enough that instance-lifetime staleness is fine.
+// Failures aren't memoized so a transient fetch error doesn't stick until
+// instance recycle.
 const googleFontsCssMemo = new Map<string, Promise<string | null>>();
 function getGoogleFontsCss(url: string): Promise<string | null> {
   let cached = googleFontsCssMemo.get(url);
@@ -55,10 +46,8 @@ function getGoogleFontsCss(url: string): Promise<string | null> {
   return cached;
 }
 
-// Pull the upright latin-subset woff2 URLs out of Google's CSS so they can be
-// preloaded — these cover the initially-rendered text, so on most connections
-// the font arrives before first paint and there's no visible swap. Italic and
-// non-latin subsets load on demand as usual.
+// Only the upright latin subset is worth preloading — it covers the
+// initially-rendered text; italic and non-latin subsets load on demand.
 function extractLatinWoff2Urls(css: string): string[] {
   const urls: string[] = [];
   const blocks = css.matchAll(/\/\*\s*latin\s*\*\/\s*@font-face\s*\{([^}]+)\}/g);
@@ -118,10 +107,6 @@ export async function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps)
     ? `.leafletWrapper {\n${fontVariableLines.join("\n")}\n}`
     : "";
 
-  // Inline the Google Fonts CSS server-side so the browser skips the
-  // render-blocking stylesheet request to fonts.googleapis.com. The fetch is
-  // cached in the Next.js data cache for a day. If the fetch fails, fall back
-  // to the stylesheet link.
   const fontCss = await Promise.all(
     googleFontsUrls.map(async (url) => ({
       url,
@@ -135,8 +120,6 @@ export async function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps)
     ...new Set(inlinedFonts.flatMap(({ css }) => extractLatinWoff2Urls(css!))),
   ];
 
-  // Metric-matched local fallbacks (see src/fontMetricFallbacks.ts) so that
-  // when the swap does happen, it doesn't shift layout
   const metricFallbackCSS = fontsToLoad
     .map((font) => getMetricFallbackFace(font))
     .filter(Boolean)
@@ -144,12 +127,6 @@ export async function FontLoader({ headingFontId, bodyFontId }: FontLoaderProps)
 
   return (
     <>
-      {/*
-        Preconnect to the font origins:
-        - fonts.gstatic.com serves the font files (needs crossorigin for CORS)
-        - fonts.googleapis.com serves the CSS (only needed on fallback)
-        Place these as early as possible in <head>
-      */}
       {googleFontsUrls.length > 0 && (
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       )}

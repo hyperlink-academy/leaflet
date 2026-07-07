@@ -1,13 +1,9 @@
 // Generates src/fontMetricFallbacks.generated.ts: metric-matched fallback
-// @font-face rules for the built-in theme fonts in src/fonts.ts.
+// @font-face rules for the built-in theme fonts in src/fonts.ts, so swapping
+// from the fallback to the web font doesn't shift layout. Same technique as
+// next/font's adjustFontFallback; formulas from
+// https://developer.chrome.com/blog/font-fallbacks
 // Run with: npm run generate-font-fallbacks
-//
-// A locally-installed font (Georgia/Arial/Courier New) is scaled to the web
-// font's metrics via size-adjust + ascent/descent/line-gap overrides, so
-// swapping from the fallback to the web font doesn't shift layout. Same
-// technique as next/font's adjustFontFallback, precomputed here because the
-// theme fonts are only known at request time.
-// Formulas from https://developer.chrome.com/blog/font-fallbacks
 
 import { writeFileSync } from "node:fs";
 import lora from "@capsizecss/metrics/lora";
@@ -19,9 +15,9 @@ import arial from "@capsizecss/metrics/arial";
 import georgia from "@capsizecss/metrics/georgia";
 import courierNew from "@capsizecss/metrics/courierNew";
 
-// Web fonts to generate fallbacks for. When adding a font to src/fonts.ts,
-// add its @capsizecss/metrics import here and regenerate. familyName in the
-// metrics must match the FontConfig's fontFamily.
+// When adding a font to src/fonts.ts, add its @capsizecss/metrics import here
+// and regenerate. familyName in the metrics must match the FontConfig's
+// fontFamily.
 const webFonts = [
   lora,
   atkinsonHyperlegibleNext,
@@ -30,7 +26,6 @@ const webFonts = [
   sourceSans3,
 ];
 
-// Locally-installed font to base the fallback on, by web font category
 const localFallbacks = {
   serif: georgia,
   monospace: courierNew,

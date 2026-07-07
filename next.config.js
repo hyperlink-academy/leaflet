@@ -33,10 +33,6 @@ const nextConfig = {
   },
   reactCompiler: true,
   experimental: {
-    // Inline CSS into the HTML instead of render-blocking <link> requests.
-    // Publication pages are mostly first-visit traffic, where eliminating the
-    // CSS round trips matters more than cross-page CSS caching.
-    inlineCss: true,
     serverActions: {
       bodySizeLimit: "5mb",
     },
