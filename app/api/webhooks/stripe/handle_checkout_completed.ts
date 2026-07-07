@@ -6,6 +6,10 @@ export async function handleCheckoutCompleted(sessionId: string) {
   const s = await getStripe().checkout.sessions.retrieve(sessionId, {
     expand: ["subscription"],
   });
+  // Setup-mode sessions (membership wallet card collection) also complete on
+  // the platform account; only Leaflet Pro subscription checkouts carry a
+  // client_reference_id and are provisioned here.
+  if (s.mode !== "subscription") return;
   const sub = typeof s.subscription === "object" ? s.subscription : null;
   const periodEnd = sub?.items.data[0]?.current_period_end ?? 0;
   const lookupKey = sub?.items.data[0]?.price.lookup_key ?? null;
