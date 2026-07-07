@@ -24,7 +24,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
         <img
           src={props.coverImageSrc}
           alt={props.coverImageAlt || props.title || ""}
-          className={`${widePage ? "sm:h-[254px] aspect-[3/2]" : "h-full aspect-[1.91/1]"}  object-cover rounded-none!`}
+          className={`object-cover rounded-none! border-b border-border-light ${widePage ? "sm:h-[254px] aspect-[3/2] sm:border-transparent " : "h-full aspect-[1.91/1]"}  `}
         />
       )}
 

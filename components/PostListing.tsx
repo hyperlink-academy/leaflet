@@ -15,11 +15,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PostByline } from "./PostByline";
 import { namedBylineProfiles } from "src/utils/byline";
-import { Separator } from "./Layout";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import { useSmoker } from "./Toast";
 import { CommentTiny } from "./Icons/CommentTiny";
-import { ShareTiny } from "./Icons/ShareTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
@@ -27,6 +24,8 @@ import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { RecommendButton } from "./RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionModal } from "./DiscussionModal";
+import { InteractionShareButton } from "./InteractionsPreview";
+import { PublicationPostItemLarge } from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
 
 export const PostListing = (props: Post & { selected?: boolean }) => {
   let pubRecord = props.publication?.pubRecord as
@@ -97,6 +96,48 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
   // For standalone posts, link directly to the document
   let postUrl = getDocumentURL(postRecord, props.documents.uri, pubRecord);
 
+  let coverImageSrc = postRecord.coverImage
+    ? blobRefToSrc(postRecord.coverImage.ref, postUri.host, undefined, {
+        width: COVER_THUMBNAIL_WIDTH.large,
+      })
+    : undefined;
+
+  // Compute nodes conditionally so MetaRow doesn't render an orphan Separator
+  // when there's no author or no date.
+  let author =
+    namedContributors.length > 0 ? (
+      <PostByline contributors={namedContributors} />
+    ) : undefined;
+  let date = postRecord.publishedAt ? (
+    <PostDate publishedAt={postRecord.publishedAt} />
+  ) : undefined;
+  let pubInfo =
+    props.publication && pubRecord ? (
+      <PubInfo
+        href={props.publication.href}
+        pubRecord={pubRecord}
+        uri={props.publication.uri}
+        postRecord={postRecord}
+      />
+    ) : undefined;
+  let interactions = (
+    <div className="text-sm flex justify-between text-tertiary w-full">
+      <Interactions
+        postUrl={postUrl}
+        quotesCount={quotes}
+        commentsCount={comments}
+        recommendsCount={recommends}
+        tags={tags}
+        showComments={mergedPrefs.showComments !== false}
+        showMentions={mergedPrefs.showMentions !== false}
+        documentUri={props.documents.uri}
+        document={postRecord}
+        publication={pubRecord}
+      />
+      <InteractionShareButton postUrl={postUrl} type="weak" />
+    </div>
+  );
+
   return (
     <div className="postListing flex flex-col gap-1">
       <BaseThemeProvider {...theme} local>
@@ -125,68 +166,17 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
               : {}
           }
         >
-          <Link
-            className="h-full w-full absolute top-0 left-0"
+          <PublicationPostItemLarge
             href={postUrl}
+            title={postRecord.title}
+            description={postRecord.description || getFirstParagraph(postRecord)}
+            author={author}
+            date={date}
+            interactions={interactions}
+            pubInfo={pubInfo}
+            coverImageSrc={coverImageSrc}
+            coverImageAlt={postRecord.title}
           />
-          {postRecord.coverImage && (
-            <div className="postListingImage">
-              <img
-                src={blobRefToSrc(
-                  postRecord.coverImage.ref,
-                  postUri.host,
-                  undefined,
-                  { width: COVER_THUMBNAIL_WIDTH.large },
-                )}
-                alt={postRecord.title || ""}
-                className="w-full h-auto aspect-video object-cover object-top-left rounded"
-              />
-            </div>
-          )}
-          <div className="postListingInfo flex flex-col px-3 py-2">
-            {props.publication && pubRecord && (
-              <PubInfo
-                href={props.publication.href}
-                pubRecord={pubRecord}
-                uri={props.publication.uri}
-                postRecord={postRecord}
-              />
-            )}
-            {postRecord.title && (
-              <h3 className="postListingTitle text-primary line-clamp-2 sm:text-lg text-base pb-0.5">
-                {postRecord.title}
-              </h3>
-            )}
-            {postRecord.description && postRecord.description !== "" && (
-              <p className="postListingDescription text-secondary line-clamp-3 leading-snug sm:text-base text-sm">
-                {postRecord.description || getFirstParagraph(postRecord)}
-              </p>
-            )}
-            <div className="flex flex-col gap-2 text-tertiary pt-1 w-full">
-              <div className="flex flex-row flex-wrap items-center gap-3 text-sm text-tertiary min-w-0">
-                <PostByline contributors={namedContributors} />
-                {namedContributors.length > 0 && postRecord.publishedAt ? (
-                  <Separator classname="h-3!" />
-                ) : null}
-                <PostDate publishedAt={postRecord.publishedAt} />
-              </div>
-              <div className="text-sm flex justify-between text-tertiary">
-                <Interactions
-                  postUrl={postUrl}
-                  quotesCount={quotes}
-                  commentsCount={comments}
-                  recommendsCount={recommends}
-                  tags={tags}
-                  showComments={mergedPrefs.showComments !== false}
-                  showMentions={mergedPrefs.showMentions !== false}
-                  documentUri={props.documents.uri}
-                  document={postRecord}
-                  publication={pubRecord}
-                />
-                <Share postUrl={postUrl} />
-              </div>
-            </div>
-          </div>
         </div>
       </BaseThemeProvider>
     </div>
@@ -241,7 +231,7 @@ const PostDate = (props: { publishedAt: string | undefined }) => {
     day: "numeric",
   });
   if (props.publishedAt) {
-    return <div className="shrink-0 sm:text-sm text-xs">{localizedDate}</div>;
+    return <div className="shrink-0 sm:text-sm text-sm">{localizedDate}</div>;
   } else return null;
 };
 
@@ -314,38 +304,5 @@ const Interactions = (props: {
         />
       )}
     </div>
-  );
-};
-
-const Share = (props: { postUrl: string }) => {
-  let smoker = useSmoker();
-  return (
-    <button
-      id={`copy-post-link-${props.postUrl}`}
-      className="flex gap-1 items-center hover:text-accent-contrast relative font-bold"
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        let mouseX = e.clientX;
-        let mouseY = e.clientY;
-
-        if (!props.postUrl) return;
-        navigator.clipboard.writeText(
-          props.postUrl.includes("http")
-            ? props.postUrl
-            : `leaflet.pub/${props.postUrl}`,
-        );
-
-        smoker({
-          text: <strong>Copied Link!</strong>,
-          position: {
-            y: mouseY,
-            x: mouseX,
-          },
-        });
-      }}
-    >
-      Share <ShareTiny />
-    </button>
   );
 };
