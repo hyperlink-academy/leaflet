@@ -2,7 +2,7 @@ import type Stripe from "stripe";
 import { render } from "@react-email/render";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { notifyNewMember } from "src/notifications";
+import { notifyNewMember } from "src/membership.server";
 import MembershipPaymentFailed from "emails/membershipPaymentFailed";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";

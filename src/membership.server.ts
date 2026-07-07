@@ -1,7 +1,47 @@
+import { AtUri } from "@atproto/syntax";
+import { v7 } from "uuid";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import {
+  type Notification,
+  pingIdentityToUpdateNotification,
+} from "src/notifications";
 
 // Server-side companions to src/membership.ts (which stays client-safe).
+// notifyNewMember lives here rather than in src/notifications.ts because that
+// module is "use server" — exporting it there would make it a wire-callable
+// action anyone could invoke with arbitrary publication/membership ids.
+
+// Notify the publication owner of a new member. Both the inline join flow and
+// the webhook (transition + reconciliation paths) can observe the same
+// activation, so dedupe on the membership id before inserting.
+export async function notifyNewMember(
+  publication: string | undefined,
+  membershipId: string,
+) {
+  if (!publication) return;
+  const recipient = new AtUri(publication).host;
+
+  const { data: existing, error: readError } = await supabaseServerClient
+    .from("notifications")
+    .select("id")
+    .eq("data->>type", "new_member")
+    .eq("data->>membership_id", membershipId)
+    .limit(1);
+  if (readError) throw readError;
+  if (existing && existing.length > 0) return;
+
+  const notification: Notification = {
+    id: v7(),
+    recipient,
+    data: { type: "new_member", publication, membership_id: membershipId },
+  };
+  const { error } = await supabaseServerClient
+    .from("notifications")
+    .insert(notification);
+  if (error) throw error;
+  await pingIdentityToUpdateNotification(recipient);
+}
 
 export async function getReaderMembership(
   publicationUri: string,

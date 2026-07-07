@@ -3,7 +3,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Tables, TablesInsert } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
-import { v7 } from "uuid";
 import { idResolver, getProfiles, type Profile } from "src/identity";
 import {
   normalizeDocumentRecord,
@@ -696,37 +695,6 @@ async function hydrateNewMemberNotifications(notifications: NotificationRow[]) {
         ),
       };
     });
-}
-
-// Notify the publication owner of a new member. Both the inline join flow and
-// the webhook (transition + reconciliation paths) can observe the same
-// activation, so dedupe on the membership id before inserting.
-export async function notifyNewMember(
-  publication: string | undefined,
-  membershipId: string,
-) {
-  if (!publication) return;
-  const recipient = new AtUri(publication).host;
-
-  const { data: existing, error: readError } = await supabaseServerClient
-    .from("notifications")
-    .select("id")
-    .eq("data->>type", "new_member")
-    .eq("data->>membership_id", membershipId)
-    .limit(1);
-  if (readError) throw readError;
-  if (existing && existing.length > 0) return;
-
-  const notification: Notification = {
-    id: v7(),
-    recipient,
-    data: { type: "new_member", publication, membership_id: membershipId },
-  };
-  const { error } = await supabaseServerClient
-    .from("notifications")
-    .insert(notification);
-  if (error) throw error;
-  await pingIdentityToUpdateNotification(recipient);
 }
 
 export async function pingIdentityToUpdateNotification(did: string) {

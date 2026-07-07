@@ -12,8 +12,10 @@ import {
   walletCheckoutSessionCard,
 } from "stripe/wallet";
 import { isActiveMembership } from "src/membership";
-import { getReaderMembership } from "src/membership.server";
-import { notifyNewMember } from "src/notifications";
+import {
+  getReaderMembership,
+  notifyNewMember,
+} from "src/membership.server";
 import { Ok, Err, type Result } from "src/result";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
