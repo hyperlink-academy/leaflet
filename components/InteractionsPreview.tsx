@@ -131,6 +131,7 @@ const TagList = (props: { tags: string[]; className?: string }) => {
 export const InteractionShareButton = (props: {
   postUrl?: string;
   type: "none" | "weak" | "strong";
+  trigger?: React.ReactNode;
 }) => {
   let smoker = useSmoker();
 
@@ -141,8 +142,14 @@ export const InteractionShareButton = (props: {
         <div
           className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.type === "strong" ? "text-accent-contrast" : ""}`}
         >
-          <ShareTiny />
-          Share
+          {props.trigger ? (
+            props.trigger
+          ) : (
+            <>
+              <ShareTiny />
+              Share
+            </>
+          )}
         </div>
       }
     >
