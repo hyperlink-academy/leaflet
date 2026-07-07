@@ -251,9 +251,9 @@ export const BaseThemeProvider = ({
     const loadGoogleFont = (url: string | null, fontFamily: string) => {
       if (!url) return;
 
-      // Check if this font stylesheet is already in the document
       const existingLink = document.querySelector(`link[href="${url}"]`);
       if (existingLink) return;
+      if (document.querySelector(`style[data-google-fonts="${url}"]`)) return;
 
       // Add preconnect hints if not present
       if (
