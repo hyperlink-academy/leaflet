@@ -8,11 +8,12 @@ import { IdentityContextProvider } from "./IdentityProvider";
 export function IdentityProviderServer(props: {
   children: React.ReactNode;
 }) {
-  // Swallow identity-backend failures so a public page still renders
-  // (logged-out) if the auth lookup errors.
-  const identityPromise = getIdentityData().catch(() => null);
+  // No .catch() here: during prerendering Next aborts this promise with a
+  // special rejection that React must observe to postpone the hole — mapping
+  // it to a value would bake a resolved logged-out identity into the static
+  // shell. Backend failures are handled inside getIdentityData instead.
   return (
-    <IdentityContextProvider identityPromise={identityPromise}>
+    <IdentityContextProvider identityPromise={getIdentityData()}>
       {props.children}
     </IdentityContextProvider>
   );

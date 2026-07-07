@@ -30,51 +30,49 @@ export default async function Publication(props: {
   const publication = await fetchPublicationForPage(did, publication_name);
   if (!publication) return <PubNotFound />;
 
-  try {
-    // Render a published "/" page when one exists; otherwise fall back to the
-    // legacy post-listing homepage.
-    const homePageRender = tryRenderPublicationPage({
-      did,
-      publication,
-      path: "/",
-    });
-    if (homePageRender) return homePageRender;
+  // Render a published "/" page when one exists; otherwise fall back to the
+  // legacy post-listing homepage.
+  const homePageRender = tryRenderPublicationPage({
+    did,
+    publication,
+    path: "/",
+  });
+  if (homePageRender) return homePageRender;
 
-    const record = normalizePublicationRecord(publication.record);
-    // Resolve the author profile and post bylines server-side so they're in the
-    // SSR HTML.
-    const agent = new BskyAgent({ service: "https://public.api.bsky.app" });
-    const homepagePosts = buildPublicationPosts(
-      publication.documents_in_publications,
-    );
-    const [{ data: profile }, bylineProfiles] = await Promise.all([
-      agent.getProfile({ actor: did }),
-      getProfiles(bylineDidsForPosts(homepagePosts)),
-    ]);
-    return (
-      <PublicationThemeProvider
+  const record = normalizePublicationRecord(publication.record);
+  // Resolve the author profile and post bylines server-side so they're in the
+  // SSR HTML.
+  const agent = new BskyAgent({ service: "https://public.api.bsky.app" });
+  const homepagePosts = buildPublicationPosts(
+    publication.documents_in_publications,
+  );
+  const [profile, bylineProfiles] = await Promise.all([
+    agent.getProfile({ actor: did }).then(
+      (res) => res.data,
+      () => undefined,
+    ),
+    getProfiles(bylineDidsForPosts(homepagePosts)),
+  ]);
+  return (
+    <PublicationThemeProvider
+      record={record}
+      pub_creator={publication.identity_did}
+    >
+      <PublicationBackgroundProvider
         record={record}
         pub_creator={publication.identity_did}
       >
-        <PublicationBackgroundProvider
+        <DefaultPublicationHomepage
           record={record}
-          pub_creator={publication.identity_did}
-        >
-          <DefaultPublicationHomepage
-            record={record}
-            publication={publication}
-            did={did}
-            profile={profile}
-            showPageBackground={record?.theme?.showPageBackground}
-            posts={attachBylineProfiles(homepagePosts, bylineProfiles)}
-          />
-        </PublicationBackgroundProvider>
-      </PublicationThemeProvider>
-    );
-  } catch (e) {
-    console.log(e);
-    return <pre>{JSON.stringify(e, undefined, 2)}</pre>;
-  }
+          publication={publication}
+          did={did}
+          profile={profile}
+          showPageBackground={record?.theme?.showPageBackground}
+          posts={attachBylineProfiles(homepagePosts, bylineProfiles)}
+        />
+      </PublicationBackgroundProvider>
+    </PublicationThemeProvider>
+  );
 }
 
 const PubNotFound = () => {

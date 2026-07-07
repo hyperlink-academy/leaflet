@@ -9,7 +9,21 @@ import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 export const getIdentityData = cache(uncachedGetIdentityData);
 async function uncachedGetIdentityData() {
+  // The cookies() read must stay outside the try: during prerendering it
+  // rejects with a framework interrupt that has to propagate for the shell to
+  // postpone correctly. Everything after it only runs on a real request.
   let cookieStore = await cookies();
+  try {
+    return await lookupIdentity(cookieStore);
+  } catch (e) {
+    // A failed lookup renders as logged-out rather than erroring the page.
+    console.error("[getIdentityData] lookup failed:", e);
+    return null;
+  }
+}
+async function lookupIdentity(
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+) {
   let auth_token =
     cookieStore.get("auth_token")?.value ||
     cookieStore.get("external_auth_token")?.value;

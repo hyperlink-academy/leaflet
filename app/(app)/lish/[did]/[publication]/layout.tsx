@@ -26,7 +26,7 @@ export async function generateMetadata(props: {
   if (!params.did || !params.publication) return { title: "Publication 404" };
 
   let publication_name = decodeURIComponent(params.publication);
-  let { data: publications } = await supabaseServerClient
+  let { data: publications, error } = await supabaseServerClient
     .from("publications")
     .select(
       `*,
@@ -38,6 +38,7 @@ export async function generateMetadata(props: {
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
     .limit(1);
+  if (error) throw error;
   let publication = publications?.[0];
   if (!publication) return { title: "Publication 404" };
 

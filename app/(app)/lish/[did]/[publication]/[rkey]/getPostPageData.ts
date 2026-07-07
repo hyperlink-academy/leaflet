@@ -24,7 +24,7 @@ export async function getPostPageData(
   let filter = publicationName
     ? await resolveDocumentFilter(did, publicationName, rkey)
     : documentUriFilter(did, rkey);
-  let { data: documents } = await supabaseServerClient
+  let { data: documents, error } = await supabaseServerClient
     .from("documents")
     .select(
       `
@@ -45,6 +45,10 @@ export async function getPostPageData(
     .or(filter)
     .order("uri", { ascending: false })
     .limit(1);
+  // A failed query (supabase-js resolves errors, it doesn't throw) must not
+  // be treated as post-not-found — during shell prerendering that would bake
+  // the error screen into the cached shell.
+  if (error) throw error;
   let document = documents?.[0];
 
   if (!document) return null;

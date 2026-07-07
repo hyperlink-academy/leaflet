@@ -7,7 +7,7 @@ export async function fetchPublicationForPage(
   did: string,
   publicationName: string,
 ) {
-  const { data } = await supabaseServerClient
+  const { data, error } = await supabaseServerClient
     .from("publications")
     .select(
       `uri, name, identity_did, record,
@@ -22,6 +22,11 @@ export async function fetchPublicationForPage(
     .or(publicationNameOrUriFilter(did, publicationName))
     .order("uri", { ascending: false })
     .limit(1);
+  // supabase-js resolves failures (including aborted renders) as
+  // { data: null, error } instead of throwing. Returning null here would
+  // render the not-found page for a publication that exists — and during
+  // shell prerendering that bakes the error screen into the cached shell.
+  if (error) throw error;
   if (data?.[0]) cacheTag(pubTag(data[0].uri));
   return data?.[0] ?? null;
 }

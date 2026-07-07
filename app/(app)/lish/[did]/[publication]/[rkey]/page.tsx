@@ -27,13 +27,14 @@ export async function generateMetadata(props: {
   cacheTag(docRouteTag(did, rkey), pubRouteTag(did, publication_name));
   if (!did) return { title: "Publication 404" };
 
-  let { data: pubs } = await supabaseServerClient
+  let { data: pubs, error: pubsError } = await supabaseServerClient
     .from("publications")
     .select("name, publication_pages(path, title, record_uri)")
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
     .limit(1);
+  if (pubsError) throw pubsError;
   // Match the same way the page body does (tryRenderPublicationPage), so
   // metadata and body never disagree about which page a URL serves.
   let match = findPublishedPage(pubs?.[0]?.publication_pages, "/" + rkey);
@@ -43,7 +44,7 @@ export async function generateMetadata(props: {
     };
   }
 
-  let [{ data: documents }] = await Promise.all([
+  let [{ data: documents, error: documentsError }] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select("*, documents_in_publications(publications(*))")
@@ -51,6 +52,7 @@ export async function generateMetadata(props: {
       .order("uri", { ascending: false })
       .limit(1),
   ]);
+  if (documentsError) throw documentsError;
   let document = documents?.[0];
   if (!document) return { title: "404" };
 

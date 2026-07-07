@@ -18,15 +18,14 @@ export async function generateMetadata(props: {
   let didOrHandle = decodeURIComponent(params.didOrHandle);
   cacheLife("hours");
 
-  // Resolve handle to DID if necessary
+  // Resolve handle to DID if necessary. Only a definitively-unresolved handle
+  // is a 404; a thrown resolver error must propagate so an interrupted render
+  // isn't captured as a not-found result.
   let did = didOrHandle;
   if (!didOrHandle.startsWith("did:")) {
-    try {
-      let resolved = await idResolver.handle.resolve(didOrHandle);
-      if (resolved) did = resolved;
-    } catch (e) {
-      return { title: "404" };
-    }
+    let resolved = await idResolver.handle.resolve(didOrHandle);
+    if (!resolved) return { title: "404" };
+    did = resolved;
   }
   cacheTag(docRouteTag(did, params.rkey));
 
@@ -72,27 +71,16 @@ export default async function StandaloneDocumentPage(props: {
   let didOrHandle = decodeURIComponent(params.didOrHandle);
   cacheLife("hours");
 
-  // Resolve handle to DID if necessary
+  // Resolve handle to DID if necessary. Only a definitively-unresolved handle
+  // is a 404; a thrown resolver error must propagate so an interrupted render
+  // isn't captured as a not-found result.
   let did = didOrHandle;
   if (!didOrHandle.startsWith("did:")) {
-    try {
-      let resolved = await idResolver.handle.resolve(didOrHandle);
-      if (!resolved) {
-        return (
-          <NotFoundLayout>
-            <p className="font-bold">Sorry, we can't find this handle!</p>
-            <p>
-              This may be a glitch on our end. If the issue persists please{" "}
-              <a href="mailto:contact@leaflet.pub">send us a note</a>.
-            </p>
-          </NotFoundLayout>
-        );
-      }
-      did = resolved;
-    } catch (e) {
+    let resolved = await idResolver.handle.resolve(didOrHandle);
+    if (!resolved) {
       return (
         <NotFoundLayout>
-          <p className="font-bold">Sorry, we can't find this leaflet!</p>
+          <p className="font-bold">Sorry, we can't find this handle!</p>
           <p>
             This may be a glitch on our end. If the issue persists please{" "}
             <a href="mailto:contact@leaflet.pub">send us a note</a>.
@@ -100,6 +88,7 @@ export default async function StandaloneDocumentPage(props: {
         </NotFoundLayout>
       );
     }
+    did = resolved;
   }
 
   cacheTag(docRouteTag(did, params.rkey));
