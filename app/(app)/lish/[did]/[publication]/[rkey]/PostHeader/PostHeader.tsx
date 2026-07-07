@@ -1,9 +1,6 @@
 "use client";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
-import {
-  Interactions,
-  getQuoteCount,
-} from "../Interactions/Interactions";
+import { Interactions, getQuoteCount } from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { useIdentityData } from "components/IdentityProvider";
@@ -19,6 +16,7 @@ import {
   bylineName,
   bylineSeparator,
 } from "src/utils/byline";
+import { TagPopover } from "components/InteractionsPreview";
 
 // Re-export so existing importers of `BylineProfile` from this module keep
 // working. The serializable byline profile (subset of the profile cache shape)
@@ -43,23 +41,7 @@ export function PostHeader(props: {
 
   const record = document?.normalizedDocument;
   let profile = props.profile;
-  // Only keep contributors that resolve to a real name (displayName or handle).
-  // Unresolved profiles (bare DIDs) would otherwise render empty clickable
-  // spans and stray separators. When none remain we fall back to the
-  // single-author `profile` path below.
-  let namedContributors = (props.contributors ?? []).filter(
-    (c) => c.displayName || c.handle,
-  );
   let pub = props.data?.documents_in_publications[0]?.publications;
-
-  const formattedDate = useLocalizedDate(
-    record?.publishedAt || new Date().toISOString(),
-    {
-      year: "numeric",
-      month: "long",
-      day: "2-digit",
-    },
-  );
 
   if (!document?.data || !record) return null;
   return (
@@ -91,46 +73,14 @@ export function PostHeader(props: {
       postDescription={record.description}
       postInfo={
         <>
-          <div className="flex flex-row gap-2 items-center">
-            {namedContributors.length > 0 ? (
-              <div className="flex flex-row flex-wrap items-center text-tertiary">
-                {namedContributors.map((c, i) => (
-                  <Fragment key={c.did}>
-                    {i > 0 && (
-                      <span className="whitespace-pre">
-                        {bylineSeparator(i, namedContributors.length)}
-                      </span>
-                    )}
-                    <ProfilePopover
-                      didOrHandle={c.did}
-                      trigger={
-                        <span className="hover:underline">
-                          {bylineName(c)}
-                        </span>
-                      }
-                    />
-                  </Fragment>
-                ))}
-              </div>
-            ) : profile ? (
-              <ProfilePopover
-                didOrHandle={profile.did}
-                trigger={
-                  <span className="text-tertiary hover:underline">
-                    {profile.displayName || profile.handle}
-                  </span>
-                }
-              />
-            ) : null}
-            {record.publishedAt ? (
-              <>
-                <Separator classname="h-4!" />
-                <p>{formattedDate}</p>
-              </>
-            ) : null}
-          </div>
+          <PostByline
+            record={record}
+            profile={profile}
+            contributors={props.contributors}
+          />
           {!props.isCanvas && (
             <Interactions
+              className="sm:mt-0 mt-1"
               showComments={props.preferences.showComments !== false}
               showMentions={props.preferences.showMentions !== false}
               showRecommends={props.preferences.showRecommends !== false}
@@ -144,6 +94,77 @@ export function PostHeader(props: {
         </>
       }
     />
+  );
+}
+
+export function PostByline(props: {
+  record: NonNullable<PostPageData>["normalizedDocument"];
+  profile?: ProfileViewDetailed;
+  contributors?: BylineProfile[];
+}) {
+  // Only keep contributors that resolve to a real name (displayName or handle).
+  // Unresolved profiles (bare DIDs) would otherwise render empty clickable
+  // spans and stray separators. When none remain we fall back to the
+  // single-author `profile` path below.
+  let namedContributors = (props.contributors ?? []).filter(
+    (c) => c.displayName || c.handle,
+  );
+  const record = props.record;
+  const formattedDate = useLocalizedDate(
+    record?.publishedAt || new Date().toISOString(),
+    {
+      year: "numeric",
+      month: "long",
+      day: "2-digit",
+    },
+  );
+  const tags = record.tags ?? [];
+  const tagCount = tags.length;
+
+  console.log(tags);
+  return (
+    <div className="flex flex-row gap-2 items-center">
+      {namedContributors.length > 0 ? (
+        <div className="flex flex-row flex-wrap items-center text-tertiary">
+          {namedContributors.map((c, i) => (
+            <Fragment key={c.did}>
+              {i > 0 && (
+                <span className="whitespace-pre">
+                  {bylineSeparator(i, namedContributors.length)}
+                </span>
+              )}
+              <ProfilePopover
+                didOrHandle={c.did}
+                trigger={
+                  <span className="hover:underline">{bylineName(c)}</span>
+                }
+              />
+            </Fragment>
+          ))}
+        </div>
+      ) : props.profile ? (
+        <ProfilePopover
+          didOrHandle={props.profile.did}
+          trigger={
+            <span className="text-tertiary hover:underline">
+              {props.profile.displayName || props.profile.handle}
+            </span>
+          }
+        />
+      ) : null}
+      {record.publishedAt ? (
+        <>
+          <Separator classname="h-4!" />
+          <p>{formattedDate}</p>
+        </>
+      ) : null}
+      {tagCount > 0 && (
+        <>
+          <Separator classname="h-4!" />
+          <TagPopover tags={tags} />
+        </>
+      )}
+    </div>
   );
 }
 

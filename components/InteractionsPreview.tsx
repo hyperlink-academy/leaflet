@@ -9,6 +9,10 @@ import { TagTiny } from "./Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionModal } from "./DiscussionModal";
 import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
+import { Menu, MenuItem } from "./Menu";
+import { ButtonPrimary, ButtonTertiary } from "./Buttons";
+import { Modal } from "./Modal";
+import { ShareTiny } from "./Icons/ShareTiny";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
@@ -21,16 +25,17 @@ export const InteractionPreview = (props: {
   showComments: boolean;
   showMentions: boolean;
   showRecommends: boolean;
-
-  share?: boolean;
+  shareType: "none" | "weak" | "strong";
 }) => {
-  let smoker = useSmoker();
   // Inside a published post body a DrawerThreadContext is in scope; there we
   // open this post's discussion in the interaction drawer (like a Bluesky post's
   // thread) instead of the standalone modal used in listings/feeds.
+  let smoker = useSmoker();
+
   let drawerNav = useContext(DrawerThreadContext);
   let [discussionsOpen, setDiscussionsOpen] = useState(false);
-  let commentsAvailable = props.showComments !== false && props.commentsCount > 0;
+  let commentsAvailable =
+    props.showComments !== false && props.commentsCount > 0;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
   let discussionsAvailable = commentsAvailable || mentionsAvailable;
   let interactionsAvailable =
@@ -40,80 +45,57 @@ export const InteractionPreview = (props: {
   const tagsCount = props.tags?.length || 0;
 
   return (
-    <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
-      {props.showRecommends === false ? null : (
-        <RecommendButton
-          documentUri={props.documentUri}
-          recommendsCount={props.recommendsCount}
-        />
-      )}
+    <div
+      className={` text-tertiary text-sm  items-center flex gap-4 grow min-w-0 justify-between`}
+    >
+      <div className="flex gap-2 items-center">
+        {!discussionsAvailable ? null : (
+          <button
+            aria-label="Post discussions"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (drawerNav)
+                drawerNav.push({
+                  type: "standardSitePost",
+                  uri: props.documentUri,
+                });
+              else setDiscussionsOpen(true);
+            }}
+            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
+          >
+            <CommentTiny /> {props.commentsCount + props.quotesCount}
+          </button>
+        )}
+        {discussionsAvailable && !drawerNav && (
+          <DiscussionModal
+            open={discussionsOpen}
+            onOpenChange={setDiscussionsOpen}
+            document_uri={props.documentUri}
+            postUrl={props.postUrl}
+            title={props.title}
+            commentsCount={props.commentsCount}
+            quotesCount={props.quotesCount}
+            showComments={props.showComments}
+            showMentions={props.showMentions}
+          />
+        )}
+        {props.showRecommends === false ? null : (
+          <RecommendButton
+            documentUri={props.documentUri}
+            recommendsCount={props.recommendsCount}
+          />
+        )}
+      </div>
 
-      {!discussionsAvailable ? null : (
-        <button
-          aria-label="Post discussions"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (drawerNav)
-              drawerNav.push({
-                type: "standardSitePost",
-                uri: props.documentUri,
-              });
-            else setDiscussionsOpen(true);
-          }}
-          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
-        >
-          <CommentTiny /> {props.commentsCount + props.quotesCount}
-        </button>
-      )}
-      {discussionsAvailable && !drawerNav && (
-        <DiscussionModal
-          open={discussionsOpen}
-          onOpenChange={setDiscussionsOpen}
-          document_uri={props.documentUri}
-          postUrl={props.postUrl}
-          title={props.title}
-          commentsCount={props.commentsCount}
-          quotesCount={props.quotesCount}
-          showComments={props.showComments}
-          showMentions={props.showMentions}
-        />
-      )}
-      {tagsCount === 0 ? null : (
+      <InteractionShareButton type={props.shareType} postUrl={props.postUrl} />
+
+      {/*{tagsCount === 0 ? null : (
         <>
           {interactionsAvailable ? <Separator classname="h-4!" /> : null}
           <TagPopover tags={props.tags!} />
         </>
-      )}
-      {props.share && (
-        <>
-          <Separator classname="h-4!" />
-
-          <button
-            id={`copy-post-link-${props.postUrl}`}
-            className="flex gap-1 items-center hover:text-accent-contrast relative"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              let mouseX = e.clientX;
-              let mouseY = e.clientY;
-
-              if (!props.postUrl) return;
-              navigator.clipboard.writeText(props.postUrl);
-
-              smoker({
-                text: <strong>Copied Link!</strong>,
-                position: {
-                  y: mouseY,
-                  x: mouseX,
-                },
-              });
-            }}
-          >
-            Share
-          </button>
-        </>
-      )}
+      )}*/}
     </div>
   );
 };
@@ -144,4 +126,57 @@ const TagList = (props: { tags: string[]; className?: string }) => {
       ))}
     </div>
   );
+};
+
+export const InteractionShareButton = (props: {
+  postUrl?: string;
+  type: "none" | "weak" | "strong";
+}) => {
+  let smoker = useSmoker();
+
+  if (props.type === "none") return;
+  return (
+    <Menu
+      trigger={
+        <div
+          className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.type === "strong" ? "text-accent-contrast" : ""}`}
+        >
+          <ShareTiny />
+          Share
+        </div>
+      }
+    >
+      <Modal
+        asChild
+        trigger={<MenuItem onSelect={() => {}}>Share on Bluesky</MenuItem>}
+      >
+        <ShareModalContent />{" "}
+      </Modal>
+
+      <MenuItem
+        onSelect={(e: Event) => {
+          e.stopPropagation();
+          e.preventDefault();
+
+          if (!props.postUrl) return;
+          navigator.clipboard.writeText(props.postUrl);
+
+          let rect = (e.target as HTMLElement).getBoundingClientRect();
+          smoker({
+            text: <strong>Copied Link!</strong>,
+            position: {
+              y: rect.top,
+              x: rect.left,
+            },
+          });
+        }}
+      >
+        Copy Link
+      </MenuItem>
+    </Menu>
+  );
+};
+
+const ShareModalContent = () => {
+  return <div>hello</div>;
 };

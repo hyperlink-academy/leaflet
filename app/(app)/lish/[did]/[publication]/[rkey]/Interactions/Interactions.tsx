@@ -19,6 +19,8 @@ import { RecommendButton } from "components/RecommendButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
 import type { DrawerThread } from "./drawerThreadContext";
+import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
+import { InteractionShareButton } from "components/InteractionsPreview";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -205,15 +207,8 @@ export const Interactions = (props: {
 
   return (
     <div
-      className={`flex gap-[10px] text-tertiary text-sm item-center ${props.className}`}
+      className={`flex gap-2 text-tertiary text-sm items-center ${props.className}`}
     >
-      {props.showRecommends === false ? null : (
-        <RecommendButton
-          documentUri={document_uri}
-          recommendsCount={props.recommendsCount}
-        />
-      )}
-
       {/*DISCUSSIONS BUTTON*/}
       {!discussionsAvailable ? null : (
         <button
@@ -238,13 +233,17 @@ export const Interactions = (props: {
           <CommentTiny aria-hidden /> {props.commentsCount + props.quotesCount}
         </button>
       )}
-
-      {tagCount > 0 && (
-        <>
-          {interactionsAvailable && <Separator classname="h-4!" />}
-          <TagPopover tags={tags} tagCount={tagCount} />
-        </>
+      {props.showRecommends === false ? null : (
+        <RecommendButton
+          documentUri={document_uri}
+          recommendsCount={props.recommendsCount}
+        />
       )}
+      <div className="h-full  w-0 spacer" />
+      <InteractionShareButton
+        postUrl={typeof window !== "undefined" ? window.location.href : ""}
+        type="weak"
+      />
     </div>
   );
 };
@@ -338,14 +337,16 @@ export const ExpandedInteractions = (props: {
                 >
                   <CommentTiny aria-hidden />
                   {props.quotesCount + props.commentsCount !== 0 && (
-                    <>
-                      {props.quotesCount + props.commentsCount}{" "}
-                      <Separator classname="h-4! text-accent-contrast!" />
-                    </>
+                    <>{props.quotesCount + props.commentsCount} </>
                   )}
-                  Discussion
                 </ButtonSecondary>
               )}
+              <InteractionShareButton
+                postUrl={
+                  typeof window !== "undefined" ? window.location.href : ""
+                }
+                type="strong"
+              />
             </div>
           </div>
         )}
