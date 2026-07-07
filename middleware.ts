@@ -1,6 +1,6 @@
 import { AtUri } from "@atproto/syntax";
 import { createClient } from "@supabase/supabase-js";
-import { getCache } from "@vercel/functions";
+import { getCache, waitUntil } from "@vercel/functions";
 import { NextRequest, NextResponse } from "next/server";
 import { Database } from "supabase/database.types";
 import { isMainSiteHost } from "src/utils/customDomain";
@@ -35,7 +35,7 @@ async function getDomainRoutes(hostname: string) {
   let { data } = await supabase
     .from("custom_domains")
     .select(
-      "*, custom_domain_routes(*), publication_domains(*, publications(*))",
+      "domain, custom_domain_routes(route, view_permission_token), publication_domains(publications(uri))",
     )
     .eq("domain", hostname)
     .single();
@@ -67,12 +67,14 @@ export default async function middleware(req: NextRequest) {
   if (!routes) {
     routes = await getDomainRoutes(hostname);
     if (routes) {
-      try {
-        await cache.set(`domain:${hostname}`, routes, {
-          ttl: 60,
-          tags: [`domain:${hostname}`],
-        });
-      } catch {}
+      waitUntil(
+        cache
+          .set(`domain:${hostname}`, routes, {
+            ttl: 60,
+            tags: [`domain:${hostname}`],
+          })
+          .catch(() => {}),
+      );
     }
   }
 

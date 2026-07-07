@@ -1828,6 +1828,21 @@ export type Database = {
           },
         ]
       }
+      tag_counts: {
+        Row: {
+          document_count: number
+          tag: string
+        }
+        Insert: {
+          document_count?: number
+          tag: string
+        }
+        Update: {
+          document_count?: number
+          tag?: string
+        }
+        Relationships: []
+      }
       user_entitlements: {
         Row: {
           entitlement_key: string
@@ -2126,6 +2141,15 @@ export type Database = {
           publication_uri: string
           publication_record: Json
           publication_name: string
+        }[]
+      }
+      get_tag_page_document_uris: {
+        Args: {
+          tag_query: string
+          max_count?: number
+        }
+        Returns: {
+          uri: string
         }[]
       }
       parse_iso_timestamp: {

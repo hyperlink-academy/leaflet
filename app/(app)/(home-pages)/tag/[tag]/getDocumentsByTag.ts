@@ -17,9 +17,42 @@ import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 export async function getDocumentsByTag(
   tag: string,
 ): Promise<{ posts: Post[] }> {
-  // Query documents that have this tag via the normalized document_tags table,
-  // which stores lowercased tags and is indexed. Tag links are lowercased (they
-  // come from search_tags), so match against the lowercased tag.
+  // Resolve the tag to document uris first via a function whose plan is
+  // pinned to the document_tags tag index. Ordering by sort_date with a limit
+  // while joining in one query lets the planner walk the sort_date index and
+  // probe every document for the tag — a full table scan for rare tags.
+  // document_tags stores lowercased tags (tag links come from search_tags),
+  // so match on the lowercased tag.
+  const { data: tagged, error: tagError } = await supabaseServerClient.rpc(
+    "get_tag_page_document_uris",
+    { tag_query: tag.toLowerCase(), max_count: 50 },
+  );
+
+  let uris: string[];
+  if (tagError) {
+    // The function ships in a migration that deploys separately from this
+    // code; if it isn't there (yet), degrade to querying document_tags
+    // directly rather than rendering an empty page. The cap keeps the .in()
+    // filter below URL length limits, so a very popular tag may miss some of
+    // its newest posts until the function exists.
+    console.error("Error fetching tag document uris:", tagError);
+    const { data: fallback, error: fallbackError } = await supabaseServerClient
+      .from("document_tags")
+      .select("uri")
+      .eq("tag", tag.toLowerCase())
+      .limit(200);
+    if (fallbackError) {
+      console.error("Error fetching documents by tag:", fallbackError);
+      return { posts: [] };
+    }
+    uris = (fallback || []).map((row) => row.uri);
+  } else {
+    uris = (tagged || []).map((row) => row.uri);
+  }
+  if (uris.length === 0) {
+    return { posts: [] };
+  }
+
   const { data: rawDocuments, error } = await supabaseServerClient
     .from("documents")
     .select(
@@ -27,10 +60,9 @@ export async function getDocumentsByTag(
       comments_on_documents(count),
       document_mentions_in_bsky(count),
       recommends_on_documents(count),
-      documents_in_publications(publications(*)),
-      document_tags!inner(tag)`,
+      documents_in_publications(publications(*))`,
     )
-    .eq("document_tags.tag", tag.toLowerCase())
+    .in("uri", uris)
     .order("sort_date", { ascending: false })
     .limit(50);
 

@@ -40,6 +40,7 @@ export function buildOauthLoginUrl(
     signup?: boolean;
     autoMerge?: boolean;
     reauth?: boolean;
+    addAccount?: boolean;
   },
   hostname?: string,
 ): string {
@@ -51,5 +52,6 @@ export function buildOauthLoginUrl(
   if (params.signup) q.set("signup", "true");
   if (params.autoMerge) q.set("autoMerge", "true");
   if (params.reauth) q.set("reauth", "true");
+  if (params.addAccount) q.set("addAccount", "true");
   return `${mainSiteAuthBase(hostname)}/api/oauth/login?${q}`;
 }
