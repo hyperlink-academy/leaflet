@@ -36,8 +36,6 @@ export async function authenticateToken(
     return Response.json({ error: "Missing Authorization header" }, { status: 401 });
   }
   let tokenId = auth.slice("Bearer ".length).trim();
-  // Token ids are uuids; reject anything else before it reaches Postgres,
-  // which throws 22P02 on non-uuid input to a uuid column.
   if (!tokenId || !isUuid(tokenId)) {
     return Response.json({ error: "Invalid token" }, { status: 401 });
   }

@@ -29,8 +29,6 @@ export default async function Icon(props: {
   params: Promise<{ leaflet_id: string }>;
 }) {
   let leaflet_id = (await props.params).leaflet_id;
-  // Crawler paths land here as the route param; a non-uuid value makes
-  // Postgres throw 22P02, so skip the lookup and render the default icon.
   let res = isUuid(leaflet_id)
     ? await supabase
         .from("permission_tokens")

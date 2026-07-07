@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { isUuid, NIL_UUID } from "src/utils/isUuid";
+import { isUuid } from "src/utils/isUuid";
 
 export type GetLeafletDataReturnType = Awaited<
   ReturnType<(typeof get_leaflet_data)["handler"]>
@@ -19,6 +19,7 @@ export const get_leaflet_data = makeRoute({
   }),
 
   handler: async ({ token_id }, { supabase }: Pick<Env, "supabase">) => {
+    if (!isUuid(token_id)) return { result: { data: null, error: null } };
     let res = await supabase
       .from("permission_tokens")
       .select(
@@ -29,10 +30,7 @@ export const get_leaflet_data = makeRoute({
         ${leaflets_to_documents_query},
         ${draft_publication_query}`,
       )
-      // Crawler paths like /feed.xml reach the [leaflet_id] route and land
-      // here as token ids; guard so they read as "no row" instead of a
-      // Postgres 22P02 error.
-      .eq("id", isUuid(token_id) ? token_id : NIL_UUID)
+      .eq("id", token_id)
       .single();
 
     type t = typeof res;
