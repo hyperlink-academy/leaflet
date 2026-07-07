@@ -4,6 +4,7 @@ import type { Attribute } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { parseHSBToRGB } from "src/utils/parseHSB";
+import { isUuid } from "src/utils/isUuid";
 
 // Route segment config
 export const revalidate = 0;
@@ -27,14 +28,19 @@ let supabase = createServerClient<Database>(
 export default async function Icon(props: {
   params: Promise<{ leaflet_id: string }>;
 }) {
-  let res = await supabase
-    .from("permission_tokens")
-    .select("*, permission_token_rights(*)")
-    .eq("id", (await props.params).leaflet_id)
-    .single();
-  let rootEntity = res.data?.root_entity;
+  let leaflet_id = (await props.params).leaflet_id;
+  // Crawler paths land here as the route param; a non-uuid value makes
+  // Postgres throw 22P02, so skip the lookup and render the default icon.
+  let res = isUuid(leaflet_id)
+    ? await supabase
+        .from("permission_tokens")
+        .select("*, permission_token_rights(*)")
+        .eq("id", leaflet_id)
+        .single()
+    : null;
+  let rootEntity = res?.data?.root_entity;
   let outlineColor, fillColor;
-  if (rootEntity && res.data) {
+  if (rootEntity && res?.data) {
     let { data } = await supabase.rpc("get_facts", {
       root: rootEntity,
     });

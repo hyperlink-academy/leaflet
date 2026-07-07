@@ -5,6 +5,7 @@ import { getIdentityData } from "actions/getIdentityData";
 
 import { AtpAgent } from "@atproto/api";
 import { ReplicacheProvider } from "src/replicache";
+import { isUuid, NIL_UUID } from "src/utils/isUuid";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -40,7 +41,9 @@ export default async function PublishLeafletPage(props: Props) {
          documents(*)
        )`,
     )
-    .eq("id", leaflet_id)
+    // Guard against non-uuid route params (crawler paths), which make
+    // Postgres throw 22P02; the nil uuid reads as "no row" instead.
+    .eq("id", isUuid(leaflet_id) ? leaflet_id : NIL_UUID)
     .single();
   let rootEntity = data?.root_entity;
 
