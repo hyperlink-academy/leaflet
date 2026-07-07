@@ -15,7 +15,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PostByline } from "./PostByline";
 import { namedBylineProfiles } from "src/utils/byline";
-import { TagPopover } from "./InteractionsPreview";
+import { Separator } from "./Layout";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSmoker } from "./Toast";
 import { CommentTiny } from "./Icons/CommentTiny";
@@ -143,7 +143,15 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
               />
             </div>
           )}
-          <div className="postListingInfo px-3 py-2">
+          <div className="postListingInfo flex flex-col px-3 py-2">
+            {props.publication && pubRecord && (
+              <PubInfo
+                href={props.publication.href}
+                pubRecord={pubRecord}
+                uri={props.publication.uri}
+                postRecord={postRecord}
+              />
+            )}
             {postRecord.title && (
               <h3 className="postListingTitle text-primary line-clamp-2 sm:text-lg text-base pb-0.5">
                 {postRecord.title}
@@ -154,44 +162,33 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
                 {postRecord.description || getFirstParagraph(postRecord)}
               </p>
             )}
-            <div className="flex flex-col-reverse gap-2 text-sm text-tertiary items-center justify-start pt-1.5 w-full">
-              {props.publication && pubRecord && (
-                <PubInfo
-                  href={props.publication.href}
-                  pubRecord={pubRecord}
-                  uri={props.publication.uri}
-                  postRecord={postRecord}
+            <div className="flex flex-col gap-2 text-tertiary pt-1 w-full">
+              <div className="flex flex-row flex-wrap items-center gap-3 text-sm text-tertiary min-w-0">
+                <PostByline contributors={namedContributors} />
+                {namedContributors.length > 0 && postRecord.publishedAt ? (
+                  <Separator classname="h-3!" />
+                ) : null}
+                <PostDate publishedAt={postRecord.publishedAt} />
+              </div>
+              <div className="text-sm flex justify-between text-tertiary">
+                <Interactions
+                  postUrl={postUrl}
+                  quotesCount={quotes}
+                  commentsCount={comments}
+                  recommendsCount={recommends}
+                  tags={tags}
+                  showComments={mergedPrefs.showComments !== false}
+                  showMentions={mergedPrefs.showMentions !== false}
+                  documentUri={props.documents.uri}
+                  document={postRecord}
+                  publication={pubRecord}
                 />
-              )}
-              <div className="flex flex-row justify-between gap-2 text-xs items-center w-full">
-                <div className="flex flex-row flex-wrap items-center gap-1 text-tertiary min-w-0">
-                  <PostByline contributors={namedContributors} />
-                  {namedContributors.length > 0 && postRecord.publishedAt ? (
-                    <span>·</span>
-                  ) : null}
-                  <PostDate publishedAt={postRecord.publishedAt} />
-                </div>
-                {tags.length === 0 ? null : <TagPopover tags={tags!} />}
+                <Share postUrl={postUrl} />
               </div>
             </div>
           </div>
         </div>
       </BaseThemeProvider>
-      <div className="text-sm flex justify-between text-tertiary">
-        <Interactions
-          postUrl={postUrl}
-          quotesCount={quotes}
-          commentsCount={comments}
-          recommendsCount={recommends}
-          tags={tags}
-          showComments={mergedPrefs.showComments !== false}
-          showMentions={mergedPrefs.showMentions !== false}
-          documentUri={props.documents.uri}
-          document={postRecord}
-          publication={pubRecord}
-        />
-        <Share postUrl={postUrl} />
-      </div>
     </div>
   );
 };
@@ -208,31 +205,31 @@ const PubInfo = (props: {
     .replace(/^www\./, "");
 
   return (
-    <div className="flex flex-col shrink-0 w-full">
-      <hr className=" block border-border-light mb-1" />
-      <div className="flex justify-between gap-4 w-full ">
-        <Link
-          href={props.href}
-          className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
-        >
-          <PubIcon
-            tiny
-            icon={
-              props.pubRecord.icon
-                ? blobRefToSrc(props.pubRecord.icon.ref, new AtUri(props.uri).host)
-                : undefined
-            }
-            pubName={props.pubRecord.name}
-          />
-          <div className="w-max min-w-0">{props.pubRecord.name}</div>
-        </Link>
-        {!isLeaflet && (
-          <div className="text-sm flex flex-row items-center text-tertiary gap-1  min-w-0">
-            <div className="truncate min-w-0">{cleanUrl}</div>
-            <ExternalLinkTiny className="shrink-0" />
-          </div>
-        )}
-      </div>
+    <div className="flex justify-between gap-4 w-full pb-1">
+      <Link
+        href={props.href}
+        className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
+      >
+        <PubIcon
+          tiny
+          icon={
+            props.pubRecord.icon
+              ? blobRefToSrc(
+                  props.pubRecord.icon.ref,
+                  new AtUri(props.uri).host,
+                )
+              : undefined
+          }
+          pubName={props.pubRecord.name}
+        />
+        <div className="w-max min-w-0">{props.pubRecord.name}</div>
+      </Link>
+      {!isLeaflet && (
+        <div className="text-sm flex flex-row items-center text-tertiary gap-1  min-w-0">
+          <div className="truncate min-w-0">{cleanUrl}</div>
+          <ExternalLinkTiny className="shrink-0" />
+        </div>
+      )}
     </div>
   );
 };
@@ -283,7 +280,7 @@ const Interactions = (props: {
 
   return (
     <div
-      className={`flex gap-2 text-tertiary text-sm  items-center justify-between px-1`}
+      className={`flex gap-2 text-tertiary text-sm  items-center justify-between`}
     >
       <div className="postListingsInteractions flex gap-3">
         <RecommendButton
