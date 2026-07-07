@@ -14,7 +14,8 @@
     "start-appview-dev": "tsx --env-file='./.env.local' --watch appview/index.ts",
     "start-feed-service-dev": "npx tsx --env-file='./.env.local' --watch feeds/index.ts",
     "start-appview-prod": "npm run build-appview && node appview/dist/index.js",
-    "email:dev": "email dev"
+    "email:dev": "email dev",
+    "generate-font-fallbacks": "node scripts/generate-font-metric-fallbacks.mjs"
   },
   "keywords": [],
   "author": "",
@@ -113,6 +114,7 @@
   },
   "devDependencies": {
     "@atproto/lex-cli": "^0.9.5",
+    "@capsizecss/metrics": "^4.1.0",
     "@cloudflare/workers-types": "^4.20240512.0",
     "@react-email/ui": "^6.0.0",
     "@tailwindcss/postcss": "^4.1.13",
