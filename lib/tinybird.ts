@@ -40,7 +40,7 @@ export const analyticsEvents = defineDatasource("analytics_events", {
     eventType: t.string().lowCardinality(),
     eventName: t.string().default(""),
     eventData: t.string().default(""),
-    sessionId: t.uint64(),
+    sessionId: t.uint64().nullable(),
     deviceId: t.uint64(),
     origin: t.string(),
     path: t.string(),
