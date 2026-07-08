@@ -1,7 +1,11 @@
 import { BskyAgent } from "@atproto/api";
 import React from "react";
+import type { Metadata } from "next";
+import { supabaseServerClient } from "supabase/serverClient";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { publicationAlternates } from "./publicationAlternates";
 import { DefaultPublicationHomepage } from "./DefaultPublicationHomepage";
 import { buildPublicationPosts } from "./buildPublicationPosts";
 import { fetchPublicationForPage } from "./getPublicationForPage";
@@ -12,6 +16,28 @@ import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
+
+export async function generateMetadata(props: {
+  params: Promise<{ publication: string; did: string }>;
+}): Promise<Metadata> {
+  let params = await props.params;
+  let did = decodeURIComponent(params.did);
+  if (!did || !params.publication) return {};
+
+  let { data: publications } = await supabaseServerClient
+    .from("publications")
+    .select("uri, record")
+    .eq("identity_did", did)
+    .or(publicationNameOrUriFilter(did, decodeURIComponent(params.publication)))
+    .order("uri", { ascending: false })
+    .limit(1);
+
+  let alternates = publicationAlternates(
+    normalizePublicationRecord(publications?.[0]?.record),
+    "/",
+  );
+  return alternates ? { alternates } : {};
+}
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
