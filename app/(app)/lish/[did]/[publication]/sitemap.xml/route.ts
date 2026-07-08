@@ -84,6 +84,10 @@ export async function GET(
     add(page.path, record?.publishedAt);
   }
 
+  // The built-in archive route; content published at the /archive path was
+  // already added above and keeps its own lastmod.
+  add("/archive", latest);
+
   let urls = [...entries.values()]
     .map(({ loc, lastmod }) => {
       let lastmodTag = lastmod
