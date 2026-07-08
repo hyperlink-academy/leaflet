@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { RSSSmall } from "components/Icons/RSSSmall";
+
+export const metadata: Metadata = { robots: { index: false } };
 
 export default function SubscribeSuccess() {
   return (

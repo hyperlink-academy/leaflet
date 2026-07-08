@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { SubscribePage } from "./SubscribePage";
+
+export const metadata: Metadata = { robots: { index: false } };
 
 export default async function PublicationSubscribePage(props: {
   params: Promise<{ did: string; publication: string }>;

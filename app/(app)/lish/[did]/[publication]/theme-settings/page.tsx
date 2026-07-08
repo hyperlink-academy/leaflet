@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getIdentityData } from "actions/getIdentityData";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
@@ -8,6 +9,8 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { ThemeSettingsContent } from "./ThemeSettingsContent";
 import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
 import { LoginModal } from "components/LoginButton";
+
+export const metadata: Metadata = { robots: { index: false } };
 
 export default async function ThemeSettingsPage(props: {
   params: Promise<{ publication: string; did: string }>;

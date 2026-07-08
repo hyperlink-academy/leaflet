@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { getIdentityData } from "actions/getIdentityData";
@@ -10,6 +11,8 @@ import { FontLoader } from "components/FontLoader";
 import { AcceptContent } from "./AcceptContent";
 
 type Params = { did: string; publication: string };
+
+export const metadata: Metadata = { robots: { index: false } };
 
 export default async function ContributorAcceptPage(props: {
   params: Promise<Params>;
