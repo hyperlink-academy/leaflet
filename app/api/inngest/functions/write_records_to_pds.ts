@@ -1,6 +1,8 @@
 import { inngest, events } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient } from "lexicons/api";
+import { isDocumentCollection } from "src/utils/collectionHelpers";
+import { truncateDocumentRecordForPDS } from "src/membership";
 
 // Batch size to avoid Inngest payload limits and PDS rate limits
 const BATCH_SIZE = 50;
@@ -48,11 +50,18 @@ export const write_records_to_pds = inngest.createFunction(
           const agent = await createAuthenticatedAgent(did);
           let written = 0;
           for (const rec of batch) {
+            // Restores read from our documents table, which holds the full
+            // content of gated posts — the PDS copy must stay truncated.
+            const record = isDocumentCollection(rec.collection)
+              ? truncateDocumentRecordForPDS(
+                  rec.record as Record<string, unknown> & { $type: string },
+                )
+              : (rec.record as Record<string, unknown>);
             await agent.com.atproto.repo.putRecord({
               repo: did,
               collection: rec.collection,
               rkey: rec.rkey,
-              record: rec.record as Record<string, unknown>,
+              record,
               validate: false,
             });
             written++;

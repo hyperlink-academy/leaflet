@@ -129,6 +129,7 @@ const BlockTypeToHTML: {
     );
   },
   "horizontal-rule": async () => <hr />,
+  "members-only-delimiter": async () => null,
   image: async (b, tx, a) => {
     let [src] = await scanIndex(tx).eav(b.value, "block/image");
     if (!src) return "";

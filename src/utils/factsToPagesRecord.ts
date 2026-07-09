@@ -15,6 +15,7 @@ import {
   PubLeafletBlocksImage,
   PubLeafletBlocksImageGallery,
   PubLeafletBlocksMath,
+  PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
@@ -405,6 +406,12 @@ export async function processBlocksToPages(opts: {
     if (b.type === "horizontal-rule") {
       const block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
         $type: ids.PubLeafletBlocksHorizontalRule,
+      };
+      return block;
+    }
+    if (b.type === "members-only-delimiter") {
+      const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
+        $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
       };
       return block;
     }

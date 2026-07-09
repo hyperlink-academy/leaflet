@@ -30,6 +30,10 @@ import {
 } from "src/utils/publishHelpers";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import {
+  pageHasMembersDelimiter,
+  truncateDocumentRecordForPDS,
+} from "src/membership";
+import {
   normalizeDocumentRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
@@ -333,7 +337,10 @@ export async function publishToPublication({
     };
     record = siteRecord;
 
-    recordForPDS = await maybeOffloadPagesToBlob(siteRecord, agent);
+    recordForPDS = await maybeOffloadPagesToBlob(
+      truncateDocumentRecordForPDS(siteRecord),
+      agent,
+    );
   } else {
     // pub.leaflet.document format (legacy)
     record = {
@@ -357,7 +364,7 @@ export async function publishToPublication({
       pages: pagesArray,
       publishedAt: resolvedPublishedAt,
     } satisfies PubLeafletDocument.Record;
-    recordForPDS = record;
+    recordForPDS = truncateDocumentRecordForPDS(record);
   }
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
@@ -381,6 +388,7 @@ export async function publishToPublication({
       supabaseServerClient.from("documents_in_publications").upsert({
         publication: publication_uri,
         document: result.uri,
+        members_only: pageHasMembersDelimiter(pagesArray[0]),
       }),
       supabaseServerClient.from("leaflets_in_publications").upsert({
         doc: result.uri,

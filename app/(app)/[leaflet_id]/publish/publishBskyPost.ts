@@ -20,6 +20,7 @@ import {
 } from "src/utils/getMicroLinkOgImage";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
+import { truncateDocumentRecordForPDS } from "src/membership";
 
 type StrongRef = {
   $type: "com.atproto.repo.strongRef";
@@ -188,10 +189,13 @@ export async function publishPostToBsky(args: {
   let record = args.document_record;
   record.bskyPostRef = post;
 
-  // The caller hands us the fully inflated record. Large docs would 413 on
-  // putRecord without first offloading pages to a blob (the same offload
-  // publishToPublication did on the initial publish).
-  const recordForPDS = await maybeOffloadPagesToBlob(record, agent);
+  // The caller hands us the fully inflated record. It needs the same
+  // members-only truncation and blob offload the initial publish applied,
+  // otherwise this re-put would leak gated content (or 413) on the PDS.
+  const recordForPDS = await maybeOffloadPagesToBlob(
+    truncateDocumentRecordForPDS(record),
+    agent,
+  );
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey: args.rkey,
