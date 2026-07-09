@@ -12,7 +12,7 @@ import {
   saveWalletCardFromSession,
 } from "actions/publications/joinMembership";
 
-type Tier = {
+export type Tier = {
   id: string;
   name: string;
   description: string | null;
@@ -70,6 +70,13 @@ export function JoinTiers(props: {
   isMember: boolean;
   hasEmail: boolean;
   walletCard: WalletCard | null;
+  // The /join page gets fresh props from the server on router.refresh(); a
+  // modal host fetched its props imperatively, so it must supply its own
+  // refetch here or the walletCard/isMember props go stale after a card save.
+  onRefresh?: () => void | Promise<void>;
+  // Where the OAuth login flow should land the reader; defaults to the
+  // current URL. A modal host appends a marker param so it can reopen itself.
+  loginRedirect?: () => string;
 }) {
   const toaster = useToaster();
   const router = useRouter();
@@ -142,7 +149,7 @@ export function JoinTiers(props: {
         const outcome = await runSubscribe(joinTier, joinCadence);
         if (outcome === "navigating") return; // keep the spinner while we leave
       }
-      router.refresh();
+      await (props.onRefresh ? props.onRefresh() : router.refresh());
       setProcessingReturn(false);
     });
   }, []);
@@ -151,7 +158,9 @@ export function JoinTiers(props: {
     if (busyTierId) return;
     if (!props.loggedIn) {
       window.location.href = buildOauthLoginUrl({
-        redirect: window.location.href,
+        redirect: props.loginRedirect
+          ? props.loginRedirect()
+          : window.location.href,
       });
       return;
     }

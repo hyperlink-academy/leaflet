@@ -17,6 +17,55 @@ import { Ok, Err, type Result } from "src/result";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
 
+export type MembershipJoinViewer = {
+  loggedIn: boolean;
+  isOwner: boolean;
+  isMember: boolean;
+  hasEmail: boolean;
+  walletCard: { brand: string | null; last4: string | null } | null;
+};
+
+// Viewer-scoped state JoinTiers needs when it renders outside the /join page
+// (the paywall's join modal); the page itself loads the same data during
+// server render. Only ever returns the caller's own membership/wallet info.
+export async function getMembershipJoinViewer(
+  publicationUri: string,
+): Promise<MembershipJoinViewer> {
+  const identity = await getIdentityData();
+  if (!identity)
+    return {
+      loggedIn: false,
+      isOwner: false,
+      isMember: false,
+      hasEmail: false,
+      walletCard: null,
+    };
+  const [{ data: publication }, membership, { data: wallet }] =
+    await Promise.all([
+      supabaseServerClient
+        .from("publications")
+        .select("identity_did")
+        .eq("uri", publicationUri)
+        .maybeSingle(),
+      getReaderMembership(publicationUri, identity.id),
+      supabaseServerClient
+        .from("stripe_wallets")
+        .select("card_brand, card_last4")
+        .eq("identity_id", identity.id)
+        .maybeSingle(),
+    ]);
+  return {
+    loggedIn: true,
+    isOwner:
+      !!identity.atp_did && identity.atp_did === publication?.identity_did,
+    isMember: isActiveMembership(membership),
+    hasEmail: !!identity.email,
+    walletCard: wallet?.card_last4
+      ? { brand: wallet.card_brand, last4: wallet.card_last4 }
+      : null,
+  };
+}
+
 // First-time card collection is a Stripe-hosted setup-mode Checkout page (no
 // Stripe.js on our side). The card is saved off-session on the platform wallet
 // customer so it can be cloned to publishers' accounts and charged for renewals.

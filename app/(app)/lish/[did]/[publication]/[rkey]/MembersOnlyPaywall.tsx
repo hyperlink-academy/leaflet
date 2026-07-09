@@ -1,8 +1,9 @@
 "use client";
+import { useEffect, useState } from "react";
 import { useDocumentOptional } from "contexts/DocumentContext";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { ButtonPrimary } from "components/Buttons";
 import { LockTiny } from "components/Icons/LockTiny";
+import { JoinMembershipModal } from "components/Memberships/JoinMembershipModal";
 
 const formatPrice = (cents: number) =>
   (cents / 100).toLocaleString("en-US", {
@@ -15,6 +16,26 @@ const formatPrice = (cents: number) =>
 // active membership; the gated blocks were already dropped server-side.
 export const MembersOnlyPaywall = () => {
   let document = useDocumentOptional();
+  let [joinOpen, setJoinOpen] = useState(false);
+
+  // Reopen the join modal after flows that leave the page: the Stripe hosted
+  // card-setup return (wallet_session, which JoinTiers processes once
+  // mounted) and OAuth login (the join_flow marker, consumed here).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("wallet_session") && !params.has("join_flow")) return;
+    setJoinOpen(true);
+    if (params.has("join_flow")) {
+      params.delete("join_flow");
+      const qs = params.toString();
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + (qs ? `?${qs}` : ""),
+      );
+    }
+  }, []);
+
   let pub = document?.publication;
   if (!pub) return null;
   let tiers = document?.membersOnly?.tiers ?? [];
@@ -23,7 +44,6 @@ export const MembersOnlyPaywall = () => {
         t.monthly_price_cents < min.monthly_price_cents ? t : min,
       )
     : null;
-  let joinUrl = `${getPublicationURL({ uri: pub.uri, record: pub.record }).replace(/\/$/, "")}/join`;
 
   return (
     <div className="membersOnlyPaywall my-4 flex flex-col items-center gap-2 text-center block-border bg-bg-page px-4 py-6">
@@ -38,11 +58,16 @@ export const MembersOnlyPaywall = () => {
           : ""}
         .
       </p>
-      <a href={joinUrl} className="hover:no-underline">
-        <ButtonPrimary role="link" type="button">
-          Become a member
-        </ButtonPrimary>
-      </a>
+      <ButtonPrimary type="button" onClick={() => setJoinOpen(true)}>
+        Become a member
+      </ButtonPrimary>
+      <JoinMembershipModal
+        open={joinOpen}
+        onOpenChange={setJoinOpen}
+        publicationUri={pub.uri}
+        publicationName={pub.name}
+        tiers={tiers}
+      />
     </div>
   );
 };

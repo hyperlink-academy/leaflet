@@ -65,7 +65,7 @@ export const send_post_broadcast = inngest.createFunction(
         supabaseServerClient
           .from("publications")
           .select(
-            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled)",
+            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(monthly_price_cents, active)",
           )
           .eq("uri", publication_uri)
           .maybeSingle(),
@@ -168,6 +168,17 @@ export const send_post_broadcast = inngest.createFunction(
     const previewBlocks = gated
       ? truncateBlocksAtMembersDelimiter(blocks)
       : blocks;
+    // Non-members' emails end in a "subscribe to see the full content" box
+    // linking to the join page, priced from the cheapest active tier.
+    const activeTierPrices = (loaded.pub.publication_membership_tiers ?? [])
+      .filter((t) => t.active)
+      .map((t) => t.monthly_price_cents);
+    const membersUpsell = {
+      joinUrl: `${pubProps.publicationUrl.replace(/\/$/, "")}/join`,
+      cheapestMonthlyCents: activeTierPrices.length
+        ? Math.min(...activeTierPrices)
+        : null,
+    };
 
     const subscribers = await step.run("snapshot-subscribers", async () => {
       const { data } = await supabaseServerClient
@@ -263,6 +274,7 @@ export const send_post_broadcast = inngest.createFunction(
             {
               key: "preview",
               blocks: previewBlocks,
+              upsell: true,
               recipients: subscribers.filter((s) => !subscriberIsEntitled(s)),
             },
             {
@@ -273,10 +285,18 @@ export const send_post_broadcast = inngest.createFunction(
                 (b) =>
                   b.block?.$type !== ids.PubLeafletBlocksMembersOnlyDelimiter,
               ),
+              upsell: false,
               recipients: subscribers.filter(subscriberIsEntitled),
             },
           ]
-        : [{ key: "all", blocks: previewBlocks, recipients: subscribers }]
+        : [
+            {
+              key: "all",
+              blocks: previewBlocks,
+              upsell: false,
+              recipients: subscribers,
+            },
+          ]
     ).filter((g) => g.recipients.length > 0);
 
     for (const group of groups) {
@@ -297,6 +317,7 @@ export const send_post_broadcast = inngest.createFunction(
               did,
               assetsBaseUrl: `${assetsBaseUrl}/`,
               unsubscribeUrl: UNSUB_PLACEHOLDER,
+              membersUpsell: group.upsell ? membersUpsell : undefined,
             }),
           );
         },
