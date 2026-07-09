@@ -9,6 +9,8 @@ import {
 } from "src/utils/normalizeRecords";
 import { AtUri } from "@atproto/syntax";
 import { getProfiles } from "src/identity";
+import { getDocumentPages } from "src/utils/normalizeRecords";
+import { truncatePagesAtMembersDelimiter } from "src/membership";
 
 export const get_document_interactions = makeRoute({
   route: "get_document_interactions",
@@ -48,6 +50,12 @@ export const get_document_interactions = makeRoute({
       document.data,
       document.uri,
     );
+    // Unauthenticated endpoint: discussion views only need the document's
+    // metadata, so gated blocks never leave the server regardless of viewer.
+    if (normalizedData) {
+      const pages = getDocumentPages(normalizedData);
+      if (pages) truncatePagesAtMembersDelimiter(pages);
+    }
 
     const pub = document.documents_in_publications?.[0]?.publications;
     const normalizedPubRecord = pub

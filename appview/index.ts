@@ -54,6 +54,52 @@ const profileCache: RedisProfileCache | null = redisClient
   : null;
 
 const QUOTE_PARAM = "/l-quote/";
+
+// The PDS copy of a members-only post is truncated at the delimiter (see
+// truncateDocumentRecordForPDS), so for posts published through Leaflet the
+// firehose record must not clobber the full-content copy publishToPublication
+// wrote to `documents`. Third-party gated posts (no leaflet draft) still
+// index from the firehose — their PDS record is all the content there is.
+// Besides the leaflet-draft link we also keep any stored copy that has blocks
+// below the delimiter: on a first publish the firehose event can beat the
+// leaflets_in_publications insert, and the full copy must win that race.
+async function isGatedLeafletManagedDoc(
+  uri: string,
+  isPublicationDoc: boolean,
+  firstPage: unknown,
+): Promise<boolean> {
+  if (!isPublicationDoc || !pageHasMembersDelimiter(firstPage)) return false;
+  const [{ data: managed }, { data: existing }] = await Promise.all([
+    supabase
+      .from("leaflets_in_publications")
+      .select("leaflet")
+      .eq("doc", uri)
+      .limit(1),
+    supabase.from("documents").select("data").eq("uri", uri).maybeSingle(),
+  ]);
+  if (managed?.length) return true;
+  return recordHasContentBelowDelimiter(existing?.data);
+}
+
+function recordHasContentBelowDelimiter(data: unknown): boolean {
+  const record = data as {
+    $type?: string;
+    pages?: unknown[];
+    content?: { pages?: unknown[] };
+  } | null;
+  const pages =
+    record?.$type === "site.standard.document"
+      ? record.content?.pages
+      : record?.pages;
+  const blocks = (pages?.[0] as { blocks?: { block?: { $type?: string } }[] })
+    ?.blocks;
+  if (!Array.isArray(blocks)) return false;
+  const idx = blocks.findIndex(
+    (b) => b?.block?.$type === ids.PubLeafletBlocksMembersOnlyDelimiter,
+  );
+  return idx !== -1 && idx < blocks.length - 1;
+}
+
 async function main() {
   const runner = new MemoryRunner({});
   let firehose = new Firehose({
@@ -130,11 +176,19 @@ async function handleEvent(evt: Event) {
         console.log(record.error);
         return;
       }
-      let docResult = await supabase.from("documents").upsert({
-        uri: evt.uri.toString(),
-        data: record.value as Json,
-      });
-      if (docResult.error) console.log(docResult.error);
+      if (
+        !(await isGatedLeafletManagedDoc(
+          evt.uri.toString(),
+          !!record.value.publication,
+          record.value.pages?.[0],
+        ))
+      ) {
+        let docResult = await supabase.from("documents").upsert({
+          uri: evt.uri.toString(),
+          data: record.value as Json,
+        });
+        if (docResult.error) console.log(docResult.error);
+      }
       await inngest.send({
         name: "appview/sync-document-metadata",
         data: {
@@ -306,7 +360,16 @@ async function handleEvent(evt: Event) {
       const hasBlobPages =
         PubLeafletContent.isMain(record.value.content) &&
         !!record.value.content.blobPages;
-      if (!hasBlobPages) {
+      if (
+        !hasBlobPages &&
+        !(await isGatedLeafletManagedDoc(
+          evt.uri.toString(),
+          !!record.value.site?.startsWith("at://"),
+          PubLeafletContent.isMain(record.value.content)
+            ? record.value.content.pages?.[0]
+            : undefined,
+        ))
+      ) {
         let docResult = await supabase.from("documents").upsert({
           uri: evt.uri.toString(),
           data: record.value as Json,

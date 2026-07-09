@@ -44,6 +44,56 @@ type PageLike = {
   blocks?: { block?: { $type?: string; id?: unknown } }[];
 };
 
+// The PDS copy of a publication post is public no matter what we do at serve
+// time — getRecord, the firehose, and CAR exports all bypass leaflet.pub — so
+// a gated post's record (and any pages blob offloaded from it) may only carry
+// the preview above the members-only delimiter. The full record lives solely
+// in our documents table, where per-viewer gating applies. Every path that
+// writes a document record to a PDS must pass it through here first.
+//
+// Standalone documents (non at:// site) are returned unchanged: there's no
+// membership to gate on, so their public page shows everything and the PDS
+// copy should match. Non-mutating; the returned copy shares untouched page and
+// block objects (including BlobRef instances) with the input.
+export function truncateDocumentRecordForPDS<T extends { $type: string }>(
+  record: T,
+): T {
+  const doc = record as T & {
+    site?: string;
+    publication?: string;
+    pages?: unknown[];
+    content?: { $type?: string; pages?: unknown[]; blobPages?: unknown };
+  };
+  const isPublicationDoc =
+    doc.$type === "site.standard.document"
+      ? !!doc.site?.startsWith("at://")
+      : !!doc.publication;
+  if (!isPublicationDoc) return record;
+
+  const pages =
+    doc.$type === "site.standard.document"
+      ? doc.content?.blobPages
+        ? undefined // already offloaded; nothing inline to truncate
+        : doc.content?.pages
+      : doc.pages;
+  if (!Array.isArray(pages) || !pageHasMembersDelimiter(pages[0])) {
+    return record;
+  }
+
+  const truncated = pages.map((p) => {
+    const page = p as PageLike;
+    return page && Array.isArray(page.blocks)
+      ? { ...page, blocks: [...page.blocks] }
+      : page;
+  });
+  truncatePagesAtMembersDelimiter(truncated);
+
+  if (doc.$type === "site.standard.document") {
+    return { ...doc, content: { ...doc.content, pages: truncated } } as T;
+  }
+  return { ...doc, pages: truncated } as T;
+}
+
 // Truncates the first page at the delimiter (keeping the delimiter itself as
 // the paywall anchor) and drops subpages no longer reachable from it. Mutates
 // in place: the raw record JSON and the normalized view share these arrays, so

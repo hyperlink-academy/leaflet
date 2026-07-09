@@ -29,7 +29,10 @@ import {
   makePublishUploadHooks,
 } from "src/utils/publishHelpers";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
-import { pageHasMembersDelimiter } from "src/membership";
+import {
+  pageHasMembersDelimiter,
+  truncateDocumentRecordForPDS,
+} from "src/membership";
 import {
   normalizeDocumentRecord,
   type NormalizedDocument,
@@ -334,7 +337,10 @@ export async function publishToPublication({
     };
     record = siteRecord;
 
-    recordForPDS = await maybeOffloadPagesToBlob(siteRecord, agent);
+    recordForPDS = await maybeOffloadPagesToBlob(
+      truncateDocumentRecordForPDS(siteRecord),
+      agent,
+    );
   } else {
     // pub.leaflet.document format (legacy)
     record = {
@@ -358,7 +364,7 @@ export async function publishToPublication({
       pages: pagesArray,
       publishedAt: resolvedPublishedAt,
     } satisfies PubLeafletDocument.Record;
-    recordForPDS = record;
+    recordForPDS = truncateDocumentRecordForPDS(record);
   }
 
   let { data: result } = await agent.com.atproto.repo.putRecord({

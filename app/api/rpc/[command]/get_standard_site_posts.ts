@@ -3,11 +3,13 @@ import { AtUri } from "@atproto/syntax";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import {
+  getDocumentPages,
   normalizeDocumentRecord,
   normalizePublicationRecord,
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { truncatePagesAtMembersDelimiter } from "src/membership";
 import { getProfiles } from "src/identity";
 import {
   getBylineDids,
@@ -71,7 +73,12 @@ export const get_standard_site_posts = makeRoute({
     const normalizedByUri = new Map<string, NormalizedDocument>();
     for (const d of documents || []) {
       const normalized = normalizeDocumentRecord(d.data, d.uri);
-      if (normalized) normalizedByUri.set(d.uri, normalized);
+      if (!normalized) continue;
+      // Unauthenticated endpoint feeding embed previews: gated blocks never
+      // leave the server regardless of viewer.
+      const pages = getDocumentPages(normalized);
+      if (pages) truncatePagesAtMembersDelimiter(pages);
+      normalizedByUri.set(d.uri, normalized);
     }
 
     const dids = Array.from(
