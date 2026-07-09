@@ -1543,6 +1543,19 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksMembersOnlyDelimiter: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.membersOnlyDelimiter',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          'Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership.',
+        required: [],
+        properties: {},
+      },
+    },
+  },
   PubLeafletBlocksOrderedList: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.orderedList',
@@ -2088,6 +2101,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
+              'lex:pub.leaflet.blocks.membersOnlyDelimiter',
             ],
           },
           x: {
@@ -2194,6 +2208,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
+              'lex:pub.leaflet.blocks.membersOnlyDelimiter',
             ],
           },
           alignment: {
@@ -3126,6 +3141,8 @@ export const ids = {
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksImageGallery: 'pub.leaflet.blocks.imageGallery',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
+  PubLeafletBlocksMembersOnlyDelimiter:
+    'pub.leaflet.blocks.membersOnlyDelimiter',
   PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',

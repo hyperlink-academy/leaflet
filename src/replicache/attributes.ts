@@ -499,6 +499,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "code"
       | "blockquote"
       | "horizontal-rule"
+      | "members-only-delimiter"
       | "posts-list"
       | "signup"
       | "image-gallery";

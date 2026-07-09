@@ -32,6 +32,7 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
+import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
 import { SubscribeBlock } from "./SubscribeBlock";
 import { deepEquals } from "src/utils/deepEquals";
@@ -387,6 +388,7 @@ const BlockTypeComponents: {
   "bluesky-post": BlueskyPostBlock,
   "standard-site-post": StandardSitePostBlock,
   "horizontal-rule": HorizontalRule,
+  "members-only-delimiter": MembersOnlyDelimiterBlock,
   "posts-list": PostsListBlock,
   signup: SubscribeBlock,
 };
