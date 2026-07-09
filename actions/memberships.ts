@@ -218,6 +218,58 @@ export type MyMembershipsData = {
   > | null;
 };
 
+export async function getMyMembershipForPublication(
+  publicationUri: string,
+): Promise<MyMembership | null> {
+  const identity = await getIdentityData();
+  if (!identity) return null;
+
+  const [{ data: row }, { data: tiers }] = await Promise.all([
+    supabaseServerClient
+      .from("publication_memberships")
+      .select(
+        `id, publication, tier, cadence, status, current_period_end, cancel_at_period_end,
+         publications(uri, name, record),
+         publication_membership_tiers(id, name, monthly_price_cents, annual_price_cents)`,
+      )
+      .eq("identity_id", identity.id)
+      .eq("publication", publicationUri)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabaseServerClient
+      .from("publication_membership_tiers")
+      .select("id, name, monthly_price_cents, annual_price_cents, sort_order")
+      .eq("publication", publicationUri)
+      .eq("active", true)
+      .order("sort_order", { ascending: true }),
+  ]);
+  if (!row) return null;
+
+  const pub = row.publications;
+  const tier = row.publication_membership_tiers;
+  return {
+    id: row.id,
+    publication: row.publication,
+    publicationName: pub?.name ?? null,
+    publicationUrl: pub ? getPublicationURL(pub) : "",
+    tierId: row.tier,
+    tierName: tier?.name ?? null,
+    monthlyPriceCents: tier?.monthly_price_cents ?? null,
+    annualPriceCents: tier?.annual_price_cents ?? null,
+    cadence: row.cadence,
+    status: row.status,
+    currentPeriodEnd: row.current_period_end,
+    cancelAtPeriodEnd: row.cancel_at_period_end,
+    availableTiers: (tiers ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      monthly_price_cents: t.monthly_price_cents,
+      annual_price_cents: t.annual_price_cents,
+    })),
+  };
+}
+
 export async function getMyMemberships(): Promise<MyMembershipsData | null> {
   const identity = await getIdentityData();
   if (!identity) return null;
