@@ -25,8 +25,9 @@ export const fetchCache = "force-no-store";
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
 }): Promise<Metadata> {
+  let robots = { index: false };
   let did = decodeURIComponent((await props.params).did);
-  if (!did) return { title: "Publication 404" };
+  if (!did) return { title: "Publication 404", robots };
 
   let { result: publication_data } = await get_publication_data.handler(
     {
@@ -37,8 +38,11 @@ export async function generateMetadata(props: {
   );
   let { publication } = publication_data;
   const record = normalizePublicationRecord(publication?.record);
-  if (!publication) return { title: "404 Publication" };
-  return { title: `Edit Pages — ${record?.name || "Untitled Publication"}` };
+  if (!publication) return { title: "404 Publication", robots };
+  return {
+    title: `Edit Pages — ${record?.name || "Untitled Publication"}`,
+    robots,
+  };
 }
 
 type Props = {

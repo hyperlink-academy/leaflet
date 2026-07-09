@@ -1,101 +1,22 @@
-import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { DocumentPageRenderer } from "./DocumentPageRenderer";
 import { fetchPublicationForPage } from "../getPublicationForPage";
 import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
-import {
-  normalizeDocumentRecord,
-  normalizePublicationRecord,
-} from "src/utils/normalizeRecords";
-import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
-import { resolveDocumentFilter } from "../resolveDocumentFilter";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
-import { findPublishedPage } from "src/utils/publishedPageMetadata";
+import { postPageMetadata } from "./postPageMetadata";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }): Promise<Metadata> {
   let params = await props.params;
-  let did = decodeURIComponent(params.did);
-  let publication_name = decodeURIComponent(params.publication);
-  let rkey = decodeURIComponent(params.rkey);
-  if (!did) return { title: "Publication 404" };
+  if (!decodeURIComponent(params.did)) return { title: "Publication 404" };
 
-  let { data: pubs } = await supabaseServerClient
-    .from("publications")
-    .select("name, publication_pages(path, title, record_uri)")
-    .eq("identity_did", did)
-    .or(publicationNameOrUriFilter(did, publication_name))
-    .order("uri", { ascending: false })
-    .limit(1);
-  // Match the same way the page body does (tryRenderPublicationPage), so
-  // metadata and body never disagree about which page a URL serves.
-  let match = findPublishedPage(pubs?.[0]?.publication_pages, "/" + rkey);
-  if (match && match.record_uri) {
-    return {
-      title: `${match.title || match.path} - ${pubs?.[0]?.name}`,
-    };
-  }
-
-  let [{ data: documents }] = await Promise.all([
-    supabaseServerClient
-      .from("documents")
-      .select("*, documents_in_publications(publications(*))")
-      .or(await resolveDocumentFilter(did, publication_name, rkey))
-      .order("uri", { ascending: false })
-      .limit(1),
-  ]);
-  let document = documents?.[0];
-  if (!document) return { title: "404" };
-
-  const docRecord = normalizeDocumentRecord(document.data);
-  if (!docRecord) return { title: "404" };
-
-  let publication = document.documents_in_publications[0]?.publications;
-  // Canonical URL points at the publication's blog domain so the post on
-  // leaflet.pub (and its quote pages, which inherit this metadata) doesn't
-  // compete with the custom-domain version in search results.
-  let canonical: string | undefined;
-  let feedTypes: Record<string, string> | undefined;
-  if (publication) {
-    let url = getDocumentURL(docRecord, document.uri, publication);
-    if (url.startsWith("http")) canonical = url;
-    let pubRecord = normalizePublicationRecord(publication.record);
-    if (pubRecord?.url) {
-      feedTypes = {
-        "application/rss+xml": `${pubRecord.url}/rss`,
-        "application/atom+xml": `${pubRecord.url}/atom`,
-        "application/feed+json": `${pubRecord.url}/json`,
-      };
-    }
-  }
-
-  return {
-    alternates:
-      canonical || feedTypes ? { canonical, types: feedTypes } : undefined,
-    icons: {
-      icon: {
-        url:
-          process.env.NODE_ENV === "development"
-            ? `/lish/${did}/${params.publication}/icon`
-            : "/icon",
-        sizes: "32x32",
-        type: "image/png",
-      },
-      other: [
-        {
-          rel: "alternate",
-          url: document.uri,
-        },
-        { rel: "site.standard.document", url: document.uri },
-      ],
-    },
-    title:
-      docRecord.title +
-      " - " +
-      document.documents_in_publications[0]?.publications?.name,
-    description: docRecord?.description || "",
-  };
+  return (
+    (await postPageMetadata({
+      did: params.did,
+      publication: params.publication,
+      segment: params.rkey,
+    })) ?? { title: "404" }
+  );
 }
 export default async function Post(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;

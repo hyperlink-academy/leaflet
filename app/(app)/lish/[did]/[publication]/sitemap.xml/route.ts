@@ -3,6 +3,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { isMainSiteHost } from "src/utils/customDomain";
+import { isExternalLink } from "src/utils/externalPublicationLink";
 
 function xmlEscape(s: string): string {
   return s
@@ -38,7 +39,7 @@ export async function GET(
     .select(
       `uri,
        documents_in_publications(documents(uri, data, sort_date)),
-       publication_pages(path)`,
+       publication_pages(path, record)`,
     )
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
@@ -76,8 +77,16 @@ export async function GET(
   }
 
   for (let page of publication.publication_pages ?? []) {
-    if (page.path) add(page.path);
+    // External link tabs store a full URL in `path` and don't live on this
+    // domain (see publishedPageMetadata).
+    if (!page.path || isExternalLink(page.path)) continue;
+    let record = page.record as { publishedAt?: string } | null;
+    add(page.path, record?.publishedAt);
   }
+
+  // The built-in archive route; content published at the /archive path was
+  // already added above and keeps its own lastmod.
+  add("/archive", latest);
 
   let urls = [...entries.values()]
     .map(({ loc, lastmod }) => {
