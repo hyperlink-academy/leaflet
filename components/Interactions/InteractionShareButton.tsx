@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { AppBskyFeedDefs } from "@atproto/api";
 import { EditorState } from "prosemirror-state";
 import { useSmoker, useToaster } from "../Toast";
 import { Menu, MenuItem } from "../Menu";
@@ -14,6 +15,7 @@ import { useIdentityData } from "../IdentityProvider";
 import { editorStateToFacetedText } from "../BlueskyPostComposer/ProsemirrorEditor";
 import { sharePostToBsky } from "actions/sharePostToBsky";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { LoginContent } from "components/LoginButton";
 
 export const InteractionShareButton = (props: {
   postUrl?: string;
@@ -69,7 +71,7 @@ export const InteractionShareButton = (props: {
           Copy Link
         </MenuItem>
       </Menu>
-      <ShareModal
+      <BskyShareModal
         postUrl={props.postUrl}
         title={props.title}
         onPosted={() => setShareModalOpen(false)}
@@ -80,7 +82,7 @@ export const InteractionShareButton = (props: {
   );
 };
 
-const ShareModal = (props: {
+export const BskyShareModal = (props: {
   postUrl?: string;
   title?: string;
   onPosted: () => void;
@@ -120,6 +122,15 @@ const ShareModal = (props: {
     props.onPosted();
   };
 
+  let embed: AppBskyFeedDefs.PostView["embed"] = {
+    $type: "app.bsky.embed.external#view",
+    external: {
+      uri: props.postUrl ?? "",
+      title: props.title ?? "",
+      description: "",
+    },
+  };
+
   let submitButton = (
     <ButtonPrimary
       className="place-self-end"
@@ -137,39 +148,41 @@ const ShareModal = (props: {
     </ButtonPrimary>
   );
 
+  let loggedIn = identity && identity.atp_did;
+
+  let shareContent = !loggedIn ? (
+    <LoginContent redirectRoute={window.location.href} className="sm:w-full!" />
+  ) : (
+    <BlueskyPostComposer
+      profile={profile}
+      editorStateRef={editorStateRef}
+      charCount={charCount}
+      onCharCountChange={setCharCount}
+      embed={embed}
+    />
+  );
+
   return (
     <>
       {isMobile ? (
         <MobileSheet
           open={props.shareModalOpen}
           onOpenChange={props.setShareModalOpen}
-          title="Share on Bluesky"
-          actionButton={submitButton}
+          title={loggedIn ? "Share on Bluesky" : undefined}
+          actionButton={loggedIn ? submitButton : undefined}
         >
-          <BlueskyPostComposer
-            profile={profile}
-            editorStateRef={editorStateRef}
-            charCount={charCount}
-            onCharCountChange={setCharCount}
-            embed={{ title: props.title, url: props.postUrl }}
-          />
+          {shareContent}
         </MobileSheet>
       ) : (
         <Modal
           open={props.shareModalOpen}
           onOpenChange={props.setShareModalOpen}
-          title="Share on Bluesky"
-          actionButton={submitButton}
-          className="w-md"
+          title={loggedIn ? "Share on Bluesky" : undefined}
+          actionButton={loggedIn ? submitButton : undefined}
+          className="max-w-full w-lg"
         >
-          <div className="spacer w-full h-2" />
-          <BlueskyPostComposer
-            profile={profile}
-            editorStateRef={editorStateRef}
-            charCount={charCount}
-            onCharCountChange={setCharCount}
-            embed={{ title: props.title, url: props.postUrl }}
-          />
+          {loggedIn && <div className="spacer w-full h-2" />}
+          {shareContent}
         </Modal>
       )}
     </>

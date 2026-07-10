@@ -1,10 +1,12 @@
 "use client";
 import { EditorState } from "prosemirror-state";
+import { AppBskyFeedDefs } from "@atproto/api";
 import { ProsemirrorEditor } from "./ProsemirrorEditor";
+import { BskyEmbed } from "components/Blocks/BlueskyPostBlock/BskyEmbed";
 import { Avatar } from "components/Avatar";
 
 // The Bluesky compose card: the author's avatar/handle, the prosemirror post
-// editor, a preview of the external link card for the post being shared, and a
+// editor, a preview of the record attached to the post being shared, and a
 // character counter. Shared by the publish flow's ShareOptions and the
 // "Share on Bluesky" modal so both compose against the same UI.
 export function BlueskyPostComposer(props: {
@@ -18,8 +20,8 @@ export function BlueskyPostComposer(props: {
   onCharCountChange: (count: number) => void;
   // localStorage key under which the in-progress post is persisted
   persistKey?: string;
-  // The external link-card preview of the post being shared.
-  embed: { title?: string; description?: string; url?: string };
+  // The embed preview of the record attached to the post being shared.
+  embed: AppBskyFeedDefs.PostView["embed"];
 }) {
   return (
     <>
@@ -38,23 +40,13 @@ export function BlueskyPostComposer(props: {
           />
         </div>
         <div className="pt-4 pl-10 w-full">
-          <div className="opaque-container text-secondary overflow-hidden flex flex-col ">
-            <div className="flex flex-col p-2">
-              <div className="font-bold truncate min-w-0 w-full ">
-                {props.embed.title}
-              </div>
-              <div className="text-tertiary line-clamp-3">
-                {props.embed.description}
-              </div>
-              <hr className="border-border mt-2 mb-1" />
-              <p className="text-xs text-tertiary min-w-0 truncate">
-                {props.embed.url?.replace(/^https?:\/\//, "")}
-              </p>
-            </div>
+          <div className="pointer-events-none">
+            <BskyEmbed content={props.embed} />
           </div>
-          <div className="place-self-end pt-2">
-            <CharacterCounter count={props.charCount} limit={300} />
-          </div>
+        </div>
+        <hr className="mt-4 mb-2 border-border-light -mx-3" />
+        <div className="place-self-end">
+          <CharacterCounter count={props.charCount} limit={300} />
         </div>
       </div>
     </>
@@ -62,6 +54,7 @@ export function BlueskyPostComposer(props: {
 }
 
 function CharacterCounter(props: { count: number; limit: number }) {
+  const remaining = props.limit - props.count;
   const over = props.count - props.limit;
   const isOver = over > 0;
 
@@ -75,7 +68,7 @@ function CharacterCounter(props: { count: number; limit: number }) {
         isOver ? "text-accent-contrast font-bold" : "text-tertiary"
       }`}
     >
-      <span>{isOver ? over : props.count}</span>
+      <span>{isOver ? over : remaining}</span>
       <svg
         width="24"
         height="24"

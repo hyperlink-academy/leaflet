@@ -119,7 +119,7 @@ export function ShareOptions(props: Props) {
         </div>
       </Checkbox>
       <div
-        className={`w-full pl-7 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
+        className={`w-full opaque-container rounded-lg! p-3 ml-7 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
       >
         <BlueskyPostComposer
           profile={{
@@ -132,9 +132,12 @@ export function ShareOptions(props: Props) {
           onCharCountChange={props.setCharCount}
           persistKey={props.bskyDraftKey}
           embed={{
-            title: props.title,
-            description: props.description,
-            url: props.record?.url,
+            $type: "app.bsky.embed.external#view",
+            external: {
+              uri: props.record?.url ?? "",
+              title: props.title,
+              description: props.description,
+            },
           }}
         />
       </div>

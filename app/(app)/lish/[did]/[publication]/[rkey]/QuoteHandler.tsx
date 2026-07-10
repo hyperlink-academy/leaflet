@@ -3,7 +3,7 @@ import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   encodeQuotePosition,
   decodeQuotePosition,
@@ -16,6 +16,8 @@ import { useDocument } from "contexts/DocumentContext";
 import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { SelectionActionPopover } from "components/SelectionActionPopover";
+import { BskyShareModal } from "components/Interactions/InteractionShareButton";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 
 export function QuoteHandler() {
   return (
@@ -59,6 +61,7 @@ const QuoteOptionButtons = (props: { position: string }) => {
   let smoker = useSmoker();
   let { identity } = useIdentityData();
   const { uri: document_uri, publication } = useDocument();
+  let [shareModalOpen, setShareModalOpen] = useState(false);
   let [url, position] = useMemo(() => {
     let currentUrl = new URL(window.location.href);
     let pos = decodeQuotePosition(props.position);
@@ -82,15 +85,19 @@ const QuoteOptionButtons = (props: { position: string }) => {
     <>
       <div className="">Share via</div>
 
-      <a
+      <button
         className="flex relative gap-1 items-center hover:font-bold px-1 hover:no-underline!"
-        role="link"
-        href={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
-        target="_blank"
+        onClick={() => setShareModalOpen(true)}
       >
-        <BlueskyLinkTiny className="shrink-0" />
+        <BlueskyTiny className="shrink-0" />
         Bluesky
-      </a>
+      </button>
+      <BskyShareModal
+        postUrl={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
+        onPosted={() => setShareModalOpen(false)}
+        shareModalOpen={shareModalOpen}
+        setShareModalOpen={setShareModalOpen}
+      />
       <Separator classname="h-4!" />
       <button
         id="copy-quote-link"

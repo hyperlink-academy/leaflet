@@ -121,7 +121,6 @@ export function PostByline(props: {
   const tags = record.tags ?? [];
   const tagCount = tags.length;
 
-  console.log(tags);
   return (
     <div className="flex flex-row gap-2 items-center">
       {namedContributors.length > 0 ? (

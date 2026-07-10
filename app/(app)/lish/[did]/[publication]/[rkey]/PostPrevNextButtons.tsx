@@ -34,8 +34,6 @@ export const PostPrevNextButtons = (props: {
       ? prevNext?.last
       : undefined;
 
-  console.log(props.showFirstLast);
-
   return (
     <div className="flex flex-col gap-0.5 w-full px-3 sm:px-4 pb-3 pt-2">
       <div className="flex justify-between w-full gap-8 ">
