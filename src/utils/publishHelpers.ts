@@ -1,4 +1,5 @@
 import { parseColor } from "@react-stately/color";
+import type { BlobRef } from "@atproto/lexicon";
 import {
   AtpBaseClient,
   PubLeafletPollDefinition,
@@ -15,14 +16,35 @@ import {
   ColorToRGBA,
 } from "components/ThemeManager/colorToLexicons";
 import type { ProcessBlocksToPagesHooks } from "src/utils/factsToPagesRecord";
+import type { GatedImageStore } from "src/utils/gatedDocumentImages";
 
 export function makePublishUploadHooks(
   agent: AtpBaseClient,
   did: string,
+  opts?: {
+    // Set for publication posts, whose members-only region is stripped from
+    // the PDS copy of the record (truncateDocumentRecordForPDS). Uploading
+    // those images to the PDS would make them public and, being unreferenced
+    // by the truncated record, subject to PDS blob garbage collection — so
+    // they're copied into publish-owned Supabase storage instead and carried
+    // as a synthetic $link blobref (blobRefToSrc passes http(s) links
+    // through).
+    gatedImages?: GatedImageStore;
+  },
 ): ProcessBlocksToPagesHooks {
   const uploadLock = new Lock();
   return {
-    uploadImage: async (src: string) => {
+    uploadImage: async (src: string, { membersOnly }: { membersOnly: boolean }) => {
+      if (opts?.gatedImages && membersOnly) {
+        // Fall back to the draft URL if the copy fails — an image tied to the
+        // draft asset's lifetime beats a dropped block.
+        const url = (await opts.gatedImages.ensureImage(src)) ?? src;
+        return {
+          ref: { $link: url },
+          mimeType: "image/*",
+          size: 0,
+        } as unknown as BlobRef;
+      }
       const data = await fetch(src);
       if (data.status !== 200) return;
       const binary = await data.blob();

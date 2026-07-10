@@ -29,6 +29,7 @@ import {
   makePublishUploadHooks,
 } from "src/utils/publishHelpers";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
+import { makeGatedImageStore } from "src/utils/gatedDocumentImages";
 import {
   pageHasMembersDelimiter,
   truncateDocumentRecordForPDS,
@@ -179,10 +180,19 @@ export async function publishToPublication({
   });
   let facts = (data as unknown as Fact<Attribute>[]) || [];
 
+  // Determine the rkey early: it's the record's path field and it scopes the
+  // publish-owned storage for members-only images.
+  const rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
+  const gatedImages = publication_uri
+    ? makeGatedImageStore({ did: credentialSession.did!, rkey })
+    : undefined;
+
   let { pages } = await processBlocksToPages({
     facts,
     root_entity,
-    hooks: makePublishUploadHooks(agent, credentialSession.did!),
+    hooks: makePublishUploadHooks(agent, credentialSession.did!, {
+      gatedImages,
+    }),
   });
 
   let existingRecord: Partial<SiteStandardDocument.Record> = {};
@@ -278,9 +288,6 @@ export async function publishToPublication({
       };
     }
   });
-
-  // Determine the rkey early since we need it for the path field
-  const rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
 
   // Resolve fields: use new values if provided, otherwise preserve existing
   const resolvedDescription =
@@ -418,6 +425,11 @@ export async function publishToPublication({
         .in("id", entitiesToDelete);
     }
   }
+
+  // GC publish-owned copies of gated images this publish no longer references
+  // (all of them when the delimiter was removed). Best-effort — the publish
+  // itself has already succeeded.
+  if (gatedImages) await gatedImages.removeStale().catch(console.error);
 
   // Create notifications for mentions (only on first publish)
   if (!existingDocUri) {
