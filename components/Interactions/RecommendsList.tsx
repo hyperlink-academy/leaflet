@@ -53,11 +53,12 @@ export function RecommendsList(props: { documentUri: string }) {
         const profile = profiles?.[did];
         return (
           <ProfilePopover
-            className="z-[60]!"
+            className="z-[60]! w-fit"
             key={did}
             didOrHandle={profile?.handle ?? did}
+            triggerClassName="flex items-start gap-2 w-fit"
             trigger={
-              <div className="flex items-start gap-2">
+              <>
                 <Avatar
                   src={profile?.avatar}
                   displayName={profile?.displayName}
@@ -73,7 +74,7 @@ export function RecommendsList(props: { documentUri: string }) {
                     </div>
                   )}
                 </div>
-              </div>
+              </>
             }
           />
         );

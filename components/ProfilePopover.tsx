@@ -14,6 +14,7 @@ export const ProfilePopover = (props: {
   trigger: React.ReactNode;
   didOrHandle: string;
   className?: string;
+  triggerClassName?: string;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   let [isHovered, setIsHovered] = useState(false);
@@ -35,7 +36,7 @@ export const ProfilePopover = (props: {
       className={`max-w-sm p-0! text-center ${props.className}`}
       trigger={
         <div
-          className="no-underline relative"
+          className={`no-underline relative ${props.triggerClassName}`}
           onPointerEnter={(e) => {
             if (hoverTimeout.current) {
               window.clearTimeout(hoverTimeout.current);
