@@ -74,6 +74,7 @@ To add or modify a lexicon:
 - **Inngest functions**: Async jobs in `app/api/inngest/functions/`
 - **Icons**: Icon components live in `components/Icons/`. Each icon is a named export in its own file (e.g. `RefreshSmall.tsx`), imports `Props` from `./Props`, spreads `{...props}` on the `<svg>` element, and uses `fill="currentColor"` instead of hardcoded colors like `fill="black"`.
 - **Popovers and menus**: Use the existing `Popover` (`components/Popover`), `Menu`, and `MenuItem` (`components/Menu`) components — do not create new popover/menu primitives. Avoid using buttons inside Popover or Modal triggers unless using a specific button component. If button is being used as trigger, always add an "asChild" prop to the Menu or Popover
+- **Default theme**: The default theme colors (accent/background/primary/highlights) are hardcoded in several disconnected places (`themeDefaults.ts`, `themeUtils.ts`, `app/globals.css` `:root`, `emails/shared.tsx`, `PubPresetPicker.tsx`) with no shared import, so they drift easily. When changing any default color, use the `update-default-theme` skill (`.claude/skills/update-default-theme/`) which lists every place to update and keeps them in sync.
 
 ### Comments
 

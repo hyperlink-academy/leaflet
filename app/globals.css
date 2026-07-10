@@ -98,7 +98,7 @@
 
 @layer base {
   :root {
-    --bg-leaflet: 240, 247, 250;
+    --bg-leaflet: 253, 252, 250;
     --bg-page: 255, 255, 255;
     --bg-page-alpha: 1;
 
@@ -116,8 +116,14 @@
       rgb(var(--bg-page)) 85%
     );
 
-    --highlight-1: 255, 177, 177;
-    --highlight-2: 253, 245, 203;
+    /* highlight-1's default is a calculated tint of the accent, matching
+       BaseThemeProvider's fallback when no explicit highlight-1 is set. */
+    --highlight-1: color-mix(
+      in oklab,
+      rgb(var(--accent-contrast)),
+      rgb(var(--bg-page)) 75%
+    );
+    --highlight-2: 237, 210, 128;
     --highlight-3: 255, 205, 195;
 
     --list-marker-width: 36px;

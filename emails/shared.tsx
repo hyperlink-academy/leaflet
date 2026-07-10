@@ -19,7 +19,7 @@ export type EmailTheme = {
 export const defaultEmailTheme: EmailTheme = {
   primary: "rgb(39, 39, 39)",
   pageBackground: "rgb(255, 255, 255)",
-  backgroundColor: "rgb(240, 247, 250)",
+  backgroundColor: "rgb(253, 252, 250)",
   accentBackground: "rgb(87, 130, 43)",
   accentText: "rgb(255, 255, 255)",
   headingFont: "Georgia, serif",
@@ -166,10 +166,12 @@ export const confirmEmailTailwindConfig = {
       "accent-1": "rgb(87, 130, 43)",
       "accent-2": "rgb(255, 255, 255)",
       "accent-contrast": "rgb(87, 130, 43)",
-      "bg-leaflet": "rgb(240, 247, 250)",
+      "bg-leaflet": "rgb(253, 252, 250)",
       "bg-page": "rgba(255, 255, 255, 1)",
-      "highlight-1": "rgb(255, 177, 177)",
-      "highlight-2": "rgb(253, 245, 203)",
+      // Gmail strips color-mix, so highlight-1's accent tint is resolved to a
+      // literal rgb() (green accent mixed 75% into the page background).
+      "highlight-1": "rgb(213, 224, 202)",
+      "highlight-2": "rgb(237, 210, 128)",
       "highlight-3": "rgb(255, 205, 195)",
     },
     fontSize: {
