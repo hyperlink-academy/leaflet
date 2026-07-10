@@ -1,9 +1,9 @@
 "use client";
 import useSWR from "swr";
 import { callRPC } from "app/api/rpc/client";
-import { Avatar } from "./Avatar";
-import { DotLoader } from "./utils/DotLoader";
-import { ProfilePopover } from "./ProfilePopover";
+import { Avatar } from "../Avatar";
+import { DotLoader } from "../utils/DotLoader";
+import { ProfilePopover } from "../ProfilePopover";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 
 // Fetches the DIDs that recommended a document and hydrates them into basic

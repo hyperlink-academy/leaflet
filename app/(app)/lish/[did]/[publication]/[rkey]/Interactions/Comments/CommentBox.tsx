@@ -419,7 +419,7 @@ export function CommentBox(props: {
           </button>
         </div>
       )}
-      <div className="w-full relative group">
+      <div className="commentComposer w-full relative group">
         <pre
           ref={mountRef}
           style={{ fontFamily: "inherit" }}
@@ -435,7 +435,7 @@ export function CommentBox(props: {
               handleMentionOpenChange(false);
             }
           }}
-          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit px-2! py-[6px]!`}
+          className={`commentInput border whitespace-pre-wrap input-with-border min-h-32 h-fit px-2! py-[6px]!`}
         />
         <IOSBS view={view} />
         <MentionAutocomplete
@@ -512,9 +512,7 @@ export function IOSBS(props: { view: RefObject<EditorView | null> }) {
   );
 }
 
-function docToFacetedText(
-  doc: Node,
-): [string, PubLeafletRichtextFacet.Main[]] {
+function docToFacetedText(doc: Node): [string, PubLeafletRichtextFacet.Main[]] {
   let fullText = "";
   let facets: PubLeafletRichtextFacet.Main[] = [];
   let byteOffset = 0;

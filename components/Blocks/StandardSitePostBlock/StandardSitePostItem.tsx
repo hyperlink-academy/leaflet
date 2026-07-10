@@ -15,7 +15,7 @@ import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
-import { InteractionPreview } from "components/InteractionsPreview";
+import { InteractionPreview } from "components/Interactions/InteractionsPreview";
 import { PubIcon } from "components/ActionBar/Publications";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";

@@ -77,7 +77,7 @@ export function prefetchQuotesData(
   }
 }
 
-export const MentionsDrawerContent = (props: {
+export const DiscussionDrawerContent = (props: {
   quotesAndMentions: { uri: string; link?: string }[];
   did: string;
 }) => {

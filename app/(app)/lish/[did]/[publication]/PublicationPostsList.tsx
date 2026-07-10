@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { AtUri } from "@atproto/api";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
-import { InteractionPreview } from "components/InteractionsPreview";
+import { InteractionPreview } from "components/Interactions/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
 import { PublicationPostItem } from "./DefaultPublicationHomepage";
 import {

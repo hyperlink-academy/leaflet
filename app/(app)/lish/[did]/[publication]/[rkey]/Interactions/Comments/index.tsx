@@ -8,14 +8,10 @@ import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
 import { useMemo, useState } from "react";
 import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { Separator } from "components/Layout";
-import { Popover } from "components/Popover";
+
 import { AtUri } from "@atproto/api";
 import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
-import { timeAgo } from "src/utils/timeAgo";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import { ProfilePopover } from "components/ProfilePopover";
 import { LoginModal } from "components/LoginButton";
 import { type Profile } from "src/identity";
 import { PostInfo } from "../../BskyPostContent";
@@ -297,28 +293,5 @@ const Replies = (props: {
         </CollapsibleReplies>
       )}
     </>
-  );
-};
-
-const DatePopover = (props: { date: string }) => {
-  const timeAgoText = useMemo(() => timeAgo(props.date), [props.date]);
-  const fullDate = useLocalizedDate(props.date, {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <Popover
-      trigger={
-        <div className="italic text-sm text-tertiary hover:underline">
-          {timeAgoText}
-        </div>
-      }
-    >
-      <div className="text-sm text-secondary">{fullDate}</div>
-    </Popover>
   );
 };

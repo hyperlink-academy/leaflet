@@ -31,10 +31,10 @@ export function NotificationList({
 
   if (notifications.length === 0)
     return (
-      <EmptyState
-        title="no notifications yet..."
-        description="Here, you'll find notifications about new follows, comments, mentions, and replies!"
-      />
+      <EmptyState title="no notifications yet...">
+        Here, you'll find notifications about new follows, comments, mentions,
+        and replies!
+      </EmptyState>
     );
   return (
     <div className="max-w-prose w-full">

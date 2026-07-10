@@ -1,19 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Modal } from "./Modal";
-import { ToggleGroup } from "./ToggleGroup";
-import { SpeedyLink } from "./SpeedyLink";
-import { DotLoader } from "./utils/DotLoader";
+import { Modal } from "../Modal";
+import { ToggleGroup } from "../ToggleGroup";
+import { SpeedyLink } from "../SpeedyLink";
+import { DotLoader } from "../utils/DotLoader";
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { CommentsDrawerContent } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/Comments";
-import { MentionsDrawerContent } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/Quotes";
+import { DiscussionDrawerContent } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/Quotes";
 import { decodeQuotePosition } from "app/(app)/lish/[did]/[publication]/[rkey]/quotePosition";
 import { useDocumentDiscussionData } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/useDocumentDiscussionData";
-import { GoToArrow } from "./Icons/GoToArrow";
-import { ButtonPrimary } from "./Buttons";
-import { StandardSitePostItem } from "./Blocks/StandardSitePostBlock/StandardSitePostItem";
-import { MobileSheet } from "./MobileSheet";
+import { GoToArrow } from "../Icons/GoToArrow";
+import { ButtonPrimary } from "../Buttons";
+import { StandardSitePostItem } from "../Blocks/StandardSitePostBlock/StandardSitePostItem";
+import { MobileSheet } from "../MobileSheet";
 import { useIsMobile } from "src/hooks/isMobile";
 
 // A self-contained modal that renders a post's comments and Bluesky mentions
@@ -136,7 +136,7 @@ export function DiscussionModal(props: {
                   pageId={props.pageId}
                 />
               ) : (
-                <MentionsDrawerContent
+                <DiscussionDrawerContent
                   did={did}
                   quotesAndMentions={quotesAndMentions}
                 />

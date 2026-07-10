@@ -1,17 +1,17 @@
 "use client";
 import { useRef, useState } from "react";
 import { EditorState } from "prosemirror-state";
-import { useSmoker, useToaster } from "./Toast";
-import { Menu, MenuItem } from "./Menu";
-import { ButtonPrimary } from "./Buttons";
-import { Modal } from "./Modal";
-import { MobileSheet } from "./MobileSheet";
+import { useSmoker, useToaster } from "../Toast";
+import { Menu, MenuItem } from "../Menu";
+import { ButtonPrimary } from "../Buttons";
+import { Modal } from "../Modal";
+import { MobileSheet } from "../MobileSheet";
 import { useIsMobile } from "src/hooks/isMobile";
-import { ShareTiny } from "./Icons/ShareTiny";
-import { BlueskyPostComposer } from "./BlueskyPostComposer/BlueskyPostComposer";
-import { DotLoader } from "./utils/DotLoader";
-import { useIdentityData } from "./IdentityProvider";
-import { editorStateToFacetedText } from "./BlueskyPostComposer/ProsemirrorEditor";
+import { ShareTiny } from "../Icons/ShareTiny";
+import { BlueskyPostComposer } from "../BlueskyPostComposer/BlueskyPostComposer";
+import { DotLoader } from "../utils/DotLoader";
+import { useIdentityData } from "../IdentityProvider";
+import { editorStateToFacetedText } from "../BlueskyPostComposer/ProsemirrorEditor";
 import { sharePostToBsky } from "actions/sharePostToBsky";
 
 export const InteractionShareButton = (props: {
@@ -26,13 +26,6 @@ export const InteractionShareButton = (props: {
 
   if (props.type === "none") return;
 
-  let shareContent = (
-    <ShareModalContent
-      postUrl={props.postUrl}
-      title={props.title}
-      onPosted={() => setShareModalOpen(false)}
-    />
-  );
   return (
     <>
       <Menu
@@ -78,11 +71,19 @@ export const InteractionShareButton = (props: {
       </Menu>
       {isMobile ? (
         <MobileSheet open={shareModalOpen} onOpenChange={setShareModalOpen}>
-          {shareContent}
+          <ShareModalContent
+            postUrl={props.postUrl}
+            title={props.title}
+            onPosted={() => setShareModalOpen(false)}
+          />{" "}
         </MobileSheet>
       ) : (
         <Modal open={shareModalOpen} onOpenChange={setShareModalOpen}>
-          {shareContent}
+          <ShareModalContent
+            postUrl={props.postUrl}
+            title={props.title}
+            onPosted={() => setShareModalOpen(false)}
+          />
         </Modal>
       )}
     </>

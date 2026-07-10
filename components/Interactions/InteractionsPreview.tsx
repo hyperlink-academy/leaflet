@@ -1,11 +1,11 @@
 "use client";
 import { useContext, useState } from "react";
-import { Separator } from "./Layout";
-import { CommentTiny } from "./Icons/CommentTiny";
-import { useSmoker } from "./Toast";
-import { Tag } from "./Tags";
-import { Popover } from "./Popover";
-import { TagTiny } from "./Icons/TagTiny";
+import { Separator } from "../Layout";
+import { CommentTiny } from "../Icons/CommentTiny";
+import { useSmoker } from "../Toast";
+import { Tag } from "../Tags";
+import { Popover } from "../Popover";
+import { TagTiny } from "../Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionModal } from "./DiscussionModal";
 import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
@@ -43,7 +43,7 @@ export const InteractionPreview = (props: {
 
   return (
     <div
-      className={` text-tertiary text-sm  items-center flex gap-4 grow min-w-0 justify-between`}
+      className={` text-tertiary text-sm  items-end flex gap-4 grow min-w-0 justify-between`}
     >
       <div className="flex gap-2 items-center">
         {!discussionsAvailable ? null : (

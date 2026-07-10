@@ -15,7 +15,7 @@ import {
   getDocumentURL,
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
-import { InteractionPreview } from "components/InteractionsPreview";
+import { InteractionPreview } from "components/Interactions/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(app)/(home-pages)/(writer)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
