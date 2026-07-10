@@ -17,7 +17,7 @@ import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { PubIcon } from "components/ActionBar/Publications";
-import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
+import { WithPublicationTheme } from "components/ThemeManager/PublicationThemeProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { formatBylineNames } from "src/utils/byline";
 
@@ -73,20 +73,14 @@ export function WithStandardSitePostPublicationTheme({
   enabled: boolean;
   children: React.ReactNode;
 }) {
-  const record = post.publication?.record;
-  if (!enabled || !record || (!record.theme && !record.basicTheme)) {
-    return <>{children}</>;
-  }
-  let pubCreator: string;
-  try {
-    pubCreator = new AtUri(post.publication!.uri).host;
-  } catch {
-    return <>{children}</>;
-  }
   return (
-    <PublicationThemeProvider local record={record} pub_creator={pubCreator}>
+    <WithPublicationTheme
+      record={post.publication?.record}
+      uri={post.publication?.uri}
+      enabled={enabled}
+    >
       {children}
-    </PublicationThemeProvider>
+    </WithPublicationTheme>
   );
 }
 

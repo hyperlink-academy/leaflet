@@ -66,6 +66,22 @@ export const PubLeafletBlocksStandardSitePost: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksStandardSitePublication: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.standardSitePublication",
+  defs: {
+    main: {
+      type: "object",
+      required: ["uri"],
+      properties: {
+        uri: { type: "string", format: "at-uri" },
+        cid: { type: "string" },
+        showPublicationTheme: { type: "boolean" },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksBlockQuote: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.blockquote",
@@ -483,6 +499,7 @@ export const BlockLexicons = [
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksStandardSitePost,
+  PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
   PubLeafletBlocksButton,

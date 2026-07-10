@@ -12,6 +12,7 @@ import {
 import { get_leaflet_data } from "./get_leaflet_data";
 import { get_publication_data } from "./get_publication_data";
 import { get_standard_site_posts } from "./get_standard_site_posts";
+import { get_standard_site_publications } from "./get_standard_site_publications";
 import { search_publication_names } from "./search_publication_names";
 import { search_publication_documents } from "./search_publication_documents";
 import { get_profile_data } from "./get_profile_data";
@@ -48,6 +49,7 @@ let Routes = [
   get_leaflet_data,
   get_publication_data,
   get_standard_site_posts,
+  get_standard_site_publications,
   search_publication_names,
   search_publication_documents,
   get_profile_data,
