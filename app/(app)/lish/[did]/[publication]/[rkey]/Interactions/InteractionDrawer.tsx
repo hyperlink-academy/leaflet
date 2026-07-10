@@ -22,6 +22,7 @@ import { StandardSitePostDrawerView } from "./StandardSitePostDrawerView";
 import { useDocumentDiscussionData } from "./useDocumentDiscussionData";
 import { useIsMobile } from "src/hooks/isMobile";
 import { MobileSheet } from "components/MobileSheet";
+import { RecommendsList } from "components/RecommendsList";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -205,6 +206,16 @@ const InteractionDrawerContent = (props: {
                   : `Comments${ssp.comments.length > 0 ? ` (${ssp.comments.length})` : ""}`}
               </h4>
             )
+          ) : activeThread?.type === "recommends" ? (
+            <div className="flex items-center gap-2">
+              <button
+                className="flex items-center gap-1 text-tertiary hover:text-secondary font-bold text-sm"
+                onClick={() => popDrawerThread(props.document_uri)}
+              >
+                <GoBackTiny /> Back
+              </button>
+              <h4>Recommended by</h4>
+            </div>
           ) : activeThread ? (
             <div className="flex items-center gap-2">
               {threadStack.length >= 2 && (
@@ -267,6 +278,8 @@ const InteractionDrawerContent = (props: {
       <DrawerThreadContext.Provider value={drawerNav}>
         {sspUri ? (
           <StandardSitePostDrawerView uri={sspUri} tab={sspActiveTab} />
+        ) : activeThread?.type === "recommends" ? (
+          <RecommendsList documentUri={activeThread.uri} />
         ) : activeThread ? (
           <ThreadView
             parentUri={activeThread.uri}

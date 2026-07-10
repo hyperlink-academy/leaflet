@@ -1,6 +1,6 @@
 "use client";
 import { Checkbox } from "components/Checkbox";
-import { BlueskyPostEditorProsemirror } from "./BskyPostEditorProsemirror";
+import { BlueskyPostComposer } from "components/BlueskyPostComposer/BlueskyPostComposer";
 import { EditorState } from "prosemirror-state";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
@@ -121,44 +121,22 @@ export function ShareOptions(props: Props) {
       <div
         className={`w-full pl-7 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
       >
-        <div className="opaque-container border-border! py-2 px-3 text-sm rounded-lg!">
-          <div className="flex gap-2">
-            <img
-              className="rounded-full w-6 h-6 sm:w-[42px] sm:h-[42px] shrink-0"
-              src={previewProfile.avatar}
-            />
-            <div className="flex flex-col min-w-0 w-full">
-              <div className="flex gap-2">
-                <p className="font-bold">{previewProfile.displayName}</p>
-                <p className="text-tertiary">@{previewProfile.handle}</p>
-              </div>
-              <div className="flex flex-col">
-                <BlueskyPostEditorProsemirror
-                  editorStateRef={props.editorStateRef}
-                  onCharCountChange={props.setCharCount}
-                  persistKey={props.bskyDraftKey}
-                />
-              </div>
-              <div className="opaque-container text-secondary overflow-hidden flex flex-col mt-4 w-full">
-                <div className="flex flex-col p-2">
-                  <div className="font-bold truncate min-w-0 w-full ">
-                    {props.title}
-                  </div>
-                  <div className="text-tertiary line-clamp-3">
-                    {props.description}
-                  </div>
-                  <hr className="border-border mt-2 mb-1" />
-                  <p className="text-xs text-tertiary">
-                    {props.record?.url?.replace(/^https?:\/\//, "")}
-                  </p>
-                </div>
-              </div>
-              <div className="text-xs text-secondary italic place-self-end pt-2">
-                {props.charCount}/300
-              </div>
-            </div>
-          </div>
-        </div>
+        <BlueskyPostComposer
+          profile={{
+            avatar: previewProfile.avatar,
+            displayName: previewProfile.displayName,
+            handle: previewProfile.handle,
+          }}
+          editorStateRef={props.editorStateRef}
+          charCount={props.charCount}
+          onCharCountChange={props.setCharCount}
+          persistKey={props.bskyDraftKey}
+          embed={{
+            title: props.title,
+            description: props.description,
+            url: props.record?.url,
+          }}
+        />
       </div>
 
       <hr className="border-border-light my-1" />
