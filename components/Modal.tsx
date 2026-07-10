@@ -65,10 +65,10 @@ export const Modal = ({
             flex flex-col rounded-lg! min-h-0 overflow-y-scroll
             ${className}`}
           >
-            <div className="flex gap-4 justify-between">
+            <div className="flex gap-4 justify-between items-start pb-1 ">
               {title ? (
                 <Dialog.Title asChild>
-                  <h3 className="pb-1 text-primary">{title}</h3>
+                  <h3 className="text-primary">{title}</h3>
                 </Dialog.Title>
               ) : (
                 <Dialog.Title />

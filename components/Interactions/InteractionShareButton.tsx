@@ -13,6 +13,7 @@ import { DotLoader } from "../utils/DotLoader";
 import { useIdentityData } from "../IdentityProvider";
 import { editorStateToFacetedText } from "../BlueskyPostComposer/ProsemirrorEditor";
 import { sharePostToBsky } from "actions/sharePostToBsky";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 
 export const InteractionShareButton = (props: {
   postUrl?: string;
@@ -21,7 +22,6 @@ export const InteractionShareButton = (props: {
   trigger?: React.ReactNode;
 }) => {
   let smoker = useSmoker();
-  let isMobile = useIsMobile();
   let [shareModalOpen, setShareModalOpen] = useState(false);
 
   if (props.type === "none") return;
@@ -69,37 +69,30 @@ export const InteractionShareButton = (props: {
           Copy Link
         </MenuItem>
       </Menu>
-      {isMobile ? (
-        <MobileSheet open={shareModalOpen} onOpenChange={setShareModalOpen}>
-          <ShareModalContent
-            postUrl={props.postUrl}
-            title={props.title}
-            onPosted={() => setShareModalOpen(false)}
-          />{" "}
-        </MobileSheet>
-      ) : (
-        <Modal open={shareModalOpen} onOpenChange={setShareModalOpen}>
-          <ShareModalContent
-            postUrl={props.postUrl}
-            title={props.title}
-            onPosted={() => setShareModalOpen(false)}
-          />
-        </Modal>
-      )}
+      <ShareModal
+        postUrl={props.postUrl}
+        title={props.title}
+        onPosted={() => setShareModalOpen(false)}
+        shareModalOpen={shareModalOpen}
+        setShareModalOpen={setShareModalOpen}
+      />
     </>
   );
 };
 
-const ShareModalContent = (props: {
+const ShareModal = (props: {
   postUrl?: string;
   title?: string;
   onPosted: () => void;
+  shareModalOpen: boolean;
+  setShareModalOpen: (s: boolean) => void;
 }) => {
   let { identity } = useIdentityData();
   let toaster = useToaster();
   let editorStateRef = useRef<EditorState | null>(null);
   let [charCount, setCharCount] = useState(0);
   let [posting, setPosting] = useState(false);
+  let isMobile = useIsMobile();
 
   let profile = {
     avatar: identity?.bsky_profiles?.record.avatar,
@@ -127,23 +120,58 @@ const ShareModalContent = (props: {
     props.onPosted();
   };
 
+  let submitButton = (
+    <ButtonPrimary
+      className="place-self-end"
+      compact
+      onClick={post}
+      disabled={posting || charCount === 0 || charCount > 300}
+    >
+      {posting ? (
+        <DotLoader />
+      ) : (
+        <>
+          <BlueskyTiny /> Post
+        </>
+      )}
+    </ButtonPrimary>
+  );
+
   return (
-    <div className="flex flex-col gap-3 w-full sm:w-96">
-      <div className="font-bold text-secondary">Share on Bluesky</div>
-      <BlueskyPostComposer
-        profile={profile}
-        editorStateRef={editorStateRef}
-        charCount={charCount}
-        onCharCountChange={setCharCount}
-        embed={{ title: props.title, url: props.postUrl }}
-      />
-      <ButtonPrimary
-        className="place-self-end"
-        onClick={post}
-        disabled={posting || charCount === 0 || charCount > 300}
-      >
-        {posting ? <DotLoader /> : "Post to Bluesky"}
-      </ButtonPrimary>
-    </div>
+    <>
+      {isMobile ? (
+        <MobileSheet
+          open={props.shareModalOpen}
+          onOpenChange={props.setShareModalOpen}
+          title="Share on Bluesky"
+          actionButton={submitButton}
+        >
+          <BlueskyPostComposer
+            profile={profile}
+            editorStateRef={editorStateRef}
+            charCount={charCount}
+            onCharCountChange={setCharCount}
+            embed={{ title: props.title, url: props.postUrl }}
+          />
+        </MobileSheet>
+      ) : (
+        <Modal
+          open={props.shareModalOpen}
+          onOpenChange={props.setShareModalOpen}
+          title="Share on Bluesky"
+          actionButton={submitButton}
+          className="w-md"
+        >
+          <div className="spacer w-full h-2" />
+          <BlueskyPostComposer
+            profile={profile}
+            editorStateRef={editorStateRef}
+            charCount={charCount}
+            onCharCountChange={setCharCount}
+            embed={{ title: props.title, url: props.postUrl }}
+          />
+        </Modal>
+      )}
+    </>
   );
 };

@@ -1,6 +1,7 @@
 "use client";
 import { EditorState } from "prosemirror-state";
 import { ProsemirrorEditor } from "./ProsemirrorEditor";
+import { Avatar } from "components/Avatar";
 
 // The Bluesky compose card: the author's avatar/handle, the prosemirror post
 // editor, a preview of the external link card for the post being shared, and a
@@ -21,25 +22,23 @@ export function BlueskyPostComposer(props: {
   embed: { title?: string; description?: string; url?: string };
 }) {
   return (
-    <div className="opaque-container border-border! py-2 px-3 text-sm rounded-lg!">
-      <div className="flex gap-2">
-        <img
-          className="rounded-full w-6 h-6 sm:w-[42px] sm:h-[42px] shrink-0"
-          src={props.profile.avatar ?? undefined}
-        />
-        <div className="flex flex-col min-w-0 w-full">
-          <div className="flex gap-2">
-            <p className="font-bold">{props.profile.displayName}</p>
-            <p className="text-tertiary">@{props.profile.handle}</p>
-          </div>
-          <div className="flex flex-col">
-            <ProsemirrorEditor
-              editorStateRef={props.editorStateRef}
-              onCharCountChange={props.onCharCountChange}
-              persistKey={props.persistKey}
-            />
-          </div>
-          <div className="opaque-container text-secondary overflow-hidden flex flex-col mt-4 w-full">
+    <>
+      <div className="bskyPostComposer flex flex-col">
+        <div className="flex gap-3 ">
+          <Avatar
+            src={props.profile.avatar}
+            displayName={props.profile.displayName}
+            size="large"
+          />
+
+          <ProsemirrorEditor
+            editorStateRef={props.editorStateRef}
+            onCharCountChange={props.onCharCountChange}
+            persistKey={props.persistKey}
+          />
+        </div>
+        <div className="pt-4 pl-10 w-full">
+          <div className="opaque-container text-secondary overflow-hidden flex flex-col ">
             <div className="flex flex-col p-2">
               <div className="font-bold truncate min-w-0 w-full ">
                 {props.embed.title}
@@ -48,16 +47,77 @@ export function BlueskyPostComposer(props: {
                 {props.embed.description}
               </div>
               <hr className="border-border mt-2 mb-1" />
-              <p className="text-xs text-tertiary">
+              <p className="text-xs text-tertiary min-w-0 truncate">
                 {props.embed.url?.replace(/^https?:\/\//, "")}
               </p>
             </div>
           </div>
-          <div className="text-xs text-secondary italic place-self-end pt-2">
-            {props.charCount}/300
+          <div className="place-self-end pt-2">
+            <CharacterCounter count={props.charCount} limit={300} />
           </div>
         </div>
       </div>
+    </>
+  );
+}
+
+function CharacterCounter(props: { count: number; limit: number }) {
+  const over = props.count - props.limit;
+  const isOver = over > 0;
+
+  const radius = 8;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.min(props.count / props.limit, 1);
+
+  return (
+    <div
+      className={`flex items-center gap-1 text-xs italic ${
+        isOver ? "text-accent-contrast font-bold" : "text-tertiary"
+      }`}
+    >
+      <span>{isOver ? over : props.count}</span>
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        className={`text-accent-contrast ${isOver ? "" : ""}`}
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="opacity-20"
+        />
+        {isOver ? (
+          <text
+            x="12"
+            y="11.5"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize="11"
+            fontWeight="bold"
+            fill="currentColor"
+          >
+            !
+          </text>
+        ) : (
+          <circle
+            cx="12"
+            cy="12"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - progress)}
+            transform="rotate(-90 12 12)"
+          />
+        )}
+      </svg>
     </div>
   );
 }

@@ -301,7 +301,7 @@ export function ProsemirrorEditor(props: {
   }, [openMentionAutocomplete]);
 
   return (
-    <div className="relative w-full h-full group">
+    <div className="relative w-full h-full grow min-w-0 group">
       <MentionAutocomplete
         open={mentionOpen}
         onOpenChange={handleMentionOpenChange}

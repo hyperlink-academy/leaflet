@@ -200,6 +200,8 @@ export const MobileSheet = ({
                               <h3 className="text-primary">{title}</h3>
                             </Dialog.Title>
                           </div>
+                          {actionButton && actionButton}
+
                           <Dialog.Close className="text-tertiary shrink-0">
                             <CloseTiny />
                           </Dialog.Close>
@@ -208,7 +210,6 @@ export const MobileSheet = ({
                         // Radix requires a Dialog.Title for accessibility.
                         <Dialog.Title />
                       )}
-                      {actionButton && actionButton}
                     </div>
                     <Dialog.Description asChild>
                       <div className="flex flex-col">
