@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { create, windowScheduler } from "@yornaath/batshit";
 import { RecommendEmptyTiny, RecommendFilledTiny } from "./Icons/RecommendTiny";
@@ -13,6 +13,11 @@ import { useSmoker, useToaster } from "./Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "./OAuthError";
 import { useIdentityData } from "./IdentityProvider";
 import { LoginModal } from "./LoginButton";
+import { Modal } from "./Modal";
+import { MobileSheet } from "./MobileSheet";
+import { useIsMobile } from "src/hooks/isMobile";
+import { RecommendsList } from "./RecommendsList";
+import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 
 // Create a batcher for recommendation checks
 // Batches requests made within 10ms window
@@ -137,28 +142,91 @@ export function RecommendButton(props: {
 }) {
   const { displayRecommended, count, recommendPost, loginOpen, setLoginOpen } =
     useRecommendPost(props.documentUri, props.recommendsCount);
+  const [recommendsModalOpen, setRecommendsModalOpen] = useState(false);
+  // Inside a post body (or the post footer) a DrawerThreadContext is in scope;
+  // there the recommenders open in the interaction drawer, mirroring how the
+  // discussion count does. Elsewhere (listings, feeds) they open in a modal.
+  const drawerNav = useContext(DrawerThreadContext);
 
   return (
     <>
-      <button
-        onClick={recommendPost}
-        className={`recommendButton relative flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
-        aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
+      <div
+        className={`recommendButton relative flex gap-1 items-center ${props.className || ""}`}
       >
-        {displayRecommended ? (
-          <RecommendFilledTiny className="text-accent-contrast" />
-        ) : (
-          <RecommendEmptyTiny />
-        )}
+        <button
+          onClick={recommendPost}
+          className="flex items-center hover:text-accent-contrast"
+          aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
+        >
+          {displayRecommended ? (
+            <RecommendFilledTiny className="text-accent-contrast" />
+          ) : (
+            <RecommendEmptyTiny />
+          )}
+        </button>
         {count > 0 && (
-          <span className={`${displayRecommended && "text-accent-contrast"}`}>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (drawerNav)
+                drawerNav.push({
+                  type: "recommends",
+                  uri: props.documentUri,
+                });
+              else setRecommendsModalOpen(true);
+            }}
+            className={`hover:text-accent-contrast ${displayRecommended ? "text-accent-contrast" : ""}`}
+            aria-label="See who recommended this"
+          >
             {count}
-          </span>
+          </button>
         )}
-      </button>
+      </div>
+      {recommendsModalOpen && (
+        <RecommendsModal
+          documentUri={props.documentUri}
+          open={recommendsModalOpen}
+          onOpenChange={setRecommendsModalOpen}
+        />
+      )}
       {loginOpen && (
         <LoginModal noEmailLogin open={loginOpen} onOpenChange={setLoginOpen} />
       )}
     </>
+  );
+}
+
+// Lists the profiles that have recommended a document. On mobile this slides up
+// in a sheet (like the interaction drawer / DiscussionModal) instead of a
+// centered modal.
+function RecommendsModal(props: {
+  documentUri: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const isMobile = useIsMobile();
+  const content = (
+    <>
+      <div className="font-bold text-secondary mb-3">Recommended by</div>
+      <RecommendsList documentUri={props.documentUri} />
+    </>
+  );
+
+  if (isMobile)
+    return (
+      <MobileSheet open={props.open} onOpenChange={props.onOpenChange}>
+        {content}
+      </MobileSheet>
+    );
+
+  return (
+    <Modal
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      className="w-80! max-w-full"
+    >
+      {content}
+    </Modal>
   );
 }

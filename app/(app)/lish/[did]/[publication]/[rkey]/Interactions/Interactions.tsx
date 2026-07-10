@@ -19,9 +19,10 @@ import { RecommendButton, useRecommendPost } from "components/RecommendButton";
 import { LoginModal } from "components/LoginButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
-import type { DrawerThread } from "./drawerThreadContext";
+import { useMemo } from "react";
+import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
-import { InteractionShareButton } from "components/InteractionsPreview";
+import { InteractionShareButton } from "components/InteractionShareButton";
 import { CommentFilledSmall } from "components/Icons/CommentFilledSmall";
 import { CommentEmptySmall } from "components/Icons/CommentEmptySmall";
 import { RecommendFilledSmall } from "components/Icons/RecommendFilledSmall";
@@ -211,6 +212,16 @@ export const Interactions = (props: {
 
   let interactionsAvailable = discussionsAvailable || props.showRecommends;
 
+  // Opening the recommenders onto this post's own interaction drawer, mirroring
+  // how the discussion button opens it. RecommendButton reads this off context.
+  const recommendsDrawerNav = useMemo(
+    () => ({
+      push: (thread: DrawerThread) =>
+        openDrawerThread(document_uri, thread, props.pageId),
+    }),
+    [document_uri, props.pageId],
+  );
+
   return (
     <div
       className={`flex gap-2 text-tertiary text-sm items-center ${props.className}`}
@@ -240,10 +251,12 @@ export const Interactions = (props: {
         </button>
       )}
       {props.showRecommends === false ? null : (
-        <RecommendButton
-          documentUri={document_uri}
-          recommendsCount={props.recommendsCount}
-        />
+        <DrawerThreadContext.Provider value={recommendsDrawerNav}>
+          <RecommendButton
+            documentUri={document_uri}
+            recommendsCount={props.recommendsCount}
+          />
+        </DrawerThreadContext.Provider>
       )}
       <div className="h-full  w-0 spacer" />
       <InteractionShareButton
@@ -272,7 +285,8 @@ export const ExpandedInteractions = (props: {
     leafletId,
   } = useDocument();
 
-  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+  let { drawerOpen, drawer, pageId, threadStack } =
+    useInteractionState(document_uri);
   let viewer = useViewerSubscription(publication?.uri ?? "");
 
   const handleQuotePrefetch = () => {
@@ -297,7 +311,7 @@ export const ExpandedInteractions = (props: {
 
   let noInteractions = !discussionsAvailable && !props.showRecommends;
   let interactionButtonClassName =
-    "flex gap-1 items-center text-accent-contrast py-1 px-2 rounded-full border border-accent-contrast shrink-0 sm:hover:bg-accent-1 hover:text-accent-2";
+    "relative flex gap-1 items-center text-accent-contrast py-1 px-2 rounded-full border border-accent-contrast shrink-0 sm:hover:bg-accent-1 hover:text-accent-2";
 
   return (
     <div
@@ -318,23 +332,45 @@ export const ExpandedInteractions = (props: {
         ) : (
           <>
             {props.showRecommends === false ? null : (
-              <button
-                className={interactionButtonClassName}
-                onClick={recommendPost}
-              >
+              <div className={interactionButtonClassName}>
+                <button
+                  className="absolute inset-0 "
+                  onClick={recommendPost}
+                  aria-label={
+                    displayRecommended ? "Remove recommend" : "Recommend"
+                  }
+                />
                 {displayRecommended ? (
                   <RecommendFilledSmall className="text-accent-contrast" />
                 ) : (
                   <RecommendEmptySmall />
                 )}
                 {count > 0 && (
-                  <span
-                    className={`${displayRecommended && "text-accent-contrast"} pr-1`}
+                  <button
+                    onClick={() => {
+                      const showingRecommends =
+                        drawerOpen &&
+                        threadStack[threadStack.length - 1]?.type ===
+                          "recommends" &&
+                        pageId === props.pageId;
+                      if (showingRecommends)
+                        setInteractionState(document_uri, {
+                          drawerOpen: false,
+                        });
+                      else
+                        openDrawerThread(
+                          document_uri,
+                          { type: "recommends", uri: document_uri },
+                          props.pageId,
+                        );
+                    }}
+                    className={`${displayRecommended && "text-accent-contrast"} pr-1 relative`}
+                    aria-label="See who recommended this"
                   >
                     {count}
-                  </span>
+                  </button>
                 )}
-              </button>
+              </div>
             )}
             {!discussionsAvailable ? null : (
               <button

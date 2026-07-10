@@ -9,10 +9,7 @@ import { TagTiny } from "./Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionModal } from "./DiscussionModal";
 import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
-import { Menu, MenuItem } from "./Menu";
-import { ButtonPrimary, ButtonTertiary } from "./Buttons";
-import { Modal } from "./Modal";
-import { ShareTiny } from "./Icons/ShareTiny";
+import { InteractionShareButton } from "./InteractionShareButton";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
@@ -88,7 +85,11 @@ export const InteractionPreview = (props: {
         )}
       </div>
 
-      <InteractionShareButton type={props.shareType} postUrl={props.postUrl} />
+      <InteractionShareButton
+        type={props.shareType}
+        postUrl={props.postUrl}
+        title={props.title}
+      />
 
       {/*{tagsCount === 0 ? null : (
         <>
@@ -126,64 +127,4 @@ const TagList = (props: { tags: string[]; className?: string }) => {
       ))}
     </div>
   );
-};
-
-export const InteractionShareButton = (props: {
-  postUrl?: string;
-  type: "none" | "weak" | "strong";
-  trigger?: React.ReactNode;
-}) => {
-  let smoker = useSmoker();
-
-  if (props.type === "none") return;
-  return (
-    <Menu
-      trigger={
-        <div
-          className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.type === "strong" ? "text-accent-contrast" : ""}`}
-        >
-          {props.trigger ? (
-            props.trigger
-          ) : (
-            <>
-              <ShareTiny />
-              Share
-            </>
-          )}
-        </div>
-      }
-    >
-      <Modal
-        asChild
-        trigger={<MenuItem onSelect={() => {}}>Share on Bluesky</MenuItem>}
-      >
-        <ShareModalContent />{" "}
-      </Modal>
-
-      <MenuItem
-        onSelect={(e: Event) => {
-          e.stopPropagation();
-          e.preventDefault();
-
-          if (!props.postUrl) return;
-          navigator.clipboard.writeText(props.postUrl);
-
-          let rect = (e.target as HTMLElement).getBoundingClientRect();
-          smoker({
-            text: <strong>Copied Link!</strong>,
-            position: {
-              y: rect.top,
-              x: rect.left,
-            },
-          });
-        }}
-      >
-        Copy Link
-      </MenuItem>
-    </Menu>
-  );
-};
-
-const ShareModalContent = () => {
-  return <div>hello</div>;
 };

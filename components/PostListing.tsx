@@ -24,7 +24,7 @@ import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { RecommendButton } from "./RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionModal } from "./DiscussionModal";
-import { InteractionShareButton } from "./InteractionsPreview";
+import { InteractionShareButton } from "./InteractionShareButton";
 import { PublicationPostItemLarge } from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
 
 export const PostListing = (props: Post & { selected?: boolean }) => {
