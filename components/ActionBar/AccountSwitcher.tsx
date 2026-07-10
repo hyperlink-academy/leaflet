@@ -34,7 +34,6 @@ function useOtherAccounts() {
 export const SwitchAccountItem = (props: {
   onShowAccounts: () => void;
   onAddAccount: () => void;
-  onClose: () => void;
 }) => {
   let { otherAccounts } = useOtherAccounts();
   return (
@@ -46,7 +45,6 @@ export const SwitchAccountItem = (props: {
           if (otherAccounts.length > 0) {
             props.onShowAccounts();
           } else {
-            props.onClose();
             props.onAddAccount();
           }
         }}
@@ -63,7 +61,6 @@ export const SwitchAccountItem = (props: {
 export const AccountList = (props: {
   onBack: () => void;
   onAddAccount: () => void;
-  onClose: () => void;
 }) => {
   let { otherAccounts } = useOtherAccounts();
   let [pendingToken, setPendingToken] = useState<string | null>(null);
@@ -127,10 +124,7 @@ export const AccountList = (props: {
       <button
         type="button"
         className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
-        onClick={() => {
-          props.onClose();
-          props.onAddAccount();
-        }}
+        onClick={props.onAddAccount}
       >
         <AddSmall />
         Add Account

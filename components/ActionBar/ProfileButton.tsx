@@ -51,6 +51,15 @@ export const ProfileButton = () => {
   let [proOpen, setProOpen] = useState(false);
   let [upgradeOpen, setUpgradeOpen] = useState(false);
 
+  // Close the menu but leave the mobile sidebar open: this component (and the
+  // add-account modal's state) is mounted inside the sidebar's Dialog, so
+  // closing the sidebar would unmount the modal right as it opens.
+  let openAddAccount = () => {
+    setOpen(false);
+    setShowAccounts(false);
+    setAddAccountOpen(true);
+  };
+
   return (
     <>
     <Popover
@@ -88,12 +97,7 @@ export const ProfileButton = () => {
       {showAccounts ? (
         <AccountList
           onBack={() => setShowAccounts(false)}
-          onClose={() => {
-            setOpen(false);
-            setSidebarOpen(false);
-            setShowAccounts(false);
-          }}
-          onAddAccount={() => setAddAccountOpen(true)}
+          onAddAccount={openAddAccount}
         />
       ) : (
       <div className="flex flex-col gap-0.5">
@@ -164,11 +168,7 @@ export const ProfileButton = () => {
         )}
         <SwitchAccountItem
           onShowAccounts={() => setShowAccounts(true)}
-          onClose={() => {
-            setOpen(false);
-            setSidebarOpen(false);
-          }}
-          onAddAccount={() => setAddAccountOpen(true)}
+          onAddAccount={openAddAccount}
         />
         <button
           type="button"
