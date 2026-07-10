@@ -115,7 +115,10 @@ export const BskyShareModal = (props: {
     });
     setPosting(false);
     if (!res.success) {
-      toaster({ content: "Oh no! Something went wrong!", type: "error" });
+      toaster({
+        content: "Hmm… Something went wrong. Try again!",
+        type: "error",
+      });
       return;
     }
     toaster({ content: "Shared to Bluesky!", type: "success" });

@@ -353,6 +353,7 @@ const PublishPostForm = (
                 publication_uri={props.publication_uri}
                 root_entity={props.root_entity}
                 leaflet_id={props.leaflet_id}
+                publishedAt={localPublishedAt?.toISOString()}
                 bskyDraftKey={bskyDraftKey}
               />
               <hr className="border-border mb-2" />

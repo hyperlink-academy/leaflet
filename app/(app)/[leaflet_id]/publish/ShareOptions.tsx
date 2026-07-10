@@ -2,8 +2,10 @@
 import { Checkbox } from "components/Checkbox";
 import { BlueskyPostComposer } from "components/BlueskyPostComposer/BlueskyPostComposer";
 import { EditorState } from "prosemirror-state";
+import { AppBskyFeedDefs, AtUri } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { useState } from "react";
 import { sendPostPreview } from "actions/publications/sendPostPreview";
 import { ButtonSecondary } from "components/Buttons";
@@ -32,6 +34,9 @@ type Props = {
   publication_uri?: string;
   root_entity: string;
   leaflet_id: string;
+  // ISO publish date (scheduled, or undefined for immediate) — previewed in the
+  // standard.site card footer.
+  publishedAt?: string;
   // localStorage key under which the in-progress Bluesky post is persisted
   bskyDraftKey?: string;
 };
@@ -41,6 +46,44 @@ export function ShareOptions(props: Props) {
   // When publishing to a publication, the Bluesky post lives in the
   // publication owner's PDS, so the preview should show their identity.
   const previewProfile = props.publicationProfile ?? props.profile;
+
+  // When publishing to a publication, mirror the standard.site enrichment that
+  // bluesky's appview derives from the post's associatedRefs, so the compose
+  // card previews the same publication footer (icon, name, author, date) the
+  // published post will show. See BskyEmbed's StandardSiteExternalEmbed.
+  const pubDid = props.publication_uri
+    ? new AtUri(props.publication_uri).host
+    : previewProfile.did;
+  const bskyEmbed = {
+    $type: "app.bsky.embed.external#view",
+    external: {
+      uri: props.record?.url ?? "",
+      title: props.title,
+      description: props.description,
+      ...(props.record && {
+        createdAt: props.publishedAt ?? new Date().toISOString(),
+        source: {
+          uri: props.record.url,
+          title: props.record.name,
+          icon: props.record.icon
+            ? blobRefToSrc(props.record.icon.ref, pubDid)
+            : undefined,
+        },
+        associatedRefs: [
+          { uri: `at://${pubDid}/site.standard.document/preview` },
+          { uri: `at://${pubDid}/site.standard.publication/preview` },
+        ],
+        associatedProfiles: [
+          {
+            did: pubDid,
+            handle: previewProfile.handle,
+            displayName: previewProfile.displayName,
+            avatar: previewProfile.avatar,
+          },
+        ],
+      }),
+    },
+  } as AppBskyFeedDefs.PostView["embed"];
   const handleChange = (
     key: keyof Omit<ShareState, "quiet">,
     checked: boolean,
@@ -131,14 +174,7 @@ export function ShareOptions(props: Props) {
           charCount={props.charCount}
           onCharCountChange={props.setCharCount}
           persistKey={props.bskyDraftKey}
-          embed={{
-            $type: "app.bsky.embed.external#view",
-            external: {
-              uri: props.record?.url ?? "",
-              title: props.title,
-              description: props.description,
-            },
-          }}
+          embed={bskyEmbed}
         />
       </div>
 
