@@ -10,6 +10,7 @@ import {
   getWebpageImage,
 } from "src/utils/getMicroLinkOgImage";
 import { resolveStandardSitePostUrl } from "src/utils/resolveStandardSitePostUrl";
+import { resolveStandardSitePublicationUrl } from "src/utils/resolveStandardSitePublicationUrl";
 import { resolveBlueskyPostUrl } from "src/utils/resolveBlueskyPostUrl";
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -21,14 +22,19 @@ export async function POST(req: NextRequest) {
   let body = (await req.json()) as LinkPreviewBody;
   let url = encodeURIComponent(body.url);
   if (body.type === "meta") {
-    let [iframely, leafletPost, blueskyPost] = await Promise.all([
-      get_link_metadata(url),
-      resolveStandardSitePostUrl(body.url, supabase).catch(() => null),
-      resolveBlueskyPostUrl(body.url).catch(() => null),
-    ]);
+    let [iframely, leafletPost, leafletPublication, blueskyPost] =
+      await Promise.all([
+        get_link_metadata(url),
+        resolveStandardSitePostUrl(body.url, supabase).catch(() => null),
+        resolveStandardSitePublicationUrl(body.url, supabase).catch(() => null),
+        resolveBlueskyPostUrl(body.url).catch(() => null),
+      ]);
     return Response.json({
       ...iframely,
       leafletPost: leafletPost ? { uri: leafletPost } : null,
+      leafletPublication: leafletPublication
+        ? { uri: leafletPublication }
+        : null,
       blueskyPost: blueskyPost ? { uri: blueskyPost } : null,
     });
   } else {
@@ -40,6 +46,7 @@ export async function POST(req: NextRequest) {
 export type LinkPreviewMetadataResult = Promise<
   Awaited<ReturnType<typeof get_link_metadata>> & {
     leafletPost: { uri: string } | null;
+    leafletPublication: { uri: string } | null;
     blueskyPost: { uri: string } | null;
   }
 >;

@@ -7,6 +7,7 @@ import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksStandardSitePost,
+  PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
@@ -397,6 +398,22 @@ export async function processBlocksToPages(opts: {
         $type: ids.PubLeafletBlocksStandardSitePost,
         uri: uri.data.value,
         ...(sizeFact && { size: sizeFact.data.value }),
+        ...(showPubThemeFact?.data.value === false && {
+          showPublicationTheme: false,
+        }),
+      };
+      return block;
+    }
+    if (b.type === "standard-site-publication") {
+      const [uri] = scan.eav(b.value, "block/standard-site-publication");
+      if (!uri) return;
+      const [showPubThemeFact] = scan.eav(
+        b.value,
+        "standard-site-publication/show-publication-theme",
+      );
+      const block: $Typed<PubLeafletBlocksStandardSitePublication.Main> = {
+        $type: ids.PubLeafletBlocksStandardSitePublication,
+        uri: uri.data.value,
         ...(showPubThemeFact?.data.value === false && {
           showPublicationTheme: false,
         }),

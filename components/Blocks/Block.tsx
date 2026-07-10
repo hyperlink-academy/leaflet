@@ -27,6 +27,7 @@ import { ButtonBlock } from "./ButtonBlock";
 import { PollBlock } from "./PollBlock";
 import { BlueskyPostBlock } from "./BlueskyPostBlock";
 import { StandardSitePostBlock } from "./StandardSitePostBlock";
+import { StandardSitePublicationBlock } from "./StandardSitePublicationBlock";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MathBlock } from "./MathBlock";
@@ -387,6 +388,7 @@ const BlockTypeComponents: {
   poll: PollBlock,
   "bluesky-post": BlueskyPostBlock,
   "standard-site-post": StandardSitePostBlock,
+  "standard-site-publication": StandardSitePublicationBlock,
   "horizontal-rule": HorizontalRule,
   "members-only-delimiter": MembersOnlyDelimiterBlock,
   "posts-list": PostsListBlock,

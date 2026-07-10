@@ -440,7 +440,7 @@ const BlockifyLink = (props: {
             }
           });
         }}
-        className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
+        className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast rounded-md bg-bg-page h-6 flex items-center"
       >
         {loading ? <DotLoader /> : "embed"}
       </button>

@@ -4,6 +4,7 @@ import { parseColor } from "react-aria-components";
 import { useEntity } from "src/replicache";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
+import { AtUri } from "@atproto/api";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import type * as SiteStandardThemeBasic from "lexicons/api/types/site/standard/theme/basic";
 import { resolvePublicationTheme } from "lexicons/src/normalize";
@@ -137,6 +138,33 @@ export function PublicationThemeProvider(props: {
         {props.children}
       </BaseThemeProvider>
     </CardBorderHiddenContext.Provider>
+  );
+}
+
+export function WithPublicationTheme({
+  record,
+  uri,
+  enabled,
+  children,
+}: {
+  record: PubThemeSource | null | undefined;
+  uri: string | null | undefined;
+  enabled: boolean;
+  children: React.ReactNode;
+}) {
+  if (!enabled || !record || !uri || (!record.theme && !record.basicTheme)) {
+    return <>{children}</>;
+  }
+  let pubCreator: string;
+  try {
+    pubCreator = new AtUri(uri).host;
+  } catch {
+    return <>{children}</>;
+  }
+  return (
+    <PublicationThemeProvider local record={record} pub_creator={pubCreator}>
+      {children}
+    </PublicationThemeProvider>
   );
 }
 
