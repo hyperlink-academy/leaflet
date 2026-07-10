@@ -13,7 +13,9 @@ import {
 } from "@atproto/api";
 import { useMemo } from "react";
 import { Avatar } from "components/Avatar";
+import { LocalizedDate } from "app/(app)/lish/[did]/[publication]/LocalizedDate";
 import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
+import { PubIcon } from "components/ActionBar/Publications";
 
 // A fork of bluesky's embed renderer, matching its layout while using our
 // colors, fonts, and shared components (Avatar, BlueskyVideoPlayer). Context
@@ -379,6 +381,16 @@ function ExternalEmbed({
   className?: string;
 }) {
   if (labelInfo) return <Info>{labelInfo}</Info>;
+  const external = content.external as StandardSiteExternal;
+  if (external.source && isStandardSiteEmbed(external)) {
+    return (
+      <StandardSiteExternalEmbed
+        external={external}
+        compact={compact}
+        className={className}
+      />
+    );
+  }
 
   return (
     <Link
@@ -423,6 +435,100 @@ function ExternalEmbed({
         </div>
       </div>
     </Link>
+  );
+}
+
+// The standard.site card: the article's thumb/title/description linking to the
+// post, footered with the publication (icon + name + author) linking to the
+// publication instead of the article's bare domain.
+function StandardSiteExternalEmbed({
+  external,
+  compact,
+  className,
+}: {
+  external: StandardSiteExternal;
+  compact?: boolean;
+  className?: string;
+}) {
+  const source = external.source!;
+  // The author is the did that owns the site.standard.document ref, matched to
+  // one of the associated profiles.
+  const authorDid = external.associatedRefs
+    ?.filter((ref) =>
+      atCollection(ref.uri).startsWith("site.standard.document"),
+    )
+    .map((ref) => atHost(ref.uri))
+    .find(Boolean);
+  const author = authorDid
+    ? external.associatedProfiles?.find((p) => p.did === authorDid)
+    : undefined;
+
+  return (
+    <div
+      className={`w-full rounded-lg overflow-hidden border border-border-light flex flex-col items-stretch ${className || ""}`}
+    >
+      <Link
+        href={external.uri}
+        className="flex flex-col hover:no-underline"
+        disableTracking
+      >
+        {external.thumb && !compact && (
+          <img
+            src={external.thumb}
+            alt={external.title}
+            className="aspect-[1200/630] object-cover"
+          />
+        )}
+        <div className="min-w-0 flex flex-col py-2 px-2.5">
+          <p className="font-bold leading-tight line-clamp-3">
+            {external.title}
+          </p>
+          {external.description && (
+            <p className="text-sm leading-snug text-tertiary line-clamp-2 mt-0.5">
+              {external.description}
+            </p>
+          )}
+          {external.createdAt && (
+            <p className="text-xs leading-snug text-tertiary mt-1">
+              <LocalizedDate
+                dateString={external.createdAt}
+                options={{ year: "numeric", month: "long", day: "2-digit" }}
+              />
+            </p>
+          )}
+        </div>
+      </Link>
+      <div className="flex items-center gap-2 border-t border-border-light py-2 px-2.5">
+        <Link
+          href={source.uri || external.uri}
+          className="flex items-center gap-2 min-w-0 grow hover:no-underline"
+          disableTracking
+        >
+          <PubIcon
+            icon={source.icon}
+            pubName={source.title}
+            className="rounded-md! w-8! h-8!"
+          />
+
+          <div className="flex flex-col leading-tight  min-w-0">
+            <span className="text-sm font-semibold text-secondary truncate">
+              {source.title}
+            </span>
+            {author?.handle && (
+              <span className="text-xs text-tertiary truncate shrink-0">
+                by @{author.handle}
+              </span>
+            )}
+          </div>
+        </Link>
+        <Link
+          href={source.uri || external.uri}
+          className="shrink-0 bg-accent-1 text-accent-2 border border-accent-1 rounded-full px-2 py-0.5 text-sm font-bold hover:no-underline"
+        >
+          Subscribe
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -594,6 +700,43 @@ function toNiceDomain(url: string): string {
 
 function getRkey(uri: string): string {
   return new AtUri(uri).rkey;
+}
+
+// standard.site (leaflet.pub etc.) augments the external embed with refs to the
+// underlying site.standard.* records, the author profiles, and the publication.
+// These aren't in the published @atproto/api types yet, so widen locally.
+type StandardSiteExternal = AppBskyEmbedExternal.ViewExternal & {
+  associatedRefs?: { uri: string; cid?: string }[];
+  associatedProfiles?: {
+    did: string;
+    handle: string;
+    displayName?: string;
+    avatar?: string;
+  }[];
+  source?: { uri?: string; title?: string; icon?: string };
+  createdAt?: string;
+};
+
+function atCollection(uri: string): string {
+  try {
+    return new AtUri(uri).collection;
+  } catch {
+    return "";
+  }
+}
+
+function atHost(uri: string): string {
+  try {
+    return new AtUri(uri).host;
+  } catch {
+    return "";
+  }
+}
+
+function isStandardSiteEmbed(external: StandardSiteExternal): boolean {
+  return !!external.associatedRefs?.some((ref) =>
+    atCollection(ref.uri).startsWith("site.standard."),
+  );
 }
 
 function clamp(num: number, min: number, max: number) {

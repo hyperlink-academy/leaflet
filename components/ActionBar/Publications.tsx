@@ -194,9 +194,11 @@ export const PubIcon = (props: {
       />
     </div>
   ) : (
-    <div className={`${iconSizeClassName} ${props.className} bg-accent-1 relative`}>
+    <div
+      className={`${iconSizeClassName} ${props.className} bg-accent-1 relative`}
+    >
       <div
-        className={`${props.tiny ? "text-xs" : props.large ? "text-2xl" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2`}
+        className={`${props.tiny ? "text-xs" : props.large ? "text-2xl" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2 shrink-0`}
       >
         {props.pubName ? props.pubName.slice(0, 1).toUpperCase() : "P"}
       </div>

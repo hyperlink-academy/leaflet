@@ -47,6 +47,42 @@ const external = (opts: { thumb?: boolean } = {}) =>
     },
   });
 
+const standardSite = (opts: { thumb?: boolean; icon?: boolean } = {}) =>
+  e({
+    $type: "app.bsky.embed.external#view",
+    external: {
+      uri: "https://leaflet.pub/p/how-we-built-the-thing",
+      title: "How we built the thing: a deep dive into the internals",
+      description:
+        "An article published on a standard.site publication, with an associated document ref, author profile, and publication source.",
+      thumb: opts.thumb ? img("standardsite", 1200, 630) : undefined,
+      createdAt: "2026-07-10T00:00:00.000Z",
+      source: {
+        uri: "https://leaflet.pub/alice",
+        title: "Alice's Newsletter",
+        icon: opts.icon === false ? undefined : img("pubicon", 100, 100),
+      },
+      associatedRefs: [
+        {
+          uri: "at://did:plc:examplealice/site.standard.document/doc123",
+          cid: "bafydoc",
+        },
+        {
+          uri: "at://did:plc:examplealice/site.standard.publication/pub123",
+          cid: "bafypub",
+        },
+      ],
+      associatedProfiles: [
+        {
+          did: "did:plc:examplealice",
+          handle: "alice.bsky.social",
+          displayName: "Alice Example",
+          avatar: img("alice", 100, 100),
+        },
+      ],
+    },
+  });
+
 const viewRecord = (extra: Record<string, unknown> = {}) => ({
   $type: "app.bsky.embed.record#viewRecord",
   uri: "at://did:plc:examplealice/app.bsky.feed.post/abc123",
@@ -92,6 +128,19 @@ const VARIANTS: Variant[] = [
   { label: "Image ×5 (overflow +1)", content: images(5) },
   { label: "External (with thumb)", content: external({ thumb: true }) },
   { label: "External (no thumb)", content: external() },
+  {
+    label: "standard.site post (thumb + pub footer)",
+    content: standardSite({ thumb: true }),
+    note: "Footer shows publication icon + name + author, links to source.uri.",
+  },
+  {
+    label: "standard.site post (no thumb)",
+    content: standardSite(),
+  },
+  {
+    label: "standard.site post (no pub icon)",
+    content: standardSite({ thumb: true, icon: false }),
+  },
   {
     label: "Quote — short",
     content: quote(),
