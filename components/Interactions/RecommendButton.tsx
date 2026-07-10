@@ -7,6 +7,8 @@ import {
   RecommendEmptyTiny,
   RecommendFilledTiny,
 } from "../Icons/RecommendTiny";
+import { RecommendEmptySmall } from "../Icons/RecommendEmptySmall";
+import { RecommendFilledSmall } from "../Icons/RecommendFilledSmall";
 import {
   recommendAction,
   unrecommendAction,
@@ -19,8 +21,12 @@ import { LoginModal } from "../LoginButton";
 import { Modal } from "../Modal";
 import { MobileSheet } from "../MobileSheet";
 import { useIsMobile } from "src/hooks/isMobile";
-import { RecommendsList } from "./RecommendsList";
+import { RecommendsList, getDocumentRecommendsKey } from "./RecommendsList";
 import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
+import {
+  InteractionButton,
+  LargeInteractionButton,
+} from "./InteractionButtons";
 
 // Create a batcher for recommendation checks
 // Batches requests made within 10ms window
@@ -37,6 +43,13 @@ const recommendationBatcher = create({
 
 const getRecommendationKey = (documentUri: string) =>
   `recommendation:${documentUri}`;
+
+// The recommends count lives in a shared SWR cache (seeded from the server prop
+// via fallbackData) rather than local state, so every RecommendButton for the
+// same document — the inline button, the one in the RecommendsModal, etc. —
+// reflects the same optimistic count.
+const getRecommendCountKey = (documentUri: string) =>
+  `recommendation-count:${documentUri}`;
 
 function useUserRecommendation(documentUri: string) {
   const { data: hasRecommended, isLoading } = useSWR(
@@ -56,6 +69,38 @@ function mutateRecommendation(documentUri: string, hasRecommended: boolean) {
   });
 }
 
+function mutateRecommendCount(
+  documentUri: string,
+  updater: (count: number) => number,
+  fallback: number,
+) {
+  mutate(
+    getRecommendCountKey(documentUri),
+    (c: number | undefined) => updater(c ?? fallback),
+    { revalidate: false },
+  );
+}
+
+// Add or remove a did from the cached recommender list so RecommendsList shows
+// the change immediately. The server write is synchronous, so a later revalidate
+// (e.g. when the modal mounts) reconciles ordering and other recommenders.
+function mutateDocumentRecommends(
+  documentUri: string,
+  did: string,
+  recommended: boolean,
+) {
+  mutate(
+    getDocumentRecommendsKey(documentUri),
+    (dids: string[] | undefined) => {
+      const current = dids ?? [];
+      if (recommended)
+        return current.includes(did) ? current : [did, ...current];
+      return current.filter((d) => d !== did);
+    },
+    { revalidate: false },
+  );
+}
+
 /**
  * Encapsulates the recommendation state and toggle handler so multiple button
  * styles (the tiny inline button and the expanded ButtonSecondary) can share
@@ -65,7 +110,11 @@ function mutateRecommendation(documentUri: string, hasRecommended: boolean) {
 export function useRecommendPost(documentUri: string, recommendsCount: number) {
   const { hasRecommended, isLoading } = useUserRecommendation(documentUri);
   const { identity } = useIdentityData();
-  const [count, setCount] = useState(recommendsCount);
+  const { data: count = recommendsCount } = useSWR<number>(
+    getRecommendCountKey(documentUri),
+    null,
+    { fallbackData: recommendsCount },
+  );
   const [isPending, setIsPending] = useState(false);
   const [optimisticRecommended, setOptimisticRecommended] = useState<
     boolean | null
@@ -89,9 +138,15 @@ export function useRecommendPost(documentUri: string, recommendsCount: number) {
     }
 
     const currentlyRecommended = displayRecommended;
+    const myDid = identity.atp_did;
     setIsPending(true);
     setOptimisticRecommended(!currentlyRecommended);
-    setCount((c) => (currentlyRecommended ? c - 1 : c + 1));
+    mutateRecommendCount(
+      documentUri,
+      (c) => (currentlyRecommended ? c - 1 : c + 1),
+      recommendsCount,
+    );
+    mutateDocumentRecommends(documentUri, myDid, !currentlyRecommended);
 
     if (!currentlyRecommended) {
       smoker({
@@ -109,7 +164,12 @@ export function useRecommendPost(documentUri: string, recommendsCount: number) {
     if (!result.success) {
       // Revert optimistic update
       setOptimisticRecommended(null);
-      setCount((c) => (currentlyRecommended ? c + 1 : c - 1));
+      mutateRecommendCount(
+        documentUri,
+        (c) => (currentlyRecommended ? c + 1 : c - 1),
+        recommendsCount,
+      );
+      mutateDocumentRecommends(documentUri, myDid, currentlyRecommended);
       setIsPending(false);
 
       toaster({
@@ -141,6 +201,8 @@ export function useRecommendPost(documentUri: string, recommendsCount: number) {
 export function RecommendButton(props: {
   documentUri: string;
   recommendsCount: number;
+  recommendOnly?: boolean;
+  large?: boolean;
   className?: string;
 }) {
   const { displayRecommended, count, recommendPost, loginOpen, setLoginOpen } =
@@ -151,44 +213,48 @@ export function RecommendButton(props: {
   // discussion count does. Elsewhere (listings, feeds) they open in a modal.
   const drawerNav = useContext(DrawerThreadContext);
 
+  const ButtonWrapper = props.large
+    ? LargeInteractionButton
+    : InteractionButton;
+  const FilledIcon = props.large ? RecommendFilledSmall : RecommendFilledTiny;
+  const EmptyIcon = props.large ? RecommendEmptySmall : RecommendEmptyTiny;
+
   return (
     <>
-      <div
-        className={`recommendButton relative flex gap-1 items-center ${props.className || ""}`}
+      <ButtonWrapper
+        onClick={recommendPost}
+        ariaLabel={displayRecommended ? "Remove recommend" : "Recommend"}
+        className={props.className}
       >
-        <button
-          onClick={recommendPost}
-          className="flex items-center hover:text-accent-contrast"
-          aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
-        >
-          {displayRecommended ? (
-            <RecommendFilledTiny className="text-accent-contrast" />
+        {displayRecommended ? <FilledIcon /> : <EmptyIcon />}
+        {count > 0 ? (
+          !props.recommendOnly ? (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (drawerNav)
+                  drawerNav.push({
+                    type: "recommends",
+                    uri: props.documentUri,
+                  });
+                else setRecommendsModalOpen(true);
+              }}
+              className={`relative  z-10 ${props.large ? "" : "hover:text-accent-contrast"}`}
+              aria-label="See who recommended this"
+            >
+              {count}
+            </button>
           ) : (
-            <RecommendEmptyTiny />
-          )}
-        </button>
-        {count > 0 && (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (drawerNav)
-                drawerNav.push({
-                  type: "recommends",
-                  uri: props.documentUri,
-                });
-              else setRecommendsModalOpen(true);
-            }}
-            className={`hover:text-accent-contrast ${displayRecommended ? "text-accent-contrast" : ""}`}
-            aria-label="See who recommended this"
-          >
-            {count}
-          </button>
-        )}
-      </div>
+            count
+          )
+        ) : null}
+      </ButtonWrapper>
+
       {recommendsModalOpen && (
         <RecommendsModal
           documentUri={props.documentUri}
+          recommendCount={props.recommendsCount}
           open={recommendsModalOpen}
           onOpenChange={setRecommendsModalOpen}
         />
@@ -203,33 +269,52 @@ export function RecommendButton(props: {
 // Lists the profiles that have recommended a document. On mobile this slides up
 // in a sheet (like the interaction drawer / DiscussionModal) instead of a
 // centered modal.
+
 function RecommendsModal(props: {
   documentUri: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  recommendCount: number;
 }) {
   const isMobile = useIsMobile();
-  const content = (
-    <>
-      <div className="font-bold text-secondary mb-3">Recommended by</div>
-      <RecommendsList documentUri={props.documentUri} />
-    </>
-  );
 
   if (isMobile)
     return (
-      <MobileSheet open={props.open} onOpenChange={props.onOpenChange}>
-        {content}
+      <MobileSheet
+        title="Recommended by"
+        open={props.open}
+        onOpenChange={props.onOpenChange}
+        actionButton={
+          <RecommendButton
+            documentUri={props.documentUri}
+            recommendsCount={props.recommendCount}
+            recommendOnly
+            large
+          />
+        }
+      >
+        <RecommendsList documentUri={props.documentUri} />{" "}
       </MobileSheet>
     );
 
   return (
     <Modal
+      title={`Recommends`}
       open={props.open}
       onOpenChange={props.onOpenChange}
-      className="w-80! max-w-full"
+      actionButton={
+        <RecommendButton
+          documentUri={props.documentUri}
+          recommendsCount={props.recommendCount}
+          recommendOnly
+          large
+          className="p-0! border-none! flex-row-reverse! hover:sm:bg-transparent! h-fit! hover:text-accent-contrast!"
+        />
+      }
+      className="px-3!  pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]!"
     >
-      {content}
+      <hr className="border-border-light -mx-3 mb-3" />
+      <RecommendsList documentUri={props.documentUri} />
     </Modal>
   );
 }

@@ -23,6 +23,7 @@ import { useDocumentDiscussionData } from "./useDocumentDiscussionData";
 import { useIsMobile } from "src/hooks/isMobile";
 import { MobileSheet } from "components/MobileSheet";
 import { RecommendsList } from "components/Interactions/RecommendsList";
+import { RecommendButton } from "components/Interactions/RecommendButton";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -106,7 +107,7 @@ const InteractionDrawerContent = (props: {
   pageId?: string;
   tab: "comments" | "quotes";
 }) => {
-  let { commentsCountByPage } = useDocument();
+  let { commentsCountByPage, recommendsCount } = useDocument();
   let commentsCount = commentsCountByPage[props.pageId ?? ""] ?? 0;
   let { threadStack } = useInteractionState(props.document_uri);
   const drawerNav = useMemo(
@@ -205,14 +206,15 @@ const InteractionDrawerContent = (props: {
               </h4>
             )
           ) : activeThread?.type === "recommends" ? (
-            <div className="flex items-center gap-2">
-              <button
-                className="flex items-center gap-1 text-tertiary hover:text-secondary font-bold text-sm"
-                onClick={() => popDrawerThread(props.document_uri)}
-              >
-                <GoBackTiny /> Back
-              </button>
-              <h4>Recommended by</h4>
+            <div className="flex items-center justify-between gap-2">
+              <h3>Recommends</h3>
+              <RecommendButton
+                documentUri={props.document_uri}
+                recommendsCount={recommendsCount}
+                recommendOnly
+                className="p-0! border-none! flex-row-reverse! hover:sm:bg-transparent! h-fit! hover:text-accent-contrast!"
+                large
+              />
             </div>
           ) : activeThread ? (
             <div className="flex items-center gap-2">
@@ -277,7 +279,9 @@ const InteractionDrawerContent = (props: {
         {sspUri ? (
           <StandardSitePostDrawerView uri={sspUri} tab={sspActiveTab} />
         ) : activeThread?.type === "recommends" ? (
-          <RecommendsList documentUri={activeThread.uri} />
+          <>
+            <RecommendsList documentUri={activeThread.uri} />
+          </>
         ) : activeThread ? (
           <ThreadView
             parentUri={activeThread.uri}

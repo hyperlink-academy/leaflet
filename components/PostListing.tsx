@@ -16,14 +16,13 @@ import { useEffect, useRef, useState } from "react";
 import { PostByline } from "./PostByline";
 import { namedBylineProfiles } from "src/utils/byline";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import { CommentTiny } from "./Icons/CommentTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { RecommendButton } from "./Interactions/RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
-import { DiscussionModal } from "./Interactions/DiscussionModal";
+import { DiscussionButton } from "./Interactions/DiscussionButton";
 import { InteractionShareButton } from "./Interactions/InteractionShareButton";
 import { PublicationPostItemLarge } from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
 
@@ -252,23 +251,8 @@ const Interactions = (props: {
   let setSelectedPostListing = useSelectedPostListing(
     (s) => s.setSelectedPostListing,
   );
-  let [discussionsOpen, setDiscussionsOpen] = useState(false);
   let defaultDrawer: "comments" | "quotes" =
     props.showComments && props.commentsCount > 0 ? "comments" : "quotes";
-  let openDiscussions = () => {
-    // Keep the listing highlighted (read by the reader feed) while the modal is up.
-    setSelectedPostListing({
-      document_uri: props.documentUri,
-      document: props.document,
-      publication: props.publication,
-      drawer: defaultDrawer,
-    });
-    setDiscussionsOpen(true);
-  };
-
-  let commentsAvailable = props.showComments && props.commentsCount > 0;
-  let mentionsAvailable = props.showMentions && props.quotesCount > 0;
-  let discussionsAvailable = commentsAvailable || mentionsAvailable;
 
   return (
     <div
@@ -279,32 +263,28 @@ const Interactions = (props: {
           documentUri={props.documentUri}
           recommendsCount={props.recommendsCount}
         />
-        {!discussionsAvailable ? null : (
-          <button
-            aria-label="Post discussions"
-            onClick={openDiscussions}
-            className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast text-tertiary"
-          >
-            <CommentTiny /> {props.commentsCount + props.quotesCount}
-          </button>
-        )}
-      </div>
-      {discussionsAvailable && (
-        <DiscussionModal
-          open={discussionsOpen}
-          onOpenChange={(open) => {
-            setDiscussionsOpen(open);
-            if (!open) setSelectedPostListing(null);
-          }}
-          document_uri={props.documentUri}
-          postUrl={props.postUrl}
-          title={props.document.title}
+        <DiscussionButton
+          documentUri={props.documentUri}
           commentsCount={props.commentsCount}
           quotesCount={props.quotesCount}
           showComments={props.showComments}
           showMentions={props.showMentions}
+          postUrl={props.postUrl}
+          title={props.document.title}
+          onOpenChange={(open) => {
+            // Keep the listing highlighted (read by the reader feed) while the
+            // modal is up.
+            if (open)
+              setSelectedPostListing({
+                document_uri: props.documentUri,
+                document: props.document,
+                publication: props.publication,
+                drawer: defaultDrawer,
+              });
+            else setSelectedPostListing(null);
+          }}
         />
-      )}
+      </div>
     </div>
   );
 };

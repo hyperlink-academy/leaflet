@@ -1,5 +1,4 @@
 "use client";
-import { CommentTiny } from "components/Icons/CommentTiny";
 import { flushSync } from "react-dom";
 import type { Json } from "supabase/database.types";
 import { create } from "zustand";
@@ -15,21 +14,14 @@ import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { EditTiny } from "components/Icons/EditTiny";
-import {
-  RecommendButton,
-  useRecommendPost,
-} from "components/Interactions/RecommendButton";
-import { LoginModal } from "components/LoginButton";
+import { RecommendButton } from "components/Interactions/RecommendButton";
+import { DiscussionButton } from "components/Interactions/DiscussionButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
 import { useMemo } from "react";
 import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
-import { CommentFilledSmall } from "components/Icons/CommentFilledSmall";
-import { CommentEmptySmall } from "components/Icons/CommentEmptySmall";
-import { RecommendFilledSmall } from "components/Icons/RecommendFilledSmall";
-import { RecommendEmptySmall } from "components/Icons/RecommendEmptySmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 
 export type InteractionState = {
@@ -203,7 +195,6 @@ export const Interactions = (props: {
   };
 
   const tags = normalizedDocument.tags;
-  const tagCount = tags?.length || 0;
 
   let commentsAvailable = props.showComments;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
@@ -212,8 +203,6 @@ export const Interactions = (props: {
     commentsAvailable && (props.commentsCount > 0 || !mentionsAvailable)
       ? "comments"
       : "quotes";
-
-  let interactionsAvailable = discussionsAvailable || props.showRecommends;
 
   // Opening the recommenders onto this post's own interaction drawer, mirroring
   // how the discussion button opens it. RecommendButton reads this off context.
@@ -229,30 +218,29 @@ export const Interactions = (props: {
     <div
       className={`flex gap-2 text-tertiary text-sm items-center ${props.className}`}
     >
-      {/*DISCUSSIONS BUTTON*/}
-      {!discussionsAvailable ? null : (
-        <button
-          className="flex gap-1 items-center w-fit"
-          onClick={() => {
-            if (
-              !drawerOpen ||
-              (drawer !== "comments" && drawer !== "quotes") ||
-              pageId !== props.pageId
-            )
-              openInteractionDrawer(
-                defaultDiscussionTab,
-                document_uri,
-                props.pageId,
-              );
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-          onMouseEnter={handleQuotePrefetch}
-          onTouchStart={handleQuotePrefetch}
-          aria-label="Discussions"
-        >
-          <CommentTiny aria-hidden /> {props.commentsCount + props.quotesCount}
-        </button>
-      )}
+      <DiscussionButton
+        showWhenEmpty
+        documentUri={document_uri}
+        commentsCount={props.commentsCount}
+        quotesCount={props.quotesCount}
+        showComments={props.showComments}
+        showMentions={props.showMentions}
+        postUrl={typeof window !== "undefined" ? window.location.href : ""}
+        onPrefetch={handleQuotePrefetch}
+        onClick={() => {
+          if (
+            !drawerOpen ||
+            (drawer !== "comments" && drawer !== "quotes") ||
+            pageId !== props.pageId
+          )
+            openInteractionDrawer(
+              defaultDiscussionTab,
+              document_uri,
+              props.pageId,
+            );
+          else setInteractionState(document_uri, { drawerOpen: false });
+        }}
+      />
       {props.showRecommends === false ? null : (
         <DrawerThreadContext.Provider value={recommendsDrawerNav}>
           <RecommendButton
@@ -288,8 +276,7 @@ export const ExpandedInteractions = (props: {
     leafletId,
   } = useDocument();
 
-  let { drawerOpen, drawer, pageId, threadStack } =
-    useInteractionState(document_uri);
+  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
   let viewer = useViewerSubscription(publication?.uri ?? "");
 
   const handleQuotePrefetch = () => {
@@ -309,8 +296,15 @@ export const ExpandedInteractions = (props: {
       ? "comments"
       : "quotes";
 
-  const { displayRecommended, count, recommendPost, loginOpen, setLoginOpen } =
-    useRecommendPost(document_uri, props.recommendsCount);
+  // Open the recommenders / discussion onto this post's own interaction drawer.
+  // RecommendButton and DiscussionButton read this off context.
+  const drawerNav = useMemo(
+    () => ({
+      push: (thread: DrawerThread) =>
+        openDrawerThread(document_uri, thread, props.pageId),
+    }),
+    [document_uri, props.pageId],
+  );
 
   let noInteractions = !discussionsAvailable && !props.showRecommends;
   let interactionButtonClassName =
@@ -333,83 +327,40 @@ export const ExpandedInteractions = (props: {
         {noInteractions ? (
           <div />
         ) : (
-          <>
+          <DrawerThreadContext.Provider value={drawerNav}>
             {props.showRecommends === false ? null : (
-              <div className={interactionButtonClassName}>
-                <button
-                  className="absolute inset-0 "
-                  onClick={recommendPost}
-                  aria-label={
-                    displayRecommended ? "Remove recommend" : "Recommend"
-                  }
-                />
-                {displayRecommended ? (
-                  <RecommendFilledSmall className="text-accent-contrast" />
-                ) : (
-                  <RecommendEmptySmall />
-                )}
-                {count > 0 && (
-                  <button
-                    onClick={() => {
-                      const showingRecommends =
-                        drawerOpen &&
-                        threadStack[threadStack.length - 1]?.type ===
-                          "recommends" &&
-                        pageId === props.pageId;
-                      if (showingRecommends)
-                        setInteractionState(document_uri, {
-                          drawerOpen: false,
-                        });
-                      else
-                        openDrawerThread(
-                          document_uri,
-                          { type: "recommends", uri: document_uri },
-                          props.pageId,
-                        );
-                    }}
-                    className={`${displayRecommended && "text-accent-contrast"} pr-1 relative`}
-                    aria-label="See who recommended this"
-                  >
-                    {count}
-                  </button>
-                )}
-              </div>
+              <RecommendButton
+                large
+                documentUri={document_uri}
+                recommendsCount={props.recommendsCount}
+              />
             )}
-            {!discussionsAvailable ? null : (
-              <button
-                className={interactionButtonClassName}
-                onClick={() => {
-                  if (
-                    !drawerOpen ||
-                    (drawer !== "comments" && drawer !== "quotes") ||
-                    pageId !== props.pageId
-                  )
-                    openInteractionDrawer(
-                      defaultDiscussionTab,
-                      document_uri,
-                      props.pageId,
-                    );
-                  else setInteractionState(document_uri, { drawerOpen: false });
-                }}
-                onMouseEnter={handleQuotePrefetch}
-                onTouchStart={handleQuotePrefetch}
-                aria-label="Discussions"
-              >
-                {props.quotesCount + props.commentsCount !== 0 ? (
-                  <>
-                    <CommentFilledSmall aria-hidden />
-
-                    <div className="pr-1">
-                      {props.quotesCount + props.commentsCount}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <CommentEmptySmall aria-hidden />
-                  </>
-                )}
-              </button>
-            )}
+            <DiscussionButton
+              large
+              showWhenEmpty
+              documentUri={document_uri}
+              commentsCount={props.commentsCount}
+              quotesCount={props.quotesCount}
+              showComments={props.showComments}
+              showMentions={props.showMentions}
+              postUrl={
+                typeof window !== "undefined" ? window.location.href : ""
+              }
+              onPrefetch={handleQuotePrefetch}
+              onClick={() => {
+                if (
+                  !drawerOpen ||
+                  (drawer !== "comments" && drawer !== "quotes") ||
+                  pageId !== props.pageId
+                )
+                  openInteractionDrawer(
+                    defaultDiscussionTab,
+                    document_uri,
+                    props.pageId,
+                  );
+                else setInteractionState(document_uri, { drawerOpen: false });
+              }}
+            />
 
             <InteractionShareButton
               postUrl={
@@ -424,12 +375,9 @@ export const ExpandedInteractions = (props: {
               }
             />
             <EditButton publication={publication} leafletId={leafletId} />
-          </>
+          </DrawerThreadContext.Provider>
         )}
       </div>
-      {loginOpen && (
-        <LoginModal noEmailLogin open={loginOpen} onOpenChange={setLoginOpen} />
-      )}
     </div>
   );
 };

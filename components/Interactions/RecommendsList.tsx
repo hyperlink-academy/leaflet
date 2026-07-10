@@ -6,13 +6,19 @@ import { DotLoader } from "../utils/DotLoader";
 import { ProfilePopover } from "../ProfilePopover";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 
+// SWR cache key for the DIDs that recommended a document. Shared with
+// RecommendButton, which mutates this cache optimistically on toggle so the
+// recommender appears/disappears immediately.
+export const getDocumentRecommendsKey = (documentUri: string) =>
+  `document-recommends:${documentUri}`;
+
 // Fetches the DIDs that recommended a document and hydrates them into basic
 // profiles, showing a loader until ready. Shared by the RecommendsModal and the
 // interaction drawer's recommends view. The fetch runs on mount, so callers
 // only render this once the modal/drawer is actually opened.
 export function RecommendsList(props: { documentUri: string }) {
   const { data: didsData, isLoading: didsLoading } = useSWR(
-    `document-recommends:${props.documentUri}`,
+    getDocumentRecommendsKey(props.documentUri),
     async () => {
       const res = await callRPC("get_document_recommends", {
         document: props.documentUri,
@@ -47,20 +53,21 @@ export function RecommendsList(props: { documentUri: string }) {
         const profile = profiles?.[did];
         return (
           <ProfilePopover
+            className="z-[60]!"
             key={did}
             didOrHandle={profile?.handle ?? did}
             trigger={
-              <div className="flex items-center gap-2 hover:underline">
+              <div className="flex items-start gap-2">
                 <Avatar
                   src={profile?.avatar}
                   displayName={profile?.displayName}
                   size="medium"
                 />
                 <div className="flex flex-col min-w-0 text-left">
-                  <div className="text-primary font-bold truncate">
+                  <div className="text-primary font-bold truncate leading-snug">
                     {profile?.displayName || profile?.handle || "Unknown user"}
                   </div>
-                  {profile?.handle && (
+                  {profile?.displayName && profile?.handle && (
                     <div className="text-tertiary text-sm truncate">
                       @{profile.handle}
                     </div>
