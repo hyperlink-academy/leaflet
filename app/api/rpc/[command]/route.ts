@@ -12,11 +12,13 @@ import {
 import { get_leaflet_data } from "./get_leaflet_data";
 import { get_publication_data } from "./get_publication_data";
 import { get_standard_site_posts } from "./get_standard_site_posts";
+import { get_standard_site_publications } from "./get_standard_site_publications";
 import { search_publication_names } from "./search_publication_names";
 import { search_publication_documents } from "./search_publication_documents";
 import { get_profile_data } from "./get_profile_data";
 import { get_profiles } from "./get_profiles";
 import { get_user_recommendations } from "./get_user_recommendations";
+import { get_document_recommends } from "./get_document_recommends";
 import { get_hot_feed } from "./get_hot_feed";
 import { get_document_interactions } from "./get_document_interactions";
 import { get_publication_analytics } from "./get_publication_analytics";
@@ -48,11 +50,13 @@ let Routes = [
   get_leaflet_data,
   get_publication_data,
   get_standard_site_posts,
+  get_standard_site_publications,
   search_publication_names,
   search_publication_documents,
   get_profile_data,
   get_profiles,
   get_user_recommendations,
+  get_document_recommends,
   get_hot_feed,
   get_document_interactions,
   get_publication_analytics,

@@ -1714,6 +1714,28 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksStandardSitePublication: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.standardSitePublication',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['uri'],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          cid: {
+            type: 'string',
+          },
+          showPublicationTheme: {
+            type: 'boolean',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksText: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.text',
@@ -2096,6 +2118,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
               'lex:pub.leaflet.blocks.standardSitePost',
+              'lex:pub.leaflet.blocks.standardSitePublication',
               'lex:pub.leaflet.blocks.page',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
@@ -2203,6 +2226,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
               'lex:pub.leaflet.blocks.standardSitePost',
+              'lex:pub.leaflet.blocks.standardSitePublication',
               'lex:pub.leaflet.blocks.page',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
@@ -3149,6 +3173,8 @@ export const ids = {
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
   PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',
   PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
+  PubLeafletBlocksStandardSitePublication:
+    'pub.leaflet.blocks.standardSitePublication',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',

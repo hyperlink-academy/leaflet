@@ -40,7 +40,7 @@ export const Popover = (props: {
     >
       <PopoverOpenContext value={open}>
         <RadixPopover.Trigger
-          className="min-w-0 outline-none! touch-manipulation [-webkit-tap-highlight-color:transparent]"
+          className="min-w-0 outline-none! w-fit touch-manipulation [-webkit-tap-highlight-color:transparent]"
           disabled={props.disabled}
           asChild={props.asChild}
         >

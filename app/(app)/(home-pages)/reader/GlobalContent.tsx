@@ -30,9 +30,14 @@ export const GlobalContent = (props: {
   let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
 
   if (posts.length === 0) {
-    return <EmptyState title="Nothing trending right now. Check back soon!" />;
+    return (
+      <EmptyState title="Hmmm… Something went wrong.">
+        Try refreshing your browser. If the problem persists,{" "}
+        <a href="mailto:contact@leaflet.pub">email us</a>.
+      </EmptyState>
+    );
   }
-
+  
   return (
     <>
       {posts.map((p) => (

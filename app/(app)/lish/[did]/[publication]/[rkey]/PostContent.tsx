@@ -16,6 +16,7 @@ import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksStandardSitePost,
+  PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
@@ -41,6 +42,9 @@ import {
   WithStandardSitePostPublicationTheme,
 } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import { StandardSitePublicationItem } from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
+import { WithPublicationTheme } from "components/ThemeManager/PublicationThemeProvider";
+import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
 import {
@@ -283,6 +287,16 @@ export let Block = ({
               </div>
             </WithStandardSitePostPublicationTheme>
           </div>
+        </div>
+      );
+    }
+    case PubLeafletBlocksStandardSitePublication.isMain(b.block): {
+      return (
+        <div className={className} {...blockProps}>
+          <PublishedStandardSitePublicationBlock
+            uri={b.block.uri}
+            showPublicationTheme={b.block.showPublicationTheme !== false}
+          />
         </div>
       );
     }
@@ -632,6 +646,27 @@ export let Block = ({
       return null;
   }
 };
+
+function PublishedStandardSitePublicationBlock(props: {
+  uri: string;
+  showPublicationTheme: boolean;
+}) {
+  let { data: publication } = useStandardSitePublication(props.uri);
+
+  return (
+    <div className="standardSitePublicationBlock block-border overflow-hidden w-full">
+      <WithPublicationTheme
+        record={publication?.record}
+        uri={publication?.uri}
+        enabled={props.showPublicationTheme}
+      >
+        <div className="bg-bg-page">
+          <StandardSitePublicationItem uri={props.uri} />
+        </div>
+      </WithPublicationTheme>
+    </div>
+  );
+}
 
 function PublishedIframeBlock(props: {
   url: string;

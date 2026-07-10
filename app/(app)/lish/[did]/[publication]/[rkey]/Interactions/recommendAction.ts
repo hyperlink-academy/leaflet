@@ -23,7 +23,6 @@ type RecommendResult =
 export async function recommendAction(args: {
   document: string;
 }): Promise<RecommendResult> {
-  console.log("recommend action...");
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
     return {

@@ -15,9 +15,9 @@ import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
-import { InteractionPreview } from "components/InteractionsPreview";
+import { InteractionPreview } from "components/Interactions/InteractionsPreview";
 import { PubIcon } from "components/ActionBar/Publications";
-import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
+import { WithPublicationTheme } from "components/ThemeManager/PublicationThemeProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { formatBylineNames } from "src/utils/byline";
 
@@ -73,20 +73,14 @@ export function WithStandardSitePostPublicationTheme({
   enabled: boolean;
   children: React.ReactNode;
 }) {
-  const record = post.publication?.record;
-  if (!enabled || !record || (!record.theme && !record.basicTheme)) {
-    return <>{children}</>;
-  }
-  let pubCreator: string;
-  try {
-    pubCreator = new AtUri(post.publication!.uri).host;
-  } catch {
-    return <>{children}</>;
-  }
   return (
-    <PublicationThemeProvider local record={record} pub_creator={pubCreator}>
+    <WithPublicationTheme
+      record={post.publication?.record}
+      uri={post.publication?.uri}
+      enabled={enabled}
+    >
       {children}
-    </PublicationThemeProvider>
+    </WithPublicationTheme>
   );
 }
 
@@ -189,9 +183,7 @@ export function StandardSitePostItemView({
   const authorLabel =
     post.contributors.length > 0
       ? formatBylineNames(
-          post.contributors
-            .map(bylineLabel)
-            .filter((l): l is string => !!l),
+          post.contributors.map(bylineLabel).filter((l): l is string => !!l),
         ) || undefined
       : bylineLabel(post.author ?? { displayName: null, handle: null });
   const date = post.record.publishedAt ? (
@@ -228,20 +220,24 @@ export function StandardSitePostItemView({
   const showRecommends = publicationPrefs?.showRecommends !== false;
   const commentsCount = showComments ? post.commentsCount : 0;
 
-  const interactions = hideInteractions ? undefined : (
-    <InteractionPreview
-      quotesCount={post.mentionsCount}
-      commentsCount={commentsCount}
-      recommendsCount={post.recommendsCount}
-      documentUri={post.uri}
-      tags={post.record.tags || []}
-      postUrl={docUrl}
-      title={post.record.title}
-      showComments={showComments}
-      showMentions={showMentions}
-      showRecommends={showRecommends}
-    />
-  );
+  const noInteractions = !showComments && !showMentions && !showRecommends;
+
+  const interactions =
+    hideInteractions || noInteractions ? undefined : (
+      <InteractionPreview
+        shareType="strong"
+        quotesCount={post.mentionsCount}
+        commentsCount={commentsCount}
+        recommendsCount={post.recommendsCount}
+        documentUri={post.uri}
+        tags={post.record.tags || []}
+        postUrl={docUrl}
+        title={post.record.title}
+        showComments={showComments}
+        showMentions={showMentions}
+        showRecommends={showRecommends}
+      />
+    );
 
   const showPubFooter =
     !!post.publication?.record &&
@@ -249,7 +245,7 @@ export function StandardSitePostItemView({
 
   const pubFooter =
     showPubFooter && post.publication ? (
-      <PubFooter publication={post.publication} />
+      <PubInfo publication={post.publication} />
     ) : null;
 
   const commonProps = {
@@ -258,7 +254,7 @@ export function StandardSitePostItemView({
     author: authorLabel,
     date,
     interactions,
-    footer: pubFooter,
+    pubInfo: pubFooter,
   };
 
   if (size === "large") {
@@ -285,7 +281,7 @@ export function StandardSitePostItemView({
   return <PublicationPostItemSmall {...commonProps} />;
 }
 
-function PubFooter({
+function PubInfo({
   publication,
 }: {
   publication: NonNullable<StandardSitePostData["publication"]>;
@@ -293,26 +289,26 @@ function PubFooter({
   if (!publication.record) return null;
   const pubUrl = getPublicationURL(publication);
   return (
-    <div className="flex flex-col">
-      <hr className=" border-border-light mt-2 mb-1" />
-      <Link
-        href={pubUrl}
-        className="flex items-center gap-1.5  text-accent-contrast font-bold no-underline! text-sm -mb-0.5"
-      >
-        <PubIcon
-          tiny
-          icon={
-            publication.record.icon
-              ? blobRefToSrc(
-                  publication.record.icon.ref,
-                  new AtUri(publication.uri).host,
-                )
-              : undefined
-          }
-          pubName={publication.record.name}
-        />
-        <span className="min-w-0 truncate">{publication.record.name}</span>
-      </Link>
-    </div>
+    <Link
+      href={pubUrl}
+      // `relative w-fit` keeps this link clickable above the post's absolute
+      // PostLink overlay while limiting the hit area to just the pub name.
+      className="relative w-fit max-w-full flex items-center gap-1.5 text-accent-contrast font-bold no-underline! text-sm"
+    >
+      <PubIcon
+        tiny
+        className="w-3! h-3!"
+        icon={
+          publication.record.icon
+            ? blobRefToSrc(
+                publication.record.icon.ref,
+                new AtUri(publication.uri).host,
+              )
+            : undefined
+        }
+        pubName={publication.record.name}
+      />
+      <span className="min-w-0 truncate">{publication.record.name}</span>
+    </Link>
   );
 }

@@ -14,7 +14,11 @@ import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
 import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons/InfoSmall";
-import { PostHeader, type BylineProfile } from "./PostHeader/PostHeader";
+import {
+  PostByline,
+  PostHeader,
+  type BylineProfile,
+} from "./PostHeader/PostHeader";
 import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PollData } from "./fetchPollData";
@@ -227,7 +231,7 @@ const CanvasMetadata = (props: {
 }) => {
   let isMobile = useIsMobile();
   return (
-    <div className="flex flex-row gap-3 items-center absolute top-3 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+    <div className="flex flex-row gap-1 items-center absolute top-3 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
       <Interactions
         quotesCount={props.quotesCount || 0}
         commentsCount={props.commentsCount || 0}

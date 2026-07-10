@@ -19,7 +19,7 @@ import { useReplicache } from "src/replicache";
 import { localImages } from "src/utils/addImage";
 import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { useSubscribe } from "src/replicache/useSubscribe";
-import { editorStateToFacetedText } from "./BskyPostEditorProsemirror";
+import { editorStateToFacetedText } from "components/BlueskyPostComposer/ProsemirrorEditor";
 import { EditorState } from "prosemirror-state";
 import { TagSelector } from "components/Tags";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
@@ -353,6 +353,7 @@ const PublishPostForm = (
                 publication_uri={props.publication_uri}
                 root_entity={props.root_entity}
                 leaflet_id={props.leaflet_id}
+                publishedAt={localPublishedAt?.toISOString()}
                 bskyDraftKey={bskyDraftKey}
               />
               <hr className="border-border mb-2" />

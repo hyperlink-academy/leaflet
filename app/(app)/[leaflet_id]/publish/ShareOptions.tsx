@@ -1,9 +1,11 @@
 "use client";
 import { Checkbox } from "components/Checkbox";
-import { BlueskyPostEditorProsemirror } from "./BskyPostEditorProsemirror";
+import { BlueskyPostComposer } from "components/BlueskyPostComposer/BlueskyPostComposer";
 import { EditorState } from "prosemirror-state";
+import { AppBskyFeedDefs, AtUri } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { useState } from "react";
 import { sendPostPreview } from "actions/publications/sendPostPreview";
 import { ButtonSecondary } from "components/Buttons";
@@ -32,6 +34,9 @@ type Props = {
   publication_uri?: string;
   root_entity: string;
   leaflet_id: string;
+  // ISO publish date (scheduled, or undefined for immediate) — previewed in the
+  // standard.site card footer.
+  publishedAt?: string;
   // localStorage key under which the in-progress Bluesky post is persisted
   bskyDraftKey?: string;
 };
@@ -41,6 +46,44 @@ export function ShareOptions(props: Props) {
   // When publishing to a publication, the Bluesky post lives in the
   // publication owner's PDS, so the preview should show their identity.
   const previewProfile = props.publicationProfile ?? props.profile;
+
+  // When publishing to a publication, mirror the standard.site enrichment that
+  // bluesky's appview derives from the post's associatedRefs, so the compose
+  // card previews the same publication footer (icon, name, author, date) the
+  // published post will show. See BskyEmbed's StandardSiteExternalEmbed.
+  const pubDid = props.publication_uri
+    ? new AtUri(props.publication_uri).host
+    : previewProfile.did;
+  const bskyEmbed = {
+    $type: "app.bsky.embed.external#view",
+    external: {
+      uri: props.record?.url ?? "",
+      title: props.title,
+      description: props.description,
+      ...(props.record && {
+        createdAt: props.publishedAt ?? new Date().toISOString(),
+        source: {
+          uri: props.record.url,
+          title: props.record.name,
+          icon: props.record.icon
+            ? blobRefToSrc(props.record.icon.ref, pubDid)
+            : undefined,
+        },
+        associatedRefs: [
+          { uri: `at://${pubDid}/site.standard.document/preview` },
+          { uri: `at://${pubDid}/site.standard.publication/preview` },
+        ],
+        associatedProfiles: [
+          {
+            did: pubDid,
+            handle: previewProfile.handle,
+            displayName: previewProfile.displayName,
+            avatar: previewProfile.avatar,
+          },
+        ],
+      }),
+    },
+  } as AppBskyFeedDefs.PostView["embed"];
   const handleChange = (
     key: keyof Omit<ShareState, "quiet">,
     checked: boolean,
@@ -119,46 +162,20 @@ export function ShareOptions(props: Props) {
         </div>
       </Checkbox>
       <div
-        className={`w-full pl-7 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
+        className={`w-full opaque-container rounded-lg! p-3 ml-7 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
       >
-        <div className="opaque-container border-border! py-2 px-3 text-sm rounded-lg!">
-          <div className="flex gap-2">
-            <img
-              className="rounded-full w-6 h-6 sm:w-[42px] sm:h-[42px] shrink-0"
-              src={previewProfile.avatar}
-            />
-            <div className="flex flex-col min-w-0 w-full">
-              <div className="flex gap-2">
-                <p className="font-bold">{previewProfile.displayName}</p>
-                <p className="text-tertiary">@{previewProfile.handle}</p>
-              </div>
-              <div className="flex flex-col">
-                <BlueskyPostEditorProsemirror
-                  editorStateRef={props.editorStateRef}
-                  onCharCountChange={props.setCharCount}
-                  persistKey={props.bskyDraftKey}
-                />
-              </div>
-              <div className="opaque-container text-secondary overflow-hidden flex flex-col mt-4 w-full">
-                <div className="flex flex-col p-2">
-                  <div className="font-bold truncate min-w-0 w-full ">
-                    {props.title}
-                  </div>
-                  <div className="text-tertiary line-clamp-3">
-                    {props.description}
-                  </div>
-                  <hr className="border-border mt-2 mb-1" />
-                  <p className="text-xs text-tertiary">
-                    {props.record?.url?.replace(/^https?:\/\//, "")}
-                  </p>
-                </div>
-              </div>
-              <div className="text-xs text-secondary italic place-self-end pt-2">
-                {props.charCount}/300
-              </div>
-            </div>
-          </div>
-        </div>
+        <BlueskyPostComposer
+          profile={{
+            avatar: previewProfile.avatar,
+            displayName: previewProfile.displayName,
+            handle: previewProfile.handle,
+          }}
+          editorStateRef={props.editorStateRef}
+          charCount={props.charCount}
+          onCharCountChange={props.setCharCount}
+          persistKey={props.bskyDraftKey}
+          embed={bskyEmbed}
+        />
       </div>
 
       <hr className="border-border-light my-1" />

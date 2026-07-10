@@ -120,6 +120,14 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "block/standard-site-publication": {
+    type: "string",
+    cardinality: "one",
+  },
+  "standard-site-publication/show-publication-theme": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "block/math": {
     type: "string",
     cardinality: "one",
@@ -495,6 +503,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "poll"
       | "bluesky-post"
       | "standard-site-post"
+      | "standard-site-publication"
       | "math"
       | "code"
       | "blockquote"

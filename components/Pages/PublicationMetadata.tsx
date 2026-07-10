@@ -23,7 +23,7 @@ import { TagSelector } from "components/Tags";
 import { useIdentityData } from "components/IdentityProvider";
 import { PostHeaderLayout } from "app/(app)/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
 import { Backdater } from "./Backdater";
-import { RecommendTinyEmpty } from "components/Icons/RecommendTiny";
+import { RecommendEmptyTiny } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { DraftContributorSelector } from "./DraftContributorSelector";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
@@ -148,7 +148,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
             <div className="flex gap-2 text-border items-center">
               {merged.showRecommends !== false && (
                 <div className="flex gap-1 items-center">
-                  <RecommendTinyEmpty />—
+                  <RecommendEmptyTiny />—
                 </div>
               )}
 

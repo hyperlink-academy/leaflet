@@ -15,7 +15,7 @@ import {
   getDocumentURL,
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
-import { InteractionPreview } from "components/InteractionsPreview";
+import { InteractionPreview } from "components/Interactions/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(app)/(home-pages)/(writer)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
@@ -106,7 +106,8 @@ function PublishedPostItem(props: {
                   : doc.record.title}
               </h3>
             </a>
-            <div className="flex justify-start align-top flex-row gap-1">
+            <div className="flex justify-start items-start flex-row gap-2">
+              {doc.postSend ? <PostSendStatus send={doc.postSend} /> : null}
               {leaflet && leaflet.permission_tokens && canEdit && (
                 <>
                   <SpeedyLink className="pt-[6px]" href={`/${leaflet.leaflet}`}>
@@ -148,14 +149,12 @@ function PublishedPostItem(props: {
             <p className="italic text-secondary">{doc.record.description}</p>
           ) : null}
           <div className="text-sm text-tertiary flex gap-3 justify-between items-center pt-3">
-            <div className="flex items-center gap-2">
-              {doc.record.publishedAt ? (
-                <PublishedDate dateString={doc.record.publishedAt} />
-              ) : null}
-              {doc.postSend ? <PostSendStatus send={doc.postSend} /> : null}
-            </div>
+            {doc.record.publishedAt ? (
+              <PublishedDate dateString={doc.record.publishedAt} />
+            ) : null}
 
             <InteractionPreview
+              shareType="weak"
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
               recommendsCount={doc.recommendsCount}
@@ -269,7 +268,7 @@ function PostSendStatus(props: {
     return (
       <Popover
         trigger={
-          <div className="accent-container font-bold text-accent-contrast text-xs px-1.5 h-full">
+          <div className="accent-container flex h-6 place-items-center font-bold text-accent-contrast text-xs px-1.5">
             SENT
           </div>
         }
@@ -300,7 +299,12 @@ function PostSendStatus(props: {
         }
       >
         <p className="text-sm text-tertiary">
-          Something went wrong… Try republishing and sending again.
+          Something went wrong and we couldn't send this email… Try republishing
+          and sending again.
+        </p>
+        <p className="text-sm text-tertiary">
+          If the issue persists,{" "}
+          <a href="mailto:contact@leaflet.pub">contact us</a>.
         </p>
       </Popover>
     );

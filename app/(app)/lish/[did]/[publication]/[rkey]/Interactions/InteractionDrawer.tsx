@@ -1,5 +1,5 @@
 "use client";
-import { MentionsDrawerContent } from "./Quotes";
+import { DiscussionDrawerContent } from "./Quotes";
 import {
   setInteractionState,
   useInteractionState,
@@ -22,6 +22,8 @@ import { StandardSitePostDrawerView } from "./StandardSitePostDrawerView";
 import { useDocumentDiscussionData } from "./useDocumentDiscussionData";
 import { useIsMobile } from "src/hooks/isMobile";
 import { MobileSheet } from "components/MobileSheet";
+import { RecommendsList } from "components/Interactions/RecommendsList";
+import { RecommendButton } from "components/Interactions/RecommendButton";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -48,9 +50,7 @@ export const InteractionDrawer = (props: {
   let drawerState = useDrawerOpen(props.document_uri);
   let open =
     !!drawerState &&
-    (props.pageId
-      ? drawerState.pageId === props.pageId
-      : !drawerState.pageId);
+    (props.pageId ? drawerState.pageId === props.pageId : !drawerState.pageId);
 
   // Remember the last open tab so the content keeps rendering it while the
   // sheet plays its exit animation (drawerState is already null by then).
@@ -107,7 +107,7 @@ const InteractionDrawerContent = (props: {
   pageId?: string;
   tab: "comments" | "quotes";
 }) => {
-  let { commentsCountByPage } = useDocument();
+  let { commentsCountByPage, recommendsCount } = useDocument();
   let commentsCount = commentsCountByPage[props.pageId ?? ""] ?? 0;
   let { threadStack } = useInteractionState(props.document_uri);
   const drawerNav = useMemo(
@@ -158,7 +158,7 @@ const InteractionDrawerContent = (props: {
   // are only available when there's something to show on this page.
   const commentsAvailable = props.commentsSlot != null;
   const mentionsAvailable = filteredQuotesAndMentions.length > 0;
-  const bothAvailable = commentsAvailable && mentionsAvailable;
+  const commentsAndMentionsAvailable = commentsAvailable && mentionsAvailable;
 
   // Resolve the active tab, falling back to whichever option is available.
   let activeTab: "comments" | "quotes" = props.tab;
@@ -205,6 +205,17 @@ const InteractionDrawerContent = (props: {
                   : `Comments${ssp.comments.length > 0 ? ` (${ssp.comments.length})` : ""}`}
               </h4>
             )
+          ) : activeThread?.type === "recommends" ? (
+            <div className="flex items-center justify-between gap-2">
+              <h3>Recommends</h3>
+              <RecommendButton
+                documentUri={props.document_uri}
+                recommendsCount={recommendsCount}
+                recommendOnly
+                className="p-0! border-none! flex-row-reverse! hover:sm:bg-transparent! h-fit! hover:text-accent-contrast!"
+                large
+              />
+            </div>
           ) : activeThread ? (
             <div className="flex items-center gap-2">
               {threadStack.length >= 2 && (
@@ -223,7 +234,7 @@ const InteractionDrawerContent = (props: {
                 <GoBackTiny /> Back
               </button>
             </div>
-          ) : bothAvailable ? (
+          ) : commentsAndMentionsAvailable ? (
             <ToggleGroup
               fullWidth
               value={activeTab}
@@ -267,13 +278,17 @@ const InteractionDrawerContent = (props: {
       <DrawerThreadContext.Provider value={drawerNav}>
         {sspUri ? (
           <StandardSitePostDrawerView uri={sspUri} tab={sspActiveTab} />
+        ) : activeThread?.type === "recommends" ? (
+          <>
+            <RecommendsList documentUri={activeThread.uri} />
+          </>
         ) : activeThread ? (
           <ThreadView
             parentUri={activeThread.uri}
             initialTab={activeThread.type === "quotes" ? "quotes" : "replies"}
           />
         ) : activeTab === "quotes" ? (
-          <MentionsDrawerContent
+          <DiscussionDrawerContent
             did={props.did}
             quotesAndMentions={filteredQuotesAndMentions}
           />
