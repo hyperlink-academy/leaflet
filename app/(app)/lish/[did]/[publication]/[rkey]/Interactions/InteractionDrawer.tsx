@@ -1,5 +1,5 @@
 "use client";
-import { MentionsDrawerContent } from "./Quotes";
+import { DiscussionDrawerContent } from "./Quotes";
 import {
   setInteractionState,
   useInteractionState,
@@ -22,7 +22,7 @@ import { StandardSitePostDrawerView } from "./StandardSitePostDrawerView";
 import { useDocumentDiscussionData } from "./useDocumentDiscussionData";
 import { useIsMobile } from "src/hooks/isMobile";
 import { MobileSheet } from "components/MobileSheet";
-import { RecommendsList } from "components/RecommendsList";
+import { RecommendsList } from "components/Interactions/RecommendsList";
 
 export const InteractionDrawer = (props: {
   showPageBackground: boolean | undefined;
@@ -49,9 +49,7 @@ export const InteractionDrawer = (props: {
   let drawerState = useDrawerOpen(props.document_uri);
   let open =
     !!drawerState &&
-    (props.pageId
-      ? drawerState.pageId === props.pageId
-      : !drawerState.pageId);
+    (props.pageId ? drawerState.pageId === props.pageId : !drawerState.pageId);
 
   // Remember the last open tab so the content keeps rendering it while the
   // sheet plays its exit animation (drawerState is already null by then).
@@ -159,7 +157,7 @@ const InteractionDrawerContent = (props: {
   // are only available when there's something to show on this page.
   const commentsAvailable = props.commentsSlot != null;
   const mentionsAvailable = filteredQuotesAndMentions.length > 0;
-  const bothAvailable = commentsAvailable && mentionsAvailable;
+  const commentsAndMentionsAvailable = commentsAvailable && mentionsAvailable;
 
   // Resolve the active tab, falling back to whichever option is available.
   let activeTab: "comments" | "quotes" = props.tab;
@@ -234,7 +232,7 @@ const InteractionDrawerContent = (props: {
                 <GoBackTiny /> Back
               </button>
             </div>
-          ) : bothAvailable ? (
+          ) : commentsAndMentionsAvailable ? (
             <ToggleGroup
               fullWidth
               value={activeTab}
@@ -286,7 +284,7 @@ const InteractionDrawerContent = (props: {
             initialTab={activeThread.type === "quotes" ? "quotes" : "replies"}
           />
         ) : activeTab === "quotes" ? (
-          <MentionsDrawerContent
+          <DiscussionDrawerContent
             did={props.did}
             quotesAndMentions={filteredQuotesAndMentions}
           />

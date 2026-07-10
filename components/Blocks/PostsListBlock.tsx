@@ -104,10 +104,9 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
 
   if (!listData || listData.uris.length === 0)
     return (
-      <EmptyState
-        container="none"
-        description="You haven't published any posts yet! When you do, they'll show here."
-      />
+      <EmptyState container="none">
+        You haven't published any posts yet! When you do, they'll show here.
+      </EmptyState>
     );
 
   return (

@@ -4,7 +4,7 @@ import { StandardSitePostItem } from "components/Blocks/StandardSitePostBlock/St
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { CommentsDrawerContent } from "./Comments";
-import { MentionsDrawerContent } from "./Quotes";
+import { DiscussionDrawerContent } from "./Quotes";
 import { useDocumentDiscussionData } from "./useDocumentDiscussionData";
 
 // Renders a referenced post's discussion inside the interaction drawer: the
@@ -50,7 +50,7 @@ export function StandardSitePostDrawerView(props: {
             ) : (
               <>
                 <hr className="border-border-light mt-3 mb-6" />
-                <MentionsDrawerContent
+                <DiscussionDrawerContent
                   did={did}
                   quotesAndMentions={quotesAndMentions}
                 />

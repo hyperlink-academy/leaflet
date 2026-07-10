@@ -21,10 +21,10 @@ import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
-import { RecommendButton } from "./RecommendButton";
+import { RecommendButton } from "./Interactions/RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
-import { DiscussionModal } from "./DiscussionModal";
-import { InteractionShareButton } from "./InteractionShareButton";
+import { DiscussionModal } from "./Interactions/DiscussionModal";
+import { InteractionShareButton } from "./Interactions/InteractionShareButton";
 import { PublicationPostItemLarge } from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
 
 export const PostListing = (props: Post & { selected?: boolean }) => {
@@ -169,7 +169,9 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
           <PublicationPostItemLarge
             href={postUrl}
             title={postRecord.title}
-            description={postRecord.description || getFirstParagraph(postRecord)}
+            description={
+              postRecord.description || getFirstParagraph(postRecord)
+            }
             author={author}
             date={date}
             interactions={interactions}

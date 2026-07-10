@@ -15,14 +15,17 @@ import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { EditTiny } from "components/Icons/EditTiny";
-import { RecommendButton, useRecommendPost } from "components/RecommendButton";
+import {
+  RecommendButton,
+  useRecommendPost,
+} from "components/Interactions/RecommendButton";
 import { LoginModal } from "components/LoginButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
 import { useMemo } from "react";
 import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
-import { InteractionShareButton } from "components/InteractionShareButton";
+import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
 import { CommentFilledSmall } from "components/Icons/CommentFilledSmall";
 import { CommentEmptySmall } from "components/Icons/CommentEmptySmall";
 import { RecommendFilledSmall } from "components/Icons/RecommendFilledSmall";

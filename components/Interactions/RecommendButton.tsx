@@ -3,18 +3,21 @@
 import { useContext, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { create, windowScheduler } from "@yornaath/batshit";
-import { RecommendEmptyTiny, RecommendFilledTiny } from "./Icons/RecommendTiny";
+import {
+  RecommendEmptyTiny,
+  RecommendFilledTiny,
+} from "../Icons/RecommendTiny";
 import {
   recommendAction,
   unrecommendAction,
 } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
 import { callRPC } from "app/api/rpc/client";
-import { useSmoker, useToaster } from "./Toast";
-import { OAuthErrorMessage, isOAuthSessionError } from "./OAuthError";
-import { useIdentityData } from "./IdentityProvider";
-import { LoginModal } from "./LoginButton";
-import { Modal } from "./Modal";
-import { MobileSheet } from "./MobileSheet";
+import { useSmoker, useToaster } from "../Toast";
+import { OAuthErrorMessage, isOAuthSessionError } from "../OAuthError";
+import { useIdentityData } from "../IdentityProvider";
+import { LoginModal } from "../LoginButton";
+import { Modal } from "../Modal";
+import { MobileSheet } from "../MobileSheet";
 import { useIsMobile } from "src/hooks/isMobile";
 import { RecommendsList } from "./RecommendsList";
 import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";

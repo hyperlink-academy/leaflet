@@ -16,7 +16,7 @@ import {
   bylineName,
   bylineSeparator,
 } from "src/utils/byline";
-import { TagPopover } from "components/InteractionsPreview";
+import { TagPopover } from "components/Interactions/InteractionsPreview";
 
 // Re-export so existing importers of `BylineProfile` from this module keep
 // working. The serializable byline profile (subset of the profile cache shape)
