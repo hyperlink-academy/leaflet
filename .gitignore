@@ -15,3 +15,9 @@ tsconfig.tsbuildinfo
 
 # Claude
 .claude/settings.local.json
+
+# Local ops/debug scripts and data backups
+scripts/*.ts
+scripts/RESTORE_PLAN.md
+scripts/backup-data/
+scripts/backup-restore/
