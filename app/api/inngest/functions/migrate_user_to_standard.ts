@@ -8,8 +8,13 @@ import {
   SiteStandardGraphSubscription,
 } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
+import { jsonToLex } from "@atproto/lexicon";
 import { Json } from "supabase/database.types";
-import { truncateDocumentRecordForPDS } from "src/membership";
+import {
+  postHasMembersDelimiter,
+  truncateDocumentRecordForPDS,
+} from "src/membership";
+import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import {
   normalizePublicationRecord,
   normalizeDocumentRecord,
@@ -180,6 +185,36 @@ export const migrate_user_to_standard = inngest.createFunction(
       }
     }
 
+    // Step 3b: Migrating a document mints a brand-new site.standard.document
+    // record, which reaches the appview as a firehose *create* — and
+    // sync_document_metadata treats creates in newsletter-enabled publications
+    // as first-time publishes and emails subscribers. Find the enabled
+    // publications so each migrated document can claim its send slot as
+    // "skipped" before the PDS write.
+    const newsletterEnabledPubs = await step.run(
+      "fetch-newsletter-settings",
+      async () => {
+        const pubUris = [
+          ...new Set([
+            ...oldPublications.map((p) => p.uri),
+            ...Object.values(publicationUriMap),
+          ]),
+        ];
+        if (pubUris.length === 0) return [];
+        const { data, error } = await supabaseServerClient
+          .from("publication_newsletter_settings")
+          .select("publication")
+          .eq("enabled", true)
+          .in("publication", pubUris);
+
+        if (error)
+          throw new Error(
+            `Failed to fetch newsletter settings: ${error.message}`,
+          );
+        return (data || []).map((row) => row.publication);
+      },
+    );
+
     // Step 4: Get ALL user's documents and their publication associations in parallel
     const [oldDocuments, allDocumentPublications] = await Promise.all([
       step.run("fetch-old-documents", async () => {
@@ -261,59 +296,101 @@ export const migrate_user_to_standard = inngest.createFunction(
           tags: normalized.tags,
           coverImage: normalized.coverImage,
           bskyPostRef: normalized.bskyPostRef,
+          ...(normalized.theme && { theme: normalized.theme }),
+          ...(normalized.preferences && {
+            preferences: normalized.preferences,
+          }),
         };
 
-        return { doc, rkey, normalized, newRecord, oldPubUri };
+        return {
+          doc,
+          rkey,
+          newRecord,
+          oldPubUri,
+          membersOnly: postHasMembersDelimiter(normalized),
+        };
       })
       .filter((x) => x !== null);
 
     // Run PDS + DB writes together for each document
     const docResults = await Promise.all(
-      documentsToMigrate.map(({ doc, rkey, newRecord, oldPubUri }) =>
-        step.run(`migrate-document-${doc.uri}`, async () => {
-          // PDS write
-          const agent = await createAuthenticatedAgent(did);
-          const putResult = await agent.com.atproto.repo.putRecord({
-            repo: did,
-            collection: "site.standard.document",
-            rkey,
-            // documents.data holds gated posts' full content; the PDS copy
-            // must stay truncated at the members-only delimiter.
-            record: truncateDocumentRecordForPDS(newRecord),
-            validate: false,
-          });
-          const newUri = putResult.data.uri;
-
-          // DB write
-          const { error: dbError } = await supabaseServerClient
-            .from("documents")
-            .upsert({
-              uri: newUri,
-              data: newRecord as Json,
+      documentsToMigrate.map(
+        ({ doc, rkey, newRecord, oldPubUri, membersOnly }) =>
+          step.run(`migrate-document-${doc.uri}`, async () => {
+            // PDS write
+            const agent = await createAuthenticatedAgent(did);
+            // documents.data is plain JSON — revive blob refs into BlobRef
+            // instances so maybeOffloadPagesToBlob's blobs mirror keeps them
+            // referenced on the record if pages get offloaded.
+            const lexRecord = jsonToLex(
+              newRecord as unknown as Json,
+            ) as SiteStandardDocument.Record;
+            const putResult = await agent.com.atproto.repo.putRecord({
+              repo: did,
+              collection: "site.standard.document",
+              rkey,
+              // documents.data holds gated posts' full content; the PDS copy
+              // must stay truncated at the members-only delimiter.
+              record: await maybeOffloadPagesToBlob(
+                truncateDocumentRecordForPDS(lexRecord),
+                agent,
+              ),
+              validate: false,
             });
+            const newUri = putResult.data.uri;
 
-          if (dbError) {
-            return {
-              success: false as const,
-              oldUri: doc.uri,
-              newUri,
-              error: dbError.message,
-            };
-          }
-
-          // If document was in a publication, add to documents_in_publications with new URIs
-          if (oldPubUri) {
-            const newPubUri = publicationUriMap[oldPubUri] || oldPubUri;
-            await supabaseServerClient
-              .from("documents_in_publications")
+            // DB write
+            const { error: dbError } = await supabaseServerClient
+              .from("documents")
               .upsert({
-                publication: newPubUri,
-                document: newUri,
+                uri: newUri,
+                data: newRecord as Json,
+                indexed: true,
               });
-          }
 
-          return { success: true as const, oldUri: doc.uri, newUri };
-        }),
+            if (dbError) {
+              return {
+                success: false as const,
+                oldUri: doc.uri,
+                newUri,
+                error: dbError.message,
+              };
+            }
+
+            // If document was in a publication, add to documents_in_publications with new URIs
+            if (oldPubUri) {
+              const newPubUri = publicationUriMap[oldPubUri] || oldPubUri;
+
+              // Claim the newsletter send slot as skipped before the firehose
+              // create event reaches sync_document_metadata, so migrating an
+              // old post never emails subscribers.
+              if (newsletterEnabledPubs.includes(newPubUri)) {
+                await supabaseServerClient
+                  .from("publication_post_sends")
+                  .upsert(
+                    {
+                      publication: newPubUri,
+                      document: newUri,
+                      status: "skipped",
+                    },
+                    {
+                      onConflict: "publication,document",
+                      ignoreDuplicates: true,
+                    },
+                  );
+              }
+
+              await supabaseServerClient
+                .from("documents_in_publications")
+                .upsert({
+                  publication: newPubUri,
+                  document: newUri,
+                  members_only: membersOnly,
+                });
+            }
+
+            return { success: true as const, oldUri: doc.uri, newUri };
+          }),
       ),
     );
 
@@ -381,6 +458,9 @@ export const migrate_user_to_standard = inngest.createFunction(
               oldSite: site,
               newSite: newPubUri,
               updatedRecord,
+              membersOnly: postHasMembersDelimiter(
+                normalizeDocumentRecord(updatedRecord),
+              ),
             };
           }
         } catch (e) {
@@ -394,53 +474,64 @@ export const migrate_user_to_standard = inngest.createFunction(
     // Update these documents on PDS and in database
     if (standardDocsToFix.length > 0) {
       const fixResults = await Promise.all(
-        standardDocsToFix.map(({ doc, rkey, oldSite, newSite, updatedRecord }) =>
-          step.run(`fix-standard-document-${doc.uri}`, async () => {
-            // PDS write to update the site field
-            const agent = await createAuthenticatedAgent(did);
-            await agent.com.atproto.repo.putRecord({
-              repo: did,
-              collection: "site.standard.document",
-              rkey,
-              // documents.data holds gated posts' full content; the PDS copy
-              // must stay truncated at the members-only delimiter.
-              record: truncateDocumentRecordForPDS(updatedRecord),
-              validate: false,
-            });
-
-            // DB write
-            const { error: dbError } = await supabaseServerClient
-              .from("documents")
-              .update({ data: updatedRecord as Json })
-              .eq("uri", doc.uri);
-
-            if (dbError) {
-              return {
-                success: false as const,
-                uri: doc.uri,
-                error: dbError.message,
-              };
-            }
-
-            // Update documents_in_publications to point to new publication URI
-            await supabaseServerClient
-              .from("documents_in_publications")
-              .upsert({
-                publication: newSite,
-                document: doc.uri,
+        standardDocsToFix.map(
+          ({ doc, rkey, oldSite, newSite, updatedRecord, membersOnly }) =>
+            step.run(`fix-standard-document-${doc.uri}`, async () => {
+              // PDS write to update the site field
+              const agent = await createAuthenticatedAgent(did);
+              // documents.data is plain JSON (and inflated: sync_document_metadata
+              // splices offloaded pages back inline) — revive blob refs and
+              // re-offload oversized pages or the putRecord 413s against the PDS.
+              const lexRecord = jsonToLex(
+                updatedRecord as unknown as Json,
+              ) as SiteStandardDocument.Record;
+              await agent.com.atproto.repo.putRecord({
+                repo: did,
+                collection: "site.standard.document",
+                rkey,
+                // documents.data holds gated posts' full content; the PDS copy
+                // must stay truncated at the members-only delimiter.
+                record: await maybeOffloadPagesToBlob(
+                  truncateDocumentRecordForPDS(lexRecord),
+                  agent,
+                ),
+                validate: false,
               });
 
-            // Remove old publication reference if different
-            if (oldSite !== newSite) {
+              // DB write
+              const { error: dbError } = await supabaseServerClient
+                .from("documents")
+                .update({ data: updatedRecord as Json })
+                .eq("uri", doc.uri);
+
+              if (dbError) {
+                return {
+                  success: false as const,
+                  uri: doc.uri,
+                  error: dbError.message,
+                };
+              }
+
+              // Update documents_in_publications to point to new publication URI
               await supabaseServerClient
                 .from("documents_in_publications")
-                .delete()
-                .eq("publication", oldSite)
-                .eq("document", doc.uri);
-            }
+                .upsert({
+                  publication: newSite,
+                  document: doc.uri,
+                  members_only: membersOnly,
+                });
 
-            return { success: true as const, uri: doc.uri };
-          }),
+              // Remove old publication reference if different
+              if (oldSite !== newSite) {
+                await supabaseServerClient
+                  .from("documents_in_publications")
+                  .delete()
+                  .eq("publication", oldSite)
+                  .eq("document", doc.uri);
+              }
+
+              return { success: true as const, uri: doc.uri };
+            }),
         ),
       );
 
