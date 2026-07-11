@@ -23,64 +23,68 @@ export const InteractionShareButton = (props: {
   type: "none" | "weak" | "strong";
   trigger?: React.ReactNode;
 }) => {
-  return null;
-  // let smoker = useSmoker();
-  // let [shareModalOpen, setShareModalOpen] = useState(false);
+  let { identity } = useIdentityData();
+  console.log(identity?.atp_did);
+  if (identity?.atp_did !== "did:plc:kydzcmnywraao2srchqgwj5c") {
+    return null;
+  }
+  let smoker = useSmoker();
+  let [shareModalOpen, setShareModalOpen] = useState(false);
 
-  // if (props.type === "none") return;
+  if (props.type === "none") return;
 
-  // return (
-  //   <>
-  //     <Menu
-  //       trigger={
-  //         <div
-  //           className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.type === "strong" ? "text-accent-contrast" : ""}`}
-  //         >
-  //           {props.trigger ? (
-  //             props.trigger
-  //           ) : (
-  //             <>
-  //               <ShareTiny />
-  //               Share
-  //             </>
-  //           )}
-  //         </div>
-  //       }
-  //     >
-  //       <MenuItem onSelect={() => setShareModalOpen(true)}>
-  //         Share on Bluesky
-  //       </MenuItem>
+  return (
+    <>
+      <Menu
+        trigger={
+          <div
+            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.type === "strong" ? "text-accent-contrast" : ""}`}
+          >
+            {props.trigger ? (
+              props.trigger
+            ) : (
+              <>
+                <ShareTiny />
+                Share
+              </>
+            )}
+          </div>
+        }
+      >
+        <MenuItem onSelect={() => setShareModalOpen(true)}>
+          Share on Bluesky
+        </MenuItem>
 
-  //       <MenuItem
-  //         onSelect={(e: Event) => {
-  //           e.stopPropagation();
-  //           e.preventDefault();
+        <MenuItem
+          onSelect={(e: Event) => {
+            e.stopPropagation();
+            e.preventDefault();
 
-  //           if (!props.postUrl) return;
-  //           navigator.clipboard.writeText(props.postUrl);
+            if (!props.postUrl) return;
+            navigator.clipboard.writeText(props.postUrl);
 
-  //           let rect = (e.target as HTMLElement).getBoundingClientRect();
-  //           smoker({
-  //             text: <strong>Copied Link!</strong>,
-  //             position: {
-  //               y: rect.top,
-  //               x: rect.left,
-  //             },
-  //           });
-  //         }}
-  //       >
-  //         Copy Link
-  //       </MenuItem>
-  //     </Menu>
-  //     <BskyShareModal
-  //       postUrl={props.postUrl}
-  //       title={props.title}
-  //       onPosted={() => setShareModalOpen(false)}
-  //       shareModalOpen={shareModalOpen}
-  //       setShareModalOpen={setShareModalOpen}
-  //     />
-  //   </>
-  // );
+            let rect = (e.target as HTMLElement).getBoundingClientRect();
+            smoker({
+              text: <strong>Copied Link!</strong>,
+              position: {
+                y: rect.top,
+                x: rect.left,
+              },
+            });
+          }}
+        >
+          Copy Link
+        </MenuItem>
+      </Menu>
+      <BskyShareModal
+        postUrl={props.postUrl}
+        title={props.title}
+        onPosted={() => setShareModalOpen(false)}
+        shareModalOpen={shareModalOpen}
+        setShareModalOpen={setShareModalOpen}
+      />
+    </>
+  );
 };
 
 export const BskyShareModal = (props: {
