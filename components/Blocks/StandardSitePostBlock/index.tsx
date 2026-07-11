@@ -6,12 +6,12 @@ import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
-  WithStandardSitePostPublicationTheme,
   type StandardSitePostSize,
 } from "./StandardSitePostItem";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { SmallIcon, MedIcon, LargeIcon } from "../PostSizeIcons";
+import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
 
 export const StandardSitePostBlock = (
   props: BlockProps & { preview?: boolean },
@@ -51,7 +51,11 @@ export const StandardSitePostBlock = (
         <StandardSitePostSettingsButton entityID={props.entityID} />
       }
     >
-      <WithStandardSitePostPublicationTheme post={post} enabled={showPubTheme}>
+      <PublicationThemeWrapper
+        postRecord={post.record}
+        pubRecord={post.publication?.record ?? undefined}
+        enabled={showPubTheme}
+      >
         <div className="bg-bg-page">
           <StandardSitePostItem
             uri={uri}
@@ -59,7 +63,7 @@ export const StandardSitePostBlock = (
             currentPublicationUri={currentPublicationUri}
           />
         </div>
-      </WithStandardSitePostPublicationTheme>
+      </PublicationThemeWrapper>
     </BlockLayout>
   );
 };

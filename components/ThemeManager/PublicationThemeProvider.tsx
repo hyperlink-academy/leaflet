@@ -141,6 +141,35 @@ export function PublicationThemeProvider(props: {
   );
 }
 
+// Themes a post listing card the way the reader feed does: prefer the
+// publication's theme when it defines one (a full theme or a standard-site
+// basicTheme), otherwise fall back to the document's own theme. With no
+// publication the post is treated as standalone, which flips usePubTheme to
+// standalone defaults (page background shown, #FFFFFF page bg). When disabled,
+// children render unthemed and inherit the surrounding theme.
+export function PublicationThemeWrapper(props: {
+  postRecord?: PubThemeSource;
+  pubRecord?: PubThemeSource;
+  enabled?: boolean;
+  children: React.ReactNode;
+}) {
+  let isStandalone = !props.pubRecord;
+  let themeSource =
+    props.pubRecord?.theme || props.pubRecord?.basicTheme
+      ? props.pubRecord
+      : props.postRecord;
+  let theme = usePubTheme(themeSource, isStandalone);
+
+  if (props.enabled === false) return <>{props.children}</>;
+  return (
+    <CardBorderHiddenContext.Provider value={!theme.showPageBackground}>
+      <BaseThemeProvider local {...theme}>
+        {props.children}
+      </BaseThemeProvider>
+    </CardBorderHiddenContext.Provider>
+  );
+}
+
 export function WithPublicationTheme({
   record,
   uri,

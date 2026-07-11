@@ -1,8 +1,7 @@
 "use client";
 import { AtUri } from "@atproto/api";
 import { PubIcon } from "components/ActionBar/Publications";
-import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
-import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import type {
   NormalizedDocument,
@@ -40,11 +39,6 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
   let postUri = new AtUri(props.documents.uri);
   let uri = props.publication ? props.publication?.uri : props.documents.uri;
 
-  // For standalone documents (no publication), pass isStandalone to get correct defaults
-  let isStandalone = !pubRecord;
-  let themeSource =
-    pubRecord?.theme || pubRecord?.basicTheme ? pubRecord : postRecord;
-  let theme = usePubTheme(themeSource, isStandalone);
   let themeRecord = pubRecord?.theme || postRecord?.theme;
   let elRef = useRef<HTMLDivElement>(null);
   let [hasBackgroundImage, setHasBackgroundImage] = useState(false);
@@ -139,7 +133,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
 
   return (
     <div className="postListing flex flex-col gap-1">
-      <BaseThemeProvider {...theme} local>
+      <PublicationThemeWrapper postRecord={postRecord} pubRecord={pubRecord}>
         <div
           ref={elRef}
           id={`post-listing-${postUri}`}
@@ -179,7 +173,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
             coverImageAlt={postRecord.title}
           />
         </div>
-      </BaseThemeProvider>
+      </PublicationThemeWrapper>
     </div>
   );
 };

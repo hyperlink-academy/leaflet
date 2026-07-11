@@ -17,7 +17,6 @@ import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { InteractionPreview } from "components/Interactions/InteractionsPreview";
 import { PubIcon } from "components/ActionBar/Publications";
-import { WithPublicationTheme } from "components/ThemeManager/PublicationThemeProvider";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { formatBylineNames } from "src/utils/byline";
 
@@ -61,26 +60,6 @@ export function StandardSitePostItem({
       currentPublicationUri={currentPublicationUri}
       hideInteractions={hideInteractions}
     />
-  );
-}
-
-export function WithStandardSitePostPublicationTheme({
-  post,
-  enabled,
-  children,
-}: {
-  post: StandardSitePostData;
-  enabled: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <WithPublicationTheme
-      record={post.publication?.record}
-      uri={post.publication?.uri}
-      enabled={enabled}
-    >
-      {children}
-    </WithPublicationTheme>
   );
 }
 

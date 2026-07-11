@@ -37,13 +37,13 @@ import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
-import {
-  StandardSitePostItemView,
-  WithStandardSitePostPublicationTheme,
-} from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
+import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { StandardSitePublicationItem } from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
-import { WithPublicationTheme } from "components/ThemeManager/PublicationThemeProvider";
+import {
+  WithPublicationTheme,
+  PublicationThemeWrapper,
+} from "components/ThemeManager/PublicationThemeProvider";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
@@ -274,8 +274,9 @@ export let Block = ({
       return (
         <div className={className} {...blockProps}>
           <div className="standardSitePostBlock block-border overflow-hidden w-full">
-            <WithStandardSitePostPublicationTheme
-              post={post}
+            <PublicationThemeWrapper
+              postRecord={post.record}
+              pubRecord={post.publication?.record ?? undefined}
               enabled={b.block.showPublicationTheme !== false}
             >
               <div className="bg-bg-page">
@@ -285,7 +286,7 @@ export let Block = ({
                   currentPublicationUri={currentPublicationUri}
                 />
               </div>
-            </WithStandardSitePostPublicationTheme>
+            </PublicationThemeWrapper>
           </div>
         </div>
       );
