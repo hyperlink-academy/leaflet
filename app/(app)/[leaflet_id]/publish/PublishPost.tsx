@@ -205,9 +205,7 @@ const PublishPostForm = (
       let bskyResult = await publishPostToBsky({
         facets: facets || [],
         text: text || "",
-        title: props.title,
         url: post_url,
-        description: props.description,
         document_record: result.record,
         rkey: result.rkey,
         // For publications the post must be authored by the owner's PDS (where

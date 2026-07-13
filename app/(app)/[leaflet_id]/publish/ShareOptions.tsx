@@ -2,10 +2,10 @@
 import { Checkbox } from "components/Checkbox";
 import { BlueskyPostComposer } from "components/BlueskyPostComposer/BlueskyPostComposer";
 import { EditorState } from "prosemirror-state";
-import { AppBskyFeedDefs, AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { useState } from "react";
 import { sendPostPreview } from "actions/publications/sendPostPreview";
 import { ButtonSecondary } from "components/Buttons";
@@ -54,36 +54,28 @@ export function ShareOptions(props: Props) {
   const pubDid = props.publication_uri
     ? new AtUri(props.publication_uri).host
     : previewProfile.did;
-  const bskyEmbed = {
-    $type: "app.bsky.embed.external#view",
-    external: {
-      uri: props.record?.url ?? "",
-      title: props.title,
-      description: props.description,
-      ...(props.record && {
-        createdAt: props.publishedAt ?? new Date().toISOString(),
-        source: {
-          uri: props.record.url,
-          title: props.record.name,
-          icon: props.record.icon
-            ? blobRefToSrc(props.record.icon.ref, pubDid)
-            : undefined,
-        },
-        associatedRefs: [
-          { uri: `at://${pubDid}/site.standard.document/preview` },
-          { uri: `at://${pubDid}/site.standard.publication/preview` },
-        ],
-        associatedProfiles: [
-          {
-            did: pubDid,
-            handle: previewProfile.handle,
-            displayName: previewProfile.displayName,
-            avatar: previewProfile.avatar,
-          },
-        ],
-      }),
-    },
-  } as AppBskyFeedDefs.PostView["embed"];
+  const bskyEmbed = bskyPostEmbed({
+    url: props.record?.url ?? "",
+    title: props.title,
+    description: props.description,
+    publishedAt: props.publishedAt ?? new Date().toISOString(),
+    publication: props.record
+      ? {
+          did: pubDid,
+          url: props.record.url,
+          name: props.record.name,
+          icon: props.record.icon,
+        }
+      : undefined,
+    author: props.record
+      ? {
+          did: pubDid,
+          handle: previewProfile.handle,
+          displayName: previewProfile.displayName,
+          avatar: previewProfile.avatar,
+        }
+      : undefined,
+  });
   const handleChange = (
     key: keyof Omit<ShareState, "quiet">,
     checked: boolean,

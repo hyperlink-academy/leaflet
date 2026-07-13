@@ -1,5 +1,4 @@
 "use client";
-import { AtUri } from "@atproto/syntax";
 import { EditTiny } from "components/Icons/EditTiny";
 import { EmptyState } from "components/EmptyState";
 
@@ -16,6 +15,7 @@ import {
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/Interactions/InteractionsPreview";
+import { sharePublicationInfo } from "src/utils/bskyPostEmbed";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(app)/(home-pages)/(writer)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
@@ -70,7 +70,6 @@ function PublishedPostItem(props: {
 }) {
   const { doc, publication, pubRecord, showPageBackground } = props;
   const { identity } = useIdentityData();
-  const uri = new AtUri(doc.uri);
   const leaflet = publication.leaflets_in_publications.find(
     (l) => l.doc === doc.uri,
   );
@@ -154,13 +153,14 @@ function PublishedPostItem(props: {
             ) : null}
 
             <InteractionPreview
+              postRecord={doc.record}
               shareType="weak"
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
               recommendsCount={doc.recommendsCount}
               documentUri={doc.uri}
               tags={doc.record.tags || []}
-              title={doc.record.title}
+              publication={sharePublicationInfo(pubRecord, publication.uri)}
               showComments={pubRecord?.preferences?.showComments !== false}
               showMentions={pubRecord?.preferences?.showMentions !== false}
               showRecommends={pubRecord?.preferences?.showRecommends !== false}

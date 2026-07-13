@@ -23,6 +23,7 @@ import { RecommendButton } from "./Interactions/RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionButton } from "./Interactions/DiscussionButton";
 import { InteractionShareButton } from "./Interactions/InteractionShareButton";
+import { sharePublicationInfo } from "src/utils/bskyPostEmbed";
 import { PublicationPostItemLarge } from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
 
 export const PostListing = (props: Post & { selected?: boolean }) => {
@@ -127,7 +128,13 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         document={postRecord}
         publication={pubRecord}
       />
-      <InteractionShareButton postUrl={postUrl} type="weak" />
+      <InteractionShareButton
+        postRecord={postRecord}
+        postUrl={postUrl}
+        documentUri={props.documents.uri}
+        publication={sharePublicationInfo(pubRecord, props.publication?.uri)}
+        type="weak"
+      />
     </div>
   );
 

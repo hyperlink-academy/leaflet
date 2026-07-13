@@ -6,6 +6,8 @@ import { TagTiny } from "../Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionButton } from "./DiscussionButton";
 import { InteractionShareButton } from "./InteractionShareButton";
+import { SharePublication, ShareAuthor } from "src/utils/bskyPostEmbed";
+import { NormalizedDocument } from "lexicons/src/normalize";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
@@ -14,7 +16,9 @@ export const InteractionPreview = (props: {
   documentUri: string;
   tags?: string[];
   postUrl: string;
-  title?: string;
+  postRecord: NormalizedDocument;
+  publication?: SharePublication;
+  author?: ShareAuthor;
   showComments: boolean;
   showMentions: boolean;
   showRecommends: boolean;
@@ -34,7 +38,7 @@ export const InteractionPreview = (props: {
           showComments={props.showComments}
           showMentions={props.showMentions}
           postUrl={props.postUrl}
-          title={props.title}
+          title={props.postRecord.title}
         />
         {props.showRecommends === false ? null : (
           <RecommendButton
@@ -45,17 +49,13 @@ export const InteractionPreview = (props: {
       </div>
 
       <InteractionShareButton
+        postRecord={props.postRecord}
         type={props.shareType}
         postUrl={props.postUrl}
-        title={props.title}
+        documentUri={props.documentUri}
+        publication={props.publication}
+        author={props.author}
       />
-
-      {/*{tagsCount === 0 ? null : (
-        <>
-          {interactionsAvailable ? <Separator classname="h-4!" /> : null}
-          <TagPopover tags={props.tags!} />
-        </>
-      )}*/}
     </div>
   );
 };

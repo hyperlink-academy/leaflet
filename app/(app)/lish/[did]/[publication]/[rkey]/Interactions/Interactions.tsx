@@ -23,6 +23,7 @@ import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
 import { ShareSmall } from "components/Icons/ShareSmall";
+import { sharePublicationInfo } from "src/utils/bskyPostEmbed";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -183,10 +184,17 @@ export const Interactions = (props: {
     uri: document_uri,
     quotesAndMentions,
     normalizedDocument,
+    normalizedPublication,
+    publication,
   } = useDocument();
   let { identity } = useIdentityData();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+
+  const sharePublication = sharePublicationInfo(
+    normalizedPublication,
+    publication?.uri,
+  );
 
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -251,7 +259,10 @@ export const Interactions = (props: {
       )}
       <div className="h-full  w-0 spacer" />
       <InteractionShareButton
+        postRecord={normalizedDocument}
         postUrl={typeof window !== "undefined" ? window.location.href : ""}
+        documentUri={document_uri}
+        publication={sharePublication}
         type="weak"
       />
     </div>
@@ -272,12 +283,18 @@ export const ExpandedInteractions = (props: {
     uri: document_uri,
     quotesAndMentions,
     normalizedDocument,
+    normalizedPublication,
     publication,
     leafletId,
   } = useDocument();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
   let viewer = useViewerSubscription(publication?.uri ?? "");
+
+  const sharePublication = sharePublicationInfo(
+    normalizedPublication,
+    publication?.uri,
+  );
 
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -363,9 +380,12 @@ export const ExpandedInteractions = (props: {
             />
 
             <InteractionShareButton
+              postRecord={normalizedDocument}
               postUrl={
                 typeof window !== "undefined" ? window.location.href : ""
               }
+              documentUri={document_uri}
+              publication={sharePublication}
               type="strong"
               trigger={
                 <div className={interactionButtonClassName}>

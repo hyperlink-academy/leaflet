@@ -18,66 +18,103 @@ import { scrollIntoView } from "src/utils/scrollIntoView";
 import { SelectionActionPopover } from "components/SelectionActionPopover";
 import { BskyShareModal } from "components/Interactions/InteractionShareButton";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { sharePublicationInfo } from "src/utils/bskyPostEmbed";
 
 export function QuoteHandler() {
+  const {
+    uri: document_uri,
+    publication,
+    normalizedDocument,
+    normalizedPublication,
+  } = useDocument();
+  // Clicking inside the modal clears the text selection, which unmounts the
+  // quote share popover (and the modal), so the modal must live above it.
+  let [shareUrl, setShareUrl] = useState<string | null>(null);
+
   return (
-    <SelectionActionPopover
-      id="quote-trigger"
-      containerSelector=".postContent"
-      resolve={({ range }) => {
-        let startIndex = findDataIndex(range.startContainer);
-        let endIndex = findDataIndex(range.endContainer);
-        if (!startIndex || !endIndex) return null;
-        let startOffset = calculateOffsetFromDataParent(
-          range.startContainer,
-          range.startOffset,
-          startIndex.element,
-        );
-        let endOffset = calculateOffsetFromDataParent(
-          range.endContainer,
-          range.endOffset,
-          endIndex.element,
-        );
-        let position: QuotePosition = {
-          ...(startIndex.pageId && { pageId: startIndex.pageId }),
-          start: {
-            block: startIndex.index.split(".").map((i) => parseInt(i)),
-            offset: startOffset,
-          },
-          end: {
-            block: endIndex.index.split(".").map((i) => parseInt(i)),
-            offset: endOffset,
-          },
-        };
-        return encodeQuotePosition(position);
-      }}
-    >
-      {(position) => <QuoteOptionButtons position={position} />}
-    </SelectionActionPopover>
+    <>
+      <SelectionActionPopover
+        id="quote-trigger"
+        containerSelector=".postContent"
+        resolve={({ range }) => {
+          let startIndex = findDataIndex(range.startContainer);
+          let endIndex = findDataIndex(range.endContainer);
+          if (!startIndex || !endIndex) return null;
+          let startOffset = calculateOffsetFromDataParent(
+            range.startContainer,
+            range.startOffset,
+            startIndex.element,
+          );
+          let endOffset = calculateOffsetFromDataParent(
+            range.endContainer,
+            range.endOffset,
+            endIndex.element,
+          );
+          let position: QuotePosition = {
+            ...(startIndex.pageId && { pageId: startIndex.pageId }),
+            start: {
+              block: startIndex.index.split(".").map((i) => parseInt(i)),
+              offset: startOffset,
+            },
+            end: {
+              block: endIndex.index.split(".").map((i) => parseInt(i)),
+              offset: endOffset,
+            },
+          };
+          return encodeQuotePosition(position);
+        }}
+      >
+        {(position) => (
+          <QuoteOptionButtons
+            position={position}
+            onShare={setShareUrl}
+            postUrl={`${normalizedPublication?.url}${normalizedDocument.path}`}
+          />
+        )}
+      </SelectionActionPopover>
+      <BskyShareModal
+        docRecord={normalizedDocument}
+        postUrl={shareUrl ? shareUrl : undefined}
+        documentUri={document_uri}
+        publication={sharePublicationInfo(
+          normalizedPublication,
+          publication?.uri,
+        )}
+        preferUrlScreenshot
+        onPosted={() => setShareUrl(null)}
+        shareModalOpen={shareUrl !== null}
+        setShareModalOpen={(open) => {
+          if (!open) setShareUrl(null);
+        }}
+      />
+    </>
   );
 }
 
-const QuoteOptionButtons = (props: { position: string }) => {
+const QuoteOptionButtons = (props: {
+  position: string;
+  onShare: (url: string) => void;
+  postUrl: string;
+}) => {
   let smoker = useSmoker();
   let { identity } = useIdentityData();
   const { uri: document_uri, publication } = useDocument();
-  let [shareModalOpen, setShareModalOpen] = useState(false);
   let [url, position] = useMemo(() => {
-    let currentUrl = new URL(window.location.href);
+    let postUrl = new URL(props.postUrl);
     let pos = decodeQuotePosition(props.position);
-    if (currentUrl.pathname.includes("/l-quote/")) {
-      currentUrl.pathname = currentUrl.pathname.split("/l-quote/")[0];
+    if (postUrl.pathname.includes("/l-quote/")) {
+      postUrl.pathname = postUrl.pathname.split("/l-quote/")[0];
     }
-    currentUrl.pathname = currentUrl.pathname + `/l-quote/${props.position}`;
+    postUrl.pathname = postUrl.pathname + `/l-quote/${props.position}`;
 
     // Clear existing query parameters
-    currentUrl.search = "";
+    postUrl.search = "";
 
     const fragmentId = pos?.pageId
       ? `${pos.pageId}~${pos.start.block.join(".")}_${pos.start.offset}`
       : `${pos?.start.block.join(".")}_${pos?.start.offset}`;
-    currentUrl.hash = `#${fragmentId}`;
-    return [currentUrl.toString(), pos];
+    postUrl.hash = `#${fragmentId}`;
+    return [postUrl.toString(), pos];
   }, [props.position]);
   let pubRecord = publication?.record;
 
@@ -87,17 +124,11 @@ const QuoteOptionButtons = (props: { position: string }) => {
 
       <button
         className="flex relative gap-1 items-center hover:font-bold px-1 hover:no-underline!"
-        onClick={() => setShareModalOpen(true)}
+        onClick={() => url && props.onShare(url)}
       >
         <BlueskyTiny className="shrink-0" />
         Bluesky
       </button>
-      <BskyShareModal
-        postUrl={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
-        onPosted={() => setShareModalOpen(false)}
-        shareModalOpen={shareModalOpen}
-        setShareModalOpen={setShareModalOpen}
-      />
       <Separator classname="h-4!" />
       <button
         id="copy-quote-link"

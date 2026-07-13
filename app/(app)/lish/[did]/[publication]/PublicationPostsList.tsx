@@ -152,6 +152,7 @@ export function PublicationPostsList({
             ) : undefined;
             const interactions = (
               <InteractionPreview
+                postRecord={doc_record}
                 shareType="none"
                 quotesCount={quotes}
                 commentsCount={comments}
@@ -159,7 +160,6 @@ export function PublicationPostsList({
                 documentUri={post.uri}
                 tags={tags}
                 postUrl={docUrl}
-                title={doc_record.title}
                 showComments={
                   publicationRecord?.preferences?.showComments !== false
                 }

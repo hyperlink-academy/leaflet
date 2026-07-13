@@ -13,6 +13,7 @@ import {
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
+import { sharePublicationInfo } from "src/utils/bskyPostEmbed";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { InteractionPreview } from "components/Interactions/InteractionsPreview";
@@ -204,6 +205,7 @@ export function StandardSitePostItemView({
   const interactions =
     hideInteractions || noInteractions ? undefined : (
       <InteractionPreview
+        postRecord={post.record}
         shareType="strong"
         quotesCount={post.mentionsCount}
         commentsCount={commentsCount}
@@ -211,7 +213,19 @@ export function StandardSitePostItemView({
         documentUri={post.uri}
         tags={post.record.tags || []}
         postUrl={docUrl}
-        title={post.record.title}
+        publication={sharePublicationInfo(
+          post.publication?.record,
+          post.publication?.uri,
+        )}
+        author={
+          post.author
+            ? {
+                did: post.author.did,
+                handle: post.author.handle ?? undefined,
+                displayName: post.author.displayName ?? undefined,
+              }
+            : undefined
+        }
         showComments={showComments}
         showMentions={showMentions}
         showRecommends={showRecommends}
