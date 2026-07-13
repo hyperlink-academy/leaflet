@@ -15,7 +15,6 @@ import {
 } from "app/(app)/lish/createPub/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/Interactions/InteractionsPreview";
-import { sharePublicationInfo } from "src/utils/bskyPostEmbed";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(app)/(home-pages)/(writer)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
@@ -160,7 +159,8 @@ function PublishedPostItem(props: {
               recommendsCount={doc.recommendsCount}
               documentUri={doc.uri}
               tags={doc.record.tags || []}
-              publication={sharePublicationInfo(pubRecord, publication.uri)}
+              publication={pubRecord || undefined}
+              pubUri={publication?.uri || undefined}
               showComments={pubRecord?.preferences?.showComments !== false}
               showMentions={pubRecord?.preferences?.showMentions !== false}
               showRecommends={pubRecord?.preferences?.showRecommends !== false}

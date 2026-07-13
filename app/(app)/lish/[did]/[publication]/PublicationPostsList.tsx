@@ -159,6 +159,7 @@ export function PublicationPostsList({
                 recommendsCount={recommends}
                 documentUri={post.uri}
                 tags={tags}
+                pubUri={publication.uri}
                 postUrl={docUrl}
                 showComments={
                   publicationRecord?.preferences?.showComments !== false

@@ -1,13 +1,14 @@
 "use client";
-import { Separator } from "../Layout";
 import { Tag } from "../Tags";
 import { Popover } from "../Popover";
 import { TagTiny } from "../Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionButton } from "./DiscussionButton";
 import { InteractionShareButton } from "./InteractionShareButton";
-import { SharePublication, ShareAuthor } from "src/utils/bskyPostEmbed";
-import { NormalizedDocument } from "lexicons/src/normalize";
+import {
+  NormalizedDocument,
+  NormalizedPublication,
+} from "lexicons/src/normalize";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
@@ -17,15 +18,13 @@ export const InteractionPreview = (props: {
   tags?: string[];
   postUrl: string;
   postRecord: NormalizedDocument;
-  publication?: SharePublication;
-  author?: ShareAuthor;
+  publication?: NormalizedPublication;
+  pubUri: string | undefined;
   showComments: boolean;
   showMentions: boolean;
   showRecommends: boolean;
   shareType: "none" | "weak" | "strong";
 }) => {
-  const tagsCount = props.tags?.length || 0;
-
   return (
     <div
       className={` text-tertiary text-sm  items-end flex gap-4 grow min-w-0 justify-between`}
@@ -54,7 +53,7 @@ export const InteractionPreview = (props: {
         postUrl={props.postUrl}
         documentUri={props.documentUri}
         publication={props.publication}
-        author={props.author}
+        pubUri={props.pubUri}
       />
     </div>
   );

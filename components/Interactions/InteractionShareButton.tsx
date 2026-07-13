@@ -15,26 +15,26 @@ import { useIdentityData } from "../IdentityProvider";
 import { editorStateToFacetedText } from "../BlueskyPostComposer/ProsemirrorEditor";
 import { publishPostToBsky } from "app/(app)/[leaflet_id]/publish/publishBskyPost";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import {
-  bskyPostEmbed,
-  SharePublication,
-  ShareAuthor,
-} from "src/utils/bskyPostEmbed";
+import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { LoginContent } from "components/LoginButton";
-import { NormalizedDocument } from "lexicons/src/normalize";
+import {
+  NormalizedDocument,
+  NormalizedPublication,
+} from "lexicons/src/normalize";
 
 export const InteractionShareButton = (props: {
   postRecord: NormalizedDocument;
   postUrl?: string;
   documentUri?: string;
-  publication?: SharePublication;
-  author?: ShareAuthor;
+  publication?: NormalizedPublication;
+  pubUri: string | undefined;
   type: "none" | "weak" | "strong";
   trigger?: React.ReactNode;
 }) => {
   let { identity } = useIdentityData();
-  console.log(identity?.atp_did);
+
+  // FLAG FOR CELINE ONLY
   if (identity?.atp_did !== "did:plc:kydzcmnywraao2srchqgwj5c") {
     return null;
   }
@@ -42,6 +42,14 @@ export const InteractionShareButton = (props: {
   let [shareModalOpen, setShareModalOpen] = useState(false);
 
   if (props.type === "none") return;
+
+  function postOwnerDid(uri: string): string | null {
+    try {
+      return new AtUri(uri).host;
+    } catch {
+      return null;
+    }
+  }
 
   return (
     <>
@@ -91,7 +99,11 @@ export const InteractionShareButton = (props: {
         docRecord={props.postRecord}
         documentUri={props.documentUri}
         publication={props.publication}
-        author={props.author}
+        pubOwnerDid={
+          (props.documentUri ? postOwnerDid(props.documentUri) : undefined) ||
+          undefined
+        }
+        pubUri={props.pubUri}
         onPosted={() => setShareModalOpen(false)}
         shareModalOpen={shareModalOpen}
         setShareModalOpen={setShareModalOpen}
@@ -103,18 +115,10 @@ export const InteractionShareButton = (props: {
 export const BskyShareModal = (props: {
   postUrl?: string;
   docRecord: NormalizedDocument;
-  // The at-uri of the document being shared. Combined with the publication uri,
-  // it lets the posted card carry the standard.site strong refs (so it renders
-  // as a publication card, not a bare link). Its host is the author's did — the
-  // repo holding the doc and its cover blob.
   documentUri?: string;
-  // When the shared post belongs to a publication, this enriches the preview
-  // into the standard.site card (publication footer) instead of a generic link.
-  publication?: SharePublication;
-  // The post author, shown as the byline in the preview card.
-  author?: ShareAuthor;
-  // Prefer a screenshot of `postUrl` as the card thumbnail over the doc's cover
-  // image. Set for quote shares so the card shows the quoted passage.
+  pubOwnerDid: string | undefined;
+  publication?: NormalizedPublication;
+  pubUri: string | undefined;
   preferUrlScreenshot?: boolean;
   onPosted: () => void;
   shareModalOpen: boolean;
@@ -150,7 +154,7 @@ export const BskyShareModal = (props: {
       url: props.postUrl,
       document_record: props.docRecord,
       documentUri: props.documentUri,
-      publicationUri: props.publication?.uri,
+      publicationUri: props.pubUri,
       preferUrlScreenshot: props.preferUrlScreenshot,
     });
     setPosting(false);
@@ -181,7 +185,7 @@ export const BskyShareModal = (props: {
     thumb,
     publishedAt,
     publication: props.publication,
-    author: props.author ?? (authorDid ? { did: authorDid } : undefined),
+    pubOwnerDid: props.pubOwnerDid,
   });
 
   let submitButton = (
@@ -207,7 +211,6 @@ export const BskyShareModal = (props: {
     <LoginContent redirectRoute={window.location.href} className="sm:w-full!" />
   ) : (
     <>
-      {props.postUrl}
       <BlueskyPostComposer
         profile={profile}
         editorStateRef={editorStateRef}

@@ -23,7 +23,6 @@ import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { sharePublicationInfo } from "src/utils/bskyPostEmbed";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -191,19 +190,6 @@ export const Interactions = (props: {
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
-  const sharePublication = sharePublicationInfo(
-    normalizedPublication,
-    publication?.uri,
-  );
-
-  const handleQuotePrefetch = () => {
-    if (quotesAndMentions) {
-      prefetchQuotesData(quotesAndMentions);
-    }
-  };
-
-  const tags = normalizedDocument.tags;
-
   let commentsAvailable = props.showComments;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
   let discussionsAvailable = commentsAvailable || mentionsAvailable;
@@ -221,6 +207,11 @@ export const Interactions = (props: {
     }),
     [document_uri, props.pageId],
   );
+  const handleQuotePrefetch = () => {
+    if (quotesAndMentions) {
+      prefetchQuotesData(quotesAndMentions);
+    }
+  };
 
   return (
     <div
@@ -262,7 +253,8 @@ export const Interactions = (props: {
         postRecord={normalizedDocument}
         postUrl={typeof window !== "undefined" ? window.location.href : ""}
         documentUri={document_uri}
-        publication={sharePublication}
+        publication={normalizedPublication || undefined}
+        pubUri={publication?.uri}
         type="weak"
       />
     </div>
@@ -290,11 +282,6 @@ export const ExpandedInteractions = (props: {
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
   let viewer = useViewerSubscription(publication?.uri ?? "");
-
-  const sharePublication = sharePublicationInfo(
-    normalizedPublication,
-    publication?.uri,
-  );
 
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -385,7 +372,10 @@ export const ExpandedInteractions = (props: {
                 typeof window !== "undefined" ? window.location.href : ""
               }
               documentUri={document_uri}
-              publication={sharePublication}
+              publication={
+                normalizedPublication ? normalizedPublication : undefined
+              }
+              pubUri={publication?.uri}
               type="strong"
               trigger={
                 <div className={interactionButtonClassName}>

@@ -25,10 +25,10 @@ type Props = {
   setCharCount: (c: number) => void;
   editorStateRef: React.MutableRefObject<EditorState | null>;
   title: string;
-  profile: ProfileViewDetailed;
-  publicationProfile?: ProfileViewDetailed;
+  viewerProfile: ProfileViewDetailed;
+  publicationOwnerProfile?: ProfileViewDetailed;
   description: string;
-  record?: NormalizedPublication | null;
+  pubRecord?: NormalizedPublication | null;
   subscriberCount?: number;
   newsletter_enabled?: boolean;
   publication_uri?: string;
@@ -45,7 +45,7 @@ export function ShareOptions(props: Props) {
   const { shareState, setShareState } = props;
   // When publishing to a publication, the Bluesky post lives in the
   // publication owner's PDS, so the preview should show their identity.
-  const previewProfile = props.publicationProfile ?? props.profile;
+  const previewProfile = props.publicationOwnerProfile ?? props.viewerProfile;
 
   // When publishing to a publication, mirror the standard.site enrichment that
   // bluesky's appview derives from the post's associatedRefs, so the compose
@@ -55,26 +55,12 @@ export function ShareOptions(props: Props) {
     ? new AtUri(props.publication_uri).host
     : previewProfile.did;
   const bskyEmbed = bskyPostEmbed({
-    url: props.record?.url ?? "",
+    url: props.pubRecord?.url ?? "",
     title: props.title,
     description: props.description,
     publishedAt: props.publishedAt ?? new Date().toISOString(),
-    publication: props.record
-      ? {
-          did: pubDid,
-          url: props.record.url,
-          name: props.record.name,
-          icon: props.record.icon,
-        }
-      : undefined,
-    author: props.record
-      ? {
-          did: pubDid,
-          handle: previewProfile.handle,
-          displayName: previewProfile.displayName,
-          avatar: previewProfile.avatar,
-        }
-      : undefined,
+    publication: props.pubRecord ? props.pubRecord : undefined,
+    pubOwnerDid: props.publicationOwnerProfile?.did,
   });
   const handleChange = (
     key: keyof Omit<ShareState, "quiet">,

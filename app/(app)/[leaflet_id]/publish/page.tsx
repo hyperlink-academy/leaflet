@@ -86,17 +86,18 @@ export default async function PublishLeafletPage(props: Props) {
 
   let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
   let newsletterEnabled =
-    !!publication?.uri && !!publication.publication_newsletter_settings?.enabled;
+    !!publication?.uri &&
+    !!publication.publication_newsletter_settings?.enabled;
   // When publishing to a publication, the Bluesky post is created in the
   // publication owner's PDS, so the preview should show the owner's identity.
   let publicationOwnerDid = publication?.identity_did;
   // Only fetch the owner profile separately when the owner is someone other
   // than the viewer; when they're the same DID we reuse the viewer profile
-  // (ShareOptions' `previewProfile = publicationProfile ?? profile` handles the
-  // undefined case).
+  // (ShareOptions falls back to `publicationOwnerProfile ?? viewerProfile`).
   let shouldFetchOwnerProfile =
     !!publicationOwnerDid && publicationOwnerDid !== identity.atp_did;
-  let [profile, publicationProfile, subscriberCount] = await Promise.all([
+  let [viewerProfile, publicationOwnerProfile, subscriberCount] =
+    await Promise.all([
     agent.getProfile({ actor: identity.atp_did }),
     shouldFetchOwnerProfile
       ? agent
@@ -142,13 +143,13 @@ export default async function PublishLeafletPage(props: Props) {
       <PublishPost
         leaflet_id={leaflet_id}
         root_entity={rootEntity}
-        profile={profile.data}
-        publicationProfile={publicationProfile}
+        viewerProfile={viewerProfile.data}
+        publicationOwnerProfile={publicationOwnerProfile}
         publicationOwnerDid={publicationOwnerDid ?? undefined}
         title={title}
         description={description}
         publication_uri={publication?.uri}
-        record={normalizePublicationRecord(publication?.record)}
+        pubRecord={normalizePublicationRecord(publication?.record)}
         posts_in_pub={publication?.documents_in_publications[0]?.count}
         newsletter_enabled={newsletterEnabled}
         subscriberCount={subscriberCount}

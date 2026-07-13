@@ -16,6 +16,8 @@ import { Avatar } from "components/Avatar";
 import { LocalizedDate } from "app/(app)/lish/[did]/[publication]/LocalizedDate";
 import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
 import { PubIcon } from "components/ActionBar/Publications";
+import { getProfiles } from "src/identity";
+import { useRecordFromDid } from "src/utils/useRecordFromDid";
 
 // A fork of bluesky's embed renderer, matching its layout while using our
 // colors, fonts, and shared components (Avatar, BlueskyVideoPlayer). Context
@@ -459,9 +461,11 @@ function StandardSiteExternalEmbed({
     )
     .map((ref) => atHost(ref.uri))
     .find(Boolean);
-  const author = authorDid
-    ? external.associatedProfiles?.find((p) => p.did === authorDid)
-    : undefined;
+
+  const { data: profile } = useRecordFromDid(authorDid);
+  const handle = profile?.handle;
+
+  console.log(profile);
 
   return (
     <div
@@ -476,7 +480,7 @@ function StandardSiteExternalEmbed({
           <img
             src={external.thumb}
             alt={external.title}
-            className="aspect-[1200/630] object-cover"
+            className="aspect-[1200/630] object-cover border-b border-border-light"
           />
         )}
         <div className="min-w-0 flex flex-col py-2 px-2.5">
@@ -514,9 +518,9 @@ function StandardSiteExternalEmbed({
             <span className="text-sm font-semibold text-secondary truncate">
               {source.title}
             </span>
-            {author?.handle && (
+            {handle && (
               <span className="text-xs text-tertiary truncate shrink-0">
-                by @{author.handle}
+                by @{handle}
               </span>
             )}
           </div>

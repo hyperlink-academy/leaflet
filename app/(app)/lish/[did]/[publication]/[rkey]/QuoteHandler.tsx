@@ -18,7 +18,6 @@ import { scrollIntoView } from "src/utils/scrollIntoView";
 import { SelectionActionPopover } from "components/SelectionActionPopover";
 import { BskyShareModal } from "components/Interactions/InteractionShareButton";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { sharePublicationInfo } from "src/utils/bskyPostEmbed";
 
 export function QuoteHandler() {
   const {
@@ -73,13 +72,12 @@ export function QuoteHandler() {
         )}
       </SelectionActionPopover>
       <BskyShareModal
+        pubOwnerDid={publication?.identity_did}
         docRecord={normalizedDocument}
         postUrl={shareUrl ? shareUrl : undefined}
         documentUri={document_uri}
-        publication={sharePublicationInfo(
-          normalizedPublication,
-          publication?.uri,
-        )}
+        pubUri={publication?.uri}
+        publication={normalizedPublication || undefined}
         preferUrlScreenshot
         onPosted={() => setShareUrl(null)}
         shareModalOpen={shareUrl !== null}

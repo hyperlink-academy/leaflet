@@ -40,19 +40,18 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { useEntity } from "src/replicache";
 import { LeafletContent } from "app/(app)/(home-pages)/(writer)/home/LeafletList/LeafletContent";
+import { Contributor } from "lexicons/api/types/site/standard/document";
 
 type Props = {
   title: string;
   leaflet_id: string;
   root_entity: string;
-  profile: ProfileViewDetailed;
-  publicationProfile?: ProfileViewDetailed;
-  // DID of the publication owner whose PDS hosts the record / Bluesky post.
-  // Undefined for standalone publishes (post is authored by the viewer).
+  viewerProfile: ProfileViewDetailed;
+  publicationOwnerProfile?: ProfileViewDetailed;
   publicationOwnerDid?: string;
   description: string;
   publication_uri?: string;
-  record?: NormalizedPublication | null;
+  pubRecord?: NormalizedPublication | null;
   posts_in_pub?: number;
   newsletter_enabled?: boolean;
   subscriberCount?: number;
@@ -70,7 +69,7 @@ export function PublishPost(props: Props) {
         <PublishPostForm setPublishState={setPublishState} {...props} />
       ) : (
         <PublishPostSuccess
-          record={props.record}
+          record={props.pubRecord}
           publication_uri={props.publication_uri}
           post_url={publishState.post_url}
           posts_in_pub={(props.posts_in_pub || 0) + 1}
@@ -194,9 +193,9 @@ const PublishPostForm = (
     }
 
     // Generate post URL based on whether it's in a publication or standalone
-    let post_url = props.record?.url
-      ? `${props.record.url}/${result.rkey}`
-      : `https://leaflet.pub/p/${props.profile.did}/${result.rkey}`;
+    let post_url = props.pubRecord?.url
+      ? `${props.pubRecord.url}/${result.rkey}`
+      : `https://leaflet.pub/p/${props.viewerProfile.did}/${result.rkey}`;
 
     let [text, facets] = editorStateRef.current
       ? editorStateToFacetedText(editorStateRef.current)
@@ -243,7 +242,7 @@ const PublishPostForm = (
               <h2>Publish: Post Details</h2>
               <PublishingTo
                 publication_uri={props.publication_uri}
-                record={props.record}
+                record={props.pubRecord}
               />
               <hr className="border-border-light" />
 
@@ -284,10 +283,10 @@ const PublishPostForm = (
                   <div className="opaque-container !border-border overflow-hidden flex flex-col w-full rounded-lg!">
                     <SocialPreviewImage
                       rootEntity={props.root_entity}
-                      did={props.profile.did}
+                      did={props.viewerProfile.did}
                       coverImageEntity={coverImageEntity}
                       publication_uri={props.publication_uri}
-                      record={props.record}
+                      record={props.pubRecord}
                     />
                     <hr className="border-border" />
                     <div className="flex flex-col p-2 gap-0.5">
@@ -301,7 +300,7 @@ const PublishPostForm = (
                       )}
                       <hr className="border-border-light mt-1 mb-0.5" />
                       <div className="text-xs text-tertiary">
-                        {(props.record?.url || "leaflet.pub").replace(
+                        {(props.pubRecord?.url || "leaflet.pub").replace(
                           /^https?:\/\//,
                           "",
                         )}
@@ -342,10 +341,10 @@ const PublishPostForm = (
                 setCharCount={setCharCount}
                 editorStateRef={editorStateRef}
                 title={props.title}
-                profile={props.profile}
-                publicationProfile={props.publicationProfile}
+                viewerProfile={props.viewerProfile}
+                publicationOwnerProfile={props.publicationOwnerProfile}
                 description={props.description}
-                record={props.record}
+                pubRecord={props.pubRecord}
                 newsletter_enabled={props.newsletter_enabled}
                 subscriberCount={props.subscriberCount}
                 publication_uri={props.publication_uri}
@@ -692,7 +691,7 @@ const PublishingTo = (props: {
 const PublishPostSuccess = (props: {
   post_url: string;
   publication_uri?: string;
-  record: Props["record"];
+  record: Props["pubRecord"];
   posts_in_pub: number;
 }) => {
   let uri = props.publication_uri ? new AtUri(props.publication_uri) : null;
