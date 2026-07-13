@@ -443,7 +443,7 @@ function ExternalEmbed({
 // The standard.site card: the article's thumb/title/description linking to the
 // post, footered with the publication (icon + name + author) linking to the
 // publication instead of the article's bare domain.
-function StandardSiteExternalEmbed({
+export function StandardSiteExternalEmbed({
   external,
   compact,
   className,
@@ -464,8 +464,6 @@ function StandardSiteExternalEmbed({
 
   const { data: profile } = useRecordFromDid(authorDid);
   const handle = profile?.handle;
-
-  console.log(profile);
 
   return (
     <div

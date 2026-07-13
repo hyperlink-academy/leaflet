@@ -78,7 +78,7 @@ export const ButtonSecondary = forwardRef<
         bg-bg-page disabled:bg-border-light
         border border-accent-contrast rounded-md
         outline-2 outline-transparent focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1 disabled:outline-none! disabled:cursor-not-allowed!
-        text-base font-bold text-accent-contrast disabled:text-border disabled:hover:text-border
+        text-base font-bold text-accent-contrast disabled:text-border disabled:hover:text-border disabled:border-border-light
         flex gap-2 items-center justify-center shrink-0
         ${props.className}
         `}
