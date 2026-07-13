@@ -165,7 +165,24 @@ export const BskyShareModal = (props: {
       });
       return;
     }
-    toaster({ content: "Shared to Bluesky!", type: "success" });
+    let postAtUri = new AtUri(res.uri);
+    let postUrl = `https://bsky.app/profile/${postAtUri.host}/post/${postAtUri.rkey}`;
+    toaster({
+      content: (
+        <span>
+          Shared to Bluesky!{" "}
+          <a
+            href={postUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="underline text-accent-2!"
+          >
+            View it here.
+          </a>
+        </span>
+      ),
+      type: "success",
+    });
     props.onPosted();
   };
 

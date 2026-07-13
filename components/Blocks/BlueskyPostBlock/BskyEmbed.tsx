@@ -11,7 +11,7 @@ import {
   AppBskyLabelerDefs,
   AtUri,
 } from "@atproto/api";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Avatar } from "components/Avatar";
 import { LocalizedDate } from "app/(app)/lish/[did]/[publication]/LocalizedDate";
 import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
@@ -462,7 +462,7 @@ export function StandardSiteExternalEmbed({
     .map((ref) => atHost(ref.uri))
     .find(Boolean);
 
-  const { data: profile } = useRecordFromDid(authorDid);
+  const { data: profile, isLoading } = useRecordFromDid(authorDid);
   const handle = profile?.handle;
 
   return (
@@ -475,10 +475,10 @@ export function StandardSiteExternalEmbed({
         disableTracking
       >
         {external.thumb && !compact && (
-          <img
+          <CoverImage
             src={external.thumb}
             alt={external.title}
-            className="aspect-[1200/630] object-cover border-b border-border-light"
+            className="aspect-[1200/630] border-b border-border-light"
           />
         )}
         <div className="min-w-0 flex flex-col py-2 px-2.5">
@@ -516,10 +516,14 @@ export function StandardSiteExternalEmbed({
             <span className="text-sm font-semibold text-secondary truncate">
               {source.title}
             </span>
-            {handle && (
-              <span className="text-xs text-tertiary truncate shrink-0">
-                by @{handle}
-              </span>
+            {isLoading ? (
+              <span className="h-[15px] w-20  bg-border-light rounded animate-pulse" />
+            ) : (
+              handle && (
+                <span className="text-xs text-tertiary truncate shrink-0">
+                  by @{handle}
+                </span>
+              )
             )}
           </div>
         </Link>
@@ -530,6 +534,35 @@ export function StandardSiteExternalEmbed({
           Subscribe
         </Link>
       </div>
+    </div>
+  );
+}
+
+// Fills the fixed-aspect cover slot with a pulsing placeholder until the image
+// finishes downloading, so the card doesn't render an empty gap. onError also
+// clears the loader so a broken thumb doesn't pulse forever.
+function CoverImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt?: string;
+  className?: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className={`relative overflow-hidden ${className || ""}`}>
+      {!loaded && (
+        <div className="absolute inset-0 bg-border-light animate-pulse" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+        className={`w-full h-full object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
     </div>
   );
 }

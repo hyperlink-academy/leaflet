@@ -1,4 +1,4 @@
-import { AppBskyFeedDefs, AtUri, BlobRef } from "@atproto/api";
+import { AppBskyFeedDefs } from "@atproto/api";
 import { blobRefToSrc } from "./blobRefToSrc";
 import type { NormalizedPublication } from "./normalizeRecords";
 
