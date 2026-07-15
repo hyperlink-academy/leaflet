@@ -22,6 +22,7 @@ import { useMemo } from "react";
 import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { ShareSmall } from "components/Icons/ShareSmall";
 
 export type InteractionState = {
@@ -190,6 +191,16 @@ export const Interactions = (props: {
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
+  // The canonical url for the post (the publication's own domain), not
+  // window.location.href — the reader may be on the /lish route, and the
+  // current url can carry query params like ?interactionDrawer. The share card
+  // links to it, and the card screenshot needs a publicly reachable url.
+  let postUrl = getDocumentURL(
+    normalizedDocument,
+    document_uri,
+    normalizedPublication,
+  );
+
   let commentsAvailable = props.showComments;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
   let discussionsAvailable = commentsAvailable || mentionsAvailable;
@@ -224,7 +235,7 @@ export const Interactions = (props: {
         quotesCount={props.quotesCount}
         showComments={props.showComments}
         showMentions={props.showMentions}
-        postUrl={typeof window !== "undefined" ? window.location.href : ""}
+        postUrl={postUrl}
         onPrefetch={handleQuotePrefetch}
         onClick={() => {
           if (
@@ -251,7 +262,7 @@ export const Interactions = (props: {
       <div className="h-full  w-0 spacer" />
       <InteractionShareButton
         postRecord={normalizedDocument}
-        postUrl={typeof window !== "undefined" ? window.location.href : ""}
+        postUrl={postUrl}
         documentUri={document_uri}
         publication={normalizedPublication || undefined}
         pubUri={publication?.uri}
@@ -282,6 +293,13 @@ export const ExpandedInteractions = (props: {
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
   let viewer = useViewerSubscription(publication?.uri ?? "");
+
+  // See Interactions above: share the canonical post url, not location.href.
+  let postUrl = getDocumentURL(
+    normalizedDocument,
+    document_uri,
+    normalizedPublication,
+  );
 
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -347,9 +365,7 @@ export const ExpandedInteractions = (props: {
               quotesCount={props.quotesCount}
               showComments={props.showComments}
               showMentions={props.showMentions}
-              postUrl={
-                typeof window !== "undefined" ? window.location.href : ""
-              }
+              postUrl={postUrl}
               onPrefetch={handleQuotePrefetch}
               onClick={() => {
                 if (
@@ -368,9 +384,7 @@ export const ExpandedInteractions = (props: {
 
             <InteractionShareButton
               postRecord={normalizedDocument}
-              postUrl={
-                typeof window !== "undefined" ? window.location.href : ""
-              }
+              postUrl={postUrl}
               documentUri={document_uri}
               publication={
                 normalizedPublication ? normalizedPublication : undefined

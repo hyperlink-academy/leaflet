@@ -400,22 +400,23 @@ function ExternalEmbed({
       className={`w-full rounded-lg overflow-hidden border border-border-light hover:no-underline hover:border-accent-contrast ${compact ? "flex items-stretch" : "flex flex-col items-stretch"} ${className || ""}`}
       disableTracking
     >
-      {content.external.thumb &&
-        (compact ? (
-          <div className="aspect-square h-[113px] shrink-0 hidden sm:block">
-            <img
-              src={content.external.thumb}
-              alt={content.external.title}
-              className="w-full h-full object-cover"
+      {compact
+        ? external.thumb && (
+            <div className="aspect-square h-[113px] shrink-0 hidden sm:block">
+              <img
+                src={external.thumb}
+                alt={external.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )
+        : (external.thumb || external.thumbPending) && (
+            <CoverImage
+              src={external.thumb}
+              alt={external.title}
+              className="aspect-[1200/630]"
             />
-          </div>
-        ) : (
-          <img
-            src={content.external.thumb}
-            alt={content.external.title}
-            className="aspect-[1200/630] object-cover"
-          />
-        ))}
+          )}
       <div
         className={`min-w-0 flex flex-col ${compact ? "py-2 px-3 " : "py-2 px-2.5"}`}
       >
@@ -474,7 +475,7 @@ export function StandardSiteExternalEmbed({
         className="flex flex-col hover:no-underline"
         disableTracking
       >
-        {external.thumb && !compact && (
+        {(external.thumb || external.thumbPending) && !compact && (
           <CoverImage
             src={external.thumb}
             alt={external.title}
@@ -539,14 +540,15 @@ export function StandardSiteExternalEmbed({
 }
 
 // Fills the fixed-aspect cover slot with a pulsing placeholder until the image
-// finishes downloading, so the card doesn't render an empty gap. onError also
-// clears the loader so a broken thumb doesn't pulse forever.
+// finishes downloading (or, with no src yet, while it's still being generated),
+// so the card doesn't render an empty gap. onError also clears the loader so a
+// broken thumb doesn't pulse forever.
 function CoverImage({
   src,
   alt,
   className,
 }: {
-  src: string;
+  src?: string;
   alt?: string;
   className?: string;
 }) {
@@ -556,13 +558,15 @@ function CoverImage({
       {!loaded && (
         <div className="absolute inset-0 bg-border-light animate-pulse" />
       )}
-      <img
-        src={src}
-        alt={alt}
-        onLoad={() => setLoaded(true)}
-        onError={() => setLoaded(true)}
-        className={`w-full h-full object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
-      />
+      {src && (
+        <img
+          src={src}
+          alt={alt}
+          onLoad={() => setLoaded(true)}
+          onError={() => setLoaded(true)}
+          className={`w-full h-full object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
     </div>
   );
 }
@@ -741,6 +745,9 @@ function getRkey(uri: string): string {
 // underlying site.standard.* records, the author profiles, and the publication.
 // These aren't in the published @atproto/api types yet, so widen locally.
 type StandardSiteExternal = AppBskyEmbedExternal.ViewExternal & {
+  // Local-only preview flag (see bskyPostEmbed): the thumb is still being
+  // generated, so show the cover slot as a pulsing placeholder.
+  thumbPending?: boolean;
   associatedRefs?: { uri: string; cid?: string }[];
   associatedProfiles?: {
     did: string;

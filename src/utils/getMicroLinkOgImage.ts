@@ -30,6 +30,7 @@ export async function getWebpageImage(
     width?: number;
     height?: number;
     deviceScaleFactor?: number;
+    screenshotOptions?: { type?: "png" | "jpeg" | "webp"; quality?: number };
     noCache?: boolean;
   },
 ) {
@@ -44,6 +45,7 @@ export async function getWebpageImage(
       body: JSON.stringify({
         url,
         setJavaScriptEnabled: options?.setJavaScriptEnabled,
+        screenshotOptions: options?.screenshotOptions,
         // scrollPage triggers lazy-loaded content (e.g. quotes and their images
         // that sit below the fold) to render before we capture.
         scrollPage: true,

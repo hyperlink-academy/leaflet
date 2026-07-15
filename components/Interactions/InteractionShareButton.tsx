@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AtUri } from "@atproto/syntax";
 import { EditorState } from "prosemirror-state";
 import { useSmoker, useToaster } from "../Toast";
@@ -34,10 +34,6 @@ export const InteractionShareButton = (props: {
 }) => {
   let { identity } = useIdentityData();
 
-  // FLAG FOR CELINE ONLY
-  if (identity?.atp_did !== "did:plc:kydzcmnywraao2srchqgwj5c") {
-    return null;
-  }
   let smoker = useSmoker();
   let [shareModalOpen, setShareModalOpen] = useState(false);
 
@@ -144,9 +140,24 @@ export const BskyShareModal = (props: {
     ? new AtUri(props.documentUri).host
     : undefined;
 
+  // The card image is a page screenshot when this is a quote share (the quote
+  // highlight matters more than the cover) or when the document has no cover
+  // image to fall back on.
+  let useScreenshot = !!props.preferUrlScreenshot || !coverImage;
+  let screenshot = usePrefetchedScreenshot(
+    props.postUrl,
+    useScreenshot && props.shareModalOpen,
+  );
+
   let post = async () => {
     if (!editorStateRef.current || !props.postUrl || posting) return;
     setPosting(true);
+    // Block on the prefetched screenshot (kicked off when the modal opened) so
+    // the post's card ships with it. If the prefetch failed,
+    // preferUrlScreenshot has the server take its own screenshot instead.
+    let prefetchedThumb = screenshot.promiseRef.current
+      ? ((await screenshot.promiseRef.current) ?? undefined)
+      : undefined;
     let [text, facets] = editorStateToFacetedText(editorStateRef.current);
     let res = await publishPostToBsky({
       text,
@@ -155,7 +166,8 @@ export const BskyShareModal = (props: {
       document_record: props.docRecord,
       documentUri: props.documentUri,
       publicationUri: props.pubUri,
-      preferUrlScreenshot: props.preferUrlScreenshot,
+      preferUrlScreenshot: useScreenshot,
+      prefetchedThumb,
     });
     setPosting(false);
     if (!res.success) {
@@ -188,7 +200,7 @@ export const BskyShareModal = (props: {
 
   // The #view embed wants a resolvable thumbnail URL, not the raw blob ref, so
   // point at the atproto image proxy for the cover blob in the author's PDS.
-  let thumb =
+  let coverThumb =
     coverImage && authorDid
       ? blobRefToSrc(coverImage.ref, authorDid, undefined, {
           width: 1000,
@@ -199,7 +211,8 @@ export const BskyShareModal = (props: {
     url: props.postUrl ?? "",
     title,
     description,
-    thumb,
+    thumb: useScreenshot ? (screenshot.previewSrc ?? undefined) : coverThumb,
+    thumbPending: useScreenshot && !screenshot.previewSrc,
     publishedAt,
     publication: props.publication,
     pubOwnerDid: props.pubOwnerDid,
@@ -225,7 +238,10 @@ export const BskyShareModal = (props: {
   let loggedIn = identity && identity.atp_did;
 
   let shareContent = !loggedIn ? (
-    <LoginContent redirectRoute={window.location.href} className="sm:w-full!" />
+    <LoginContent
+      redirectRoute={typeof window !== "undefined" ? window.location.href : ""}
+      className="sm:w-full!"
+    />
   ) : (
     <>
       <BlueskyPostComposer
@@ -264,3 +280,50 @@ export const BskyShareModal = (props: {
     </>
   );
 };
+
+// Kicks off the card screenshot (a slow browser render) the moment the share
+// modal opens (`enabled`), so it's ready by the time the user finishes
+// composing. `promiseRef` resolves to the base64 webp handed to
+// publishPostToBsky (null on failure); `previewSrc` is an object URL for the
+// compose card preview once the image lands.
+function usePrefetchedScreenshot(url: string | undefined, enabled: boolean) {
+  let promiseRef = useRef<Promise<string | null> | null>(null);
+  let [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled || !url) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    promiseRef.current = fetch(
+      `/api/quote_screenshot?url=${encodeURIComponent(url)}`,
+    )
+      .then(async (res) => {
+        if (!res.ok) return null;
+        let blob = await res.blob();
+        if (!cancelled) {
+          objectUrl = URL.createObjectURL(blob);
+          setPreviewSrc(objectUrl);
+        }
+        return blobToBase64(blob);
+      })
+      .catch(() => null);
+    return () => {
+      cancelled = true;
+      promiseRef.current = null;
+      setPreviewSrc(null);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [url, enabled]);
+
+  return { promiseRef, previewSrc };
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let reader = new FileReader();
+    // reader.result is a data: URL; the base64 payload follows the comma.
+    reader.onload = () => resolve((reader.result as string).split(",")[1]);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}

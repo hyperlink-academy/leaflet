@@ -17,6 +17,9 @@ export function bskyPostEmbed(args: {
   description?: string;
   // Resolved thumbnail URL (not a blob ref).
   thumb?: string;
+  // The thumbnail is still being generated — the preview card shows a pulsing
+  // placeholder in the cover slot instead of omitting it.
+  thumbPending?: boolean;
   // ISO date shown in the standard.site card footer.
   publishedAt?: string;
   publication?: NormalizedPublication;
@@ -30,6 +33,7 @@ export function bskyPostEmbed(args: {
       title: args.title,
       description: args.description ?? "",
       ...(args.thumb ? { thumb: args.thumb } : {}),
+      ...(args.thumbPending ? { thumbPending: true } : {}),
       ...(pub && {
         createdAt: args.publishedAt,
         source: {

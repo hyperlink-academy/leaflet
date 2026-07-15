@@ -6,7 +6,6 @@ import {
   Agent as BskyAgent,
   BlobRef,
 } from "@atproto/api";
-import sharp from "sharp";
 import { TID } from "@atproto/common";
 import { AtUri } from "@atproto/syntax";
 import { getIdentityData } from "actions/getIdentityData";
@@ -15,7 +14,7 @@ import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
-import { getWebpageImage } from "src/utils/getMicroLinkOgImage";
+import { screenshotBskyCardImage } from "src/utils/bskyCardScreenshot";
 import { uploadCoverImageThumb } from "src/utils/uploadCoverImageThumb";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import { truncateDocumentRecordForPDS } from "src/membership";
@@ -41,8 +40,13 @@ export async function publishPostToBsky(args: {
   publicationUri?: string;
   // Prefer a live screenshot of `url` as the card thumbnail over the document's
   // cover image. Set when sharing a quote, whose card should show the quoted
-  // passage (the /l-quote og:image) rather than the post's generic cover.
+  // passage (the /l-quote og:image) rather than the post's generic cover, and
+  // when sharing a document that has no cover image.
   preferUrlScreenshot?: boolean;
+  // Base64 webp card image (already 1200x630) the client prefetched from
+  // /api/quote_screenshot while the share modal was open, so publishing doesn't
+  // block on a fresh browser render.
+  prefetchedThumb?: string;
 }): Promise<PublishBskyResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -83,12 +87,21 @@ export async function publishPostToBsky(args: {
     ? new AtUri(args.documentUri).host
     : postAuthorDid;
 
-  // A quote share wants the per-quote screenshot (the /l-quote og:image) as the
-  // card, not the doc's generic cover, so screenshot the url first and fall back
-  // to the cover only if that fails.
-  let thumb = args.preferUrlScreenshot
-    ? await screenshotCardThumb(args.url, uploadThumb)
-    : undefined;
+  // When the share wants a screenshot card (quote share, or no cover image),
+  // use the client's prefetched screenshot (or take one now if the prefetch
+  // failed) and fall back to the cover only if that fails too.
+  let thumb: BlobRef | undefined;
+  if (args.prefetchedThumb) {
+    thumb = await uploadThumb(
+      Buffer.from(args.prefetchedThumb, "base64"),
+    ).catch((e) => {
+      console.error("Failed to upload prefetched bsky card thumbnail:", e);
+      return undefined;
+    });
+  }
+  if (!thumb && args.preferUrlScreenshot) {
+    thumb = await screenshotCardThumb(args.url, uploadThumb);
+  }
   thumb ??=
     (await uploadCoverImageThumb(coverImage, coverImageDid, uploadThumb)) ??
     undefined;
@@ -187,29 +200,12 @@ async function screenshotCardThumb(
   url: string,
   uploadThumb: (bytes: Buffer) => Promise<BlobRef>,
 ): Promise<BlobRef | undefined> {
-  let preview_image = await getWebpageImage(url, {
-    width: 1400,
-    height: 733,
-    noCache: true,
-  });
-
-  if (!preview_image.ok) {
-    console.error(
-      `Screenshot for bsky card failed (${preview_image.status}): ${await preview_image
-        .text()
-        .catch(() => "")}`,
-    );
-    return undefined;
-  }
-
+  let image = await screenshotBskyCardImage(url);
+  if (!image) return undefined;
   try {
-    let resizedImage = await sharp(await preview_image.arrayBuffer())
-      .resize({ width: 1200, height: 630, fit: "cover" })
-      .webp({ quality: 85 })
-      .toBuffer();
-    return await uploadThumb(resizedImage);
+    return await uploadThumb(image);
   } catch (e) {
-    console.error("Failed to process bsky card thumbnail:", e);
+    console.error("Failed to upload bsky card thumbnail:", e);
     return undefined;
   }
 }
