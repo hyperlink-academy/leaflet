@@ -40,19 +40,22 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { useEntity } from "src/replicache";
 import { LeafletContent } from "app/(app)/(home-pages)/(writer)/home/LeafletList/LeafletContent";
+import { Contributor } from "lexicons/api/types/site/standard/document";
+import {
+  BskyEmbed,
+  StandardSiteExternalEmbed,
+} from "components/Blocks/BlueskyPostBlock/BskyEmbed";
 
 type Props = {
   title: string;
   leaflet_id: string;
   root_entity: string;
-  profile: ProfileViewDetailed;
-  publicationProfile?: ProfileViewDetailed;
-  // DID of the publication owner whose PDS hosts the record / Bluesky post.
-  // Undefined for standalone publishes (post is authored by the viewer).
+  viewerProfile: ProfileViewDetailed;
+  publicationOwnerProfile?: ProfileViewDetailed;
   publicationOwnerDid?: string;
   description: string;
   publication_uri?: string;
-  record?: NormalizedPublication | null;
+  pubRecord?: NormalizedPublication | null;
   posts_in_pub?: number;
   newsletter_enabled?: boolean;
   subscriberCount?: number;
@@ -65,12 +68,12 @@ export function PublishPost(props: Props) {
     { state: "default" } | { state: "success"; post_url: string }
   >({ state: "default" });
   return (
-    <div className="publishPage w-screen h-full bg-bg-page flex sm:pt-0 pt-4 sm:place-items-center justify-center text-primary">
+    <div className="publishPage w-screen min-h-screen bg-bg-page flex justify-center text-primary">
       {publishState.state === "default" ? (
         <PublishPostForm setPublishState={setPublishState} {...props} />
       ) : (
         <PublishPostSuccess
-          record={props.record}
+          record={props.pubRecord}
           publication_uri={props.publication_uri}
           post_url={publishState.post_url}
           posts_in_pub={(props.posts_in_pub || 0) + 1}
@@ -136,6 +139,12 @@ const PublishPostForm = (
   // set from the draft editor.
   let coverImageEntity =
     useEntity(props.root_entity, "root/cover-image")?.data.value ?? null;
+  let coverImageSrc = useEntity(coverImageEntity, "block/image")?.data.src;
+  // The did that owns the publication record — needed to resolve the pub icon
+  // blob and to attribute the post's author in the social-preview embed.
+  let pubDid =
+    props.publicationOwnerDid ??
+    (props.publication_uri ? new AtUri(props.publication_uri).host : undefined);
 
   // Get post preferences from Replicache state
   let postPreferences = useSubscribe(rep, (tx) =>
@@ -194,9 +203,9 @@ const PublishPostForm = (
     }
 
     // Generate post URL based on whether it's in a publication or standalone
-    let post_url = props.record?.url
-      ? `${props.record.url}/${result.rkey}`
-      : `https://leaflet.pub/p/${props.profile.did}/${result.rkey}`;
+    let post_url = props.pubRecord?.url
+      ? `${props.pubRecord.url}/${result.rkey}`
+      : `https://leaflet.pub/p/${props.viewerProfile.did}/${result.rkey}`;
 
     let [text, facets] = editorStateRef.current
       ? editorStateToFacetedText(editorStateRef.current)
@@ -205,9 +214,7 @@ const PublishPostForm = (
       let bskyResult = await publishPostToBsky({
         facets: facets || [],
         text: text || "",
-        title: props.title,
         url: post_url,
-        description: props.description,
         document_record: result.record,
         rkey: result.rkey,
         // For publications the post must be authored by the owner's PDS (where
@@ -232,7 +239,7 @@ const PublishPostForm = (
   }
 
   return (
-    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3 text-primary">
+    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3 sm:py-8 py-4 text-primary">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -245,7 +252,7 @@ const PublishPostForm = (
               <h2>Publish: Post Details</h2>
               <PublishingTo
                 publication_uri={props.publication_uri}
-                record={props.record}
+                record={props.pubRecord}
               />
               <hr className="border-border-light" />
 
@@ -283,33 +290,32 @@ const PublishPostForm = (
               <div className="flex justify-between sm:flex-row flex-col gap-4">
                 <div className="text-tertiary shrink-0">Social Preview</div>
                 <div className="flex flex-col gap-1.5 w-full sm:max-w-sm">
-                  <div className="opaque-container !border-border overflow-hidden flex flex-col w-full rounded-lg!">
-                    <SocialPreviewImage
-                      rootEntity={props.root_entity}
-                      did={props.profile.did}
-                      coverImageEntity={coverImageEntity}
-                      publication_uri={props.publication_uri}
-                      record={props.record}
-                    />
-                    <hr className="border-border" />
-                    <div className="flex flex-col p-2 gap-0.5">
-                      <div className="font-bold line-clamp-1">
-                        {props.title || "Untitled"}
-                      </div>
-                      {props.description && (
-                        <div className="text-sm text-tertiary line-clamp-2">
-                          {props.description}
-                        </div>
-                      )}
-                      <hr className="border-border-light mt-1 mb-0.5" />
-                      <div className="text-xs text-tertiary">
-                        {(props.record?.url || "leaflet.pub").replace(
-                          /^https?:\/\//,
-                          "",
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <StandardSiteExternalEmbed
+                    external={{
+                      uri: props.pubRecord?.url ?? "",
+                      title: props.title || "Untitled",
+                      description: props.description,
+                      thumb: coverImageSrc || undefined,
+                      source: {
+                        uri: props.pubRecord?.url,
+                        title: props.pubRecord?.name,
+                        icon:
+                          props.pubRecord?.icon && pubDid
+                            ? blobRefToSrc(props.pubRecord.icon.ref, pubDid)
+                            : undefined,
+                      },
+
+                      associatedRefs: pubDid
+                        ? [
+                            {
+                              uri: `at://${pubDid}/site.standard.document/preview`,
+                            },
+                          ]
+                        : undefined,
+                      createdAt: (localPublishedAt ?? new Date()).toISOString(),
+                    }}
+                  />
+
                   <CoverImageControls
                     rootEntity={props.root_entity}
                     coverImageEntity={coverImageEntity}
@@ -344,10 +350,10 @@ const PublishPostForm = (
                 setCharCount={setCharCount}
                 editorStateRef={editorStateRef}
                 title={props.title}
-                profile={props.profile}
-                publicationProfile={props.publicationProfile}
+                viewerProfile={props.viewerProfile}
+                publicationOwnerProfile={props.publicationOwnerProfile}
                 description={props.description}
-                record={props.record}
+                pubRecord={props.pubRecord}
                 newsletter_enabled={props.newsletter_enabled}
                 subscriberCount={props.subscriberCount}
                 publication_uri={props.publication_uri}
@@ -355,6 +361,7 @@ const PublishPostForm = (
                 leaflet_id={props.leaflet_id}
                 publishedAt={localPublishedAt?.toISOString()}
                 bskyDraftKey={bskyDraftKey}
+                coverImageSrc={coverImageSrc}
               />
               <hr className="border-border mb-2" />
 
@@ -446,121 +453,6 @@ const CoverImageControls = (props: {
         />
       </label>
     </div>
-  );
-};
-
-const SocialPreviewImage = (props: {
-  rootEntity: string;
-  did: string;
-  coverImageEntity: string | null;
-  publication_uri?: string;
-  record?: NormalizedPublication | null;
-}) => {
-  const firstPage = useEntity(props.rootEntity, "root/page")[0];
-  const page = firstPage?.data.value || props.rootEntity;
-  const coverImage = useEntity(props.coverImageEntity, "block/image");
-
-  if (props.coverImageEntity && coverImage) {
-    return (
-      <img
-        // Prefer the in-memory object URL while a freshly uploaded cover is
-        // still uploading, so the preview shows immediately.
-        src={localImages.get(coverImage.data.src) ?? coverImage.data.src}
-        className="w-full object-cover aspect-video"
-        alt=""
-      />
-    );
-  }
-
-  if (props.publication_uri && props.record) {
-    return (
-      <PublicationSocialPreview
-        publication_uri={props.publication_uri}
-        record={props.record}
-        page={page}
-      />
-    );
-  }
-
-  return <EntitySocialPreview rootEntity={props.rootEntity} page={page} />;
-};
-
-const SocialPreviewFrame = (props: {
-  page: string;
-  wrapperStyle: CSSProperties;
-}) => (
-  <div
-    inert
-    className="w-full aspect-video overflow-hidden flex justify-center items-end pointer-events-none"
-  >
-    <div
-      className="leafletContentWrapper h-full w-40 sm:w-48 pt-3 overflow-clip"
-      style={props.wrapperStyle}
-    >
-      <LeafletContent entityID={props.page} isOnScreen={true} />
-    </div>
-  </div>
-);
-
-const EntitySocialPreview = (props: { rootEntity: string; page: string }) => {
-  const cardBackgroundImage = useEntity(
-    props.rootEntity,
-    "theme/card-background-image",
-  );
-  const cardBackgroundRepeat = useEntity(
-    props.rootEntity,
-    "theme/card-background-image-repeat",
-  );
-  const cardBackgroundOpacity = useEntity(
-    props.rootEntity,
-    "theme/card-background-image-opacity",
-  );
-
-  const wrapperStyle: CSSProperties = {
-    backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-    backgroundImage: cardBackgroundImage
-      ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`
-      : undefined,
-    backgroundRepeat: cardBackgroundRepeat ? "repeat" : "no-repeat",
-    backgroundPosition: "center",
-    backgroundSize: !cardBackgroundRepeat
-      ? "cover"
-      : (cardBackgroundRepeat.data.value as number) / 3,
-    opacity:
-      cardBackgroundImage?.data.src && cardBackgroundOpacity
-        ? cardBackgroundOpacity.data.value
-        : 1,
-  };
-
-  return (
-    <ThemeProvider local entityID={props.rootEntity} className="w-full!">
-      <ThemeBackgroundProvider entityID={props.rootEntity}>
-        <SocialPreviewFrame page={props.page} wrapperStyle={wrapperStyle} />
-      </ThemeBackgroundProvider>
-    </ThemeProvider>
-  );
-};
-
-const PublicationSocialPreview = (props: {
-  publication_uri: string;
-  record: NormalizedPublication;
-  page: string;
-}) => {
-  const pub_creator = new AtUri(props.publication_uri).host;
-  return (
-    <PublicationThemeProvider record={props.record} pub_creator={pub_creator}>
-      <PublicationBackgroundProvider
-        record={props.record}
-        pub_creator={pub_creator}
-      >
-        <SocialPreviewFrame
-          page={props.page}
-          wrapperStyle={{
-            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-          }}
-        />
-      </PublicationBackgroundProvider>
-    </PublicationThemeProvider>
   );
 };
 
@@ -694,7 +586,7 @@ const PublishingTo = (props: {
 const PublishPostSuccess = (props: {
   post_url: string;
   publication_uri?: string;
-  record: Props["record"];
+  record: Props["pubRecord"];
   posts_in_pub: number;
 }) => {
   let uri = props.publication_uri ? new AtUri(props.publication_uri) : null;

@@ -204,6 +204,7 @@ export function StandardSitePostItemView({
   const interactions =
     hideInteractions || noInteractions ? undefined : (
       <InteractionPreview
+        postRecord={post.record}
         shareType="strong"
         quotesCount={post.mentionsCount}
         commentsCount={commentsCount}
@@ -211,7 +212,8 @@ export function StandardSitePostItemView({
         documentUri={post.uri}
         tags={post.record.tags || []}
         postUrl={docUrl}
-        title={post.record.title}
+        pubUri={post.publication?.uri}
+        publication={post.publication?.record || undefined}
         showComments={showComments}
         showMentions={showMentions}
         showRecommends={showRecommends}

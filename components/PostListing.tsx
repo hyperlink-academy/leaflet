@@ -127,7 +127,14 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         document={postRecord}
         publication={pubRecord}
       />
-      <InteractionShareButton postUrl={postUrl} type="weak" />
+      <InteractionShareButton
+        postRecord={postRecord}
+        postUrl={postUrl}
+        documentUri={props.documents.uri}
+        publication={pubRecord}
+        pubUri={props.publication?.uri}
+        type="weak"
+      />
     </div>
   );
 

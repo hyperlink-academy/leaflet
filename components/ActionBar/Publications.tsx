@@ -179,7 +179,7 @@ export const PubIcon = (props: {
   large?: boolean;
   className?: string;
 }) => {
-  let iconSizeClassName = `${props.tiny ? "w-4 h-4" : props.small ? "w-5 h-5" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full`;
+  let iconSizeClassName = `${props.tiny ? "w-4 h-4" : props.small ? "w-5 h-5" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full shrink-0`;
 
   return props.icon ? (
     <div

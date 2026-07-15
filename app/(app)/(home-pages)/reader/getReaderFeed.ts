@@ -61,7 +61,9 @@ export async function getReaderFeed(
     await Promise.all(feed.map((post) => enrichDocumentToPost(post as any)))
   ).filter((post): post is Post => post !== null);
   if (feed.length > 0 && posts.length !== feed.length) {
-    console.log(`[getReaderFeed] ${feed.length - posts.length}/${feed.length} posts dropped during enrichment`);
+    console.log(
+      `[getReaderFeed] ${feed.length - posts.length}/${feed.length} posts dropped during enrichment`,
+    );
   }
 
   const nextCursor =
@@ -79,7 +81,7 @@ export async function getReaderFeed(
 }
 
 export type Post = {
-  author: string | null;
+  ownerDid: string | null;
   // Ordered byline profiles (contributors, or the lone author as a fallback)
   // resolved via the profile cache so listings can render display names.
   contributors: BylineProfile[];

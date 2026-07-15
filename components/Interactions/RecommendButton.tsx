@@ -52,9 +52,15 @@ const getRecommendCountKey = (documentUri: string) =>
   `recommendation-count:${documentUri}`;
 
 function useUserRecommendation(documentUri: string) {
+  const { identity } = useIdentityData();
   const { data: hasRecommended, isLoading } = useSWR(
-    getRecommendationKey(documentUri),
+    identity?.atp_did ? getRecommendationKey(documentUri) : null,
     () => recommendationBatcher.fetch(documentUri),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+    },
   );
 
   return {

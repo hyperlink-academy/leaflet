@@ -54,7 +54,7 @@ export async function getProfilePosts(
       : null;
 
     let post: Post = {
-      author: handle,
+      ownerDid: handle,
       contributors: await resolveBylineProfiles(
         normalizedData,
         new AtUri(row.uri).host,

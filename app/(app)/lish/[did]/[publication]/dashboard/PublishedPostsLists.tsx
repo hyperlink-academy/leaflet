@@ -1,5 +1,4 @@
 "use client";
-import { AtUri } from "@atproto/syntax";
 import { EditTiny } from "components/Icons/EditTiny";
 import { EmptyState } from "components/EmptyState";
 
@@ -70,7 +69,6 @@ function PublishedPostItem(props: {
 }) {
   const { doc, publication, pubRecord, showPageBackground } = props;
   const { identity } = useIdentityData();
-  const uri = new AtUri(doc.uri);
   const leaflet = publication.leaflets_in_publications.find(
     (l) => l.doc === doc.uri,
   );
@@ -154,13 +152,15 @@ function PublishedPostItem(props: {
             ) : null}
 
             <InteractionPreview
+              postRecord={doc.record}
               shareType="weak"
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
               recommendsCount={doc.recommendsCount}
               documentUri={doc.uri}
               tags={doc.record.tags || []}
-              title={doc.record.title}
+              publication={pubRecord || undefined}
+              pubUri={publication?.uri || undefined}
               showComments={pubRecord?.preferences?.showComments !== false}
               showMentions={pubRecord?.preferences?.showMentions !== false}
               showRecommends={pubRecord?.preferences?.showRecommends !== false}

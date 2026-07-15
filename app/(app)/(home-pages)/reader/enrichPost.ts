@@ -36,7 +36,10 @@ export async function enrichDocumentToPost(
 
   const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
   if (!normalizedData) {
-    console.log("[enrichPost] normalizeDocumentRecord returned null for:", doc.uri);
+    console.log(
+      "[enrichPost] normalizeDocumentRecord returned null for:",
+      doc.uri,
+    );
     return null;
   }
 
@@ -61,7 +64,7 @@ export async function enrichDocumentToPost(
           uri: pub.uri || "",
         }
       : undefined,
-    author: handle?.alsoKnownAs?.[0]
+    ownerDid: handle?.alsoKnownAs?.[0]
       ? `@${handle.alsoKnownAs[0].slice(5)}`
       : null,
     contributors,
@@ -88,8 +91,7 @@ async function getAccurateMentionsCount(
     ? `https://leaflet.pub${postUrl}`
     : postUrl;
   const constellationBacklinks = await getConstellationBacklinks(absoluteUrl);
-  const uniqueBacklinkCount = new Set(
-    constellationBacklinks.map((b) => b.uri),
-  ).size;
+  const uniqueBacklinkCount = new Set(constellationBacklinks.map((b) => b.uri))
+    .size;
   return dbMentionsCount + uniqueBacklinkCount;
 }

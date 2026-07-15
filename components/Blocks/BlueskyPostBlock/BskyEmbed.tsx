@@ -11,11 +11,13 @@ import {
   AppBskyLabelerDefs,
   AtUri,
 } from "@atproto/api";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Avatar } from "components/Avatar";
 import { LocalizedDate } from "app/(app)/lish/[did]/[publication]/LocalizedDate";
 import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
 import { PubIcon } from "components/ActionBar/Publications";
+import { getProfiles } from "src/identity";
+import { useRecordFromDid } from "src/utils/useRecordFromDid";
 
 // A fork of bluesky's embed renderer, matching its layout while using our
 // colors, fonts, and shared components (Avatar, BlueskyVideoPlayer). Context
@@ -398,22 +400,23 @@ function ExternalEmbed({
       className={`w-full rounded-lg overflow-hidden border border-border-light hover:no-underline hover:border-accent-contrast ${compact ? "flex items-stretch" : "flex flex-col items-stretch"} ${className || ""}`}
       disableTracking
     >
-      {content.external.thumb &&
-        (compact ? (
-          <div className="aspect-square h-[113px] shrink-0 hidden sm:block">
-            <img
-              src={content.external.thumb}
-              alt={content.external.title}
-              className="w-full h-full object-cover"
+      {compact
+        ? external.thumb && (
+            <div className="aspect-square h-[113px] shrink-0 hidden sm:block">
+              <img
+                src={external.thumb}
+                alt={external.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )
+        : (external.thumb || external.thumbPending) && (
+            <CoverImage
+              src={external.thumb}
+              alt={external.title}
+              className="aspect-[1200/630]"
             />
-          </div>
-        ) : (
-          <img
-            src={content.external.thumb}
-            alt={content.external.title}
-            className="aspect-[1200/630] object-cover"
-          />
-        ))}
+          )}
       <div
         className={`min-w-0 flex flex-col ${compact ? "py-2 px-3 " : "py-2 px-2.5"}`}
       >
@@ -441,7 +444,7 @@ function ExternalEmbed({
 // The standard.site card: the article's thumb/title/description linking to the
 // post, footered with the publication (icon + name + author) linking to the
 // publication instead of the article's bare domain.
-function StandardSiteExternalEmbed({
+export function StandardSiteExternalEmbed({
   external,
   compact,
   className,
@@ -459,9 +462,9 @@ function StandardSiteExternalEmbed({
     )
     .map((ref) => atHost(ref.uri))
     .find(Boolean);
-  const author = authorDid
-    ? external.associatedProfiles?.find((p) => p.did === authorDid)
-    : undefined;
+
+  const { data: profile, isLoading } = useRecordFromDid(authorDid);
+  const handle = profile?.handle;
 
   return (
     <div
@@ -472,11 +475,11 @@ function StandardSiteExternalEmbed({
         className="flex flex-col hover:no-underline"
         disableTracking
       >
-        {external.thumb && !compact && (
-          <img
+        {(external.thumb || external.thumbPending) && !compact && (
+          <CoverImage
             src={external.thumb}
             alt={external.title}
-            className="aspect-[1200/630] object-cover"
+            className="aspect-[1200/630] border-b border-border-light"
           />
         )}
         <div className="min-w-0 flex flex-col py-2 px-2.5">
@@ -514,10 +517,14 @@ function StandardSiteExternalEmbed({
             <span className="text-sm font-semibold text-secondary truncate">
               {source.title}
             </span>
-            {author?.handle && (
-              <span className="text-xs text-tertiary truncate shrink-0">
-                by @{author.handle}
-              </span>
+            {isLoading ? (
+              <span className="h-[15px] w-20  bg-border-light rounded animate-pulse" />
+            ) : (
+              handle && (
+                <span className="text-xs text-tertiary truncate shrink-0">
+                  by @{handle}
+                </span>
+              )
             )}
           </div>
         </Link>
@@ -528,6 +535,38 @@ function StandardSiteExternalEmbed({
           Subscribe
         </Link>
       </div>
+    </div>
+  );
+}
+
+// Fills the fixed-aspect cover slot with a pulsing placeholder until the image
+// finishes downloading (or, with no src yet, while it's still being generated),
+// so the card doesn't render an empty gap. onError also clears the loader so a
+// broken thumb doesn't pulse forever.
+function CoverImage({
+  src,
+  alt,
+  className,
+}: {
+  src?: string;
+  alt?: string;
+  className?: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className={`relative overflow-hidden ${className || ""}`}>
+      {!loaded && (
+        <div className="absolute inset-0 bg-border-light animate-pulse" />
+      )}
+      {src && (
+        <img
+          src={src}
+          alt={alt}
+          onLoad={() => setLoaded(true)}
+          onError={() => setLoaded(true)}
+          className={`w-full h-full object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
     </div>
   );
 }
@@ -706,6 +745,9 @@ function getRkey(uri: string): string {
 // underlying site.standard.* records, the author profiles, and the publication.
 // These aren't in the published @atproto/api types yet, so widen locally.
 type StandardSiteExternal = AppBskyEmbedExternal.ViewExternal & {
+  // Local-only preview flag (see bskyPostEmbed): the thumb is still being
+  // generated, so show the cover slot as a pulsing placeholder.
+  thumbPending?: boolean;
   associatedRefs?: { uri: string; cid?: string }[];
   associatedProfiles?: {
     did: string;

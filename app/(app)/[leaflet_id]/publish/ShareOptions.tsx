@@ -2,14 +2,15 @@
 import { Checkbox } from "components/Checkbox";
 import { BlueskyPostComposer } from "components/BlueskyPostComposer/BlueskyPostComposer";
 import { EditorState } from "prosemirror-state";
-import { AppBskyFeedDefs, AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { useState } from "react";
 import { sendPostPreview } from "actions/publications/sendPostPreview";
 import { ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 export type ShareState = {
   bluesky: boolean;
@@ -25,10 +26,10 @@ type Props = {
   setCharCount: (c: number) => void;
   editorStateRef: React.MutableRefObject<EditorState | null>;
   title: string;
-  profile: ProfileViewDetailed;
-  publicationProfile?: ProfileViewDetailed;
+  viewerProfile: ProfileViewDetailed;
+  publicationOwnerProfile?: ProfileViewDetailed;
   description: string;
-  record?: NormalizedPublication | null;
+  pubRecord?: NormalizedPublication | null;
   subscriberCount?: number;
   newsletter_enabled?: boolean;
   publication_uri?: string;
@@ -39,51 +40,39 @@ type Props = {
   publishedAt?: string;
   // localStorage key under which the in-progress Bluesky post is persisted
   bskyDraftKey?: string;
+  coverImageSrc?: string;
 };
 
 export function ShareOptions(props: Props) {
   const { shareState, setShareState } = props;
-  // When publishing to a publication, the Bluesky post lives in the
-  // publication owner's PDS, so the preview should show their identity.
-  const previewProfile = props.publicationProfile ?? props.profile;
-
-  // When publishing to a publication, mirror the standard.site enrichment that
-  // bluesky's appview derives from the post's associatedRefs, so the compose
-  // card previews the same publication footer (icon, name, author, date) the
-  // published post will show. See BskyEmbed's StandardSiteExternalEmbed.
-  const pubDid = props.publication_uri
-    ? new AtUri(props.publication_uri).host
-    : previewProfile.did;
+  const ownerProfile = props.publicationOwnerProfile ?? props.viewerProfile;
   const bskyEmbed = {
     $type: "app.bsky.embed.external#view",
     external: {
-      uri: props.record?.url ?? "",
-      title: props.title,
+      uri: props.pubRecord?.url ?? "",
+      title: props.title || "Untitled",
       description: props.description,
-      ...(props.record && {
-        createdAt: props.publishedAt ?? new Date().toISOString(),
-        source: {
-          uri: props.record.url,
-          title: props.record.name,
-          icon: props.record.icon
-            ? blobRefToSrc(props.record.icon.ref, pubDid)
+      thumb: props.coverImageSrc || undefined,
+      source: {
+        uri: props.pubRecord?.url,
+        title: props.pubRecord?.name,
+        icon:
+          props.pubRecord?.icon && ownerProfile.did
+            ? blobRefToSrc(props.pubRecord.icon.ref, ownerProfile.did)
             : undefined,
-        },
-        associatedRefs: [
-          { uri: `at://${pubDid}/site.standard.document/preview` },
-          { uri: `at://${pubDid}/site.standard.publication/preview` },
-        ],
-        associatedProfiles: [
-          {
-            did: pubDid,
-            handle: previewProfile.handle,
-            displayName: previewProfile.displayName,
-            avatar: previewProfile.avatar,
-          },
-        ],
-      }),
+      },
+
+      associatedRefs: ownerProfile.did
+        ? [
+            {
+              uri: `at://${ownerProfile.did}/site.standard.document/preview`,
+            },
+          ]
+        : undefined,
+      createdAt: props.publishedAt,
     },
-  } as AppBskyFeedDefs.PostView["embed"];
+  };
+
   const handleChange = (
     key: keyof Omit<ShareState, "quiet">,
     checked: boolean,
@@ -137,6 +126,37 @@ export function ShareOptions(props: Props) {
 
       <Checkbox
         className="gap-4!"
+        checked={shareState.bluesky}
+        onChange={(e) => handleChange("bluesky", e.target.checked)}
+      >
+        <div className="flex flex-col">
+          <div>Share on Bluesky</div>
+          <div className="text-sm text-tertiary font-normal">
+            Subscribers will be updated via a custom Bluesky feed
+          </div>
+        </div>
+      </Checkbox>
+      <div className="pl-7">
+        <div
+          className={`w-full opaque-container rounded-lg! p-3 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
+        >
+          <BlueskyPostComposer
+            profile={{
+              avatar: ownerProfile.avatar,
+              displayName: ownerProfile.displayName,
+              handle: ownerProfile.handle,
+            }}
+            editorStateRef={props.editorStateRef}
+            charCount={props.charCount}
+            onCharCountChange={props.setCharCount}
+            persistKey={props.bskyDraftKey}
+            embed={bskyEmbed}
+          />
+        </div>
+      </div>
+
+      <Checkbox
+        className="gap-4!"
         checked={shareState.postToReaders}
         onChange={(e) => handleChange("postToReaders", e.target.checked)}
       >
@@ -148,35 +168,6 @@ export function ShareOptions(props: Props) {
           </div>
         </div>
       </Checkbox>
-
-      <Checkbox
-        className="gap-4!"
-        checked={shareState.bluesky}
-        onChange={(e) => handleChange("bluesky", e.target.checked)}
-      >
-        <div className="flex flex-col">
-          <div>Share on Bluesky</div>
-          <div className="text-sm text-tertiary font-normal">
-            Subscribers will be updated via a custom Bluesky feed
-          </div>
-        </div>
-      </Checkbox>
-      <div
-        className={`w-full opaque-container rounded-lg! p-3 ml-7 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
-      >
-        <BlueskyPostComposer
-          profile={{
-            avatar: previewProfile.avatar,
-            displayName: previewProfile.displayName,
-            handle: previewProfile.handle,
-          }}
-          editorStateRef={props.editorStateRef}
-          charCount={props.charCount}
-          onCharCountChange={props.setCharCount}
-          persistKey={props.bskyDraftKey}
-          embed={bskyEmbed}
-        />
-      </div>
 
       <hr className="border-border-light my-1" />
 
@@ -249,7 +240,18 @@ function EmailPreview(props: {
   };
 
   return (
-    <div className="pl-7 pb-2 flex flex-col gap-1">
+    <div className="pl-7 pb-2 flex flex-col gap-1 -mt-2">
+      {status.state === "sent" ? (
+        <div className="text-sm text-tertiary italic">
+          Preview sent to {email}.
+        </div>
+      ) : status.state === "error" ? (
+        <div className="text-sm text-accent-contrast">{status.message}</div>
+      ) : (
+        <div className="text-sm text-tertiary font-normal">
+          Send the rendered email to a test address before broadcasting.
+        </div>
+      )}
       <div className="flex gap-2 items-center">
         <input
           type="email"
@@ -270,21 +272,12 @@ function EmailPreview(props: {
           {status.state === "sending" ? (
             <DotLoader className="h-[23px]" />
           ) : (
-            "Send preview"
+            <div className="w-max flex flex-row gap-1">
+              Send<span className="sm:block  hidden"> preview</span>
+            </div>
           )}
         </ButtonSecondary>
       </div>
-      {status.state === "sent" ? (
-        <div className="text-sm text-tertiary italic">
-          Preview sent to {email}.
-        </div>
-      ) : status.state === "error" ? (
-        <div className="text-sm text-accent-contrast">{status.message}</div>
-      ) : (
-        <div className="text-sm text-tertiary font-normal">
-          Send the rendered email to a test address before broadcasting.
-        </div>
-      )}
     </div>
   );
 }

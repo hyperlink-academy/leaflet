@@ -1,11 +1,14 @@
 "use client";
-import { Separator } from "../Layout";
 import { Tag } from "../Tags";
 import { Popover } from "../Popover";
 import { TagTiny } from "../Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionButton } from "./DiscussionButton";
 import { InteractionShareButton } from "./InteractionShareButton";
+import {
+  NormalizedDocument,
+  NormalizedPublication,
+} from "lexicons/src/normalize";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
@@ -14,14 +17,14 @@ export const InteractionPreview = (props: {
   documentUri: string;
   tags?: string[];
   postUrl: string;
-  title?: string;
+  postRecord: NormalizedDocument;
+  publication?: NormalizedPublication;
+  pubUri: string | undefined;
   showComments: boolean;
   showMentions: boolean;
   showRecommends: boolean;
   shareType: "none" | "weak" | "strong";
 }) => {
-  const tagsCount = props.tags?.length || 0;
-
   return (
     <div
       className={` text-tertiary text-sm  items-end flex gap-4 grow min-w-0 justify-between`}
@@ -34,7 +37,7 @@ export const InteractionPreview = (props: {
           showComments={props.showComments}
           showMentions={props.showMentions}
           postUrl={props.postUrl}
-          title={props.title}
+          title={props.postRecord.title}
         />
         {props.showRecommends === false ? null : (
           <RecommendButton
@@ -45,17 +48,13 @@ export const InteractionPreview = (props: {
       </div>
 
       <InteractionShareButton
+        postRecord={props.postRecord}
         type={props.shareType}
         postUrl={props.postUrl}
-        title={props.title}
+        documentUri={props.documentUri}
+        publication={props.publication}
+        pubUri={props.pubUri}
       />
-
-      {/*{tagsCount === 0 ? null : (
-        <>
-          {interactionsAvailable ? <Separator classname="h-4!" /> : null}
-          <TagPopover tags={props.tags!} />
-        </>
-      )}*/}
     </div>
   );
 };
