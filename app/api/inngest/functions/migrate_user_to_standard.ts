@@ -9,6 +9,7 @@ import {
 } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
+import { expireDomainRoutes } from "src/utils/domainRoutesCache";
 import { truncateDocumentRecordForPDS } from "src/membership";
 import {
   normalizePublicationRecord,
@@ -514,6 +515,22 @@ export const migrate_user_to_standard = inngest.createFunction(
 
       const results = await Promise.all(updatePromises);
       stats.referencesUpdated = results.filter((r) => !r.error).length;
+
+      // The middleware caches domain -> publication uri, so domains pointing
+      // at migrated publications must be expired to route to the new uris.
+      if (pubEntries.length > 0) {
+        const { data: migratedDomains } = await supabaseServerClient
+          .from("publication_domains")
+          .select("domain")
+          .in(
+            "publication",
+            pubEntries.map(([, newUri]) => newUri),
+          );
+        await Promise.all(
+          (migratedDomains ?? []).map((d) => expireDomainRoutes(d.domain)),
+        );
+      }
+
       return stats.referencesUpdated;
     });
 

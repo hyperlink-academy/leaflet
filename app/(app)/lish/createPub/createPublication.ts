@@ -11,6 +11,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { Vercel } from "@vercel/sdk";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
+import { expireDomainRoutes } from "src/utils/domainRoutesCache";
 import { string } from "zod";
 import { getPublicationType } from "src/utils/collectionHelpers";
 import { PubThemeDefaultsRGB } from "components/ThemeManager/themeDefaults";
@@ -185,6 +186,8 @@ export async function createPublication({
   await supabaseServerClient
     .from("publication_domains")
     .insert({ domain, publication: result.uri, identity: identity.atp_did });
+
+  await expireDomainRoutes(domain);
 
   return { success: true, publication };
 }

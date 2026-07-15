@@ -8,6 +8,12 @@ import {
   receive_auth_callback_route,
   decryptCrossSiteToken,
 } from "src/crossSiteAuth";
+import {
+  DOMAIN_ROUTES_TTL,
+  NEGATIVE_DOMAIN_ROUTES_TTL,
+  domainRoutesCacheKey,
+  domainRoutesCacheTag,
+} from "src/utils/domainRoutesCache";
 
 export const config = {
   matcher: [
@@ -42,6 +48,9 @@ async function getDomainRoutes(hostname: string) {
   return data;
 }
 type DomainRoutes = Awaited<ReturnType<typeof getDomainRoutes>>;
+// Wrapped so a cached "this hostname has no routes" is distinguishable from a
+// cache miss.
+type CachedDomainRoutes = { routes: DomainRoutes };
 
 export default async function middleware(req: NextRequest) {
   let hostname = req.headers.get("host")!;
@@ -61,21 +70,28 @@ export default async function middleware(req: NextRequest) {
   if (hostname === "leaflet.pub") return;
   if (req.nextUrl.pathname === "/not-found") return;
   let routes: DomainRoutes = null;
+  let cached: CachedDomainRoutes | null = null;
   try {
-    routes = (await cache.get(`domain:${hostname}`)) as DomainRoutes;
+    cached = (await cache.get(
+      domainRoutesCacheKey(hostname),
+    )) as CachedDomainRoutes | null;
   } catch {}
-  if (!routes) {
+  if (cached) {
+    routes = cached.routes;
+  } else {
     routes = await getDomainRoutes(hostname);
-    if (routes) {
-      waitUntil(
-        cache
-          .set(`domain:${hostname}`, routes, {
-            ttl: 60,
-            tags: [`domain:${hostname}`],
-          })
-          .catch(() => {}),
-      );
-    }
+    waitUntil(
+      cache
+        .set(
+          domainRoutesCacheKey(hostname),
+          { routes } satisfies CachedDomainRoutes,
+          {
+            ttl: routes ? DOMAIN_ROUTES_TTL : NEGATIVE_DOMAIN_ROUTES_TTL,
+            tags: [domainRoutesCacheTag(hostname)],
+          },
+        )
+        .catch(() => {}),
+    );
   }
 
   let pub = routes?.publication_domains[0]?.publications;

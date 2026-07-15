@@ -3,6 +3,7 @@ import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { Vercel } from "@vercel/sdk";
 import { getIdentityData } from "actions/getIdentityData";
+import { expireDomainRoutes } from "src/utils/domainRoutesCache";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -90,6 +91,7 @@ async function createDomain(
     confirmed: false,
     identity_id,
   });
+  await expireDomainRoutes(domain);
   return {};
 }
 
@@ -125,6 +127,7 @@ export async function assignDomainToDocument({
     view_permission_token,
     edit_permission_token,
   });
+  await expireDomainRoutes(domain);
 
   return true;
 }
@@ -155,6 +158,7 @@ export async function assignDomainToPublication({
     identity: identity.atp_did,
     domain,
   });
+  await expireDomainRoutes(domain);
 
   return true;
 }
@@ -171,6 +175,7 @@ export async function removeDomainAssignment({
 }) {
   if (!(await assertOwnsDomain(domain))) return null;
   await clearAllAssignments(domain);
+  await expireDomainRoutes(domain);
   return true;
 }
 
@@ -182,9 +187,11 @@ export async function removeDomainRoute({ routeId }: { routeId: string }) {
   let allRoutes = identity.custom_domains.flatMap(
     (d) => d.custom_domain_routes,
   );
-  if (!allRoutes.find((r) => r.id === routeId)) return null;
+  let route = allRoutes.find((r) => r.id === routeId);
+  if (!route) return null;
 
   await supabase.from("custom_domain_routes").delete().eq("id", routeId);
+  await expireDomainRoutes(route.domain);
 
   return true;
 }
@@ -205,6 +212,7 @@ export async function deleteDomain({ domain }: { domain: string }) {
       domain,
     }),
   ]);
+  await expireDomainRoutes(domain);
 
   return true;
 }
