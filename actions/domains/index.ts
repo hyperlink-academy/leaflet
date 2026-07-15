@@ -21,9 +21,6 @@ const VERCEL_TEAM = "team_42xaJiZMTw9Sr7i0DcLTae9d";
 // Shared helpers
 // ==============
 
-// The middleware caches domain -> routes lookups long-lived under this tag;
-// expire it after any assignment change so routing picks the change up
-// immediately.
 async function expireDomainCache(domain: string) {
   try {
     await getCache().expireTag(`domain:${domain}`);

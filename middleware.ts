@@ -44,16 +44,11 @@ async function getDomainRoutes(hostname: string) {
 type DomainRoutes = Awaited<ReturnType<typeof getDomainRoutes>>;
 type DomainCacheEntry = { routes: NonNullable<DomainRoutes>; cachedAt: number };
 
-// Entries live long and are expired by tag when a domain's assignment changes
-// (see expireDomainCache in actions/domains); cachedAt only bounds how long one
-// is served without a background re-check, as a net for out-of-band DB edits.
 const DOMAIN_CACHE_TTL_SECONDS = 60 * 60 * 24;
 const REVALIDATE_AFTER_MS = 60_000;
 
-// Coalesce concurrent lookups per hostname so a burst of requests hitting a
-// cache miss together produces one database query instead of one per request.
 let inflightLookups = new Map<string, Promise<DomainRoutes>>();
-function lookupDomainRoutes(hostname: string) {
+function fetchDomainRoutesFromDB(hostname: string) {
   let pending = inflightLookups.get(hostname);
   if (!pending) {
     pending = getDomainRoutes(hostname).finally(() =>
@@ -64,7 +59,10 @@ function lookupDomainRoutes(hostname: string) {
   return pending;
 }
 
-async function persistDomainRoutes(hostname: string, routes: DomainRoutes) {
+async function writeDomainRoutesToCache(
+  hostname: string,
+  routes: DomainRoutes,
+) {
   if (routes)
     await cache.set(
       `domain:${hostname}`,
@@ -97,20 +95,17 @@ export default async function middleware(req: NextRequest) {
     entry = (await cache.get(`domain:${hostname}`)) as DomainCacheEntry | null;
   } catch {}
   if (entry?.routes) {
-    // Serve the cached routes immediately and re-check stale entries in the
-    // background, so the database is never in the request path for a cached
-    // domain.
     routes = entry.routes;
     if (Date.now() - entry.cachedAt > REVALIDATE_AFTER_MS)
       waitUntil(
-        lookupDomainRoutes(hostname)
-          .then((fresh) => persistDomainRoutes(hostname, fresh))
+        fetchDomainRoutesFromDB(hostname)
+          .then((fresh) => writeDomainRoutesToCache(hostname, fresh))
           .catch(() => {}),
       );
   } else {
-    routes = await lookupDomainRoutes(hostname);
+    routes = await fetchDomainRoutesFromDB(hostname);
     if (routes)
-      waitUntil(persistDomainRoutes(hostname, routes).catch(() => {}));
+      waitUntil(writeDomainRoutesToCache(hostname, routes).catch(() => {}));
   }
 
   let pub = routes?.publication_domains[0]?.publications;
