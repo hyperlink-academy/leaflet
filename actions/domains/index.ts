@@ -1,6 +1,7 @@
 "use server";
 import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
+import { getCache } from "@vercel/functions";
 import { Vercel } from "@vercel/sdk";
 import { getIdentityData } from "actions/getIdentityData";
 
@@ -19,6 +20,15 @@ const VERCEL_TEAM = "team_42xaJiZMTw9Sr7i0DcLTae9d";
 
 // Shared helpers
 // ==============
+
+// The middleware caches domain -> routes lookups long-lived under this tag;
+// expire it after any assignment change so routing picks the change up
+// immediately.
+async function expireDomainCache(domain: string) {
+  try {
+    await getCache().expireTag(`domain:${domain}`);
+  } catch {}
+}
 
 async function assertOwnsDomain(domain: string) {
   let identity = await getIdentityData();
@@ -125,6 +135,7 @@ export async function assignDomainToDocument({
     view_permission_token,
     edit_permission_token,
   });
+  await expireDomainCache(domain);
 
   return true;
 }
@@ -155,6 +166,7 @@ export async function assignDomainToPublication({
     identity: identity.atp_did,
     domain,
   });
+  await expireDomainCache(domain);
 
   return true;
 }
@@ -171,6 +183,7 @@ export async function removeDomainAssignment({
 }) {
   if (!(await assertOwnsDomain(domain))) return null;
   await clearAllAssignments(domain);
+  await expireDomainCache(domain);
   return true;
 }
 
@@ -182,9 +195,11 @@ export async function removeDomainRoute({ routeId }: { routeId: string }) {
   let allRoutes = identity.custom_domains.flatMap(
     (d) => d.custom_domain_routes,
   );
-  if (!allRoutes.find((r) => r.id === routeId)) return null;
+  let route = allRoutes.find((r) => r.id === routeId);
+  if (!route) return null;
 
   await supabase.from("custom_domain_routes").delete().eq("id", routeId);
+  await expireDomainCache(route.domain);
 
   return true;
 }
@@ -205,6 +220,7 @@ export async function deleteDomain({ domain }: { domain: string }) {
       domain,
     }),
   ]);
+  await expireDomainCache(domain);
 
   return true;
 }
