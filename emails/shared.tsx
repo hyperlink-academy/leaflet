@@ -1,5 +1,6 @@
 import { Head, Img, Link, pixelBasedPreset } from "@react-email/components";
 import React from "react";
+import { compareColors } from "components/ThemeManager/themeUtils";
 
 export type EmailTheme = {
   primary: string;
@@ -70,6 +71,36 @@ export const mixRgb = (a: string, b: string, bPercent: number): string => {
   )}, ${round(ab * (1 - t) + bb * t)})`;
 };
 
+// Mirrors BaseThemeProvider's `--accent-contrast` selection: of the two
+// accents, pick the one with more OKLab contrast against the surface, unless
+// it's near-indistinguishable from the text color while the other accent
+// still reads against the background. The web renders themed text (pub
+// names, links) in accent-contrast rather than raw accent-1; without this a
+// pale accentBackground on a pale card is near-invisible.
+export const pickAccentContrast = (
+  theme: Pick<EmailTheme, "primary" | "accentBackground" | "accentText">,
+  surface: string,
+): string => {
+  const toTriplet = (c: string) => parseColor(c).join(", ");
+  const bgRef = toTriplet(surface);
+  const primary = toTriplet(theme.primary);
+  const accents = [theme.accentBackground, theme.accentText].sort(
+    (a, b) =>
+      compareColors(toTriplet(b), bgRef).distance -
+      compareColors(toTriplet(a), bgRef).distance,
+  );
+  const bestVsText = compareColors(toTriplet(accents[0]), primary);
+  const altVsBg = compareColors(toTriplet(accents[1]), bgRef);
+  if (
+    bestVsText.distance < 0.15 &&
+    bestVsText.chromaDiff < 0.05 &&
+    altVsBg.distance > 0.31
+  ) {
+    return accents[1];
+  }
+  return accents[0];
+};
+
 export type ResolvedColors = {
   primary: string;
   secondary: string;
@@ -112,7 +143,7 @@ export const makeStaticUrl = (assetsBaseUrl: string) => {
 // SVG support across new Outlook + Outlook.com in late 2025.
 export const makeEmailIconUrl = (
   assetsBaseUrl: string,
-  name: "quote" | "comment",
+  name: "quote" | "comment" | "bluesky",
   color: string,
   size = 16,
 ): string => {
@@ -120,6 +151,19 @@ export const makeEmailIconUrl = (
   const params = new URLSearchParams({ color });
   if (size !== 16) params.set("size", String(size));
   return `${base}/api/email-assets/${name}.png?${params.toString()}`;
+};
+
+// Email clients don't render `white-space: pre-wrap` reliably (Outlook
+// collapses it), so newlines in plaintext become explicit <br /> elements.
+export const renderTextWithBreaks = (
+  text: string,
+  key: string,
+): React.ReactNode => {
+  const parts = text.split("\n");
+  if (parts.length === 1) return text;
+  return parts.flatMap((part, i) =>
+    i < parts.length - 1 ? [part, <br key={`${key}-br-${i}`} />] : [part],
+  );
 };
 
 // React's TypeScript types don't include the deprecated `bgcolor` HTML

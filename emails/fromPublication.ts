@@ -1,5 +1,7 @@
 import { defaultEmailTheme, type EmailTheme } from "./shared";
 import type { PubLeafletPublication } from "lexicons/api";
+import type * as SiteStandardThemeBasic from "lexicons/api/types/site/standard/theme/basic";
+import { resolvePublicationTheme } from "lexicons/src/normalize";
 import { getFontConfig, getFontFamilyValue } from "src/fonts";
 
 type ThemeColor = {
@@ -19,7 +21,7 @@ const colorToCss = (color: unknown, fallback: string): string => {
   return `rgb(${c.r}, ${c.g}, ${c.b})`;
 };
 
-const resolveEmailTheme = (
+export const resolveEmailTheme = (
   theme: PubLeafletPublication.Theme | undefined,
 ): EmailTheme => {
   if (!theme) return defaultEmailTheme;
@@ -49,11 +51,15 @@ type NormalizedPublicationLike = {
   name?: string;
   url?: string;
   theme?: PubLeafletPublication.Theme;
+  basicTheme?: SiteStandardThemeBasic.Main;
 };
 
 // Single choke point for translating a normalized publication record into the
 // publication-scoped PostEmail props (name, url, theme). The broadcast and
 // preview send paths both route through here so theme handling stays in sync.
+// Theme goes through resolvePublicationTheme so basicTheme-only (standard
+// site) publications get their colors instead of the default email chrome,
+// matching the web's fallback.
 export const emailPropsFromPublication = (
   pub: NormalizedPublicationLike | null | undefined,
 ): {
@@ -63,5 +69,5 @@ export const emailPropsFromPublication = (
 } => ({
   publicationName: pub?.name || "Publication",
   publicationUrl: pub?.url || "https://leaflet.pub",
-  theme: resolveEmailTheme(pub?.theme),
+  theme: resolveEmailTheme(resolvePublicationTheme(pub)),
 });

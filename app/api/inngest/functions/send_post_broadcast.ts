@@ -15,6 +15,9 @@ import {
   resolveReplyToEmail,
 } from "src/utils/newsletterSender";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import type { AppBskyFeedDefs } from "@atproto/api";
+import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
+import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
 import { getProfiles } from "src/identity";
 import {
   getBylineDids,
@@ -154,6 +157,17 @@ export const send_post_broadcast = inngest.createFunction(
         ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
         : [];
 
+    // Best-effort: hydrateBskyPostBlocks returns {} on failure, so bskyPost
+    // blocks degrade to the "not supported" card instead of failing the send.
+    const bskyPosts = (await step.run("hydrate-bsky-posts", async () =>
+      hydrateBskyPostBlocks(blocks),
+    )) as Record<string, AppBskyFeedDefs.PostView>;
+
+    const { standardSitePosts, standardSitePublications } = (await step.run(
+      "load-standard-site-block-data",
+      async () => fetchStandardSiteBlockData(blocks),
+    )) as Awaited<ReturnType<typeof fetchStandardSiteBlockData>>;
+
     const subscribers = await step.run("snapshot-subscribers", async () => {
       const { data } = await supabaseServerClient
         .from("publication_email_subscribers")
@@ -198,6 +212,10 @@ export const send_post_broadcast = inngest.createFunction(
           authorName,
           publishedAtLabel,
           blocks,
+          bskyPosts,
+          standardSitePosts,
+          standardSitePublications,
+          currentPublicationUri: publication_uri,
           did,
           assetsBaseUrl: `${assetsBaseUrl}/`,
           unsubscribeUrl: UNSUB_PLACEHOLDER,

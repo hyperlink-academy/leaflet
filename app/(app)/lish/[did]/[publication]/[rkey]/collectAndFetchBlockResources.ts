@@ -16,6 +16,7 @@ import {
 import { extractBlocksByType } from "./extractBlocksByType";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { fetchPollData, type PollData } from "./fetchPollData";
+import { fetchBskyPosts } from "src/utils/fetchBskyPosts";
 
 type Page =
   | PubLeafletPagesLinearDocument.Main
@@ -42,19 +43,10 @@ export async function collectAndFetchBlockResources({
   const bskyPostBlocks = extractBlocksByType<
     $Typed<PubLeafletBlocksBskyPost.Main>
   >(allBlocks, ids.PubLeafletBlocksBskyPost);
-  const bskyPostBatches: typeof bskyPostBlocks[] = [];
-  for (let i = 0; i < bskyPostBlocks.length; i += 25) {
-    bskyPostBatches.push(bskyPostBlocks.slice(i, i + 25));
-  }
-  const bskyPostResponses = await Promise.all(
-    bskyPostBatches.map((batch) =>
-      agent.getPosts(
-        { uris: batch.map((p) => p.block.postRef.uri) },
-        { headers: {} },
-      ),
-    ),
+  const bskyPostData = await fetchBskyPosts(
+    agent,
+    bskyPostBlocks.map((p) => p.block.postRef.uri),
   );
-  const bskyPostData = bskyPostResponses.flatMap((r) => r.data.posts);
 
   const standardSitePostUris = Array.from(
     new Set(

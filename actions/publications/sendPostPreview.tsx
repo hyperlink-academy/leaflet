@@ -17,6 +17,8 @@ import {
   resolveReplyToEmail,
 } from "src/utils/newsletterSender";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
+import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
 import { PostEmail } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
 import { getProfiles } from "src/identity";
@@ -91,6 +93,9 @@ export async function sendPostPreview(args: {
     firstPage?.type === "doc"
       ? (firstPage.blocks as PubLeafletPagesLinearDocument.Block[])
       : [];
+  const bskyPosts = await hydrateBskyPostBlocks(blocks);
+  const { standardSitePosts, standardSitePublications } =
+    await fetchStandardSiteBlockData(blocks);
 
   const pubRecord = normalizePublicationRecord(publication.record);
   const pubProps = emailPropsFromPublication(pubRecord);
@@ -151,6 +156,10 @@ export async function sendPostPreview(args: {
           year: "numeric",
         }),
         blocks,
+        bskyPosts,
+        standardSitePosts,
+        standardSitePublications,
+        currentPublicationUri: args.publication_uri,
         did: identity.atp_did,
         assetsBaseUrl,
         // Omitting unsubscribeUrl triggers the "(preview)" footer branch.
