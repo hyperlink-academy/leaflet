@@ -82,6 +82,7 @@
     "prosemirror-model": "^1.21.0",
     "prosemirror-schema-basic": "^1.2.2",
     "prosemirror-state": "^1.4.3",
+    "puppeteer-core": "^25.3.0",
     "react": "19.2.1",
     "react-aria-components": "^1.8.0",
     "react-day-picker": "^9.3.0",

@@ -1,4 +1,4 @@
-import { getMicroLinkOgImage } from "src/utils/getMicroLinkOgImage";
+import { ogScreenshotResponse } from "src/utils/screenshotPage";
 import { supabaseServerClient } from "supabase/serverClient";
 import { jsonToLex } from "@atproto/lexicon";
 import { idResolver } from "src/identity";
@@ -65,5 +65,5 @@ export default async function OpenGraphImage(props: {
   }
 
   // Fall back to screenshot
-  return getMicroLinkOgImage(`/p/${params.didOrHandle}/${params.rkey}/`);
+  return ogScreenshotResponse(`/p/${params.didOrHandle}/${params.rkey}/`);
 }

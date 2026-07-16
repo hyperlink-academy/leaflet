@@ -24,9 +24,11 @@ type Page =
 export async function collectAndFetchBlockResources({
   agent,
   pages,
+  openPageId,
 }: {
   agent: AtpAgent;
   pages: Page[];
+  openPageId?: string;
 }): Promise<{
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
@@ -79,8 +81,21 @@ export async function collectAndFetchBlockResources({
     pollBlocks.map((b) => b.block.pollRef.uri),
   );
 
-  const firstPageBlocks = (pages[0] as Page | undefined)?.blocks ?? [];
-  const prerenderedCodeBlocks = await extractCodeBlocks(firstPageBlocks);
+  // Keyed `${pageId}:${blockIndex}` to match PostContent's lookup: the root
+  // page renders with no pageId, subpages with their page id.
+  const prerenderedCodeBlocks = new Map<string, string>();
+  await Promise.all(
+    pages.map(async (page, pageIndex) => {
+      const isServerRendered =
+        pageIndex === 0 || (!!openPageId && page.id === openPageId);
+      if (!isServerRendered) return;
+      const pageCode = await extractCodeBlocks(page.blocks ?? []);
+      const pageKey = pageIndex === 0 ? "" : (page.id ?? "");
+      for (const [blockIndex, html] of pageCode) {
+        prerenderedCodeBlocks.set(`${pageKey}:${blockIndex}`, html);
+      }
+    }),
+  );
 
   return {
     bskyPostData,

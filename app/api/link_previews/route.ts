@@ -5,10 +5,7 @@ import { NextRequest } from "next/server";
 import * as z from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
-import {
-  getMicroLinkOgImage,
-  getWebpageImage,
-} from "src/utils/getMicroLinkOgImage";
+import { screenshotPage } from "src/utils/screenshotPage";
 import { resolveStandardSitePostUrl } from "src/utils/resolveStandardSitePostUrl";
 import { resolveStandardSitePublicationUrl } from "src/utils/resolveStandardSitePublicationUrl";
 import { resolveBlueskyPostUrl } from "src/utils/resolveBlueskyPostUrl";
@@ -53,17 +50,23 @@ export type LinkPreviewMetadataResult = Promise<
 export type LinkPreviewImageResult = ReturnType<typeof get_link_image_preview>;
 
 async function get_link_image_preview(url: string) {
-  let image = await getWebpageImage(url, { width: 1400, height: 1213 });
+  // Arbitrary external sites: scripts on, networkidle2 + settle, since we
+  // know nothing about how they render.
+  let image = await screenshotPage(url, {
+    width: 1400,
+    height: 1213,
+    waitUntil: "networkidle2",
+    scrollPage: true,
+    waitForTimeout: 2000,
+  });
   let key = await hash(url);
-  if (image.status === 200) {
-    await supabase.storage
-      .from("url-previews")
-      .upload(key, await image.arrayBuffer(), {
-        contentType: image.headers.get("content-type") || undefined,
-        upsert: true,
-      });
+  if (image) {
+    await supabase.storage.from("url-previews").upload(key, image, {
+      contentType: "image/png",
+      upsert: true,
+    });
   } else {
-    console.log("an error occured rendering the website", await image.text());
+    console.log("an error occured rendering the website", url);
   }
 
   return {

@@ -1,4 +1,4 @@
-import { getMicroLinkOgImage } from "src/utils/getMicroLinkOgImage";
+import { ogScreenshotResponse } from "src/utils/screenshotPage";
 import { supabaseServerClient } from "supabase/serverClient";
 import { jsonToLex } from "@atproto/lexicon";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
@@ -53,7 +53,7 @@ export default async function OpenGraphImage(props: {
   }
 
   // Fall back to screenshot
-  return getMicroLinkOgImage(
+  return ogScreenshotResponse(
     `/lish/${decodeURIComponent(params.did)}/${decodeURIComponent(params.publication)}/${params.rkey}/`,
   );
 }

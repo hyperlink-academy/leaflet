@@ -424,7 +424,8 @@ export let Block = ({
       return <StaticMathBlock block={b.block} />;
     }
     case PubLeafletBlocksCode.isMain(b.block): {
-      let html = prerenderedCodeBlocks?.get(index.join("."));
+      let pageKey = pageId && pageId !== pages[0]?.id ? pageId : "";
+      let html = prerenderedCodeBlocks?.get(`${pageKey}:${index.join(".")}`);
       return <PubCodeBlock block={b.block} prerenderedCode={html} />;
     }
     case PubLeafletBlocksWebsite.isMain(b.block): {
