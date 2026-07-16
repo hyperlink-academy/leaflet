@@ -6,6 +6,7 @@ import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { decodeQuotePosition } from "app/(app)/lish/[did]/[publication]/[rkey]/quotePosition";
 
 export async function generateMetadata(props: {
   params: Promise<{ didOrHandle: string; rkey: string }>;
@@ -60,7 +61,7 @@ export async function generateMetadata(props: {
 }
 
 export default async function StandaloneDocumentPage(props: {
-  params: Promise<{ didOrHandle: string; rkey: string }>;
+  params: Promise<{ didOrHandle: string; rkey: string; quote?: string }>;
 }) {
   let params = await props.params;
   let didOrHandle = decodeURIComponent(params.didOrHandle);
@@ -95,5 +96,13 @@ export default async function StandaloneDocumentPage(props: {
     }
   }
 
-  return <DocumentPageRenderer did={did} rkey={params.rkey} />;
+  return (
+    <DocumentPageRenderer
+      did={did}
+      rkey={params.rkey}
+      openPageId={
+        params.quote ? decodeQuotePosition(params.quote)?.pageId : undefined
+      }
+    />
+  );
 }
