@@ -113,7 +113,10 @@ export function ReplicacheProvider(props: {
       // returns a full document snapshot, so the default 60s poll is the
       // dominant idle-tab database egress.
       pullInterval: props.disablePull ? null : 5 * 60 * 1000,
-      pushDelay: 500,
+      // Each push is a billed serverless invocation and pushes for one doc
+      // serialize on an advisory lock, so batch a little wider. Live
+      // co-editing latency rides the yjs broadcast channel, not push.
+      pushDelay: 1000,
       mutators: Object.fromEntries(
         Object.keys(mutations).map((m) => {
           return [
