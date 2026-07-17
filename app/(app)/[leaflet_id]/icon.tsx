@@ -87,7 +87,12 @@ export default async function Icon(props: {
       // config to also set the ImageResponse's width and height.
       ...size,
       headers: {
-        "Cache-Control": "no-cache",
+        // Browsers request the favicon on nearly every page load, and each
+        // miss runs two DB queries plus a satori render. The icon only
+        // changes with the leaflet's theme, so let caches hold it and pick
+        // up theme edits within the hour.
+        "Cache-Control":
+          "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
       },
     },
   );

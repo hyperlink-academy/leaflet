@@ -207,7 +207,16 @@ export const push = makeRoute({
       timeProcessingMutations = performance.now() - start;
       console.log(e);
     } finally {
-      // Calculate mutation statistics
+      // Push runs on every batched mutation from every client — building and
+      // emitting this summary unconditionally is measurable CPU and log
+      // volume at that frequency.
+      if (process.env.LOG_PUSH_PERFORMANCE) logPushPerformance();
+      client.release();
+      await supabase.removeChannel(channel);
+      return { result: undefined } as const;
+    }
+
+    function logPushPerformance() {
       let totalMutationTime = mutationTimings.reduce(
         (sum, m) => sum + m.duration,
         0,
@@ -237,10 +246,6 @@ ${mutationTimings
   .map((m) => `  ${m.name}: ${m.duration.toFixed(2)}ms`)
   .join("\n")}
       `);
-
-      client.release();
-      await supabase.removeChannel(channel);
-      return { result: undefined } as const;
     }
   },
 });

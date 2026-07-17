@@ -23,9 +23,12 @@ export async function resolveBlueskyPostUrl(
 
   let html: string;
   try {
+    // no-store: the cache key is an arbitrary user-pasted URL, so entries
+    // are near-unrepeatable — caching them just pays a runtime-cache write
+    // per paste with no realistic hit rate.
     let res = await fetch(input, {
       headers: { Accept: "text/html" },
-      next: { revalidate: 60 * 10 },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     if (!(res.headers.get("content-type") || "").includes("text/html"))

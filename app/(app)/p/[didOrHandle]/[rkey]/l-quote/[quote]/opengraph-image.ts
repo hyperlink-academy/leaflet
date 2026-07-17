@@ -1,7 +1,10 @@
 import { ogScreenshotResponse } from "src/utils/screenshotPage";
 import { decodeQuotePosition } from "app/(app)/lish/[did]/[publication]/[rkey]/quotePosition";
 
-export const revalidate = 60;
+// OG content is effectively immutable post-publish, and each regeneration is a
+// multi-second remote-browser render billed for its full wall time — unfurl
+// bots re-fetch these constantly.
+export const revalidate = 86400;
 
 export default async function OpenGraphImage(props: {
   params: Promise<{ didOrHandle: string; rkey: string; quote: string }>;

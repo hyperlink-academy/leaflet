@@ -96,7 +96,13 @@ export async function ogScreenshotResponse(
   });
   if (!image) return new Response("Screenshot failed", { status: 502 });
   return new Response(new Uint8Array(image), {
-    headers: { "Content-Type": "image/png" },
+    headers: {
+      "Content-Type": "image/png",
+      // Let the CDN absorb unfurl-bot traffic between ISR regenerations —
+      // each miss is a multi-second remote-browser render.
+      "Cache-Control":
+        "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+    },
   });
 }
 
