@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "supabase/database.types";
 import { supabaseServerClient } from "supabase/serverClient";
 
 // The publication served on a custom domain, if any. Cross-domain login lands
@@ -7,8 +9,9 @@ import { supabaseServerClient } from "supabase/serverClient";
 // publications lookup the middleware uses to route custom domains.
 export async function publicationUriForHost(
   host: string,
+  supabase: SupabaseClient<Database> = supabaseServerClient,
 ): Promise<string | null> {
-  let { data } = await supabaseServerClient
+  let { data } = await supabase
     .from("custom_domains")
     .select("publication_domains(publications(uri))")
     .eq("domain", host)

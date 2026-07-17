@@ -5,6 +5,7 @@ import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import { publicationUriForHost } from "src/utils/publicationForHost";
 
 /**
  * Resolve a URL or AT URI to a standard-site-post AT URI by checking our DB.
@@ -42,23 +43,24 @@ export async function resolveStandardSitePostUrl(
   // pub.leaflet.publication (base_path) and site.standard.publication (url).
   // Descending uri order prefers site.standard.publication over
   // pub.leaflet.publication when base paths are equally specific.
-  const { data: publications } = await supabase
-    .from("publications")
-    .select("uri, record")
-    .or(
-      [
-        `record->>base_path.like.${url.host}*`,
-        `record->>url.like.${origin}*`,
-      ].join(","),
-    )
-    .order("uri", { ascending: false });
-
-  if (!publications?.length) return null;
+  const [{ data: publications }, hostPubUri] = await Promise.all([
+    supabase
+      .from("publications")
+      .select("uri, record")
+      .or(
+        [
+          `record->>base_path.like.${url.host}*`,
+          `record->>url.like.${origin}*`,
+        ].join(","),
+      )
+      .order("uri", { ascending: false }),
+    requestedPath === "/" ? null : publicationUriForHost(url.host, supabase),
+  ]);
 
   // Pick the publication whose url is the longest prefix of the requested URL,
   // and compute the document path relative to that publication's base path.
   let best: { uri: string; path: string; urlLength: number } | null = null;
-  for (const pub of publications) {
+  for (const pub of publications || []) {
     const normalized = normalizePublicationRecord(pub.record);
     if (!normalized?.url) continue;
     const pubUrl = normalized.url.replace(/\/$/, "");
@@ -71,18 +73,30 @@ export async function resolveStandardSitePostUrl(
       best = { uri: pub.uri, path, urlLength: pubUrl.length };
   }
 
-  if (!best) return null;
+  const candidates: { uri: string; path: string }[] = [];
+  if (best) candidates.push({ uri: best.uri, path: best.path });
+  if (hostPubUri && hostPubUri !== best?.uri)
+    candidates.push({ uri: hostPubUri, path: requestedPath });
 
-  // Find documents in that publication where data.path matches the requested
-  // path (relative to the publication's base path).
+  const docs = await Promise.all(
+    candidates.map((c) => findDocumentInPublication(supabase, c.uri, c.path)),
+  );
+  return docs.find((doc) => doc !== null) ?? null;
+}
+
+// Find a document in the publication whose data.path matches the requested
+// path (relative to the publication's base path).
+async function findDocumentInPublication(
+  supabase: SupabaseClient<Database>,
+  publicationUri: string,
+  path: string,
+): Promise<string | null> {
   const { data: docsInPub } = await supabase
     .from("documents_in_publications")
     .select("documents(uri, data)")
-    .eq("publication", best.uri);
+    .eq("publication", publicationUri);
 
-  if (!docsInPub) return null;
-
-  for (const row of docsInPub) {
+  for (const row of docsInPub || []) {
     const doc = row.documents;
     if (!doc) continue;
     const normalized = normalizeDocumentRecord(doc.data as Json, doc.uri);
@@ -93,7 +107,7 @@ export async function resolveStandardSitePostUrl(
         : `/${normalized.path}`
       : null;
     const docPath = rawPath ? rawPath.replace(/\/$/, "") || "/" : null;
-    if (docPath === best.path) return doc.uri;
+    if (docPath === path) return doc.uri;
   }
   return null;
 }

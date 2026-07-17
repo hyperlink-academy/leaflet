@@ -3,12 +3,13 @@ import { AtUri } from "@atproto/syntax";
 import type { Database } from "supabase/database.types";
 import { ids } from "lexicons/api/lexicons";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { publicationUriForHost } from "src/utils/publicationForHost";
 
 /**
  * Resolve a URL or AT URI to a standard-site-publication AT URI by checking our
  * DB. Only resolves publication *roots* (never individual posts): leaflet.pub
  * /lish/{did}/{publication} URLs, at:// publication URIs, and custom-domain
- * homepages whose URL exactly matches a publication's configured url.
+ * homepages.
  */
 export async function resolveStandardSitePublicationUrl(
   input: string,
@@ -79,16 +80,20 @@ export async function resolveStandardSitePublicationUrl(
   const requestedPath = url.pathname.replace(/\/$/, "") || "/";
   const requestedUrl = origin + (requestedPath === "/" ? "" : requestedPath);
 
-  const { data: publications } = await supabase
-    .from("publications")
-    .select("uri, record")
-    .or(
-      [
-        `record->>base_path.like.${url.host}*`,
-        `record->>url.like.${origin}*`,
-      ].join(","),
-    )
-    .order("uri", { ascending: false });
+  const [hostPubUri, { data: publications }] = await Promise.all([
+    requestedPath === "/" ? publicationUriForHost(url.host, supabase) : null,
+    supabase
+      .from("publications")
+      .select("uri, record")
+      .or(
+        [
+          `record->>base_path.like.${url.host}*`,
+          `record->>url.like.${origin}*`,
+        ].join(","),
+      )
+      .order("uri", { ascending: false }),
+  ]);
+  if (hostPubUri) return hostPubUri;
 
   if (!publications?.length) return null;
 
