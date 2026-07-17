@@ -53,67 +53,66 @@ function parseDimension(value: string | null): number | undefined {
   return Math.min(parsed, 2000);
 }
 
+function publicUrl(path: string) {
+  return `${process.env.NEXT_PUBLIC_SUPABASE_API_URL}/storage/v1/object/public/${COVER_IMAGE_BUCKET}/${path}`;
+}
+
+// Bytes are served straight off Supabase's CDN rather than streamed through
+// this function: bytes leaving Vercel bill at fast data transfer rates
+// (currently in overage), while Supabase serves the same bytes as cheap
+// cached egress. Only this tiny 302 comes from Vercel, edge-cached for a
+// year since CID-addressed content never changes.
+function redirect(to: string) {
+  return new NextResponse(null, {
+    status: 302,
+    headers: {
+      Location: to,
+      "Cache-Control": CACHE_CONTROL,
+      "CDN-Cache-Control": CDN_CACHE_CONTROL,
+    },
+  });
+}
+
 /**
- * Caches the PDS blob in Supabase storage (CIDs are content-addressed, so the
- * cache is immutable) and returns a downscaled version of it, resized here
- * with sharp — Supabase's image transform bills per origin image per month,
- * while resizing a thumbnail in-function costs effectively nothing and the
- * result sits behind a year-long CDN cache anyway. Returns null if it can't
- * be produced.
+ * Ensures the original PDS blob is cached in storage with a well-formed
+ * Cache-Control. (Uploads from before the storage-js seconds fix stored a
+ * malformed `max-age=public, ...` header, which defeats CDN caching — those
+ * get re-uploaded once.) Returns the object's public URL, plus the bytes
+ * when they already passed through here so callers can reuse them without
+ * another round trip. Null when the blob can't be produced at that URL.
  */
-async function getTransformedBlob(
+async function ensureOriginalCached(
   did: string,
   cid: string,
-  transform: { width?: number; height?: number },
-): Promise<{ bytes: Buffer; contentType: string } | null> {
+): Promise<{ url: string; bytes: ArrayBuffer | null } | null> {
   if (!did || !cid) return null;
-
   const path = `${COVER_IMAGE_PREFIX}/${cid}`;
+  const url = publicUrl(path);
 
-  // Try the cached original first; on a miss, fetch from the PDS and cache
-  // it, resizing the bytes we already hold rather than re-downloading.
-  let original: ArrayBuffer;
-  const { data: cached } = await supabaseServerClient.storage
+  const head = await fetch(url, { method: "HEAD" });
+  const malformed = (head.headers.get("cache-control") ?? "").includes(
+    "max-age=public",
+  );
+  if (head.ok && !malformed) return { url, bytes: null };
+
+  let source = head.ok ? await fetch(url) : await fetchAtprotoBlob(did, cid);
+  if (!source || !source.ok) return null;
+  const bytes = await source.arrayBuffer();
+
+  const { error } = await supabaseServerClient.storage
     .from(COVER_IMAGE_BUCKET)
-    .download(path);
-  if (cached) {
-    original = await cached.arrayBuffer();
-  } else {
-    const response = await fetchAtprotoBlob(did, cid);
-    if (!response) return null;
-    original = await response.arrayBuffer();
-
-    const { error } = await supabaseServerClient.storage
-      .from(COVER_IMAGE_BUCKET)
-      .upload(path, original, {
-        contentType: response.headers.get("content-type") || undefined,
-        // storage-js expects seconds, not a header value.
-        cacheControl: "31536000",
-        upsert: true,
-      });
-    if (error) console.log("failed to cache cover image", error);
+    .upload(path, bytes, {
+      contentType: source.headers.get("content-type") || undefined,
+      // storage-js expects seconds, not a header value.
+      cacheControl: "31536000",
+      upsert: true,
+    });
+  if (error) {
+    console.log("failed to cache cover image", error);
+    // With nothing stored at the URL there is nothing to redirect to.
+    if (!head.ok) return null;
   }
-
-  try {
-    // rotate() applies EXIF orientation, which imgproxy did implicitly.
-    // withoutEnlargement mirrors imgproxy's no-upscale default.
-    const resized = await sharp(Buffer.from(original), { animated: true })
-      .rotate()
-      .resize({
-        width: transform.width,
-        height: transform.height,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .toBuffer({ resolveWithObject: true });
-    return {
-      bytes: resized.data,
-      contentType: `image/${resized.info.format}`,
-    };
-  } catch (e) {
-    console.log("failed to resize cover image", e);
-    return null;
-  }
+  return { url, bytes };
 }
 
 export async function GET(req: NextRequest) {
@@ -126,25 +125,59 @@ export async function GET(req: NextRequest) {
   const width = parseDimension(url.searchParams.get("width"));
   const height = parseDimension(url.searchParams.get("height"));
 
-  // When thumbnail dimensions are requested, stream back a downscaled version
-  // instead of the full-resolution blob.
   if (width || height) {
-    const transformed = await getTransformedBlob(params.did, params.cid, {
-      width,
-      height,
-    });
-    if (transformed) {
-      return new NextResponse(new Uint8Array(transformed.bytes), {
-        headers: {
-          "Content-Type": transformed.contentType,
-          "Cache-Control": CACHE_CONTROL,
-          "CDN-Cache-Control": CDN_CACHE_CONTROL,
-        },
-      });
+    // Thumbnail: resized once with sharp (Supabase's image transform bills
+    // per origin image per month), stored, and served by redirect.
+    const variantPath = `${COVER_IMAGE_PREFIX}/resized/w${width ?? 0}-h${height ?? 0}/${params.cid}`;
+    const variantUrl = publicUrl(variantPath);
+    const existing = await fetch(variantUrl, { method: "HEAD" });
+    if (existing.ok) return redirect(variantUrl);
+
+    const original = await ensureOriginalCached(params.did, params.cid);
+    if (original) {
+      let bytes = original.bytes;
+      if (!bytes) {
+        const res = await fetch(original.url);
+        if (res.ok) bytes = await res.arrayBuffer();
+      }
+      if (bytes) {
+        try {
+          // rotate() applies EXIF orientation, which imgproxy did
+          // implicitly. withoutEnlargement mirrors imgproxy's no-upscale
+          // default.
+          const resized = await sharp(Buffer.from(bytes), { animated: true })
+            .rotate()
+            .resize({
+              width,
+              height,
+              fit: "inside",
+              withoutEnlargement: true,
+            })
+            .toBuffer({ resolveWithObject: true });
+          const { error } = await supabaseServerClient.storage
+            .from(COVER_IMAGE_BUCKET)
+            .upload(variantPath, new Uint8Array(resized.data), {
+              contentType: `image/${resized.info.format}`,
+              cacheControl: "31536000",
+              upsert: true,
+            });
+          if (!error) return redirect(variantUrl);
+          console.log("failed to store cover variant", variantPath, error);
+        } catch (e) {
+          console.log("failed to resize cover image", e);
+        }
+      }
+      // Couldn't produce a variant; the cached original still beats
+      // streaming the full blob through this function.
+      return redirect(original.url);
     }
-    // Fall through to the original blob if the transform couldn't be produced.
+    // Fall through to streaming if nothing could be cached.
+  } else {
+    const original = await ensureOriginalCached(params.did, params.cid);
+    if (original) return redirect(original.url);
   }
 
+  // Last resort: stream straight from the PDS.
   const response = await fetchAtprotoBlob(params.did, params.cid);
   if (!response) return new NextResponse(null, { status: 404 });
 
