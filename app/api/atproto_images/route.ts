@@ -2,12 +2,12 @@ export const runtime = "nodejs";
 
 import { IdResolver } from "@atproto/identity";
 import { NextRequest, NextResponse } from "next/server";
+import sharp from "sharp";
 import { supabaseServerClient } from "supabase/serverClient";
 
 let idResolver = new IdResolver();
 
-// Reuse the existing image-cache bucket (it already has Supabase image
-// transformations enabled — see app/api/link_previews/route.ts).
+// Reuse the existing image-cache bucket (see app/api/link_previews/route.ts).
 const COVER_IMAGE_BUCKET = "url-previews";
 const COVER_IMAGE_PREFIX = "post-cover";
 const CACHE_CONTROL =
@@ -55,56 +55,65 @@ function parseDimension(value: string | null): number | undefined {
 
 /**
  * Caches the PDS blob in Supabase storage (CIDs are content-addressed, so the
- * cache is immutable) and returns a downscaled version of it via Supabase's
- * image transform. We stream the bytes back ourselves (rather than redirecting
- * to the public transform URL) so the thumbnail is a single round trip served
- * with our own immutable cache headers. Returns null if it can't be produced.
+ * cache is immutable) and returns a downscaled version of it, resized here
+ * with sharp — Supabase's image transform bills per origin image per month,
+ * while resizing a thumbnail in-function costs effectively nothing and the
+ * result sits behind a year-long CDN cache anyway. Returns null if it can't
+ * be produced.
  */
 async function getTransformedBlob(
   did: string,
   cid: string,
   transform: { width?: number; height?: number },
-): Promise<Blob | null> {
+): Promise<{ bytes: Buffer; contentType: string } | null> {
   if (!did || !cid) return null;
 
   const path = `${COVER_IMAGE_PREFIX}/${cid}`;
 
-  // Only fetch + upload the full blob if it isn't already cached.
-  const { data: existing } = await supabaseServerClient.storage
+  // Try the cached original first; on a miss, fetch from the PDS and cache
+  // it, resizing the bytes we already hold rather than re-downloading.
+  let original: ArrayBuffer;
+  const { data: cached } = await supabaseServerClient.storage
     .from(COVER_IMAGE_BUCKET)
-    .list(COVER_IMAGE_PREFIX, { limit: 1, search: cid });
-
-  if (!existing || existing.length === 0) {
+    .download(path);
+  if (cached) {
+    original = await cached.arrayBuffer();
+  } else {
     const response = await fetchAtprotoBlob(did, cid);
     if (!response) return null;
+    original = await response.arrayBuffer();
 
     const { error } = await supabaseServerClient.storage
       .from(COVER_IMAGE_BUCKET)
-      .upload(path, await response.arrayBuffer(), {
+      .upload(path, original, {
         contentType: response.headers.get("content-type") || undefined,
-        cacheControl: "public, max-age=31536000, immutable",
+        // storage-js expects seconds, not a header value.
+        cacheControl: "31536000",
         upsert: true,
       });
-    if (error) {
-      console.log("failed to cache cover image for transform", error);
-      return null;
-    }
+    if (error) console.log("failed to cache cover image", error);
   }
 
-  const { data, error } = await supabaseServerClient.storage
-    .from(COVER_IMAGE_BUCKET)
-    .download(path, {
-      transform: {
+  try {
+    // rotate() applies EXIF orientation, which imgproxy did implicitly.
+    // withoutEnlargement mirrors imgproxy's no-upscale default.
+    const resized = await sharp(Buffer.from(original), { animated: true })
+      .rotate()
+      .resize({
         width: transform.width,
         height: transform.height,
-        resize: "contain",
-      },
-    });
-  if (error || !data) {
-    console.log("failed to fetch transformed cover image", error);
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .toBuffer({ resolveWithObject: true });
+    return {
+      bytes: resized.data,
+      contentType: `image/${resized.info.format}`,
+    };
+  } catch (e) {
+    console.log("failed to resize cover image", e);
     return null;
   }
-  return data;
 }
 
 export async function GET(req: NextRequest) {
@@ -118,16 +127,16 @@ export async function GET(req: NextRequest) {
   const height = parseDimension(url.searchParams.get("height"));
 
   // When thumbnail dimensions are requested, stream back a downscaled version
-  // (via Supabase's image transform) instead of the full-resolution blob.
+  // instead of the full-resolution blob.
   if (width || height) {
     const transformed = await getTransformedBlob(params.did, params.cid, {
       width,
       height,
     });
     if (transformed) {
-      return new NextResponse(transformed, {
+      return new NextResponse(new Uint8Array(transformed.bytes), {
         headers: {
-          "Content-Type": transformed.type || "image/jpeg",
+          "Content-Type": transformed.contentType,
           "Cache-Control": CACHE_CONTROL,
           "CDN-Cache-Control": CDN_CACHE_CONTROL,
         },
