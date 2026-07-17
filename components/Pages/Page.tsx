@@ -147,6 +147,7 @@ export const PageWrapper = (props: {
         id={props.id}
         className={`
       pageScrollWrapper
+      footnote-scope
       publicationScrollContainer
       grow relative
       shrink-0 snap-center
@@ -171,7 +172,7 @@ export const PageWrapper = (props: {
 `}
       >
         <div
-          className={`postPageContent footnote-scope static
+          className={`postPageContent static
           ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
