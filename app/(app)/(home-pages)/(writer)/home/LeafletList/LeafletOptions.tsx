@@ -32,6 +32,23 @@ import {
 import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 
+// A member (owner or confirmed contributor) of the publication a leaflet
+// belongs to gets the same manage options everywhere this menu is shown —
+// /home and the publication dashboard's draft and post lists. Standalone
+// documents are managed by whoever's PDS hosts them.
+function useCanManagePost() {
+  const pubStatus = useLeafletPublicationStatus();
+  const { identity } = useIdentityData();
+  if (!identity?.atp_did) return false;
+  if (pubStatus?.documentUri?.includes(identity.atp_did)) return true;
+  const pubUri = pubStatus?.publicationUri;
+  if (!pubUri) return false;
+  return (
+    identity.publications.some((p) => p.uri === pubUri) ||
+    identity.contributor_publications.some((p) => p.uri === pubUri)
+  );
+}
+
 export const LeafletOptions = (props: {
   archived?: boolean | null;
   loggedIn?: boolean;
@@ -39,9 +56,7 @@ export const LeafletOptions = (props: {
   const pubStatus = useLeafletPublicationStatus();
   let [state, setState] = useState<"normal" | "areYouSure">("normal");
   let [open, setOpen] = useState(false);
-  let { identity } = useIdentityData();
-  let isPublicationOwner =
-    !!identity?.atp_did && !!pubStatus?.documentUri?.includes(identity.atp_did);
+  let canManagePost = useCanManagePost();
   return (
     <>
       <Menu
@@ -66,7 +81,7 @@ export const LeafletOptions = (props: {
         {state === "normal" ? (
           !props.loggedIn ? (
             <LoggedOutOptions setState={setState} />
-          ) : pubStatus?.documentUri && isPublicationOwner ? (
+          ) : pubStatus?.documentUri && canManagePost ? (
             <PublishedPostOptions setState={setState} />
           ) : (
             <DefaultOptions setState={setState} archived={props.archived} />
@@ -86,14 +101,15 @@ const DefaultOptions = (props: {
   const pubStatus = useLeafletPublicationStatus();
   const toaster = useToaster();
   const { setArchived } = useArchiveMutations();
-  const { identity } = useIdentityData();
+  const canManagePost = useCanManagePost();
   const tokenId = pubStatus?.token.id;
   const itemType = pubStatus?.draftInPublication ? "Draft" : "Leaflet";
 
-  // Check if this is a published post/document and if user is the owner
-  const isPublishedPostOwner =
-    !!identity?.atp_did && !!pubStatus?.documentUri?.includes(identity.atp_did);
-  const canDelete = !pubStatus?.documentUri || isPublishedPostOwner;
+  // Deleting a leaflet in a publication, or a published document, requires
+  // being a member of the publication or the document's owner. Standalone
+  // unpublished leaflets are deletable by anyone with the edit token.
+  const canDelete =
+    pubStatus?.documentUri || pubStatus?.publicationUri ? canManagePost : true;
 
   return (
     <>
@@ -324,6 +340,12 @@ function useArchiveMutations() {
           (p) => p.permission_tokens?.id === tokenId,
         );
         if (item) item.archived = archived;
+        for (const row of data.contributor_leaflets ?? []) {
+          if (row.permission_tokens?.id !== tokenId) continue;
+          for (const lip of row.permission_tokens.leaflets_in_publications ??
+            [])
+            lip.archived = archived;
+        }
       });
       mutatePublicationData(mutatePub, (data) => {
         const item = data.publication?.leaflets_in_publications.find(
@@ -338,6 +360,9 @@ function useArchiveMutations() {
           data.permission_token_on_homepage.filter(
             (p) => p.permission_tokens?.id !== tokenId,
           );
+        data.contributor_leaflets = (data.contributor_leaflets ?? []).filter(
+          (r) => r.permission_tokens?.id !== tokenId,
+        );
       });
       mutatePublicationData(mutatePub, (data) => {
         if (!data.publication) return;

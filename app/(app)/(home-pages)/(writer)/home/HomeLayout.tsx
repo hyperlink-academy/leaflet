@@ -63,9 +63,14 @@ export const HomeContent = (props: {
     (identity?.contributor_publications?.length ?? 0) > 0;
   let hasArchived =
     identity &&
-    identity.permission_token_on_homepage.filter(
+    (identity.permission_token_on_homepage.some(
       (leaflet) => leaflet.archived === true,
-    ).length > 0;
+    ) ||
+      (identity.contributor_leaflets ?? []).some((row) =>
+        row.permission_tokens.leaflets_in_publications?.some(
+          (l) => l.archived,
+        ),
+      ));
 
   return (
     <DashboardPageLayout
@@ -115,7 +120,12 @@ function HomeLeafletList(props: {
       .map((row) => ({
         added_at: row.created_at,
         token: row.permission_tokens as unknown as PermissionToken,
-        archived: false,
+        // Contributed leaflets have no personal homepage row, so archived
+        // state comes from the publication's draft list
+        archived:
+          row.permission_tokens.leaflets_in_publications?.some(
+            (l) => l.archived,
+          ) ?? false,
       }));
     leaflets = [...owned, ...contributed];
   } else {
