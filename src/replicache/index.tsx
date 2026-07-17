@@ -108,7 +108,11 @@ export function ReplicacheProvider(props: {
     if (props.initialFactsOnly) return;
     let supabase = supabaseBrowserClient();
     let newRep = new Replicache({
-      pullInterval: props.disablePull ? null : undefined,
+      // Pokes drive pulls in real time; the interval only backstops a poke
+      // lost on a live socket (reconnects pull explicitly below). Every pull
+      // returns a full document snapshot, so the default 60s poll is the
+      // dominant idle-tab database egress.
+      pullInterval: props.disablePull ? null : 5 * 60 * 1000,
       pushDelay: 500,
       mutators: Object.fromEntries(
         Object.keys(mutations).map((m) => {
@@ -178,7 +182,15 @@ export function ReplicacheProvider(props: {
       channel.on("broadcast", { event: "poke" }, () => {
         newRep.pull();
       });
-      channel.subscribe();
+      // Pull on every resubscribe after a connection drop — pokes broadcast
+      // while disconnected are gone for good. Replicache already pulls on
+      // open, so the initial subscribe is skipped.
+      let subscribedOnce = false;
+      channel.subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        if (subscribedOnce) newRep.pull();
+        subscribedOnce = true;
+      });
     }
     return () => {
       newRep.close();

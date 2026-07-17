@@ -3,10 +3,6 @@ import { serve } from "@hono/node-server";
 import { DidResolver, MemoryCache } from "@atproto/identity";
 import { parseReqNsid, verifyJwt } from "@atproto/xrpc-server";
 import { supabaseServerClient } from "supabase/serverClient";
-import {
-  normalizeDocumentRecord,
-  type NormalizedDocument,
-} from "src/utils/normalizeRecords";
 import { inngest } from "app/api/inngest/client";
 import { AtUri } from "@atproto/api";
 import { wikipedia } from "../mentions/services/wikipedia";
@@ -76,6 +72,11 @@ app.get("/xrpc/parts.page.mention.search", async (c) => {
 
 //Cursor format ts::uri
 
+// Everything the skeleton response needs from a document. postRef is the
+// pub.leaflet field, bskyPostRef the site.standard one; publishedAt gates
+// pub.leaflet records the same way normalizeDocument does.
+const SKELETON_COLUMNS = `uri, sort_date, postRef:data->postRef, bskyPostRef:data->bskyPostRef, publishedAt:data->>publishedAt`;
+
 app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   let auth = await validateAuth(c.req, serviceDid);
   let feed = c.req.query("feed");
@@ -94,7 +95,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   if (feedAtURI.rkey == "bsky-leaflet-quotes") {
     let query = supabaseServerClient
       .from("document_mentions_in_bsky")
-      .select("*")
+      .select("uri, indexed_at")
       .order("indexed_at", { ascending: false })
       .order("uri", { ascending: false })
       .limit(25);
@@ -122,12 +123,15 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     }
     query = supabaseServerClient
       .from("documents")
+      // The skeleton only needs the bsky post ref out of each document, so
+      // project just the refs instead of the full record jsonb; the embedded
+      // tables exist purely to filter and select as little as possible.
       .select(
-        `*,
+        `${SKELETON_COLUMNS},
          documents_in_publications!inner(
-           publications!inner(*,
+           publications!inner(uri,
              identities!publications_identity_did_fkey!inner(
-               bsky_follows!bsky_follows_follows_fkey!inner(*)
+               bsky_follows!bsky_follows_follows_fkey!inner(identity)
               )
             )
           )`,
@@ -140,8 +144,8 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     query = supabaseServerClient
       .from("documents")
       .select(
-        `*,
-          documents_in_publications(publications(*))`,
+        `${SKELETON_COLUMNS},
+          documents_in_publications(publications(uri))`,
       )
       .or(
         "record->preferences->showInDiscover.is.null,record->preferences->>showInDiscover.eq.true",
@@ -152,8 +156,8 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     query = supabaseServerClient
       .from("documents")
       .select(
-        `*,
-          documents_in_publications!inner(publications!inner(*, publication_subscriptions!inner(*)))`,
+        `${SKELETON_COLUMNS},
+          documents_in_publications!inner(publications!inner(uri, publication_subscriptions!inner(identity)))`,
       )
       .eq(
         "documents_in_publications.publications.publication_subscriptions.identity",
@@ -182,10 +186,11 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   return c.json({
     cursor: newCursor || cursor,
     feed: posts.flatMap((p) => {
-      if (!p.data) return [];
-      const normalizedDoc = normalizeDocumentRecord(p.data, p.uri);
-      if (!normalizedDoc?.bskyPostRef) return [];
-      return { post: normalizedDoc.bskyPostRef.uri };
+      let ref = (p.bskyPostRef ?? (p.publishedAt ? p.postRef : null)) as {
+        uri?: string;
+      } | null;
+      if (!ref?.uri) return [];
+      return { post: ref.uri };
     }),
   });
 });
