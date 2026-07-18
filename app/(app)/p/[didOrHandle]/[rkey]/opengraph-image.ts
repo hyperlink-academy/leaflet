@@ -45,7 +45,9 @@ export default async function OpenGraphImage(props: {
         let cid =
           (docRecord.coverImage.ref as unknown as { $link: string })["$link"] ||
           docRecord.coverImage.ref.toString();
-        return coverImageRedirect(did, cid);
+        let res = await coverImageRedirect(did, cid);
+        if (res) return res;
+        // Fall through to screenshot if the cover couldn't be cached
       }
     }
   }

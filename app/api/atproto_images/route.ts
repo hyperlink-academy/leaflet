@@ -114,6 +114,63 @@ async function ensureOriginalCached(
   return { url, bytes };
 }
 
+/**
+ * Ensures a resized variant of the blob is cached in storage (resized once
+ * with sharp — Supabase's image transform bills per origin image per month)
+ * and returns its public URL. Falls back to the cached original's URL when a
+ * variant can't be produced, and null when nothing could be cached at all.
+ * Width/height are expected to already be snapped to the image-width ladder.
+ */
+export async function ensureResizedVariantCached(
+  did: string,
+  cid: string,
+  width?: number,
+  height?: number,
+): Promise<string | null> {
+  const variantPath = `${COVER_IMAGE_PREFIX}/resized/w${width ?? 0}-h${height ?? 0}/${cid}`;
+  const variantUrl = publicUrl(variantPath);
+  const existing = await fetch(variantUrl, { method: "HEAD" });
+  if (existing.ok) return variantUrl;
+
+  const original = await ensureOriginalCached(did, cid);
+  if (!original) return null;
+  let bytes = original.bytes;
+  if (!bytes) {
+    const res = await fetch(original.url);
+    if (res.ok) bytes = await res.arrayBuffer();
+  }
+  if (bytes) {
+    try {
+      // rotate() applies EXIF orientation, which imgproxy did
+      // implicitly. withoutEnlargement mirrors imgproxy's no-upscale
+      // default.
+      const resized = await sharp(Buffer.from(bytes), { animated: true })
+        .rotate()
+        .resize({
+          width,
+          height,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .toBuffer({ resolveWithObject: true });
+      const { error } = await supabaseServerClient.storage
+        .from(COVER_IMAGE_BUCKET)
+        .upload(variantPath, new Uint8Array(resized.data), {
+          contentType: `image/${resized.info.format}`,
+          cacheControl: "31536000",
+          upsert: true,
+        });
+      if (!error) return variantUrl;
+      console.log("failed to store cover variant", variantPath, error);
+    } catch (e) {
+      console.log("failed to resize cover image", e);
+    }
+  }
+  // Couldn't produce a variant; the cached original still beats
+  // streaming the full blob.
+  return original.url;
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const params = {
@@ -125,51 +182,13 @@ export async function GET(req: NextRequest) {
   const height = parseDimension(url.searchParams.get("height"));
 
   if (width || height) {
-    // Thumbnail: resized once with sharp (Supabase's image transform bills
-    // per origin image per month), stored, and served by redirect.
-    const variantPath = `${COVER_IMAGE_PREFIX}/resized/w${width ?? 0}-h${height ?? 0}/${params.cid}`;
-    const variantUrl = publicUrl(variantPath);
-    const existing = await fetch(variantUrl, { method: "HEAD" });
-    if (existing.ok) return redirect(variantUrl);
-
-    const original = await ensureOriginalCached(params.did, params.cid);
-    if (original) {
-      let bytes = original.bytes;
-      if (!bytes) {
-        const res = await fetch(original.url);
-        if (res.ok) bytes = await res.arrayBuffer();
-      }
-      if (bytes) {
-        try {
-          // rotate() applies EXIF orientation, which imgproxy did
-          // implicitly. withoutEnlargement mirrors imgproxy's no-upscale
-          // default.
-          const resized = await sharp(Buffer.from(bytes), { animated: true })
-            .rotate()
-            .resize({
-              width,
-              height,
-              fit: "inside",
-              withoutEnlargement: true,
-            })
-            .toBuffer({ resolveWithObject: true });
-          const { error } = await supabaseServerClient.storage
-            .from(COVER_IMAGE_BUCKET)
-            .upload(variantPath, new Uint8Array(resized.data), {
-              contentType: `image/${resized.info.format}`,
-              cacheControl: "31536000",
-              upsert: true,
-            });
-          if (!error) return redirect(variantUrl);
-          console.log("failed to store cover variant", variantPath, error);
-        } catch (e) {
-          console.log("failed to resize cover image", e);
-        }
-      }
-      // Couldn't produce a variant; the cached original still beats
-      // streaming the full blob through this function.
-      return redirect(original.url);
-    }
+    const variantUrl = await ensureResizedVariantCached(
+      params.did,
+      params.cid,
+      width,
+      height,
+    );
+    if (variantUrl) return redirect(variantUrl);
     // Fall through to streaming if nothing could be cached.
   } else {
     const original = await ensureOriginalCached(params.did, params.cid);

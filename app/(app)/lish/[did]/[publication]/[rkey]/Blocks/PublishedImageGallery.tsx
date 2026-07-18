@@ -24,8 +24,8 @@ export function PublishedImageGallery(props: {
   did: string;
 }) {
   let { block, did } = props;
-  // Grid/strip/carousel cells render well under 800px, so they get a resized
-  // variant; the lightbox gets the full-resolution blob.
+  // Grid/strip/carousel cells get the 1200 tier (document-body column at
+  // retina density); the lightbox gets the full-resolution blob.
   let { images, fullImages } = useMemo(() => {
     let toImage = (
       i: PubLeafletBlocksImageGallery.Image,
@@ -37,7 +37,7 @@ export function PublishedImageGallery(props: {
       height: i.aspectRatio.height,
     });
     return {
-      images: block.images.map((i) => toImage(i, { width: 800 })),
+      images: block.images.map((i) => toImage(i, { width: 1200 })),
       fullImages: block.images.map((i) => toImage(i)),
     };
   }, [block.images, did]);

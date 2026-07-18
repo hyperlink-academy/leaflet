@@ -123,7 +123,7 @@ let Block = async ({
           alt={b.block.alt}
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
-          src={blobRefToSrc(b.block.image.ref, did, baseUrl, { width: 800 })}
+          src={blobRefToSrc(b.block.image.ref, did, baseUrl, { width: 1200 })}
         />
       );
     }
@@ -141,7 +141,7 @@ let Block = async ({
               alt={image.alt}
               height={image.aspectRatio.height}
               width={image.aspectRatio.width}
-              src={blobRefToSrc(image.image.ref, did, baseUrl, { width: 800 })}
+              src={blobRefToSrc(image.image.ref, did, baseUrl, { width: 1200 })}
             />
           ))}
         </div>
