@@ -156,6 +156,7 @@ export async function PublicationPageRenderer({
     normalizedDocument:
       null as unknown as DocumentContextValue["normalizedDocument"],
     normalizedPublication,
+    postUrl: getPublicationURL(publication),
     theme,
     prevNext: undefined,
     quotesAndMentions: [],

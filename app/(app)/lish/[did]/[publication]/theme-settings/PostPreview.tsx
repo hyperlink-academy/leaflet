@@ -107,6 +107,7 @@ export function PostPreview(props: {
     uri: FAKE_DOC_URI,
     normalizedDocument: fakeNormalizedDocument,
     normalizedPublication: null,
+    postUrl: "https://leaflet.pub/preview",
     theme: undefined,
     prevNext: undefined,
     quotesAndMentions: [],

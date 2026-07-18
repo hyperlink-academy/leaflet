@@ -196,6 +196,7 @@ export async function getPostPageData(
     // Pre-normalized data - consumers should use these instead of normalizing themselves
     normalizedDocument,
     normalizedPublication,
+    postUrl,
     quotesAndMentions,
     theme,
     prevNext,
