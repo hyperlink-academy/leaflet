@@ -4,6 +4,7 @@ import { IdResolver } from "@atproto/identity";
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { supabaseServerClient } from "supabase/serverClient";
+import { snapToImageWidth } from "supabase/imageSizes";
 
 let idResolver = new IdResolver();
 
@@ -48,9 +49,7 @@ function parseDimension(value: string | null): number | undefined {
   if (!value) return undefined;
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
-  // Clamp to a sane upper bound so the proxy can't be used to request
-  // arbitrarily large transforms.
-  return Math.min(parsed, 2000);
+  return snapToImageWidth(parsed);
 }
 
 function publicUrl(path: string) {
