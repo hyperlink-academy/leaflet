@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isProductionDomain } from "./utils/isProductionDeployment";
+import { isUuid } from "./utils/isUuid";
 
 export const AUTH_TOKEN_COOKIE = "auth_token";
 // pending_merge_token carries a freshly-minted email_auth_token for the target
@@ -43,7 +44,7 @@ export async function removePendingMergeToken() {
 // Resolves a cookie-held email_auth_token id to the identity it authenticates.
 // Returns null unless the token is confirmed and the identity row exists.
 export async function resolveAuthToken(tokenId: string | undefined) {
-  if (!tokenId) return null;
+  if (!tokenId || !isUuid(tokenId)) return null;
   const { data } = await supabaseServerClient
     .from("email_auth_tokens")
     .select("id, confirmed, identities(id, email, atp_did)")
