@@ -50,7 +50,9 @@ export async function GET(req: NextRequest) {
   // A `subscribe` action means the user is subscribing, not just signing in —
   // send the subscription confirmation email (publication name/url) instead of
   // the generic auth code.
-  let subscribePublication = parseActionFromSearchParam(action)?.publication;
+  let parsedAction = parseActionFromSearchParam(action);
+  let subscribePublication =
+    parsedAction?.action === "subscribe" ? parsedAction.publication : undefined;
   let subscription = subscribePublication
     ? await resolveSubscriptionEmailContext(subscribePublication)
     : undefined;

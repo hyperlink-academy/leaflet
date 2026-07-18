@@ -2,6 +2,7 @@ import {
   backfillAtprotoSubscriptionsForIdentity,
   subscribeToPublication,
 } from "app/(app)/lish/subscribeToPublication";
+import { recommendAction } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
@@ -323,9 +324,9 @@ const handleAction = async (
   redirectPath: string,
   authTokenId: string | null,
   // The session-reuse fast-path skips the PDS round-trip, so a stale atproto
-  // session surfaces here as a failed subscribe. Force a fresh PDS login and
-  // retry rather than dropping the user back unsubscribed with no error.
-  reauthOnSubscribeFailure = false,
+  // session surfaces here as a failed action. Force a fresh PDS login and
+  // retry rather than dropping the user back with no error.
+  reauthOnActionFailure = false,
 ) => {
   // Treat redirectPath as cross-domain only when it parses as an absolute
   // http(s) URL — the same notion of "absolute" postAuthRedirect uses. A bare
@@ -342,7 +343,7 @@ const handleAction = async (
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
     if (!result.success) {
-      if (reauthOnSubscribeFailure)
+      if (reauthOnActionFailure)
         return redirect(
           buildOauthLoginUrl({
             reauth: true,
@@ -355,6 +356,23 @@ const handleAction = async (
       url.searchParams.set("showSubscribeError", "true");
     } else if (result.hasFeed === false) {
       url.searchParams.set("showSubscribeSuccess", "true");
+    }
+  }
+
+  if (action?.action === "recommend") {
+    let result = await recommendAction({ document: action.document });
+    if (!result.success) {
+      if (reauthOnActionFailure)
+        return redirect(
+          buildOauthLoginUrl({
+            reauth: true,
+            action: encodeActionToSearchParam(action),
+            redirect: redirectPath,
+          }),
+        );
+      url.searchParams.set("showRecommendError", "true");
+    } else {
+      url.searchParams.set("showRecommendSuccess", "true");
     }
   }
 
