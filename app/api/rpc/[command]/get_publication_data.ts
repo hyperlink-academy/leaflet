@@ -5,6 +5,8 @@ import { AtUri } from "@atproto/syntax";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { getIdentityData } from "actions/getIdentityData";
 import { ids } from "lexicons/api/lexicons";
+import { publicationUriVariants } from "src/utils/uriHelpers";
+import { dedupeDocumentsInPublications } from "src/utils/deduplicateRecords";
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -39,13 +41,6 @@ export const get_publication_data = makeRoute({
         .from("publications")
         .select(
           `*,
-        documents_in_publications(members_only, documents(
-          *,
-          comments_on_documents(count),
-          document_mentions_in_bsky(count),
-          recommends_on_documents(count),
-          publication_post_sends(status, subscriber_count)
-        )),
         publication_subscriptions(*, identities(atp_did)),
         publication_email_subscribers(*, identities(atp_did)),
         publication_domains(*),
@@ -88,8 +83,27 @@ export const get_publication_data = makeRoute({
       return { result: { publication: null, documents: [], drafts: [] } };
     }
 
+    // Documents link to whichever namespace URI their record names, and the
+    // publication may be indexed under both — fetch links for both variants so
+    // legacy pub.leaflet-only posts still show up alongside migrated ones.
+    const { data: docLinks } = await supabase
+      .from("documents_in_publications")
+      .select(
+        `members_only, documents(
+          *,
+          comments_on_documents(count),
+          document_mentions_in_bsky(count),
+          recommends_on_documents(count),
+          publication_post_sends(status, subscriber_count)
+        )`,
+      )
+      .in("publication", publicationUriVariants(publication.uri));
+    const documentsInPublication = dedupeDocumentsInPublications(
+      docLinks ?? [],
+    );
+
     // Pre-normalize documents from documents_in_publications
-    const documents = (publication?.documents_in_publications || [])
+    const documents = documentsInPublication
       .map((dip) => {
         if (!dip.documents) return null;
         const normalized = normalizeDocumentRecord(
@@ -128,7 +142,12 @@ export const get_publication_data = makeRoute({
 
     return {
       result: {
-        publication,
+        // Reattach the merged document links; clients (e.g. the theme preview)
+        // read publication.documents_in_publications off this object.
+        publication: {
+          ...publication,
+          documents_in_publications: documentsInPublication,
+        },
         documents,
         drafts,
       },

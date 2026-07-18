@@ -28,6 +28,30 @@ export function publicationUriFilter(did: string, rkey: string): string {
 }
 
 /**
+ * Both namespace URIs a publication may be indexed under (same DID and rkey,
+ * in site.standard.publication and pub.leaflet.publication). A publication can
+ * have a row for each, and documents link to whichever variant their record
+ * names — so queries over a publication's documents must match both.
+ */
+export function publicationUriVariants(uri: string): string[] {
+  try {
+    const aturi = new AtUri(uri);
+    if (
+      aturi.collection !== ids.SiteStandardPublication &&
+      aturi.collection !== ids.PubLeafletPublication
+    ) {
+      return [uri];
+    }
+    return [
+      AtUri.make(aturi.host, ids.SiteStandardPublication, aturi.rkey).toString(),
+      AtUri.make(aturi.host, ids.PubLeafletPublication, aturi.rkey).toString(),
+    ];
+  } catch {
+    return [uri];
+  }
+}
+
+/**
  * Returns an OR filter string for Supabase queries to match a publication by name
  * or by either namespace URI. Used when the rkey might be the publication name.
  */

@@ -83,6 +83,34 @@ export function deduplicateByUri<T extends { uri: string }>(records: T[]): T[] {
 }
 
 /**
+ * Deduplicates documents_in_publications rows fetched across a publication's
+ * namespace URI variants (see publicationUriVariants). A migrated document is
+ * linked under both the site.standard and pub.leaflet publication URIs, so the
+ * merged rows can carry the same document identity twice — keep one row per
+ * identity, preferring the site.standard document. Rows without a joined
+ * document are dropped.
+ */
+export function dedupeDocumentsInPublications<
+  T extends { documents: { uri: string } | null },
+>(rows: T[]): (T & { documents: NonNullable<T["documents"]> })[] {
+  const withDocs = rows.filter(
+    (r): r is T & { documents: NonNullable<T["documents"]> } => !!r.documents,
+  );
+  const kept = new Set(
+    deduplicateByUriOrdered(withDocs.map((r) => r.documents)).map(
+      (d) => d.uri,
+    ),
+  );
+  const seen = new Set<string>();
+  return withDocs.filter((r) => {
+    const uri = r.documents.uri;
+    if (!kept.has(uri) || seen.has(uri)) return false;
+    seen.add(uri);
+    return true;
+  });
+}
+
+/**
  * Deduplicates records while preserving the original order based on the first
  * occurrence of each unique record.
  *

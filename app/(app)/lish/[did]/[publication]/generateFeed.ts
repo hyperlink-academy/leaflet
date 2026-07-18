@@ -11,7 +11,11 @@ import {
   hasLeafletContent,
   isLeafletPublication,
 } from "src/utils/normalizeRecords";
-import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
+import {
+  publicationNameOrUriFilter,
+  publicationUriVariants,
+} from "src/utils/uriHelpers";
+import { dedupeDocumentsInPublications } from "src/utils/deduplicateRecords";
 import {
   getDocumentURL,
   getPublicationURL,
@@ -61,11 +65,7 @@ export async function generateFeed(
   );
   let { data: publications, error } = await supabaseServerClient
     .from("publications")
-    .select(
-      `*,
-      documents_in_publications(documents(*))
-      `,
-    )
+    .select("*")
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
@@ -78,6 +78,19 @@ export async function generateFeed(
   }
   let publication = publications?.[0];
   if (!publication) return new NextResponse(null, { status: 404 });
+
+  // Documents link to whichever namespace URI their record names, and the
+  // publication may be indexed under both — fetch links for both variants so
+  // legacy pub.leaflet-only posts still show up alongside migrated ones.
+  let { data: docLinks, error: docsError } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("documents(*)")
+    .in("publication", publicationUriVariants(publication.uri));
+  if (docsError) {
+    console.error(docsError);
+    return new NextResponse(null, { status: 500 });
+  }
+  const documentsInPublication = dedupeDocumentsInPublications(docLinks ?? []);
 
   const pubRecord = normalizePublicationRecord(publication.record);
   // Legacy pub.leaflet publications without a configured domain don't
@@ -97,7 +110,7 @@ export async function generateFeed(
   );
   const description = pubRecord?.description ?? rawRecord?.description;
 
-  let docs = publication.documents_in_publications
+  let docs = documentsInPublication
     .sort((a, b) => {
       const dateA = a.documents?.sort_date
         ? new Date(a.documents.sort_date).getTime()

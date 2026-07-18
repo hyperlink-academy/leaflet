@@ -21,12 +21,21 @@ import type * as SiteStandardPublication from "../api/types/site/standard/public
 import type * as SiteStandardThemeBasic from "../api/types/site/standard/theme/basic";
 import type * as SiteStandardThemeColor from "../api/types/site/standard/theme/color";
 import type * as PubLeafletThemeColor from "../api/types/pub/leaflet/theme/color";
-import type { $Typed } from "../api/util";
+import type { $Typed, OmitKey } from "../api/util";
 import { AtUri } from "@atproto/syntax";
 
 // Normalized document type - uses the generated site.standard.document type
-// with an additional optional theme field for backwards compatibility
-export type NormalizedDocument = SiteStandardDocument.Record & {
+// with an additional optional theme field for backwards compatibility.
+// publishedAt is optional here even though site.standard.document requires it:
+// pub.leaflet.document records may legitimately lack it, and consumers all
+// handle a missing date, so normalization must not drop those documents.
+// (OmitKey rather than Omit: the generated Record's index signature makes
+// plain Omit collapse every known key to `unknown`.)
+export type NormalizedDocument = OmitKey<
+  SiteStandardDocument.Record,
+  "publishedAt"
+> & {
+  publishedAt?: string;
   // Keep the original theme for components that need leaflet-specific styling
   theme?: PubLeafletPublication.Theme;
   preferences?: SiteStandardPublication.Preferences;
@@ -264,12 +273,6 @@ export function normalizeDocument(
 
   if (isLeafletDocument(record)) {
     // Convert from pub.leaflet to site.standard
-    const publishedAt = record.publishedAt;
-
-    if (!publishedAt) {
-      return null;
-    }
-
     // For standalone documents (no publication), construct a site URL from the author
     // This matches the pattern used in publishToPublication.ts for new standalone docs
     const site = record.publication || `https://leaflet.pub/p/${record.author}`;
@@ -295,7 +298,7 @@ export function normalizeDocument(
       title: record.title,
       site,
       path,
-      publishedAt,
+      publishedAt: record.publishedAt,
       description: record.description,
       tags: record.tags,
       coverImage: record.coverImage,

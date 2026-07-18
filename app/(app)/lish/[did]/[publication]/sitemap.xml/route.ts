@@ -1,6 +1,10 @@
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
-import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
+import {
+  publicationNameOrUriFilter,
+  publicationUriVariants,
+} from "src/utils/uriHelpers";
+import { dedupeDocumentsInPublications } from "src/utils/deduplicateRecords";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { isMainSiteHost } from "src/utils/customDomain";
 import { isExternalLink } from "src/utils/externalPublicationLink";
@@ -36,11 +40,7 @@ export async function GET(
 
   let { data: publications } = await supabaseServerClient
     .from("publications")
-    .select(
-      `uri,
-       documents_in_publications(documents(uri, data, sort_date)),
-       publication_pages(path, record)`,
-    )
+    .select(`uri, publication_pages(path, record)`)
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
@@ -48,6 +48,14 @@ export async function GET(
 
   let publication = publications?.[0];
   if (!did || !publication) return new Response(null, { status: 404 });
+
+  // Documents link to whichever namespace URI their record names, and the
+  // publication may be indexed under both — fetch links for both variants so
+  // legacy pub.leaflet-only posts still show up alongside migrated ones.
+  let { data: docLinks } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select("documents(uri, data, sort_date)")
+    .in("publication", publicationUriVariants(publication.uri));
 
   let base = `https://${host}`;
 
@@ -59,9 +67,9 @@ export async function GET(
     if (!entries.has(path)) entries.set(path, { loc: base + path, lastmod });
   };
 
-  let posts = (publication.documents_in_publications ?? [])
-    .map((dip) => dip.documents)
-    .filter((d): d is NonNullable<typeof d> => !!d);
+  let posts = dedupeDocumentsInPublications(docLinks ?? []).map(
+    (dip) => dip.documents,
+  );
 
   // Home page lastmod tracks the most recently published post.
   let latest = posts.reduce<string | undefined>((acc, d) => {
