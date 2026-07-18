@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { supabaseServerClient } from "supabase/serverClient";
+import { snapToImageWidth } from "supabase/imageSizes";
 
 // Downscaling for storage images, used by the next/image loader
 // (supabase/supabase-image-loader.js). Resizing here with sharp instead of
@@ -24,9 +25,7 @@ function parseDimension(value: string | null): number | undefined {
   if (!value) return undefined;
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
-  // Clamp to a sane upper bound so the proxy can't be used to request
-  // arbitrarily large resizes.
-  return Math.min(parsed, 2000);
+  return snapToImageWidth(parsed);
 }
 
 function publicUrl(bucketAndPath: string) {

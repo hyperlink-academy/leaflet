@@ -218,7 +218,7 @@ export const BskyShareModal = (props: {
   let coverThumb =
     coverImage && authorDid
       ? blobRefToSrc(coverImage.ref, authorDid, undefined, {
-          width: 1000,
+          width: 1200,
         })
       : undefined;
 
