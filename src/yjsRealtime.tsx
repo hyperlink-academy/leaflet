@@ -31,6 +31,18 @@ export class YjsRealtimeConnection {
   private channel: RealtimeChannel | null = null;
   private connected = false;
   private closed = false;
+  // Number of *other* clients on the channel, tracked via presence. Doc and
+  // awareness broadcasts are suppressed while this is 0: a solo editor's
+  // stream has no receivers, but every message is still billed by supabase,
+  // and solo sessions are the common case. Peers that join later converge
+  // through replicache instead (which also covers updates sent before they
+  // subscribed), so nothing is lost by not broadcasting into an empty room.
+  private otherPeers = 0;
+  private presenceKey = crypto.randomUUID();
+  // Clients from before presence tracking never show up in otherPeers, but
+  // they do broadcast unconditionally — so anything received recently also
+  // counts as a peer being present.
+  private lastRemoteBroadcast = 0;
   // The same entityID can be mounted by more than one editor at once (e.g. a
   // footnote rendered in both the side column and the bottom section), each
   // with its own doc/awareness, so an entity maps to a set of registrations.
@@ -55,20 +67,35 @@ export class YjsRealtimeConnection {
   private ensureChannel() {
     if (this.channel || this.closed) return;
     let supabase = supabaseBrowserClient();
-    this.channel = supabase.channel(`yjs:${this.name}`);
-    this.channel.on("broadcast", { event: "doc-update" }, ({ payload }) =>
-      this.onDocBroadcast(payload),
-    );
-    this.channel.on("broadcast", { event: "awareness" }, ({ payload }) =>
-      this.onAwarenessBroadcast(payload),
-    );
+    this.channel = supabase.channel(`yjs:${this.name}`, {
+      config: { presence: { key: this.presenceKey } },
+    });
+    this.channel.on("broadcast", { event: "doc-update" }, ({ payload }) => {
+      this.lastRemoteBroadcast = Date.now();
+      this.onDocBroadcast(payload);
+    });
+    this.channel.on("broadcast", { event: "awareness" }, ({ payload }) => {
+      this.lastRemoteBroadcast = Date.now();
+      this.onAwarenessBroadcast(payload);
+    });
     // A peer that just joined asks everyone to (re)announce their cursors.
-    this.channel.on("broadcast", { event: "hello" }, () =>
-      this.announceAwareness(),
-    );
-    this.channel.subscribe((status) => {
+    this.channel.on("broadcast", { event: "hello" }, () => {
+      this.lastRemoteBroadcast = Date.now();
+      this.announceAwareness();
+    });
+    this.channel.on("presence", { event: "sync" }, () => {
+      let hadPeers = this.otherPeers > 0;
+      this.otherPeers = Object.keys(
+        this.channel?.presenceState() ?? {},
+      ).filter((key) => key !== this.presenceKey).length;
+      // A peer appeared: replay our cursor to them, since awareness sent
+      // while we were alone was suppressed.
+      if (!hadPeers && this.otherPeers > 0) this.announceAwareness();
+    });
+    this.channel.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
         this.connected = true;
+        await this.channel?.track({});
         this.send("hello", {});
         this.announceAwareness();
       } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
@@ -145,6 +172,14 @@ export class YjsRealtimeConnection {
 
   private send(event: string, payload: object) {
     if (!this.channel || !this.connected || this.closed) return;
+    // "hello" is exempt: it's a single message on join, and it must reach
+    // clients that are invisible to presence.
+    if (
+      event !== "hello" &&
+      this.otherPeers === 0 &&
+      Date.now() - this.lastRemoteBroadcast > 2 * 60_000
+    )
+      return;
     this.channel.send({ type: "broadcast", event, payload });
   }
 
