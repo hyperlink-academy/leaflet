@@ -28,6 +28,7 @@ export const LoginModal = (props: {
   trigger?: React.ReactNode;
   asChild?: boolean;
   redirectRoute?: string;
+  action?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) => {
@@ -49,6 +50,7 @@ export const LoginModal = (props: {
       <LoginContent
         noEmailLogin={props.noEmailLogin}
         redirectRoute={props.redirectRoute}
+        action={props.action}
         open={open}
         onSuccess={() => setOpen(false)}
       />
@@ -60,6 +62,7 @@ export const LoginContent = (props: {
   pageView?: boolean;
   noEmailLogin?: boolean;
   redirectRoute?: string;
+  action?: string;
   open?: boolean;
   onSuccess?: () => void;
   className?: string;
@@ -84,6 +87,7 @@ export const LoginContent = (props: {
         <LinkAtmosphereContent
           pageView={props.pageView}
           redirectRoute={props.redirectRoute}
+          action={props.action}
           open={props.open}
         />
       );
@@ -198,6 +202,7 @@ export const LoginContent = (props: {
                 window.location.href = buildOauthLoginUrl({
                   handle,
                   redirect: props.redirectRoute || window.location.href,
+                  action: props.action,
                   addAccount: props.addAccount,
                 });
               }}
@@ -284,6 +289,7 @@ export const LoginContent = (props: {
                 window.location.href = buildOauthLoginUrl({
                   redirect: props.redirectRoute || "/",
                   signup: true,
+                  action: props.action,
                   addAccount: props.addAccount,
                 });
               }}
@@ -301,6 +307,7 @@ export const LoginContent = (props: {
 const LinkAtmosphereContent = (props: {
   pageView?: boolean;
   redirectRoute?: string;
+  action?: string;
   open?: boolean;
 }) => {
   let [loading, setLoading] = useState(false);
@@ -331,6 +338,7 @@ const LinkAtmosphereContent = (props: {
           window.location.href = buildOauthLoginUrl({
             handle,
             redirect: props.redirectRoute || window.location.href,
+            action: props.action,
             link: true,
           });
         }}
@@ -343,6 +351,7 @@ const LinkAtmosphereContent = (props: {
           window.location.href = buildOauthLoginUrl({
             redirect: props.redirectRoute || "/",
             signup: true,
+            action: props.action,
             link: true,
           });
         }}

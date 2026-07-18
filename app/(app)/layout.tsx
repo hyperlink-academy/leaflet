@@ -5,6 +5,7 @@ import { RequestHeadersProvider } from "components/Providers/RequestHeadersProvi
 import { RouteUIStateManager } from "components/RouteUIStateManger";
 import { SubscriptionSuccessModal } from "components/SubscriptionSuccessModal";
 import { SubscribeConfirmationModal } from "components/Subscribe/SubscribeConfirmationModal";
+import { RecommendConfirmationToast } from "components/Interactions/RecommendConfirmationToast";
 
 export default async function AppLayout({
   children,
@@ -26,6 +27,7 @@ export default async function AppLayout({
         <Suspense>
           <SubscriptionSuccessModal />
           <SubscribeConfirmationModal />
+          <RecommendConfirmationToast />
         </Suspense>
         <RouteUIStateManager />
       </RequestHeadersProvider>
