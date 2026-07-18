@@ -41,7 +41,9 @@ export function bskyPostEmbed(args: {
           title: pub.name,
           icon:
             pub.icon && args.pubOwnerDid
-              ? blobRefToSrc(pub.icon.ref, args.pubOwnerDid)
+              ? blobRefToSrc(pub.icon.ref, args.pubOwnerDid, undefined, {
+                  width: 360,
+                })
               : undefined,
         },
         associatedRefs: [

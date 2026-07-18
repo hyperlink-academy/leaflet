@@ -1,7 +1,7 @@
 import { AtUri } from "@atproto/syntax";
-import { IdResolver } from "@atproto/identity";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";
+import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import {
   normalizePublicationRecord,
   type NormalizedPublication,
@@ -13,9 +13,32 @@ import {
 import { publicationUriFilter } from "src/utils/uriHelpers";
 import sharp from "sharp";
 
-const idResolver = new IdResolver();
-
 export const runtime = "nodejs";
+
+// Reuse the image-cache bucket (see app/api/atproto_images/route.ts). Variants
+// are keyed by CID, so they're immutable; the redirect response itself stays
+// short-lived since the publication record's icon can change.
+const ICON_BUCKET = "url-previews";
+const ICON_PREFIX = "pub-icon/w96";
+const CACHE_HEADERS = {
+  "Cache-Control":
+    "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
+  "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
+};
+
+function variantUrl(cid: string) {
+  return `${process.env.NEXT_PUBLIC_SUPABASE_API_URL}/storage/v1/object/public/${ICON_BUCKET}/${ICON_PREFIX}/${cid}`;
+}
+
+// Bytes are served off Supabase's CDN rather than streamed through this
+// function: bytes leaving Vercel bill at fast data transfer rates while
+// Supabase serves the same bytes as cheap cached egress.
+function redirect(to: string) {
+  return new NextResponse(null, {
+    status: 302,
+    headers: { Location: to, ...CACHE_HEADERS },
+  });
+}
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -92,9 +115,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse(svg, {
         headers: {
           "Content-Type": "image/svg+xml",
-          "Cache-Control":
-            "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
-          "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
+          ...CACHE_HEADERS,
         },
       });
     }
@@ -107,21 +128,12 @@ export async function GET(req: NextRequest) {
       "$link"
     ];
 
-    // Fetch the blob from the PDS
-    const identity = await idResolver.did.resolve(pubUri.host);
-    const service = identity?.service?.find((f) => f.id === "#atproto_pds");
-    if (!service) return new NextResponse(null, { status: 404 });
+    // Already resized and stored for this CID?
+    const existing = await fetch(variantUrl(cid), { method: "HEAD" });
+    if (existing.ok) return redirect(variantUrl(cid));
 
-    const blobResponse = await fetch(
-      `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${pubUri.host}&cid=${cid}`,
-      {
-        headers: {
-          "Accept-Encoding": "gzip, deflate, br, zstd",
-        },
-      },
-    );
-
-    if (!blobResponse.ok) {
+    const blobResponse = await fetchAtprotoBlob(pubUri.host, cid);
+    if (!blobResponse) {
       return new NextResponse(null, { status: 404 });
     }
 
@@ -137,14 +149,22 @@ export async function GET(req: NextRequest) {
       .webp({ quality: 90 })
       .toBuffer();
 
-    // Return with caching headers
+    const { error } = await supabaseServerClient.storage
+      .from(ICON_BUCKET)
+      .upload(`${ICON_PREFIX}/${cid}`, new Uint8Array(resizedImage), {
+        contentType: "image/webp",
+        // storage-js expects seconds, not a header value.
+        cacheControl: "31536000",
+        upsert: true,
+      });
+    if (!error) return redirect(variantUrl(cid));
+    console.log("failed to store pub icon variant", cid, error);
+
+    // Fall back to streaming the resized bytes if storage failed.
     return new NextResponse(resizedImage, {
       headers: {
         "Content-Type": "image/webp",
-        // Cache for 1 hour, but serve stale for much longer while revalidating
-        "Cache-Control":
-          "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
-        "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
+        ...CACHE_HEADERS,
       },
     });
   } catch (error) {

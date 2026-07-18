@@ -2,8 +2,8 @@ import { ogScreenshotResponse } from "src/utils/screenshotPage";
 import { supabaseServerClient } from "supabase/serverClient";
 import { jsonToLex } from "@atproto/lexicon";
 import { idResolver } from "src/identity";
-import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { coverImageRedirect } from "src/utils/ogCoverImageRedirect";
 import { documentUriFilter } from "src/utils/uriHelpers";
 
 // OG content is effectively immutable post-publish, and each regeneration is a
@@ -41,28 +41,11 @@ export default async function OpenGraphImage(props: {
     if (document) {
       const docRecord = normalizeDocumentRecord(jsonToLex(document.data));
       if (docRecord?.coverImage) {
-        try {
-          // Get CID from the blob ref (handle both serialized and hydrated forms)
-          let cid =
-            (docRecord.coverImage.ref as unknown as { $link: string })["$link"] ||
-            docRecord.coverImage.ref.toString();
-
-          let imageResponse = await fetchAtprotoBlob(did, cid);
-          if (imageResponse) {
-            let imageBlob = await imageResponse.blob();
-
-            // Return the image with appropriate headers
-            return new Response(imageBlob, {
-              headers: {
-                "Content-Type": imageBlob.type || "image/jpeg",
-                "Cache-Control": "public, max-age=3600",
-              },
-            });
-          }
-        } catch (e) {
-          // Fall through to screenshot if cover image fetch fails
-          console.error("Failed to fetch cover image:", e);
-        }
+        // Get CID from the blob ref (handle both serialized and hydrated forms)
+        let cid =
+          (docRecord.coverImage.ref as unknown as { $link: string })["$link"] ||
+          docRecord.coverImage.ref.toString();
+        return coverImageRedirect(did, cid);
       }
     }
   }

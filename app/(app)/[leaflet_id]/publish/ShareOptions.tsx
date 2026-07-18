@@ -58,7 +58,14 @@ export function ShareOptions(props: Props) {
         title: props.pubRecord?.name,
         icon:
           props.pubRecord?.icon && ownerProfile.did
-            ? blobRefToSrc(props.pubRecord.icon.ref, ownerProfile.did)
+            ? blobRefToSrc(
+                props.pubRecord.icon.ref,
+                ownerProfile.did,
+                undefined,
+                {
+                  width: 360,
+                },
+              )
             : undefined,
       },
 

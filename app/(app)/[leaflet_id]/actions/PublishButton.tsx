@@ -429,6 +429,8 @@ const PubSelector = (props: {
                         ? blobRefToSrc(
                             pubRecord.icon.ref,
                             new AtUri(p.uri).host,
+                            undefined,
+                            { width: 360 },
                           )
                         : undefined
                     }

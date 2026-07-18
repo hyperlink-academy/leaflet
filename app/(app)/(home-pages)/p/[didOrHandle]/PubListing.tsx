@@ -28,6 +28,8 @@ export const PubListing = (props: PubListingProps) => {
     ? blobRefToSrc(
         record?.theme?.backgroundImage?.image?.ref,
         new AtUri(props.uri).host,
+        undefined,
+        { width: 2000 },
       )
     : null;
 
@@ -58,7 +60,12 @@ export const PubListing = (props: PubListingProps) => {
             <PubIcon
               icon={
                 record.icon
-                  ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
+                  ? blobRefToSrc(
+                      record.icon.ref,
+                      new AtUri(props.uri).host,
+                      undefined,
+                      { width: 360 },
+                    )
                   : undefined
               }
               pubName={record.name}

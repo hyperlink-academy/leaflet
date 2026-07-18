@@ -90,6 +90,8 @@ export function PublicationBackgroundProvider(props: {
         ? blobRefToSrc(
             props.record?.theme?.backgroundImage?.image?.ref,
             props.pub_creator,
+            undefined,
+            { width: 2000 },
           )
         : null;
 

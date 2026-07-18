@@ -65,8 +65,8 @@ export const DefaultPublicationHomepage = ({
   const navPages = publishedNavPages(publication.publication_pages);
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
-    : (resolvedPosts ??
-      buildPublicationPosts(publication.documents_in_publications));
+    : resolvedPosts ??
+      buildPublicationPosts(publication.documents_in_publications);
   return (
     <>
       <FontLoader
@@ -75,7 +75,11 @@ export const DefaultPublicationHomepage = ({
       />
       <PublicationHomeLayout
         showPageBackground={!!showPageBackground}
-        iconUrl={record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined}
+        iconUrl={
+          record?.icon
+            ? blobRefToSrc(record.icon.ref, did, undefined, { width: 360 })
+            : undefined
+        }
         wordmark={wordmarkFromTheme(record?.theme, did)}
         navPages={navPages}
         publicationUrl={getPublicationURL(publication)}

@@ -58,7 +58,12 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
 
   let backgroundImage =
     themeRecord?.backgroundImage?.image?.ref && uri
-      ? blobRefToSrc(themeRecord.backgroundImage.image.ref, new AtUri(uri).host)
+      ? blobRefToSrc(
+          themeRecord.backgroundImage.image.ref,
+          new AtUri(uri).host,
+          undefined,
+          { width: 2000 },
+        )
       : null;
 
   let backgroundImageRepeat = themeRecord?.backgroundImage?.repeat;
@@ -209,6 +214,8 @@ const PubInfo = (props: {
               ? blobRefToSrc(
                   props.pubRecord.icon.ref,
                   new AtUri(props.uri).host,
+                  undefined,
+                  { width: 360 },
                 )
               : undefined
           }

@@ -66,7 +66,8 @@ export async function GET(req: NextRequest) {
   let publicationUri =
     subscribePublication ||
     (await publicationUriForHost(new URL(redirect).host));
-  if (publicationUri) confirmUrl.searchParams.set("publication", publicationUri);
+  if (publicationUri)
+    confirmUrl.searchParams.set("publication", publicationUri);
   return NextResponse.redirect(confirmUrl.toString());
 }
 
@@ -77,7 +78,8 @@ async function resolveSubscriptionEmailContext(publicationUri: string) {
     .eq("uri", publicationUri)
     .maybeSingle();
   const normalized = normalizePublicationRecord(publication?.record);
-  const assetsBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+  const assetsBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
   return {
     publicationName: normalized?.name,
     publicationUrl: normalized?.url,
@@ -86,6 +88,7 @@ async function resolveSubscriptionEmailContext(publicationUri: string) {
           normalized.icon.ref,
           new AtUri(publicationUri).host,
           assetsBaseUrl,
+          { width: 360 },
         )
       : undefined,
   };

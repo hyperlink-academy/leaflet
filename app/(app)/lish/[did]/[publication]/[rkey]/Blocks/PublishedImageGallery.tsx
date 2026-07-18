@@ -24,16 +24,23 @@ export function PublishedImageGallery(props: {
   did: string;
 }) {
   let { block, did } = props;
-  let images = useMemo<GalleryImage[]>(
-    () =>
-      block.images.map((i) => ({
-        src: blobRefToSrc(i.image.ref, did),
-        alt: i.alt || "",
-        width: i.aspectRatio.width,
-        height: i.aspectRatio.height,
-      })),
-    [block.images, did],
-  );
+  // Grid/strip/carousel cells render well under 800px, so they get a resized
+  // variant; the lightbox gets the full-resolution blob.
+  let { images, fullImages } = useMemo(() => {
+    let toImage = (
+      i: PubLeafletBlocksImageGallery.Image,
+      transform?: { width: number },
+    ): GalleryImage => ({
+      src: blobRefToSrc(i.image.ref, did, undefined, transform),
+      alt: i.alt || "",
+      width: i.aspectRatio.width,
+      height: i.aspectRatio.height,
+    });
+    return {
+      images: block.images.map((i) => toImage(i, { width: 800 })),
+      fullImages: block.images.map((i) => toImage(i)),
+    };
+  }, [block.images, did]);
 
   let [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   let openLightbox = (index: number) => setLightboxIndex(index);
@@ -76,7 +83,7 @@ export function PublishedImageGallery(props: {
         count={images.length}
         index={lightboxIndex}
         onIndexChange={setLightboxIndex}
-        renderSlide={(i) => <LightboxSlide image={images[i]} />}
+        renderSlide={(i) => <LightboxSlide image={fullImages[i]} />}
       />
     </div>
   );

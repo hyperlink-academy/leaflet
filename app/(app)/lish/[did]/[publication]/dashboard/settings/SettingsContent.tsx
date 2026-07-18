@@ -23,6 +23,7 @@ import {
   useCanSeePayments,
 } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
@@ -93,7 +94,9 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
     setDescriptionValue(record.description || "");
     if (record.icon)
       setIconPreview(
-        `/api/atproto_images?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]}`,
+        blobRefToSrc(record.icon.ref, pubData.identity_did, undefined, {
+          width: 360,
+        }),
       );
   }, [pubData, record]);
 

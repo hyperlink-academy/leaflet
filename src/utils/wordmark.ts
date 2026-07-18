@@ -14,7 +14,11 @@ export function wordmarkFromTheme(
   const wordmark = theme?.wordmark;
   if (!wordmark?.image?.ref) return null;
   return {
-    src: blobRefToSrc(wordmark.image.ref, did),
+    // Request a variant sized for the configured display width (2x for hidpi)
+    // instead of the full-resolution blob.
+    src: blobRefToSrc(wordmark.image.ref, did, undefined, {
+      width: (wordmark.width ?? 400) * 2,
+    }),
     width: wordmark.width ?? undefined,
   };
 }

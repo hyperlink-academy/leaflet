@@ -1135,7 +1135,9 @@ const BlockRenderer = ({
     );
   }
   if (PubLeafletBlocksImage.isMain(block)) {
-    const src = blobRefToSrc(block.image.ref, did, assetsBaseUrl);
+    const src = blobRefToSrc(block.image.ref, did, assetsBaseUrl, {
+      width: 800,
+    });
     // Deliberately no numeric `width`/`height` HTML attributes: Outlook
     // honors those over CSS `max-width`, so a 1200px natural-size photo
     // would blow out our 28rem container. `max-width: <natural>px` keeps
@@ -1152,7 +1154,9 @@ const BlockRenderer = ({
   }
   if (PubLeafletBlocksWebsite.isMain(block)) {
     const previewSrc = block.previewImage
-      ? blobRefToSrc(block.previewImage.ref, did, assetsBaseUrl)
+      ? blobRefToSrc(block.previewImage.ref, did, assetsBaseUrl, {
+          width: 360,
+        })
       : undefined;
     return (
       <LinkBlock
@@ -1232,7 +1236,11 @@ const BlockRenderer = ({
     const post = standardSitePosts?.[block.uri];
     if (!post) {
       return (
-        <BlockDataNotFound label="Post not found." theme={theme} colors={colors} />
+        <BlockDataNotFound
+          label="Post not found."
+          theme={theme}
+          colors={colors}
+        />
       );
     }
     // default to "medium" to match the draft (StandardSitePostBlock),
@@ -1275,9 +1283,7 @@ const BlockRenderer = ({
       />
     );
   }
-  return (
-    <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
-  );
+  return <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />;
 };
 
 // Matches the published web renderer's notice when a referenced standard-site
