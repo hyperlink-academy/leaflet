@@ -4,9 +4,6 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useToaster } from "components/Toast";
 import { replaceWithoutParams } from "src/utils/replaceWithoutParams";
 
-// Fires a toast for the `recommend` after-sign-in action: the oauth callback
-// recommends the post server-side, then redirects back with one of these params
-// (see handleAction in app/api/oauth/[route]/route.ts).
 export function RecommendConfirmationToast() {
   let router = useRouter();
   let pathname = usePathname();
