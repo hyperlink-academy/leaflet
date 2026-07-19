@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateFeed } from "../generateFeed";
+import { feedResponse } from "../feedResponse";
 
 export async function GET(
   req: Request,
@@ -16,11 +17,10 @@ export async function GET(
     return feed;
   }
 
-  return new Response(feed.json1(), {
-    headers: {
-      "Content-Type": "application/feed+json",
-      "Cache-Control": "s-maxage=300, stale-while-revalidate=3600",
-      "CDN-Cache-Control": "s-maxage=300, stale-while-revalidate=3600",
-    },
-  });
+  return feedResponse(
+    req,
+    feed.json1(),
+    "application/feed+json",
+    feed.options.updated,
+  );
 }

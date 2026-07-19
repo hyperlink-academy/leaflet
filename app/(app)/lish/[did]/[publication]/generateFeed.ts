@@ -56,16 +56,13 @@ export async function generateFeed(
   did: string,
   publication_name: string,
 ): Promise<Feed | NextResponse<unknown>> {
-  let renderToReadableStream = await import("react-dom/server").then(
+  // Started before the queries so the module load (cold starts) overlaps them.
+  let renderToReadableStreamPromise = import("react-dom/server").then(
     (module) => module.renderToReadableStream,
   );
   let { data: publications, error } = await supabaseServerClient
     .from("publications")
-    .select(
-      `*,
-      documents_in_publications(documents(*))
-      `,
-    )
+    .select(`uri, record`)
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
@@ -97,19 +94,23 @@ export async function generateFeed(
   );
   const description = pubRecord?.description ?? rawRecord?.description;
 
-  let docs = publication.documents_in_publications
-    .sort((a, b) => {
-      const dateA = a.documents?.sort_date
-        ? new Date(a.documents.sort_date).getTime()
-        : 0;
-      const dateB = b.documents?.sort_date
-        ? new Date(b.documents.sort_date).getTime()
-        : 0;
-      return dateB - dateA; // Sort in descending order (newest first)
-    })
-    .slice(0, FEED_ITEM_LIMIT);
+  let { data: docs, error: docsError } = await supabaseServerClient
+    .from("documents")
+    .select(
+      `uri, data, sort_date,
+       documents_in_publications!inner(publication)`,
+    )
+    .eq("documents_in_publications.publication", publication.uri)
+    .order("sort_date", { ascending: false })
+    .order("uri", { ascending: false })
+    .limit(FEED_ITEM_LIMIT);
+  if (docsError) {
+    console.error(docsError);
+    return new NextResponse(null, { status: 500 });
+  }
+  docs = docs ?? [];
 
-  const newest = parseDate(docs[0]?.documents?.sort_date);
+  const newest = parseDate(docs[0]?.sort_date);
 
   const feed = new Feed({
     title: stripInvalidXmlChars(name),
@@ -133,13 +134,10 @@ export async function generateFeed(
     },
   });
 
+  const renderToReadableStream = await renderToReadableStreamPromise;
   for (const doc of docs) {
-    if (!doc.documents) continue;
-    const record = normalizeDocumentRecord(
-      doc.documents?.data,
-      doc.documents?.uri,
-    );
-    const uri = new AtUri(doc.documents?.uri);
+    const record = normalizeDocumentRecord(doc.data, doc.uri);
+    const uri = new AtUri(doc.uri);
     if (!record) continue;
 
     let blocks: PubLeafletPagesLinearDocument.Block[] = [];
@@ -151,7 +149,7 @@ export async function generateFeed(
     }
 
     const docUrl = absolutize(
-      getDocumentURL(record, doc.documents.uri, pubRecord ?? pubInput),
+      getDocumentURL(record, doc.uri, pubRecord ?? pubInput),
     );
 
     let content: string;
@@ -176,9 +174,7 @@ export async function generateFeed(
     }
 
     const date =
-      parseDate(record.publishedAt) ??
-      parseDate(doc.documents.sort_date) ??
-      new Date(0);
+      parseDate(record.publishedAt) ?? parseDate(doc.sort_date) ?? new Date(0);
 
     feed.addItem({
       title: stripInvalidXmlChars(record.title || ""),

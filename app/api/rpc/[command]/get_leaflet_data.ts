@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
+import { isUuid } from "src/utils/isUuid";
 
 export type GetLeafletDataReturnType = Awaited<
   ReturnType<(typeof get_leaflet_data)["handler"]>
@@ -18,6 +19,7 @@ export const get_leaflet_data = makeRoute({
   }),
 
   handler: async ({ token_id }, { supabase }: Pick<Env, "supabase">) => {
+    if (!isUuid(token_id)) return { result: { data: null, error: null } };
     let res = await supabase
       .from("permission_tokens")
       .select(
