@@ -19,28 +19,31 @@ import {
   LightboxSlide,
 } from "components/Blocks/ImageGalleryBlock/ImageGalleryLightbox";
 
+function toImage(
+  i: PubLeafletBlocksImageGallery.Image,
+  did: string,
+  transform?: Parameters<typeof blobRefToSrc>[3],
+): GalleryImage {
+  return {
+    src: blobRefToSrc(i.image.ref, did, undefined, transform),
+    alt: i.alt || "",
+    width: i.aspectRatio.width,
+    height: i.aspectRatio.height,
+  };
+}
+
 export function PublishedImageGallery(props: {
   block: PubLeafletBlocksImageGallery.Main;
   did: string;
 }) {
   let { block, did } = props;
   // Grid/strip/carousel cells get the 1200 tier (document-body column at
-  // retina density); the lightbox gets the full-resolution blob.
-  let { images, fullImages } = useMemo(() => {
-    let toImage = (
-      i: PubLeafletBlocksImageGallery.Image,
-      transform?: { width: number },
-    ): GalleryImage => ({
-      src: blobRefToSrc(i.image.ref, did, undefined, transform),
-      alt: i.alt || "",
-      width: i.aspectRatio.width,
-      height: i.aspectRatio.height,
-    });
-    return {
-      images: block.images.map((i) => toImage(i, { width: 1200 })),
-      fullImages: block.images.map((i) => toImage(i)),
-    };
-  }, [block.images, did]);
+  // retina density); the lightbox gets the full-resolution blob, built
+  // per-slide only when it's actually opened.
+  let images = useMemo<GalleryImage[]>(
+    () => block.images.map((i) => toImage(i, did, { width: 1200 })),
+    [block.images, did],
+  );
 
   let [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   let openLightbox = (index: number) => setLightboxIndex(index);
@@ -83,7 +86,9 @@ export function PublishedImageGallery(props: {
         count={images.length}
         index={lightboxIndex}
         onIndexChange={setLightboxIndex}
-        renderSlide={(i) => <LightboxSlide image={fullImages[i]} />}
+        renderSlide={(i) => (
+          <LightboxSlide image={toImage(block.images[i], did)} />
+        )}
       />
     </div>
   );

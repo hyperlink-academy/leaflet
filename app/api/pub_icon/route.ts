@@ -1,7 +1,10 @@
 import { AtUri } from "@atproto/syntax";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";
-import { fetchAtprotoBlob } from "app/api/atproto_images/route";
+import {
+  ensureDerivedImageCached,
+  fetchAtprotoBlob,
+} from "src/utils/atprotoImages";
 import {
   normalizePublicationRecord,
   type NormalizedPublication,
@@ -15,30 +18,14 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-// Reuse the image-cache bucket (see app/api/atproto_images/route.ts). Variants
-// are keyed by CID, so they're immutable; the redirect response itself stays
-// short-lived since the publication record's icon can change.
-const ICON_BUCKET = "url-previews";
+// Variants are keyed by CID, so they're immutable; the redirect response
+// itself stays short-lived since the publication record's icon can change.
 const ICON_PREFIX = "pub-icon/w96";
 const CACHE_HEADERS = {
   "Cache-Control":
     "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
   "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
 };
-
-function variantUrl(cid: string) {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_API_URL}/storage/v1/object/public/${ICON_BUCKET}/${ICON_PREFIX}/${cid}`;
-}
-
-// Bytes are served off Supabase's CDN rather than streamed through this
-// function: bytes leaving Vercel bill at fast data transfer rates while
-// Supabase serves the same bytes as cheap cached egress.
-function redirect(to: string) {
-  return new NextResponse(null, {
-    status: 302,
-    headers: { Location: to, ...CACHE_HEADERS },
-  });
-}
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -128,40 +115,34 @@ export async function GET(req: NextRequest) {
       "$link"
     ];
 
-    // Already resized and stored for this CID?
-    const existing = await fetch(variantUrl(cid), { method: "HEAD" });
-    if (existing.ok) return redirect(variantUrl(cid));
-
-    const blobResponse = await fetchAtprotoBlob(pubUri.host, cid);
-    if (!blobResponse) {
-      return new NextResponse(null, { status: 404 });
-    }
-
-    // Get the image buffer
-    const imageBuffer = await blobResponse.arrayBuffer();
-
-    // Resize to 96x96 using Sharp
-    const resizedImage = await sharp(Buffer.from(imageBuffer))
-      .resize(96, 96, {
-        fit: "cover",
-        position: "center",
-      })
-      .webp({ quality: 90 })
-      .toBuffer();
-
-    const { error } = await supabaseServerClient.storage
-      .from(ICON_BUCKET)
-      .upload(`${ICON_PREFIX}/${cid}`, new Uint8Array(resizedImage), {
-        contentType: "image/webp",
-        // storage-js expects seconds, not a header value.
-        cacheControl: "31536000",
-        upsert: true,
+    let resized: Uint8Array | null = null;
+    const url = await ensureDerivedImageCached(
+      `${ICON_PREFIX}/${cid}`,
+      async () => {
+        const blobResponse = await fetchAtprotoBlob(pubUri.host, cid);
+        if (!blobResponse) return null;
+        // Resize to 96x96 using Sharp
+        resized = new Uint8Array(
+          await sharp(Buffer.from(await blobResponse.arrayBuffer()))
+            .resize(96, 96, {
+              fit: "cover",
+              position: "center",
+            })
+            .webp({ quality: 90 })
+            .toBuffer(),
+        );
+        return { bytes: resized, contentType: "image/webp" };
+      },
+    );
+    if (url)
+      return new NextResponse(null, {
+        status: 302,
+        headers: { Location: url, ...CACHE_HEADERS },
       });
-    if (!error) return redirect(variantUrl(cid));
-    console.log("failed to store pub icon variant", cid, error);
+    if (!resized) return new NextResponse(null, { status: 404 });
 
     // Fall back to streaming the resized bytes if storage failed.
-    return new NextResponse(resizedImage, {
+    return new NextResponse(resized, {
       headers: {
         "Content-Type": "image/webp",
         ...CACHE_HEADERS,

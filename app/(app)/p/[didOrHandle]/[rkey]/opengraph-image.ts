@@ -41,11 +41,7 @@ export default async function OpenGraphImage(props: {
     if (document) {
       const docRecord = normalizeDocumentRecord(jsonToLex(document.data));
       if (docRecord?.coverImage) {
-        // Get CID from the blob ref (handle both serialized and hydrated forms)
-        let cid =
-          (docRecord.coverImage.ref as unknown as { $link: string })["$link"] ||
-          docRecord.coverImage.ref.toString();
-        let res = await coverImageRedirect(did, cid);
+        let res = await coverImageRedirect(did, docRecord.coverImage.ref);
         if (res) return res;
         // Fall through to screenshot if the cover couldn't be cached
       }

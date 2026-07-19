@@ -1,4 +1,5 @@
 import type { PubLeafletPublication } from "lexicons/api";
+import { snapToImageWidth } from "supabase/imageSizes";
 import { blobRefToSrc } from "./blobRefToSrc";
 
 export type WordmarkData = { src: string; width?: number };
@@ -17,7 +18,7 @@ export function wordmarkFromTheme(
     // Request a variant sized for the configured display width (2x for hidpi)
     // instead of the full-resolution blob.
     src: blobRefToSrc(wordmark.image.ref, did, undefined, {
-      width: (wordmark.width ?? 400) * 2,
+      width: snapToImageWidth((wordmark.width ?? 400) * 2),
     }),
     width: wordmark.width ?? undefined,
   };

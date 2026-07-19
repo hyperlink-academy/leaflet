@@ -1,4 +1,5 @@
 import { BlobRef } from "@atproto/lexicon";
+import type { ImageWidth } from "supabase/imageSizes";
 
 // `baseUrl` produces an absolute URL (needed for outbound email where the proxy
 // path can't resolve against the document origin).
@@ -13,7 +14,7 @@ export const blobRefToSrc = (
   b: BlobRef["ref"],
   did: string,
   baseUrl?: string,
-  transform?: { width?: number; height?: number },
+  transform?: { width?: ImageWidth; height?: ImageWidth },
 ) => {
   const link = (b as unknown as { $link: string })["$link"];
   if (link.startsWith("http://") || link.startsWith("https://")) return link;
@@ -27,4 +28,4 @@ export const blobRefToSrc = (
 
 // Display widths (px) for cover-image thumbnails, used to request a right-sized
 // transform instead of shipping the full-resolution blob.
-export const COVER_THUMBNAIL_WIDTH = { large: 800, medium: 360 };
+export const COVER_THUMBNAIL_WIDTH = { large: 800, medium: 360 } as const;
