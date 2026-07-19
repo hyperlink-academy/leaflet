@@ -121,6 +121,10 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       console.log("Sending event");
       await inngest.send({ name: "feeds/index-follows", data: { did: auth } });
     }
+    // plan-checked: KNOWN DEBT — the follow filter lives in !inner embeds, so
+    // the newest-first limit walks documents_sort_date_idx probing the embeds
+    // per document, scanning the whole table for users whose follows have few
+    // or old posts. Needs a fenced SQL function like get_reader_feed.
     query = supabaseServerClient
       .from("documents")
       // The skeleton only needs the bsky post ref out of each document, so
@@ -153,6 +157,10 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       );
   } else {
     //the default subscription feed
+    // plan-checked: KNOWN DEBT — same shape as bsky-follows-leaflets above:
+    // subscribers with few or quiet subscriptions scan the whole documents
+    // table. get_reader_feed already fences this exact join for the reader
+    // UI; this skeleton needs the same treatment.
     query = supabaseServerClient
       .from("documents")
       .select(
