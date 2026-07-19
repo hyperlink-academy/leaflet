@@ -65,12 +65,14 @@ export async function requestPublicationEmailSubscription(
   const normalizedPub = normalizePublicationRecord(publication?.record);
   const pubName = normalizedPub?.name;
   const pubUrl = normalizedPub?.url;
-  const assetsBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+  const assetsBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
   const pubIcon = normalizedPub?.icon
     ? blobRefToSrc(
         normalizedPub.icon.ref,
         new AtUri(publicationUri).host,
         assetsBaseUrl,
+        { width: 360 },
       )
     : undefined;
 
@@ -356,4 +358,3 @@ async function linkEmailToCurrentIdentity(
   if (!merged.ok) return Err("database_error");
   return Ok(current.id);
 }
-

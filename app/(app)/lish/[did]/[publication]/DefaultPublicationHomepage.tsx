@@ -60,7 +60,11 @@ export const DefaultPublicationHomepage = ({
       />
       <PublicationHomeLayout
         showPageBackground={!!showPageBackground}
-        iconUrl={record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined}
+        iconUrl={
+          record?.icon
+            ? blobRefToSrc(record.icon.ref, did, undefined, { width: 360 })
+            : undefined
+        }
         wordmark={wordmarkFromTheme(record?.theme, did)}
         navPages={navPages}
         publicationUrl={getPublicationURL(publication)}

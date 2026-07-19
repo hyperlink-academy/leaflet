@@ -114,7 +114,12 @@ const PublicationOption = (props: {
           <PubIcon
             icon={
               record.icon
-                ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
+                ? blobRefToSrc(
+                    record.icon.ref,
+                    new AtUri(props.uri).host,
+                    undefined,
+                    { width: 360 },
+                  )
                 : undefined
             }
             pubName={record.name}

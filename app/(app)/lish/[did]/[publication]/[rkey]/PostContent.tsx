@@ -472,7 +472,7 @@ export let Block = ({
             <div
               className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
-                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did)})`,
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, undefined, { width: 360 })})`,
                 backgroundPosition: "center",
               }}
             />
@@ -516,7 +516,9 @@ export let Block = ({
                 height={b.block.aspectRatio?.height}
                 width={b.block.aspectRatio?.width}
                 className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-                src={blobRefToSrc(b.block.image.ref, did)}
+                src={blobRefToSrc(b.block.image.ref, did, undefined, {
+                  width: 2000,
+                })}
               />
             </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}

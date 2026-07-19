@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import sharp from "sharp";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
-
-let idResolver = new IdResolver();
+import {
+  ensureDerivedImageCached,
+  fetchAtprotoBlob,
+} from "src/utils/atprotoImages";
 
 export const dynamic = "force-dynamic";
+
+// Favicon variants are keyed by CID, so they're immutable; the redirect
+// response itself stays short-lived since the record's icon can change.
+const ICON_PREFIX = "pub-icon/w32";
+const CACHE_HEADERS = {
+  "CDN-Cache-Control": "s-maxage=86400, stale-while-revalidate=86400",
+  "Cache-Control":
+    "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+};
 
 export async function GET(
   request: NextRequest,
@@ -35,24 +45,36 @@ export async function GET(
     if (!record?.icon)
       return NextResponse.redirect(new URL("/icon.png", request.url));
 
-    let identity = await idResolver.did.resolve(did);
-    let service = identity?.service?.find((f) => f.id === "#atproto_pds");
-    if (!service)
-      return NextResponse.redirect(new URL("/icon.png", request.url));
     let cid = (record.icon.ref as unknown as { $link: string })["$link"];
-    const response = await fetch(
-      `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${cid}`,
+
+    let resized: Uint8Array | null = null;
+    const url = await ensureDerivedImageCached(
+      `${ICON_PREFIX}/${cid}`,
+      async () => {
+        const response = await fetchAtprotoBlob(did, cid);
+        if (!response) return null;
+        resized = new Uint8Array(
+          await sharp(await response.arrayBuffer())
+            .resize({ width: 32, height: 32 })
+            .png()
+            .toBuffer(),
+        );
+        return { bytes: resized, contentType: "image/png" };
+      },
     );
-    let blob = await response.blob();
-    let resizedImage = await sharp(await blob.arrayBuffer())
-      .resize({ width: 32, height: 32 })
-      .toBuffer();
-    return new Response(new Uint8Array(resizedImage), {
+    if (url)
+      return new NextResponse(null, {
+        status: 302,
+        headers: { Location: url, ...CACHE_HEADERS },
+      });
+    if (!resized)
+      return NextResponse.redirect(new URL("/icon.png", request.url));
+
+    // Fall back to streaming the resized bytes if storage failed.
+    return new Response(resized, {
       headers: {
         "Content-Type": "image/png",
-        "CDN-Cache-Control": "s-maxage=86400, stale-while-revalidate=86400",
-        "Cache-Control":
-          "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+        ...CACHE_HEADERS,
       },
     });
   } catch (e) {

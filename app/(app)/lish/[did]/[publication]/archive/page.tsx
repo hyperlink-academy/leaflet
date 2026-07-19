@@ -130,7 +130,11 @@ export default async function PublicationArchive(props: {
         />
         <PublicationHomeLayout
           showPageBackground={!!record?.theme?.showPageBackground}
-          iconUrl={record?.icon ? blobRefToSrc(record.icon.ref, did) : undefined}
+          iconUrl={
+            record?.icon
+              ? blobRefToSrc(record.icon.ref, did, undefined, { width: 360 })
+              : undefined
+          }
           wordmark={wordmarkFromTheme(record?.theme, did)}
           navPages={publishedNavPages(publication.publication_pages)}
           publicationUrl={getPublicationURL(publication)}

@@ -138,10 +138,7 @@ export async function PublicationPageRenderer({
         firstBatch,
         await getProfiles(bylineDidsForPosts(firstBatch)),
       );
-      return [
-        key,
-        { uris: ordered.map((p) => p.uri), initialPosts },
-      ] as const;
+      return [key, { uris: ordered.map((p) => p.uri), initialPosts }] as const;
     }),
   );
 
@@ -207,7 +204,14 @@ export async function PublicationPageRenderer({
               pageWidth={normalizedPublication?.theme?.pageWidth}
               iconUrl={
                 normalizedPublication?.icon
-                  ? blobRefToSrc(normalizedPublication.icon.ref, did)
+                  ? blobRefToSrc(
+                      normalizedPublication.icon.ref,
+                      did,
+                      undefined,
+                      {
+                        width: 360,
+                      },
+                    )
                   : undefined
               }
               wordmark={wordmarkFromTheme(normalizedPublication?.theme, did)}

@@ -20,7 +20,14 @@ export async function GET(req: NextRequest) {
 
   let image = await screenshotBskyCardImage(parsed.toString());
   if (!image) return new Response("Screenshot failed", { status: 502 });
+  // Cache at the edge so the warm-up fetch above actually saves the second
+  // render when the user posts.
   return new Response(new Uint8Array(image), {
-    headers: { "Content-Type": "image/webp" },
+    headers: {
+      "Content-Type": "image/webp",
+      "Cache-Control":
+        "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+      "CDN-Cache-Control": "s-maxage=86400, stale-while-revalidate=604800",
+    },
   });
 }

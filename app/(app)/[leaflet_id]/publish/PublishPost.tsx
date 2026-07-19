@@ -301,7 +301,12 @@ const PublishPostForm = (
                         title: props.pubRecord?.name,
                         icon:
                           props.pubRecord?.icon && pubDid
-                            ? blobRefToSrc(props.pubRecord.icon.ref, pubDid)
+                            ? blobRefToSrc(
+                                props.pubRecord.icon.ref,
+                                pubDid,
+                                undefined,
+                                { width: 360 },
+                              )
                             : undefined,
                       },
 
@@ -562,6 +567,8 @@ const PublishingTo = (props: {
                 ? blobRefToSrc(
                     props.record.icon.ref,
                     new AtUri(props.publication_uri).host,
+                    undefined,
+                    { width: 360 },
                   )
                 : undefined
             }

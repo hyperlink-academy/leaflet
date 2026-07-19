@@ -244,7 +244,10 @@ export const StandardSitePostEmailBlock = ({
   // publication theme, else the post's own theme; standalone (no publication)
   // flips usePubTheme to standalone defaults.
   const cardTheme = showPublicationTheme
-    ? resolveCardTheme([post.publication?.record, post.record], !post.publication)
+    ? resolveCardTheme(
+        [post.publication?.record, post.record],
+        !post.publication,
+      )
     : outerCardTheme(theme);
   const colors = resolveColors(cardTheme);
   const cardBg = cardTheme.pageBackground;
@@ -257,9 +260,7 @@ export const StandardSitePostEmailBlock = ({
   const authorLabel =
     post.contributors.length > 0
       ? formatBylineNames(
-          post.contributors
-            .map(bylineLabel)
-            .filter((l): l is string => !!l),
+          post.contributors.map(bylineLabel).filter((l): l is string => !!l),
         ) || undefined
       : bylineLabel(post.author ?? { displayName: null, handle: null });
   // Same Intl options as the web's LocalizedDate; UTC matches its SSR default
@@ -272,8 +273,7 @@ export const StandardSitePostEmailBlock = ({
         timeZone: "UTC",
       })
     : undefined;
-  const description =
-    post.record.description || getFirstParagraph(post.record);
+  const description = post.record.description || getFirstParagraph(post.record);
 
   let postDid: string | undefined;
   try {
@@ -293,14 +293,15 @@ export const StandardSitePostEmailBlock = ({
 
   let pubDid: string | undefined;
   try {
-    pubDid = post.publication ? new AtUri(post.publication.uri).host : undefined;
+    pubDid = post.publication
+      ? new AtUri(post.publication.uri).host
+      : undefined;
   } catch {
     pubDid = undefined;
   }
   const showPubInfo =
     !!post.publication?.record &&
-    (!currentPublicationUri ||
-      post.publication.uri !== currentPublicationUri);
+    (!currentPublicationUri || post.publication.uri !== currentPublicationUri);
   const pubInfo =
     showPubInfo && post.publication?.record ? (
       <PubInfoLine
@@ -312,6 +313,7 @@ export const StandardSitePostEmailBlock = ({
                 post.publication.record.icon.ref,
                 pubDid,
                 assetsBaseUrl,
+                { width: 360 },
               )
             : undefined
         }
@@ -363,9 +365,7 @@ export const StandardSitePostEmailBlock = ({
       <Link href={docUrl} style={cellLinkStyle}>
         {title}
         {size !== "small" && description ? (
-          <span
-            style={descriptionStyle(colors, cardTheme.bodyFont, 16)}
-          >
+          <span style={descriptionStyle(colors, cardTheme.bodyFont, 16)}>
             {description}
           </span>
         ) : null}
@@ -483,7 +483,7 @@ export const StandardSitePublicationEmailBlock = ({
 
   const iconSrc =
     record.icon && host
-      ? blobRefToSrc(record.icon.ref, host, assetsBaseUrl)
+      ? blobRefToSrc(record.icon.ref, host, assetsBaseUrl, { width: 360 })
       : undefined;
 
   const authorLabel = author ? bylineLabel(author) : undefined;

@@ -15,7 +15,9 @@ export const SubscribeCard = (props: {
 }) => {
   let record = props.record;
   let iconUrl = record.icon
-    ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
+    ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host, undefined, {
+        width: 360,
+      })
     : undefined;
   return (
     <div

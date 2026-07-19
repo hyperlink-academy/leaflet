@@ -30,7 +30,12 @@ export default async function LoginConfirmPage(props: {
     let record = normalizePublicationRecord(publication?.record);
     if (publication && record) {
       let iconUrl = record.icon
-        ? blobRefToSrc(record.icon.ref, new AtUri(publication.uri).host)
+        ? blobRefToSrc(
+            record.icon.ref,
+            new AtUri(publication.uri).host,
+            undefined,
+            { width: 360 },
+          )
         : undefined;
       return (
         <PublicationThemeProvider

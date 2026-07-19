@@ -284,6 +284,8 @@ function PubInfo({
             ? blobRefToSrc(
                 publication.record.icon.ref,
                 new AtUri(publication.uri).host,
+                undefined,
+                { width: 360 },
               )
             : undefined
         }

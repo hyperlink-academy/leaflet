@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { BlobRef } from "@atproto/api";
-import { fetchAtprotoBlob } from "app/api/atproto_images/route";
+import { fetchAtprotoBlob } from "src/utils/atprotoImages";
 
 // Fetch a document's cover image from its author's PDS, resize it to a Bluesky
 // external-card thumbnail (1200x630 webp), and upload it via `uploadThumb`.

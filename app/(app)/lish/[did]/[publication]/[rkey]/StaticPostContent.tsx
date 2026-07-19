@@ -109,7 +109,7 @@ let Block = async ({
             <div
               className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
-                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, baseUrl)})`,
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, baseUrl, { width: 360 })})`,
                 backgroundPosition: "center",
               }}
             />
@@ -123,7 +123,7 @@ let Block = async ({
           alt={b.block.alt}
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
-          src={blobRefToSrc(b.block.image.ref, did, baseUrl)}
+          src={blobRefToSrc(b.block.image.ref, did, baseUrl, { width: 1200 })}
         />
       );
     }
@@ -141,7 +141,7 @@ let Block = async ({
               alt={image.alt}
               height={image.aspectRatio.height}
               width={image.aspectRatio.width}
-              src={blobRefToSrc(image.image.ref, did, baseUrl)}
+              src={blobRefToSrc(image.image.ref, did, baseUrl, { width: 1200 })}
             />
           ))}
         </div>
@@ -202,7 +202,9 @@ function ListItem(props: {
         className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
       />
       {isChecklist && (
-        <div className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}>
+        <div
+          className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
+        >
           {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
         </div>
       )}

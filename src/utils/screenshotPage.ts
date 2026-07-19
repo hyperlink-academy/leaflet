@@ -102,6 +102,7 @@ export async function ogScreenshotResponse(
       // each miss is a multi-second remote-browser render.
       "Cache-Control":
         "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+      "CDN-Cache-Control": "s-maxage=86400, stale-while-revalidate=604800",
     },
   });
 }

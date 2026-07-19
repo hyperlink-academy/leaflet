@@ -33,7 +33,7 @@ export function PublicationDraftEditor(props: {
 }) {
   let record = props.publicationRecord;
   const iconUrl = record?.icon
-    ? blobRefToSrc(record.icon.ref, props.did)
+    ? blobRefToSrc(record.icon.ref, props.did, undefined, { width: 360 })
     : undefined;
 
   if (!record) return;

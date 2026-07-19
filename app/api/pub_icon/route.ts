@@ -1,7 +1,10 @@
 import { AtUri } from "@atproto/syntax";
-import { IdResolver } from "@atproto/identity";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";
+import {
+  ensureDerivedImageCached,
+  fetchAtprotoBlob,
+} from "src/utils/atprotoImages";
 import {
   normalizePublicationRecord,
   type NormalizedPublication,
@@ -13,9 +16,16 @@ import {
 import { publicationUriFilter } from "src/utils/uriHelpers";
 import sharp from "sharp";
 
-const idResolver = new IdResolver();
-
 export const runtime = "nodejs";
+
+// Variants are keyed by CID, so they're immutable; the redirect response
+// itself stays short-lived since the publication record's icon can change.
+const ICON_PREFIX = "pub-icon/w96";
+const CACHE_HEADERS = {
+  "Cache-Control":
+    "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
+  "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
+};
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -92,9 +102,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse(svg, {
         headers: {
           "Content-Type": "image/svg+xml",
-          "Cache-Control":
-            "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
-          "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
+          ...CACHE_HEADERS,
         },
       });
     }
@@ -107,44 +115,37 @@ export async function GET(req: NextRequest) {
       "$link"
     ];
 
-    // Fetch the blob from the PDS
-    const identity = await idResolver.did.resolve(pubUri.host);
-    const service = identity?.service?.find((f) => f.id === "#atproto_pds");
-    if (!service) return new NextResponse(null, { status: 404 });
-
-    const blobResponse = await fetch(
-      `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${pubUri.host}&cid=${cid}`,
-      {
-        headers: {
-          "Accept-Encoding": "gzip, deflate, br, zstd",
-        },
+    let resized: Uint8Array | null = null;
+    const url = await ensureDerivedImageCached(
+      `${ICON_PREFIX}/${cid}`,
+      async () => {
+        const blobResponse = await fetchAtprotoBlob(pubUri.host, cid);
+        if (!blobResponse) return null;
+        // Resize to 96x96 using Sharp
+        resized = new Uint8Array(
+          await sharp(Buffer.from(await blobResponse.arrayBuffer()))
+            .resize(96, 96, {
+              fit: "cover",
+              position: "center",
+            })
+            .webp({ quality: 90 })
+            .toBuffer(),
+        );
+        return { bytes: resized, contentType: "image/webp" };
       },
     );
+    if (url)
+      return new NextResponse(null, {
+        status: 302,
+        headers: { Location: url, ...CACHE_HEADERS },
+      });
+    if (!resized) return new NextResponse(null, { status: 404 });
 
-    if (!blobResponse.ok) {
-      return new NextResponse(null, { status: 404 });
-    }
-
-    // Get the image buffer
-    const imageBuffer = await blobResponse.arrayBuffer();
-
-    // Resize to 96x96 using Sharp
-    const resizedImage = await sharp(Buffer.from(imageBuffer))
-      .resize(96, 96, {
-        fit: "cover",
-        position: "center",
-      })
-      .webp({ quality: 90 })
-      .toBuffer();
-
-    // Return with caching headers
-    return new NextResponse(resizedImage, {
+    // Fall back to streaming the resized bytes if storage failed.
+    return new NextResponse(resized, {
       headers: {
         "Content-Type": "image/webp",
-        // Cache for 1 hour, but serve stale for much longer while revalidating
-        "Cache-Control":
-          "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
-        "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
+        ...CACHE_HEADERS,
       },
     });
   } catch (error) {

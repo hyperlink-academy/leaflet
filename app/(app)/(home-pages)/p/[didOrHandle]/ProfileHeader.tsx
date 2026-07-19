@@ -129,7 +129,9 @@ const PublicationCard = (props: {
         <PubIcon
           icon={
             record.icon
-              ? blobRefToSrc(record.icon.ref, new AtUri(uri).host)
+              ? blobRefToSrc(record.icon.ref, new AtUri(uri).host, undefined, {
+                  width: 360,
+                })
               : undefined
           }
           pubName={record.name}

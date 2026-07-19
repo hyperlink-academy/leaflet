@@ -48,7 +48,9 @@ export function StandardSitePublicationItemView({
     host = undefined;
   }
   const iconSrc =
-    record.icon && host ? blobRefToSrc(record.icon.ref, host) : undefined;
+    record.icon && host
+      ? blobRefToSrc(record.icon.ref, host, undefined, { width: 360 })
+      : undefined;
 
   const authorLabel = author
     ? formatBylineNames(

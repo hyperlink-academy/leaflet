@@ -71,6 +71,10 @@ async function get_link_image_preview(url: string) {
       .toBuffer();
     await supabase.storage.from("url-previews").upload(key, thumbnail, {
       contentType: "image/png",
+      // A day, not a year: the key is a hash of the url and gets upsert-
+      // overwritten when the link is re-previewed, so an immutable cache
+      // would pin stale thumbnails. (storage-js expects seconds.)
+      cacheControl: "86400",
       upsert: true,
     });
   } else {
