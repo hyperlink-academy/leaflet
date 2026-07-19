@@ -1,15 +1,12 @@
 import { z } from "zod";
-import {
-  PullRequest,
-  PullResponseV1,
-  VersionNotSupportedResponse,
-} from "replicache";
-import type { Fact } from "src/replicache";
-import { FactWithIndexes } from "src/replicache/utils";
-import type { Attribute } from "src/replicache/attributes";
+import { VersionNotSupportedResponse } from "replicache";
+import { drizzle } from "drizzle-orm/node-postgres";
+import Client from "ioredis";
+import { pool } from "supabase/pool";
+import { computePull } from "src/replicache/serverPullData";
+import { makeCVRStore } from "src/replicache/cvrStore";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import type { Json } from "supabase/database.types";
 
 // First define the sub-types for V0 and V1 requests
 const pullRequestV0 = z.object({
@@ -21,7 +18,9 @@ const pullRequestV0 = z.object({
   lastMutationID: z.number(),
 });
 
-// For the Cookie type used in V1
+// For the Cookie type used in V1. New clients hold a CVR cookie (an object
+// with an order property); pre-CVR clients hold a Date.now() number, which
+// computePull answers with a full snapshot.
 const cookieType = z.union([
   z.null(),
   z.string(),
@@ -44,98 +43,22 @@ const pullRequestV1 = z.object({
 // Combined PullRequest type
 const PullRequestSchema = z.union([pullRequestV0, pullRequestV1]);
 
+const db = drizzle(pool);
+// Without Redis (dev) every CVR lookup misses and pulls degrade to full
+// snapshots — the pre-CVR behavior.
+const cvrStore = makeCVRStore(
+  process.env.NODE_ENV === "production" && process.env.REDIS_URL
+    ? new Client(process.env.REDIS_URL)
+    : null,
+);
+
 export const pull = makeRoute({
   route: "pull",
   input: z.object({ pullRequest: PullRequestSchema, token_id: z.string() }),
-  handler: async ({ pullRequest, token_id }, { supabase }: Env) => {
+  handler: async ({ pullRequest, token_id }, _env: Env) => {
     let body = pullRequest;
     if (body.pullVersion === 0) return versionNotSupported;
-    let { data, error } = await supabase.rpc("pull_data", {
-      token_id,
-      client_group_id: body.clientGroupID,
-    });
-    if (!data) {
-      console.log(error);
-
-      return {
-        error: "ClientStateNotFound",
-      } as const;
-    }
-
-    let facts = data.facts as {
-      attribute: string;
-      author_did: string | null;
-      created_at: string;
-      data: any;
-      entity: string;
-      id: string;
-      updated_at: string | null;
-      version: number;
-    }[];
-    let publication_data = data.publications as {
-      description: string;
-      title: string;
-      tags: string[];
-      cover_image: string | null;
-      preferences: Json | null;
-    }[];
-    let draft_contributors = (data.draft_contributors as string[] | null) ?? [];
-    let pub_patch = publication_data?.[0]
-      ? [
-          {
-            op: "put",
-            key: "publication_description",
-            value: publication_data[0].description,
-          },
-          {
-            op: "put",
-            key: "publication_title",
-            value: publication_data[0].title,
-          },
-          {
-            op: "put",
-            key: "publication_tags",
-            value: publication_data[0].tags || [],
-          },
-          {
-            op: "put",
-            key: "post_preferences",
-            value: publication_data[0].preferences || null,
-          },
-        ]
-      : [];
-
-    let clientGroup = (
-      (data.client_groups as {
-        client_id: string;
-        client_group: string;
-        last_mutation: number;
-      }[]) || []
-    ).reduce(
-      (acc, clientRecord) => {
-        acc[clientRecord.client_id] = clientRecord.last_mutation;
-        return acc;
-      },
-      {} as { [clientID: string]: number },
-    );
-
-    return {
-      cookie: Date.now(),
-      lastMutationIDChanges: clientGroup,
-      patch: [
-        { op: "clear" },
-        { op: "put", key: "initialized", value: true },
-        ...(facts || []).map((f) => {
-          return {
-            op: "put",
-            key: f.id,
-            value: FactWithIndexes(f as unknown as Fact<Attribute>),
-          } as const;
-        }),
-        ...pub_patch,
-        { op: "put", key: "draft_contributors", value: draft_contributors },
-      ],
-    } as PullResponseV1;
+    return await computePull(db, cvrStore, body, token_id, Date.now());
   },
 });
 
