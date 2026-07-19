@@ -4,7 +4,6 @@ import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { createElement } from "react";
 import { StaticPostContent } from "./[rkey]/StaticPostContent";
 import { supabaseServerClient } from "supabase/serverClient";
-import { Json } from "supabase/database.types";
 import { NextResponse } from "next/server";
 import {
   normalizePublicationRecord,
@@ -95,39 +94,15 @@ export async function generateFeed(
   );
   const description = pubRecord?.description ?? rawRecord?.description;
 
-  // Ordering documents by sort_date with a limit while filtering through
-  // documents_in_publications lets the planner walk documents_sort_date_idx
-  // probing every document for the publication — a full scan of documents
-  // for small publications. The function's plan is fenced to start from the
-  // publication's own membership rows.
-  let { data: rpcDocs, error: docsError } = await supabaseServerClient.rpc(
+  let { data: docs, error: docsError } = await supabaseServerClient.rpc(
     "get_publication_feed_docs",
     { p_publication: publication.uri, p_limit: FEED_ITEM_LIMIT },
   );
-  let docs: { uri: string; data: Json; sort_date: string | null }[] =
-    rpcDocs ?? [];
   if (docsError) {
-    // The function ships in a migration that deploys separately from this
-    // code; if it isn't there (yet), degrade to fetching the publication's
-    // rows without the pathological join ordering and sorting here.
     console.error(docsError);
-    const { data: fallback, error: fallbackError } = await supabaseServerClient
-      .from("documents_in_publications")
-      .select(`documents(uri, data, sort_date)`)
-      .eq("publication", publication.uri);
-    if (fallbackError) {
-      console.error(fallbackError);
-      return new NextResponse(null, { status: 500 });
-    }
-    docs = (fallback ?? [])
-      .flatMap((row) => (row.documents ? [row.documents] : []))
-      .sort(
-        (a, b) =>
-          new Date(b.sort_date ?? 0).getTime() -
-            new Date(a.sort_date ?? 0).getTime() || (a.uri < b.uri ? 1 : -1),
-      )
-      .slice(0, FEED_ITEM_LIMIT);
+    return new NextResponse(null, { status: 500 });
   }
+  docs = docs ?? [];
 
   const newest = parseDate(docs[0]?.sort_date);
 

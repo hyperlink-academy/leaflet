@@ -86,9 +86,9 @@ this via `node scripts/check-supabase-query-plans.mjs`.
    - Existing examples to copy: `get_publication_feed_docs`,
      `get_tag_page_document_uris`, `get_profile_posts`, `get_reader_feed`.
    - Hand-add the function's types to `supabase/database.types.ts` (mirror
-     the existing `Functions` entries) and give the caller a fallback query
-     for the deploy window before the migration applies (see
-     `generateFeed.ts`, `getDocumentsByTag.ts`).
+     the existing `Functions` entries). Migrations apply via the deploy
+     workflow's `deploy-supabase` job; if the caller must survive the window
+     before that job runs, add a fallback query (see `getDocumentsByTag.ts`).
 
 ## Verifying a query's plan
 
