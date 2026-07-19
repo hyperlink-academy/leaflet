@@ -56,7 +56,8 @@ export async function generateFeed(
   did: string,
   publication_name: string,
 ): Promise<Feed | NextResponse<unknown>> {
-  let renderToReadableStream = await import("react-dom/server").then(
+  // Started before the queries so the module load (cold starts) overlaps them.
+  let renderToReadableStreamPromise = import("react-dom/server").then(
     (module) => module.renderToReadableStream,
   );
   let { data: publications, error } = await supabaseServerClient
@@ -133,6 +134,7 @@ export async function generateFeed(
     },
   });
 
+  const renderToReadableStream = await renderToReadableStreamPromise;
   for (const doc of docs) {
     const record = normalizeDocumentRecord(doc.data, doc.uri);
     const uri = new AtUri(doc.uri);

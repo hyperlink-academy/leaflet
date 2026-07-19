@@ -65,14 +65,18 @@ export default async function Publication(props: {
 
     const record = normalizePublicationRecord(publication.record);
     // Resolve the author profile and post bylines server-side so they're in the
-    // SSR HTML.
+    // SSR HTML. The profile lookup is independent of the post queries, so it
+    // runs alongside the rows → bylines chain.
     const agent = new BskyAgent({ service: "https://public.api.bsky.app" });
-    const homepagePosts = buildPublicationPosts(
-      await fetchPublicationPostRows(publication.uri),
-    );
-    const [{ data: profile }, bylineProfiles] = await Promise.all([
+    const [{ data: profile }, posts] = await Promise.all([
       agent.getProfile({ actor: did }),
-      getProfiles(bylineDidsForPosts(homepagePosts)),
+      fetchPublicationPostRows(publication.uri).then(async (rows) => {
+        const posts = buildPublicationPosts(rows);
+        return attachBylineProfiles(
+          posts,
+          await getProfiles(bylineDidsForPosts(posts)),
+        );
+      }),
     ]);
     return (
       <PublicationThemeProvider
@@ -89,7 +93,7 @@ export default async function Publication(props: {
             did={did}
             profile={profile}
             showPageBackground={record?.theme?.showPageBackground}
-            posts={attachBylineProfiles(homepagePosts, bylineProfiles)}
+            posts={posts}
           />
         </PublicationBackgroundProvider>
       </PublicationThemeProvider>

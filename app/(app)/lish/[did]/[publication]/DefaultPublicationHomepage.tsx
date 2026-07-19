@@ -12,10 +12,7 @@ import {
   PublicationPostsList,
   type PublicationPostsListFakePost,
 } from "./PublicationPostsList";
-import {
-  buildPublicationPosts,
-  type PublicationPostsListPost,
-} from "./buildPublicationPosts";
+import { type PublicationPostsListPost } from "./buildPublicationPosts";
 
 type FakePost = PublicationPostsListFakePost;
 
@@ -42,33 +39,19 @@ export const DefaultPublicationHomepage = ({
       record_uri: string | null;
       sort_order: string;
     }[];
-    // Only the client theme preview supplies this; server callers resolve
-    // `posts` themselves.
-    documents_in_publications?: {
-      documents: {
-        uri: string;
-        data: unknown;
-        comments_on_documents: { count: number }[];
-        document_mentions_in_bsky: { count: number }[];
-        recommends_on_documents: { count: number }[];
-      } | null;
-    }[];
   };
   did: string;
   profile: { did: string; displayName?: string; handle: string } | undefined;
   showPageBackground: boolean | undefined;
   fakePosts?: FakePost[];
-  // Posts with bylines resolved server-side. When omitted (client theme
-  // preview) the list is built here and bylines resolve on the client.
+  // Server callers attach bylines before passing these; the client theme
+  // preview passes them byline-less and PublicationPostsList resolves them.
   posts?: PublicationPostsListPost[];
 }) => {
   const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
   // publication_pages rows are published state, so the nav reads them directly.
   const navPages = publishedNavPages(publication.publication_pages);
-  const posts: PublicationPostsListPost[] = fakePosts
-    ? []
-    : (resolvedPosts ??
-      buildPublicationPosts(publication.documents_in_publications));
+  const posts: PublicationPostsListPost[] = fakePosts ? [] : resolvedPosts ?? [];
   return (
     <>
       <FontLoader

@@ -101,6 +101,18 @@ export async function PublicationPageRenderer({
       ? [firstPage as PubLeafletPagesLinearDocument.Main]
       : [];
 
+  const postsListBlocks = allBlocks.filter((b) =>
+    PubLeafletBlocksPostsList.isMain(b.block),
+  );
+
+  // The document list is only loaded when the page renders one — callers that
+  // already have it (theme preview) pass it in, everyone else queries here.
+  // Started before the block-resource fetches so the two overlap.
+  const postRowsPromise = postsListBlocks.length
+    ? publication.documents_in_publications ??
+      fetchPublicationPostRows(publication.uri)
+    : [];
+
   const {
     bskyPostData,
     standardSitePostData: standardSitePosts,
@@ -108,21 +120,10 @@ export async function PublicationPageRenderer({
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
 
-  const postsListBlocks = allBlocks.filter((b) =>
-    PubLeafletBlocksPostsList.isMain(b.block),
-  );
-
   // Per distinct tag-filter signature, ship the full ordered URI list plus a
   // byline-resolved first batch (in the SSR HTML); the client hydrates later
-  // batches by URI on scroll via getPostsByUris. The document list is only
-  // loaded when the page renders one — callers that already have it (theme
-  // preview) pass it in, everyone else defers the query to here.
-  const allPosts = postsListBlocks.length
-    ? buildPublicationPosts(
-        publication.documents_in_publications ??
-          (await fetchPublicationPostRows(publication.uri)),
-      )
-    : [];
+  // batches by URI on scroll via getPostsByUris.
+  const allPosts = buildPublicationPosts(await postRowsPromise);
   const distinctFilters = new Map<string, string[] | undefined>();
   for (const b of postsListBlocks) {
     const filterByTags = (b.block as PubLeafletBlocksPostsList.Main)

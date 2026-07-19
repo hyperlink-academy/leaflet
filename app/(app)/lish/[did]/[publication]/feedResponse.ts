@@ -18,26 +18,20 @@ export function feedResponse(
   lastModified?: Date,
 ) {
   const etag = `"${createHash("sha1").update(body).digest("base64url")}"`;
-  const lastModifiedHeader = lastModified
-    ? { "Last-Modified": lastModified.toUTCString() }
-    : undefined;
-  const headers304 = { ETag: etag, ...lastModifiedHeader, ...CACHE_HEADERS };
-  if (etagMatches(req.headers.get("if-none-match"), etag))
-    return new Response(null, { status: 304, headers: headers304 });
-  // Per RFC 9110 If-Modified-Since only applies when If-None-Match is absent.
-  if (
-    !req.headers.get("if-none-match") &&
-    lastModified &&
-    modifiedSince(req.headers.get("if-modified-since"), lastModified)
-  )
-    return new Response(null, { status: 304, headers: headers304 });
+  const headers = {
+    ETag: etag,
+    ...(lastModified && { "Last-Modified": lastModified.toUTCString() }),
+    ...CACHE_HEADERS,
+  };
+  // Per RFC 9110, If-Modified-Since only applies when If-None-Match is absent.
+  const ifNoneMatch = req.headers.get("if-none-match");
+  const notModified = ifNoneMatch
+    ? etagMatches(ifNoneMatch, etag)
+    : !!lastModified &&
+      modifiedSince(req.headers.get("if-modified-since"), lastModified);
+  if (notModified) return new Response(null, { status: 304, headers });
   return new Response(body, {
-    headers: {
-      "Content-Type": contentType,
-      ETag: etag,
-      ...lastModifiedHeader,
-      ...CACHE_HEADERS,
-    },
+    headers: { "Content-Type": contentType, ...headers },
   });
 }
 
