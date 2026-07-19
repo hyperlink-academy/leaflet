@@ -21,5 +21,6 @@ export async function GET(
     req,
     collapseInterTagWhitespace(feed.rss2()),
     "application/rss+xml",
+    feed.options.updated,
   );
 }

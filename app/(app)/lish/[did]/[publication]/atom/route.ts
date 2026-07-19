@@ -17,5 +17,10 @@ export async function GET(
     return feed;
   }
 
-  return feedResponse(req, feed.atom1(), "application/atom+xml");
+  return feedResponse(
+    req,
+    feed.atom1(),
+    "application/atom+xml",
+    feed.options.updated,
+  );
 }
