@@ -94,16 +94,10 @@ export async function generateFeed(
   );
   const description = pubRecord?.description ?? rawRecord?.description;
 
-  let { data: docs, error: docsError } = await supabaseServerClient
-    .from("documents")
-    .select(
-      `uri, data, sort_date,
-       documents_in_publications!inner(publication)`,
-    )
-    .eq("documents_in_publications.publication", publication.uri)
-    .order("sort_date", { ascending: false })
-    .order("uri", { ascending: false })
-    .limit(FEED_ITEM_LIMIT);
+  let { data: docs, error: docsError } = await supabaseServerClient.rpc(
+    "get_publication_feed_docs",
+    { p_publication: publication.uri, p_limit: FEED_ITEM_LIMIT },
+  );
   if (docsError) {
     console.error(docsError);
     return new NextResponse(null, { status: 500 });

@@ -2039,6 +2039,17 @@ export type Database = {
           publication_name: string
         }[]
       }
+      get_publication_feed_docs: {
+        Args: {
+          p_publication: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          data: Json
+          sort_date: string
+        }[]
+      }
       get_reader_feed: {
         Args: {
           p_identity: string
