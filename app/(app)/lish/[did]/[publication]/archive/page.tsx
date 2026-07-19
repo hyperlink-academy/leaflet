@@ -19,7 +19,10 @@ import {
 import { DocumentPageRenderer } from "../[rkey]/DocumentPageRenderer";
 import { postPageMetadata } from "../[rkey]/postPageMetadata";
 import { buildPublicationPosts } from "../buildPublicationPosts";
-import { fetchPublicationForPage } from "../getPublicationForPage";
+import {
+  fetchPublicationForPage,
+  fetchPublicationPostRows,
+} from "../getPublicationForPage";
 import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
 import { resolveDocumentFilter } from "../resolveDocumentFilter";
 import { publicationAlternates } from "../publicationAlternates";
@@ -98,7 +101,9 @@ export default async function PublicationArchive(props: {
     );
 
   const record = normalizePublicationRecord(publication.record);
-  const posts = buildPublicationPosts(publication.documents_in_publications)
+  const posts = buildPublicationPosts(
+    await fetchPublicationPostRows(publication.uri),
+  )
     .slice()
     .sort((a, b) => {
       const aDate = a.record.publishedAt

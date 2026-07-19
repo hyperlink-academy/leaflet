@@ -8,7 +8,10 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { publicationAlternates } from "./publicationAlternates";
 import { DefaultPublicationHomepage } from "./DefaultPublicationHomepage";
 import { buildPublicationPosts } from "./buildPublicationPosts";
-import { fetchPublicationForPage } from "./getPublicationForPage";
+import {
+  fetchPublicationForPage,
+  fetchPublicationPostRows,
+} from "./getPublicationForPage";
 import { tryRenderPublicationPage } from "./tryRenderPublicationPage";
 import { getProfiles } from "src/identity";
 import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
@@ -65,7 +68,7 @@ export default async function Publication(props: {
     // SSR HTML.
     const agent = new BskyAgent({ service: "https://public.api.bsky.app" });
     const homepagePosts = buildPublicationPosts(
-      publication.documents_in_publications,
+      await fetchPublicationPostRows(publication.uri),
     );
     const [{ data: profile }, bylineProfiles] = await Promise.all([
       agent.getProfile({ actor: did }),

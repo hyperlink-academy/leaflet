@@ -20,6 +20,7 @@ import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { DocumentProvider } from "contexts/DocumentContext";
 import type { DocumentContextValue } from "contexts/DocumentContext";
 import { buildPublicationPosts } from "../buildPublicationPosts";
+import { fetchPublicationPostRows } from "../getPublicationForPage";
 import {
   POSTS_LIST_PAGE_SIZE,
   postsListFilterKey,
@@ -111,12 +112,16 @@ export async function PublicationPageRenderer({
     PubLeafletBlocksPostsList.isMain(b.block),
   );
 
-  // The page query already loaded every document, so build the list in memory.
   // Per distinct tag-filter signature, ship the full ordered URI list plus a
   // byline-resolved first batch (in the SSR HTML); the client hydrates later
-  // batches by URI on scroll via getPostsByUris.
+  // batches by URI on scroll via getPostsByUris. The document list is only
+  // loaded when the page renders one — callers that already have it (theme
+  // preview) pass it in, everyone else defers the query to here.
   const allPosts = postsListBlocks.length
-    ? buildPublicationPosts(publication.documents_in_publications)
+    ? buildPublicationPosts(
+        publication.documents_in_publications ??
+          (await fetchPublicationPostRows(publication.uri)),
+      )
     : [];
   const distinctFilters = new Map<string, string[] | undefined>();
   for (const b of postsListBlocks) {

@@ -42,7 +42,9 @@ export const DefaultPublicationHomepage = ({
       record_uri: string | null;
       sort_order: string;
     }[];
-    documents_in_publications: {
+    // Only the client theme preview supplies this; server callers resolve
+    // `posts` themselves.
+    documents_in_publications?: {
       documents: {
         uri: string;
         data: unknown;
