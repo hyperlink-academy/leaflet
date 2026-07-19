@@ -6,12 +6,27 @@
 // walk the order column's index across the ENTIRE table, probing the embed
 // per row until enough rows match. When the filter is selective (a small
 // publication, a user with few follows) the limit never short-circuits and
-// every request scans the whole table. See
-// .claude/skills/supabase-query-plans/SKILL.md for the fix patterns.
+// every request scans the whole table. No index or ANALYZE can fix this —
+// the query shape must change:
+//
+//   1. Filter on the from-table's own indexed columns, or
+//   2. start the query from the join/membership table and embed the rest, or
+//   3. for newest-N-across-a-join, use a SQL function whose plan is fenced
+//      with a MATERIALIZED CTE over the join table plus SET enable_seqscan =
+//      off (copy get_publication_feed_docs, get_tag_page_document_uris, or
+//      get_reader_feed; hand-add the signature to supabase/database.types.ts).
+//
+// Dev-sized tables hide the trap — verify a suspect shape with EXPLAIN
+// ANALYZE against a few hundred thousand skewed synthetic rows, testing the
+// worst key (a tiny or inactive publication, a key with zero matches), not
+// the average one.
 //
 // A finding is suppressed by a comment containing `plan-checked:` within the
-// ten lines above the `.from(` call, stating why the shape is safe (or
-// tracking it as known debt).
+// ten lines above the `.from(` call. The reason must be a data-distribution
+// argument ("global feed — the filters exclude a tiny minority of recent
+// rows, so the limit short-circuits"), not "seems fast". `plan-checked:
+// KNOWN DEBT — ...` marks pre-existing offenders awaiting a fenced rewrite;
+// don't add new debt.
 import ts from "typescript";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
