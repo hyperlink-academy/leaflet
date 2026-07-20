@@ -221,9 +221,9 @@ export const Block = memo(function Block(
       ${
         !props.previousBlock
           ? props.type === "heading" || props.type === "text"
-            ? "pt-2 sm:pt-3"
-            : "pt-3 sm:pt-4"
-          : "pt-1"
+            ? "mt-1 sm:mt-2"
+            : "mt-2 sm:mt-3"
+          : ""
       }`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
@@ -583,30 +583,28 @@ const NonTextBlockOptions = (props: {
 // text, and only shows on hover unless the heading is currently folded.
 const HeadingFoldButton = (props: { entityID: string }) => {
   let folded = useUIState((s) => s.foldedBlocks.includes(props.entityID));
-  let headingLevel = useEntity(
-    props.entityID,
-    "block/heading-level",
-  )?.data.value;
+  let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
+    .value;
   let top =
     headingLevel === 1
-      ? "top-[22px]"
+      ? "top-[16px]"
       : headingLevel === 2
-        ? "top-[13px]"
-        : "top-[9px]";
+        ? "top-[10px]"
+        : "top-[7px]";
   return (
     <button
-      className={`headingFoldButton absolute left-0 ${top} p-1 -ml-1 sm:-ml-0.5 text-tertiary hover:text-secondary transition-opacity
+      className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-1 rounded-r-full text-bg-page  transition-opacity
         ${
           folded
-            ? "text-secondary opacity-100"
-            : "opacity-0 sm:group-hover/blockWrapper:opacity-100"
+            ? "opacity-100 bg-accent-contrast"
+            : "opacity-0 sm:group-hover/blockWrapper:opacity-100 bg-border "
         }`}
       onClick={() => useUIState.getState().toggleFold(props.entityID)}
     >
       <ArrowDownTiny
         className={`transition-transform ${folded ? "-rotate-90" : ""}`}
-        width={14}
-        height={14}
+        width={12}
+        height={12}
       />
     </button>
   );
