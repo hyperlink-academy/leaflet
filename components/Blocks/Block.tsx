@@ -107,6 +107,11 @@ export const Block = memo(function Block(
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let focused = useUIState(
+    (s) =>
+      s.focusedEntity?.entityType === "block" &&
+      s.focusedEntity.entityID === props.entityID,
+  );
   let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
 
   let alignmentStyle =
@@ -172,7 +177,9 @@ export const Block = memo(function Block(
       axis: "x",
       filterTaps: true,
       pointer: { touch: true },
-      enabled: isMobile && !!props.listData,
+      // Only the focused block can be swipe-indented, so that horizontal
+      // swipes anywhere else pan the page carousel. Focus first, then swipe.
+      enabled: isMobile && !!props.listData && focused,
     },
   );
 
@@ -200,7 +207,7 @@ export const Block = memo(function Block(
         flex flex-row gap-2
         px-3 sm:px-4
         z-1 w-full
-        ${props.listData ? "touch-pan-y" : ""}
+        ${props.listData && focused ? "touch-pan-y" : ""}
       ${alignmentStyle}
       ${
         !props.nextBlock
