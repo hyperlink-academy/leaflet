@@ -6,7 +6,7 @@ import {
   ContentLayout,
   Notification,
 } from "./Notification";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(published)/lish/createPub/getPublicationURL";
 
 export const CommentMentionNotification = (
   props: HydratedCommentMentionNotification,

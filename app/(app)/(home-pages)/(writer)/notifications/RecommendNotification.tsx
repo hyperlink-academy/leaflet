@@ -1,7 +1,7 @@
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedRecommendNotification } from "src/notifications";
 import { RecommendTinyFilled } from "components/Icons/RecommendTiny";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(published)/lish/createPub/getPublicationURL";
 
 export const RecommendNotification = (
   props: HydratedRecommendNotification,

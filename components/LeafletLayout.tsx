@@ -3,7 +3,7 @@ export const LeafletLayout = (props: {
   className?: string;
   // In flow mode the layout does NOT create its own scroll container: it sizes
   // to its content height so an ancestor (e.g. the publication edit layout) can
-  // be the single vertical scroller. See app/(app)/lish/.../edit/layout.tsx.
+  // be the single vertical scroller. See app/(published)/lish/.../edit/layout.tsx.
   flow?: boolean;
 }) => {
   return (

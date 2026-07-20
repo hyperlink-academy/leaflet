@@ -11,8 +11,8 @@ import {
   AppBskyLabelerDefs,
 } from "@atproto/api";
 import { Avatar } from "components/Avatar";
-import { OpenPage } from "app/(app)/lish/[did]/[publication]/[rkey]/PostPages";
-import { useOpenThread } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
+import { OpenPage } from "app/(published)/lish/[did]/[publication]/[rkey]/PostPages";
+import { useOpenThread } from "app/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
 
 export const BlueskyEmbed = (props: {

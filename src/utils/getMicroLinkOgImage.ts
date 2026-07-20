@@ -1,13 +1,17 @@
+import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
+
+type ScreenshotOptions = {
+  setJavaScriptEnabled?: boolean;
+  width?: number;
+  height?: number;
+  deviceScaleFactor?: number;
+  noCache?: boolean;
+};
 
 export async function getMicroLinkOgImage(
   path: string,
-  options?: {
-    width?: number;
-    height?: number;
-    deviceScaleFactor?: number;
-    noCache?: boolean;
-  },
+  options?: ScreenshotOptions,
 ) {
   const headersList = await headers();
   let hostname = headersList.get("x-forwarded-host");
@@ -25,15 +29,38 @@ export async function getMicroLinkOgImage(
 
 export async function getWebpageImage(
   url: string,
-  options?: {
-    setJavaScriptEnabled?: boolean;
-    width?: number;
-    height?: number;
-    deviceScaleFactor?: number;
-    noCache?: boolean;
-  },
+  options?: ScreenshotOptions,
 ) {
-  let response = await fetch(
+  if (options?.noCache) return fetchScreenshot(url, options);
+  const shot = await cachedScreenshot(url, options);
+  return new Response(shot.body, {
+    status: shot.status,
+    headers: {
+      ...(shot.contentType ? { "Content-Type": shot.contentType } : {}),
+      "Cache-Control": "public, max-age=60",
+    },
+  });
+}
+
+// Browser-rendered screenshots are expensive (seconds of Cloudflare
+// rendering); the cache amortizes them the way the og-image routes'
+// `revalidate = 60` did before cacheComponents.
+async function cachedScreenshot(
+  url: string,
+  options: ScreenshotOptions | undefined,
+): Promise<{ status: number; contentType: string | null; body: ArrayBuffer }> {
+  "use cache";
+  cacheLife("minutes");
+  const response = await fetchScreenshot(url, options);
+  return {
+    status: response.status,
+    contentType: response.headers.get("content-type"),
+    body: await response.arrayBuffer(),
+  };
+}
+
+async function fetchScreenshot(url: string, options?: ScreenshotOptions) {
+  return fetch(
     `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT}/browser-rendering/screenshot`,
     {
       method: "POST",
@@ -69,13 +96,6 @@ export async function getWebpageImage(
           deviceScaleFactor: options?.deviceScaleFactor,
         },
       }),
-      next: !options?.noCache
-        ? undefined
-        : {
-            revalidate: 600,
-          },
     },
   );
-
-  return response;
 }

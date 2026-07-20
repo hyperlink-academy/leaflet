@@ -10,7 +10,7 @@ import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationM
 import {
   getPublicationURL,
   getDocumentURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
+} from "app/(published)/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,

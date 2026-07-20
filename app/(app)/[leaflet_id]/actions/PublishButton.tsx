@@ -1,6 +1,6 @@
 "use client";
 import { publishToPublication } from "actions/publishToPublication";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "app/(published)/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import {
   PubIcon,

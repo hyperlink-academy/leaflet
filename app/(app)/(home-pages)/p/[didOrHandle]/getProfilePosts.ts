@@ -1,7 +1,7 @@
 "use server";
 
 import { supabaseServerClient } from "supabase/serverClient";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "app/(published)/lish/createPub/getPublicationURL";
 import type { Post } from "app/(app)/(home-pages)/reader/getReaderFeed";
 import {
   normalizeDocumentRecord,

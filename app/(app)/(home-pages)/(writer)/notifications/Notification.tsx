@@ -1,6 +1,6 @@
 "use client";
 import { Avatar } from "components/Avatar";
-import { BaseTextBlock } from "app/(app)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
+import { BaseTextBlock } from "app/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { timeAgo } from "src/utils/timeAgo";
 import { useReplicache, useEntity } from "src/replicache";

@@ -8,7 +8,7 @@ import { Input } from "components/Input";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { requestPublicationEmailSubscription } from "actions/publications/subscribeEmail";
-import { subscribeToPublication } from "app/(app)/lish/subscribeToPublication";
+import { subscribeToPublication } from "app/(published)/lish/subscribeToPublication";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { SUBSCRIBE_ERROR_MESSAGES } from "./subscribeErrors";
 import { onMouseDown as iosOnPointerDown } from "src/utils/iosInputMouseDown";

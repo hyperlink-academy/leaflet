@@ -6,7 +6,7 @@ import {
 import { HydratedCommentNotification } from "src/notifications";
 import { PubLeafletComment } from "lexicons/api";
 import { ReplyTiny } from "components/Icons/ReplyTiny";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(published)/lish/createPub/getPublicationURL";
 
 export const ReplyNotification = (props: HydratedCommentNotification) => {
   const docRecord = props.normalizedDocument;

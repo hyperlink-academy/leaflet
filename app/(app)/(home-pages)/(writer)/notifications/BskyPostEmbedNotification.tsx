@@ -2,7 +2,7 @@ import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedBskyPostEmbedNotification } from "src/notifications";
 import { AtUri } from "@atproto/api";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(published)/lish/createPub/getPublicationURL";
 
 export const BskyPostEmbedNotification = (
   props: HydratedBskyPostEmbedNotification,

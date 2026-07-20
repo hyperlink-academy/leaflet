@@ -33,17 +33,30 @@ export function mutateIdentityData(
     { revalidate: false },
   );
 }
-export function IdentityContextProvider(props: {
-  children: React.ReactNode;
-  identityPromise: Promise<Identity>;
-}) {
+
+// Two mounting modes:
+// - `initialValue` (the (app) layout and nested dashboard layouts): identity
+//   was awaited on the server and is present in the SSR HTML.
+// - `identityPromise` (the (published) layout): identity streams in beside the
+//   static shell and consumers render logged-out until it lands.
+type IdentitySource =
+  | { initialValue: Identity; identityPromise?: undefined }
+  | { identityPromise: Promise<Identity>; initialValue?: undefined };
+
+export function IdentityContextProvider(
+  props: { children: React.ReactNode } & IdentitySource,
+) {
+  const seeded = props.identityPromise === undefined;
   let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
-    fallbackData: null,
+    fallbackData: seeded ? props.initialValue : null,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     revalidateIfStale: false,
     revalidateOnMount: false,
   });
+  useEffect(() => {
+    if (seeded) mutate(props.initialValue);
+  }, [seeded, props.initialValue]);
   // Remember the current session in the saved-accounts list so the account
   // switcher can offer it later. The token is always re-fetched — the cookie
   // is httpOnly, and a re-login mints a fresh token for the same identity, so
@@ -87,15 +100,14 @@ export function IdentityContextProvider(props: {
   return (
     <IdentityContext.Provider value={{ identity, mutate }}>
       {props.children}
-      {/* The identity streams in from the server after the static shell; the
-          resolver lives in its own Suspense boundary so nothing else waits on
-          it, and consumers render their logged-out state until it lands. */}
-      <Suspense fallback={null}>
-        <IdentityStreamResolver
-          identityPromise={props.identityPromise}
-          mutate={mutate}
-        />
-      </Suspense>
+      {props.identityPromise ? (
+        <Suspense fallback={null}>
+          <IdentityStreamResolver
+            identityPromise={props.identityPromise}
+            mutate={mutate}
+          />
+        </Suspense>
+      ) : null}
     </IdentityContext.Provider>
   );
 }

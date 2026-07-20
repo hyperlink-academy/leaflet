@@ -1,4 +1,4 @@
-import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getBasePublicationURL } from "app/(published)/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { SpeedyLink } from "components/SpeedyLink";

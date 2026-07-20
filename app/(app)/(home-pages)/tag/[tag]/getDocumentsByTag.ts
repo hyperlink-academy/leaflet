@@ -1,6 +1,6 @@
 "use server";
 
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "app/(published)/lish/createPub/getPublicationURL";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/api";
 import { idResolver } from "src/identity";

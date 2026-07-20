@@ -23,7 +23,7 @@ import { ShareTiny } from "./Icons/ShareTiny";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(published)/lish/createPub/getPublicationURL";
 import { RecommendButton } from "./RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionModal } from "./DiscussionModal";

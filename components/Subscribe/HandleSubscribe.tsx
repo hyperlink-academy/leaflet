@@ -5,7 +5,7 @@ import { Popover } from "components/Popover";
 import Link from "next/link";
 import { useState } from "react";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
-import { subscribeToPublication } from "app/(app)/lish/subscribeToPublication";
+import { subscribeToPublication } from "app/(published)/lish/subscribeToPublication";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";

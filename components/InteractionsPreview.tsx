@@ -8,7 +8,7 @@ import { Popover } from "./Popover";
 import { TagTiny } from "./Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionModal } from "./DiscussionModal";
-import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
+import { DrawerThreadContext } from "app/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 
 export const InteractionPreview = (props: {
   quotesCount: number;

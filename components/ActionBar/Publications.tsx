@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
-import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getBasePublicationURL } from "app/(published)/lish/createPub/getPublicationURL";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
 import { ActionButton } from "./ActionButton";

@@ -7,14 +7,14 @@ import { AtUri } from "@atproto/api";
 import { PubLeafletComment, PubLeafletDocument } from "lexicons/api";
 import { ReplyTiny } from "components/Icons/ReplyTiny";
 import { Avatar } from "components/Avatar";
-import { BaseTextBlock } from "app/(app)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
+import { BaseTextBlock } from "app/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import {
   getProfileComments,
   type ProfileComment,
   type Cursor,
 } from "./getProfileComments";
 import { timeAgo } from "src/utils/timeAgo";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "app/(published)/lish/createPub/getPublicationURL";
 
 export const ProfileCommentsContent = (props: {
   did: string;

@@ -3,7 +3,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import {
   getPublicationURL,
   getBasePublicationURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
+} from "app/(published)/lish/createPub/getPublicationURL";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { mainSiteAuthBase } from "src/utils/customDomain";

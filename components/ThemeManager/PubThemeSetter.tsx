@@ -1,7 +1,7 @@
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "app/(published)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useState } from "react";
 import type { Color } from "react-aria-components";
 import { pickers, SectionArrow } from "./ThemeSetter";
@@ -9,7 +9,7 @@ import { PubLeafletThemeBackgroundImage } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { updatePublicationTheme } from "app/(app)/lish/createPub/updatePublication";
+import { updatePublicationTheme } from "app/(published)/lish/createPub/updatePublication";
 import { PagePickers } from "./PubPickers/PubTextPickers";
 import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";

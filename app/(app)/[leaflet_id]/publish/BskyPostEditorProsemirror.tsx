@@ -9,7 +9,7 @@ import { keymap } from "prosemirror-keymap";
 import { history, undo, redo } from "prosemirror-history";
 import { inputRules, InputRule } from "prosemirror-inputrules";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
-import { IOSBS } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/Comments/CommentBox";
+import { IOSBS } from "app/(published)/lish/[did]/[publication]/[rkey]/Interactions/Comments/CommentBox";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { Mention, MentionAutocomplete } from "components/Mention";
 import { loadDraftDoc, saveDraftDoc } from "src/utils/prosemirror/draftPersistence";

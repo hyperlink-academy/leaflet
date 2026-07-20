@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "app/(published)/lish/createPub/getPublicationURL";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
 
 export type SearchPublicationNamesReturnType = Awaited<

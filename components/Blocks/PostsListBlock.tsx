@@ -5,16 +5,16 @@ import { BlockProps, BlockLayout } from "./Block";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
-import { PaginatedPublicationPostsList } from "app/(app)/lish/[did]/[publication]/PaginatedPublicationPostsList";
+} from "app/(published)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { PaginatedPublicationPostsList } from "app/(published)/lish/[did]/[publication]/PaginatedPublicationPostsList";
 import {
   POSTS_LIST_PAGE_SIZE,
   postsListFilterKey,
   sortPostsForList,
   filterPostsByTags,
   type LoadPostsBatch,
-} from "app/(app)/lish/[did]/[publication]/postsListPagination";
-import type { PublicationPostsListPost } from "app/(app)/lish/[did]/[publication]/buildPublicationPosts";
+} from "app/(published)/lish/[did]/[publication]/postsListPagination";
+import type { PublicationPostsListPost } from "app/(published)/lish/[did]/[publication]/buildPublicationPosts";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "./SettingsTriggerButton";

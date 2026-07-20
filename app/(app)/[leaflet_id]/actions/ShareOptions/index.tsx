@@ -17,7 +17,7 @@ import { ShareSmall } from "components/Icons/ShareSmall";
 import {
   getPublicationURL,
   getDocumentURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
+} from "app/(published)/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import { useIsMobile } from "src/hooks/isMobile";
 import { LoginModal } from "components/LoginButton";

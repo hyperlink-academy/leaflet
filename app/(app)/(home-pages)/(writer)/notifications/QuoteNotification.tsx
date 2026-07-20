@@ -3,7 +3,7 @@ import { ContentLayout, Notification } from "./Notification";
 import { HydratedQuoteNotification } from "src/notifications";
 import { AtUri } from "@atproto/api";
 import { Avatar } from "components/Avatar";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(published)/lish/createPub/getPublicationURL";
 
 export const QuoteNotification = (props: HydratedQuoteNotification) => {
   const postView = props.bskyPost.post_view as any;

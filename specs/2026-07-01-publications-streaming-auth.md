@@ -1,10 +1,14 @@
 # Static Publication Pages with Streamed-In Identity
 
-**Status**: implemented — Phase 2 was built directly (no Phase 1 route-group
-split): `cacheComponents` is on, the shared layout streams identity as a
-promise, published pages are `"use cache"`d with tags from `src/cacheTags.ts`,
-and invalidation flows from server actions (`updateTag`) and the appview via
-`POST /api/revalidate` (`REVALIDATE_SECRET`, optional `REVALIDATE_URL`).
+**Status**: implemented — `cacheComponents` is on app-wide, but streaming is
+scoped to the published routes: `lish/` and `p/` live in the `app/(published)/`
+route group, whose layout hands the un-awaited identity promise to the client
+provider, while the `(app)` group keeps the prior blocking layout (awaited
+`headers()` + identity seeded via `initialValue`) so home/reader/editor/
+dashboard behavior matches pre-branch. Published pages are `"use cache"`d with
+tags from `src/cacheTags.ts`, and invalidation flows from server actions
+(`updateTag`) and the appview via `POST /api/revalidate` (`REVALIDATE_SECRET`,
+optional `REVALIDATE_URL`).
 
 ## Goal
 

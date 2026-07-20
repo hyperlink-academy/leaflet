@@ -1,7 +1,7 @@
 import { AtUri } from "@atproto/api";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
-import { getConstellationBacklinks } from "app/(app)/lish/[did]/[publication]/[rkey]/getPostPageData";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "app/(published)/lish/createPub/getPublicationURL";
+import { getConstellationBacklinks } from "app/(published)/lish/[did]/[publication]/[rkey]/getPostPageData";
+import { getDocumentURL } from "app/(published)/lish/createPub/getPublicationURL";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,

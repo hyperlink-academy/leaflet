@@ -20,7 +20,7 @@ import {
   backfillAtprotoSubscriptionsForIdentity,
   publishAtprotoSubscriptionForDid,
   unsubscribeToPublication,
-} from "app/(app)/lish/subscribeToPublication";
+} from "app/(published)/lish/subscribeToPublication";
 import type { OAuthSessionError } from "src/atproto-oauth";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";

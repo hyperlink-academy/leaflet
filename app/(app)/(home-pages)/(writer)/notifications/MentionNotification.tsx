@@ -2,7 +2,7 @@ import { MentionTiny } from "components/Icons/MentionTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedMentionNotification } from "src/notifications";
 import { AtUri } from "@atproto/api";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "app/(published)/lish/createPub/getPublicationURL";
 
 export const MentionNotification = (props: HydratedMentionNotification) => {
   const docRecord = props.normalizedDocument;

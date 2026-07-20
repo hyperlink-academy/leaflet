@@ -1,7 +1,7 @@
 import {
   SubscribePage,
   PubNotFound,
-} from "app/(app)/lish/[did]/[publication]/subscribe/SubscribePage";
+} from "app/(published)/lish/[did]/[publication]/subscribe/SubscribePage";
 import { Metadata } from "next";
 import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
