@@ -6,7 +6,7 @@ import {
   nextCookieOrder,
   parseCVRCookie,
   stableHash,
-  type PullFactRow,
+  type PullFact,
 } from "./cvr";
 import { makeCVRStore, type CVRStore, type RedisLike } from "./cvrStore";
 import { FactWithIndexes } from "./utils";
@@ -19,10 +19,12 @@ import type { Attribute } from "src/replicache/attributes";
 // the client view the legacy reset strategy would have produced.
 // ---------------------------------------------------------------------------
 
+type FactRow = { fact: PullFact; row_version: number };
+
 type ServerState = {
   // fact id -> row (row_version emulates xmin: set to the txn counter on
   // every insert/update)
-  facts: Map<string, PullFactRow>;
+  facts: Map<string, FactRow>;
   publication: {
     description: string;
     title: string;
@@ -44,9 +46,15 @@ function newServerState(): ServerState {
   };
 }
 
-function pullInputs(s: ServerState) {
+function pullInputs(s: ServerState, baseF: Record<string, number> | null) {
   return {
-    facts: [...s.facts.values()],
+    // mirrors the pull query: full rows are hydrated only for facts that are
+    // new or changed relative to the base CVR
+    facts: [...s.facts.values()].map(({ fact, row_version }) => ({
+      id: fact.id,
+      row_version,
+      fact: baseF && baseF[fact.id] === row_version ? null : fact,
+    })),
     extras: buildExtras(
       s.publication ? [s.publication] : null,
       s.draft_contributors,
@@ -59,9 +67,12 @@ function pullInputs(s: ServerState) {
 // id (with indexes), plus the extra keys.
 function naiveClientView(s: ServerState): Map<string, ReadonlyJSONValue> {
   let kv = new Map<string, ReadonlyJSONValue>();
-  let { facts, extras } = pullInputs(s);
+  let extras = buildExtras(
+    s.publication ? [s.publication] : null,
+    s.draft_contributors,
+  );
   for (let [key, value] of Object.entries(extras)) kv.set(key, value);
-  for (let { fact } of facts)
+  for (let { fact } of s.facts.values())
     kv.set(fact.id, FactWithIndexes(fact as unknown as Fact<Attribute>));
   return kv;
 }
@@ -108,7 +119,7 @@ async function serverPull(
     prevCookie,
     baseCVR,
     nextCVRID,
-    ...pullInputs(s),
+    ...pullInputs(s, baseCVR?.f ?? null),
     now,
   });
   if (nextCVR) await store.set(storeKey, { id: nextCVRID, ...nextCVR });
@@ -119,7 +130,7 @@ let factCounter = 0;
 function makeFact(
   s: ServerState,
   data?: { type: string; value: unknown },
-): PullFactRow {
+): FactRow {
   factCounter++;
   let fact = {
     id: `fact-${factCounter}`,
@@ -212,7 +223,7 @@ describe("buildPullResponse: reset mode", () => {
       prevCookie: null,
       baseCVR: null,
       nextCVRID: "new-cvr",
-      ...pullInputs(s),
+      ...pullInputs(s, null),
       now: 999,
     });
     expect(response.lastMutationIDChanges).toEqual({ client1: 3 });
@@ -251,7 +262,7 @@ describe("buildPullResponse: reset mode", () => {
       prevCookie: { order: 500, cvrID: "evicted" },
       baseCVR: null,
       nextCVRID: "new-cvr",
-      ...pullInputs(s),
+      ...pullInputs(s, null),
       now: 100,
     });
     expect(response.patch[0]).toEqual({ op: "clear" });
@@ -265,7 +276,7 @@ describe("buildPullResponse: reset mode", () => {
       prevCookie: legacyCookie,
       baseCVR: null,
       nextCVRID: "new-cvr",
-      ...pullInputs(s),
+      ...pullInputs(s, null),
       now: 999,
     });
     expect(response.patch[0]).toEqual({ op: "clear" });
@@ -401,6 +412,22 @@ describe("buildPullResponse: diff mode via the store", () => {
     expect(Object.fromEntries(kv)).toEqual(
       Object.fromEntries(naiveClientView(s)),
     );
+  });
+
+  test("a changed fact arriving unhydrated is surfaced, not dropped", () => {
+    let s = newServerState();
+    let a = makeFact(s);
+    s.facts.set(a.fact.id, a);
+    expect(() =>
+      buildPullResponse({
+        prevCookie: { order: 1, cvrID: "x" },
+        baseCVR: { f: { [a.fact.id]: a.row_version - 1 }, x: {}, c: {} },
+        nextCVRID: "y",
+        // hydrated against a *different* base that claims the fact is current
+        ...pullInputs(s, { [a.fact.id]: a.row_version }),
+        now: 2000,
+      }),
+    ).toThrow(/not hydrated/);
   });
 
   test("editing churn never grows the store: one slot per client group", async () => {

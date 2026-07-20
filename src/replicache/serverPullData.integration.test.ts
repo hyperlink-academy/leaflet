@@ -199,10 +199,10 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
     );
 
     let naive = await naivePullData(token, clientGroup);
-    let mine = await fetchPullData(db, token, clientGroup);
+    let mine = await fetchPullData(db, token, clientGroup, null);
 
     // facts: same rows, same JSON shapes
-    expect(sortById(mine.facts.map((f) => f.fact))).toEqual(
+    expect(sortById(mine.facts.map((f) => f.fact!))).toEqual(
       sortById(naive.facts ?? []),
     );
     expect(mine.facts).toHaveLength(4);
@@ -228,8 +228,8 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
     // token that exists but has no facts beyond nothing on the root
     let { token } = await createDoc();
     let naive = await naivePullData(token, "no-such-group");
-    let mine = await fetchPullData(db, token, "no-such-group");
-    expect(mine.facts.map((f) => f.fact)).toEqual(naive.facts ?? []);
+    let mine = await fetchPullData(db, token, "no-such-group", null);
+    expect(mine.facts.map((f) => f.fact!)).toEqual(naive.facts ?? []);
     expect(mine.clients).toEqual({});
     expect(mine.publications).toEqual(naive.publications);
     expect(mine.draft_contributors).toEqual(naive.draft_contributors);
@@ -237,7 +237,7 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
     // valid-uuid but nonexistent token
     let ghost = randomUUID();
     let naiveGhost = await naivePullData(ghost, "no-such-group");
-    let mineGhost = await fetchPullData(db, ghost, "no-such-group");
+    let mineGhost = await fetchPullData(db, ghost, "no-such-group", null);
     expect(mineGhost.facts).toEqual([]);
     expect(naiveGhost.facts).toBeNull();
     expect(mineGhost.publications).toBeNull();
@@ -245,7 +245,40 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
 
     // malformed token id errors in both
     await expect(naivePullData("not-a-uuid", "g")).rejects.toThrow();
-    await expect(fetchPullData(db, "not-a-uuid", "g")).rejects.toThrow();
+    await expect(fetchPullData(db, "not-a-uuid", "g", null)).rejects.toThrow();
+  });
+
+  test("hydrates full rows only for facts that differ from the passed base", async () => {
+    let { root, token } = await createDoc();
+    let factA = await addFact(root, "block/text", { type: "text", value: "a" });
+    let factB = await addFact(root, "block/text", { type: "text", value: "b" });
+
+    let full = await fetchPullData(db, token, "g", null);
+    expect(full.facts.every((f) => f.fact !== null)).toBe(true);
+    let base = Object.fromEntries(full.facts.map((f) => [f.id, f.row_version]));
+
+    // base matches current state exactly: versions only, no rows hydrated
+    let unchanged = await fetchPullData(db, token, "g", base);
+    expect(unchanged.facts).toHaveLength(2);
+    expect(unchanged.facts.every((f) => f.fact === null)).toBe(true);
+    expect(
+      Object.fromEntries(unchanged.facts.map((f) => [f.id, f.row_version])),
+    ).toEqual(base);
+
+    // one stale version + one unknown id: only those hydrate
+    await pool.query(`update facts set data = $2 where id = $1`, [
+      factA,
+      JSON.stringify({ type: "text", value: "a2" }),
+    ]);
+    let partial = await fetchPullData(db, token, "g", base);
+    let partialA = partial.facts.find((f) => f.id === factA)!;
+    let partialB = partial.facts.find((f) => f.id === factB)!;
+    expect(partialA.fact!.data).toEqual({ type: "text", value: "a2" });
+    expect(partialB.fact).toBeNull();
+
+    let factC = await addFact(root, "block/text", { type: "text", value: "c" });
+    let withNew = await fetchPullData(db, token, "g", base);
+    expect(withNew.facts.find((f) => f.id === factC)!.fact).not.toBeNull();
   });
 
   test("row_version tracks updates via xmin", async () => {
@@ -259,21 +292,21 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
       value: "b",
     });
 
-    let before = await fetchPullData(db, token, "g");
-    let beforeA = before.facts.find((f) => f.fact.id === factA)!;
-    let beforeB = before.facts.find((f) => f.fact.id === factB)!;
+    let before = await fetchPullData(db, token, "g", null);
+    let beforeA = before.facts.find((f) => f.id === factA)!;
+    let beforeB = before.facts.find((f) => f.id === factB)!;
 
     await pool.query(`update facts set data = $2 where id = $1`, [
       factA,
       JSON.stringify({ type: "text", value: "a2" }),
     ]);
 
-    let after = await fetchPullData(db, token, "g");
-    let afterA = after.facts.find((f) => f.fact.id === factA)!;
-    let afterB = after.facts.find((f) => f.fact.id === factB)!;
+    let after = await fetchPullData(db, token, "g", null);
+    let afterA = after.facts.find((f) => f.id === factA)!;
+    let afterB = after.facts.find((f) => f.id === factB)!;
 
     expect(afterA.row_version).not.toBe(beforeA.row_version);
-    expect(afterA.fact.data).toEqual({ type: "text", value: "a2" });
+    expect(afterA.fact!.data).toEqual({ type: "text", value: "a2" });
     expect(afterB.row_version).toBe(beforeB.row_version);
   });
 });

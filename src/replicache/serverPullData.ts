@@ -10,13 +10,13 @@ import {
   buildExtras,
   buildPullResponse,
   parseCVRCookie,
-  type PullFactRow,
+  type PullFactVersion,
 } from "./cvr";
 import type { CVRStore } from "./cvrStore";
 
 export type PullData = {
   clients: Record<string, number>;
-  facts: PullFactRow[];
+  facts: PullFactVersion[];
   publications:
     | {
         description: string;
@@ -30,15 +30,19 @@ export type PullData = {
 };
 
 // Replicates the pull_data Postgres function (and its get_facts closure walk)
-// with one addition: each fact carries a row_version taken from xmin, which
+// with two additions: each fact carries a row_version taken from xmin, which
 // bumps on every insert/update and so lets the CVR pull diff without any
-// schema changes. Runs as a single repeatable-read snapshot to match the
+// schema changes; and the caller's base CVR fact versions are passed into the
+// query, so full rows only leave the database for facts that are new or
+// changed against that base (pass null to hydrate everything, e.g. for a full
+// snapshot). Runs as a single repeatable-read snapshot to match the
 // consistency of the original single-statement RPC — in particular a
 // mutation's lastMutationID is never visible without its fact writes.
 export async function fetchPullData(
   db: NodePgDatabase,
   token_id: string,
   client_group_id: string,
+  baseFactVersions: Record<string, number> | null,
 ): Promise<PullData> {
   return await db.transaction(
     async (tx) => {
@@ -65,14 +69,27 @@ export async function fetchPullData(
                 WHERE f1.data ->> 'type' = 'reference'
                    OR f1.data ->> 'type' = 'ordered-reference'
                    OR f1.data ->> 'type' = 'spatial-reference'
+              ),
+              base AS (
+                SELECT key AS id, value::bigint AS row_version
+                FROM jsonb_each_text(${JSON.stringify(baseFactVersions ?? {})}::jsonb)
               )
-              SELECT row_to_json(af)::jsonb - 'row_version' AS fact, af.row_version
-              FROM all_facts af`,
+              SELECT af.id, af.row_version,
+                CASE WHEN b.row_version IS NULL OR b.row_version <> af.row_version
+                     THEN row_to_json(af)::jsonb - 'row_version'
+                END AS fact
+              FROM all_facts af
+              LEFT JOIN base b ON b.id = af.id::text`,
         )
-      ).rows as { fact: PullFactRow["fact"]; row_version: number | string }[];
-      let facts: PullFactRow[] = factRows.map((row) => ({
-        fact: row.fact,
+      ).rows as {
+        id: string;
+        row_version: number | string;
+        fact: NonNullable<PullFactVersion["fact"]> | null;
+      }[];
+      let facts: PullFactVersion[] = factRows.map((row) => ({
+        id: row.id,
         row_version: Number(row.row_version),
+        fact: row.fact,
       }));
 
       let publications = (
@@ -121,33 +138,37 @@ export async function computePull(
 ): Promise<PullResponseOKV1 | ClientStateNotFoundResponse> {
   let cookie = parseCVRCookie(pullRequest.cookie);
   let storeKey = `${token_id}:${pullRequest.clientGroupID}`;
-  let baseCVR;
-  let data: PullData;
   try {
-    // Stored CVRs are immutable once written (keyed by cvrID), so reading one
-    // concurrently with the snapshot query is race-free.
-    [baseCVR, data] = await Promise.all([
-      cookie ? store.get(storeKey, cookie.cvrID) : null,
-      fetchPullData(db, token_id, pullRequest.clientGroupID),
-    ]);
+    // The base CVR must resolve before the snapshot query runs: the query
+    // takes the base fact versions as an argument and only hydrates rows
+    // that differ from them.
+    let baseCVR = cookie ? await store.get(storeKey, cookie.cvrID) : null;
+    let data = await fetchPullData(
+      db,
+      token_id,
+      pullRequest.clientGroupID,
+      baseCVR?.f ?? null,
+    );
+    let nextCVRID = randomUUID();
+    let { response, nextCVR } = buildPullResponse({
+      prevCookie: pullRequest.cookie,
+      baseCVR,
+      nextCVRID,
+      facts: data.facts,
+      extras: buildExtras(data.publications, data.draft_contributors),
+      clients: data.clients,
+      now,
+    });
+    if (nextCVR) await store.set(storeKey, { id: nextCVRID, ...nextCVR });
+    return response;
   } catch (e) {
     // The legacy handler returned ClientStateNotFound whenever the pull_data
     // RPC errored (e.g. a malformed token id); Replicache then resets the
-    // client. Preserve that rather than surfacing a 500 the puller would
-    // hand to Replicache as a garbage response.
+    // client, which also cleanly recovers the (structurally impossible)
+    // unhydrated-changed-fact error from buildPullResponse. Preserve that
+    // rather than surfacing a 500 the puller would hand to Replicache as a
+    // garbage response.
     console.log(e);
     return { error: "ClientStateNotFound" };
   }
-  let nextCVRID = randomUUID();
-  let { response, nextCVR } = buildPullResponse({
-    prevCookie: pullRequest.cookie,
-    baseCVR,
-    nextCVRID,
-    facts: data.facts,
-    extras: buildExtras(data.publications, data.draft_contributors),
-    clients: data.clients,
-    now,
-  });
-  if (nextCVR) await store.set(storeKey, { id: nextCVRID, ...nextCVR });
-  return response;
 }

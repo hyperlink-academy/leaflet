@@ -24,7 +24,13 @@ export type PullFact = {
   [key: string]: unknown;
 };
 
-export type PullFactRow = { fact: PullFact; row_version: number };
+export type PullFactVersion = {
+  id: string;
+  row_version: number;
+  // The full row, hydrated by the pull query only for facts that are new or
+  // changed relative to the base CVR it was given; null means unchanged.
+  fact: PullFact | null;
+};
 
 export type CVR = {
   // fact id -> row version (xmin)
@@ -101,13 +107,26 @@ export function stableHash(value: unknown): string {
   return fnv1a(s, 0x811c9dc5).toString(36) + fnv1a(s, 0x9dc5811c).toString(36);
 }
 
+// The pull query's hydration condition must mirror the diff below exactly; a
+// changed fact arriving unhydrated means the query was given a different base
+// CVR than this diff, which is a caller bug — surface it rather than silently
+// dropping the update.
+function hydrated(row: PullFactVersion): PullFact {
+  if (!row.fact)
+    throw new Error(
+      `fact ${row.id} changed but was not hydrated; the pull query and diff must share the same base CVR`,
+    );
+  return row.fact;
+}
+
 export function buildPullResponse(args: {
   prevCookie: unknown;
   // The stored CVR the cookie's cvrID resolved to; null (legacy cookie, first
   // pull, evicted or lost slot) always yields the full-snapshot response.
+  // Must be the same base the pull query hydrated `facts` against.
   baseCVR: CVR | null;
   nextCVRID: string;
-  facts: PullFactRow[];
+  facts: PullFactVersion[];
   // Ordered: `initialized` must be first; later entries keep legacy patch order.
   extras: Record<string, ReadonlyJSONValue>;
   clients: Record<string, number>;
@@ -122,7 +141,7 @@ export function buildPullResponse(args: {
     args;
 
   let nextF: Record<string, number> = {};
-  for (let { fact, row_version } of facts) nextF[fact.id] = row_version;
+  for (let { id, row_version } of facts) nextF[id] = row_version;
   let nextX: Record<string, string> = {};
   for (let [key, value] of Object.entries(extras))
     nextX[key] = stableHash(value);
@@ -139,11 +158,11 @@ export function buildPullResponse(args: {
     let extraEntries = Object.entries(extras);
     for (let [key, value] of extraEntries)
       if (key === "initialized") patch.push({ op: "put", key, value });
-    for (let { fact } of facts)
+    for (let row of facts)
       patch.push({
         op: "put",
-        key: fact.id,
-        value: FactWithIndexes(fact as unknown as Fact<Attribute>),
+        key: row.id,
+        value: FactWithIndexes(hydrated(row) as unknown as Fact<Attribute>),
       });
     for (let [key, value] of extraEntries)
       if (key !== "initialized") patch.push({ op: "put", key, value });
@@ -158,12 +177,12 @@ export function buildPullResponse(args: {
   }
 
   let patch: PatchOperation[] = [];
-  for (let { fact, row_version } of facts)
-    if (base.f[fact.id] !== row_version)
+  for (let row of facts)
+    if (base.f[row.id] !== row.row_version)
       patch.push({
         op: "put",
-        key: fact.id,
-        value: FactWithIndexes(fact as unknown as Fact<Attribute>),
+        key: row.id,
+        value: FactWithIndexes(hydrated(row) as unknown as Fact<Attribute>),
       });
   for (let id of Object.keys(base.f))
     if (!(id in nextF)) patch.push({ op: "del", key: id });
