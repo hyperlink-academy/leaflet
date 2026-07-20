@@ -336,6 +336,13 @@ input[type="number"] {
   );
 }
 
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* only gets used in codeblock for now */
+}
+
 .inline-code {
   display: inline;
   font-size: 1em;
@@ -501,7 +508,7 @@ body.cmd-held .ProseMirror a {
 }
 
 .container {
-/*need this max-w-none because this classname conflicts with one that tailwind uses that has a max-w-930px on it*/
+  /*need this max-w-none because this classname conflicts with one that tailwind uses that has a max-w-930px on it*/
   @apply max-w-none;
   @apply border;
   @apply border-border-light;
