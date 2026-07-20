@@ -1,11 +1,11 @@
-import { sql } from "drizzle-orm";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { randomUUID } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ClientStateNotFoundResponse,
   PullResponseOKV1,
   ReadonlyJSONValue,
 } from "replicache";
-import { randomUUID } from "node:crypto";
+import type { Database } from "supabase/database.types";
 import {
   buildExtras,
   buildPullResponse,
@@ -29,100 +29,47 @@ export type PullData = {
   draft_contributors: string[] | null;
 };
 
-// Replicates the pull_data Postgres function (and its get_facts closure walk)
-// with two additions: each fact carries a row_version taken from xmin, which
-// bumps on every insert/update and so lets the CVR pull diff without any
-// schema changes; and the caller's base CVR fact versions are passed into the
-// query, so full rows only leave the database for facts that are new or
-// changed against that base (pass null to hydrate everything, e.g. for a full
-// snapshot). Runs as a single repeatable-read snapshot to match the
-// consistency of the original single-statement RPC — in particular a
-// mutation's lastMutationID is never visible without its fact writes.
+// The whole client view comes from the pull_data_cvr stored function (see its
+// migration for the query): one PostgREST round trip, no pool connection, and
+// — because the function is a single SQL statement — one snapshot for every
+// read, so a mutation's lastMutationID is never visible without its fact
+// writes. The caller's base CVR fact versions are passed in so full fact rows
+// only leave the database when new or changed against that base; null
+// hydrates everything (the full-snapshot path).
 export async function fetchPullData(
-  db: NodePgDatabase,
+  supabase: SupabaseClient<Database>,
   token_id: string,
   client_group_id: string,
   baseFactVersions: Record<string, number> | null,
 ): Promise<PullData> {
-  return await db.transaction(
-    async (tx) => {
-      let clientRows = (
-        await tx.execute(
-          sql`SELECT client_id, last_mutation FROM replicache_clients WHERE client_group = ${client_group_id}`,
-        )
-      ).rows as { client_id: string; last_mutation: number | string }[];
-      let clients: Record<string, number> = {};
-      for (let row of clientRows)
-        clients[row.client_id] = Number(row.last_mutation);
-
-      let factRows = (
-        await tx.execute(
-          sql`WITH RECURSIVE all_facts AS (
-                SELECT f.*, f.xmin::text::bigint AS row_version
-                FROM facts f
-                JOIN permission_tokens pt ON f.entity = pt.root_entity
-                WHERE pt.id = ${token_id}::uuid
-              UNION
-                SELECT f.*, f.xmin::text::bigint AS row_version
-                FROM facts f
-                INNER JOIN all_facts f1 ON (uuid(f1.data ->> 'value') = f.entity)
-                WHERE f1.data ->> 'type' = 'reference'
-                   OR f1.data ->> 'type' = 'ordered-reference'
-                   OR f1.data ->> 'type' = 'spatial-reference'
-              ),
-              base AS (
-                SELECT key AS id, value::bigint AS row_version
-                FROM jsonb_each_text(${JSON.stringify(baseFactVersions ?? {})}::jsonb)
-              )
-              SELECT af.id, af.row_version,
-                CASE WHEN b.row_version IS NULL OR b.row_version <> af.row_version
-                     THEN row_to_json(af)::jsonb - 'row_version'
-                END AS fact
-              FROM all_facts af
-              LEFT JOIN base b ON b.id = af.id::text`,
-        )
-      ).rows as {
-        id: string;
-        row_version: number | string;
-        fact: NonNullable<PullFactVersion["fact"]> | null;
-      }[];
-      let facts: PullFactVersion[] = factRows.map((row) => ({
-        id: row.id,
-        row_version: Number(row.row_version),
-        fact: row.fact,
-      }));
-
-      let publications = (
-        await tx.execute(
-          sql`SELECT row_to_json(lip) AS pub FROM leaflets_in_publications lip WHERE lip.leaflet = ${token_id}::uuid`,
-        )
-      ).rows as { pub: NonNullable<PullData["publications"]>[number] }[];
-      if (publications.length === 0)
-        publications = (
-          await tx.execute(
-            sql`SELECT row_to_json(ltd) AS pub FROM leaflets_to_documents ltd WHERE ltd.leaflet = ${token_id}::uuid`,
-          )
-        ).rows as { pub: NonNullable<PullData["publications"]>[number] }[];
-
-      let contributorRows = (
-        await tx.execute(
-          sql`SELECT contributor_did FROM leaflet_contributors WHERE leaflet = ${token_id}::uuid`,
-        )
-      ).rows as { contributor_did: string }[];
-
-      return {
-        clients,
-        facts,
-        publications:
-          publications.length > 0 ? publications.map((row) => row.pub) : null,
-        draft_contributors:
-          contributorRows.length > 0
-            ? contributorRows.map((row) => row.contributor_did)
-            : null,
-      };
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" },
-  );
+  let { data, error } = await supabase.rpc("pull_data_cvr", {
+    token_id,
+    client_group_id,
+    base_cvr: baseFactVersions ?? {},
+  });
+  if (error || data == null)
+    throw error ?? new Error("pull_data_cvr returned no data");
+  let result = data as unknown as {
+    client_groups: { client_id: string; last_mutation: number }[] | null;
+    facts:
+      | { id: string; row_version: number; fact: PullFactVersion["fact"] }[]
+      | null;
+    publications: PullData["publications"];
+    draft_contributors: string[] | null;
+  };
+  let clients: Record<string, number> = {};
+  for (let row of result.client_groups ?? [])
+    clients[row.client_id] = Number(row.last_mutation);
+  return {
+    clients,
+    facts: (result.facts ?? []).map((row) => ({
+      id: row.id,
+      row_version: Number(row.row_version),
+      fact: row.fact ?? null,
+    })),
+    publications: result.publications,
+    draft_contributors: result.draft_contributors,
+  };
 }
 
 // The full CVR pull: resolve the base CVR the cookie points at, fetch the
@@ -130,7 +77,7 @@ export async function fetchPullData(
 // (legacy Date.now() numbers, null first pulls) and cookies whose CVR is
 // gone from the store both get the legacy full-snapshot response.
 export async function computePull(
-  db: NodePgDatabase,
+  supabase: SupabaseClient<Database>,
   store: CVRStore,
   pullRequest: { cookie: unknown; clientGroupID: string },
   token_id: string,
@@ -139,12 +86,12 @@ export async function computePull(
   let cookie = parseCVRCookie(pullRequest.cookie);
   let storeKey = `${token_id}:${pullRequest.clientGroupID}`;
   try {
-    // The base CVR must resolve before the snapshot query runs: the query
-    // takes the base fact versions as an argument and only hydrates rows
-    // that differ from them.
+    // The base CVR must resolve before the pull query runs: the query takes
+    // the base fact versions as an argument and only hydrates rows that
+    // differ from them.
     let baseCVR = cookie ? await store.get(storeKey, cookie.cvrID) : null;
     let data = await fetchPullData(
-      db,
+      supabase,
       token_id,
       pullRequest.clientGroupID,
       baseCVR?.f ?? null,

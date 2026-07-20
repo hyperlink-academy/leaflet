@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { VersionNotSupportedResponse } from "replicache";
-import { drizzle } from "drizzle-orm/node-postgres";
 import Client from "ioredis";
-import { pool } from "supabase/pool";
 import { computePull } from "src/replicache/serverPullData";
 import { makeCVRStore } from "src/replicache/cvrStore";
 import { makeRoute } from "../lib";
@@ -43,7 +41,6 @@ const pullRequestV1 = z.object({
 // Combined PullRequest type
 const PullRequestSchema = z.union([pullRequestV0, pullRequestV1]);
 
-const db = drizzle(pool);
 // Without Redis (dev) every CVR lookup misses and pulls degrade to full
 // snapshots — the pre-CVR behavior.
 const cvrStore = makeCVRStore(
@@ -55,10 +52,10 @@ const cvrStore = makeCVRStore(
 export const pull = makeRoute({
   route: "pull",
   input: z.object({ pullRequest: PullRequestSchema, token_id: z.string() }),
-  handler: async ({ pullRequest, token_id }, _env: Env) => {
+  handler: async ({ pullRequest, token_id }, { supabase }: Env) => {
     let body = pullRequest;
     if (body.pullVersion === 0) return versionNotSupported;
-    return await computePull(db, cvrStore, body, token_id, Date.now());
+    return await computePull(supabase, cvrStore, body, token_id, Date.now());
   },
 });
 

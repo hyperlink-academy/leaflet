@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, test } from "vitest";
 import { Pool } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "supabase/database.types";
 import { randomUUID } from "node:crypto";
 import type { PatchOperation, ReadonlyJSONValue } from "replicache";
 import { fetchPullData, computePull } from "./serverPullData";
@@ -20,18 +21,30 @@ let fakeRedis: RedisLike = {
 };
 let store = makeCVRStore(fakeRedis);
 
-// These tests run against the local supabase database (which must be migrated
-// and running: `supabase start`). They never read .env.local so they can't
-// accidentally point at production.
+// These tests run against the local supabase stack (which must be migrated
+// and running: `supabase start`): PostgREST for the pull function like
+// production, plus a direct pg connection for seeding and parity queries.
+// They never read .env.local so they can't accidentally point at production.
 const TEST_DB_URL =
   process.env.TEST_DB_URL ??
   "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+// The standard supabase-CLI local demo credentials (`supabase status`).
+const TEST_SUPABASE_URL =
+  process.env.TEST_SUPABASE_URL ?? "http://127.0.0.1:54321";
+const TEST_SUPABASE_SERVICE_KEY =
+  process.env.TEST_SUPABASE_SERVICE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
 let pool = new Pool({ connectionString: TEST_DB_URL, max: 5 });
-let db = drizzle(pool);
+let supabase = createClient<Database>(
+  TEST_SUPABASE_URL,
+  TEST_SUPABASE_SERVICE_KEY,
+);
 
 let dbAvailable = await pool
-  .query("select 1 from pg_proc where proname = 'pull_data'")
+  .query(
+    "select 1 from pg_proc where proname = 'pull_data_cvr' and exists (select 1 from pg_proc where proname = 'pull_data')",
+  )
   .then((r) => r.rowCount === 1)
   .catch(() => false);
 if (!dbAvailable)
@@ -199,7 +212,7 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
     );
 
     let naive = await naivePullData(token, clientGroup);
-    let mine = await fetchPullData(db, token, clientGroup, null);
+    let mine = await fetchPullData(supabase, token, clientGroup, null);
 
     // facts: same rows, same JSON shapes
     expect(sortById(mine.facts.map((f) => f.fact!))).toEqual(
@@ -228,7 +241,7 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
     // token that exists but has no facts beyond nothing on the root
     let { token } = await createDoc();
     let naive = await naivePullData(token, "no-such-group");
-    let mine = await fetchPullData(db, token, "no-such-group", null);
+    let mine = await fetchPullData(supabase, token, "no-such-group", null);
     expect(mine.facts.map((f) => f.fact!)).toEqual(naive.facts ?? []);
     expect(mine.clients).toEqual({});
     expect(mine.publications).toEqual(naive.publications);
@@ -237,7 +250,7 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
     // valid-uuid but nonexistent token
     let ghost = randomUUID();
     let naiveGhost = await naivePullData(ghost, "no-such-group");
-    let mineGhost = await fetchPullData(db, ghost, "no-such-group", null);
+    let mineGhost = await fetchPullData(supabase, ghost, "no-such-group", null);
     expect(mineGhost.facts).toEqual([]);
     expect(naiveGhost.facts).toBeNull();
     expect(mineGhost.publications).toBeNull();
@@ -245,7 +258,7 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
 
     // malformed token id errors in both
     await expect(naivePullData("not-a-uuid", "g")).rejects.toThrow();
-    await expect(fetchPullData(db, "not-a-uuid", "g", null)).rejects.toThrow();
+    await expect(fetchPullData(supabase, "not-a-uuid", "g", null)).rejects.toThrow();
   });
 
   test("hydrates full rows only for facts that differ from the passed base", async () => {
@@ -253,12 +266,12 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
     let factA = await addFact(root, "block/text", { type: "text", value: "a" });
     let factB = await addFact(root, "block/text", { type: "text", value: "b" });
 
-    let full = await fetchPullData(db, token, "g", null);
+    let full = await fetchPullData(supabase, token, "g", null);
     expect(full.facts.every((f) => f.fact !== null)).toBe(true);
     let base = Object.fromEntries(full.facts.map((f) => [f.id, f.row_version]));
 
     // base matches current state exactly: versions only, no rows hydrated
-    let unchanged = await fetchPullData(db, token, "g", base);
+    let unchanged = await fetchPullData(supabase, token, "g", base);
     expect(unchanged.facts).toHaveLength(2);
     expect(unchanged.facts.every((f) => f.fact === null)).toBe(true);
     expect(
@@ -270,14 +283,14 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
       factA,
       JSON.stringify({ type: "text", value: "a2" }),
     ]);
-    let partial = await fetchPullData(db, token, "g", base);
+    let partial = await fetchPullData(supabase, token, "g", base);
     let partialA = partial.facts.find((f) => f.id === factA)!;
     let partialB = partial.facts.find((f) => f.id === factB)!;
     expect(partialA.fact!.data).toEqual({ type: "text", value: "a2" });
     expect(partialB.fact).toBeNull();
 
     let factC = await addFact(root, "block/text", { type: "text", value: "c" });
-    let withNew = await fetchPullData(db, token, "g", base);
+    let withNew = await fetchPullData(supabase, token, "g", base);
     expect(withNew.facts.find((f) => f.id === factC)!.fact).not.toBeNull();
   });
 
@@ -292,7 +305,7 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
       value: "b",
     });
 
-    let before = await fetchPullData(db, token, "g", null);
+    let before = await fetchPullData(supabase, token, "g", null);
     let beforeA = before.facts.find((f) => f.id === factA)!;
     let beforeB = before.facts.find((f) => f.id === factB)!;
 
@@ -301,7 +314,7 @@ describe.runIf(dbAvailable)("fetchPullData parity with pull_data RPC", () => {
       JSON.stringify({ type: "text", value: "a2" }),
     ]);
 
-    let after = await fetchPullData(db, token, "g", null);
+    let after = await fetchPullData(supabase, token, "g", null);
     let afterA = after.facts.find((f) => f.id === factA)!;
     let afterB = after.facts.find((f) => f.id === factB)!;
 
@@ -330,7 +343,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
     // --- first pull: legacy-style full snapshot
     let kv = new Map<string, ReadonlyJSONValue>();
     let first = await computePull(
-      db,
+      supabase,
       store,
       { cookie: null, clientGroupID: clientGroup },
       token,
@@ -351,7 +364,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
 
     // --- no-op pull: nothing changed
     let noop = await computePull(
-      db,
+      supabase,
       store,
       { cookie: JSON.parse(JSON.stringify(first.cookie)), clientGroupID: clientGroup },
       token,
@@ -378,7 +391,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
     await setClient(clientID, clientGroup, 2);
 
     let second = await computePull(
-      db,
+      supabase,
       store,
       { cookie: noop.cookie, clientGroupID: clientGroup },
       token,
@@ -402,7 +415,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
     // --- delete a fact (which unlinks the child closure too)
     await pool.query(`delete from facts where id = $1`, [factRoot]);
     let third = await computePull(
-      db,
+      supabase,
       store,
       { cookie: second.cookie, clientGroupID: clientGroup },
       token,
@@ -418,7 +431,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
 
     // final client view must equal a from-scratch snapshot
     let fresh = await computePull(
-      db,
+      supabase,
       store,
       { cookie: null, clientGroupID: clientGroup },
       token,
@@ -433,7 +446,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
   test("publication metadata changes flow through incrementally", async () => {
     let { token } = await createDoc();
     let first = await computePull(
-      db,
+      supabase,
       store,
       { cookie: null, clientGroupID: "g" },
       token,
@@ -446,7 +459,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
 
     await addPublicationFor(token, "First Title");
     let second = await computePull(
-      db,
+      supabase,
       store,
       { cookie: first.cookie, clientGroupID: "g" },
       token,
@@ -464,7 +477,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
       [token],
     );
     let third = await computePull(
-      db,
+      supabase,
       store,
       { cookie: second.cookie, clientGroupID: "g" },
       token,
@@ -481,7 +494,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
     await addFact(root, "block/text", { type: "text", value: "hi" });
     let legacyCookie = Date.now() - 1000;
     let res = await computePull(
-      db,
+      supabase,
       store,
       { cookie: legacyCookie, clientGroupID: "g" },
       token,
@@ -499,7 +512,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
     let { root, token } = await createDoc();
     await addFact(root, "block/text", { type: "text", value: "hi" });
     let first = await computePull(
-      db,
+      supabase,
       store,
       { cookie: null, clientGroupID: "g" },
       token,
@@ -510,7 +523,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
     redisMap.delete(slotKey);
 
     let res = await computePull(
-      db,
+      supabase,
       store,
       { cookie: first.cookie, clientGroupID: "g" },
       token,
@@ -526,7 +539,7 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
 
   test("malformed token id returns ClientStateNotFound like the legacy handler", async () => {
     let res = await computePull(
-      db,
+      supabase,
       store,
       { cookie: null, clientGroupID: "g" },
       "not-a-uuid",
