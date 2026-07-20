@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import {
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
@@ -47,10 +46,7 @@ import {
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
-import {
-  ImageGalleryLightbox,
-  LightboxSlide,
-} from "components/Blocks/ImageGalleryBlock/ImageGalleryLightbox";
+import { useImageLightbox } from "src/useImageLightbox";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
@@ -173,7 +169,9 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
-  let [imageLightboxOpen, setImageLightboxOpen] = useState(false);
+  // The page publishes a source only where images should be zoomable (post
+  // pages, not previews/publication pages), which gates image clickability.
+  let canOpenLightbox = useImageLightbox((s) => s.source !== null) && !preview;
   let document = useDocumentOptional();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
@@ -481,7 +479,6 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksImage.isMain(b.block): {
-      let imageBlock = b.block;
       let isFullBleed = b.block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -508,8 +505,12 @@ export let Block = ({
           <div className={`relative ${isFullBleed ? "w-full" : "w-fit"} h-fit`}>
             <button
               type="button"
-              className={`block ${isFullBleed ? "w-full" : "w-fit"} cursor-zoom-in`}
-              onClick={() => setImageLightboxOpen(true)}
+              className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-pointer" : ""}`}
+              onClick={
+                canOpenLightbox
+                  ? () => useImageLightbox.getState().openAt(index.join("."))
+                  : undefined
+              }
             >
               <img
                 alt={b.block.alt}
@@ -520,21 +521,6 @@ export let Block = ({
               />
             </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
-            <ImageGalleryLightbox
-              count={1}
-              index={imageLightboxOpen ? 0 : null}
-              onIndexChange={(i) => setImageLightboxOpen(i !== null)}
-              renderSlide={() => (
-                <LightboxSlide
-                  image={{
-                    src: blobRefToSrc(imageBlock.image.ref, did),
-                    alt: imageBlock.alt || "",
-                    width: imageBlock.aspectRatio?.width ?? 0,
-                    height: imageBlock.aspectRatio?.height ?? 0,
-                  }}
-                />
-              )}
-            />
           </div>
         </div>
       );

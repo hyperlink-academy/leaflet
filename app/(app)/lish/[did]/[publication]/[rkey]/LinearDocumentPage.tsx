@@ -1,6 +1,9 @@
 "use client";
+import { useEffect } from "react";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { useLeafletContent } from "contexts/LeafletContentContext";
+import { useImageLightbox } from "src/useImageLightbox";
+import { collectPostImages } from "./collectPostImages";
 import {
   ExpandedInteractions,
   getQuoteCount,
@@ -51,6 +54,16 @@ export function LinearDocumentPage({
   const { pages } = useLeafletContent();
   const footnotes = collectFootnotesFromBlocks(blocks);
   const footnoteIndexMap = buildFootnoteIndexMap(footnotes);
+
+  // getting all the pages images and storing in state
+  useEffect(() => {
+    let source = collectPostImages(blocks, did);
+    useImageLightbox.getState().setSource(source);
+    return () => {
+      if (useImageLightbox.getState().source === source)
+        useImageLightbox.getState().setSource(null);
+    };
+  }, [blocks, did]);
 
   if (!document) return null;
 

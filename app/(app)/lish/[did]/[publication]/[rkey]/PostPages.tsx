@@ -20,6 +20,7 @@ import { PollData } from "./fetchPollData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
+import { GlobalImageLightbox } from "./GlobalImageLightbox";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import {
   type OpenPage,
@@ -169,6 +170,8 @@ export function PostPages({
   return (
     <>
       {!sharedProps.fullPageScroll && <BookendSpacer />}
+
+      <GlobalImageLightbox />
 
       <PageRenderer
         page={firstPage}
