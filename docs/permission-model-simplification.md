@@ -15,17 +15,27 @@ control alongside (or instead of) bearer tokens.
   token) is the de facto document id that everything else FKs to
   (`leaflets_to_documents.leaflet`, `leaflets_in_publications.leaflet`,
   `leaflet_contributors.leaflet`, `publications.draft_leaflet`,
-  `identities.home_page`, `custom_domain_routes.*`). The real problem is not
-  the extra join — it's that **the document's identity and the write
-  capability are the same value**, which makes tokens unrevocable and makes
-  identity-based access control impossible to express.
-- Recommended target: repurpose `entity_sets` as the `docs` table (same ids,
-  so no fact/entity rewrites), collapse `permission_token_rights` into a
-  `doc + role` on the token itself, re-key document associations from the edit
-  token to the doc id, and add a `doc_access(doc, identity, role)` table for
-  non-bearer grants. This is a moderate, phaseable migration — roughly 15
-  code files, 4–5 SQL functions, and a handful of column-level backfills, with
-  no rewrite of the facts data or the sync machinery.
+  `identities.home_page`, `custom_domain_routes.*`).
+- **Verdict: the access-control work is worth doing; most of the schema
+  migration is not.** The indirection is vestigial but harmless — it has one
+  cached join and some argument plumbing to its name, and zero known bugs.
+  Everything the product actually wants (identity grants, roles, private
+  docs, link revocation/rotation) can be built against the existing schema by
+  treating `entity_sets.id` as the doc id it already is: a
+  `doc_access(entity_set, identity, role)` table plus enforcement changes in
+  push/pull. Token rotation is even pre-provisioned — the token FKs got
+  `ON UPDATE CASCADE` in migration `20251122220118` (only
+  `publications.draft_leaflet` is missing it), so a leaked edit link can be
+  rotated in place today.
+- The one structural cleanup with a good risk/reward ratio is folding
+  `permission_token_rights` into `permission_tokens(doc, role)` — additive,
+  no PK churn, deletes the join table and the `permission_set` mutation
+  plumbing. The larger moves evaluated below (re-keying the six association
+  tables to doc id, renaming `entity_sets`→`docs`) are the majority of the
+  migration risk for aesthetic gain; skip them unless a concrete need
+  appears (e.g. decoupling URLs from token ids). Sections 2–4 retain the
+  full design and migration plan for those pieces so the option stays
+  documented, but they are not recommended as-is.
 
 ## 1. What exists today
 
@@ -261,11 +271,26 @@ Replicache indexes/undo, yjs sync, appview, feeds, publishing to ATProto.
 
 ### Verdict
 
-Feasible and worthwhile. The 1:1 invariants the migration depends on are
-enforced by construction in all four creation paths (verify with the
-pre-flight queries). Because the doc id already exists as `entity_sets.id`,
-the migration is column renames, one join-table collapse, and six
-single-statement backfills — not a data rewrite. The genuinely new work
-(roles, `doc_access`, visibility, read gating) is exactly the feature work
-wanted anyway; the simplification mostly *removes* code (rights join,
-`permission_set` plumbing, EntitySetProvider logic, dead flags).
+Feasible, but only partially worthwhile. The 1:1 invariants the migration
+depends on are enforced by construction in all four creation paths (verify
+with the pre-flight queries), and because the doc id already exists as
+`entity_sets.id`, none of it is a data rewrite. But weigh value against
+risk honestly:
+
+- The **feature work** (roles, `doc_access`, visibility, read gating on
+  pull, rotation UI) is where all the user value is, and none of it is
+  blocked by the current schema — `doc_access` can key on `entity_set`
+  directly, and push/pull enforcement changes are code-only.
+- The **join-table collapse** (`permission_tokens.doc` + `role`) is cheap,
+  additive, and deletes real plumbing. Good risk/reward.
+- The **association re-key and renames** are the riskiest category of
+  change here (PK changes on production tables, offline Replicache clients
+  replaying old mutation args, atomic PostgREST deploys) and fix nothing
+  that is broken. The most likely source of a permissions bug in the next
+  year is that migration itself, not the current model. Defer indefinitely.
+
+Suggested order: (1) hygiene — leak fix in `deleteLeaflet`, drop
+`change_entity_set` and dead `get_leaflet_page_data`, add
+`ON UPDATE CASCADE` to `draft_leaflet`; (2) the access-control feature
+against the existing schema; (3) the token-rights collapse
+opportunistically; (4) the rest only if a concrete need materializes.
