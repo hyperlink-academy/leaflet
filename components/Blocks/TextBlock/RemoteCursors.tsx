@@ -4,6 +4,7 @@ import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 import { relativePositionToAbsolutePosition, ySyncPluginKey } from "y-prosemirror";
 import { useEditorStates } from "src/state/useEditorState";
+import { cursorRelevanceFilter } from "./remoteCursorPlugin";
 import {
   CONTRACT_MS,
   cursorColors,
@@ -88,6 +89,9 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
           props.awareness.getStates().forEach((aw, clientId) => {
             if (clientId === props.awareness.clientID || aw.cursor == null)
               return;
+            // The awareness is shared page-wide; only draw carets pointing
+            // into this block's entity.
+            if (aw.cursor.entityID !== props.entityID) return;
             let head = relativePositionToAbsolutePosition(
               ystate.doc,
               ystate.type,
@@ -123,7 +127,18 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
     const schedule = () => {
       if (raf === null) raf = window.requestAnimationFrame(recompute);
     };
-    props.awareness.on("change", schedule);
+    // Shared awareness: skip changes whose cursors neither are nor were in
+    // this entity, so a caret move in one block doesn't recompute every
+    // overlay on the page.
+    const relevance = cursorRelevanceFilter(props.awareness, props.entityID);
+    const onAwarenessChange = (changes: {
+      added: number[];
+      updated: number[];
+      removed: number[];
+    }) => {
+      if (relevance(changes)) schedule();
+    };
+    props.awareness.on("change", onAwarenessChange);
     // Only recompute when *this* block's editor changes. setEditorState
     // replaces just the edited entity's entry, so a keystroke in another
     // block leaves our entry referentially equal and is skipped — otherwise
@@ -139,7 +154,7 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
     window.addEventListener("resize", schedule);
     schedule();
     return () => {
-      props.awareness.off("change", schedule);
+      props.awareness.off("change", onAwarenessChange);
       unsubscribe();
       window.removeEventListener("resize", schedule);
       resizeObserver.disconnect();
