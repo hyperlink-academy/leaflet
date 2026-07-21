@@ -1,0 +1,47 @@
+name: Run tests
+description: Install deps, start the local Supabase stack, and run the vitest suite
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+        cache: "npm"
+    - run: npm i
+      shell: bash
+    - uses: supabase/setup-cli@v1
+    - id: cli
+      run: echo "version=$(supabase --version)" >> "$GITHUB_OUTPUT"
+      shell: bash
+    # supabase start spends most of its time pulling images (~2.5GB, dominated
+    # by postgres), so cache them as a tarball keyed on the CLI version, which
+    # determines the image set.
+    - id: image-cache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/supabase-images.tar.zst
+        key: supabase-images-${{ runner.os }}-${{ steps.cli.outputs.version }}
+    - if: steps.image-cache.outputs.cache-hit == 'true'
+      run: zstd -dc /tmp/supabase-images.tar.zst | docker load
+      shell: bash
+    - if: steps.image-cache.outputs.cache-hit != 'true'
+      run: docker images --format '{{.Repository}}:{{.Tag}}' | sort > /tmp/images-before.txt
+      shell: bash
+    # The integration tests need the migrated db + PostgREST behind kong;
+    # everything else is dead weight in CI.
+    - run: supabase start -x gotrue,studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,postgres-meta,supavisor
+      shell: bash
+    # Save whatever images supabase start pulled, diffed against the pre-start
+    # list so it tracks registry/tag changes across CLI versions.
+    - if: steps.image-cache.outputs.cache-hit != 'true'
+      run: |
+        new_images=$(comm -13 /tmp/images-before.txt <(docker images --format '{{.Repository}}:{{.Tag}}' | sort))
+        if [ -n "$new_images" ]; then
+          echo "$new_images" | xargs docker save | zstd -T0 > /tmp/supabase-images.tar.zst
+        else
+          echo "No new images pulled; nothing to cache"
+        fi
+      shell: bash
+    - run: npm test
+      shell: bash

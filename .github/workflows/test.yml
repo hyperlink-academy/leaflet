@@ -13,6 +13,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/test.yml"
+      - ".github/actions/run-tests/**"
 
 concurrency:
   group: test-${{ github.ref }}
@@ -24,13 +25,4 @@ jobs:
     name: vitest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: "npm"
-      - run: "npm i"
-      - uses: supabase/setup-cli@v1
-      # The integration tests need the migrated db + PostgREST behind kong;
-      # everything else is dead weight in CI.
-      - run: supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector
-      - run: "npm test"
+      - uses: ./.github/actions/run-tests
