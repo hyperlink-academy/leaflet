@@ -12,7 +12,10 @@ import {
   walletCheckoutSessionCard,
 } from "stripe/wallet";
 import { isActiveMembership } from "src/membership";
-import { getReaderMembership } from "src/membership.server";
+import {
+  getReaderMembership,
+  notifyNewMember,
+} from "src/membership.server";
 import { Ok, Err, type Result } from "src/result";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
@@ -206,11 +209,49 @@ export async function subscribeToTier(args: {
       existing.stripe_account_id &&
       !isActiveMembership(existing)
     ) {
-      await stripe.subscriptions
-        .cancel(existing.stripe_subscription_id, undefined, {
+      // The row can look lapsed just because a renewal webhook was missed;
+      // only Stripe knows whether the subscription is still billing, and
+      // canceling a live one here would kill a paid-up membership with no
+      // refund.
+      const liveSub = await stripe.subscriptions
+        .retrieve(existing.stripe_subscription_id, {
           stripeAccount: existing.stripe_account_id,
         })
-        .catch(() => {});
+        .catch((e) => {
+          if ((e as { code?: string })?.code === "resource_missing")
+            return null;
+          throw e;
+        });
+      if (
+        liveSub &&
+        (liveSub.status === "active" || liveSub.status === "trialing")
+      ) {
+        const livePeriodEnd = liveSub.items.data[0]?.current_period_end ?? 0;
+        const { error } = await supabaseServerClient
+          .from("publication_memberships")
+          .update({
+            status: liveSub.status,
+            current_period_end: livePeriodEnd
+              ? new Date(livePeriodEnd * 1000).toISOString()
+              : null,
+            cancel_at_period_end: liveSub.cancel_at_period_end ?? false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        if (error)
+          console.error(
+            "[joinMembership] membership refresh from stripe failed:",
+            error,
+          );
+        return Err("already_member");
+      }
+      if (liveSub) {
+        await stripe.subscriptions
+          .cancel(existing.stripe_subscription_id, undefined, {
+            stripeAccount: existing.stripe_account_id,
+          })
+          .catch(() => {});
+      }
     }
 
     const connectedCustomerId = await getOrCreateConnectedCustomer(
@@ -261,7 +302,7 @@ export async function subscribeToTier(args: {
         ? subscription.latest_invoice
         : null;
 
-    const { error } = await supabaseServerClient
+    const { data: membershipRow, error } = await supabaseServerClient
       .from("publication_memberships")
       .upsert(
         {
@@ -281,10 +322,64 @@ export async function subscribeToTier(args: {
           updated_at: new Date().toISOString(),
         },
         { onConflict: "publication,identity_id" },
-      );
-    if (error) {
+      )
+      .select("id")
+      .single();
+    if (error || !membershipRow) {
       console.error("[joinMembership] membership upsert failed:", error);
       return Err("stripe_error");
+    }
+
+    // The webhook only notifies on an inactive→active transition, and this
+    // row is already active by the time its events arrive — so the inline
+    // join is what notifies the publisher (notifyNewMember dedupes against
+    // the webhook's reconciliation path). A notification failure shouldn't
+    // fail a join that already billed.
+    if (
+      subscription.status === "active" ||
+      subscription.status === "trialing"
+    ) {
+      try {
+        await notifyNewMember(args.publicationUri, membershipRow.id);
+      } catch (e) {
+        console.error("[joinMembership] new member notification failed:", e);
+      }
+    }
+
+    // Concurrent joins (different tier/cadence, so different idempotency keys)
+    // can each create a live subscription while only one row survives the
+    // upsert. Cancel any older live subscription for this reader+publication so
+    // exactly one keeps billing; ties break by id so racing requests can't
+    // cancel each other. The connect-events webhook reconciles the row if the
+    // survivor isn't the one it points at.
+    try {
+      const siblings = await stripe.subscriptions.list(
+        { customer: connectedCustomerId, status: "all", limit: 100 },
+        { stripeAccount },
+      );
+      for (const other of siblings.data) {
+        if (other.id === subscription.id) continue;
+        if (other.metadata?.kind !== "publication_membership") continue;
+        if (other.metadata?.publication !== args.publicationUri) continue;
+        if (other.status === "canceled" || other.status === "incomplete_expired")
+          continue;
+        if (
+          other.created > subscription.created ||
+          (other.created === subscription.created &&
+            other.id > subscription.id)
+        )
+          continue;
+        await stripe.subscriptions
+          .cancel(other.id, undefined, { stripeAccount })
+          .catch((e) =>
+            console.error(
+              `[joinMembership] failed to cancel duplicate subscription ${other.id}:`,
+              e,
+            ),
+          );
+      }
+    } catch (e) {
+      console.error("[joinMembership] duplicate subscription sweep failed:", e);
     }
 
     if (subscription.status === "active" || subscription.status === "trialing")
