@@ -1,16 +1,16 @@
 -- Add missing indexes on document foreign keys used by get_profile_posts
-CREATE INDEX CONCURRENTLY IF NOT EXISTS comments_on_documents_document_idx
+CREATE INDEX IF NOT EXISTS comments_on_documents_document_idx
   ON public.comments_on_documents (document);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS document_mentions_in_bsky_document_idx
+CREATE INDEX IF NOT EXISTS document_mentions_in_bsky_document_idx
   ON public.document_mentions_in_bsky (document);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS documents_in_publications_document_idx
+CREATE INDEX IF NOT EXISTS documents_in_publications_document_idx
   ON public.documents_in_publications (document);
 
 -- Expression index to look up documents by DID without adding a column
 -- at://did:plc:xxx/collection/rkey -> split_part gives did:plc:xxx
-CREATE INDEX CONCURRENTLY IF NOT EXISTS documents_identity_did_sort_idx
+CREATE INDEX IF NOT EXISTS documents_identity_did_sort_idx
   ON public.documents (split_part(uri, '/', 3), sort_date DESC, uri DESC);
 
 -- Rewrite get_profile_posts to use the expression index
