@@ -58,12 +58,9 @@ export function LinearDocumentPage({
   // getting all the pages images and storing in state
   useEffect(() => {
     let source = collectPostImages(blocks, did);
-    useImageLightbox.getState().setSource(source);
-    return () => {
-      if (useImageLightbox.getState().source === source)
-        useImageLightbox.getState().setSource(null);
-    };
-  }, [blocks, did]);
+    useImageLightbox.getState().setSource(pageId ?? "", source);
+    return () => useImageLightbox.getState().setSource(pageId ?? "", null);
+  }, [blocks, did, pageId]);
 
   if (!document) return null;
 

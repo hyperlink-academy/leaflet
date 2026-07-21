@@ -171,7 +171,10 @@ export let Block = ({
   let b = block;
   // The page publishes a source only where images should be zoomable (post
   // pages, not previews/publication pages), which gates image clickability.
-  let canOpenLightbox = useImageLightbox((s) => s.source !== null) && !preview;
+  // Keyed by pageId since multiple pages (main + opened subpages) can be
+  // mounted at once, each with their own source.
+  let canOpenLightbox =
+    useImageLightbox((s) => s.sources.has(pageId ?? "")) && !preview;
   let document = useDocumentOptional();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
@@ -508,7 +511,10 @@ export let Block = ({
               className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-pointer" : ""}`}
               onClick={
                 canOpenLightbox
-                  ? () => useImageLightbox.getState().openAt(index.join("."))
+                  ? () =>
+                      useImageLightbox
+                        .getState()
+                        .openAt(pageId ?? "", index.join("."))
                   : undefined
               }
             >

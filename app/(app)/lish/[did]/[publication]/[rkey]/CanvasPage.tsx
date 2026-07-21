@@ -131,12 +131,9 @@ function CanvasContent({
       sortedBlocks.map((b) => ({ block: b.block })),
       did,
     );
-    useImageLightbox.getState().setSource(source);
-    return () => {
-      if (useImageLightbox.getState().source === source)
-        useImageLightbox.getState().setSource(null);
-    };
-  }, [sortedBlocks, did]);
+    useImageLightbox.getState().setSource(pageId ?? "", source);
+    return () => useImageLightbox.getState().setSource(pageId ?? "", null);
+  }, [sortedBlocks, did, pageId]);
 
   return (
     <div className="canvasWrapper h-full w-fit overflow-y-scroll postContent">
