@@ -43,7 +43,8 @@ export type NotificationData =
   | { type: "comment_mention"; comment_uri: string; mention_type: "did" }
   | { type: "comment_mention"; comment_uri: string; mention_type: "publication"; mentioned_uri: string }
   | { type: "comment_mention"; comment_uri: string; mention_type: "document"; mentioned_uri: string }
-  | { type: "recommend"; document_uri: string; recommend_uri: string };
+  | { type: "recommend"; document_uri: string; recommend_uri: string }
+  | { type: "new_member"; publication: string; membership_id: string };
 
 export type HydratedNotification =
   | HydratedCommentNotification
@@ -52,12 +53,13 @@ export type HydratedNotification =
   | HydratedBskyPostEmbedNotification
   | HydratedMentionNotification
   | HydratedCommentMentionNotification
-  | HydratedRecommendNotification;
+  | HydratedRecommendNotification
+  | HydratedNewMemberNotification;
 export async function hydrateNotifications(
   notifications: NotificationRow[],
 ): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications, recommendNotifications] = await Promise.all([
+  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications, recommendNotifications, newMemberNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
     hydrateSubscribeNotifications(notifications),
     hydrateQuoteNotifications(notifications),
@@ -65,10 +67,11 @@ export async function hydrateNotifications(
     hydrateMentionNotifications(notifications),
     hydrateCommentMentionNotifications(notifications),
     hydrateRecommendNotifications(notifications),
+    hydrateNewMemberNotifications(notifications),
   ]);
 
   // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications, ...recommendNotifications];
+  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications, ...recommendNotifications, ...newMemberNotifications];
 
   // Sort by created_at to maintain order
   allHydrated.sort(
@@ -637,6 +640,61 @@ async function hydrateRecommendNotifications(notifications: NotificationRow[]) {
       };
     })
     .filter((n) => n !== null);
+}
+
+export type HydratedNewMemberNotification = Awaited<
+  ReturnType<typeof hydrateNewMemberNotifications>
+>[0];
+
+async function hydrateNewMemberNotifications(notifications: NotificationRow[]) {
+  const newMemberNotifications = notifications.filter(
+    (n): n is NotificationRow & { data: ExtractNotificationType<"new_member"> } =>
+      (n.data as NotificationData)?.type === "new_member",
+  );
+
+  if (newMemberNotifications.length === 0) {
+    return [];
+  }
+
+  const membershipIds = newMemberNotifications.map((n) => n.data.membership_id);
+  const { data: memberships } = await supabaseServerClient
+    .from("publication_memberships")
+    .select(
+      "id, identities(atp_did), publication_membership_tiers(name), publications(record)",
+    )
+    .in("id", membershipIds);
+
+  const memberDids = Array.from(
+    new Set(
+      (memberships ?? [])
+        .map((m) => m.identities?.atp_did)
+        .filter((d): d is string => !!d),
+    ),
+  );
+  const profiles = await getProfiles(memberDids);
+
+  return newMemberNotifications
+    .map((notification) => {
+      const membership = memberships?.find(
+        (m) => m.id === notification.data.membership_id,
+      );
+      const memberDid = membership?.identities?.atp_did ?? null;
+      return {
+        id: notification.id,
+        recipient: notification.recipient,
+        created_at: notification.created_at,
+        type: "new_member" as const,
+        publication: notification.data.publication,
+        membership_id: notification.data.membership_id,
+        tierName: membership?.publication_membership_tiers?.name ?? null,
+        profile: memberDid
+          ? toNotificationProfile(profiles.get(memberDid))
+          : null,
+        normalizedPublication: normalizePublicationRecord(
+          membership?.publications?.record,
+        ),
+      };
+    });
 }
 
 export async function pingIdentityToUpdateNotification(did: string) {

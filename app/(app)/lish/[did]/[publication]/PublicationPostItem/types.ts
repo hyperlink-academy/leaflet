@@ -9,6 +9,7 @@ export type CommonProps = {
   interactions?: React.ReactNode;
   pubInfo?: React.ReactNode;
   inList?: boolean;
+  membersOnly?: boolean;
 };
 
 export type LargeProps = CommonProps & {

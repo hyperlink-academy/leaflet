@@ -21,7 +21,10 @@ export type DocumentContextValue = Pick<
   | "mentions"
   | "leafletId"
   | "recommendsCount"
->;
+> &
+  // Optional so non-post DocumentProvider consumers (publication pages,
+  // previews) don't have to supply it; absent means ungated.
+  Partial<Pick<NonNullPostPageData, "membersOnly">>;
 
 const DocumentContext = createContext<DocumentContextValue | null>(null);
 

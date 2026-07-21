@@ -30,6 +30,7 @@ import { deletePublication } from "./deletePublication";
 import { useRouter } from "next/navigation";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
+import { MembershipSettings } from "./MembershipSettings";
 
 type SettingsView = "all" | "theme";
 
@@ -256,9 +257,12 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         <ContributorSettings />
 
         {canSeePayments && (
-          <DashboardContainer section="Monetization">
-            <ConnectPayments />
-          </DashboardContainer>
+          <>
+            <DashboardContainer section="Monetization">
+              <ConnectPayments />
+            </DashboardContainer>
+            <MembershipSettings />
+          </>
         )}
 
         {canSeePro && !isPro ? (

@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PRODUCT_DEFINITION, parseEntitlements } from "stripe/products";
+import { requestOrigin } from "src/utils/requestOrigin";
 
 export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get("session_id");
   const returnUrl = req.nextUrl.searchParams.get("return") || "/";
 
   if (!sessionId) {
-    return NextResponse.redirect(new URL(returnUrl, req.url));
+    return NextResponse.redirect(new URL(returnUrl, requestOrigin(req)));
   }
 
   try {
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
     console.error("Error processing checkout success:", err);
   }
 
-  const redirectUrl = new URL(returnUrl, req.url);
+  const redirectUrl = new URL(returnUrl, requestOrigin(req));
   redirectUrl.searchParams.set("upgrade", "success");
   return NextResponse.redirect(redirectUrl);
 }

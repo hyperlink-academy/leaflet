@@ -5,6 +5,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { isActiveMembership } from "src/membership";
 import {
   PublicationSubscribers,
   type MergedSubscriber,
@@ -56,7 +57,28 @@ export default async function SubsPage(props: {
     if (s.identities?.atp_did) dids.add(s.identities.atp_did);
   }
 
-  const profiles = await getProfiles(Array.from(dids));
+  const [profiles, { data: memberRows }] = await Promise.all([
+    getProfiles(Array.from(dids)),
+    supabaseServerClient
+      .from("publication_memberships")
+      .select(
+        "status, current_period_end, publication_membership_tiers(name), identities(atp_did, email)",
+      )
+      .eq("publication", pub.uri),
+  ]);
+
+  // Active paying members, keyed by both DID and email so we can tag whichever
+  // subscriber-list identity they surface as.
+  const memberTierByDid = new Map<string, string>();
+  const memberTierByEmail = new Map<string, string>();
+  for (const m of memberRows ?? []) {
+    if (!isActiveMembership(m)) continue;
+    const tierName = m.publication_membership_tiers?.name ?? "Member";
+    const did = m.identities?.atp_did;
+    const email = m.identities?.email;
+    if (did) memberTierByDid.set(did, tierName);
+    if (email) memberTierByEmail.set(email, tierName);
+  }
 
   const byDid = new Map<string, MergedSubscriber>();
   const emailOnly: MergedSubscriber[] = [];
@@ -71,6 +93,7 @@ export default async function SubsPage(props: {
       email: undefined,
       created_at: s.created_at,
       status: "subscribed",
+      memberTier: memberTierByDid.get(d),
     });
   }
 
@@ -94,6 +117,9 @@ export default async function SubsPage(props: {
       email: s.email,
       created_at: s.created_at,
       status,
+      memberTier:
+        (linkedDid ? memberTierByDid.get(linkedDid) : undefined) ??
+        (s.email ? memberTierByEmail.get(s.email) : undefined),
     });
   }
 

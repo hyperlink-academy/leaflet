@@ -16,6 +16,7 @@ import {
   getDocumentURL,
   getPublicationURL,
 } from "app/(app)/lish/createPub/getPublicationURL";
+import { truncateBlocksAtMembersDelimiter } from "src/membership";
 
 // Readers poll feeds constantly and every item is a full React SSR render
 // (including shiki highlighting for code blocks), so cap the feed at the
@@ -62,7 +63,7 @@ export async function generateFeed(
   );
   let { data: publications, error } = await supabaseServerClient
     .from("publications")
-    .select(`uri, record`)
+    .select(`uri, record, publication_membership_settings(enabled)`)
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
@@ -141,6 +142,9 @@ export async function generateFeed(
         blocks = firstPage.blocks || [];
       }
     }
+    // The feed is public, so members-only posts only syndicate their preview.
+    if (publication.publication_membership_settings?.enabled)
+      blocks = truncateBlocksAtMembersDelimiter(blocks);
 
     const docUrl = absolutize(
       getDocumentURL(record, doc.uri, pubRecord ?? pubInput),

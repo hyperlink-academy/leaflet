@@ -12,6 +12,7 @@ import { BskyPostEmbedNotification } from "./BskyPostEmbedNotification";
 import { MentionNotification } from "./MentionNotification";
 import { CommentMentionNotification } from "./CommentMentionNotification";
 import { RecommendNotification } from "./RecommendNotification";
+import { NewMemberNotification } from "./NewMemberNotification";
 import { EmptyState } from "components/EmptyState";
 
 export function NotificationList({
@@ -63,6 +64,9 @@ export function NotificationList({
           }
           if (n.type === "recommend") {
             return <RecommendNotification key={n.id} {...n} />;
+          }
+          if (n.type === "new_member") {
+            return <NewMemberNotification key={n.id} {...n} />;
           }
         })}
       </div>
