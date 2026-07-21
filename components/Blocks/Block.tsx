@@ -205,7 +205,7 @@ export const Block = memo(function Block(
       className={`
         blockWrapper group/blockWrapper relative
         flex flex-row gap-2
-        px-3 sm:px-4
+        px-3 sm:px-4 pt-1
         z-1 w-full
         ${props.listData && focused ? "touch-pan-y" : ""}
       ${alignmentStyle}
@@ -430,7 +430,7 @@ const BlockMultiselectIndicator = (props: BlockProps) => {
           pointer-events-none
           bg-border-light
           absolute right-2 left-2 bottom-0
-          ${first ? "top-2" : "top-0"}
+          ${first ? "top-1" : "top-0"}
           ${!prevBlockSelected && "rounded-t-md"}
           ${!nextBlockSelected && "rounded-b-md"}
           `}
@@ -587,13 +587,13 @@ const HeadingFoldButton = (props: { entityID: string }) => {
     .value;
   let top =
     headingLevel === 1
-      ? "top-[16px]"
+      ? "top-[20px]"
       : headingLevel === 2
-        ? "top-[10px]"
-        : "top-[7px]";
+        ? "top-[14px]"
+        : "top-[11px]";
   return (
     <button
-      className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-1 rounded-r-full text-bg-page  transition-opacity
+      className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-[3px] rounded-r-full text-bg-page  transition-opacity
         ${
           folded
             ? "opacity-100 bg-accent-contrast"
