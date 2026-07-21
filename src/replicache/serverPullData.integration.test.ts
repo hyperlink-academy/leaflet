@@ -47,10 +47,17 @@ let dbAvailable = await pool
   )
   .then((r) => r.rowCount === 1)
   .catch(() => false);
-if (!dbAvailable)
+if (!dbAvailable) {
+  // Skipping locally is a convenience; in CI it would silently pass a broken
+  // stack, so fail instead.
+  if (process.env.CI)
+    throw new Error(
+      `Pull integration tests require a migrated database at ${TEST_DB_URL}`,
+    );
   console.warn(
     `Skipping pull integration tests: no migrated database at ${TEST_DB_URL}`,
   );
+}
 
 // ---------------------------------------------------------------------------
 // Seeding helpers. Cleanup relies on ON DELETE CASCADE from entity_sets for

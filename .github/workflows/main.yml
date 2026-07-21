@@ -18,6 +18,22 @@ jobs:
       - run: "npm i"
       - run: "npx tsc"
 
+  test:
+    runs-on: ubuntu-latest
+    name: vitest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+      - run: "npm i"
+      - uses: supabase/setup-cli@v1
+      # The integration tests need the migrated db + PostgREST behind kong;
+      # everything else is dead weight in CI.
+      - run: supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector
+      - run: "npm test"
+
   lexicons:
     runs-on: ubuntu-latest
     name: lexicon
@@ -33,7 +49,7 @@ jobs:
       - run: "npm i"
       - run: "npm run publish-lexicons"
   deploy-supabase:
-    needs: [typecheck]
+    needs: [typecheck, test]
     runs-on: ubuntu-latest
     name: Deploy Supabase
     env:

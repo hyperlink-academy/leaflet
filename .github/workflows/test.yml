@@ -1,0 +1,36 @@
+name: Test
+
+# On pushes to main the test job in main.yml runs unconditionally and gates
+# the supabase deploy; this workflow only covers PRs.
+on:
+  pull_request:
+    paths:
+      - "**/*.test.ts"
+      - "src/replicache/**"
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - "vitest.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/test.yml"
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: vitest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+      - run: "npm i"
+      - uses: supabase/setup-cli@v1
+      # The integration tests need the migrated db + PostgREST behind kong;
+      # everything else is dead weight in CI.
+      - run: supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector
+      - run: "npm test"
