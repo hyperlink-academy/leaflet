@@ -7,8 +7,10 @@ import {
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
+import { useMemo } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
+import { canvasBlockOrder } from "./collectPostImages";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
@@ -113,7 +115,9 @@ function CanvasContent({
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
-  let height = blocks.length > 0 ? Math.max(...blocks.map((b) => b.y), 0) : 0;
+  let sortedBlocks = useMemo(() => [...blocks].sort(canvasBlockOrder), [blocks]);
+  let height =
+    sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
 
   return (
     <div className="canvasWrapper h-full w-fit overflow-y-scroll postContent">
@@ -126,29 +130,22 @@ function CanvasContent({
       >
         <CanvasBackground />
 
-        {blocks
-          .sort((a, b) => {
-            if (a.y === b.y) {
-              return a.x - b.x;
-            }
-            return a.y - b.y;
-          })
-          .map((canvasBlock, index) => {
-            return (
-              <CanvasBlock
-                key={index}
-                canvasBlock={canvasBlock}
-                did={did}
-                pollData={pollData}
-                prerenderedCodeBlocks={prerenderedCodeBlocks}
-                bskyPostData={bskyPostData}
-                standardSitePostData={standardSitePostData}
-                pageId={pageId}
-                pages={pages}
-                index={index}
-              />
-            );
-          })}
+        {sortedBlocks.map((canvasBlock, index) => {
+          return (
+            <CanvasBlock
+              key={index}
+              canvasBlock={canvasBlock}
+              did={did}
+              pollData={pollData}
+              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              bskyPostData={bskyPostData}
+              standardSitePostData={standardSitePostData}
+              pageId={pageId}
+              pages={pages}
+              index={index}
+            />
+          );
+        })}
       </div>
     </div>
   );
