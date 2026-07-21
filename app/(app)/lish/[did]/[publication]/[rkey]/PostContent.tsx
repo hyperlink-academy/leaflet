@@ -765,7 +765,7 @@ function ListItem(props: {
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
-        className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+        className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
       />
       {isChecklist && (
         <div
@@ -851,7 +851,7 @@ function OrderedListItem(props: {
   let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
-      <div className="listMarker shrink-0 mx-2 z-1 mt-[4px]">
+      <div className="listMarker shrink-0 ml-2 z-1 mt-[4px]">
         {calculatedIndex}.
       </div>
       {isChecklist && (

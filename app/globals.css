@@ -126,7 +126,7 @@
     --highlight-2: 237, 210, 128;
     --highlight-3: 255, 205, 195;
 
-    --list-marker-width: 36px;
+    --list-marker-width: 38px;
     --page-width-unitless: min(
       var(--page-width-setting),
       calc(var(--leaflet-width-unitless) - 12)
@@ -143,11 +143,6 @@
     --wavySVG: (url("/RSVPBackground/wavy.svg"));
 
     --safe-padding-bottom: calc(env(safe-area-inset-bottom) - 8px);
-  }
-  @media (max-width: 640px) {
-    :root {
-      --list-marker-width: 20px;
-    }
   }
 
   @media (min-width: 640px) {

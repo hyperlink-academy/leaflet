@@ -199,7 +199,7 @@ function ListItem(props: {
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
-        className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
+        className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
       />
       {isChecklist && (
         <div className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}>
