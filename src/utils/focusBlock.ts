@@ -116,6 +116,19 @@ function applyFocusToView(
       });
       break;
     }
+    case "afterFootnote": {
+      tr.doc.descendants((node, nodePos) => {
+        if (pos) return false;
+        if (
+          node.type.name === "footnote" &&
+          node.attrs.footnoteEntityID === position.footnoteEntityID
+        ) {
+          pos = { pos: nodePos + node.nodeSize };
+          return false;
+        }
+      });
+      break;
+    }
   }
 
   nextBlock.view.dispatch(
@@ -163,4 +176,8 @@ type Position =
   | {
       type: "bottom";
       left: number;
+    }
+  | {
+      type: "afterFootnote";
+      footnoteEntityID: string;
     };
