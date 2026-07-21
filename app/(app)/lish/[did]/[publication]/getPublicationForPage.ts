@@ -31,7 +31,7 @@ export async function fetchPublicationPostRows(publicationUri: string) {
   const { data } = await supabaseServerClient
     .from("documents_in_publications")
     .select(
-      `documents(uri, data,
+      `members_only, documents(uri, data,
          comments_on_documents(count),
          document_mentions_in_bsky(count),
          recommends_on_documents(count))`,

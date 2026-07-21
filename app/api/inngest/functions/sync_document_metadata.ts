@@ -2,6 +2,7 @@ import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtpAgent, AtUri } from "@atproto/api";
 import { idResolver } from "src/identity";
+import { pageHasMembersDelimiter } from "src/membership";
 import type { Json } from "supabase/database.types";
 
 // 1m, 2m, 4m, 8m, 16m, 32m, 1h, 2h, 4h, 8h, 8h, 8h (~37h total)
@@ -109,6 +110,20 @@ export const sync_document_metadata = inngest.createFunction(
         .from("documents")
         .update({ data: inflatedRecord as Json })
         .eq("uri", document_uri);
+
+      // The appview skips the members_only flag for blob-offloaded records
+      // (the firehose payload has `pages: []`), so this is the only place it
+      // can be computed from the real pages; without it, flag-keyed surfaces
+      // would serve full gated content.
+      const site = record.site;
+      if (typeof site === "string" && site.startsWith("at://")) {
+        const { error } = await supabaseServerClient
+          .from("documents_in_publications")
+          .update({ members_only: pageHasMembersDelimiter(inflatedPages[0]) })
+          .eq("publication", site)
+          .eq("document", document_uri);
+        if (error) throw error;
+      }
 
       return { inflated: true, pageCount: inflatedPages.length };
     });

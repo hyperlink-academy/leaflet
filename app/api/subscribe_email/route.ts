@@ -7,6 +7,7 @@ import {
 import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { mainSiteAuthBase } from "src/utils/customDomain";
+import { requestOrigin } from "src/utils/requestOrigin";
 
 export const dynamic = "force-dynamic";
 
@@ -47,12 +48,8 @@ export async function POST(req: NextRequest) {
   if (!publicationUri) {
     return new NextResponse("Missing publication", { status: 400 });
   }
-  const requestOrigin = new URL(req.url).origin;
-  const returnUrl = await resolveReturnUrl(
-    publicationUri,
-    returnTo,
-    requestOrigin,
-  );
+  const origin = requestOrigin(req);
+  const returnUrl = await resolveReturnUrl(publicationUri, returnTo, origin);
   if (!returnUrl) {
     return new NextResponse("Publication not found", { status: 404 });
   }
@@ -65,7 +62,8 @@ export async function POST(req: NextRequest) {
   // auth_token cookie lives), not on the publication's domain — it bounces the
   // session back via receive_auth_callback. `redirect` still points at the
   // publication so the success modal shows there.
-  const authBase = mainSiteAuthBase(req.headers.get("host") ?? undefined) || requestOrigin;
+  const authBase =
+    mainSiteAuthBase(req.headers.get("host") ?? undefined) || origin;
   const loginUrl = new URL("/api/auth/email-login", authBase);
   loginUrl.searchParams.set("email", email);
   loginUrl.searchParams.set("redirect", returnUrl.toString());

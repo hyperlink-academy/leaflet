@@ -55,7 +55,12 @@ export async function DocumentPageRenderer({
   ]);
 
   const record = document?.normalizedDocument;
+
   const pages = record ? getDocumentPages(record) : undefined;
+
+  console.log("-------------");
+  console.log(document?.data, record, pages);
+  console.log("-------------");
 
   if (!document?.data || !record || !pages)
     return (

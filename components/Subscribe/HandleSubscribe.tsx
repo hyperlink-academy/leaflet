@@ -130,6 +130,11 @@ export const SubscribeWithHandle = (props: {
         setSubscribing(false);
         return;
       }
+      if (result.joinUrl) {
+        // Memberships enabled — go pick a tier instead of the success modal.
+        window.location.href = result.joinUrl;
+        return;
+      }
       if (props.onAtSuccess) {
         props.onAtSuccess();
       } else {

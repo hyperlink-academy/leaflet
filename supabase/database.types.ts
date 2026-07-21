@@ -1352,6 +1352,7 @@ export type Database = {
       }
       publication_memberships: {
         Row: {
+          cadence: string | null
           cancel_at_period_end: boolean
           created_at: string
           current_period_end: string | null
@@ -1359,12 +1360,15 @@ export type Database = {
           identity_id: string
           publication: string
           status: string | null
+          stripe_account_id: string | null
           stripe_customer_id: string | null
+          stripe_price_id: string | null
           stripe_subscription_id: string | null
           tier: string | null
           updated_at: string
         }
         Insert: {
+          cadence?: string | null
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
@@ -1372,12 +1376,15 @@ export type Database = {
           identity_id: string
           publication: string
           status?: string | null
+          stripe_account_id?: string | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           tier?: string | null
           updated_at?: string
         }
         Update: {
+          cadence?: string | null
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
@@ -1385,7 +1392,9 @@ export type Database = {
           identity_id?: string
           publication?: string
           status?: string | null
+          stripe_account_id?: string | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           tier?: string | null
           updated_at?: string
@@ -1946,6 +1955,82 @@ export type Database = {
             foreignKeyName: "stripe_connected_accounts_identity_id_fkey"
             columns: ["identity_id"]
             isOneToOne: true
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_wallets: {
+        Row: {
+          card_brand: string | null
+          card_exp_month: number | null
+          card_exp_year: number | null
+          card_last4: string | null
+          created_at: string
+          default_payment_method_id: string | null
+          identity_id: string
+          stripe_customer_id: string
+          updated_at: string
+        }
+        Insert: {
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string
+          default_payment_method_id?: string | null
+          identity_id: string
+          stripe_customer_id: string
+          updated_at?: string
+        }
+        Update: {
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string
+          default_payment_method_id?: string | null
+          identity_id?: string
+          stripe_customer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_wallets_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: true
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connected_customers: {
+        Row: {
+          created_at: string
+          identity_id: string
+          stripe_account_id: string
+          stripe_customer_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          identity_id: string
+          stripe_account_id: string
+          stripe_customer_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          identity_id?: string
+          stripe_account_id?: string
+          stripe_customer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connected_customers_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
             referencedRelation: "identities"
             referencedColumns: ["id"]
           },

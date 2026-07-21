@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "blueprint": {
+      "source": "imbue-ai/blueprint",
+      "sourceType": "github",
+      "skillPath": "skills/blueprint/SKILL.md",
+      "computedHash": "ae26356c3e496cf91d06e9b41b244bf74e97f860ecdccacc7edab418c0948ec5"
+    },
+    "blueprint-generate": {
+      "source": "imbue-ai/blueprint",
+      "sourceType": "github",
+      "skillPath": "skills/blueprint-generate/SKILL.md",
+      "computedHash": "124966d02ff7211171fea90325e300d185bd591eb6ac8fea9f985a6f7fdc72d8"
+    }
+  }
+}

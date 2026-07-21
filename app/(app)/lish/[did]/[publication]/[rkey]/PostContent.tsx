@@ -12,6 +12,7 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksStandardSitePost,
@@ -60,6 +61,7 @@ import { useDocument, useDocumentOptional } from "contexts/DocumentContext";
 import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
+import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 
 type PostsListData = {
   publication: { uri: string; record: unknown };
@@ -310,6 +312,12 @@ export let Block = ({
     }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
+    }
+    case PubLeafletBlocksMembersOnlyDelimiter.isMain(b.block): {
+      // Full-access viewers read straight through; for everyone else the
+      // delimiter is the last served block and renders the paywall.
+      if (!document?.membersOnly?.gated) return null;
+      return <MembersOnlyPaywall />;
     }
     case PubLeafletBlocksSignup.isMain(b.block): {
       if (!document?.publication?.uri) return null;

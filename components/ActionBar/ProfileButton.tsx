@@ -130,6 +130,21 @@ export const ProfileButton = () => {
           <WebSmall />
           Domain Settings
         </button>
+        {identity && (
+          <SpeedyLink
+            className="no-underline! menuItem -mx-[8px]"
+            href="/memberships"
+            onClick={() => {
+              setOpen(false);
+              setSidebarOpen(false);
+            }}
+          >
+            <button type="button" className="flex gap-2">
+              <AnalyticsSmall />
+              Memberships &amp; Billing
+            </button>
+          </SpeedyLink>
+        )}
         <hr className="border-border-light border-dashed" />
 
         {canSeePro && isPro && (

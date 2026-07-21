@@ -54,6 +54,7 @@ type PublicationRow = {
     sort_order: string;
   }[];
   documents_in_publications?: {
+    members_only?: boolean | null;
     documents: {
       uri: string;
       data: unknown;

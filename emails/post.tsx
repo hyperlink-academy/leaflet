@@ -85,6 +85,15 @@ type PostEmailProps = {
   assetsBaseUrl: string;
   theme?: EmailTheme;
   /**
+   * Set for non-member recipients of a gated post: renders a "subscribe to
+   * see the full content" box after the (truncated) blocks. Email can't open
+   * the site's join modal, so it always links out to the join page.
+   */
+  membersUpsell?: {
+    joinUrl: string;
+    cheapestMonthlyCents?: number | null;
+  };
+  /**
    * Hydrated Bluesky posts for `pub.leaflet.blocks.bskyPost` blocks, keyed
    * by post URI. Blocks whose post is missing (hydration failed, post
    * deleted/blocked) fall back to the "not supported" card.
@@ -824,6 +833,18 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             currentPublicationUri={p.currentPublicationUri}
                           />
                         ))}
+
+                        {p.membersUpsell ? (
+                          <MembersUpsell
+                            publicationName={p.publicationName}
+                            joinUrl={p.membersUpsell.joinUrl}
+                            cheapestMonthlyCents={
+                              p.membersUpsell.cheapestMonthlyCents
+                            }
+                            theme={theme}
+                            colors={c}
+                          />
+                        ) : null}
 
                         {/* Footer: Gmail won't reliably cascade `text-align` from a
                     wrapping <table>, so each centered row is its own <td
@@ -1783,6 +1804,108 @@ const BlockNotSupported = ({
           See full post
         </Link>
       </ReactEmailText>
+    </Section>
+  );
+};
+
+// Paywall box for non-member recipients of a gated post, mirroring the site's
+// MembersOnlyPaywall. Rendered after the truncated blocks.
+const MembersUpsell = ({
+  publicationName,
+  joinUrl,
+  cheapestMonthlyCents,
+  theme = defaultEmailTheme,
+  colors,
+}: {
+  publicationName: string;
+  joinUrl: string;
+  cheapestMonthlyCents?: number | null;
+  theme?: EmailTheme;
+  colors?: ResolvedColors;
+}) => {
+  const c = colors ?? resolveColors(theme);
+  const priceLabel =
+    cheapestMonthlyCents != null
+      ? (cheapestMonthlyCents / 100).toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: cheapestMonthlyCents % 100 === 0 ? 0 : 2,
+        })
+      : null;
+  return (
+    <Section
+      style={{
+        border: `1px solid ${c.border}`,
+        borderRadius: 4,
+        margin: BLOCK_MARGIN,
+        padding: "20px 12px",
+      }}
+    >
+      <ReactEmailText
+        style={{
+          color: theme.primary,
+          fontFamily: theme.bodyFont,
+          fontSize: 16,
+          fontWeight: "bold",
+          lineHeight: 1.4,
+          margin: 0,
+          textAlign: "center",
+        }}
+      >
+        This post is for members
+      </ReactEmailText>
+      <ReactEmailText
+        style={{
+          color: c.secondary,
+          fontFamily: theme.bodyFont,
+          fontSize: 14,
+          lineHeight: 1.4,
+          margin: "4px 0 12px",
+          textAlign: "center",
+        }}
+      >
+        Subscribe to see the full content — become a member of{" "}
+        {publicationName}
+        {priceLabel ? ` starting at ${priceLabel}/month` : ""}.
+      </ReactEmailText>
+      {/* Bulletproof centered button — same table pattern as ButtonBlock. */}
+      <table
+        role="presentation"
+        align="center"
+        cellPadding={0}
+        cellSpacing={0}
+        border={0}
+        style={{ borderCollapse: "separate", margin: "0 auto" }}
+      >
+        <tbody>
+          <tr>
+            <td
+              align="center"
+              {...bgcolorAttr(theme.accentBackground)}
+              style={{
+                backgroundColor: theme.accentBackground,
+                borderRadius: 6,
+                padding: "10px 20px",
+              }}
+            >
+              <Link
+                href={joinUrl}
+                style={{
+                  color: theme.accentText,
+                  display: "block",
+                  fontFamily: theme.bodyFont,
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  lineHeight: "20px",
+                  textDecoration: "none",
+                }}
+              >
+                Become a member
+              </Link>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </Section>
   );
 };

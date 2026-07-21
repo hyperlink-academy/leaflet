@@ -10,6 +10,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/api";
+import { requestOrigin } from "src/utils/requestOrigin";
 
 // Custom-domain email login bounces here first. If the user already has a
 // session on the main site for this same email we hand it straight back to the
@@ -18,10 +19,11 @@ import { AtUri } from "@atproto/api";
 // so the canonical session is minted first-party here before bouncing back.
 export async function GET(req: NextRequest) {
   let email = req.nextUrl.searchParams.get("email");
+  let origin = requestOrigin(req);
   // Callers pass an absolute redirect (window.location.href); default to the
-  // main-site origin so postAuthRedirect and NextResponse.redirect never get a
+  // request origin so postAuthRedirect and NextResponse.redirect never get a
   // relative URL.
-  let redirect = req.nextUrl.searchParams.get("redirect") || req.nextUrl.origin;
+  let redirect = req.nextUrl.searchParams.get("redirect") || origin;
   let action = req.nextUrl.searchParams.get("action");
 
   if (!email) return NextResponse.redirect(redirect);
@@ -58,7 +60,7 @@ export async function GET(req: NextRequest) {
     : undefined;
 
   let tokenId = await requestAuthEmailToken(email, subscription);
-  let confirmUrl = new URL("/login/confirm", req.nextUrl.origin);
+  let confirmUrl = new URL("/login/confirm", origin);
   confirmUrl.searchParams.set("token", tokenId);
   confirmUrl.searchParams.set("email", email);
   confirmUrl.searchParams.set("redirect", redirect);

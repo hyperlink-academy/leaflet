@@ -54,9 +54,15 @@ export type ProcessBlocksToPagesHooks = {
    * Resolve an image URL to a BlobRef. For publish, this uploads the blob to
    * the user's PDS. For preview, this synthesizes a BlobRef that carries the
    * URL through to the email template (no PDS side-effects).
+   * `membersOnly` is true for images past the members-only delimiter
+   * (including subpages linked from there) — content that gated publishes
+   * strip from the PDS copy of the record.
    * Returning undefined causes the image block to be dropped.
    */
-  uploadImage: (src: string) => Promise<BlobRef | undefined>;
+  uploadImage: (
+    src: string,
+    opts: { membersOnly: boolean },
+  ) => Promise<BlobRef | undefined>;
 
   /**
    * Persist a poll definition record and return its at-uri / CID. For
@@ -133,7 +139,7 @@ export async function processBlocksToPages(opts: {
   const [pageType] = scan.eav(startPage, "page/type");
 
   if (pageType?.data.value === "canvas") {
-    const canvasBlocks = await canvasBlocksToRecord(startPage);
+    const canvasBlocks = await canvasBlocksToRecord(startPage, false);
     pages.unshift({
       id: startPage,
       blocks: canvasBlocks,
@@ -141,7 +147,7 @@ export async function processBlocksToPages(opts: {
     });
   } else {
     const blocks = getBlocksWithTypeLocal(facts, startPage);
-    const b = await blocksToRecord(blocks);
+    const b = await blocksToRecord(blocks, false);
     pages.unshift({
       id: startPage,
       blocks: b,
@@ -153,11 +159,20 @@ export async function processBlocksToPages(opts: {
 
   async function blocksToRecord(
     blocks: Block[],
+    membersOnly: boolean,
   ): Promise<PubLeafletPagesLinearDocument.Block[]> {
     const parsedBlocks = parseBlocksToList(blocks);
+    // Blocks past the delimiter are members-only; the delimiter itself stays
+    // public as the paywall anchor. It can only be a top-level block, never
+    // inside a list.
+    const delimiterIndex = parsedBlocks.findIndex(
+      (b) => b.type === "block" && b.block.type === "members-only-delimiter",
+    );
     return (
       await Promise.all(
-        parsedBlocks.map(async (blockOrList) => {
+        parsedBlocks.map(async (blockOrList, blockIndex) => {
+          const blockMembersOnly =
+            membersOnly || (delimiterIndex !== -1 && blockIndex > delimiterIndex);
           if (blockOrList.type === "block") {
             const alignmentValue = scan.eav(
               blockOrList.block.value,
@@ -175,7 +190,7 @@ export async function processBlocksToPages(opts: {
                     : alignmentValue === "left"
                       ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
                       : undefined;
-            const b = await blockToRecord(blockOrList.block);
+            const b = await blockToRecord(blockOrList.block, blockMembersOnly);
             if (!b) return [];
             const block: PubLeafletPagesLinearDocument.Block = {
               $type: "pub.leaflet.pages.linearDocument#block",
@@ -194,7 +209,10 @@ export async function processBlocksToPages(opts: {
                       $type: "pub.leaflet.blocks.orderedList",
                       startIndex:
                         run.children[0].block.listData?.listStart || 1,
-                      children: await orderedChildrenToRecord(run.children),
+                      children: await orderedChildrenToRecord(
+                        run.children,
+                        blockMembersOnly,
+                      ),
                     },
                   };
                   return block;
@@ -203,7 +221,10 @@ export async function processBlocksToPages(opts: {
                     $type: "pub.leaflet.pages.linearDocument#block",
                     block: {
                       $type: "pub.leaflet.blocks.unorderedList",
-                      children: await unorderedChildrenToRecord(run.children),
+                      children: await unorderedChildrenToRecord(
+                        run.children,
+                        blockMembersOnly,
+                      ),
                     },
                   };
                   return block;
@@ -236,11 +257,12 @@ export async function processBlocksToPages(opts: {
 
   async function unorderedChildrenToRecord(
     children: List[],
+    membersOnly: boolean,
   ): Promise<PubLeafletBlocksUnorderedList.ListItem[]> {
     return (
       await Promise.all(
         children.map(async (child) => {
-          const content = await blockToRecord(child.block);
+          const content = await blockToRecord(child.block, membersOnly);
           if (!content) return [];
           const record: PubLeafletBlocksUnorderedList.ListItem = {
             $type: "pub.leaflet.blocks.unorderedList#listItem",
@@ -256,12 +278,15 @@ export async function processBlocksToPages(opts: {
             (c) => c.block.listData?.listStyle === "ordered",
           );
           if (sameStyle.length > 0) {
-            record.children = await unorderedChildrenToRecord(sameStyle);
+            record.children = await unorderedChildrenToRecord(
+              sameStyle,
+              membersOnly,
+            );
           }
           if (diffStyle.length > 0) {
             record.orderedListChildren = {
               $type: "pub.leaflet.blocks.orderedList",
-              children: await orderedChildrenToRecord(diffStyle),
+              children: await orderedChildrenToRecord(diffStyle, membersOnly),
             };
           }
           return record;
@@ -272,11 +297,12 @@ export async function processBlocksToPages(opts: {
 
   async function orderedChildrenToRecord(
     children: List[],
+    membersOnly: boolean,
   ): Promise<PubLeafletBlocksOrderedList.ListItem[]> {
     return (
       await Promise.all(
         children.map(async (child) => {
-          const content = await blockToRecord(child.block);
+          const content = await blockToRecord(child.block, membersOnly);
           if (!content) return [];
           const record: PubLeafletBlocksOrderedList.ListItem = {
             $type: "pub.leaflet.blocks.orderedList#listItem",
@@ -292,12 +318,15 @@ export async function processBlocksToPages(opts: {
             (c) => c.block.listData?.listStyle !== "ordered",
           );
           if (sameStyle.length > 0) {
-            record.children = await orderedChildrenToRecord(sameStyle);
+            record.children = await orderedChildrenToRecord(
+              sameStyle,
+              membersOnly,
+            );
           }
           if (diffStyle.length > 0) {
             record.unorderedListChildren = {
               $type: "pub.leaflet.blocks.unorderedList",
-              children: await unorderedChildrenToRecord(diffStyle),
+              children: await unorderedChildrenToRecord(diffStyle, membersOnly),
             };
           }
           return record;
@@ -306,7 +335,7 @@ export async function processBlocksToPages(opts: {
     ).flat();
   }
 
-  async function blockToRecord(b: Block) {
+  async function blockToRecord(b: Block, membersOnly: boolean) {
     const footnoteContentResolver = (footnoteEntityID: string) => {
       const [content] = scan.eav(footnoteEntityID, "block/text");
       if (!content)
@@ -350,7 +379,10 @@ export async function processBlocksToPages(opts: {
       const [pageType] = scan.eav(page.data.value, "page/type");
 
       if (pageType?.data.value === "canvas") {
-        const canvasBlocks = await canvasBlocksToRecord(page.data.value);
+        const canvasBlocks = await canvasBlocksToRecord(
+          page.data.value,
+          membersOnly,
+        );
         pages.push({
           id: page.data.value,
           blocks: canvasBlocks,
@@ -360,7 +392,7 @@ export async function processBlocksToPages(opts: {
         const blocks = getBlocksWithTypeLocal(facts, page.data.value);
         pages.push({
           id: page.data.value,
-          blocks: await blocksToRecord(blocks),
+          blocks: await blocksToRecord(blocks, membersOnly),
           type: "doc",
         });
       }
@@ -490,7 +522,7 @@ export async function processBlocksToPages(opts: {
       if (!image) return;
       const [altText] = scan.eav(b.value, "image/alt");
       const [fullBleed] = scan.eav(b.value, "image/full-bleed");
-      const blobref = await hooks.uploadImage(image.data.src);
+      const blobref = await hooks.uploadImage(image.data.src, { membersOnly });
       if (!blobref) return;
       const block: $Typed<PubLeafletBlocksImage.Main> = {
         $type: "pub.leaflet.blocks.image",
@@ -515,7 +547,9 @@ export async function processBlocksToPages(opts: {
             const [image] = scan.eav(imageEntity, "block/image");
             if (!image) return null;
             const [alt] = scan.eav(imageEntity, "image/alt");
-            const blobref = await hooks.uploadImage(image.data.src);
+            const blobref = await hooks.uploadImage(image.data.src, {
+              membersOnly,
+            });
             if (!blobref) return null;
             const galleryImage: PubLeafletBlocksImageGallery.Image = {
               $type: "pub.leaflet.blocks.imageGallery#image",
@@ -552,7 +586,7 @@ export async function processBlocksToPages(opts: {
       const [src] = scan.eav(b.value, "link/url");
       if (!src) return;
       const blobref = previewImage
-        ? await hooks.uploadImage(previewImage.data.src)
+        ? await hooks.uploadImage(previewImage.data.src, { membersOnly })
         : undefined;
       const [title] = scan.eav(b.value, "link/title");
       const block: $Typed<PubLeafletBlocksWebsite.Main> = {
@@ -657,6 +691,7 @@ export async function processBlocksToPages(opts: {
 
   async function canvasBlocksToRecord(
     pageID: string,
+    membersOnly: boolean,
   ): Promise<PubLeafletPagesCanvas.Block[]> {
     const canvasBlocks = scan.eav(pageID, "canvas/block");
     return (
@@ -676,7 +711,7 @@ export async function processBlocksToPages(opts: {
             factID: canvasBlock.id,
           };
 
-          const content = await blockToRecord(block);
+          const content = await blockToRecord(block, membersOnly);
           if (!content) return null;
 
           const width =

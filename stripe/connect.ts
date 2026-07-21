@@ -1,13 +1,9 @@
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 
-// Platform fee taken from each payment a publisher collects, applied as
-// application_fee_amount on destination charges.
+// Platform fee taken from each membership payment, applied as
+// application_fee_percent on the publisher's direct-charge subscription.
 export const PLATFORM_FEE_BPS = 500; // 5%
-
-export function platformFeeAmount(amountInCents: number): number {
-  return Math.round((amountInCents * PLATFORM_FEE_BPS) / 10_000);
-}
 
 export type ConnectedAccountState = {
   charges_enabled: boolean;
@@ -19,7 +15,8 @@ export type ConnectedAccountState = {
 // payments. A "full" dashboard requires both fees_collector and losses_collector
 // to be "stripe"; other combinations are rejected as
 // account_controller_unsupported_configuration. The publisher owns the account
-// and carries loss liability; our platform cut is independent (application_fee_amount).
+// and carries loss liability; members are charged directly on it and our platform
+// cut arrives as application fees (application_fee_percent).
 export async function createConnectedMerchantAccount(args: {
   email: string;
   displayName?: string;
