@@ -4,29 +4,40 @@ import {
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksOrderedList,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { GalleryImage } from "components/Blocks/ImageGalleryBlock/shared";
 
-// Collect every image in the post in document order — standalone image blocks
-// and each gallery's children flattened inline — so a standalone image's
-// lightbox can page through the whole post. Image blocks are keyed by their
-// index-path so each one can find its position in the flattened list; galleries
-// only contribute images, they keep their own local lightbox.
-export function collectPostImages(
-  blocks: { block: PubLeafletPagesLinearDocument.Block["block"] }[],
-  did: string,
-): { images: GalleryImage[]; offsets: Map<string, number> } {
-  let images: GalleryImage[] = [];
-  let offsets = new Map<string, number>();
+// Canvas blocks render in visual order; sharing the comparator keeps the
+// lightbox paging through canvas images in the same order they appear.
+export function canvasBlockOrder(
+  a: PubLeafletPagesCanvas.Block,
+  b: PubLeafletPagesCanvas.Block,
+) {
+  return a.y === b.y ? a.x - b.x : a.y - b.y;
+}
 
-  let walkBlock = (
-    b: { block: PubLeafletPagesLinearDocument.Block["block"] },
-    path: number[],
-  ) => {
+// Collect every image on a page in document order — standalone image blocks and
+// each gallery's children flattened inline — so a standalone image's lightbox
+// can page through them all. The clicked image is found by src, so galleries
+// only contribute images; they keep their own local lightbox.
+export function collectPostImages(
+  page: PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main,
+  did: string,
+): GalleryImage[] {
+  let blocks = PubLeafletPagesCanvas.isMain(page)
+    ? [...(page.blocks || [])]
+        .sort(canvasBlockOrder)
+        .map((b) => ({ block: b.block }))
+    : (page.blocks ?? []);
+  let images: GalleryImage[] = [];
+
+  let walkBlock = (b: {
+    block: PubLeafletPagesLinearDocument.Block["block"];
+  }) => {
     let block = b.block;
     if (PubLeafletBlocksImage.isMain(block)) {
-      offsets.set(path.join("."), images.length);
       images.push({
         src: blobRefToSrc(block.image.ref, did),
         alt: block.alt || "",
@@ -42,37 +53,28 @@ export function collectPostImages(
           height: i.aspectRatio.height,
         });
     } else if (PubLeafletBlocksUnorderedList.isMain(block)) {
-      block.children.forEach((child, i) =>
-        walkListItem(child, [...path, i], false),
-      );
+      block.children.forEach((child) => walkListItem(child, false));
     } else if (PubLeafletBlocksOrderedList.isMain(block)) {
-      block.children.forEach((child, i) =>
-        walkListItem(child, [...path, i], true),
-      );
+      block.children.forEach((child) => walkListItem(child, true));
     }
   };
 
-  // A list item renders its content block at its own path, then nests its
-  // children one level deeper — mirroring how ListItem/OrderedListItem build
-  // the `index` prop so the keys here line up with the rendered blocks.
   let walkListItem = (
     item:
       | PubLeafletBlocksUnorderedList.ListItem
       | PubLeafletBlocksOrderedList.ListItem,
-    path: number[],
     ordered: boolean,
   ) => {
-    walkBlock({ block: item.content }, path);
-    let sameKind = item.children ?? [];
-    sameKind.forEach((child, i) => walkListItem(child, [...path, i], ordered));
+    walkBlock({ block: item.content });
+    (item.children ?? []).forEach((child) => walkListItem(child, ordered));
     let otherKind = ordered
       ? ((item as PubLeafletBlocksOrderedList.ListItem).unorderedListChildren
           ?.children ?? [])
       : ((item as PubLeafletBlocksUnorderedList.ListItem).orderedListChildren
           ?.children ?? []);
-    otherKind.forEach((child, i) => walkListItem(child, [...path, i], !ordered));
+    otherKind.forEach((child) => walkListItem(child, !ordered));
   };
 
-  blocks.forEach((b, i) => walkBlock(b, [i]));
-  return { images, offsets };
+  blocks.forEach((b) => walkBlock(b));
+  return images;
 }

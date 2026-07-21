@@ -168,10 +168,8 @@ export function PostPages({
   };
 
   return (
-    <>
+    <GlobalImageLightbox did={did}>
       {!sharedProps.fullPageScroll && <BookendSpacer />}
-
-      <GlobalImageLightbox />
 
       <PageRenderer
         page={firstPage}
@@ -272,7 +270,7 @@ export function PostPages({
       })}
 
       {!sharedProps.fullPageScroll && <BookendSpacer />}
-    </>
+    </GlobalImageLightbox>
   );
 }
 

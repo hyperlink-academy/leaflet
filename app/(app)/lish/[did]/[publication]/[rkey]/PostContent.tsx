@@ -46,7 +46,7 @@ import {
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
-import { useImageLightbox } from "src/useImageLightbox";
+import { useOpenImageLightbox } from "./GlobalImageLightbox";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
@@ -169,12 +169,8 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
-  // The page publishes a source only where images should be zoomable (post
-  // pages, not previews/publication pages), which gates image clickability.
-  // Keyed by pageId since multiple pages (main + opened subpages) can be
-  // mounted at once, each with their own source.
-  let canOpenLightbox =
-    useImageLightbox((s) => s.sources.has(pageId ?? "")) && !preview;
+  let openLightbox = useOpenImageLightbox();
+  let canOpenLightbox = !!openLightbox && !preview;
   let document = useDocumentOptional();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
@@ -482,6 +478,7 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksImage.isMain(b.block): {
+      let src = blobRefToSrc(b.block.image.ref, did);
       let isFullBleed = b.block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -511,10 +508,7 @@ export let Block = ({
               className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-pointer" : ""}`}
               onClick={
                 canOpenLightbox
-                  ? () =>
-                      useImageLightbox
-                        .getState()
-                        .openAt(pageId ?? "", index.join("."))
+                  ? () => openLightbox?.(pageId, src)
                   : undefined
               }
             >
@@ -523,7 +517,7 @@ export let Block = ({
                 height={b.block.aspectRatio?.height}
                 width={b.block.aspectRatio?.width}
                 className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-                src={blobRefToSrc(b.block.image.ref, did)}
+                src={src}
               />
             </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}

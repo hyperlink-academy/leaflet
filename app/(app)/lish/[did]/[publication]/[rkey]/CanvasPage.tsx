@@ -7,11 +7,10 @@ import {
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
-import { useImageLightbox } from "src/useImageLightbox";
-import { collectPostImages } from "./collectPostImages";
+import { canvasBlockOrder } from "./collectPostImages";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
@@ -116,24 +115,9 @@ function CanvasContent({
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
-  // Sorted once so the render order and the lightbox's image order (and thus
-  // each image block's index) line up.
-  let sortedBlocks = useMemo(
-    () => [...blocks].sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y)),
-    [blocks],
-  );
+  let sortedBlocks = useMemo(() => [...blocks].sort(canvasBlockOrder), [blocks]);
   let height =
     sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
-
-  // get all the images in the canvas and store in state so lightbox can use it
-  useEffect(() => {
-    let source = collectPostImages(
-      sortedBlocks.map((b) => ({ block: b.block })),
-      did,
-    );
-    useImageLightbox.getState().setSource(pageId ?? "", source);
-    return () => useImageLightbox.getState().setSource(pageId ?? "", null);
-  }, [sortedBlocks, did, pageId]);
 
   return (
     <div className="canvasWrapper h-full w-fit overflow-y-scroll postContent">
