@@ -148,11 +148,16 @@ async function reconcileUntrackedSubscription(
   // FK guards: surface a permanently-unrecoverable insert loudly instead of
   // retry-looping on it. A missing identity means the subscription is billing
   // with no owner at all.
-  const [identityRes, tierRes] = await Promise.all([
+  const [identityRes, pubRes, tierRes] = await Promise.all([
     supabaseServerClient
       .from("identities")
       .select("id")
       .eq("id", identity_id)
+      .maybeSingle(),
+    supabaseServerClient
+      .from("publications")
+      .select("uri")
+      .eq("uri", publication)
       .maybeSingle(),
     tier_id
       ? supabaseServerClient
@@ -163,10 +168,17 @@ async function reconcileUntrackedSubscription(
       : Promise.resolve({ data: null, error: null }),
   ]);
   if (identityRes.error) throw identityRes.error;
+  if (pubRes.error) throw pubRes.error;
   if (tierRes.error) throw tierRes.error;
   if (!identityRes.data) {
     console.error(
       `[connect-events] membership subscription ${sub.id} references missing identity ${identity_id}; billing with no owner, needs manual cancellation`,
+    );
+    return;
+  }
+  if (!pubRes.data) {
+    console.error(
+      `[connect-events] membership subscription ${sub.id} references deleted publication ${publication}; billing for nothing, needs manual cancellation`,
     );
     return;
   }
@@ -212,13 +224,17 @@ export async function handleMembershipInvoiceFailed(
 
   // No grace period: a failed renewal re-gates members-only content immediately
   // (isActiveMembership treats past_due as inactive); Stripe retries then cancels.
+  // Write the re-fetched status rather than assuming past_due — a replayed or
+  // out-of-order event can arrive after the subscription already recovered.
   const { error } = await supabaseServerClient
     .from("publication_memberships")
-    .update({ status: "past_due", updated_at: new Date().toISOString() })
+    .update({ status: sub.status, updated_at: new Date().toISOString() })
     .eq("stripe_subscription_id", sub.id);
   if (error) throw error;
 
-  await sendPaymentFailedEmail(sub);
+  if (!isActiveStatus(sub.status)) {
+    await sendPaymentFailedEmail(sub);
+  }
 }
 
 async function sendPaymentFailedEmail(sub: Stripe.Subscription) {
