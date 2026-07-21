@@ -2091,6 +2091,14 @@ export type Database = {
         }
         Returns: Database["public"]["CompositeTypes"]["pull_result"]
       }
+      pull_data_cvr: {
+        Args: {
+          token_id: string
+          client_group_id: string
+          base_cvr: Json
+        }
+        Returns: Json
+      }
       search_tags: {
         Args: {
           search_query: string
