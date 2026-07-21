@@ -1,8 +1,7 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import sharp from "sharp";
-import { redirect } from "next/navigation";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 
@@ -33,11 +32,13 @@ export async function GET(
     let publication = publications?.[0];
 
     const record = normalizePublicationRecord(publication?.record);
-    if (!record?.icon) return redirect("/icon.png");
+    if (!record?.icon)
+      return NextResponse.redirect(new URL("/icon.png", request.url));
 
     let identity = await idResolver.did.resolve(did);
     let service = identity?.service?.find((f) => f.id === "#atproto_pds");
-    if (!service) return redirect("/icon.png");
+    if (!service)
+      return NextResponse.redirect(new URL("/icon.png", request.url));
     let cid = (record.icon.ref as unknown as { $link: string })["$link"];
     const response = await fetch(
       `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${cid}`,
@@ -56,6 +57,6 @@ export async function GET(
     });
   } catch (e) {
     console.log(e);
-    return redirect("/icon.png");
+    return NextResponse.redirect(new URL("/icon.png", request.url));
   }
 }

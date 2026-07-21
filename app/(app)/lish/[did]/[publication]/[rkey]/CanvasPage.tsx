@@ -7,14 +7,20 @@ import {
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
+import { useMemo } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
+import { canvasBlockOrder } from "./collectPostImages";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
 import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons/InfoSmall";
-import { PostHeader, type BylineProfile } from "./PostHeader/PostHeader";
+import {
+  PostByline,
+  PostHeader,
+  type BylineProfile,
+} from "./PostHeader/PostHeader";
 import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PollData } from "./fetchPollData";
@@ -109,7 +115,9 @@ function CanvasContent({
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
-  let height = blocks.length > 0 ? Math.max(...blocks.map((b) => b.y), 0) : 0;
+  let sortedBlocks = useMemo(() => [...blocks].sort(canvasBlockOrder), [blocks]);
+  let height =
+    sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
 
   return (
     <div className="canvasWrapper h-full w-fit overflow-y-scroll postContent">
@@ -122,29 +130,22 @@ function CanvasContent({
       >
         <CanvasBackground />
 
-        {blocks
-          .sort((a, b) => {
-            if (a.y === b.y) {
-              return a.x - b.x;
-            }
-            return a.y - b.y;
-          })
-          .map((canvasBlock, index) => {
-            return (
-              <CanvasBlock
-                key={index}
-                canvasBlock={canvasBlock}
-                did={did}
-                pollData={pollData}
-                prerenderedCodeBlocks={prerenderedCodeBlocks}
-                bskyPostData={bskyPostData}
-                standardSitePostData={standardSitePostData}
-                pageId={pageId}
-                pages={pages}
-                index={index}
-              />
-            );
-          })}
+        {sortedBlocks.map((canvasBlock, index) => {
+          return (
+            <CanvasBlock
+              key={index}
+              canvasBlock={canvasBlock}
+              did={did}
+              pollData={pollData}
+              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              bskyPostData={bskyPostData}
+              standardSitePostData={standardSitePostData}
+              pageId={pageId}
+              pages={pages}
+              index={index}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -227,7 +228,7 @@ const CanvasMetadata = (props: {
 }) => {
   let isMobile = useIsMobile();
   return (
-    <div className="flex flex-row gap-3 items-center absolute top-3 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+    <div className="flex flex-row gap-1 items-center absolute top-3 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
       <Interactions
         quotesCount={props.quotesCount || 0}
         commentsCount={props.commentsCount || 0}

@@ -4,7 +4,6 @@ import { Awareness } from "y-protocols/awareness";
 import * as base64 from "base64-js";
 import { useEntity, useReplicache } from "src/replicache";
 import { useYjsRealtime, YjsRealtimeConnection } from "src/yjsRealtime";
-import { useIdentityData } from "components/IdentityProvider";
 import { remoteCursorPlugin } from "./remoteCursorPlugin";
 import { RemoteCursors } from "./RemoteCursors";
 import { SCHEMA_VERSION } from "./schema";
@@ -30,7 +29,10 @@ import {
 // drop `cursorPlugin` into its plugin list and render `overlay`.
 export function useCollabText(entityID: string) {
   let { yText, awareness } = useYJSValue(entityID);
-  let cursorPlugin = useMemo(() => remoteCursorPlugin(awareness), [awareness]);
+  let cursorPlugin = useMemo(
+    () => remoteCursorPlugin(awareness, entityID),
+    [awareness, entityID],
+  );
   let overlay = <RemoteCursors entityID={entityID} awareness={awareness} />;
   return { yText, awareness, cursorPlugin, overlay };
 }
@@ -40,9 +42,10 @@ export function useCollabText(entityID: string) {
 //   - replicache holds the source of truth (the `block/text` fact is the full
 //     encoded doc state): applied here on load and on pokes, and written back
 //     (debounced) when local edits change the fragment;
-//   - the realtime channel carries live incremental updates and cursor
-//     (awareness) state between connected peers.
-// Both inbound paths are gated on the doc's schema version (see
+//   - the realtime channel carries live incremental updates, and its shared
+//     connection-level awareness carries cursor state (tagged with the
+//     entityID it points into — see src/yjsRealtime).
+// Both inbound doc paths are gated on the doc's schema version (see
 // ./schemaVersion): content from a newer schema is never applied to a doc an
 // editor binds to. The channel side of that gate lives in yjsRealtime; the
 // replicache side is here.
@@ -51,9 +54,17 @@ export function useYJSValue(entityID: string) {
   const docStateFromReplicache = useEntity(entityID, "block/text");
   let rep = useReplicache();
   let realtime = useYjsRealtime();
-  let { identity } = useIdentityData();
+  // Outside a YjsRealtimeProvider (read-only contexts) there are never any
+  // peers; a throwaway awareness keeps the cursor plugin and overlay
+  // unconditional.
+  const [fallbackAwareness] = useState(() =>
+    realtime ? null : new Awareness(new Y.Doc()),
+  );
+  const awareness = realtime?.awareness ?? fallbackAwareness!;
+  useEffect(() => {
+    return () => fallbackAwareness?.destroy();
+  }, [fallbackAwareness]);
   const [yText] = useState(() => ydoc.getXmlFragment("prosemirror"));
-  const [awareness] = useState(() => new Awareness(ydoc));
 
   // Content written by a newer schema must never reach the editor's doc (see
   // ./schemaVersion) — leave it unapplied and go stale; the read-only
@@ -74,32 +85,14 @@ export function useYJSValue(entityID: string) {
     Y.applyUpdate(ydoc, update);
   }
 
-  let userName =
-    identity?.bsky_profiles?.record?.displayName ||
-    identity?.bsky_profiles?.handle ||
-    "Anonymous";
-  useEffect(() => {
-    // a stable hue offset per client; each peer derives the actual cursor
-    // color from their own theme's accent (see collabCursor.ts)
-    awareness.setLocalStateField("user", {
-      name: userName,
-      hue: (ydoc.clientID % 8) * 45,
-    });
-  }, [awareness, userName, ydoc]);
-
-  // Broadcast local edits and cursor positions to connected peers, and apply
-  // theirs as they arrive. Cursors only ever travel over the channel; doc
+  // Broadcast local edits to connected peers and apply theirs as they
+  // arrive. Cursors travel through the connection's shared awareness; doc
   // updates also flow through replicache below.
+  let connection = realtime?.connection ?? null;
   useEffect(() => {
-    if (!realtime) return;
-    return realtime.register(entityID, ydoc, awareness);
-  }, [realtime, entityID, ydoc, awareness]);
-
-  useEffect(() => {
-    return () => {
-      awareness.destroy();
-    };
-  }, [awareness]);
+    if (!connection) return;
+    return connection.register(entityID, ydoc);
+  }, [connection, entityID, ydoc]);
 
   useEffect(() => {
     if (!rep.rep) return;

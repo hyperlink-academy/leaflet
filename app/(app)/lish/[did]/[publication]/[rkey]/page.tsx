@@ -3,6 +3,7 @@ import { DocumentPageRenderer } from "./DocumentPageRenderer";
 import { fetchPublicationForPage } from "../getPublicationForPage";
 import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
 import { postPageMetadata } from "./postPageMetadata";
+import { decodeQuotePosition } from "./quotePosition";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -19,7 +20,12 @@ export async function generateMetadata(props: {
   );
 }
 export default async function Post(props: {
-  params: Promise<{ publication: string; did: string; rkey: string }>;
+  params: Promise<{
+    publication: string;
+    did: string;
+    rkey: string;
+    quote?: string;
+  }>;
 }) {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
@@ -51,6 +57,13 @@ export default async function Post(props: {
     if (pageRender) return pageRender;
   }
   return (
-    <DocumentPageRenderer did={did} rkey={rkey} publication={publication_name} />
+    <DocumentPageRenderer
+      did={did}
+      rkey={rkey}
+      publication={publication_name}
+      openPageId={
+        params.quote ? decodeQuotePosition(params.quote)?.pageId : undefined
+      }
+    />
   );
 }

@@ -38,7 +38,7 @@ export async function getPostPageData(
         uri,
         comments_on_documents(record),
         documents_in_publications(publications(*,
-          documents_in_publications(documents(uri, data)),
+          documents_in_publications(documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
           publication_subscriptions(*),
           publication_newsletter_settings(enabled),
           publication_membership_settings(enabled),
@@ -157,24 +157,16 @@ export async function getPostPageData(
       ?.documents_in_publications;
 
   if (currentPublishedAt && allDocs) {
-    // Filter and sort documents by publishedAt
+    // The publishedAt filter mirrors normalizeDocumentRecord's gating of
+    // unpublished pub.leaflet records without paying for the full data jsonb
+    // of every sibling post.
     const sortedDocs = allDocs
-      .map((dip) => {
-        const normalizedData = normalizeDocumentRecord(
-          dip?.documents?.data,
-          dip?.documents?.uri,
-        );
-        return {
-          uri: dip?.documents?.uri,
-          title: normalizedData?.title,
-          publishedAt: normalizedData?.publishedAt,
-        };
-      })
-      .filter((doc) => doc.publishedAt && doc.title) // Only include docs with publishedAt and valid data
+      .flatMap((dip) => (dip.documents ? [dip.documents] : []))
+      .filter((doc) => doc.publishedAt && doc.title)
       .sort(
         (a, b) =>
-          new Date(a.publishedAt!).getTime() -
-          new Date(b.publishedAt!).getTime(),
+          new Date(a.sort_date || 0).getTime() -
+          new Date(b.sort_date || 0).getTime(),
       );
 
     // Find current document index
@@ -255,6 +247,7 @@ export async function getPostPageData(
     // Pre-normalized data - consumers should use these instead of normalizing themselves
     normalizedDocument,
     normalizedPublication,
+    postUrl,
     quotesAndMentions,
     theme,
     prevNext,

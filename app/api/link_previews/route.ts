@@ -2,14 +2,13 @@ export const maxDuration = 60;
 export const runtime = "nodejs";
 
 import { NextRequest } from "next/server";
+import sharp from "sharp";
 import * as z from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
-import {
-  getMicroLinkOgImage,
-  getWebpageImage,
-} from "src/utils/getMicroLinkOgImage";
+import { screenshotPage } from "src/utils/screenshotPage";
 import { resolveStandardSitePostUrl } from "src/utils/resolveStandardSitePostUrl";
+import { resolveStandardSitePublicationUrl } from "src/utils/resolveStandardSitePublicationUrl";
 import { resolveBlueskyPostUrl } from "src/utils/resolveBlueskyPostUrl";
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -21,14 +20,19 @@ export async function POST(req: NextRequest) {
   let body = (await req.json()) as LinkPreviewBody;
   let url = encodeURIComponent(body.url);
   if (body.type === "meta") {
-    let [iframely, leafletPost, blueskyPost] = await Promise.all([
-      get_link_metadata(url),
-      resolveStandardSitePostUrl(body.url, supabase).catch(() => null),
-      resolveBlueskyPostUrl(body.url).catch(() => null),
-    ]);
+    let [iframely, leafletPost, leafletPublication, blueskyPost] =
+      await Promise.all([
+        get_link_metadata(url),
+        resolveStandardSitePostUrl(body.url, supabase).catch(() => null),
+        resolveStandardSitePublicationUrl(body.url, supabase).catch(() => null),
+        resolveBlueskyPostUrl(body.url).catch(() => null),
+      ]);
     return Response.json({
       ...iframely,
       leafletPost: leafletPost ? { uri: leafletPost } : null,
+      leafletPublication: leafletPublication
+        ? { uri: leafletPublication }
+        : null,
       blueskyPost: blueskyPost ? { uri: blueskyPost } : null,
     });
   } else {
@@ -40,29 +44,41 @@ export async function POST(req: NextRequest) {
 export type LinkPreviewMetadataResult = Promise<
   Awaited<ReturnType<typeof get_link_metadata>> & {
     leafletPost: { uri: string } | null;
+    leafletPublication: { uri: string } | null;
     blueskyPost: { uri: string } | null;
   }
 >;
 export type LinkPreviewImageResult = ReturnType<typeof get_link_image_preview>;
 
 async function get_link_image_preview(url: string) {
-  let image = await getWebpageImage(url, { width: 1400, height: 1213 });
+  // Arbitrary external sites: scripts on, networkidle2 + settle, since we
+  // know nothing about how they render.
+  let image = await screenshotPage(url, {
+    width: 1400,
+    height: 1213,
+    waitUntil: "networkidle2",
+    scrollPage: true,
+    waitForTimeout: 2000,
+  });
   let key = await hash(url);
-  if (image.status === 200) {
-    await supabase.storage
-      .from("url-previews")
-      .upload(key, await image.arrayBuffer(), {
-        contentType: image.headers.get("content-type") || undefined,
-        upsert: true,
-      });
+  if (image) {
+    // Store at display size and serve the object directly — running the
+    // downscale here instead of requesting it via Supabase's image transform
+    // avoids their per-origin-image transformation billing.
+    let thumbnail = await sharp(image)
+      .resize(240, 208, { fit: "inside" })
+      .png()
+      .toBuffer();
+    await supabase.storage.from("url-previews").upload(key, thumbnail, {
+      contentType: "image/png",
+      upsert: true,
+    });
   } else {
-    console.log("an error occured rendering the website", await image.text());
+    console.log("an error occured rendering the website", url);
   }
 
   return {
-    url: supabase.storage.from("url-previews").getPublicUrl(key, {
-      transform: { width: 240, height: 208, resize: "contain" },
-    }).data.publicUrl,
+    url: supabase.storage.from("url-previews").getPublicUrl(key).data.publicUrl,
     height: 208,
     width: 240,
   };

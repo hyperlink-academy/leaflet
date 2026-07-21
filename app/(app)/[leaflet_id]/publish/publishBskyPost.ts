@@ -4,21 +4,18 @@ import {
   AppBskyEmbedExternal,
   AppBskyRichtextFacet,
   Agent as BskyAgent,
-  UnicodeString,
+  BlobRef,
 } from "@atproto/api";
-import sharp from "sharp";
 import { TID } from "@atproto/common";
 import { AtUri } from "@atproto/syntax";
 import { getIdentityData } from "actions/getIdentityData";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
+import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
-import {
-  getMicroLinkOgImage,
-  getWebpageImage,
-} from "src/utils/getMicroLinkOgImage";
-import { fetchAtprotoBlob } from "app/api/atproto_images/route";
+import { screenshotBskyCardImage } from "src/utils/bskyCardScreenshot";
+import { uploadCoverImageThumb } from "src/utils/uploadCoverImageThumb";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import { truncateDocumentRecordForPDS } from "src/membership";
 
@@ -29,22 +26,27 @@ type StrongRef = {
 };
 
 type PublishBskyResult =
-  | { success: true }
+  | { success: true; uri: string }
   | { success: false; error: OAuthSessionError };
 
 export async function publishPostToBsky(args: {
   text: string;
   url: string;
-  title: string;
-  description: string;
-  document_record: SiteStandardDocument.Record;
-  rkey: string;
   facets: AppBskyRichtextFacet.Main[];
-  // When publishing to a publication, the document record lives in the
-  // publication owner's PDS, so the Bluesky cross-post must also be created
-  // from the owner's account. Standalone publishes leave this undefined and
-  // post from the current viewer.
+  document_record: SiteStandardDocument.Record;
+  rkey?: string;
   ownerDid?: string;
+  documentUri?: string;
+  publicationUri?: string;
+  // Prefer a live screenshot of `url` as the card thumbnail over the document's
+  // cover image. Set when sharing a quote, whose card should show the quoted
+  // passage (the /l-quote og:image) rather than the post's generic cover, and
+  // when sharing a document that has no cover image.
+  preferUrlScreenshot?: boolean;
+  // Base64 webp card image (already 1200x630) the client prefetched from
+  // /api/quote_screenshot while the share modal was open, so publishing doesn't
+  // block on a fresh browser render.
+  prefetchedThumb?: string;
 }): Promise<PublishBskyResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -57,12 +59,6 @@ export async function publishPostToBsky(args: {
       },
     };
   }
-
-  // The post is authored by whichever PDS hosts the document record. For
-  // publications that's the owner; for standalone docs it's the viewer. If a
-  // contributor is publishing and the owner is signed out, this surfaces a
-  // clear "owner needs to sign in again" error rather than silently posting
-  // from the contributor's account.
   let postAuthorDid = args.ownerDid || identity.atp_did;
 
   const sessionResult = await restoreOAuthSession(postAuthorDid);
@@ -74,89 +70,41 @@ export async function publishPostToBsky(args: {
     credentialSession.fetchHandler.bind(credentialSession),
   );
 
-  // Get image binary - prefer cover image, fall back to screenshot
-  let imageBinary: Blob | null = null;
+  let uploadThumb = (bytes: Buffer) =>
+    agent.com.atproto.repo
+      .uploadBlob(bytes, { headers: { "Content-Type": "image/webp" } })
+      .then((r) => r.data.blob);
 
-  if (args.document_record.coverImage) {
-    let cid =
-      (args.document_record.coverImage.ref as unknown as { $link: string })[
-        "$link"
-      ] || args.document_record.coverImage.ref.toString();
+  let documentRecord = args.document_record;
+  let rkey = args.rkey;
 
-    // The cover image blob was uploaded to the post author's PDS alongside
-    // the document record, so fetch it from there.
-    let coverImageResponse = await fetchAtprotoBlob(postAuthorDid, cid);
-    if (coverImageResponse) {
-      imageBinary = await coverImageResponse.blob();
-    }
-  }
+  let { title, description, coverImage } = documentRecord;
 
-  // Fall back to screenshot if no cover image or fetch failed
-  if (!imageBinary) {
-    let preview_image = await getWebpageImage(args.url, {
-      width: 1400,
-      height: 733,
-      noCache: true,
+  // The cover blob lives in the repo hosting the document. On publish that's the
+  // post author's repo; on share it's the document uri's host (the original
+  // author, who may differ from the cross-posting viewer).
+  let coverImageDid = args.documentUri
+    ? new AtUri(args.documentUri).host
+    : postAuthorDid;
+
+  // When the share wants a screenshot card (quote share, or no cover image),
+  // use the client's prefetched screenshot (or take one now if the prefetch
+  // failed) and fall back to the cover only if that fails too.
+  let thumb: BlobRef | undefined;
+  if (args.prefetchedThumb) {
+    thumb = await uploadThumb(
+      Buffer.from(args.prefetchedThumb, "base64"),
+    ).catch((e) => {
+      console.error("Failed to upload prefetched bsky card thumbnail:", e);
+      return undefined;
     });
-    // On failure the screenshot service returns a non-2xx with a JSON error
-    // body, not image bytes (a 422 here usually means the render timed out).
-    // Feeding that to sharp throws "unsupported image format", so guard on .ok.
-    if (preview_image.ok) {
-      imageBinary = await preview_image.blob();
-    } else {
-      console.error(
-        `Screenshot for bsky card failed (${preview_image.status}): ${await preview_image
-          .text()
-          .catch(() => "")}`,
-      );
-    }
   }
-
-  // Resize and upload. A screenshot hiccup or unexpected image format should
-  // degrade to a card without a thumbnail rather than failing the publish, so
-  // keep `blob` optional and tolerate sharp throwing.
-  let blob:
-    | Awaited<ReturnType<typeof agent.com.atproto.repo.uploadBlob>>
-    | undefined;
-  if (imageBinary) {
-    try {
-      let resizedImage = await sharp(await imageBinary.arrayBuffer())
-        .resize({
-          width: 1200,
-          height: 630,
-          fit: "cover",
-        })
-        .webp({ quality: 85 })
-        .toBuffer();
-
-      blob = await agent.com.atproto.repo.uploadBlob(resizedImage, {
-        headers: { "Content-Type": "image/webp" },
-      });
-    } catch (e) {
-      console.error("Failed to process bsky card thumbnail:", e);
-    }
+  if (!thumb && args.preferUrlScreenshot) {
+    thumb = await screenshotCardThumb(args.url, uploadThumb);
   }
-
-  // Reference the document and, when it lives in a publication, the publication
-  // record on the post so the appview can index the relationship. Our DB
-  // doesn't store CIDs, so read each strong ref straight from the author's repo.
-  // (The document ref is the snapshot taken before we write bskyPostRef back to
-  // it below — the post→document→post cycle can't reference its own next CID.)
-  let did = credentialSession.did!;
-  let documentUri = `at://${did}/${args.document_record.$type}/${args.rkey}`;
-
-  let { data: docInPub } = await supabaseServerClient
-    .from("documents_in_publications")
-    .select("publication")
-    .eq("document", documentUri)
-    .maybeSingle();
-
-  let associatedRefs: StrongRef[] = [];
-  for (let uri of [documentUri, docInPub?.publication]) {
-    if (!uri) continue;
-    let ref = await getRecordStrongRef(agent, uri);
-    if (ref) associatedRefs.push(ref);
-  }
+  thumb ??=
+    (await uploadCoverImageThumb(coverImage, coverImageDid, uploadThumb)) ??
+    undefined;
 
   // associatedRefs hangs off the external embed card alongside uri/title/etc.
   // It isn't in the published @atproto/api types yet, so widen External here.
@@ -164,11 +112,39 @@ export async function publishPostToBsky(args: {
     associatedRefs?: StrongRef[];
   } = {
     uri: args.url,
-    title: args.title,
-    description: args.description,
-    ...(blob ? { thumb: blob.data.blob } : {}),
+    title,
+    description: description ?? "",
   };
+
+  // On publish, fall back to a page screenshot when there's no other thumb.
+  if (rkey && !thumb) {
+    thumb = await screenshotCardThumb(args.url, uploadThumb);
+  }
+
+  let documentRefUri: string | undefined;
+  let publicationRefUri: string | undefined;
+  if (rkey) {
+    documentRefUri = `at://${credentialSession.did!}/${documentRecord.$type}/${rkey}`;
+    let { data: docInPub } = await supabaseServerClient
+      .from("documents_in_publications")
+      .select("publication")
+      .eq("document", documentRefUri)
+      .maybeSingle();
+    publicationRefUri = docInPub?.publication ?? undefined;
+  } else {
+    documentRefUri = args.documentUri;
+    publicationRefUri = args.publicationUri;
+  }
+
+  let associatedRefs: StrongRef[] = [];
+  for (let uri of [documentRefUri, publicationRefUri]) {
+    if (!uri) continue;
+    let ref = await getRecordStrongRef(uri);
+    if (ref) associatedRefs.push(ref);
+  }
   if (associatedRefs.length > 0) external.associatedRefs = associatedRefs;
+
+  if (thumb) external.thumb = thumb;
 
   let bsky = new BskyAgent(credentialSession);
   let post = await bsky.app.bsky.feed.post.create(
@@ -186,47 +162,66 @@ export async function publishPostToBsky(args: {
       },
     },
   );
-  let record = args.document_record;
-  record.bskyPostRef = post;
 
-  // The caller hands us the fully inflated record. It needs the same
-  // members-only truncation and blob offload the initial publish applied,
-  // otherwise this re-put would leak gated content (or 413) on the PDS.
-  const recordForPDS = await maybeOffloadPagesToBlob(
-    truncateDocumentRecordForPDS(record),
-    agent,
-  );
+  if (rkey) {
+    let record = documentRecord;
+    record.bskyPostRef = post;
 
-  let { data: result } = await agent.com.atproto.repo.putRecord({
-    rkey: args.rkey,
-    repo: credentialSession.did!,
-    collection: args.document_record.$type,
-    record: recordForPDS,
-    validate: false, //TODO publish the lexicon so we can validate!
-  });
-  await supabaseServerClient
-    .from("documents")
-    .update({
-      data: record as Json,
-    })
-    .eq("uri", result.uri);
-  return { success: true };
+    // The caller hands us the fully inflated record. It needs the same
+    // members-only truncation and blob offload the initial publish applied,
+    // otherwise this re-put would leak gated content (or 413) on the PDS.
+    const recordForPDS = await maybeOffloadPagesToBlob(
+      truncateDocumentRecordForPDS(record),
+      agent,
+    );
+
+    let { data: result } = await agent.com.atproto.repo.putRecord({
+      rkey,
+      repo: credentialSession.did!,
+      collection: record.$type,
+      record: recordForPDS,
+      validate: false, //TODO publish the lexicon so we can validate!
+    });
+    await supabaseServerClient
+      .from("documents")
+      .update({
+        data: record as Json,
+      })
+      .eq("uri", result.uri);
+  }
+
+  return { success: true, uri: post.uri };
 }
 
-// Resolve a record URI to a strong ref ({ uri, cid }) by reading its current
-// CID from the repo. Returns null if the record is missing or has no CID so a
-// failed lookup degrades to a missing associatedRef rather than blocking the post.
-async function getRecordStrongRef(
-  agent: AtpBaseClient,
-  uri: string,
-): Promise<StrongRef | null> {
+// Screenshot `url` and upload it as a 1200x630 webp external-card thumbnail.
+// Returns undefined (rather than throwing) so a failed screenshot degrades to a
+// card without an image instead of failing the whole post.
+async function screenshotCardThumb(
+  url: string,
+  uploadThumb: (bytes: Buffer) => Promise<BlobRef>,
+): Promise<BlobRef | undefined> {
+  let image = await screenshotBskyCardImage(url);
+  if (!image) return undefined;
+  try {
+    return await uploadThumb(image);
+  } catch (e) {
+    console.error("Failed to upload bsky card thumbnail:", e);
+    return undefined;
+  }
+}
+
+// Resolve a record URI to a strong ref ({ uri, cid }) by reading its current CID
+async function getRecordStrongRef(uri: string): Promise<StrongRef | null> {
   try {
     let { host, collection, rkey } = new AtUri(uri);
-    let { data } = await agent.com.atproto.repo.getRecord({
-      repo: host,
-      collection,
-      rkey,
-    });
+    let identity = await idResolver.did.resolve(host);
+    let service = identity?.service?.find((s) => s.id === "#atproto_pds");
+    if (!service) return null;
+    let res = await fetch(
+      `${service.serviceEndpoint}/xrpc/com.atproto.repo.getRecord?repo=${host}&collection=${collection}&rkey=${rkey}`,
+    );
+    if (!res.ok) return null;
+    let data = (await res.json()) as { uri: string; cid?: string };
     if (!data.cid) return null;
     return {
       $type: "com.atproto.repo.strongRef",

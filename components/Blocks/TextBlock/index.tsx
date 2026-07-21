@@ -77,8 +77,12 @@ export function TextBlock(
       {permission && !props.preview && !stale && (
         <div
           // overflow-x-clip keeps the remote-cursor overlay from making the
-          // page scroll sideways on iOS Safari when a cursor sits at the edge
-          className={`w-full relative group overflow-x-clip ${!initialized ? "hidden" : ""}`}
+          // page scroll sideways on iOS Safari when a cursor sits at the edge.
+          // The padding/negative-margin pair (box-content keeps the text's
+          // width) pushes the clip edge out so a caret centered on the first
+          // or last column isn't cut in half — the caret dot is 7px wide, so
+          // it needs 3.5px of room past the text edge
+          className={`yjs-cursor-clip w-full box-content px-1.5 -mx-1.5 relative group overflow-x-clip ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
           <BaseTextBlock {...props} />
@@ -440,7 +444,7 @@ const BlockifyLink = (props: {
             }
           });
         }}
-        className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
+        className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast rounded-md bg-bg-page h-6 flex items-center"
       >
         {loading ? <DotLoader /> : "embed"}
       </button>

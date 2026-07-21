@@ -158,10 +158,11 @@ export function LightboxSlide(props: { image: GalleryImage }) {
         className=" min-h-0 max-w-full object-contain"
         onClick={(e) => e.stopPropagation()}
       />
+      <div></div>
       {image.alt && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="shrink-0 max-w-full whitespace-pre-wrap text-bg-page text-sm    line-clamp-3"
+          className="shrink-0 whitespace-pre-wrap text-bg-page text-sm line-clamp-6 max-w-prose text-center"
         >
           {image.alt}
         </div>

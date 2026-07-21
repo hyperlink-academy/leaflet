@@ -31,7 +31,10 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
 
   if (props.preview) {
     return (
-      <BlockLayout isSelected={isSelected} className="border-none!">
+      <BlockLayout
+        isSelected={isSelected}
+        className="border-none! rounded-none!"
+      >
         <PostsListPlaceholder />
       </BlockLayout>
     );
@@ -40,7 +43,7 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   return (
     <BlockLayout
       isSelected={isSelected}
-      className="border-none! p-0!"
+      className="border-none! p-0! rounded-none!"
       extraOptions={<PostsListSettingsButton entityID={props.entityID} />}
     >
       <PostsListBlockContent entityID={props.entityID} />
@@ -102,10 +105,9 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
 
   if (!listData || listData.uris.length === 0)
     return (
-      <EmptyState
-        container="none"
-        description="You haven't published any posts yet! When you do, they'll show here."
-      />
+      <EmptyState container="none">
+        You haven't published any posts yet! When you do, they'll show here.
+      </EmptyState>
     );
 
   return (

@@ -7,6 +7,8 @@ import { ySyncPlugin } from "y-prosemirror";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { stripCommentMarks } from "components/Blocks/TextBlock/stripCommentMarks";
 import { useReplicache, useEntity } from "src/replicache";
+import { scanIndex } from "src/replicache/utils";
+import { focusBlock } from "src/utils/focusBlock";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { betterIsUrl } from "src/utils/isURL";
 import { trackUndoRedo } from "components/Blocks/TextBlock/mountProsemirror";
@@ -71,7 +73,11 @@ function EditableFootnote(props: {
     cursorPlugin,
     overlay,
   } = useCollabText(props.footnoteEntityID);
-  let { pageID } = useFootnoteContext();
+  let { pageID, footnotes } = useFootnoteContext();
+  // Read through a ref so the keymap (created once per mount) sees the current
+  // footnote list without remounting the editor whenever it changes.
+  let footnotesRef = useRef(footnotes);
+  footnotesRef.current = footnotes;
 
   useLayoutEffect(() => {
     if (!mountRef.current || !value) return;
@@ -95,6 +101,32 @@ function EditableFootnote(props: {
         },
         Enter: (_state, _dispatch, view) => {
           view?.dom.blur();
+          return true;
+        },
+        ArrowLeft: (state, _dispatch, view) => {
+          if (!state.selection.empty || state.selection.anchor > 1)
+            return false;
+          let fn = footnotesRef.current.find(
+            (f) => f.footnoteEntityID === props.footnoteEntityID,
+          );
+          if (!fn || !rep.rep) return false;
+          let blockID = fn.blockID;
+          view?.dom.blur();
+          rep.rep
+            .query(async (tx) => {
+              let scan = scanIndex(tx);
+              return (await scan.eav(blockID, "block/type"))[0]?.data.value;
+            })
+            .then((type) => {
+              if (!type) return;
+              focusBlock(
+                { value: blockID, type, parent: pageID },
+                {
+                  type: "afterFootnote",
+                  footnoteEntityID: props.footnoteEntityID,
+                },
+              );
+            });
           return true;
         },
       }),

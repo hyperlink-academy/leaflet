@@ -1,11 +1,14 @@
-import { getMicroLinkOgImage } from "src/utils/getMicroLinkOgImage";
+import { ogScreenshotResponse } from "src/utils/screenshotPage";
 import { supabaseServerClient } from "supabase/serverClient";
 import { jsonToLex } from "@atproto/lexicon";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { resolveDocumentFilter } from "../resolveDocumentFilter";
 
-export const revalidate = 60;
+// OG content is effectively immutable post-publish, and each regeneration is a
+// multi-second remote-browser render billed for its full wall time — unfurl
+// bots re-fetch these constantly.
+export const revalidate = 86400;
 
 export default async function OpenGraphImage(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -53,7 +56,7 @@ export default async function OpenGraphImage(props: {
   }
 
   // Fall back to screenshot
-  return getMicroLinkOgImage(
+  return ogScreenshotResponse(
     `/lish/${decodeURIComponent(params.did)}/${decodeURIComponent(params.publication)}/${params.rkey}/`,
   );
 }

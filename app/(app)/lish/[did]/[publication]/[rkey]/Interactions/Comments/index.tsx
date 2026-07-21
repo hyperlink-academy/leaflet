@@ -1,21 +1,17 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useInteractionState, setInteractionState } from "../Interactions";
 import { useIdentityData } from "components/IdentityProvider";
-import { CommentBox } from "./CommentBox";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
 import { useMemo, useState } from "react";
 import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { Separator } from "components/Layout";
-import { Popover } from "components/Popover";
+
 import { AtUri } from "@atproto/api";
 import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
-import { timeAgo } from "src/utils/timeAgo";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import { ProfilePopover } from "components/ProfilePopover";
 import { LoginModal } from "components/LoginButton";
 import { type Profile } from "src/identity";
 import { PostInfo } from "../../BskyPostContent";
@@ -27,6 +23,13 @@ export type Comment = {
   uri: string;
   profile: Profile | null;
 };
+
+// Loaded when the comments drawer renders rather than bundled: the comment
+// editor drags prosemirror into every public post page otherwise.
+const CommentBox = dynamic(
+  () => import("./CommentBox").then((m) => m.CommentBox),
+  { ssr: false },
+);
 export function CommentsDrawerContent(props: {
   document_uri: string;
   comments: Comment[];
@@ -297,28 +300,5 @@ const Replies = (props: {
         </CollapsibleReplies>
       )}
     </>
-  );
-};
-
-const DatePopover = (props: { date: string }) => {
-  const timeAgoText = useMemo(() => timeAgo(props.date), [props.date]);
-  const fullDate = useLocalizedDate(props.date, {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <Popover
-      trigger={
-        <div className="italic text-sm text-tertiary hover:underline">
-          {timeAgoText}
-        </div>
-      }
-    >
-      <div className="text-sm text-secondary">{fullDate}</div>
-    </Popover>
   );
 };

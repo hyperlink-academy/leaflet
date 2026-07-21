@@ -11,6 +11,7 @@ export type DocumentContextValue = Pick<
   | "uri"
   | "normalizedDocument"
   | "normalizedPublication"
+  | "postUrl"
   | "theme"
   | "prevNext"
   | "quotesAndMentions"

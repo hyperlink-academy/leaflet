@@ -4,6 +4,7 @@ import type { Attribute } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { parseHSBToRGB } from "src/utils/parseHSB";
+import { isUuid } from "src/utils/isUuid";
 
 // Route segment config
 export const revalidate = 0;
@@ -27,14 +28,17 @@ let supabase = createServerClient<Database>(
 export default async function Icon(props: {
   params: Promise<{ leaflet_id: string }>;
 }) {
-  let res = await supabase
-    .from("permission_tokens")
-    .select("*, permission_token_rights(*)")
-    .eq("id", (await props.params).leaflet_id)
-    .single();
-  let rootEntity = res.data?.root_entity;
+  let leaflet_id = (await props.params).leaflet_id;
+  let res = isUuid(leaflet_id)
+    ? await supabase
+        .from("permission_tokens")
+        .select("*, permission_token_rights(*)")
+        .eq("id", leaflet_id)
+        .single()
+    : null;
+  let rootEntity = res?.data?.root_entity;
   let outlineColor, fillColor;
-  if (rootEntity && res.data) {
+  if (rootEntity && res?.data) {
     let { data } = await supabase.rpc("get_facts", {
       root: rootEntity,
     });
@@ -87,7 +91,12 @@ export default async function Icon(props: {
       // config to also set the ImageResponse's width and height.
       ...size,
       headers: {
-        "Cache-Control": "no-cache",
+        // Browsers request the favicon on nearly every page load, and each
+        // miss runs two DB queries plus a satori render. The icon only
+        // changes with the leaflet's theme, so let caches hold it and pick
+        // up theme edits within the hour.
+        "Cache-Control":
+          "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
       },
     },
   );

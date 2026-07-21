@@ -1,5 +1,4 @@
 "use client";
-import { CommentTiny } from "components/Icons/CommentTiny";
 import { flushSync } from "react-dom";
 import type { Json } from "supabase/database.types";
 import { create } from "zustand";
@@ -15,10 +14,16 @@ import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { EditTiny } from "components/Icons/EditTiny";
-import { RecommendButton } from "components/RecommendButton";
+import { RecommendButton } from "components/Interactions/RecommendButton";
+import { DiscussionButton } from "components/Interactions/DiscussionButton";
 import { ButtonSecondary } from "components/Buttons";
 import { Separator } from "components/Layout";
-import type { DrawerThread } from "./drawerThreadContext";
+import { useMemo } from "react";
+import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
+import { ShareButton } from "app/(app)/[leaflet_id]/actions/ShareOptions";
+import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { ShareSmall } from "components/Icons/ShareSmall";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -179,19 +184,22 @@ export const Interactions = (props: {
     uri: document_uri,
     quotesAndMentions,
     normalizedDocument,
+    normalizedPublication,
+    publication,
   } = useDocument();
   let { identity } = useIdentityData();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
-  const handleQuotePrefetch = () => {
-    if (quotesAndMentions) {
-      prefetchQuotesData(quotesAndMentions);
-    }
-  };
-
-  const tags = normalizedDocument.tags;
-  const tagCount = tags?.length || 0;
+  // The canonical url for the post (the publication's own domain), not
+  // window.location.href — the reader may be on the /lish route, and the
+  // current url can carry query params like ?interactionDrawer. The share card
+  // links to it, and the card screenshot needs a publicly reachable url.
+  let postUrl = getDocumentURL(
+    normalizedDocument,
+    document_uri,
+    normalizedPublication,
+  );
 
   let commentsAvailable = props.showComments;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
@@ -201,50 +209,65 @@ export const Interactions = (props: {
       ? "comments"
       : "quotes";
 
-  let interactionsAvailable = discussionsAvailable || props.showRecommends;
+  // Opening the recommenders onto this post's own interaction drawer, mirroring
+  // how the discussion button opens it. RecommendButton reads this off context.
+  const recommendsDrawerNav = useMemo(
+    () => ({
+      push: (thread: DrawerThread) =>
+        openDrawerThread(document_uri, thread, props.pageId),
+    }),
+    [document_uri, props.pageId],
+  );
+  const handleQuotePrefetch = () => {
+    if (quotesAndMentions) {
+      prefetchQuotesData(quotesAndMentions);
+    }
+  };
 
   return (
     <div
-      className={`flex gap-[10px] text-tertiary text-sm item-center ${props.className}`}
+      className={`flex gap-2 text-tertiary text-sm items-center ${props.className}`}
     >
+      <DiscussionButton
+        showWhenEmpty
+        documentUri={document_uri}
+        commentsCount={props.commentsCount}
+        quotesCount={props.quotesCount}
+        showComments={props.showComments}
+        showMentions={props.showMentions}
+        postUrl={postUrl}
+        onPrefetch={handleQuotePrefetch}
+        onClick={() => {
+          if (
+            !drawerOpen ||
+            (drawer !== "comments" && drawer !== "quotes") ||
+            pageId !== props.pageId
+          )
+            openInteractionDrawer(
+              defaultDiscussionTab,
+              document_uri,
+              props.pageId,
+            );
+          else setInteractionState(document_uri, { drawerOpen: false });
+        }}
+      />
       {props.showRecommends === false ? null : (
-        <RecommendButton
-          documentUri={document_uri}
-          recommendsCount={props.recommendsCount}
-        />
+        <DrawerThreadContext.Provider value={recommendsDrawerNav}>
+          <RecommendButton
+            documentUri={document_uri}
+            recommendsCount={props.recommendsCount}
+          />
+        </DrawerThreadContext.Provider>
       )}
-
-      {/*DISCUSSIONS BUTTON*/}
-      {!discussionsAvailable ? null : (
-        <button
-          className="flex gap-1 items-center w-fit"
-          onClick={() => {
-            if (
-              !drawerOpen ||
-              (drawer !== "comments" && drawer !== "quotes") ||
-              pageId !== props.pageId
-            )
-              openInteractionDrawer(
-                defaultDiscussionTab,
-                document_uri,
-                props.pageId,
-              );
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-          onMouseEnter={handleQuotePrefetch}
-          onTouchStart={handleQuotePrefetch}
-          aria-label="Discussions"
-        >
-          <CommentTiny aria-hidden /> {props.commentsCount + props.quotesCount}
-        </button>
-      )}
-
-      {tagCount > 0 && (
-        <>
-          {interactionsAvailable && <Separator classname="h-4!" />}
-          <TagPopover tags={tags} tagCount={tagCount} />
-        </>
-      )}
+      <div className="h-full  w-0 spacer" />
+      <InteractionShareButton
+        postRecord={normalizedDocument}
+        postUrl={postUrl}
+        documentUri={document_uri}
+        publication={normalizedPublication || undefined}
+        pubUri={publication?.uri}
+        type="weak"
+      />
     </div>
   );
 };
@@ -263,12 +286,20 @@ export const ExpandedInteractions = (props: {
     uri: document_uri,
     quotesAndMentions,
     normalizedDocument,
+    normalizedPublication,
     publication,
     leafletId,
   } = useDocument();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
   let viewer = useViewerSubscription(publication?.uri ?? "");
+
+  // See Interactions above: share the canonical post url, not location.href.
+  let postUrl = getDocumentURL(
+    normalizedDocument,
+    document_uri,
+    normalizedPublication,
+  );
 
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -287,7 +318,19 @@ export const ExpandedInteractions = (props: {
       ? "comments"
       : "quotes";
 
+  // Open the recommenders / discussion onto this post's own interaction drawer.
+  // RecommendButton and DiscussionButton read this off context.
+  const drawerNav = useMemo(
+    () => ({
+      push: (thread: DrawerThread) =>
+        openDrawerThread(document_uri, thread, props.pageId),
+    }),
+    [document_uri, props.pageId],
+  );
+
   let noInteractions = !discussionsAvailable && !props.showRecommends;
+  let interactionButtonClassName =
+    "relative flex gap-1 items-center text-accent-contrast py-1 px-2 rounded-full border border-accent-contrast shrink-0 sm:hover:bg-accent-1 hover:text-accent-2";
 
   return (
     <div
@@ -302,78 +345,64 @@ export const ExpandedInteractions = (props: {
       )}
 
       <hr className="border-border-light mb-3 " />
-
-      <div className="flex gap-2 justify-between">
+      <div className="expandedInteractions flex gap-4 justify-start font-bold mx-auto">
         {noInteractions ? (
           <div />
         ) : (
-          <div className="flex flex-col gap-2 just">
-            <div className="flex gap-2 sm:flex-row flex-col">
-              {props.showRecommends === false ? null : (
-                <RecommendButton
-                  documentUri={document_uri}
-                  recommendsCount={props.recommendsCount}
-                  expanded
-                />
-              )}
-              {!discussionsAvailable ? null : (
-                <ButtonSecondary
-                  onClick={() => {
-                    if (
-                      !drawerOpen ||
-                      (drawer !== "comments" && drawer !== "quotes") ||
-                      pageId !== props.pageId
-                    )
-                      openInteractionDrawer(
-                        defaultDiscussionTab,
-                        document_uri,
-                        props.pageId,
-                      );
-                    else
-                      setInteractionState(document_uri, { drawerOpen: false });
-                  }}
-                  onMouseEnter={handleQuotePrefetch}
-                  onTouchStart={handleQuotePrefetch}
-                  aria-label="Discussions"
-                >
-                  <CommentTiny aria-hidden />
-                  {props.quotesCount + props.commentsCount !== 0 && (
-                    <>
-                      {props.quotesCount + props.commentsCount}{" "}
-                      <Separator classname="h-4! text-accent-contrast!" />
-                    </>
-                  )}
-                  Discussion
-                </ButtonSecondary>
-              )}
-            </div>
-          </div>
-        )}
+          <DrawerThreadContext.Provider value={drawerNav}>
+            {props.showRecommends === false ? null : (
+              <RecommendButton
+                large
+                documentUri={document_uri}
+                recommendsCount={props.recommendsCount}
+              />
+            )}
+            <DiscussionButton
+              large
+              showWhenEmpty
+              documentUri={document_uri}
+              commentsCount={props.commentsCount}
+              quotesCount={props.quotesCount}
+              showComments={props.showComments}
+              showMentions={props.showMentions}
+              postUrl={postUrl}
+              onPrefetch={handleQuotePrefetch}
+              onClick={() => {
+                if (
+                  !drawerOpen ||
+                  (drawer !== "comments" && drawer !== "quotes") ||
+                  pageId !== props.pageId
+                )
+                  openInteractionDrawer(
+                    defaultDiscussionTab,
+                    document_uri,
+                    props.pageId,
+                  );
+                else setInteractionState(document_uri, { drawerOpen: false });
+              }}
+            />
 
-        <EditButton publication={publication} leafletId={leafletId} />
+            <InteractionShareButton
+              postRecord={normalizedDocument}
+              postUrl={postUrl}
+              documentUri={document_uri}
+              publication={
+                normalizedPublication ? normalizedPublication : undefined
+              }
+              pubUri={publication?.uri}
+              type="strong"
+              trigger={
+                <div className={interactionButtonClassName}>
+                  <ShareSmall className="text-inherit" />
+                  <div className="pr-1 text-base!">Share</div>
+                </div>
+              }
+            />
+            <EditButton publication={publication} leafletId={leafletId} />
+          </DrawerThreadContext.Provider>
+        )}
       </div>
     </div>
-  );
-};
-
-const TagPopover = (props: {
-  tagCount: number;
-  tags: string[] | undefined;
-}) => {
-  return (
-    <Popover
-      className="p-2! max-w-xs"
-      trigger={
-        <div
-          className="tags flex gap-1 items-center"
-          aria-label={`${props.tagCount} tag${props.tagCount === 1 ? "" : "s"}`}
-        >
-          <TagTiny aria-hidden /> {props.tagCount}
-        </div>
-      }
-    >
-      <TagList tags={props.tags} className="text-secondary!" />
-    </Popover>
   );
 };
 
@@ -430,7 +459,8 @@ const EditButton = (props: {
         href={`https://leaflet.pub/${props.leafletId}`}
         className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-md !border-accent-1 !outline-accent-1 h-fit"
       >
-        <EditTiny /> Edit Post
+        <EditTiny />
+        Edit
       </a>
     );
   return null;

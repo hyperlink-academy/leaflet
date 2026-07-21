@@ -20,6 +20,7 @@ import { LeafletContentProvider } from "contexts/LeafletContentContext";
 import { DocumentProvider } from "contexts/DocumentContext";
 import type { DocumentContextValue } from "contexts/DocumentContext";
 import { buildPublicationPosts } from "../buildPublicationPosts";
+import { fetchPublicationPostRows } from "../getPublicationForPage";
 import {
   POSTS_LIST_PAGE_SIZE,
   postsListFilterKey,
@@ -101,6 +102,18 @@ export async function PublicationPageRenderer({
       ? [firstPage as PubLeafletPagesLinearDocument.Main]
       : [];
 
+  const postsListBlocks = allBlocks.filter((b) =>
+    PubLeafletBlocksPostsList.isMain(b.block),
+  );
+
+  // The document list is only loaded when the page renders one — callers that
+  // already have it (theme preview) pass it in, everyone else queries here.
+  // Started before the block-resource fetches so the two overlap.
+  const postRowsPromise = postsListBlocks.length
+    ? publication.documents_in_publications ??
+      fetchPublicationPostRows(publication.uri)
+    : [];
+
   const {
     bskyPostData,
     standardSitePostData: standardSitePosts,
@@ -108,17 +121,10 @@ export async function PublicationPageRenderer({
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
 
-  const postsListBlocks = allBlocks.filter((b) =>
-    PubLeafletBlocksPostsList.isMain(b.block),
-  );
-
-  // The page query already loaded every document, so build the list in memory.
   // Per distinct tag-filter signature, ship the full ordered URI list plus a
   // byline-resolved first batch (in the SSR HTML); the client hydrates later
   // batches by URI on scroll via getPostsByUris.
-  const allPosts = postsListBlocks.length
-    ? buildPublicationPosts(publication.documents_in_publications)
-    : [];
+  const allPosts = buildPublicationPosts(await postRowsPromise);
   const distinctFilters = new Map<string, string[] | undefined>();
   for (const b of postsListBlocks) {
     const filterByTags = (b.block as PubLeafletBlocksPostsList.Main)
@@ -157,6 +163,7 @@ export async function PublicationPageRenderer({
     normalizedDocument:
       null as unknown as DocumentContextValue["normalizedDocument"],
     normalizedPublication,
+    postUrl: getPublicationURL(publication),
     theme,
     prevNext: undefined,
     quotesAndMentions: [],

@@ -4,6 +4,7 @@ import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 import { relativePositionToAbsolutePosition, ySyncPluginKey } from "y-prosemirror";
 import { useEditorStates } from "src/state/useEditorState";
+import { cursorRelevanceFilter } from "./remoteCursorPlugin";
 import {
   CONTRACT_MS,
   cursorColors,
@@ -32,6 +33,11 @@ type RemoteCursorData = {
   left: number;
   top: number;
   height: number;
+  // caret's distance to the block's overflow-clip edges (Infinity when the
+  // editor has no .yjs-cursor-clip ancestor, e.g. footnotes) — used to grow
+  // the name pill away from an edge it would be clipped by
+  spaceLeft: number;
+  spaceRight: number;
 };
 
 const cursorsEqual = (a: RemoteCursorData[], b: RemoteCursorData[]) =>
@@ -44,7 +50,9 @@ const cursorsEqual = (a: RemoteCursorData[], b: RemoteCursorData[]) =>
       c.hue === d.hue &&
       c.left === d.left &&
       c.top === d.top &&
-      c.height === d.height
+      c.height === d.height &&
+      c.spaceLeft === d.spaceLeft &&
+      c.spaceRight === d.spaceRight
     );
   });
 
@@ -75,9 +83,15 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
           ystate.prevSnapshot == null
         ) {
           const anchorRect = anchor.getBoundingClientRect();
+          const clipRect = anchor
+            .closest(".yjs-cursor-clip")
+            ?.getBoundingClientRect();
           props.awareness.getStates().forEach((aw, clientId) => {
             if (clientId === props.awareness.clientID || aw.cursor == null)
               return;
+            // The awareness is shared page-wide; only draw carets pointing
+            // into this block's entity.
+            if (aw.cursor.entityID !== props.entityID) return;
             let head = relativePositionToAbsolutePosition(
               ystate.doc,
               ystate.type,
@@ -102,6 +116,8 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
               left: coords.left - anchorRect.left,
               top: coords.top - anchorRect.top,
               height: coords.bottom - coords.top,
+              spaceLeft: clipRect ? coords.left - clipRect.left : Infinity,
+              spaceRight: clipRect ? clipRect.right - coords.left : Infinity,
             });
           });
         }
@@ -111,7 +127,18 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
     const schedule = () => {
       if (raf === null) raf = window.requestAnimationFrame(recompute);
     };
-    props.awareness.on("change", schedule);
+    // Shared awareness: skip changes whose cursors neither are nor were in
+    // this entity, so a caret move in one block doesn't recompute every
+    // overlay on the page.
+    const relevance = cursorRelevanceFilter(props.awareness, props.entityID);
+    const onAwarenessChange = (changes: {
+      added: number[];
+      updated: number[];
+      removed: number[];
+    }) => {
+      if (relevance(changes)) schedule();
+    };
+    props.awareness.on("change", onAwarenessChange);
     // Only recompute when *this* block's editor changes. setEditorState
     // replaces just the edited entity's entry, so a keystroke in another
     // block leaves our entry referentially equal and is skipped — otherwise
@@ -127,7 +154,7 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
     window.addEventListener("resize", schedule);
     schedule();
     return () => {
-      props.awareness.off("change", schedule);
+      props.awareness.off("change", onAwarenessChange);
       unsubscribe();
       window.removeEventListener("resize", schedule);
       resizeObserver.disconnect();
@@ -146,9 +173,15 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
   );
 }
 
+// keep in sync with the `.yjs-cursor-open .yjs-cursor-pill` max-width in
+// globals.css
+const PILL_MAX_WIDTH = 240;
+
 function RemoteCursor({ cursor }: { cursor: RemoteCursorData }) {
   let [phase, setPhase] = useState<"rest" | "contract" | "open">("rest");
+  let [expand, setExpand] = useState<"" | "left" | "right">("");
   let timer = useRef<number | null>(null);
+  let labelTextRef = useRef<HTMLSpanElement | null>(null);
   let spring = getSpringVars();
   let colors = cursorColors(cursor.hue);
 
@@ -159,6 +192,20 @@ function RemoteCursor({ cursor }: { cursor: RemoteCursorData }) {
   // so interrupting mid-animation stays smooth.
   const beginReveal = () => {
     if (timer.current !== null) window.clearTimeout(timer.current);
+    // Pick the pill's growth direction while it's still a dot (switching the
+    // anchor class is invisible at dot size): if a centered pill would cross
+    // a clip edge, grow it toward the other side instead.
+    const pillWidth = Math.min(
+      labelTextRef.current?.offsetWidth ?? 0,
+      PILL_MAX_WIDTH,
+    );
+    setExpand(
+      cursor.spaceLeft < pillWidth / 2
+        ? "right"
+        : cursor.spaceRight < pillWidth / 2
+          ? "left"
+          : "",
+    );
     setPhase("contract");
     timer.current = window.setTimeout(() => {
       timer.current = null;
@@ -181,7 +228,9 @@ function RemoteCursor({ cursor }: { cursor: RemoteCursorData }) {
     <div
       className={`ProseMirror-yjs-cursor ${
         phase === "contract" ? "yjs-cursor-contract" : ""
-      } ${phase === "open" ? "yjs-cursor-open" : ""}`}
+      } ${phase === "open" ? "yjs-cursor-open" : ""} ${
+        expand ? `yjs-cursor-expand-${expand}` : ""
+      }`}
       style={
         {
           left: cursor.left,
@@ -214,7 +263,9 @@ function RemoteCursor({ cursor }: { cursor: RemoteCursorData }) {
           aria-label={cursor.name}
         />
         <div className="yjs-cursor-pill yjs-cursor-label">
-          <span className="yjs-cursor-text">{cursor.name}</span>
+          <span ref={labelTextRef} className="yjs-cursor-text">
+            {cursor.name}
+          </span>
         </div>
       </div>
     </div>

@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "TZ=UTC next dev --turbo -H 127.0.0.1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "publish-lexicons": "tsx lexicons/publish.ts",
     "generate-db-types": "supabase gen types --local > supabase/database.types.ts && drizzle-kit introspect && rm -rf ./drizzle/*.sql ./drizzle/meta",
     "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/api ./lexicons/pub/leaflet/document.json ./lexicons/pub/leaflet/comment.json ./lexicons/pub/leaflet/publication.json ./lexicons/pub/leaflet/publicationPage.json ./lexicons/pub/leaflet/content.json ./lexicons/pub/leaflet/*/* ./lexicons/com/atproto/*/* ./lexicons/app/bsky/*/* ./lexicons/site/*/* ./lexicons/site/*/*/* ./lexicons/parts/*/* ./lexicons/parts/*/*/* --yes && tsx ./lexicons/fix-extensions.ts ./lexicons/api",
@@ -15,7 +17,8 @@
     "start-feed-service-dev": "npx tsx --env-file='./.env.local' --watch feeds/index.ts",
     "start-appview-prod": "npm run build-appview && node appview/dist/index.js",
     "email:dev": "email dev",
-    "generate-font-fallbacks": "node scripts/generate-font-metric-fallbacks.mjs"
+    "generate-font-fallbacks": "node scripts/generate-font-metric-fallbacks.mjs",
+    "check-query-plans": "node scripts/check-supabase-query-plans.mjs"
   },
   "keywords": [],
   "author": "",
@@ -82,6 +85,7 @@
     "prosemirror-model": "^1.21.0",
     "prosemirror-schema-basic": "^1.2.2",
     "prosemirror-state": "^1.4.3",
+    "puppeteer-core": "^25.3.0",
     "react": "19.2.1",
     "react-aria-components": "^1.8.0",
     "react-day-picker": "^9.3.0",
@@ -132,6 +136,8 @@
     "tailwindcss": "^4.1.13",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.7",
     "wrangler": "^3.56.0"
   },
   "overrides": {

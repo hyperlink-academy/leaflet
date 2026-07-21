@@ -154,9 +154,39 @@ export function basicThemeToLeafletTheme(
   };
 }
 
+const LEAFLET_THEME_COLOR_TYPES = new Set([
+  "pub.leaflet.theme.color#rgb",
+  "pub.leaflet.theme.color#rgba",
+]);
+
+function isLeafletThemeColor(color: unknown): boolean {
+  return (
+    !!color &&
+    typeof color === "object" &&
+    LEAFLET_THEME_COLOR_TYPES.has((color as { $type?: string }).$type ?? "")
+  );
+}
+
+/*
+Our in house theme record is called "theme". So is Offprint and Pckt's. As such, we need to check that the theme in the record is actually a leaflet theme. If it isn't we need to use basicTheme
+ */
+function isLeafletTheme(
+  theme: PubLeafletPublication.Theme | null | undefined,
+): boolean {
+  if (!theme) return false;
+  return [
+    theme.backgroundColor,
+    theme.pageBackground,
+    theme.primary,
+    theme.accentBackground,
+    theme.accentText,
+  ].some(isLeafletThemeColor);
+}
+
 /**
  * Returns the effective pub.leaflet theme for a publication record, preferring
- * the full theme when present and falling back to basicTheme otherwise.
+ * the full theme when it's in a usable pub.leaflet format and falling back to
+ * basicTheme otherwise.
  */
 export function resolvePublicationTheme(
   record:
@@ -168,9 +198,9 @@ export function resolvePublicationTheme(
     | undefined,
 ): PubLeafletPublication.Theme | undefined {
   if (!record) return undefined;
-  if (record.theme) return record.theme;
+  if (isLeafletTheme(record.theme)) return record.theme ?? undefined;
   if (record.basicTheme) return basicThemeToLeafletTheme(record.basicTheme);
-  return undefined;
+  return record.theme ?? undefined;
 }
 
 /**
@@ -256,8 +286,9 @@ export function normalizeDocument(
       : undefined;
 
     // Extract preferences if present (available after lexicon rebuild)
-    const leafletPrefs = (record as Record<string, unknown>)
-      .preferences as SiteStandardPublication.Preferences | undefined;
+    const leafletPrefs = (record as Record<string, unknown>).preferences as
+      | SiteStandardPublication.Preferences
+      | undefined;
 
     return {
       $type: "site.standard.document",
@@ -272,7 +303,10 @@ export function normalizeDocument(
       content,
       theme: record.theme,
       preferences: leafletPrefs
-        ? { ...leafletPrefs, $type: "site.standard.publication#preferences" as const }
+        ? {
+            ...leafletPrefs,
+            $type: "site.standard.publication#preferences" as const,
+          }
         : undefined,
     };
   }

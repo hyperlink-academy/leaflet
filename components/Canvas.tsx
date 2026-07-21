@@ -22,7 +22,7 @@ import { AddTags, PublicationMetadata } from "./Pages/PublicationMetadata";
 import { useLeafletPublicationData } from "./PageSWRDataProvider";
 import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
-import { RecommendTinyEmpty } from "./Icons/RecommendTiny";
+import { RecommendEmptyTiny } from "./Icons/RecommendTiny";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { mergePreferences } from "src/utils/mergePreferences";
 
@@ -188,7 +188,7 @@ const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
     <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
       {showRecommends && (
         <div className="flex gap-1 text-tertiary items-center">
-          <RecommendTinyEmpty className="text-border" /> —
+          <RecommendEmptyTiny className="text-border" /> —
         </div>
       )}
       {(showComments || showMentions) && (

@@ -11,6 +11,7 @@ export const Modal = ({
   onOpenChange,
   asChild,
   trigger,
+  actionButton,
   title,
   children,
 }: {
@@ -21,6 +22,7 @@ export const Modal = ({
   trigger?: React.ReactNode;
   title?: React.ReactNode;
   children: React.ReactNode;
+  actionButton?: React.ReactNode;
 }) => {
   let { height, offsetTop, difference } = useVisualViewport();
   // iOS keyboard open: re-center modal against the visual viewport. Android
@@ -64,9 +66,12 @@ export const Modal = ({
             ${className}`}
           >
             {title ? (
-              <Dialog.Title asChild>
-                <h3 className="pb-1 text-primary">{title}</h3>
-              </Dialog.Title>
+              <div className="flex gap-4 justify-between items-start pb-1 ">
+                <Dialog.Title asChild>
+                  <h3 className="text-primary">{title}</h3>
+                </Dialog.Title>
+                {actionButton && actionButton}
+              </div>
             ) : (
               <Dialog.Title />
             )}

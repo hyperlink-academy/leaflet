@@ -16,6 +16,7 @@ import {
 import { extractBlocksByType } from "./extractBlocksByType";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { fetchPollData, type PollData } from "./fetchPollData";
+import { fetchBskyPosts } from "src/utils/fetchBskyPosts";
 
 type Page =
   | PubLeafletPagesLinearDocument.Main
@@ -24,9 +25,11 @@ type Page =
 export async function collectAndFetchBlockResources({
   agent,
   pages,
+  openPageId,
 }: {
   agent: AtpAgent;
   pages: Page[];
+  openPageId?: string;
 }): Promise<{
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
@@ -40,19 +43,10 @@ export async function collectAndFetchBlockResources({
   const bskyPostBlocks = extractBlocksByType<
     $Typed<PubLeafletBlocksBskyPost.Main>
   >(allBlocks, ids.PubLeafletBlocksBskyPost);
-  const bskyPostBatches: typeof bskyPostBlocks[] = [];
-  for (let i = 0; i < bskyPostBlocks.length; i += 25) {
-    bskyPostBatches.push(bskyPostBlocks.slice(i, i + 25));
-  }
-  const bskyPostResponses = await Promise.all(
-    bskyPostBatches.map((batch) =>
-      agent.getPosts(
-        { uris: batch.map((p) => p.block.postRef.uri) },
-        { headers: {} },
-      ),
-    ),
+  const bskyPostData = await fetchBskyPosts(
+    agent,
+    bskyPostBlocks.map((p) => p.block.postRef.uri),
   );
-  const bskyPostData = bskyPostResponses.flatMap((r) => r.data.posts);
 
   const standardSitePostUris = Array.from(
     new Set(
@@ -79,8 +73,21 @@ export async function collectAndFetchBlockResources({
     pollBlocks.map((b) => b.block.pollRef.uri),
   );
 
-  const firstPageBlocks = (pages[0] as Page | undefined)?.blocks ?? [];
-  const prerenderedCodeBlocks = await extractCodeBlocks(firstPageBlocks);
+  // Keyed `${pageId}:${blockIndex}` to match PostContent's lookup: the root
+  // page renders with no pageId, subpages with their page id.
+  const prerenderedCodeBlocks = new Map<string, string>();
+  await Promise.all(
+    pages.map(async (page, pageIndex) => {
+      const isServerRendered =
+        pageIndex === 0 || (!!openPageId && page.id === openPageId);
+      if (!isServerRendered) return;
+      const pageCode = await extractCodeBlocks(page.blocks ?? []);
+      const pageKey = pageIndex === 0 ? "" : (page.id ?? "");
+      for (const [blockIndex, html] of pageCode) {
+        prerenderedCodeBlocks.set(`${pageKey}:${blockIndex}`, html);
+      }
+    }),
+  );
 
   return {
     bskyPostData,

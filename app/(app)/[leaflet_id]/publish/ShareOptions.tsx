@@ -1,13 +1,16 @@
 "use client";
 import { Checkbox } from "components/Checkbox";
-import { BlueskyPostEditorProsemirror } from "./BskyPostEditorProsemirror";
+import { BlueskyPostComposer } from "components/BlueskyPostComposer/BlueskyPostComposer";
 import { EditorState } from "prosemirror-state";
+import { AtUri } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
+import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { useState } from "react";
 import { sendPostPreview } from "actions/publications/sendPostPreview";
 import { ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 export type ShareState = {
   bluesky: boolean;
@@ -23,24 +26,53 @@ type Props = {
   setCharCount: (c: number) => void;
   editorStateRef: React.MutableRefObject<EditorState | null>;
   title: string;
-  profile: ProfileViewDetailed;
-  publicationProfile?: ProfileViewDetailed;
+  viewerProfile: ProfileViewDetailed;
+  publicationOwnerProfile?: ProfileViewDetailed;
   description: string;
-  record?: NormalizedPublication | null;
+  pubRecord?: NormalizedPublication | null;
   subscriberCount?: number;
   newsletter_enabled?: boolean;
   publication_uri?: string;
   root_entity: string;
   leaflet_id: string;
+  // ISO publish date (scheduled, or undefined for immediate) — previewed in the
+  // standard.site card footer.
+  publishedAt?: string;
   // localStorage key under which the in-progress Bluesky post is persisted
   bskyDraftKey?: string;
+  coverImageSrc?: string;
 };
 
 export function ShareOptions(props: Props) {
   const { shareState, setShareState } = props;
-  // When publishing to a publication, the Bluesky post lives in the
-  // publication owner's PDS, so the preview should show their identity.
-  const previewProfile = props.publicationProfile ?? props.profile;
+  const ownerProfile = props.publicationOwnerProfile ?? props.viewerProfile;
+  const bskyEmbed = {
+    $type: "app.bsky.embed.external#view",
+    external: {
+      uri: props.pubRecord?.url ?? "",
+      title: props.title || "Untitled",
+      description: props.description,
+      thumb: props.coverImageSrc || undefined,
+      source: {
+        uri: props.pubRecord?.url,
+        title: props.pubRecord?.name,
+        icon:
+          props.pubRecord?.icon && ownerProfile.did
+            ? blobRefToSrc(props.pubRecord.icon.ref, ownerProfile.did)
+            : undefined,
+      },
+
+      associatedRefs: ownerProfile.did
+        ? [
+            {
+              uri: `at://${ownerProfile.did}/site.standard.document/preview`,
+            },
+          ]
+        : undefined,
+      createdAt: props.publishedAt,
+    },
+  };
+
   const handleChange = (
     key: keyof Omit<ShareState, "quiet">,
     checked: boolean,
@@ -94,6 +126,37 @@ export function ShareOptions(props: Props) {
 
       <Checkbox
         className="gap-4!"
+        checked={shareState.bluesky}
+        onChange={(e) => handleChange("bluesky", e.target.checked)}
+      >
+        <div className="flex flex-col">
+          <div>Share on Bluesky</div>
+          <div className="text-sm text-tertiary font-normal">
+            Subscribers will be updated via a custom Bluesky feed
+          </div>
+        </div>
+      </Checkbox>
+      <div className="pl-7">
+        <div
+          className={`w-full opaque-container rounded-lg! p-3 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
+        >
+          <BlueskyPostComposer
+            profile={{
+              avatar: ownerProfile.avatar,
+              displayName: ownerProfile.displayName,
+              handle: ownerProfile.handle,
+            }}
+            editorStateRef={props.editorStateRef}
+            charCount={props.charCount}
+            onCharCountChange={props.setCharCount}
+            persistKey={props.bskyDraftKey}
+            embed={bskyEmbed}
+          />
+        </div>
+      </div>
+
+      <Checkbox
+        className="gap-4!"
         checked={shareState.postToReaders}
         onChange={(e) => handleChange("postToReaders", e.target.checked)}
       >
@@ -105,61 +168,6 @@ export function ShareOptions(props: Props) {
           </div>
         </div>
       </Checkbox>
-
-      <Checkbox
-        className="gap-4!"
-        checked={shareState.bluesky}
-        onChange={(e) => handleChange("bluesky", e.target.checked)}
-      >
-        <div className="flex flex-col">
-          <div>Share on Bluesky</div>
-          <div className="text-sm text-tertiary font-normal">
-            Subscribers will be updated via a custom Bluesky feed
-          </div>
-        </div>
-      </Checkbox>
-      <div
-        className={`w-full pl-7 pb-2 ${!shareState.bluesky ? "opacity-50" : ""}`}
-      >
-        <div className="opaque-container border-border! py-2 px-3 text-sm rounded-lg!">
-          <div className="flex gap-2">
-            <img
-              className="rounded-full w-6 h-6 sm:w-[42px] sm:h-[42px] shrink-0"
-              src={previewProfile.avatar}
-            />
-            <div className="flex flex-col min-w-0 w-full">
-              <div className="flex gap-2">
-                <p className="font-bold">{previewProfile.displayName}</p>
-                <p className="text-tertiary">@{previewProfile.handle}</p>
-              </div>
-              <div className="flex flex-col">
-                <BlueskyPostEditorProsemirror
-                  editorStateRef={props.editorStateRef}
-                  onCharCountChange={props.setCharCount}
-                  persistKey={props.bskyDraftKey}
-                />
-              </div>
-              <div className="opaque-container text-secondary overflow-hidden flex flex-col mt-4 w-full">
-                <div className="flex flex-col p-2">
-                  <div className="font-bold truncate min-w-0 w-full ">
-                    {props.title}
-                  </div>
-                  <div className="text-tertiary line-clamp-3">
-                    {props.description}
-                  </div>
-                  <hr className="border-border mt-2 mb-1" />
-                  <p className="text-xs text-tertiary">
-                    {props.record?.url?.replace(/^https?:\/\//, "")}
-                  </p>
-                </div>
-              </div>
-              <div className="text-xs text-secondary italic place-self-end pt-2">
-                {props.charCount}/300
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <hr className="border-border-light my-1" />
 
@@ -232,7 +240,18 @@ function EmailPreview(props: {
   };
 
   return (
-    <div className="pl-7 pb-2 flex flex-col gap-1">
+    <div className="pl-7 pb-2 flex flex-col gap-1 -mt-2">
+      {status.state === "sent" ? (
+        <div className="text-sm text-tertiary italic">
+          Preview sent to {email}.
+        </div>
+      ) : status.state === "error" ? (
+        <div className="text-sm text-accent-contrast">{status.message}</div>
+      ) : (
+        <div className="text-sm text-tertiary font-normal">
+          Send the rendered email to a test address before broadcasting.
+        </div>
+      )}
       <div className="flex gap-2 items-center">
         <input
           type="email"
@@ -253,21 +272,12 @@ function EmailPreview(props: {
           {status.state === "sending" ? (
             <DotLoader className="h-[23px]" />
           ) : (
-            "Send preview"
+            <div className="w-max flex flex-row gap-1">
+              Send<span className="sm:block  hidden"> preview</span>
+            </div>
           )}
         </ButtonSecondary>
       </div>
-      {status.state === "sent" ? (
-        <div className="text-sm text-tertiary italic">
-          Preview sent to {email}.
-        </div>
-      ) : status.state === "error" ? (
-        <div className="text-sm text-accent-contrast">{status.message}</div>
-      ) : (
-        <div className="text-sm text-tertiary font-normal">
-          Send the rendered email to a test address before broadcasting.
-        </div>
-      )}
     </div>
   );
 }

@@ -13,16 +13,19 @@ import {
   dracula,
 } from "@react-email/components";
 import type { PrismLanguage } from "@react-email/code-block";
-import { UnicodeString } from "@atproto/api";
+import { UnicodeString, type AppBskyFeedDefs } from "@atproto/api";
 import React, { type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
+  PubLeafletBlocksBskyPost,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksImage,
   PubLeafletBlocksOrderedList,
+  PubLeafletBlocksStandardSitePost,
+  PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -41,10 +44,18 @@ import {
   makeEmailIconUrl,
   makeStaticUrl,
   mixRgb,
+  renderTextWithBreaks,
   resolveColors,
   type EmailTheme,
   type ResolvedColors,
 } from "./shared";
+import { BskyPostEmailBlock } from "./bskyPost";
+import {
+  StandardSitePostEmailBlock,
+  StandardSitePublicationEmailBlock,
+} from "./standardSiteBlocks";
+import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import { supabaseServerClient } from "supabase/serverClient";
 
 type PostEmailProps = {
@@ -82,6 +93,25 @@ type PostEmailProps = {
     joinUrl: string;
     cheapestMonthlyCents?: number | null;
   };
+  /**
+   * Hydrated Bluesky posts for `pub.leaflet.blocks.bskyPost` blocks, keyed
+   * by post URI. Blocks whose post is missing (hydration failed, post
+   * deleted/blocked) fall back to the "not supported" card.
+   */
+  bskyPosts?: Record<string, AppBskyFeedDefs.PostView>;
+  /**
+   * Hydrated data for `pub.leaflet.blocks.standardSitePost` /
+   * `standardSitePublication` blocks, keyed by AT-URI. Blocks whose reference
+   * is missing render the same "not found" notice as the published web page.
+   */
+  standardSitePosts?: Record<string, StandardSitePostData>;
+  standardSitePublications?: Record<string, StandardSitePublicationData>;
+  /**
+   * AT-URI of the publication this email is sent from. A standardSitePost
+   * block referencing a post in this same publication hides its publication
+   * footer, matching the web renderer.
+   */
+  currentPublicationUri?: string;
 };
 
 const drawerUrl = (base: string, drawer: "quotes" | "comments") => {
@@ -114,6 +144,281 @@ const facet = (
   index: { byteStart, byteEnd },
   features,
 });
+
+const bskyPostBlock = (rkey: string): PubLeafletPagesLinearDocument.Block => ({
+  $type: "pub.leaflet.pages.linearDocument#block",
+  block: {
+    $type: "pub.leaflet.blocks.bskyPost",
+    postRef: {
+      uri: `at://did:plc:preview/app.bsky.feed.post/${rkey}`,
+      cid: "preview",
+    },
+  },
+});
+
+const previewBskyAuthor = {
+  did: "did:plc:preview",
+  handle: "leaflet.pub",
+  displayName: "Leaflet Preview",
+  avatar: "https://placehold.co/80x80/png",
+};
+
+const previewBskyPost = (
+  rkey: string,
+  post: Partial<AppBskyFeedDefs.PostView>,
+): [string, AppBskyFeedDefs.PostView] => {
+  const uri = `at://did:plc:preview/app.bsky.feed.post/${rkey}`;
+  return [
+    uri,
+    {
+      $type: "app.bsky.feed.defs#postView",
+      uri,
+      cid: "preview",
+      author: previewBskyAuthor,
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "A plain preview post.",
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+      indexedAt: "2026-01-05T17:00:00.000Z",
+      ...post,
+    },
+  ];
+};
+
+// Fixture posts for `npm run email:dev`, covering each embed degradation.
+// Production sends look posts up by their real at:// URIs, so these preview
+// URIs can never collide with sent content.
+const previewBskyPosts: Record<string, AppBskyFeedDefs.PostView> =
+  Object.fromEntries([
+    previewBskyPost("text", {
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "Check out https://leaflet.pub for more.\nNewlines become breaks.",
+        facets: [
+          {
+            index: { byteStart: 10, byteEnd: 29 },
+            features: [
+              {
+                $type: "app.bsky.richtext.facet#link",
+                uri: "https://leaflet.pub",
+              },
+            ],
+          },
+        ],
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+      replyCount: 3,
+      quoteCount: 2,
+    }),
+    previewBskyPost("image", {
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "A post with a single image.",
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+      embed: {
+        $type: "app.bsky.embed.images#view",
+        images: [
+          {
+            thumb: "https://placehold.co/600x400/png",
+            fullsize: "https://placehold.co/1200x800/png",
+            alt: "placeholder",
+          },
+        ],
+      },
+    }),
+    previewBskyPost("multiimage", {
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "A post with four images.",
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+      embed: {
+        $type: "app.bsky.embed.images#view",
+        images: Array.from({ length: 4 }, (_, i) => ({
+          thumb: `https://placehold.co/600x400/png?text=${i + 1}`,
+          fullsize: `https://placehold.co/1200x800/png?text=${i + 1}`,
+          alt: `placeholder ${i + 1}`,
+        })),
+      },
+    }),
+    previewBskyPost("external", {
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "A post with a link card.",
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+      embed: {
+        $type: "app.bsky.embed.external#view",
+        external: {
+          uri: "https://leaflet.pub",
+          title: "Leaflet",
+          description:
+            "Shared writing and social publishing, with a description long enough to exercise the two-line clamp on the external card.",
+          thumb: "https://placehold.co/240x240/png",
+        },
+      },
+    }),
+    previewBskyPost("quote", {
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "Quoting another post.",
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+      embed: {
+        $type: "app.bsky.embed.record#view",
+        record: {
+          $type: "app.bsky.embed.record#viewRecord",
+          uri: "at://did:plc:preview/app.bsky.feed.post/quoted",
+          cid: "preview",
+          author: previewBskyAuthor,
+          value: {
+            $type: "app.bsky.feed.post",
+            text: "The quoted post's text.",
+            createdAt: "2026-01-04T17:00:00.000Z",
+          },
+          indexedAt: "2026-01-04T17:00:00.000Z",
+        },
+      },
+    }),
+    previewBskyPost("video", {
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "A post with a video.",
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+      embed: {
+        $type: "app.bsky.embed.video#view",
+        cid: "preview",
+        playlist: "https://example.com/playlist.m3u8",
+        thumbnail: "https://placehold.co/640x360/png",
+        alt: "video placeholder",
+      },
+    }),
+    previewBskyPost("labeled", {
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "A labeled post — the media is replaced with an info box.",
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+      labels: [
+        {
+          src: "did:plc:moderation",
+          uri: "at://did:plc:preview/app.bsky.feed.post/labeled",
+          val: "graphic-media",
+          cts: "2026-01-05T17:00:00.000Z",
+        },
+      ],
+      embed: {
+        $type: "app.bsky.embed.images#view",
+        images: [
+          {
+            thumb: "https://placehold.co/600x400/png",
+            fullsize: "https://placehold.co/1200x800/png",
+            alt: "placeholder",
+          },
+        ],
+      },
+    }),
+    previewBskyPost("optout", {
+      author: {
+        ...previewBskyAuthor,
+        labels: [
+          {
+            src: "did:plc:preview",
+            uri: "at://did:plc:preview/app.bsky.actor.profile/self",
+            val: "!no-unauthenticated",
+            cts: "2026-01-05T17:00:00.000Z",
+          },
+        ],
+      },
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "This text should not render — the author opted out.",
+        createdAt: "2026-01-05T17:00:00.000Z",
+      },
+    }),
+  ]);
+
+const standardSitePostBlock = (
+  rkey: string,
+  size?: "large" | "medium" | "small",
+): PubLeafletPagesLinearDocument.Block => ({
+  $type: "pub.leaflet.pages.linearDocument#block",
+  block: {
+    $type: "pub.leaflet.blocks.standardSitePost",
+    uri: `at://did:plc:preview/site.standard.document/${rkey}`,
+    size,
+  },
+});
+
+const previewStandardSitePublication: StandardSitePublicationData = {
+  uri: "at://did:plc:preview/site.standard.publication/3previewpub",
+  record: {
+    $type: "site.standard.publication",
+    name: "Example Publication",
+    url: "https://example.leaflet.pub",
+    description:
+      "A publication about examples, with enough description text that it wraps onto several lines and exercises the three-line clamp on the card.",
+  },
+  author: {
+    did: "did:plc:preview",
+    handle: "example.leaflet.pub",
+    displayName: "Example Author",
+  },
+};
+
+const previewCoverImage = {
+  ref: { $link: "https://placehold.co/800x800/png" },
+} as unknown as NonNullable<StandardSitePostData["record"]["coverImage"]>;
+
+const previewStandardSitePost = (
+  rkey: string,
+  record: Partial<StandardSitePostData["record"]>,
+): [string, StandardSitePostData] => {
+  const uri = `at://did:plc:preview/site.standard.document/${rkey}`;
+  return [
+    uri,
+    {
+      uri,
+      record: {
+        $type: "site.standard.document",
+        title: "A referenced post",
+        description:
+          "The description of the referenced post, long enough to wrap onto a few lines so the clamp is visible in the preview.",
+        publishedAt: "2026-01-05T17:00:00.000Z",
+        site: "https://example.leaflet.pub",
+        path: `/${rkey}`,
+        ...record,
+      },
+      publication: {
+        uri: previewStandardSitePublication.uri,
+        record: previewStandardSitePublication.record,
+      },
+      author: previewStandardSitePublication.author,
+      contributors: [],
+      commentsCount: 0,
+      mentionsCount: 0,
+      recommendsCount: 0,
+    },
+  ];
+};
+
+// Fixture posts for `npm run email:dev`, one per block size. Production sends
+// look posts up by their real at:// URIs, so these can never collide.
+const previewStandardSitePosts: Record<string, StandardSitePostData> =
+  Object.fromEntries([
+    previewStandardSitePost("small", { title: "A small referenced post" }),
+    previewStandardSitePost("medium", {
+      title: "A medium post with a cover image",
+      coverImage: previewCoverImage,
+    }),
+    previewStandardSitePost("large", {
+      title: "A large post with a cover image",
+      coverImage: previewCoverImage,
+    }),
+  ]);
 
 const defaultProps: PostEmailProps = {
   publicationName: "Publication",
@@ -250,11 +555,38 @@ const defaultProps: PostEmailProps = {
       $type: "pub.leaflet.pages.linearDocument#block",
       block: { $type: "pub.leaflet.blocks.horizontalRule" },
     },
+    bskyPostBlock("text"),
+    bskyPostBlock("image"),
+    bskyPostBlock("multiimage"),
+    bskyPostBlock("external"),
+    bskyPostBlock("quote"),
+    bskyPostBlock("video"),
+    bskyPostBlock("labeled"),
+    bskyPostBlock("optout"),
+    // No fixture post for this URI — exercises the deleted/unfetched fallback.
+    bskyPostBlock("deleted"),
+    standardSitePostBlock("small", "small"),
+    standardSitePostBlock("medium", "medium"),
+    standardSitePostBlock("large", "large"),
+    // No fixture for this URI — exercises the "Post not found." fallback.
+    standardSitePostBlock("missing"),
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: {
+        $type: "pub.leaflet.blocks.standardSitePublication",
+        uri: previewStandardSitePublication.uri,
+      },
+    },
     {
       $type: "pub.leaflet.pages.linearDocument#block",
       block: { $type: "pub.leaflet.blocks.math" },
     },
   ],
+  bskyPosts: previewBskyPosts,
+  standardSitePosts: previewStandardSitePosts,
+  standardSitePublications: {
+    [previewStandardSitePublication.uri]: previewStandardSitePublication,
+  },
 };
 
 const BLOCK_MARGIN_TOP = 4;
@@ -493,6 +825,12 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             theme={theme}
                             colors={c}
                             postUrl={p.postUrl}
+                            bskyPosts={p.bskyPosts}
+                            standardSitePosts={p.standardSitePosts}
+                            standardSitePublications={
+                              p.standardSitePublications
+                            }
+                            currentPublicationUri={p.currentPublicationUri}
                           />
                         ))}
 
@@ -710,6 +1048,10 @@ const BlockRenderer = ({
   theme,
   colors,
   postUrl,
+  bskyPosts,
+  standardSitePosts,
+  standardSitePublications,
+  currentPublicationUri,
 }: {
   block: PubLeafletPagesLinearDocument.Block["block"];
   alignment?: string;
@@ -718,6 +1060,10 @@ const BlockRenderer = ({
   theme: EmailTheme;
   colors: ResolvedColors;
   postUrl: string;
+  bskyPosts?: Record<string, AppBskyFeedDefs.PostView>;
+  standardSitePosts?: Record<string, StandardSitePostData>;
+  standardSitePublications?: Record<string, StandardSitePublicationData>;
+  currentPublicationUri?: string;
 }) => {
   if (PubLeafletBlocksText.isMain(block)) {
     return (
@@ -886,8 +1232,116 @@ const BlockRenderer = ({
       />
     );
   }
+  if (PubLeafletBlocksBskyPost.isMain(block)) {
+    const post = bskyPosts?.[block.postRef.uri];
+    if (!post) {
+      return (
+        <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
+      );
+    }
+    return (
+      <BskyPostEmailBlock
+        post={post}
+        clientHost={block.clientHost}
+        theme={theme}
+        colors={colors}
+        assetsBaseUrl={assetsBaseUrl}
+      />
+    );
+  }
+  if (PubLeafletBlocksStandardSitePost.isMain(block)) {
+    const post = standardSitePosts?.[block.uri];
+    if (!post) {
+      return (
+        <BlockDataNotFound label="Post not found." theme={theme} colors={colors} />
+      );
+    }
+    // default to "medium" to match the draft (StandardSitePostBlock),
+    // since the publish step omits size when it hasn't been explicitly set
+    const size =
+      block.size === "large"
+        ? "large"
+        : block.size === "small"
+          ? "small"
+          : "medium";
+    return (
+      <StandardSitePostEmailBlock
+        post={post}
+        size={size}
+        showPublicationTheme={block.showPublicationTheme !== false}
+        currentPublicationUri={currentPublicationUri}
+        theme={theme}
+        assetsBaseUrl={assetsBaseUrl}
+      />
+    );
+  }
+  if (PubLeafletBlocksStandardSitePublication.isMain(block)) {
+    const publication = standardSitePublications?.[block.uri];
+    if (!publication) {
+      return (
+        <BlockDataNotFound
+          label="Publication not found."
+          theme={theme}
+          colors={colors}
+          bordered
+        />
+      );
+    }
+    return (
+      <StandardSitePublicationEmailBlock
+        publication={publication}
+        showPublicationTheme={block.showPublicationTheme !== false}
+        theme={theme}
+        assetsBaseUrl={assetsBaseUrl}
+      />
+    );
+  }
   return (
     <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
+  );
+};
+
+// Matches the published web renderer's notice when a referenced standard-site
+// post/publication isn't in the database. On the web the publication notice
+// keeps its bordered card wrapper while the post notice is bare text —
+// `bordered` mirrors that.
+const BlockDataNotFound = ({
+  label,
+  theme,
+  colors,
+  bordered,
+}: {
+  label: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+  bordered?: boolean;
+}) => {
+  const text = (
+    <ReactEmailText
+      style={{
+        color: colors.tertiary,
+        fontFamily: theme.bodyFont,
+        fontSize: 14,
+        fontStyle: "italic",
+        lineHeight: 1.4,
+        margin: bordered ? 0 : BLOCK_MARGIN,
+      }}
+    >
+      {label}
+    </ReactEmailText>
+  );
+  if (!bordered) return text;
+  return (
+    <Section
+      style={{
+        border: `1px solid ${colors.borderLight}`,
+        borderRadius: 8,
+        margin: BLOCK_MARGIN,
+        padding: 16,
+      }}
+    >
+      {text}
+    </Section>
   );
 };
 
@@ -1495,14 +1949,6 @@ function* segments(
     yield { text: text.slice(textCursor, text.length) };
   }
 }
-
-const renderTextWithBreaks = (text: string, key: string): React.ReactNode => {
-  const parts = text.split("\n");
-  if (parts.length === 1) return text;
-  return parts.flatMap((part, i) =>
-    i < parts.length - 1 ? [part, <br key={`${key}-br-${i}`} />] : [part],
-  );
-};
 
 const resolveAtMentionHref = (
   feature: { atURI: string; href?: string },

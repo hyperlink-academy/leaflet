@@ -110,7 +110,7 @@ export async function getDocumentsByTag(
           pubRecord: normalizedPubRecord,
           uri: pub?.uri || "",
         },
-        author: handle?.alsoKnownAs?.[0]
+        ownerDid: handle?.alsoKnownAs?.[0]
           ? `@${handle.alsoKnownAs[0].slice(5)}`
           : null,
         contributors: await resolveBylineProfiles(normalizedData, uri.host),

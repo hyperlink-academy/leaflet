@@ -18,11 +18,11 @@ type PresetTheme = {
 const presetThemes: PresetTheme[] = [
   {
     name: "Default",
-    bgLeaflet: "#FFFEFC",
+    bgLeaflet: "#FDFCFA",
     bgPage: "#FDFCFA",
     showPageBackground: false,
     primary: "#272727",
-    accent1: "#57821E",
+    accent1: "#57822B",
     accent2: "#FFFFFF",
     headingFont: undefined,
     bodyFont: undefined,

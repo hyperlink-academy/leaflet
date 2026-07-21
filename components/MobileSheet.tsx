@@ -21,6 +21,7 @@ export const MobileSheet = ({
   id,
   contentRef,
   children,
+  actionButton,
 }: {
   className?: string;
   open?: boolean;
@@ -33,6 +34,7 @@ export const MobileSheet = ({
   id?: string;
   contentRef?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
+  actionButton?: React.ReactNode;
 }) => {
   let { height, offsetTop, difference } = useVisualViewport();
   // iOS keyboard open: the layout viewport (and dvh) don't shrink for the
@@ -190,24 +192,25 @@ export const MobileSheet = ({
                     overflow-y-scroll overscroll-y-contain
                     ${className}`}
                   >
-                    {/* When a title is given the sheet supplies its own header
-                        + close button; otherwise the children are expected to
-                        render their own chrome. Radix still requires a
-                        Dialog.Title for accessibility. */}
-                    {title ? (
-                      <div className="w-full flex items-center gap-2 mb-2">
-                        <div className="flex-1 min-w-0">
-                          <Dialog.Title asChild>
-                            <h3 className="text-primary">{title}</h3>
-                          </Dialog.Title>
+                    <div className="flex justify-between gap-4">
+                      {title ? (
+                        <div className="w-full flex items-center gap-2 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <Dialog.Title asChild>
+                              <h3 className="text-primary">{title}</h3>
+                            </Dialog.Title>
+                          </div>
+                          {actionButton && actionButton}
+
+                          <Dialog.Close className="text-tertiary shrink-0">
+                            <CloseTiny />
+                          </Dialog.Close>
                         </div>
-                        <Dialog.Close className="text-tertiary shrink-0">
-                          <CloseTiny />
-                        </Dialog.Close>
-                      </div>
-                    ) : (
-                      <Dialog.Title />
-                    )}
+                      ) : (
+                        // Radix requires a Dialog.Title for accessibility.
+                        <Dialog.Title />
+                      )}
+                    </div>
                     <Dialog.Description asChild>
                       <div className="flex flex-col">
                         {children}

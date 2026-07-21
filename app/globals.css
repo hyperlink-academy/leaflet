@@ -98,7 +98,7 @@
 
 @layer base {
   :root {
-    --bg-leaflet: 240, 247, 250;
+    --bg-leaflet: 253, 252, 250;
     --bg-page: 255, 255, 255;
     --bg-page-alpha: 1;
 
@@ -116,8 +116,14 @@
       rgb(var(--bg-page)) 85%
     );
 
-    --highlight-1: 255, 177, 177;
-    --highlight-2: 253, 245, 203;
+    /* highlight-1's default is a calculated tint of the accent, matching
+       BaseThemeProvider's fallback when no explicit highlight-1 is set. */
+    --highlight-1: color-mix(
+      in oklab,
+      rgb(var(--accent-contrast)),
+      rgb(var(--bg-page)) 75%
+    );
+    --highlight-2: 237, 210, 128;
     --highlight-3: 255, 205, 195;
 
     --list-marker-width: 36px;
@@ -330,6 +336,13 @@ input[type="number"] {
   );
 }
 
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* only gets used in codeblock for now */
+}
+
 .inline-code {
   display: inline;
   font-size: 1em;
@@ -495,7 +508,7 @@ body.cmd-held .ProseMirror a {
 }
 
 .container {
-/*need this max-w-none because this classname conflicts with one that tailwind uses that has a max-w-930px on it*/
+  /*need this max-w-none because this classname conflicts with one that tailwind uses that has a max-w-930px on it*/
   @apply max-w-none;
   @apply border;
   @apply border-border-light;
@@ -825,6 +838,9 @@ body.cmd-held .ProseMirror a {
      name pill is painted crisply by .yjs-cursor-label */
   --goo-pad-x: 16px;
   --goo-pad-top: 26px;
+  /* half the rest-state 7px dot; the edge-flipped pill pins an end cap here
+     so every growth direction coincides at the dot */
+  --cursor-dot-r: 3.5px;
   /* left/top/height are set inline per cursor from view.coordsAtPos */
   position: absolute;
   width: 0;
@@ -887,6 +903,18 @@ body.cmd-held .ProseMirror a {
     height 154ms ease,
     top 154ms ease;
 }
+/* edge-adjacent cursors (class set by RemoteCursor at reveal time): a
+   centered pill would cross the block's clip edge, so pin the end cap
+   nearest the edge on the caret and grow toward the room instead. At dot
+   size all anchorings coincide, so the class switch never moves pixels. */
+.yjs-cursor-expand-right .yjs-cursor-pill {
+  transform: translate(calc(-1 * var(--cursor-dot-r)), -50%);
+  transform-origin: var(--cursor-dot-r) 50%;
+}
+.yjs-cursor-expand-left .yjs-cursor-pill {
+  transform: translate(calc(-100% + var(--cursor-dot-r)), -50%);
+  transform-origin: calc(100% - var(--cursor-dot-r)) 50%;
+}
 /* the crisp, full-width name pill — the visible pill body (the goo layer
    renders only the junction blob) */
 .yjs-cursor-label {
@@ -939,6 +967,14 @@ body.cmd-held .ProseMirror a {
   transform: translate(-50%, -50%)
     translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
   transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+.yjs-cursor-expand-right.yjs-cursor-contract .yjs-cursor-pill {
+  transform: translate(calc(-1 * var(--cursor-dot-r)), -50%)
+    translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
+}
+.yjs-cursor-expand-left.yjs-cursor-contract .yjs-cursor-pill {
+  transform: translate(calc(-100% + var(--cursor-dot-r)), -50%)
+    translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
 }
 
 /* open: transforms spring back to identity while the caret thickens and

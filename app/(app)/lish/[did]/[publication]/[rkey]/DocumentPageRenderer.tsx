@@ -30,10 +30,12 @@ export async function DocumentPageRenderer({
   did,
   rkey,
   publication,
+  openPageId,
 }: {
   did: string;
   rkey: string;
   publication?: string;
+  openPageId?: string;
 }) {
   let agent = new AtpAgent({
     service: "https://public.api.bsky.app",
@@ -100,6 +102,7 @@ export async function DocumentPageRenderer({
       | PubLeafletPagesLinearDocument.Main
       | PubLeafletPagesCanvas.Main
     )[],
+    openPageId,
   });
 
   const pubRecord = document.normalizedPublication;

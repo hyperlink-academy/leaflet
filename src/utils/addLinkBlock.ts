@@ -33,6 +33,30 @@ export async function assertStandardSitePostFacts(
   await rep.mutate.assertFact(facts);
 }
 
+export async function assertStandardSitePublicationFacts(
+  rep: Replicache<ReplicacheMutators>,
+  entityID: string,
+  uri: string,
+  ignoreUndo?: boolean,
+) {
+  let facts: Parameters<typeof rep.mutate.assertFact>[0] & {
+    ignoreUndo?: true;
+  } = [
+    {
+      entity: entityID,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "standard-site-publication" },
+    },
+    {
+      entity: entityID,
+      attribute: "block/standard-site-publication",
+      data: { type: "string", value: uri },
+    },
+  ];
+  if (ignoreUndo) facts.ignoreUndo = true;
+  await rep.mutate.assertFact(facts);
+}
+
 export async function addLinkBlock(
   url: string,
   entityID: string,
@@ -81,6 +105,16 @@ export async function addLinkBlock(
       rep,
       entityID,
       data.leafletPost.uri,
+      ignoreUndo,
+    );
+    return;
+  }
+
+  if (data.leafletPublication) {
+    await assertStandardSitePublicationFacts(
+      rep,
+      entityID,
+      data.leafletPublication.uri,
       ignoreUndo,
     );
     return;

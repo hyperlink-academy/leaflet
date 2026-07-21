@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import {
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
@@ -17,6 +16,7 @@ import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksStandardSitePost,
+  PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
@@ -37,17 +37,17 @@ import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
-import {
-  StandardSitePostItemView,
-  WithStandardSitePostPublicationTheme,
-} from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
+import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import { StandardSitePublicationItem } from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
+import {
+  WithPublicationTheme,
+  PublicationThemeWrapper,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
-import {
-  ImageGalleryLightbox,
-  LightboxSlide,
-} from "components/Blocks/ImageGalleryBlock/ImageGalleryLightbox";
+import { useOpenImageLightbox } from "./GlobalImageLightbox";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
@@ -171,7 +171,8 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
-  let [imageLightboxOpen, setImageLightboxOpen] = useState(false);
+  let openLightbox = useOpenImageLightbox();
+  let canOpenLightbox = !!openLightbox && !preview;
   let document = useDocumentOptional();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
@@ -272,8 +273,9 @@ export let Block = ({
       return (
         <div className={className} {...blockProps}>
           <div className="standardSitePostBlock block-border overflow-hidden w-full">
-            <WithStandardSitePostPublicationTheme
-              post={post}
+            <PublicationThemeWrapper
+              postRecord={post.record}
+              pubRecord={post.publication?.record ?? undefined}
               enabled={b.block.showPublicationTheme !== false}
             >
               <div className="bg-bg-page">
@@ -283,8 +285,18 @@ export let Block = ({
                   currentPublicationUri={currentPublicationUri}
                 />
               </div>
-            </WithStandardSitePostPublicationTheme>
+            </PublicationThemeWrapper>
           </div>
+        </div>
+      );
+    }
+    case PubLeafletBlocksStandardSitePublication.isMain(b.block): {
+      return (
+        <div className={className} {...blockProps}>
+          <PublishedStandardSitePublicationBlock
+            uri={b.block.uri}
+            showPublicationTheme={b.block.showPublicationTheme !== false}
+          />
         </div>
       );
     }
@@ -417,7 +429,8 @@ export let Block = ({
       return <StaticMathBlock block={b.block} />;
     }
     case PubLeafletBlocksCode.isMain(b.block): {
-      let html = prerenderedCodeBlocks?.get(index.join("."));
+      let pageKey = pageId && pageId !== pages[0]?.id ? pageId : "";
+      let html = prerenderedCodeBlocks?.get(`${pageKey}:${index.join(".")}`);
       return <PubCodeBlock block={b.block} prerenderedCode={html} />;
     }
     case PubLeafletBlocksWebsite.isMain(b.block): {
@@ -473,7 +486,7 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksImage.isMain(b.block): {
-      let imageBlock = b.block;
+      let src = blobRefToSrc(b.block.image.ref, did);
       let isFullBleed = b.block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -500,33 +513,22 @@ export let Block = ({
           <div className={`relative ${isFullBleed ? "w-full" : "w-fit"} h-fit`}>
             <button
               type="button"
-              className={`block ${isFullBleed ? "w-full" : "w-fit"} cursor-zoom-in`}
-              onClick={() => setImageLightboxOpen(true)}
+              className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-pointer" : ""}`}
+              onClick={
+                canOpenLightbox
+                  ? () => openLightbox?.(pageId, src)
+                  : undefined
+              }
             >
               <img
                 alt={b.block.alt}
                 height={b.block.aspectRatio?.height}
                 width={b.block.aspectRatio?.width}
                 className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-                src={blobRefToSrc(b.block.image.ref, did)}
+                src={src}
               />
             </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
-            <ImageGalleryLightbox
-              count={1}
-              index={imageLightboxOpen ? 0 : null}
-              onIndexChange={(i) => setImageLightboxOpen(i !== null)}
-              renderSlide={() => (
-                <LightboxSlide
-                  image={{
-                    src: blobRefToSrc(imageBlock.image.ref, did),
-                    alt: imageBlock.alt || "",
-                    width: imageBlock.aspectRatio?.width ?? 0,
-                    height: imageBlock.aspectRatio?.height ?? 0,
-                  }}
-                />
-              )}
-            />
           </div>
         </div>
       );
@@ -640,6 +642,27 @@ export let Block = ({
       return null;
   }
 };
+
+function PublishedStandardSitePublicationBlock(props: {
+  uri: string;
+  showPublicationTheme: boolean;
+}) {
+  let { data: publication } = useStandardSitePublication(props.uri);
+
+  return (
+    <div className="standardSitePublicationBlock block-border overflow-hidden w-full">
+      <WithPublicationTheme
+        record={publication?.record}
+        uri={publication?.uri}
+        enabled={props.showPublicationTheme}
+      >
+        <div className="bg-bg-page">
+          <StandardSitePublicationItem uri={props.uri} />
+        </div>
+      </WithPublicationTheme>
+    </div>
+  );
+}
 
 function PublishedIframeBlock(props: {
   url: string;

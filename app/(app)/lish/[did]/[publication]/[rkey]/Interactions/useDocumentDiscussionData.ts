@@ -8,6 +8,7 @@ import {
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import type { Comment } from "./Comments";
 
 type DocumentInteractionsData = {
@@ -54,6 +55,11 @@ export function useDocumentDiscussionData(
         uri: document_uri,
         normalizedDocument: documentRecord,
         normalizedPublication: data?.publication ?? null,
+        postUrl: getDocumentURL(
+          documentRecord,
+          document_uri,
+          data?.publication,
+        ),
         theme: null,
         prevNext: null,
         quotesAndMentions: data?.quotesAndMentions ?? [],

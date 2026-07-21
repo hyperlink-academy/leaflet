@@ -2124,6 +2124,17 @@ export type Database = {
           publication_name: string
         }[]
       }
+      get_publication_feed_docs: {
+        Args: {
+          p_publication: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          data: Json
+          sort_date: string
+        }[]
+      }
       get_reader_feed: {
         Args: {
           p_identity: string
@@ -2164,6 +2175,14 @@ export type Database = {
           client_group_id: string
         }
         Returns: Database["public"]["CompositeTypes"]["pull_result"]
+      }
+      pull_data_cvr: {
+        Args: {
+          token_id: string
+          client_group_id: string
+          base_cvr: Json
+        }
+        Returns: Json
       }
       search_tags: {
         Args: {

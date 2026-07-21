@@ -102,11 +102,11 @@ export function CodeBlock(props: BlockProps) {
         )}
       </BlockLayout>
       {permissions.write && (
-        <div className="text-sm text-tertiary flex w-full justify-between">
+        <div className="text-sm text-tertiary flex w-full justify-between gap-4">
           <div className="codeBlockTheme grow flex gap-1">
             Theme:{" "}
             <select
-              className="codeBlockThemeSelect text-left bg-transparent pr-1 sm:max-w-none max-w-24 w-full"
+              className="codeBlockThemeSelect text-left bg-transparent pr-1 w-full min-w-0 truncate underline cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -128,7 +128,7 @@ export function CodeBlock(props: BlockProps) {
             </select>
           </div>
           <select
-            className="codeBlockLang grow text-right bg-transparent pr-1 sm:max-w-none max-w-24 w-full"
+            className="codeBlockLang grow text-right bg-transparent underline cursor-pointer truncate min-w-0"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

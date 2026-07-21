@@ -3,7 +3,7 @@ import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   encodeQuotePosition,
   decodeQuotePosition,
@@ -16,65 +16,104 @@ import { useDocument } from "contexts/DocumentContext";
 import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { SelectionActionPopover } from "components/SelectionActionPopover";
+import { BskyShareModal } from "components/Interactions/InteractionShareButton";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 
 export function QuoteHandler() {
+  const {
+    uri: document_uri,
+    publication,
+    normalizedDocument,
+    normalizedPublication,
+    postUrl,
+  } = useDocument();
+  // Clicking inside the modal clears the text selection, which unmounts the
+  // quote share popover (and the modal), so the modal must live above it.
+  let [shareUrl, setShareUrl] = useState<string | null>(null);
+
   return (
-    <SelectionActionPopover
-      id="quote-trigger"
-      containerSelector=".postContent"
-      resolve={({ range }) => {
-        let startIndex = findDataIndex(range.startContainer);
-        let endIndex = findDataIndex(range.endContainer);
-        if (!startIndex || !endIndex) return null;
-        let startOffset = calculateOffsetFromDataParent(
-          range.startContainer,
-          range.startOffset,
-          startIndex.element,
-        );
-        let endOffset = calculateOffsetFromDataParent(
-          range.endContainer,
-          range.endOffset,
-          endIndex.element,
-        );
-        let position: QuotePosition = {
-          ...(startIndex.pageId && { pageId: startIndex.pageId }),
-          start: {
-            block: startIndex.index.split(".").map((i) => parseInt(i)),
-            offset: startOffset,
-          },
-          end: {
-            block: endIndex.index.split(".").map((i) => parseInt(i)),
-            offset: endOffset,
-          },
-        };
-        return encodeQuotePosition(position);
-      }}
-    >
-      {(position) => <QuoteOptionButtons position={position} />}
-    </SelectionActionPopover>
+    <>
+      <SelectionActionPopover
+        id="quote-trigger"
+        containerSelector=".postContent"
+        resolve={({ range }) => {
+          let startIndex = findDataIndex(range.startContainer);
+          let endIndex = findDataIndex(range.endContainer);
+          if (!startIndex || !endIndex) return null;
+          let startOffset = calculateOffsetFromDataParent(
+            range.startContainer,
+            range.startOffset,
+            startIndex.element,
+          );
+          let endOffset = calculateOffsetFromDataParent(
+            range.endContainer,
+            range.endOffset,
+            endIndex.element,
+          );
+          let position: QuotePosition = {
+            ...(startIndex.pageId && { pageId: startIndex.pageId }),
+            start: {
+              block: startIndex.index.split(".").map((i) => parseInt(i)),
+              offset: startOffset,
+            },
+            end: {
+              block: endIndex.index.split(".").map((i) => parseInt(i)),
+              offset: endOffset,
+            },
+          };
+          return encodeQuotePosition(position);
+        }}
+      >
+        {(position) => (
+          <QuoteOptionButtons
+            position={position}
+            onShare={setShareUrl}
+            postUrl={postUrl}
+          />
+        )}
+      </SelectionActionPopover>
+      <BskyShareModal
+        pubOwnerDid={publication?.identity_did}
+        docRecord={normalizedDocument}
+        postUrl={shareUrl ? shareUrl : undefined}
+        documentUri={document_uri}
+        pubUri={publication?.uri}
+        publication={normalizedPublication || undefined}
+        preferUrlScreenshot
+        onPosted={() => setShareUrl(null)}
+        shareModalOpen={shareUrl !== null}
+        setShareModalOpen={(open) => {
+          if (!open) setShareUrl(null);
+        }}
+      />
+    </>
   );
 }
 
-const QuoteOptionButtons = (props: { position: string }) => {
+const QuoteOptionButtons = (props: {
+  position: string;
+  onShare: (url: string) => void;
+  postUrl: string;
+}) => {
   let smoker = useSmoker();
   let { identity } = useIdentityData();
   const { uri: document_uri, publication } = useDocument();
   let [url, position] = useMemo(() => {
-    let currentUrl = new URL(window.location.href);
+    let postUrl = new URL(props.postUrl, window.location.origin);
     let pos = decodeQuotePosition(props.position);
-    if (currentUrl.pathname.includes("/l-quote/")) {
-      currentUrl.pathname = currentUrl.pathname.split("/l-quote/")[0];
+    if (postUrl.pathname.includes("/l-quote/")) {
+      postUrl.pathname = postUrl.pathname.split("/l-quote/")[0];
     }
-    currentUrl.pathname = currentUrl.pathname + `/l-quote/${props.position}`;
+    postUrl.pathname = postUrl.pathname + `/l-quote/${props.position}`;
 
     // Clear existing query parameters
-    currentUrl.search = "";
+    postUrl.search = "";
 
     const fragmentId = pos?.pageId
       ? `${pos.pageId}~${pos.start.block.join(".")}_${pos.start.offset}`
       : `${pos?.start.block.join(".")}_${pos?.start.offset}`;
-    currentUrl.hash = `#${fragmentId}`;
-    return [currentUrl.toString(), pos];
+    postUrl.hash = `#${fragmentId}`;
+    return [postUrl.toString(), pos];
   }, [props.position]);
   let pubRecord = publication?.record;
 
@@ -82,15 +121,13 @@ const QuoteOptionButtons = (props: { position: string }) => {
     <>
       <div className="">Share via</div>
 
-      <a
+      <button
         className="flex relative gap-1 items-center hover:font-bold px-1 hover:no-underline!"
-        role="link"
-        href={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
-        target="_blank"
+        onClick={() => url && props.onShare(url)}
       >
-        <BlueskyLinkTiny className="shrink-0" />
+        <BlueskyTiny className="shrink-0" />
         Bluesky
-      </a>
+      </button>
       <Separator classname="h-4!" />
       <button
         id="copy-quote-link"

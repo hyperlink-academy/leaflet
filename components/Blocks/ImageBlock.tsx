@@ -19,6 +19,7 @@ import {
   ImageGalleryLightbox,
   EditorLightboxSlide,
 } from "./ImageGalleryBlock/ImageGalleryLightbox";
+import { getPostImageEntities } from "./ImageGalleryBlock/getPostImages";
 import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
@@ -47,12 +48,31 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 
   let altText = useEntity(props.value, "image/alt")?.data.value;
 
-  let [lightboxOpen, setLightboxOpen] = useState(false);
+  // Snapshot of every image in the post, taken the first time the lightbox
+  // opens, so it can page through them all (gallery images included) starting on
+  // the one that was opened.
+  let [lightbox, setLightbox] = useState<{
+    ids: string[];
+    index: number;
+  } | null>(null);
 
   // Writers select the block first; a second click on the image opens the
   // lightbox. Readers (no write permission) open it on the first click.
   let canOpenLightbox =
     !props.preview && (!entity_set.permissions.write || !!isSelected);
+
+  let openLightbox = async () => {
+    let ids =
+      (await rep?.query((tx) => getPostImageEntities(tx, props.parent))) ?? [];
+    let index = ids.indexOf(props.value);
+    // Fall back to just this image if it isn't in the gathered list (e.g. on the
+    // canvas, or before the write has settled).
+    if (index === -1) {
+      ids = [props.value];
+      index = 0;
+    }
+    setLightbox({ ids, index });
+  };
 
   let nextIsFullBleed = useEntity(
     props.nextBlock && props.nextBlock.value,
@@ -172,7 +192,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         type="button"
         className={`block w-fit ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
         onClick={() => {
-          if (canOpenLightbox) setLightboxOpen(true);
+          if (canOpenLightbox) openLightbox();
         }}
       >
         {localSrc || image.data.local ? (
@@ -198,10 +218,16 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       </button>
       {!props.preview && (
         <ImageGalleryLightbox
-          count={1}
-          index={lightboxOpen ? 0 : null}
-          onIndexChange={(i) => setLightboxOpen(i !== null)}
-          renderSlide={() => <EditorLightboxSlide entityID={props.value} />}
+          count={lightbox?.ids.length ?? 0}
+          index={lightbox?.index ?? null}
+          onIndexChange={(i) => {
+            if (i === null) setLightbox(null);
+          }}
+          renderSlide={(i) =>
+            lightbox ? (
+              <EditorLightboxSlide entityID={lightbox.ids[i]} />
+            ) : null
+          }
         />
       )}
       {!props.preview ? (
