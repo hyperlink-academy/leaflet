@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { AtUri } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import {
+  normalizeDocumentRecord,
   normalizePublicationRecord,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import {
   isDocumentCollection,
   isPublicationCollection,
@@ -48,12 +50,11 @@ export async function GET(
       // Document link - need to find the publication it belongs to
       const { data: docInPub } = await supabaseServerClient
         .from("documents_in_publications")
-        .select("publication, publications!inner(record)")
+        .select("publication, documents!inner(data), publications!inner(record)")
         .eq("document", atUriString)
         .single();
 
       if (docInPub?.publication && docInPub.publications) {
-        // Document is in a publication - redirect to domain/rkey
         const normalizedPub = normalizePublicationRecord(
           docInPub.publications.record,
         );
@@ -64,13 +65,17 @@ export async function GET(
           });
         }
 
-        // Ensure url ends without trailing slash
-        const cleanUrl = normalizedPub.url.endsWith("/")
-          ? normalizedPub.url.slice(0, -1)
-          : normalizedPub.url;
-
-        // Redirect to the document on the publication's domain (temporary redirect since url can change)
-        return NextResponse.redirect(`${cleanUrl}/${uri.rkey}`, 307);
+        // Redirect to the document on the publication's domain, honoring the
+        // record's path property, which can differ from the rkey (temporary
+        // redirect since url and path can change)
+        const normalizedDoc = normalizeDocumentRecord(
+          docInPub.documents.data,
+          atUriString,
+        );
+        const target = normalizedDoc
+          ? getDocumentURL(normalizedDoc, atUriString, normalizedPub)
+          : `${normalizedPub.url.replace(/\/+$/, "")}/${uri.rkey}`;
+        return NextResponse.redirect(target, 307);
       }
 
       // If not in a publication, check if it's a standalone document

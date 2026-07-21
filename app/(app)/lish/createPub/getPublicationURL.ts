@@ -58,18 +58,18 @@ export function getDocumentURL(
   let path = doc.path || "/" + new AtUri(docUri).rkey;
   if (path[0] !== "/") path = "/" + path;
 
+  let base: string;
   if (!publication) {
-    return doc.site + path;
-  }
-
-  // Already-normalized publications: use URL directly
-  if (
+    base = doc.site;
+  } else if (
+    // Already-normalized publications: use URL directly
     (publication as NormalizedPublication).$type ===
     "site.standard.publication"
   ) {
-    return ((publication as NormalizedPublication).url || doc.site) + path;
+    base = (publication as NormalizedPublication).url || doc.site;
+  } else {
+    // Raw publication input: delegate to getPublicationURL for full resolution
+    base = getPublicationURL(publication as PublicationInput);
   }
-
-  // Raw publication input: delegate to getPublicationURL for full resolution
-  return getPublicationURL(publication as PublicationInput) + path;
+  return base.replace(/\/+$/, "") + path;
 }
