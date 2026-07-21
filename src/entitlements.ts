@@ -9,6 +9,14 @@ const PRO_ENTITLEMENT_KEY = "publication_analytics";
 // can be rolled out to specific users while it's still being built.
 const PAYMENTS_ENTITLEMENT_KEY = "payments";
 
+// Keys the app currently checks, surfaced as suggestions in the admin UI.
+// Grants are not restricted to this list.
+export const KNOWN_ENTITLEMENT_KEYS = [
+  PRO_ENTITLEMENT_KEY,
+  PAYMENTS_ENTITLEMENT_KEY,
+  "pro_plan_visible",
+];
+
 export function hasEntitlement(
   entitlements: Record<string, unknown> | null | undefined,
   key: string,
