@@ -206,6 +206,7 @@ export const Block = memo(function Block(
         blockWrapper group/blockWrapper relative
         flex flex-row gap-2
         px-3 sm:px-4 pt-1
+
         z-1 w-full
         ${props.listData && focused ? "touch-pan-y" : ""}
       ${alignmentStyle}
@@ -218,6 +219,20 @@ export const Block = memo(function Block(
             : "pb-2"
       }
       ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
+      ${
+        props.type === "heading" &&
+        props.previousBlock &&
+        props.previousBlock.type !== "horizontal-rule"
+          ? props.previousBlock.type !== "heading"
+            ? {
+                1: "mt-8 sm:mt-10",
+                2: "mt-6 sm:mt-8",
+                3: "mt-4 sm:mt-5",
+                4: "mt-4 sm:mt-5",
+              }[props.headingLevel || 1]
+            : "mt-2"
+          : ""
+      }
       ${
         !props.previousBlock
           ? props.type === "heading" || props.type === "text"
@@ -691,7 +706,7 @@ export const ListMarker = (
           if (children.length > 0)
             useUIState.getState().toggleFold(props.value);
         }}
-        className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+        className={`listMarker group/list-marker ${listStyle?.data.value === "ordered" ? "" : "px-3 py-2"} ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
         {listStyle?.data.value === "ordered" ? (
           editingNumber ? (
