@@ -160,6 +160,11 @@ export function useLeafletPublicationStatus() {
     // Draft state - in a publication but not yet published
     draftInPublication:
       data.leaflets_in_publications?.[0]?.publication ?? undefined,
+    // The publication this leaflet belongs to, whether published or not
+    publicationUri:
+      publishedInPublication?.publication ??
+      data.leaflets_in_publications?.[0]?.publication ??
+      undefined,
     // Published state
     isPublished: !!(publishedInPublication || publishedStandalone),
     publishedAt:
