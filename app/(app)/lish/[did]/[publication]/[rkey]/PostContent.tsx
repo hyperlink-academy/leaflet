@@ -774,7 +774,7 @@ function ListItem(props: {
           {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
         </div>
       )}
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full min-w-0">
         <Block
           pollData={props.pollData}
           pages={props.pages}
@@ -861,7 +861,7 @@ function OrderedListItem(props: {
           {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
         </div>
       )}
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full min-w-0">
         <Block
           pollData={props.pollData}
           pages={props.pages}
