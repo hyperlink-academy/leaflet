@@ -96,7 +96,16 @@ export async function postPageMetadata(props: {
         sizes: "32x32",
         type: "image/png",
       },
-      other: [{ rel: "site.standard.document", url: document.uri }],
+      other: [
+        {
+          rel: "alternate",
+          url: document.uri,
+        },
+        {
+          rel: "site.standard.document",
+          url: document.uri,
+        },
+      ],
     },
     title:
       docRecord.title +

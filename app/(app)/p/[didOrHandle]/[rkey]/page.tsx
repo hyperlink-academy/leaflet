@@ -47,7 +47,16 @@ export async function generateMetadata(props: {
   return {
     alternates: canonical ? { canonical } : undefined,
     icons: {
-      other: [{ rel: "site.standard.document", url: document.uri }],
+      other: [
+        {
+          rel: "alternate",
+          url: document.uri,
+        },
+        {
+          rel: "site.standard.document",
+          url: document.uri,
+        },
+      ],
     },
     title: docRecord.title,
     description: docRecord?.description || "",

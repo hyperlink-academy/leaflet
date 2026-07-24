@@ -46,6 +46,10 @@ export async function generateMetadata(props: {
       },
       other: [
         {
+          rel: "alternate",
+          url: publication.uri,
+        },
+        {
           rel: "site.standard.publication",
           url: publication.uri,
         },
