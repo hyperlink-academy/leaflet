@@ -122,6 +122,7 @@ export async function createPublication({
         showComments: preferences.showComments,
         showMentions: preferences.showMentions,
         showPrevNext: preferences.showPrevNext,
+        prevNextDirection: preferences.prevNextDirection,
         showRecommends: preferences.showRecommends,
         showFirstLast: preferences.showFirstLast,
       },

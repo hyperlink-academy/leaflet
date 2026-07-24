@@ -47,6 +47,7 @@ export type SharedPageProps = {
     showRecommends?: boolean;
     showPrevNext?: boolean;
     showFirstLast?: boolean;
+    prevNextDirection?: string;
   };
   pubRecord?: NormalizedPublication | null;
   theme?: PubLeafletPublication.Theme | null;
@@ -119,6 +120,7 @@ export function PostPages({
     showRecommends?: boolean;
     showPrevNext?: boolean;
     showFirstLast?: boolean;
+    prevNextDirection?: string;
   };
   pollData: PollData[];
   commentsSlot: React.ReactNode;

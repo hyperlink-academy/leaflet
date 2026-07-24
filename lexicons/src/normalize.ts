@@ -379,6 +379,7 @@ export function normalizePublication(
             showMentions: record.preferences.showMentions,
             showPrevNext: record.preferences.showPrevNext,
             showFirstLast: record.preferences.showFirstLast,
+            prevNextDirection: record.preferences.prevNextDirection,
             showRecommends: record.preferences.showRecommends,
           }
         : undefined;

@@ -64,6 +64,14 @@
           "type": "boolean",
           "default": false
         },
+        "prevNextDirection": {
+          "type": "string",
+          "knownValues": [
+            "ltr",
+            "rtl"
+          ],
+          "default": "rtl"
+        },
         "showRecommends": {
           "type": "boolean",
           "default": true

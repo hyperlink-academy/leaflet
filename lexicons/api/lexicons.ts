@@ -2465,6 +2465,11 @@ export const schemaDict = {
             type: 'boolean',
             default: false,
           },
+          prevNextDirection: {
+            type: 'string',
+            knownValues: ['ltr', 'rtl'],
+            default: 'rtl',
+          },
           showRecommends: {
             type: 'boolean',
             default: true,
@@ -3055,6 +3060,11 @@ export const schemaDict = {
           showFirstLast: {
             default: false,
             type: 'boolean',
+          },
+          prevNextDirection: {
+            default: 'rtl',
+            knownValues: ['ltr', 'rtl'],
+            type: 'string',
           },
           showRecommends: {
             default: true,

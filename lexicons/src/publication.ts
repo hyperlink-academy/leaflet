@@ -34,6 +34,13 @@ export const PubLeafletPublication: LexiconDoc = {
         showMentions: { type: "boolean", default: true },
         showPrevNext: { type: "boolean", default: true },
         showFirstLast: { type: "boolean", default: false },
+        // Which way along the row posts get newer: "rtl" puts the newer post on
+        // the left, "ltr" puts it on the right.
+        prevNextDirection: {
+          type: "string",
+          knownValues: ["ltr", "rtl"],
+          default: "rtl",
+        },
         showRecommends: { type: "boolean", default: true },
       },
     },
