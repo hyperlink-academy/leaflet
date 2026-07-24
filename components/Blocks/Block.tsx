@@ -227,10 +227,10 @@ export const Block = memo(function Block(
             ? {
                 1: "mt-5 sm:mt-6",
                 2: "mt-4 sm:mt-5",
-                3: "mt-3 sm:mt-4",
-                4: "mt-3 sm:mt-4",
+                3: "mt-2 sm:mt-3",
+                4: "mt-2 sm:mt-3",
               }[props.headingLevel || 1]
-            : "mt-2"
+            : "mt-1"
           : ""
       }
       ${
