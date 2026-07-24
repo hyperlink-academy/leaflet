@@ -1,6 +1,6 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { BlockProps, BlockLayout } from "./Block";
@@ -32,16 +32,17 @@ import { ToggleGroup } from "components/ToggleGroup";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
-  let entity_set = useEntitySetContext();
-  let { permissions } = entity_set;
-  let { rep, undoManager } = useReplicache();
-  let url = useEntity(props.entityID, "embed/url");
+  // Blocks written before html embeds were split into their own block type
+  // have type "embed" with an embed/html fact.
   let html = useEntity(props.entityID, "embed/html");
-  let isCanvasBlock = props.pageType === "canvas";
+  if (html) return <HTMLBlock {...props} />;
+  return <URLEmbedBlock {...props} />;
+};
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+const useEmbedSizing = (props: BlockProps & { preview?: boolean }) => {
+  let { rep } = useReplicache();
+  let { permissions } = useEntitySetContext();
+  let isCanvasBlock = props.pageType === "canvas";
 
   let height = useEntity(props.entityID, "embed/height")?.data.value || 360;
   let aspectRatio = useEntity(props.entityID, "embed/aspect-ratio")?.data.value;
@@ -74,6 +75,46 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         {...heightHandle.handlers}
       />
     ) : null;
+
+  let sizeStyle = aspectRatio
+    ? { aspectRatio }
+    : { height: height + (heightHandle.dragDelta?.y || 0) };
+
+  return {
+    aspectRatio,
+    resizeHandle,
+    sizeStyle,
+    wrapperClassName: `w-full ${!aspectRatio && heightHandle.dragDelta ? "pointer-events-none" : ""}`,
+  };
+};
+
+const EmbedBlockShell = (props: {
+  entityID: string;
+  sizing: ReturnType<typeof useEmbedSizing>;
+  children: ReactNode;
+}) => {
+  let isSelected = useUIState((s) =>
+    s.selectedBlocks.find((b) => b.value === props.entityID),
+  );
+  return (
+    <div className={props.sizing.wrapperClassName}>
+      <BlockLayout
+        isSelected={!!isSelected}
+        className="flex flex-col relative w-full overflow-hidden group/embedBlock p-0!"
+      >
+        {props.children}
+      </BlockLayout>
+      {props.sizing.resizeHandle}
+    </div>
+  );
+};
+
+const URLEmbedBlock = (props: BlockProps & { preview?: boolean }) => {
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
+  let { rep, undoManager } = useReplicache();
+  let url = useEntity(props.entityID, "embed/url");
+  let sizing = useEmbedSizing(props);
 
   let assertBlockData = useCallback(
     async (entityID: string, block: EmbedBlockData) => {
@@ -150,14 +191,6 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     },
   });
 
-  useEffect(() => {
-    if (props.preview) return;
-    let input = document.getElementById(elementId.block(props.entityID).input);
-    if (isSelected) {
-      input?.focus();
-    } else input?.blur();
-  }, [isSelected, props.entityID, props.preview]);
-
   let bgPage = useColorAttribute(null, "theme/page-background");
   let primary = useColorAttribute(null, "theme/primary");
   let iframeSrc = useMemo(() => {
@@ -181,78 +214,89 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     iframeSrc?.includes("youtube.com") || iframeSrc?.includes("youtu.be");
 
   if (props.preview) return null;
-  if (!url && !html) {
+  if (!url) {
     if (!permissions.write) return null;
-    return (
-      <div
-        className={`w-full ${!aspectRatio && heightHandle.dragDelta ? "pointer-events-none" : ""}`}
-      >
-        <label
-          id={props.preview ? undefined : elementId.block(props.entityID).input}
-          htmlFor={embedInputId(props.entityID)}
-          className={`
-            w-full p-2
-            text-tertiary hover:text-accent-contrast hover:cursor-pointer
-            flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
-            ${isSelected ? "border-2 border-tertiary" : "border border-border"}
-            ${props.pageType === "canvas" && "bg-bg-page"}`}
-          style={
-            aspectRatio
-              ? { aspectRatio }
-              : { height: height + (heightHandle.dragDelta?.y || 0) }
-          }
-          onMouseDown={() => {
-            focusBlock(
-              { type: props.type, value: props.entityID, parent: props.parent },
-              { type: "start" },
-            );
-          }}
-        >
-          <BlockEmbedInput {...props} />
-        </label>
-        {resizeHandle}
-      </div>
-    );
+    return <EmptyEmbedBlock {...props} />;
   }
 
   return (
-    <div
-      className={`w-full ${!aspectRatio && heightHandle.dragDelta ? "pointer-events-none" : ""}`}
-    >
-      <BlockLayout
-        isSelected={!!isSelected}
-        className="flex flex-col relative w-full overflow-hidden group/embedBlock p-0!"
-      >
-        {html ? (
-          <iframe
-            className="w-full"
-            style={{ height: height + (heightHandle.dragDelta?.y || 0) }}
-            srcDoc={html.data.value}
-            sandbox={srcDocSandbox}
-            allow="fullscreen"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          ></iframe>
-        ) : (
-          <iframe
-            ref={iframeRef}
-            className={aspectRatio ? "w-full h-auto" : "w-full"}
-            style={
-              aspectRatio
-                ? { aspectRatio }
-                : { height: height + (heightHandle.dragDelta?.y || 0) }
-            }
-            src={iframeSrc}
-            allow="fullscreen"
-            loading="lazy"
-            referrerPolicy={
-              isYouTube ? "strict-origin-when-cross-origin" : "no-referrer"
-            }
-          ></iframe>
-        )}
-      </BlockLayout>
+    <EmbedBlockShell entityID={props.entityID} sizing={sizing}>
+      <iframe
+        ref={iframeRef}
+        className={sizing.aspectRatio ? "w-full h-auto" : "w-full"}
+        style={sizing.sizeStyle}
+        src={iframeSrc}
+        allow="fullscreen"
+        loading="lazy"
+        referrerPolicy={
+          isYouTube ? "strict-origin-when-cross-origin" : "no-referrer"
+        }
+      ></iframe>
+    </EmbedBlockShell>
+  );
+};
 
-      {resizeHandle}
+export const HTMLBlock = (props: BlockProps & { preview?: boolean }) => {
+  let { permissions } = useEntitySetContext();
+  let html = useEntity(props.entityID, "embed/html");
+  let sizing = useEmbedSizing(props);
+
+  if (props.preview) return null;
+  if (!html) {
+    if (!permissions.write) return null;
+    return <EmptyEmbedBlock {...props} />;
+  }
+
+  return (
+    <EmbedBlockShell entityID={props.entityID} sizing={sizing}>
+      <iframe
+        className={sizing.aspectRatio ? "w-full h-auto" : "w-full"}
+        style={sizing.sizeStyle}
+        srcDoc={html.data.value}
+        sandbox={srcDocSandbox}
+        allow="fullscreen"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+      ></iframe>
+    </EmbedBlockShell>
+  );
+};
+
+const EmptyEmbedBlock = (props: BlockProps) => {
+  let sizing = useEmbedSizing(props);
+  let isSelected = useUIState((s) =>
+    s.selectedBlocks.find((b) => b.value === props.entityID),
+  );
+
+  useEffect(() => {
+    let input = document.getElementById(elementId.block(props.entityID).input);
+    if (isSelected) {
+      input?.focus();
+    } else input?.blur();
+  }, [isSelected, props.entityID]);
+
+  return (
+    <div className={sizing.wrapperClassName}>
+      <label
+        id={elementId.block(props.entityID).input}
+        htmlFor={embedInputId(props.entityID)}
+        className={`
+          w-full p-2
+          text-tertiary hover:text-accent-contrast hover:cursor-pointer
+          flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
+          ${isSelected ? "border-2 border-tertiary" : "border border-border"}
+          ${props.pageType === "canvas" && "bg-bg-page"}`}
+        style={sizing.sizeStyle}
+        onMouseDown={() => {
+          focusBlock(
+            { type: props.type, value: props.entityID, parent: props.parent },
+            { type: "start" },
+          );
+        }}
+      >
+        <BlockEmbedInput {...props} />
+      </label>
+      {sizing.resizeHandle}
     </div>
   );
 };
@@ -265,7 +309,7 @@ const BlockEmbedInput = (props: BlockProps) => {
   );
 
   let entity_set = useEntitySetContext();
-  let [mode, setMode] = useState<"url" | "html">("url");
+  let mode = props.type === "html" ? "html" : "url";
   let [linkValue, setLinkValue] = useState("");
   let [htmlValue, setHtmlValue] = useState("");
   let [loading, setLoading] = useState(false);
@@ -301,7 +345,7 @@ const BlockEmbedInput = (props: BlockProps) => {
           permission_set: entity_set.set,
           factID: v7(),
           parent: props.parent,
-          type: "card",
+          type: "embed",
           position: generateKeyBetween(props.position, props.nextPosition),
           newEntityID: entity,
         });
@@ -326,7 +370,11 @@ const BlockEmbedInput = (props: BlockProps) => {
         if (res.status === 200) {
           let data = await (res.json() as LinkPreviewMetadataResult);
           if (data.leafletPost) {
-            await assertStandardSitePostFacts(rep, entity, data.leafletPost.uri);
+            await assertStandardSitePostFacts(
+              rep,
+              entity,
+              data.leafletPost.uri,
+            );
             setLoading(false);
             return;
           }
@@ -429,7 +477,7 @@ const BlockEmbedInput = (props: BlockProps) => {
             permission_set: entity_set.set,
             factID: v7(),
             parent: props.parent,
-            type: "card",
+            type: "html",
             position: generateKeyBetween(props.position, props.nextPosition),
             newEntityID: entity,
           });
@@ -504,32 +552,22 @@ const BlockEmbedInput = (props: BlockProps) => {
       }}
     >
       <div className="w-full flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "url", label: "URL" },
-              { value: "html", label: "HTML" },
-            ]}
-          />
-          <ToggleGroup
-            value={
-              (aspectRatioFact?.data.value ?? "fixed") as
-                | "fixed"
-                | "4/3"
-                | "1/1"
-                | "4/1"
-            }
-            onChange={setAspectRatio}
-            options={[
-              { value: "fixed", label: "Fixed" },
-              { value: "4/3", label: "4:3" },
-              { value: "1/1", label: "1:1" },
-              { value: "4/1", label: "4:1" },
-            ]}
-          />
-        </div>
+        <ToggleGroup
+          value={
+            (aspectRatioFact?.data.value ?? "fixed") as
+              | "fixed"
+              | "4/3"
+              | "1/1"
+              | "4/1"
+          }
+          onChange={setAspectRatio}
+          options={[
+            { value: "fixed", label: "Fixed" },
+            { value: "4/3", label: "4:3" },
+            { value: "1/1", label: "1:1" },
+            { value: "4/1", label: "4:1" },
+          ]}
+        />
         <button
           type="submit"
           id="embed-block-submit"

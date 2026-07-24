@@ -90,6 +90,7 @@ const BlockTypeToHTML: {
   mailbox: async () => null,
   poll: async () => null,
   embed: async () => null,
+  html: async () => null,
   signup: async () => null,
   "bluesky-post": async (b, tx) => {
     let [post] = await scanIndex(tx).eav(b.value, "block/bluesky-post");

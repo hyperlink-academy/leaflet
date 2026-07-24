@@ -12,6 +12,7 @@ import {
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksHtml,
   PubLeafletBlocksIframe,
   PubLeafletBlocksImage,
   PubLeafletBlocksImageGallery,
@@ -43,11 +44,7 @@ import { ColorToRGB } from "components/ThemeManager/colorToLexicons";
 import { ThemeDefaults } from "components/ThemeManager/themeUtils";
 import { parseColor } from "@react-stately/color";
 
-type ExcludeString<T> = T extends string
-  ? string extends T
-    ? never
-    : T
-  : T;
+type ExcludeString<T> = T extends string ? (string extends T ? never : T) : T;
 
 export type ProcessBlocksToPagesHooks = {
   /**
@@ -172,7 +169,8 @@ export async function processBlocksToPages(opts: {
       await Promise.all(
         parsedBlocks.map(async (blockOrList, blockIndex) => {
           const blockMembersOnly =
-            membersOnly || (delimiterIndex !== -1 && blockIndex > delimiterIndex);
+            membersOnly ||
+            (delimiterIndex !== -1 && blockIndex > delimiterIndex);
           if (blockOrList.type === "block") {
             const alignmentValue = scan.eav(
               blockOrList.block.value,
@@ -242,9 +240,7 @@ export async function processBlocksToPages(opts: {
     const runs: { style: "ordered" | "unordered"; children: List[] }[] = [];
     for (const child of children) {
       const style: "ordered" | "unordered" =
-        child.block.listData?.listStyle === "ordered"
-          ? "ordered"
-          : "unordered";
+        child.block.listData?.listStyle === "ordered" ? "ordered" : "unordered";
       const last = runs[runs.length - 1];
       if (last && last.style === style) {
         last.children.push(child);
@@ -358,8 +354,7 @@ export async function processBlocksToPages(opts: {
     };
     const getBlockContent = (b: string) => {
       const [content] = scan.eav(b, "block/text");
-      if (!content)
-        return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
+      if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
       const doc = new Y.Doc();
       const update = base64.toByteArray(content.data.value);
       Y.applyUpdate(doc, update);
@@ -499,17 +494,28 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     }
-    if (b.type === "embed") {
+    if (b.type === "embed" || b.type === "html") {
       const [url] = scan.eav(b.value, "embed/url");
+      // embed-typed blocks may carry an embed/html fact from before html
+      // embeds were split into their own block type
       const [html] = scan.eav(b.value, "embed/html");
       const [height] = scan.eav(b.value, "embed/height");
       const [aspectRatio] = scan.eav(b.value, "embed/aspect-ratio");
       if (!url && !html) return;
-      const block: $Typed<PubLeafletBlocksIframe.Main> = {
-        $type: "pub.leaflet.blocks.iframe",
-        ...(html ? { html: html.data.value } : { url: url!.data.value }),
-        height: Math.floor(height?.data.value || 600),
-      };
+      const blockHeight = Math.floor(height?.data.value || 600);
+      const block: $Typed<
+        PubLeafletBlocksHtml.Main | PubLeafletBlocksIframe.Main
+      > = html
+        ? {
+            $type: "pub.leaflet.blocks.html",
+            html: html.data.value,
+            height: blockHeight,
+          }
+        : {
+            $type: "pub.leaflet.blocks.iframe",
+            url: url!.data.value,
+            height: blockHeight,
+          };
       if (aspectRatio) {
         const [w, h] = aspectRatio.data.value.split("/").map(Number);
         if (w && h) {

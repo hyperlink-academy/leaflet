@@ -1384,6 +1384,44 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksHtml: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.html',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['html'],
+        properties: {
+          html: {
+            type: 'string',
+            description:
+              "Inline HTML rendered via a sandboxed iframe's srcdoc attribute.",
+          },
+          height: {
+            type: 'integer',
+            minimum: 16,
+            maximum: 1600,
+          },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.blocks.html#aspectRatio',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksIframe: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.iframe',
@@ -1398,7 +1436,7 @@ export const schemaDict = {
           html: {
             type: 'string',
             description:
-              "Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url.",
+              "DEPRECATED — use pub.leaflet.blocks.html instead. Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url.",
           },
           height: {
             type: 'integer',
@@ -2109,6 +2147,7 @@ export const schemaDict = {
             type: 'union',
             refs: [
               'lex:pub.leaflet.blocks.iframe',
+              'lex:pub.leaflet.blocks.html',
               'lex:pub.leaflet.blocks.text',
               'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
@@ -2217,6 +2256,7 @@ export const schemaDict = {
             type: 'union',
             refs: [
               'lex:pub.leaflet.blocks.iframe',
+              'lex:pub.leaflet.blocks.html',
               'lex:pub.leaflet.blocks.text',
               'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
@@ -3165,6 +3205,7 @@ export const ids = {
   PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
+  PubLeafletBlocksHtml: 'pub.leaflet.blocks.html',
   PubLeafletBlocksIframe: 'pub.leaflet.blocks.iframe',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksImageGallery: 'pub.leaflet.blocks.imageGallery',

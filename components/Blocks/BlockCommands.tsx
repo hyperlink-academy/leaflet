@@ -342,6 +342,14 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Embed HTML",
+    icon: <BlockEmbedSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      await createBlockWithType(rep, props, "html");
+    },
+  },
+  {
     name: "Bluesky Post",
     icon: <BlockBlueskySmall />,
     type: "block",

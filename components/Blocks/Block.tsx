@@ -16,7 +16,7 @@ import { ImageBlock } from "./ImageBlock";
 import { ImageGalleryBlock } from "./ImageGalleryBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
-import { EmbedBlock } from "./EmbedBlock";
+import { EmbedBlock, HTMLBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { AreYouSure } from "./DeleteBlock";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -388,6 +388,7 @@ const BlockTypeComponents: {
   "image-gallery": ImageGalleryBlock,
   link: ExternalLinkBlock,
   embed: EmbedBlock,
+  html: HTMLBlock,
   mailbox: MailboxBlock,
   datetime: DateTimeBlock,
   rsvp: RSVPBlock,
