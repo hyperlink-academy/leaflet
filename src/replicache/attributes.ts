@@ -227,6 +227,10 @@ const EmbedBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "embed/html": {
+    type: "string",
+    cardinality: "one",
+  },
   "embed/height": {
     type: "number",
     cardinality: "one",

@@ -31,6 +31,7 @@ import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
@@ -304,6 +305,7 @@ export let Block = ({
       return (
         <PublishedIframeBlock
           url={b.block.url}
+          html={b.block.html}
           height={b.block.height}
           aspectRatio={b.block.aspectRatio}
           pageId={pageId}
@@ -665,7 +667,8 @@ function PublishedStandardSitePublicationBlock(props: {
 }
 
 function PublishedIframeBlock(props: {
-  url: string;
+  url?: string;
+  html?: string;
   height?: number;
   aspectRatio?: PubLeafletBlocksIframe.AspectRatio;
   pageId?: string;
@@ -683,6 +686,29 @@ function PublishedIframeBlock(props: {
 
   let { theme } = useDocument();
   let pubTheme = usePubTheme({ theme });
+
+  let aspectRatioValue = props.aspectRatio
+    ? `${props.aspectRatio.width}/${props.aspectRatio.height}`
+    : undefined;
+
+  if (props.html) {
+    return (
+      <iframe
+        className={`relative w-full overflow-hidden group/embedBlock block-border my-2 ${aspectRatioValue ? "h-auto" : ""}`}
+        style={
+          aspectRatioValue
+            ? { aspectRatio: aspectRatioValue }
+            : { height: props.height }
+        }
+        srcDoc={props.html}
+        sandbox={srcDocSandbox}
+        allow="fullscreen"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+  if (!props.url) return null;
   let iframeSrc = new URL(props.url);
   iframeSrc.searchParams.set("parts.page.embed.ctx.mode", "view");
   iframeSrc.searchParams.set(
@@ -694,15 +720,15 @@ function PublishedIframeBlock(props: {
     pubTheme.primary.toString("hex"),
   );
 
-  let aspectRatio = props.aspectRatio
-    ? `${props.aspectRatio.width}/${props.aspectRatio.height}`
-    : undefined;
-
   return (
     <iframe
       ref={iframeRef}
-      className={`relative w-full overflow-hidden group/embedBlock block-border my-2 ${aspectRatio ? "h-auto" : ""}`}
-      style={aspectRatio ? { aspectRatio } : { height: props.height }}
+      className={`relative w-full overflow-hidden group/embedBlock block-border my-2 ${aspectRatioValue ? "h-auto" : ""}`}
+      style={
+        aspectRatioValue
+          ? { aspectRatio: aspectRatioValue }
+          : { height: props.height }
+      }
       src={iframeSrc.toString()}
       allow="fullscreen"
       loading="lazy"
