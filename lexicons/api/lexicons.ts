@@ -1390,11 +1390,15 @@ export const schemaDict = {
     defs: {
       main: {
         type: 'object',
-        required: ['url'],
         properties: {
           url: {
             type: 'string',
             format: 'uri',
+          },
+          html: {
+            type: 'string',
+            description:
+              "Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url.",
           },
           height: {
             type: 'integer',

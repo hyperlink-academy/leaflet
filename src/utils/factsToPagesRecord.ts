@@ -501,12 +501,13 @@ export async function processBlocksToPages(opts: {
     }
     if (b.type === "embed") {
       const [url] = scan.eav(b.value, "embed/url");
+      const [html] = scan.eav(b.value, "embed/html");
       const [height] = scan.eav(b.value, "embed/height");
       const [aspectRatio] = scan.eav(b.value, "embed/aspect-ratio");
-      if (!url) return;
+      if (!url && !html) return;
       const block: $Typed<PubLeafletBlocksIframe.Main> = {
         $type: "pub.leaflet.blocks.iframe",
-        url: url.data.value,
+        ...(html ? { html: html.data.value } : { url: url!.data.value }),
         height: Math.floor(height?.data.value || 600),
       };
       if (aspectRatio) {

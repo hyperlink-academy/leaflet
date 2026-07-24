@@ -385,9 +385,13 @@ export const PubLeafletBlocksIFrame: LexiconDoc = {
   defs: {
     main: {
       type: "object",
-      required: ["url"],
       properties: {
         url: { type: "string", format: "uri" },
+        html: {
+          type: "string",
+          description:
+            "Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url.",
+        },
         height: { type: "integer", minimum: 16, maximum: 1600 },
         aspectRatio: {
           type: "ref",
