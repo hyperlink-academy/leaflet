@@ -284,7 +284,7 @@ export function MentionAutocomplete(props: {
           sideOffset={4}
           collisionPadding={32}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className={`dropdownMenu group/mention-menu z-20 bg-bg-page
+          className={`dropdownMenu group/mention-menu z-[60] bg-bg-page
             flex  data-[side=top]:flex-col-reverse flex-col
             p-1 gap-1 text-primary
             border border-border rounded-md shadow-md

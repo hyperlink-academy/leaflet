@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getIdentityData } from "actions/getIdentityData";
 import { isAdminEmail } from "src/adminAllowlist";
@@ -67,5 +68,17 @@ export default async function AdminPage() {
       knownToCode: KNOWN_ENTITLEMENT_KEYS.includes(key),
     }));
 
-  return <AdminEntitlements grants={rows} keys={keys} />;
+  return (
+    <>
+      <div className="w-full max-w-2xl mx-auto px-4 pt-8 -mb-8 flex justify-end">
+        <Link
+          href="/admin/import-subscribers"
+          className="text-sm text-accent-contrast hover:underline"
+        >
+          Import email subscribers →
+        </Link>
+      </div>
+      <AdminEntitlements grants={rows} keys={keys} />
+    </>
+  );
 }

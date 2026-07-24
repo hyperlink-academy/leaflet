@@ -1,8 +1,8 @@
 "use client";
 import { AppBskyRichtextFacet, UnicodeString } from "@atproto/api";
 import { useState, useCallback, useRef, useLayoutEffect } from "react";
-import { EditorState } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
+import { EditorState, Plugin } from "prosemirror-state";
+import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 import { Mark, Schema, MarkSpec, Node } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
@@ -78,33 +78,27 @@ const bskyPostSchema = new Schema({
         ];
       },
     } as MarkSpec,
-    hashtag: {
-      attrs: {
-        tag: {},
-      },
-      inclusive: false,
-      parseDOM: [
-        {
-          tag: "span.hashtag",
-          getAttrs(dom: HTMLElement) {
-            return {
-              tag: dom.getAttribute("data-tag"),
-            };
-          },
-        },
-      ],
-      toDOM(node) {
-        let { tag } = node.attrs;
-        return [
-          "span",
-          {
-            class: "hashtag text-accent-contrast",
-            "data-tag": tag,
-          },
-          0,
-        ];
-      },
-    } as MarkSpec,
+  },
+});
+
+const HASHTAG_REGEX = /(^|\s)#(\w+)/gm;
+
+const hashtagHighlighter = new Plugin({
+  props: {
+    decorations(state) {
+      const decorations: Decoration[] = [];
+      state.doc.forEach((paragraph, offset) => {
+        for (const match of paragraph.textContent.matchAll(HASHTAG_REGEX)) {
+          const start = offset + 1 + match.index! + match[1].length;
+          decorations.push(
+            Decoration.inline(start, start + match[2].length + 1, {
+              class: "text-accent-contrast",
+            }),
+          );
+        }
+      });
+      return DecorationSet.create(state.doc, decorations);
+    },
   },
 });
 
@@ -246,7 +240,8 @@ export function ProsemirrorEditor(props: {
       schema: bskyPostSchema,
       doc: initialDoc,
       plugins: [
-        inputRules({ rules: [createHashtagInputRule(), mentionInputRule] }),
+        inputRules({ rules: [mentionInputRule] }),
+        hashtagHighlighter,
         keymap({
           "Mod-z": undo,
           "Mod-y": redo,
@@ -379,6 +374,19 @@ export function editorStateToFacetedText(
     }
   });
 
+  for (const match of fullText.matchAll(HASHTAG_REGEX)) {
+    const start = match.index! + match[1].length;
+    facets.push({
+      index: {
+        byteStart: new UnicodeString(fullText.slice(0, start)).length,
+        byteEnd: new UnicodeString(
+          fullText.slice(0, start + match[2].length + 1),
+        ).length,
+      },
+      features: [{ $type: "app.bsky.richtext.facet#tag", tag: match[2] }],
+    });
+  }
+
   return [fullText, facets];
 }
 
@@ -394,13 +402,6 @@ function marksToFeatures(marks: readonly Mark[]) {
         });
         break;
       }
-      case "hashtag": {
-        features.push({
-          $type: "app.bsky.richtext.facet#tag",
-          tag: mark.attrs.tag,
-        });
-        break;
-      }
       case "link":
         features.push({
           $type: "app.bsky.richtext.facet#link",
@@ -413,25 +414,3 @@ function marksToFeatures(marks: readonly Mark[]) {
   return features;
 }
 
-// Input rule to automatically apply hashtag mark
-function createHashtagInputRule() {
-  return new InputRule(/#([\w]+)\s$/, (state, match, start, end) => {
-    const [fullMatch, tag] = match;
-    const tr = state.tr;
-
-    // Replace the matched text (including space) with just the hashtag and space
-    tr.replaceWith(start, end, [
-      state.schema.text("#" + tag),
-      state.schema.text(" "),
-    ]);
-
-    // Apply hashtag mark to # and tag text only (not the space)
-    tr.addMark(
-      start,
-      start + tag.length + 1,
-      bskyPostSchema.marks.hashtag.create({ tag }),
-    );
-
-    return tr;
-  });
-}
