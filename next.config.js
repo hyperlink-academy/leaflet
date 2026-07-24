@@ -1,5 +1,7 @@
 // @ts-check
 
+const { IMAGE_WIDTHS } = require("./supabase/imageSizes");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   turbopack: {
@@ -26,6 +28,8 @@ const nextConfig = {
   images: {
     loader: "custom",
     loaderFile: "./supabase/supabase-image-loader.js",
+    deviceSizes: IMAGE_WIDTHS,
+    imageSizes: [],
     remotePatterns: [
       { protocol: "http", hostname: "127.0.0.1", port: "54321" },
       { protocol: "https", hostname: "bdefzwcumgzjwllsnaej.supabase.co" },

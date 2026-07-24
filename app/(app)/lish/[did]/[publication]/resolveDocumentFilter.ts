@@ -17,6 +17,11 @@ export async function resolveDocumentFilter(
   segment: string,
 ): Promise<string> {
   const path = segment.startsWith("/") ? segment : "/" + segment;
+  // plan-checked: KNOWN DEBT — every filter here lives in an !inner embed, so
+  // the limit walks documents_in_publications probing publications + documents
+  // per row, and scans the whole membership table when the segment matches
+  // nothing (every 404 probe). Needs the publication resolved first (callers
+  // usually have it) so this can filter on the indexed publication column.
   const { data } = await supabaseServerClient
     .from("documents_in_publications")
     .select(

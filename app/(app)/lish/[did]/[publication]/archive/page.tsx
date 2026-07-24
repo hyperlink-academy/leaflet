@@ -19,7 +19,10 @@ import {
 import { DocumentPageRenderer } from "../[rkey]/DocumentPageRenderer";
 import { postPageMetadata } from "../[rkey]/postPageMetadata";
 import { buildPublicationPosts } from "../buildPublicationPosts";
-import { fetchPublicationForPage } from "../getPublicationForPage";
+import {
+  fetchPublicationForPage,
+  fetchPublicationPostRows,
+} from "../getPublicationForPage";
 import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
 import { resolveDocumentFilter } from "../resolveDocumentFilter";
 import { publicationAlternates } from "../publicationAlternates";
@@ -83,11 +86,14 @@ export default async function PublicationArchive(props: {
     path: "/archive",
   });
   if (pageRender) return pageRender;
-  let { data: shadowingDocs } = await supabaseServerClient
-    .from("documents")
-    .select("uri")
-    .or(await resolveDocumentFilter(did, publication_name, "archive"))
-    .limit(1);
+  // The post rows are fetched alongside the shadowing check; they only go
+  // unused in the rare case a document publishes at the /archive path.
+  const [{ data: shadowingDocs }, postRows] = await Promise.all([
+    resolveDocumentFilter(did, publication_name, "archive").then((filter) =>
+      supabaseServerClient.from("documents").select("uri").or(filter).limit(1),
+    ),
+    fetchPublicationPostRows(publication.uri),
+  ]);
   if (shadowingDocs?.[0])
     return (
       <DocumentPageRenderer
@@ -98,8 +104,7 @@ export default async function PublicationArchive(props: {
     );
 
   const record = normalizePublicationRecord(publication.record);
-  const posts = buildPublicationPosts(publication.documents_in_publications)
-    .slice()
+  const posts = buildPublicationPosts(postRows)
     .sort((a, b) => {
       const aDate = a.record.publishedAt
         ? new Date(a.record.publishedAt).getTime()

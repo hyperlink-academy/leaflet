@@ -65,10 +65,10 @@ export const get_profile_data = makeRoute({
     // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
     const publications = deduplicateByUri(rawPublications || []);
 
-    // Normalize publication records before returning
     const normalizedPublications = publications
       .map(normalizePublicationRow)
-      .filter(hasValidPublication);
+      .filter(hasValidPublication)
+      .filter((p) => p.record.preferences?.showInDiscover !== false);
 
     return {
       result: {

@@ -8,6 +8,11 @@ import type { Cursor, Post } from "./getReaderFeed";
 export async function getNewFeed(
   cursor?: Cursor | null,
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
+  // plan-checked: this is the global discover feed, so the newest-first walk
+  // of documents_sort_date_idx is the intended access path — the filters
+  // (document is in a publication, not opted out of Discover) exclude only a
+  // small minority of recent documents, so the limit short-circuits after a
+  // few index entries. Revisit if either filter ever becomes selective.
   let query = supabaseServerClient
     .from("documents")
     .select(

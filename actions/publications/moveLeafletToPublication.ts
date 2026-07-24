@@ -1,6 +1,7 @@
 "use server";
 
 import { getIdentityData } from "actions/getIdentityData";
+import { isConfirmedContributor } from "src/contributorPermissions";
 import { supabaseServerClient } from "supabase/serverClient";
 
 export async function moveLeafletToPublication(
@@ -16,7 +17,13 @@ export async function moveLeafletToPublication(
     .select("*")
     .eq("uri", publication_uri)
     .single();
-  if (publication?.identity_did !== identity.atp_did) return;
+  if (!publication) return;
+  let isOwner = publication.identity_did === identity.atp_did;
+  if (
+    !isOwner &&
+    !(await isConfirmedContributor(publication_uri, identity.atp_did))
+  )
+    return;
 
   await supabaseServerClient.from("leaflets_in_publications").insert({
     publication: publication_uri,
@@ -25,6 +32,14 @@ export async function moveLeafletToPublication(
     title: metadata.title,
     description: metadata.description,
   });
+
+  // Credit whoever saved the draft in the byline.
+  await supabaseServerClient
+    .from("leaflet_contributors")
+    .upsert(
+      { leaflet: leaflet_id, contributor_did: identity.atp_did },
+      { onConflict: "leaflet,contributor_did", ignoreDuplicates: true },
+    );
 
   await supabaseServerClient
     .from("entities")

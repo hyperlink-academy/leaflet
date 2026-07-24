@@ -227,6 +227,10 @@ const EmbedBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "embed/html": {
+    type: "string",
+    cardinality: "one",
+  },
   "embed/height": {
     type: "number",
     cardinality: "one",
@@ -499,6 +503,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "link"
       | "mailbox"
       | "embed"
+      | "html"
       | "button"
       | "poll"
       | "bluesky-post"

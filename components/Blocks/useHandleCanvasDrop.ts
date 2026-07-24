@@ -194,7 +194,8 @@ export const useHandleCanvasDrop = (entityID: string) => {
             await client.storage
               .from("minilink-user-assets")
               .upload(block.fileID, block.file, {
-                cacheControl: "public, max-age=31560000, immutable",
+                // storage-js expects seconds, not a header value.
+                cacheControl: "31536000",
               });
 
             // Update fact with final version

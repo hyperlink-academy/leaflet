@@ -10,6 +10,9 @@ export async function handleSubscriptionUpdated(subscriptionId: string) {
   const status = sub.cancel_at_period_end ? "canceling" : sub.status;
   const metadataIdentityId = sub.metadata.identity_id ?? null;
 
+  // Membership subscriptions live on publishers' connected accounts and are
+  // handled by the connect-events webhook, never here (this endpoint only sees
+  // the platform account's own Leaflet Pro subscriptions).
   const entitlements = parseEntitlements(PRODUCT_DEFINITION.metadata);
 
   // Find the identity by stripe_customer_id

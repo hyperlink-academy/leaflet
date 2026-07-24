@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
+import { isUuid } from "src/utils/isUuid";
 
 export type GetLeafletDataReturnType = Awaited<
   ReturnType<(typeof get_leaflet_data)["handler"]>
 >;
 
-const leaflets_in_publications_query = `leaflets_in_publications(*, publications!leaflets_in_publications_publication_fkey(*, publication_contributors(contributor_did, confirmed, created_at), publication_newsletter_settings(enabled)), documents(*))`;
+const leaflets_in_publications_query = `leaflets_in_publications(*, publications!leaflets_in_publications_publication_fkey(*, publication_contributors(contributor_did, confirmed, created_at), publication_newsletter_settings(enabled), publication_membership_settings(enabled)), documents(*))`;
 const leaflets_to_documents_query = `leaflets_to_documents(*, documents(*))`;
 // Set when this token is a publication's draft leaflet (the single leaflet
 // holding the publication's draft pages, nav, and theme).
@@ -18,6 +19,7 @@ export const get_leaflet_data = makeRoute({
   }),
 
   handler: async ({ token_id }, { supabase }: Pick<Env, "supabase">) => {
+    if (!isUuid(token_id)) return { result: { data: null, error: null } };
     let res = await supabase
       .from("permission_tokens")
       .select(

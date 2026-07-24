@@ -1,4 +1,5 @@
 import React from "react";
+import { MembersBadge } from "./MembersBadge";
 import { MetaRow } from "./MetaRow";
 import { PostLink } from "./PostLink";
 import { type MediumProps } from "./types";
@@ -18,6 +19,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
           {props.title && (
             <h3 className="text-primary leading-snug line-clamp-2 pb-1">
               {props.title}
+              {props.membersOnly && <MembersBadge />}
             </h3>
           )}
           <div className="grow">

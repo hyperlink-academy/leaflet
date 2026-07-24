@@ -14,6 +14,7 @@ import {
 import { eq, inArray } from "drizzle-orm";
 import { pool } from "supabase/pool";
 import { revalidatePath } from "next/cache";
+import { cancelPublicationMemberSubscriptions } from "src/membership.server";
 
 export async function deletePublication(
   publication_uri: string,
@@ -38,6 +39,21 @@ export async function deletePublication(
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
+
+  // Deleting the publications row cascades the membership rows away, so cancel
+  // members' Stripe subscriptions first — and abort the whole delete if any
+  // can't be canceled, rather than leave live billing with no record.
+  const membershipsCanceled = await cancelPublicationMemberSubscriptions(
+    publication_uri,
+    identity.connectedAccount?.stripe_account_id,
+  );
+  if (!membershipsCanceled) {
+    return {
+      success: false,
+      error:
+        "Couldn't cancel member subscriptions; publication was not deleted",
+    };
+  }
 
   // Collect these BEFORE deleting the publication row — cascading deletes would remove the join rows.
   let [docs, drafts] = await Promise.all([

@@ -16,7 +16,7 @@ import { ImageBlock } from "./ImageBlock";
 import { ImageGalleryBlock } from "./ImageGalleryBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
-import { EmbedBlock } from "./EmbedBlock";
+import { EmbedBlock, HTMLBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { AreYouSure } from "./DeleteBlock";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -107,6 +107,11 @@ export const Block = memo(function Block(
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let focused = useUIState(
+    (s) =>
+      s.focusedEntity?.entityType === "block" &&
+      s.focusedEntity.entityID === props.entityID,
+  );
   let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
 
   let alignmentStyle =
@@ -172,7 +177,9 @@ export const Block = memo(function Block(
       axis: "x",
       filterTaps: true,
       pointer: { touch: true },
-      enabled: isMobile && !!props.listData,
+      // Only the focused block can be swipe-indented, so that horizontal
+      // swipes anywhere else pan the page carousel. Focus first, then swipe.
+      enabled: isMobile && !!props.listData && focused,
     },
   );
 
@@ -198,9 +205,9 @@ export const Block = memo(function Block(
       className={`
         blockWrapper group/blockWrapper relative
         flex flex-row gap-2
-        px-3 sm:px-4
+        px-3 sm:px-4 pt-1
         z-1 w-full
-        ${props.listData ? "touch-pan-y" : ""}
+        ${props.listData && focused ? "touch-pan-y" : ""}
       ${alignmentStyle}
       ${
         !props.nextBlock
@@ -214,9 +221,9 @@ export const Block = memo(function Block(
       ${
         !props.previousBlock
           ? props.type === "heading" || props.type === "text"
-            ? "pt-2 sm:pt-3"
-            : "pt-3 sm:pt-4"
-          : "pt-1"
+            ? "mt-1 sm:mt-2"
+            : "mt-2 sm:mt-3"
+          : ""
       }`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
@@ -381,6 +388,7 @@ const BlockTypeComponents: {
   "image-gallery": ImageGalleryBlock,
   link: ExternalLinkBlock,
   embed: EmbedBlock,
+  html: HTMLBlock,
   mailbox: MailboxBlock,
   datetime: DateTimeBlock,
   rsvp: RSVPBlock,
@@ -423,7 +431,7 @@ const BlockMultiselectIndicator = (props: BlockProps) => {
           pointer-events-none
           bg-border-light
           absolute right-2 left-2 bottom-0
-          ${first ? "top-2" : "top-0"}
+          ${first ? "top-1" : "top-0"}
           ${!prevBlockSelected && "rounded-t-md"}
           ${!nextBlockSelected && "rounded-b-md"}
           `}
@@ -576,30 +584,28 @@ const NonTextBlockOptions = (props: {
 // text, and only shows on hover unless the heading is currently folded.
 const HeadingFoldButton = (props: { entityID: string }) => {
   let folded = useUIState((s) => s.foldedBlocks.includes(props.entityID));
-  let headingLevel = useEntity(
-    props.entityID,
-    "block/heading-level",
-  )?.data.value;
+  let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
+    .value;
   let top =
     headingLevel === 1
-      ? "top-[22px]"
+      ? "top-[20px]"
       : headingLevel === 2
-        ? "top-[13px]"
-        : "top-[9px]";
+        ? "top-[14px]"
+        : "top-[11px]";
   return (
     <button
-      className={`headingFoldButton absolute left-0 ${top} p-1 -ml-1 sm:-ml-0.5 text-tertiary hover:text-secondary transition-opacity
+      className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-[3px] rounded-r-full text-bg-page  transition-opacity
         ${
           folded
-            ? "text-secondary opacity-100"
-            : "opacity-0 sm:group-hover/blockWrapper:opacity-100"
+            ? "opacity-100 bg-accent-contrast"
+            : "opacity-0 sm:group-hover/blockWrapper:opacity-100 bg-border "
         }`}
       onClick={() => useUIState.getState().toggleFold(props.entityID)}
     >
       <ArrowDownTiny
         className={`transition-transform ${folded ? "-rotate-90" : ""}`}
-        width={14}
-        height={14}
+        width={12}
+        height={12}
       />
     </button>
   );

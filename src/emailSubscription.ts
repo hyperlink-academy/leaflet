@@ -5,6 +5,7 @@ import {
   getSuppression,
   deleteSuppression,
 } from "src/utils/postmarkSuppressions";
+import { membershipJoinUrl } from "src/membership.server";
 import { Ok, Err, type Result } from "src/result";
 
 export async function recordEmailSubscription(
@@ -143,6 +144,10 @@ export async function applyAfterSignInAction(
         target.searchParams.set("subscribe_email_error", recorded.error);
         return target.toString();
       }
+      // Memberships enabled → land the new subscriber on the tier page
+      // instead of the confirmation toast.
+      const joinUrl = await membershipJoinUrl(parsed.publication);
+      if (joinUrl) return new URL(joinUrl, target).toString();
       target.searchParams.set("subscribe_email", email);
       return target.toString();
     }

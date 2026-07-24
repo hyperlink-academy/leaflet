@@ -1,7 +1,7 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useInteractionState, setInteractionState } from "../Interactions";
 import { useIdentityData } from "components/IdentityProvider";
-import { CommentBox } from "./CommentBox";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
@@ -23,6 +23,13 @@ export type Comment = {
   uri: string;
   profile: Profile | null;
 };
+
+// Loaded when the comments drawer renders rather than bundled: the comment
+// editor drags prosemirror into every public post page otherwise.
+const CommentBox = dynamic(
+  () => import("./CommentBox").then((m) => m.CommentBox),
+  { ssr: false },
+);
 export function CommentsDrawerContent(props: {
   document_uri: string;
   comments: Comment[];

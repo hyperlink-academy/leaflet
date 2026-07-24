@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { blockCommands } from "./BlockCommands";
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
   useLeafletPublicationData,
@@ -28,11 +30,25 @@ export const BlockCommandBar = ({
 }) => {
   let [highlighted, setHighlighted] = useState<string | undefined>(undefined);
 
-  let { rep, undoManager } = useReplicache();
+  let { rep, undoManager, rootEntity } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pub } = useLeafletPublicationData();
   let publicationPage = useLeafletPublicationPage();
   let inPublicationEdit = !!publicationPage;
+
+  // Gating for the members-only delimiter: memberships enabled, first page
+  // only (that's the page the server truncates), and at most one per post.
+  let membershipsEnabled =
+    !!pub?.publications?.publication_membership_settings?.enabled;
+  let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
+  let hasMembersDelimiter = useSubscribe(
+    rep,
+    async (tx) => {
+      let blocks = await getBlocksWithType(tx, props.parent);
+      return !!blocks?.some((b) => b.type === "members-only-delimiter");
+    },
+    { default: false, dependencies: [props.parent] },
+  );
 
   // This clears '/' AND anything typed after it
   const clearCommandSearchText = () => {
@@ -70,7 +86,18 @@ export const BlockCommandBar = ({
     // Subpage/canvas blocks don't belong in a publication's own pages.
     const allowedOnPage =
       !command.hiddenOnPublicationPage || !inPublicationEdit;
-    return matchesSearch && isVisible && allowedInContext && allowedOnPage;
+    const allowedDelimiter =
+      !command.membersOnlyDelimiter ||
+      (membershipsEnabled &&
+        props.parent === firstPage &&
+        !hasMembersDelimiter);
+    return (
+      matchesSearch &&
+      isVisible &&
+      allowedInContext &&
+      allowedOnPage &&
+      allowedDelimiter
+    );
   });
 
   return (

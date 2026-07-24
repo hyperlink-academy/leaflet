@@ -1,8 +1,10 @@
+import { snapToImageWidth } from "./imageSizes";
+
 export default function supabaseLoader({ src, width, quality }) {
   const path = src.startsWith("/") ? src.slice(1) : src;
-  // resize=contain scales proportionally to fit `width`. Without it Supabase
-  // defaults to resize=cover, and since next/image only passes width (no
-  // height), imgproxy fills the missing height with the source height and crops
-  // the width to fit — chopping the right side off large images. See #286.
-  return `${process.env.NEXT_PUBLIC_SUPABASE_API_URL}/storage/v1/render/image/public/${path}?width=${width}&quality=${quality || 75}&resize=contain`;
+  // Resize through our own sharp-backed proxy rather than Supabase's
+  // render/image endpoint, which bills every distinct origin image
+  // transformed each month. The proxy scales proportionally to `width` and
+  // never upscales, matching the previous resize=contain behavior (see #286).
+  return `/api/resized_images?path=${encodeURIComponent(path)}&width=${snapToImageWidth(width)}`;
 }

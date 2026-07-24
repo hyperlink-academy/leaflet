@@ -14,6 +14,7 @@ import {
   unrecommendAction,
 } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
 import { callRPC } from "app/api/rpc/client";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { useSmoker, useToaster } from "../Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "../OAuthError";
 import { useIdentityData } from "../IdentityProvider";
@@ -266,7 +267,15 @@ export function RecommendButton(props: {
         />
       )}
       {loginOpen && (
-        <LoginModal noEmailLogin open={loginOpen} onOpenChange={setLoginOpen} />
+        <LoginModal
+          noEmailLogin
+          open={loginOpen}
+          onOpenChange={setLoginOpen}
+          action={encodeActionToSearchParam({
+            action: "recommend",
+            document: props.documentUri,
+          })}
+        />
       )}
     </>
   );

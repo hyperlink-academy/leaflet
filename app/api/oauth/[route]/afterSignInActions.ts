@@ -1,7 +1,12 @@
-export type ActionAfterSignIn = {
-  action: "subscribe";
-  publication: string;
-};
+export type ActionAfterSignIn =
+  | {
+      action: "subscribe";
+      publication: string;
+    }
+  | {
+      action: "recommend";
+      document: string;
+    };
 
 export function encodeActionToSearchParam(actions: ActionAfterSignIn): string {
   return encodeURIComponent(JSON.stringify(actions));

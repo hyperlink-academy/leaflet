@@ -7,6 +7,7 @@ import {
 import { useIdentityData } from "components/IdentityProvider";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { DefaultPublicationHomepage } from "../DefaultPublicationHomepage";
+import { buildPublicationPosts } from "../buildPublicationPosts";
 import { LocalizedDate } from "../LocalizedDate";
 import type { ReactNode } from "react";
 
@@ -100,6 +101,7 @@ export function PubPreview(props: {
       profile={profile}
       showPageBackground={props.showPageBackground}
       fakePosts={fakePosts}
+      posts={buildPublicationPosts(publication.documents_in_publications)}
     />
   );
 }

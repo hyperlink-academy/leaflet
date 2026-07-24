@@ -1,0 +1,14 @@
+{
+    "host": "https://api.us-west-2.aws.tinybird.co",
+    "id": "bc00b362-4c6c-42f0-b966-08518b304112",
+    "name": "leaflet",
+    "scope": "user",
+    "token": "p.eyJ1IjogImJjMDBiMzYyLTRjNmMtNDJmMC1iOTY2LTA4NTE4YjMwNDExMiIsICJpZCI6ICIxNTgzY2VmMy02ZjhhLTQ0MTYtODA0Zi1mZWFkMmNkMGE4NWQiLCAiaG9zdCI6ICJhd3MtdXMtd2VzdC0yIn0.5n0YIKLxMJu8WHsDNGgHNRSXjKnKjjMTbXPMYNi8eUE",
+    "tokens": {
+        "https://api.us-west-2.aws.tinybird.co": "p.eyJ1IjogImJjMDBiMzYyLTRjNmMtNDJmMC1iOTY2LTA4NTE4YjMwNDExMiIsICJpZCI6ICIxNTgzY2VmMy02ZjhhLTQ0MTYtODA0Zi1mZWFkMmNkMGE4NWQiLCAiaG9zdCI6ICJhd3MtdXMtd2VzdC0yIn0.5n0YIKLxMJu8WHsDNGgHNRSXjKnKjjMTbXPMYNi8eUE"
+    },
+    "user_email": "jared@leaflet.pub",
+    "user_id": "f5889030-e36a-41c6-9e08-f0c72a1fcaf0",
+    "user_token": "p.eyJ1IjogImY1ODg5MDMwLWUzNmEtNDFjNi05ZTA4LWYwYzcyYTFmY2FmMCIsICJpZCI6ICIxNTVjYjZlYS1iNTk5LTQ3MWUtYWU3MC0xYTdmZmQ0N2ZlY2IiLCAiaG9zdCI6ICJhd3MtdXMtd2VzdC0yIn0.0Bc76hLlAkyhHyqCFgmdCfDiJVQKQq_mvoWR3xLx30k",
+    "version": "4.1.1"
+}

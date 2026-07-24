@@ -44,6 +44,19 @@ export async function recommendAction(args: {
     credentialSession.fetchHandler.bind(credentialSession),
   );
 
+  // Recommends are unique per (recommender, document); reuse the existing one
+  // so replays (e.g. the after-sign-in action when the user had already
+  // recommended before logging out) don't violate that constraint.
+  const { data: existingRecommend } = await supabaseServerClient
+    .from("recommends_on_documents")
+    .select("uri")
+    .eq("document", args.document)
+    .eq("recommender_did", credentialSession.did!)
+    .maybeSingle();
+  if (existingRecommend) {
+    return { success: true, uri: existingRecommend.uri };
+  }
+
   let record: Un$Typed<SiteStandardGraphRecommend.Record> = {
     document: args.document,
     createdAt: new Date().toISOString(),

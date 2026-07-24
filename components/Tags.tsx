@@ -87,9 +87,9 @@ const TagSearchInput = (props: {
   let [searchResults, setSearchResults] = useState<TagSearchResult[]>([]);
   let [isSearching, setIsSearching] = useState(false);
 
-  const placeholderInputRef = useRef<HTMLButtonElement | null>(null);
-
-  let inputWidth = placeholderInputRef.current?.clientWidth;
+  let inputWidth = document.getElementById(
+    "placeholder-tag-search-input",
+  )?.clientWidth;
 
   // Fetch tags whenever the input value changes. Results are only shown from
   // 3 characters on, so don't issue a search for shorter inputs — notably the
@@ -181,6 +181,7 @@ const TagSearchInput = (props: {
         }}
       />
       <Popover
+        noArrow
         open={isOpen}
         onOpenChange={() => {
           setIsOpen(!isOpen);
@@ -189,17 +190,13 @@ const TagSearchInput = (props: {
               document.getElementById("tag-search-input")?.focus();
             }, 100);
         }}
-        className="w-full p-2! min-w-xs text-primary"
+        className="tagResults w-full p-2! min-w-xs text-primary max-w-md translate-x-[calc(50%-8px)]"
         sideOffset={-39}
         onOpenAutoFocus={(e) => e.preventDefault()}
         asChild
         trigger={
-          <button
-            ref={placeholderInputRef}
-            className="absolute left-0 top-0 right-0 h-[30px]"
-          ></button>
+          <button className="absolute left-0 top-0 right-0 h-[30px] max-w-md"></button>
         }
-        noArrow
       >
         <div className="" style={{ width: `${inputWidth}px` }}>
           <Input

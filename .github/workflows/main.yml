@@ -18,6 +18,13 @@ jobs:
       - run: "npm i"
       - run: "npx tsc"
 
+  test:
+    runs-on: ubuntu-latest
+    name: vitest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-tests
+
   lexicons:
     runs-on: ubuntu-latest
     name: lexicon
@@ -33,7 +40,7 @@ jobs:
       - run: "npm i"
       - run: "npm run publish-lexicons"
   deploy-supabase:
-    needs: [typecheck]
+    needs: [typecheck, test]
     runs-on: ubuntu-latest
     name: Deploy Supabase
     env:

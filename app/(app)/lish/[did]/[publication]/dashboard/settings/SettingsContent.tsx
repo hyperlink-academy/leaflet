@@ -30,6 +30,11 @@ import { deletePublication } from "./deletePublication";
 import { useRouter } from "next/navigation";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
+import { MembershipSettings } from "./MembershipSettings";
+import {
+  resolvePrevNextDirection,
+  type PrevNextDirection,
+} from "src/utils/mergePreferences";
 
 type SettingsView = "all" | "theme";
 
@@ -85,6 +90,9 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
       ? false
       : record.preferences.showFirstLast,
   );
+  let [prevNextDirection, setPrevNextDirection] = useState<PrevNextDirection>(
+    resolvePrevNextDirection(record?.preferences?.prevNextDirection),
+  );
 
   // Sync from server data
   useEffect(() => {
@@ -139,6 +147,12 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         : record.preferences.showFirstLast;
     if (showFirstLast !== savedShowFirstLast) return true;
 
+    if (
+      prevNextDirection !==
+      resolvePrevNextDirection(record.preferences?.prevNextDirection)
+    )
+      return true;
+
     return false;
   }, [
     record,
@@ -151,6 +165,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
     showRecommends,
     showPrevNext,
     showFirstLast,
+    prevNextDirection,
   ]);
 
   // Contributors (non-owners) only get the contributor settings — they can't
@@ -185,6 +200,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
               showMentions,
               showPrevNext,
               showFirstLast,
+              prevNextDirection,
               showRecommends,
             },
           });
@@ -243,6 +259,8 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           setShowPrevNext={setShowPrevNext}
           showFirstLast={showFirstLast}
           setShowFirstLast={setShowFirstLast}
+          prevNextDirection={prevNextDirection}
+          setPrevNextDirection={setPrevNextDirection}
           showInDiscover={showInDiscover}
           setShowInDiscover={setShowInDiscover}
         />
@@ -256,9 +274,12 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         <ContributorSettings />
 
         {canSeePayments && (
-          <DashboardContainer section="Monetization">
-            <ConnectPayments />
-          </DashboardContainer>
+          <>
+            <DashboardContainer section="Monetization">
+              <ConnectPayments />
+            </DashboardContainer>
+            <MembershipSettings />
+          </>
         )}
 
         {canSeePro && !isPro ? (

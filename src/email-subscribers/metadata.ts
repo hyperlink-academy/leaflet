@@ -8,6 +8,9 @@
 export type CsvImportProvenance = {
   source: "csv_import";
   imported_at?: string;
+  // Who ran the import — set by the admin UI (the admin's email); absent for
+  // CLI-script imports.
+  imported_by?: string;
   // Other CSV columns that the import script didn't consume directly
   // (e.g. ip_address, signup_source) — kept verbatim so we don't lose
   // information from the source list. The subscription date is not

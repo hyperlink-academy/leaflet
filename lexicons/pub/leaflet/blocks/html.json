@@ -1,0 +1,42 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.html",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "html"
+      ],
+      "properties": {
+        "html": {
+          "type": "string",
+          "description": "Inline HTML rendered via a sandboxed iframe's srcdoc attribute."
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 1600
+        },
+        "aspectRatio": {
+          "type": "ref",
+          "ref": "#aspectRatio"
+        }
+      }
+    },
+    "aspectRatio": {
+      "type": "object",
+      "required": [
+        "width",
+        "height"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

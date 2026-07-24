@@ -5,6 +5,7 @@ import { getIdentityData } from "actions/getIdentityData";
 
 import { AtpAgent } from "@atproto/api";
 import { ReplicacheProvider } from "src/replicache";
+import { isUuid } from "src/utils/isUuid";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ type Props = {
 };
 export default async function PublishLeafletPage(props: Props) {
   let leaflet_id = (await props.params).leaflet_id;
+  if (!isUuid(leaflet_id)) return null;
   let { data } = await supabaseServerClient
     .from("permission_tokens")
     .select(

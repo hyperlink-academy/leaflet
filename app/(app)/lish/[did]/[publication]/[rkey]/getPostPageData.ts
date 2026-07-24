@@ -12,6 +12,14 @@ import {
 } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getIdentityData } from "actions/getIdentityData";
+import { getDocumentPages } from "src/utils/normalizeRecords";
+import {
+  isActiveMembership,
+  postHasMembersDelimiter,
+  truncatePagesAtMembersDelimiter,
+} from "src/membership";
+import { getReaderMembership } from "src/membership.server";
 import { resolveDocumentFilter } from "../resolveDocumentFilter";
 
 export async function getPostPageData(
@@ -30,9 +38,12 @@ export async function getPostPageData(
         uri,
         comments_on_documents(record),
         documents_in_publications(publications(*,
-          documents_in_publications(documents(uri, data)),
+          documents_in_publications(documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
           publication_subscriptions(*),
           publication_newsletter_settings(enabled),
+          publication_membership_settings(enabled),
+          publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order),
+          publication_contributors(contributor_did, confirmed),
           publication_pages(id, path, title, record_uri, sort_order))
         ),
         document_mentions_in_bsky(*),
@@ -58,6 +69,50 @@ export async function getPostPageData(
   const normalizedPublication = normalizePublicationRecord(
     document.documents_in_publications[0]?.publications?.record,
   );
+
+  // Members-only gating: when the publication has paid memberships enabled and
+  // the post's first page carries a delimiter, drop everything after it before
+  // the record leaves the server — non-members' payloads never contain the
+  // gated blocks. Owners, confirmed contributors, and active members see all.
+  const gatePub = document.documents_in_publications[0]?.publications;
+  const membershipTiers = (gatePub?.publication_membership_tiers ?? [])
+    .filter((t) => t.active)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      monthly_price_cents: t.monthly_price_cents,
+      annual_price_cents: t.annual_price_cents,
+      currency: t.currency,
+    }));
+  let membersOnly: { gated: boolean; tiers: typeof membershipTiers } = {
+    gated: false,
+    tiers: [],
+  };
+  if (
+    gatePub?.publication_membership_settings?.enabled &&
+    postHasMembersDelimiter(normalizedDocument)
+  ) {
+    const identity = await getIdentityData();
+    const viewerDid = identity?.atp_did;
+    let entitled =
+      !!viewerDid &&
+      (gatePub.identity_did === viewerDid ||
+        gatePub.publication_contributors.some(
+          (c) => c.contributor_did === viewerDid && c.confirmed,
+        ));
+    if (!entitled && identity) {
+      entitled = isActiveMembership(
+        await getReaderMembership(gatePub.uri, identity.id),
+      );
+    }
+    if (!entitled) {
+      const pages = getDocumentPages(normalizedDocument);
+      if (pages) truncatePagesAtMembersDelimiter(pages);
+      membersOnly = { gated: true, tiers: membershipTiers };
+    }
+  }
 
   // Fetch constellation backlinks for mentions
   const postUrl = getDocumentURL(normalizedDocument, document.uri, normalizedPublication);
@@ -102,24 +157,16 @@ export async function getPostPageData(
       ?.documents_in_publications;
 
   if (currentPublishedAt && allDocs) {
-    // Filter and sort documents by publishedAt
+    // The publishedAt filter mirrors normalizeDocumentRecord's gating of
+    // unpublished pub.leaflet records without paying for the full data jsonb
+    // of every sibling post.
     const sortedDocs = allDocs
-      .map((dip) => {
-        const normalizedData = normalizeDocumentRecord(
-          dip?.documents?.data,
-          dip?.documents?.uri,
-        );
-        return {
-          uri: dip?.documents?.uri,
-          title: normalizedData?.title,
-          publishedAt: normalizedData?.publishedAt,
-        };
-      })
-      .filter((doc) => doc.publishedAt && doc.title) // Only include docs with publishedAt and valid data
+      .flatMap((dip) => (dip.documents ? [dip.documents] : []))
+      .filter((doc) => doc.publishedAt && doc.title)
       .sort(
         (a, b) =>
-          new Date(a.publishedAt!).getTime() -
-          new Date(b.publishedAt!).getTime(),
+          new Date(a.sort_date || 0).getTime() -
+          new Date(b.sort_date || 0).getTime(),
       );
 
     // Find current document index
@@ -164,6 +211,10 @@ export async function getPostPageData(
 
   // Build explicit publication context for consumers
   const rawPub = document.documents_in_publications[0]?.publications;
+  // The embedded sibling documents were only fetched to compute prevNext;
+  // shipping every post's full record to the client would leak members-only
+  // content (and bloat the payload).
+  if (rawPub) rawPub.documents_in_publications = [];
   const publication = rawPub
     ? {
         uri: rawPub.uri,
@@ -196,9 +247,11 @@ export async function getPostPageData(
     // Pre-normalized data - consumers should use these instead of normalizing themselves
     normalizedDocument,
     normalizedPublication,
+    postUrl,
     quotesAndMentions,
     theme,
     prevNext,
+    membersOnly,
     // Explicit relational data for DocumentContext
     publication,
     commentsCount,

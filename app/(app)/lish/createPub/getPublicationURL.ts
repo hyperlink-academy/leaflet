@@ -20,8 +20,11 @@ type PublicationInput =
 export function getPublicationURL(pub: PublicationInput): string {
   const normalized = normalizePublicationRecord(pub.record);
 
-  // If we have a normalized record with a URL (site.standard format), use it
-  if (normalized?.url) {
+  // If we have a normalized record with a URL (site.standard format), use it.
+  // Only in production though — like base_path below, the record's URL points
+  // at the live custom domain, and dev/preview should stay on their own host
+  // (a custom-domain redirect would kick off the cross-site auth dance there).
+  if (normalized?.url && isProductionDomain()) {
     return normalized.url;
   }
 
@@ -58,18 +61,18 @@ export function getDocumentURL(
   let path = doc.path || "/" + new AtUri(docUri).rkey;
   if (path[0] !== "/") path = "/" + path;
 
+  let base: string;
   if (!publication) {
-    return doc.site + path;
-  }
-
-  // Already-normalized publications: use URL directly
-  if (
+    base = doc.site;
+  } else if (
+    // Already-normalized publications: use URL directly
     (publication as NormalizedPublication).$type ===
     "site.standard.publication"
   ) {
-    return ((publication as NormalizedPublication).url || doc.site) + path;
+    base = (publication as NormalizedPublication).url || doc.site;
+  } else {
+    // Raw publication input: delegate to getPublicationURL for full resolution
+    base = getPublicationURL(publication as PublicationInput);
   }
-
-  // Raw publication input: delegate to getPublicationURL for full resolution
-  return getPublicationURL(publication as PublicationInput) + path;
+  return base.replace(/\/+$/, "") + path;
 }

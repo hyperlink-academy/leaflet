@@ -125,6 +125,95 @@ export async function mergeEmailIdentityIntoAtpIdentity(args: {
         .set({ identity_id: targetId })
         .where(eq(custom_domains.identity_id, sourceId));
 
+      // Paid-membership state hangs off identities with ON DELETE CASCADE, so
+      // it must move before the source row is deleted — Stripe keeps billing
+      // the subscriptions either way.
+
+      // publication_memberships: unique (publication, identity_id). A live
+      // subscription must keep its row, so on collision the active side wins,
+      // target preferred on a tie. A dropped live row is logged for manual
+      // cancellation; the connect-events webhook also flags it on the
+      // subscription's next event.
+      await tx.execute(sql`
+        delete from publication_memberships t
+        where t.identity_id = ${targetId}
+          and t.status not in ('active', 'trialing')
+          and exists (
+            select 1 from publication_memberships s
+            where s.identity_id = ${sourceId}
+              and s.publication = t.publication
+              and s.status in ('active', 'trialing')
+          )
+      `);
+      const droppedMemberships = await tx.execute(sql`
+        delete from publication_memberships s
+        where s.identity_id = ${sourceId}
+          and exists (
+            select 1 from publication_memberships t
+            where t.identity_id = ${targetId}
+              and t.publication = s.publication
+          )
+        returning s.publication, s.stripe_subscription_id, s.status
+      `);
+      for (const row of droppedMemberships.rows as {
+        publication: string;
+        stripe_subscription_id: string | null;
+        status: string | null;
+      }[]) {
+        if (row.status === "active" || row.status === "trialing")
+          console.error(
+            `[mergeIdentity] dropped live membership ${row.stripe_subscription_id} (${row.publication}) on merge collision; needs manual cancellation`,
+          );
+      }
+      await tx.execute(sql`
+        update publication_memberships
+        set identity_id = ${targetId}
+        where identity_id = ${sourceId}
+      `);
+
+      // stripe_wallets: one per identity; target's wallet and saved card win.
+      await tx.execute(sql`
+        delete from stripe_wallets
+        where identity_id = ${sourceId}
+          and exists (select 1 from stripe_wallets where identity_id = ${targetId})
+      `);
+      await tx.execute(sql`
+        update stripe_wallets
+        set identity_id = ${targetId}
+        where identity_id = ${sourceId}
+      `);
+
+      // stripe_connected_customers: target wins on (identity, account)
+      // collision. A membership moved from source still carries source's
+      // customer id on its own row, so dropping the mapping doesn't orphan the
+      // subscription.
+      await tx.execute(sql`
+        delete from stripe_connected_customers s
+        where s.identity_id = ${sourceId}
+          and exists (
+            select 1 from stripe_connected_customers t
+            where t.identity_id = ${targetId}
+              and t.stripe_account_id = s.stripe_account_id
+          )
+      `);
+      await tx.execute(sql`
+        update stripe_connected_customers
+        set identity_id = ${targetId}
+        where identity_id = ${sourceId}
+      `);
+
+      // stripe_connected_accounts: one per identity; target wins.
+      await tx.execute(sql`
+        delete from stripe_connected_accounts
+        where identity_id = ${sourceId}
+          and exists (select 1 from stripe_connected_accounts where identity_id = ${targetId})
+      `);
+      await tx.execute(sql`
+        update stripe_connected_accounts
+        set identity_id = ${targetId}
+        where identity_id = ${sourceId}
+      `);
+
       // identities.email is unique — step via NULL so we don't collide
       // mid-swap. custom_domains.identity is nullable and cascades on update;
       // we re-set it explicitly after the final value lands because NULL→value

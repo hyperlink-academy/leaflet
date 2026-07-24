@@ -16,7 +16,9 @@ const id = 'pub.leaflet.blocks.iframe'
 
 export interface Main {
   $type?: 'pub.leaflet.blocks.iframe'
-  url: string
+  url?: string
+  /** DEPRECATED — use pub.leaflet.blocks.html instead. Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url. */
+  html?: string
   height?: number
   aspectRatio?: AspectRatio
 }

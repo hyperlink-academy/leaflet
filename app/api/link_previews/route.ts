@@ -2,6 +2,7 @@ export const maxDuration = 60;
 export const runtime = "nodejs";
 
 import { NextRequest } from "next/server";
+import sharp from "sharp";
 import * as z from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
@@ -61,7 +62,14 @@ async function get_link_image_preview(url: string) {
   });
   let key = await hash(url);
   if (image) {
-    await supabase.storage.from("url-previews").upload(key, image, {
+    // Store at display size and serve the object directly — running the
+    // downscale here instead of requesting it via Supabase's image transform
+    // avoids their per-origin-image transformation billing.
+    let thumbnail = await sharp(image)
+      .resize(240, 208, { fit: "inside" })
+      .png()
+      .toBuffer();
+    await supabase.storage.from("url-previews").upload(key, thumbnail, {
       contentType: "image/png",
       upsert: true,
     });
@@ -70,9 +78,7 @@ async function get_link_image_preview(url: string) {
   }
 
   return {
-    url: supabase.storage.from("url-previews").getPublicUrl(key, {
-      transform: { width: 240, height: 208, resize: "contain" },
-    }).data.publicUrl,
+    url: supabase.storage.from("url-previews").getPublicUrl(key).data.publicUrl,
     height: 208,
     width: 240,
   };

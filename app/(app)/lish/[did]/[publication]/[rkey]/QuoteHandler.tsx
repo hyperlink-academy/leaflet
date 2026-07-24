@@ -25,6 +25,7 @@ export function QuoteHandler() {
     publication,
     normalizedDocument,
     normalizedPublication,
+    postUrl,
   } = useDocument();
   // Clicking inside the modal clears the text selection, which unmounts the
   // quote share popover (and the modal), so the modal must live above it.
@@ -67,7 +68,7 @@ export function QuoteHandler() {
           <QuoteOptionButtons
             position={position}
             onShare={setShareUrl}
-            postUrl={`${normalizedPublication?.url}${normalizedDocument.path}`}
+            postUrl={postUrl}
           />
         )}
       </SelectionActionPopover>
@@ -98,7 +99,7 @@ const QuoteOptionButtons = (props: {
   let { identity } = useIdentityData();
   const { uri: document_uri, publication } = useDocument();
   let [url, position] = useMemo(() => {
-    let postUrl = new URL(props.postUrl);
+    let postUrl = new URL(props.postUrl, window.location.origin);
     let pos = decodeQuotePosition(props.position);
     if (postUrl.pathname.includes("/l-quote/")) {
       postUrl.pathname = postUrl.pathname.split("/l-quote/")[0];

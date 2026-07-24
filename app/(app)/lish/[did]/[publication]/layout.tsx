@@ -22,12 +22,7 @@ export async function generateMetadata(props: {
   let publication_name = decodeURIComponent(params.publication);
   let { data: publications } = await supabaseServerClient
     .from("publications")
-    .select(
-      `*,
-        publication_subscriptions(*),
-      documents_in_publications(documents(*))
-      `,
-    )
+    .select(`uri, record`)
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })

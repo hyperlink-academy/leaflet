@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { AtUri } from "@atproto/syntax";
-import { EditorState } from "prosemirror-state";
+import type { EditorState } from "prosemirror-state";
 import { useSmoker, useToaster } from "../Toast";
 import { Menu, MenuItem } from "../Menu";
 import { ButtonPrimary } from "../Buttons";
@@ -9,10 +10,8 @@ import { Modal } from "../Modal";
 import { MobileSheet } from "../MobileSheet";
 import { useIsMobile } from "src/hooks/isMobile";
 import { ShareTiny } from "../Icons/ShareTiny";
-import { BlueskyPostComposer } from "../BlueskyPostComposer/BlueskyPostComposer";
 import { DotLoader } from "../utils/DotLoader";
 import { useIdentityData } from "../IdentityProvider";
-import { editorStateToFacetedText } from "../BlueskyPostComposer/ProsemirrorEditor";
 import { publishPostToBsky } from "app/(app)/[leaflet_id]/publish/publishBskyPost";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
@@ -22,6 +21,17 @@ import {
   NormalizedDocument,
   NormalizedPublication,
 } from "lexicons/src/normalize";
+
+// Loaded on share-modal open rather than bundled: the composer drags in
+// prosemirror, which every anonymous reader of a public post would otherwise
+// download for a button most never click.
+const BlueskyPostComposer = dynamic(
+  () =>
+    import("../BlueskyPostComposer/BlueskyPostComposer").then(
+      (m) => m.BlueskyPostComposer,
+    ),
+  { ssr: false, loading: () => <DotLoader /> },
+);
 
 export const InteractionShareButton = (props: {
   postRecord: NormalizedDocument;
@@ -158,6 +168,11 @@ export const BskyShareModal = (props: {
     let prefetchedThumb = screenshot.promiseRef.current
       ? ((await screenshot.promiseRef.current) ?? undefined)
       : undefined;
+    // Runtime import keeps the prosemirror module graph out of the static
+    // bundle; by submit time the composer chunk (same module) is loaded.
+    let { editorStateToFacetedText } = await import(
+      "../BlueskyPostComposer/ProsemirrorEditor"
+    );
     let [text, facets] = editorStateToFacetedText(editorStateRef.current);
     let res = await publishPostToBsky({
       text,
@@ -203,7 +218,7 @@ export const BskyShareModal = (props: {
   let coverThumb =
     coverImage && authorDid
       ? blobRefToSrc(coverImage.ref, authorDid, undefined, {
-          width: 1000,
+          width: 1200,
         })
       : undefined;
 

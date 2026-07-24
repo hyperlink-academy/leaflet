@@ -306,7 +306,7 @@ export const AddTags = () => {
 
   return (
     <Popover
-      className="p-2! w-full min-w-xs"
+      className="p-2! w-full min-w-xs max-w-md "
       trigger={
         <div className="addTagTrigger flex gap-1 hover:underline text-sm items-center text-tertiary">
           <TagTiny />{" "}

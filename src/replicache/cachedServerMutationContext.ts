@@ -29,14 +29,13 @@ export function cachedServerMutationContext(
 
   const scanIndex = {
     async eav<A extends Attribute>(entity: string, attribute: A) {
-      let cached = eavCache.get(`${entity}-${attribute}`) as DeepReadonly<
-        Fact<A>
-      >[];
-      let baseFacts: DeepReadonly<Fact<A>>[];
       if (deleteEntitiesCache.includes(entity)) return [];
-      if (cached) baseFacts = cached;
-      else {
-        cached = (await tx
+      let cacheKey = `${entity}-${attribute}`;
+      // The cache holds raw DB rows only; writeCache is merged in fresh on
+      // every read so buffered puts aren't appended twice.
+      let dbFacts = eavCache.get(cacheKey) as DeepReadonly<Fact<A>>[];
+      if (!dbFacts) {
+        dbFacts = (await tx
           .select({
             id: facts.id,
             data: facts.data,
@@ -51,10 +50,13 @@ export function cachedServerMutationContext(
               driz.eq(facts.entity, entity),
             ),
           )) as DeepReadonly<Fact<A>>[];
+        eavCache.set(cacheKey, dbFacts as DeepReadonly<Fact<Attribute>>[]);
       }
-      cached = cached.filter(
-        (f) =>
-          !writeCache.find((wc) => wc.type === "del" && wc.fact.id === f.id),
+      // Any writeCache entry supersedes the stored row with the same id:
+      // updates reuse fact ids, so masking only dels would return both the
+      // stale DB row and its buffered replacement.
+      let base = dbFacts.filter(
+        (f) => !writeCache.find((wc) => wc.fact.id === f.id),
       );
       let newlyWrittenFacts = writeCache.filter(
         (f) =>
@@ -63,7 +65,7 @@ export function cachedServerMutationContext(
           f.fact.entity === entity,
       );
       return [
-        ...cached,
+        ...base,
         ...newlyWrittenFacts.map((f) => f.fact as Fact<A>),
       ].filter(
         (f) =>

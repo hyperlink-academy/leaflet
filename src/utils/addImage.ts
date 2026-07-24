@@ -106,7 +106,9 @@ export async function prepareImage(
         await client.storage
           .from("minilink-user-assets")
           .upload(fileID, uploadBlob, {
-            cacheControl: "public, max-age=31560000, immutable",
+            // storage-js expects seconds here, not a header value — anything
+            // else is stored as a malformed Cache-Control and defeats the CDN.
+            cacheControl: "31536000",
           });
         await rep.mutate.assertFact({
           entity: args.entityID,

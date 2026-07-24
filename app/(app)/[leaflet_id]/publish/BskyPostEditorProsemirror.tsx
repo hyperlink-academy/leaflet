@@ -34,6 +34,13 @@ export const addMentionToEditor = (
     const atMentionNode = schema.nodes.atMention.create({
       atURI: mention.uri,
       text,
+      // Post search results carry a path-aware URL (site.standard documents
+      // can publish under a path that differs from their rkey); store it so
+      // the facet's href survives into the published record. The search RPC
+      // can fall back to an at:// URI or a relative /lish/ path — neither
+      // belongs in an href.
+      ...(mention.type === "post" &&
+        /^https?:\/\//.test(mention.url) && { href: mention.url }),
       ...(mention.type === "service_result" && {
         href: mention.href,
         icon: mention.icon,

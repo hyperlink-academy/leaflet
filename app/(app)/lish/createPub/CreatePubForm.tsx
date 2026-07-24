@@ -63,6 +63,7 @@ export const CreatePubForm = () => {
               showComments: true,
               showMentions: true,
               showPrevNext: true,
+              prevNextDirection: "rtl",
               showRecommends: true,
               showFirstLast: false,
             },

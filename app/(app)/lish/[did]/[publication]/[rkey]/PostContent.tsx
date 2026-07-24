@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import {
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
@@ -13,10 +12,12 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksStandardSitePublication,
+  PubLeafletBlocksHtml,
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
@@ -31,6 +32,7 @@ import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
@@ -47,10 +49,7 @@ import {
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
-import {
-  ImageGalleryLightbox,
-  LightboxSlide,
-} from "components/Blocks/ImageGalleryBlock/ImageGalleryLightbox";
+import { useOpenImageLightbox } from "./GlobalImageLightbox";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
@@ -64,6 +63,7 @@ import { useDocument, useDocumentOptional } from "contexts/DocumentContext";
 import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
+import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 
 type PostsListData = {
   publication: { uri: string; record: unknown };
@@ -173,7 +173,8 @@ export let Block = ({
   isLast?: boolean;
 }) => {
   let b = block;
-  let [imageLightboxOpen, setImageLightboxOpen] = useState(false);
+  let openLightbox = useOpenImageLightbox();
+  let canOpenLightbox = !!openLightbox && !preview;
   let document = useDocumentOptional();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
@@ -305,6 +306,17 @@ export let Block = ({
       return (
         <PublishedIframeBlock
           url={b.block.url}
+          html={b.block.html}
+          height={b.block.height}
+          aspectRatio={b.block.aspectRatio}
+          pageId={pageId}
+        />
+      );
+    }
+    case PubLeafletBlocksHtml.isMain(b.block): {
+      return (
+        <PublishedIframeBlock
+          html={b.block.html}
           height={b.block.height}
           aspectRatio={b.block.aspectRatio}
           pageId={pageId}
@@ -313,6 +325,12 @@ export let Block = ({
     }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
+    }
+    case PubLeafletBlocksMembersOnlyDelimiter.isMain(b.block): {
+      // Full-access viewers read straight through; for everyone else the
+      // delimiter is the last served block and renders the paywall.
+      if (!document?.membersOnly?.gated) return null;
+      return <MembersOnlyPaywall />;
     }
     case PubLeafletBlocksSignup.isMain(b.block): {
       if (!document?.publication?.uri) return null;
@@ -481,7 +499,7 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksImage.isMain(b.block): {
-      let imageBlock = b.block;
+      let src = blobRefToSrc(b.block.image.ref, did);
       let isFullBleed = b.block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -508,33 +526,22 @@ export let Block = ({
           <div className={`relative ${isFullBleed ? "w-full" : "w-fit"} h-fit`}>
             <button
               type="button"
-              className={`block ${isFullBleed ? "w-full" : "w-fit"} cursor-zoom-in`}
-              onClick={() => setImageLightboxOpen(true)}
+              className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-pointer" : ""}`}
+              onClick={
+                canOpenLightbox
+                  ? () => openLightbox?.(pageId, src)
+                  : undefined
+              }
             >
               <img
                 alt={b.block.alt}
                 height={b.block.aspectRatio?.height}
                 width={b.block.aspectRatio?.width}
                 className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-                src={blobRefToSrc(b.block.image.ref, did)}
+                src={src}
               />
             </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
-            <ImageGalleryLightbox
-              count={1}
-              index={imageLightboxOpen ? 0 : null}
-              onIndexChange={(i) => setImageLightboxOpen(i !== null)}
-              renderSlide={() => (
-                <LightboxSlide
-                  image={{
-                    src: blobRefToSrc(imageBlock.image.ref, did),
-                    alt: imageBlock.alt || "",
-                    width: imageBlock.aspectRatio?.width ?? 0,
-                    height: imageBlock.aspectRatio?.height ?? 0,
-                  }}
-                />
-              )}
-            />
           </div>
         </div>
       );
@@ -671,9 +678,10 @@ function PublishedStandardSitePublicationBlock(props: {
 }
 
 function PublishedIframeBlock(props: {
-  url: string;
+  url?: string;
+  html?: string;
   height?: number;
-  aspectRatio?: PubLeafletBlocksIframe.AspectRatio;
+  aspectRatio?: { width: number; height: number };
   pageId?: string;
 }) {
   let parentPage = props.pageId
@@ -689,6 +697,29 @@ function PublishedIframeBlock(props: {
 
   let { theme } = useDocument();
   let pubTheme = usePubTheme({ theme });
+
+  let aspectRatioValue = props.aspectRatio
+    ? `${props.aspectRatio.width}/${props.aspectRatio.height}`
+    : undefined;
+
+  if (props.html) {
+    return (
+      <iframe
+        className={`relative w-full overflow-hidden group/embedBlock block-border my-2 ${aspectRatioValue ? "h-auto" : ""}`}
+        style={
+          aspectRatioValue
+            ? { aspectRatio: aspectRatioValue }
+            : { height: props.height }
+        }
+        srcDoc={props.html}
+        sandbox={srcDocSandbox}
+        allow="fullscreen"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+  if (!props.url) return null;
   let iframeSrc = new URL(props.url);
   iframeSrc.searchParams.set("parts.page.embed.ctx.mode", "view");
   iframeSrc.searchParams.set(
@@ -700,15 +731,15 @@ function PublishedIframeBlock(props: {
     pubTheme.primary.toString("hex"),
   );
 
-  let aspectRatio = props.aspectRatio
-    ? `${props.aspectRatio.width}/${props.aspectRatio.height}`
-    : undefined;
-
   return (
     <iframe
       ref={iframeRef}
-      className={`relative w-full overflow-hidden group/embedBlock block-border my-2 ${aspectRatio ? "h-auto" : ""}`}
-      style={aspectRatio ? { aspectRatio } : { height: props.height }}
+      className={`relative w-full overflow-hidden group/embedBlock block-border my-2 ${aspectRatioValue ? "h-auto" : ""}`}
+      style={
+        aspectRatioValue
+          ? { aspectRatio: aspectRatioValue }
+          : { height: props.height }
+      }
       src={iframeSrc.toString()}
       allow="fullscreen"
       loading="lazy"
@@ -780,7 +811,7 @@ function ListItem(props: {
           {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
         </div>
       )}
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full min-w-0">
         <Block
           pollData={props.pollData}
           pages={props.pages}
@@ -867,7 +898,7 @@ function OrderedListItem(props: {
           {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
         </div>
       )}
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full min-w-0">
         <Block
           pollData={props.pollData}
           pages={props.pages}

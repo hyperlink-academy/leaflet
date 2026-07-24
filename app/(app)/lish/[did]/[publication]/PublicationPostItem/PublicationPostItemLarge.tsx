@@ -1,4 +1,5 @@
 import React from "react";
+import { MembersBadge } from "./MembersBadge";
 import { MetaRow } from "./MetaRow";
 import { PostLink } from "./PostLink";
 import { type LargeProps } from "./types";
@@ -37,6 +38,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
             className={`text-primary leading-snug text-lg pb-1  clamp-2 ${widePage ? "sm:text-xl " : ""}`}
           >
             {props.title}
+            {props.membersOnly && <MembersBadge />}
           </h3>
         )}
         <p

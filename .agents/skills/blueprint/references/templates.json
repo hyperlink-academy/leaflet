@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Default",
+    "description": "Overview, Expected behavior, Implementation plan, Implementation phases, Testing strategy, Open questions",
+    "prompt": [
+      "The plan should contain EXACTLY the following sections in order.",
+      "Use bullet points with short, readable sentences throughout. The plan should be glanceable — no long paragraphs.",
+      "",
+      "- Overview: The key decisions and motivation for the changes",
+      "- Expected behavior: The resulting behavior from the user's or system's perspective, including any changes in behavior due to interaction of new and existing functionality, as bullet points",
+      "- Implementation plan: The full list of files, classes, methods, functions, data types, etc. to create or modify and what they will do",
+      "- Implementation phases: Ordered phases, where each phase builds on the previous and results in a working (but potentially incomplete) system",
+      "- Testing strategy: How to test the changes, including unit tests, integration tests, and edge cases",
+      "- Open questions: Unresolved design decisions, trade-offs, or ambiguities that need further discussion"
+    ]
+  },
+  {
+    "name": "Concise",
+    "description": "Overview, Expected behavior, Changes",
+    "prompt": [
+      "Write a concise plan with three sections.",
+      "Use bullet points with short, readable sentences throughout. The plan should be glanceable — no long paragraphs.",
+      "",
+      "- Overview (4-5 bullet points): The key decisions and motivation for the changes",
+      "- Expected behavior: The resulting behavior from the user's or system's perspective, including any changes in behavior due to interaction of new and existing functionality, as bullet points",
+      "- Changes: What needs to change relative to the existing system, as bullet points without implementation details"
+    ]
+  }
+]
