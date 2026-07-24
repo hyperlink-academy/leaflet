@@ -21,3 +21,6 @@ scripts/*.ts
 scripts/RESTORE_PLAN.md
 scripts/backup-data/
 scripts/backup-restore/
+
+# Local scratch notes (accidentally committed once; keep untracked)
+/scratch/
