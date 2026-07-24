@@ -197,6 +197,20 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
   let { title, entitiesToDelete } = useTitle(props.entityID);
   let [description, setDescription] = useState("");
 
+  let publications = useMemo(() => {
+    if (!identity) return [];
+    let byUri = new Map<
+      string,
+      NonNullable<typeof identity>["publications"][number]
+    >();
+    for (let p of [
+      ...identity.publications,
+      ...identity.contributor_publications,
+    ])
+      byUri.set(p.uri, p);
+    return [...byUri.values()];
+  }, [identity]);
+
   return (
     <Popover
       asChild
@@ -253,7 +267,7 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
           <hr className="border-border-light my-3" />
           <div>
             <PubSelector
-              publications={identity.publications}
+              publications={publications}
               selectedPub={selectedPub}
               setSelectedPub={setSelectedPub}
             />
