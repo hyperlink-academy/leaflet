@@ -202,6 +202,7 @@ const PublishedPostOptions = (props: {
 }) => {
   const pubStatus = useLeafletPublicationStatus();
   const toaster = useToaster();
+  const { markUnpublished } = useArchiveMutations();
   const postLink = pubStatus?.postShareLink ?? "";
   const isFullUrl = postLink.includes("http");
 
@@ -222,9 +223,20 @@ const PublishedPostOptions = (props: {
       <hr className="border-border-light" />
       <MenuItem
         onSelect={async () => {
-          if (pubStatus?.documentUri) {
-            await unpublishPost(pubStatus.documentUri);
+          if (!pubStatus?.documentUri) return;
+          let result = await unpublishPost(pubStatus.documentUri);
+          if (!result.success) {
+            toaster({
+              content: (
+                <div className="font-bold">
+                  Couldn&apos;t unpublish: {result.error.message}
+                </div>
+              ),
+              type: "error",
+            });
+            return;
           }
+          markUnpublished(pubStatus.token.id, pubStatus.documentUri);
           toaster({
             content: <div className="font-bold">Unpublished Post!</div>,
             type: "success",
@@ -235,7 +247,9 @@ const PublishedPostOptions = (props: {
         <div className="flex flex-col">
           Unpublish Post
           <div className="text-tertiary text-sm font-normal!">
-            Move this post back into drafts
+            {pubStatus?.publicationUri
+              ? "Move this post back into drafts"
+              : "Turn this post back into a draft"}
           </div>
         </div>
       </MenuItem>
@@ -274,11 +288,34 @@ const DeleteAreYouSureForm = (props: { backToMenu: () => void }) => {
         </ButtonTertiary>
         <ButtonPrimary
           onClick={async () => {
-            if (tokenId) removeFromLists(tokenId);
             if (pubStatus?.documentUri) {
-              await deletePost(pubStatus.documentUri);
+              let result = await deletePost(pubStatus.documentUri);
+              if (!result.success) {
+                toaster({
+                  content: (
+                    <div className="font-bold">
+                      Couldn&apos;t delete: {result.error.message}
+                    </div>
+                  ),
+                  type: "error",
+                });
+                return;
+              }
             }
-            if (pubStatus?.token) deleteLeaflet(pubStatus.token);
+            if (tokenId) removeFromLists(tokenId, pubStatus?.documentUri);
+            try {
+              if (pubStatus?.token) await deleteLeaflet(pubStatus.token);
+            } catch {
+              toaster({
+                content: (
+                  <div className="font-bold">
+                    Couldn&apos;t delete this {itemType.toLowerCase()}
+                  </div>
+                ),
+                type: "error",
+              });
+              return;
+            }
 
             toaster({
               content: <div className="font-bold">Deleted {itemType}!</div>,
@@ -361,7 +398,51 @@ function useArchiveMutations() {
         if (draft) (draft._raw as { archived?: boolean }).archived = archived;
       });
     },
-    removeFromLists: (tokenId: string) => {
+    // The post's document was deleted server-side, so the leaflet reverts to
+    // a draft: clear the published-document references and, for publication
+    // posts, resurface the leaflet in the dashboard's draft list.
+    markUnpublished: (tokenId: string, documentUri: string) => {
+      mutateIdentityData(mutateIdentity, (data) => {
+        const tokens = [
+          ...data.permission_token_on_homepage.map((p) => p.permission_tokens),
+          ...(data.contributor_leaflets ?? []).map((r) => r.permission_tokens),
+        ];
+        for (const pt of tokens) {
+          if (!pt || pt.id !== tokenId) continue;
+          pt.leaflets_to_documents = (pt.leaflets_to_documents ?? []).filter(
+            (d) => d.document !== documentUri,
+          );
+          for (const lip of pt.leaflets_in_publications ?? []) {
+            if (lip.doc !== documentUri) continue;
+            lip.doc = null;
+            lip.documents = null;
+          }
+        }
+      });
+      mutatePublicationData(mutatePub, (data) => {
+        if (!data.publication) return;
+        data.documents = data.documents.filter((d) => d.uri !== documentUri);
+        for (const lip of data.publication.leaflets_in_publications) {
+          if (lip.doc !== documentUri) continue;
+          lip.doc = null;
+          lip.documents = null;
+          // get_publication_data derives `drafts` server-side from the
+          // leaflets without documents, so mirror that here.
+          if (
+            !(lip as { archived?: boolean }).archived &&
+            !data.drafts.some((d) => d.leaflet === lip.leaflet)
+          ) {
+            data.drafts.push({
+              leaflet: lip.leaflet,
+              title: lip.title,
+              permission_tokens: lip.permission_tokens,
+              _raw: lip,
+            });
+          }
+        }
+      });
+    },
+    removeFromLists: (tokenId: string, documentUri?: string) => {
       mutateIdentityData(mutateIdentity, (data) => {
         data.permission_token_on_homepage =
           data.permission_token_on_homepage.filter(
@@ -372,6 +453,8 @@ function useArchiveMutations() {
         );
       });
       mutatePublicationData(mutatePub, (data) => {
+        if (documentUri)
+          data.documents = data.documents.filter((d) => d.uri !== documentUri);
         const draftIndex = data.drafts.findIndex(
           (d) => d.permission_tokens?.id === tokenId,
         );
