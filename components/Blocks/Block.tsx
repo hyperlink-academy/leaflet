@@ -225,10 +225,10 @@ export const Block = memo(function Block(
         props.previousBlock.type !== "horizontal-rule"
           ? props.previousBlock.type !== "heading"
             ? {
-                1: "mt-8 sm:mt-10",
-                2: "mt-6 sm:mt-8",
-                3: "mt-4 sm:mt-5",
-                4: "mt-4 sm:mt-5",
+                1: "mt-5 sm:mt-6",
+                2: "mt-4 sm:mt-5",
+                3: "mt-3 sm:mt-4",
+                4: "mt-3 sm:mt-4",
               }[props.headingLevel || 1]
             : "mt-2"
           : ""
