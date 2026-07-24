@@ -19,6 +19,7 @@ async function fetchPublicationForJoin(did: string, publicationName: string) {
     .select(
       `uri, name, identity_did, record,
        publication_membership_settings(enabled),
+       publication_newsletter_settings(enabled),
        publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, stripe_price_monthly_id)`,
     )
     .eq("identity_did", did)
@@ -95,6 +96,10 @@ export default async function JoinPage(props: {
             publicationUri={publication.uri}
             publicationName={publication.name}
             publicationUrl={getPublicationURL(publication)}
+            publicationDescription={record?.description}
+            newsletterMode={
+              !!publication.publication_newsletter_settings?.enabled
+            }
             tiers={tiers}
             loggedIn={!!identity}
             isOwner={
@@ -102,7 +107,8 @@ export default async function JoinPage(props: {
               identity.atp_did === publication.identity_did
             }
             isMember={isActiveMembership(membership)}
-            hasEmail={!!identity?.email}
+            email={identity?.email ?? null}
+            handle={identity?.bsky_profiles?.handle ?? null}
             walletCard={walletCard}
           />
         </div>

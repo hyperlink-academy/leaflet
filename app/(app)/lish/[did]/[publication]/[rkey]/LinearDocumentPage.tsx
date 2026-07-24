@@ -111,7 +111,7 @@ export function LinearDocumentPage({
           recommendsCount={document.recommendsCount}
         />
         <div className={`spacer h-4 w-full`} />
-        {document.publication?.uri && (
+        {document.publication?.uri && !document.membersOnly?.gated && (
           <div className="px-3 sm:px-4 w-full pt-4">
             <SubscribePanel
               publicationUri={document.publication.uri}

@@ -12,10 +12,7 @@ import {
   walletCheckoutSessionCard,
 } from "stripe/wallet";
 import { isActiveMembership } from "src/membership";
-import {
-  getReaderMembership,
-  notifyNewMember,
-} from "src/membership.server";
+import { getReaderMembership, notifyNewMember } from "src/membership.server";
 import { Ok, Err, type Result } from "src/result";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
@@ -24,7 +21,8 @@ export type MembershipJoinViewer = {
   loggedIn: boolean;
   isOwner: boolean;
   isMember: boolean;
-  hasEmail: boolean;
+  email: string | null;
+  handle: string | null;
   walletCard: { brand: string | null; last4: string | null } | null;
 };
 
@@ -40,7 +38,9 @@ export async function getMembershipJoinViewer(
       loggedIn: false,
       isOwner: false,
       isMember: false,
-      hasEmail: false,
+
+      email: null,
+      handle: null,
       walletCard: null,
     };
   const [{ data: publication }, membership, { data: wallet }] =
@@ -62,7 +62,9 @@ export async function getMembershipJoinViewer(
     isOwner:
       !!identity.atp_did && identity.atp_did === publication?.identity_did,
     isMember: isActiveMembership(membership),
-    hasEmail: !!identity.email,
+
+    email: identity.email ?? null,
+    handle: identity.bsky_profiles?.handle ?? null,
     walletCard: wallet?.card_last4
       ? { brand: wallet.card_brand, last4: wallet.card_last4 }
       : null,
@@ -361,12 +363,14 @@ export async function subscribeToTier(args: {
         if (other.id === subscription.id) continue;
         if (other.metadata?.kind !== "publication_membership") continue;
         if (other.metadata?.publication !== args.publicationUri) continue;
-        if (other.status === "canceled" || other.status === "incomplete_expired")
+        if (
+          other.status === "canceled" ||
+          other.status === "incomplete_expired"
+        )
           continue;
         if (
           other.created > subscription.created ||
-          (other.created === subscription.created &&
-            other.id > subscription.id)
+          (other.created === subscription.created && other.id > subscription.id)
         )
           continue;
         await stripe.subscriptions

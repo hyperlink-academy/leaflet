@@ -31,7 +31,7 @@ type SubscribeMode = "email" | "atproto";
 // Logged-out email subscribe goes through the main-site email-login flow with a
 // `subscribe` after-sign-in action, so the session is minted on the main site
 // and handed back to the custom domain (see postAuthRedirect).
-function redirectToEmailSubscribe(email: string, publicationUri: string) {
+export function redirectToEmailSubscribe(email: string, publicationUri: string) {
   let base = mainSiteAuthBase() || window.location.origin;
   let url = new URL("/api/auth/email-login", base);
   url.searchParams.set("email", email);
@@ -51,6 +51,10 @@ export type SubscribeProps = {
   publicationName: string;
   publicationDescription?: string;
   newsletterMode: boolean;
+  // Fires once the reader has finished subscribing (email confirmed, atproto
+  // follow succeeded, or a one-click subscribe). The membership paywall uses
+  // this to move a new subscriber straight into paid-tier payment setup.
+  onSubscribed?: () => void;
 };
 
 export const SubscribePanel = (props: SubscribeProps) => {
@@ -92,6 +96,11 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [linkModalOpen, setLinkModalOpen] = useState(false);
   let [subscribeMode, setSubscribeMode] = useState<SubscribeMode>("email");
+
+  const markSubscribed = () => {
+    setLocallySubscribed(true);
+    props.onSubscribed?.();
+  };
 
   const viewerHandle = identity?.bsky_profiles?.handle;
   const viewerAtpDid = identity?.atp_did;
@@ -187,7 +196,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               publicationUrl={props.publicationUrl}
               email={user.email}
               handle={user.handle}
-              onSubscribed={() => setLocallySubscribed(true)}
+              onSubscribed={markSubscribed}
             />
           ) : subscribeMode === "email" ? (
             <EmailInput
@@ -230,7 +239,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           user={user}
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
-          onSubscribed={() => setLocallySubscribed(true)}
+          onSubscribed={markSubscribed}
         />
       )}
       {props.newsletterMode && needsLinkConfirmation && (
@@ -254,7 +263,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
         onOpenChange={(open) => {
           setAtSuccessOpen(open);
           if (!open) {
-            setLocallySubscribed(true);
+            markSubscribed();
             mutateIdentity();
             router.refresh();
           }
@@ -268,7 +277,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           onOpenChange={(open) => {
             setConfirmOpen(open);
             if (!open) {
-              if (confirmState === "success") setLocallySubscribed(true);
+              if (confirmState === "success") markSubscribed();
               setConfirmState("confirm");
               setLinkToCurrent(false);
             }

@@ -61,6 +61,9 @@ export const SubscribeWithHandle = (props: {
   onSubscribed?: () => void;
   onAtSuccess?: () => void;
   leading?: React.ReactNode;
+  // Overrides the "Subscribe" copy on the action button (e.g. the membership
+  // join flow, where subscribing is a step toward paying).
+  subscribeLabel?: React.ReactNode;
   user: {
     loggedIn: boolean;
     email: string | undefined;
@@ -166,7 +169,9 @@ export const SubscribeWithHandle = (props: {
           <>
             {avatar}
             <div className="flex grow  min-w-0">
-              <div className="shrink-0 pr-[6px]">Subscribe</div>
+              <div className="shrink-0 pr-[6px]">
+                {props.subscribeLabel ?? "Subscribe"}
+              </div>
               {!props.compact && (
                 <span className="grow truncate min-w-0">
                   as {props.user.handle}
@@ -256,7 +261,7 @@ export const SubscribeWithHandle = (props: {
               redirectToOauthForSubscribe(trimmed, false);
             }}
             action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm min-w-20 shrink-0">
-              Subscribe
+              {props.subscribeLabel ?? "Subscribe"}
             </div>
           />
           {props.publicationUrl && (
