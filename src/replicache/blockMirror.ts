@@ -49,6 +49,7 @@ export class BlockStructureMirror {
   private byId = new Map<string, Fact<MirroredAttribute>>();
   private byEntityAttribute = new Map<string, Fact<MirroredAttribute>[]>();
   private listeners = new Set<MirrorListener>();
+  private pendingChanged: Set<string> | null = null;
   // Mirrors the "initialized" key the sync engine sets once the first pull
   // lands; until it flips consumers fall back to initialFacts.
   initialized = false;
@@ -119,18 +120,35 @@ export class BlockStructureMirror {
         }
       }
     }
-    if (changed.size > 0) {
-      // This runs inside Replicache's awaited subscription fire: an uncaught
-      // throw here rejects the already-committed mutate() promise and skips
-      // every remaining listener, so isolate each one.
+    if (changed.size > 0) this.notify(changed);
+  }
+
+  // The maps above update synchronously in the watch callback (one-shot reads
+  // like getPageBlocks depend on that), but listener notification is deferred
+  // one macrotask. A single user action can commit several mutations
+  // back-to-back (Enter on a list item: addBlock then moveChildren), and the
+  // watch fires inside the awaited mutate() chain — notifying synchronously
+  // would recompute every subscribed block list per commit on the mutation's
+  // critical path and render the intermediate states. Deferring coalesces the
+  // burst into one notification against the settled state.
+  private notify(changed: Set<string>) {
+    if (this.pendingChanged) {
+      for (let attribute of changed) this.pendingChanged.add(attribute);
+      return;
+    }
+    this.pendingChanged = changed;
+    setTimeout(() => {
+      let batch = this.pendingChanged!;
+      this.pendingChanged = null;
+      // Isolate listeners so one throwing doesn't skip the rest.
       for (let listener of this.listeners) {
         try {
-          listener(changed);
+          listener(batch);
         } catch (e) {
           console.error("BlockStructureMirror listener threw", e);
         }
       }
-    }
+    }, 0);
   }
 }
 

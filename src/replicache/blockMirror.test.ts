@@ -210,6 +210,24 @@ test("mirror matches a full-fact rebuild through structural mutations", async ()
   });
   await settle();
   expect(notifications).toBe(1);
+
+  // Back-to-back commits from a single user action (Enter on a list item:
+  // addBlock then moveChildren) coalesce into one deferred notification, so
+  // listeners recompute once against the settled state instead of once per
+  // commit. The mutate chain is microtask-only, so the flush timer can't
+  // fire between the two awaited mutations.
+  await rep.mutate.assertFact({
+    entity: entities[1],
+    attribute: "block/heading-level",
+    data: { type: "number", value: 3 },
+  });
+  await rep.mutate.assertFact({
+    entity: entities[2],
+    attribute: "block/heading-level",
+    data: { type: "number", value: 1 },
+  });
+  await settle();
+  expect(notifications).toBe(2);
   unsubscribe();
 
   await rep.close();
