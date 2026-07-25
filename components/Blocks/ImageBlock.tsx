@@ -61,9 +61,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let canOpenLightbox =
     !props.preview && (!entity_set.permissions.write || !!isSelected);
 
-  let openLightbox = async () => {
-    let ids =
-      (await rep?.query((tx) => getPostImageEntities(tx, props.parent))) ?? [];
+  let openLightbox = () => {
+    let ids = rep ? getPostImageEntities(rep, props.parent) : [];
     let index = ids.indexOf(props.value);
     // Fall back to just this image if it isn't in the gathered list (e.g. on the
     // canvas, or before the write has settled).

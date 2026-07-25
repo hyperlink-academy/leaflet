@@ -1,7 +1,12 @@
 import { Block } from "components/Blocks/Block";
-import { ReadTransaction } from "replicache";
-import { Fact } from "src/replicache";
-import { scanIndex, scanIndexLocal } from "src/replicache/utils";
+import { Replicache } from "replicache";
+import { Fact, ReplicacheMutators } from "src/replicache";
+import { Attribute } from "src/replicache/attributes";
+import {
+  BlockStructureMirror,
+  getBlockStructureMirror,
+} from "src/replicache/blockMirror";
+import { scanIndexLocal } from "src/replicache/utils";
 
 // Headings own the blocks that follow them in document order until the next
 // heading of equal-or-higher level (Obsidian-style sections). That ownership is
@@ -9,9 +14,9 @@ import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 // each block — the heading-folding analog of listData.path.
 //
 // Only assign headingPath when there's an enclosing section: an explicit
-// `headingPath: undefined` would add an own-key that Replicache's deepEqual
-// (which compares by own-key count) counts, masking a real change like
-// text→list and silently suppressing the subscription update.
+// `headingPath: undefined` would add an own-key that the deepEquals guard in
+// the mirror hooks (which compares by own-key count) counts, masking a real
+// change like text→list and silently suppressing the update.
 function computeHeadingSections(blocks: Block[]): void {
   let stack: { entity: string; level: number }[] = [];
   for (let block of blocks) {
@@ -57,113 +62,16 @@ function computeDisplayNumbers(blocks: Block[]): void {
   }
 }
 
-export const getBlocksWithType = async (
-  tx: ReadTransaction,
-  entityID: string,
-) => {
-  let initialized = await tx.get("initialized");
-  if (!initialized) return null;
-  let scan = scanIndex(tx);
-  let blocks = await scan.eav(entityID, "card/block");
-
-  let result = (
-    await Promise.all(
-      blocks
-        .sort((a, b) => {
-          if (a.data.position === b.data.position) return a.id > b.id ? 1 : -1;
-          return a.data.position > b.data.position ? 1 : -1;
-        })
-        .map(async (b) => {
-          let type = (await scan.eav(b.data.value, "block/type"))[0];
-          let isList = await scan.eav(b.data.value, "block/is-list");
-          if (!type) return null;
-          let headingLevel =
-            type.data.value === "heading"
-              ? (await scan.eav(b.data.value, "block/heading-level"))[0]?.data
-                  .value
-              : undefined;
-          // All lists use recursive structure
-          if (isList[0]?.data.value) {
-            const getChildren = async (
-              root: Fact<"card/block">,
-              parent: string,
-              depth: number,
-              path: { depth: number; entity: string }[],
-            ): Promise<Block[]> => {
-              let children = (
-                await scan.eav(root.data.value, "card/block")
-              ).sort((a, b) => {
-                if (a.data.position === b.data.position)
-                  return a.id > b.id ? 1 : -1;
-                return a.data.position > b.data.position ? 1 : -1;
-              });
-              let type = (await scan.eav(root.data.value, "block/type"))[0];
-              let checklist = await scan.eav(
-                root.data.value,
-                "block/check-list",
-              );
-              let listStyle = (
-                await scan.eav(root.data.value, "block/list-style")
-              )[0];
-              let listNumber = (
-                await scan.eav(root.data.value, "block/list-number")
-              )[0];
-              if (!type) return [];
-              let newPath = [...path, { entity: root.data.value, depth }];
-              let childBlocks = await Promise.all(
-                children.map((c) =>
-                  getChildren(c, root.data.value, depth + 1, newPath),
-                ),
-              );
-              return [
-                {
-                  ...root.data,
-                  factID: root.id,
-                  type: type.data.value,
-                  parent: b.entity,
-                  listData: {
-                    depth: depth,
-                    parent,
-                    path: newPath,
-                    checklist: !!checklist[0],
-                    checked: checklist[0]?.data.value,
-                    listStyle: listStyle?.data.value,
-                    listStart: listNumber?.data.value,
-                  },
-                },
-                ...childBlocks.flat(),
-              ];
-            };
-            return getChildren(b, b.entity, 1, []);
-          }
-          return [
-            {
-              ...b.data,
-              factID: b.id,
-              type: type.data.value,
-              parent: b.entity,
-              ...(headingLevel !== undefined && { headingLevel }),
-            },
-          ] as Block[];
-        }),
-    )
-  )
-    .flat()
-    .filter((f) => f !== null);
-
-  computeHeadingSections(result);
-  computeDisplayNumbers(result);
-  return result;
+// Synchronous scan interface shared by the two sync fact sources: the
+// initialFacts array (SSR/first paint) and the live BlockStructureMirror.
+export type SyncScan = {
+  eav<A extends Attribute>(entity: string, attribute: A): SafeArray<Fact<A>>;
 };
 
-export const getBlocksWithTypeLocal = (
-  initialFacts: Fact<any>[],
-  entityID: string,
-) => {
-  let scan = scanIndexLocal(initialFacts);
+function assembleBlocks(scan: SyncScan, entityID: string): Block[] {
   let blocks = scan.eav(entityID, "card/block");
   let result = blocks
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       if (a.data.position === b.data.position) return a.id > b.id ? 1 : -1;
       return a.data.position > b.data.position ? 1 : -1;
     })
@@ -175,7 +83,6 @@ export const getBlocksWithTypeLocal = (
         type.data.value === "heading"
           ? scan.eav(b.data.value, "block/heading-level")[0]?.data.value
           : undefined;
-      // All lists use recursive structure
       if (isList[0]?.data.value) {
         const getChildren = (
           root: Fact<"card/block">,
@@ -185,12 +92,13 @@ export const getBlocksWithTypeLocal = (
         ): Block[] => {
           let children = scan
             .eav(root.data.value, "card/block")
-            .sort((a, b) => {
+            .toSorted((a, b) => {
               if (a.data.position === b.data.position)
                 return a.id > b.id ? 1 : -1;
               return a.data.position > b.data.position ? 1 : -1;
             });
           let type = scan.eav(root.data.value, "block/type")[0];
+          let checklist = scan.eav(root.data.value, "block/check-list");
           let listStyle = scan.eav(root.data.value, "block/list-style")[0];
           let listNumber = scan.eav(root.data.value, "block/list-number")[0];
           if (!type) return [];
@@ -208,6 +116,8 @@ export const getBlocksWithTypeLocal = (
                 depth: depth,
                 parent,
                 path: newPath,
+                checklist: !!checklist[0],
+                checked: checklist[0]?.data.value,
                 listStyle: listStyle?.data.value,
                 listStart: listNumber?.data.value,
               },
@@ -233,4 +143,25 @@ export const getBlocksWithTypeLocal = (
   computeHeadingSections(result);
   computeDisplayNumbers(result);
   return result;
-};
+}
+
+export const getBlocksWithTypeLocal = (
+  initialFacts: Fact<any>[],
+  entityID: string,
+) => assembleBlocks(scanIndexLocal(initialFacts), entityID);
+
+export const getBlocksFromMirror = (
+  mirror: BlockStructureMirror,
+  entityID: string,
+) => assembleBlocks(mirror, entityID);
+
+// One-shot block-list read for event handlers and commands. Reads the mirror
+// synchronously — safe anywhere outside a mutator body, since watch diffs are
+// applied before a mutation's promise resolves, so any awaited mutation is
+// already reflected. Returns [] until the first pull lands. A freshly created
+// mirror populates asynchronously, so this relies on the render hooks having
+// created it at mount — don't call it before the page has rendered.
+export const getPageBlocks = (
+  rep: Replicache<ReplicacheMutators>,
+  entityID: string,
+) => assembleBlocks(getBlockStructureMirror(rep), entityID);

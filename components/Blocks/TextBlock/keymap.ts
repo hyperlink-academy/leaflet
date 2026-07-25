@@ -22,7 +22,7 @@ import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getPageBlocks } from "src/replicache/getBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
 type PropsRef = RefObject<
@@ -813,16 +813,15 @@ const metaA =
         state.tr.setSelection(TextSelection.create(state.doc, from)),
       );
       view?.dom.blur();
-      repRef.current?.query(async (tx) => {
-        let allBlocks =
-          (await getBlocksWithType(tx, propsRef.current.parent)) || [];
+      if (repRef.current) {
+        let allBlocks = getPageBlocks(repRef.current, propsRef.current.parent);
         useUIState.setState({
           selectedBlocks: allBlocks.map((b) => ({
             value: b.value,
             parent: propsRef.current.parent,
           })),
         });
-      });
+      }
       return true;
     }
   };

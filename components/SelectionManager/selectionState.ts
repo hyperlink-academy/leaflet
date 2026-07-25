@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { getBlocksWithType, isBlockHidden } from "src/replicache/getBlocks";
+import { getPageBlocks, isBlockHidden } from "src/replicache/getBlocks";
 
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
@@ -14,10 +14,7 @@ export const getSortedSelection = async (
   let selectedBlocks = useUIState.getState().selectedBlocks;
   let foldedBlocks = useUIState.getState().foldedBlocks;
   if (!selectedBlocks[0]) return [[], []];
-  let siblings =
-    (await rep?.query((tx) =>
-      getBlocksWithType(tx, selectedBlocks[0].parent),
-    )) || [];
+  let siblings = getPageBlocks(rep, selectedBlocks[0].parent);
   let sortedBlocks = siblings.filter((s) => {
     let selected = selectedBlocks.find((sb) => sb.value === s.value);
     return selected;

@@ -5,7 +5,7 @@ import { Block } from "./Block";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getPageBlocks } from "src/replicache/getBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
@@ -83,8 +83,7 @@ export function useBlockMouseHandlers(props: Block) {
         if (e.buttons !== 1) return;
         let selection = useSelectingMouse.getState();
         if (!selection.start) return;
-        let siblings =
-          (await rep?.query((tx) => getBlocksWithType(tx, props.parent))) || [];
+        let siblings = rep ? getPageBlocks(rep, props.parent) : [];
         let startIndex = siblings.findIndex((b) => b.value === selection.start);
         if (startIndex === -1) return;
         let endIndex = siblings.findIndex((b) => b.value === props.value);

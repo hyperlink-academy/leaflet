@@ -1,15 +1,13 @@
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getPageBlocks } from "src/replicache/getBlocks";
 import { useUIState } from "src/useUIState";
 
-type BlockData = NonNullable<
-  Awaited<ReturnType<typeof getBlocksWithType>>
->[number];
+type BlockData = ReturnType<typeof getPageBlocks>[number];
 
 // A block's real parent for ordering: its list container, or the page for root
-// blocks (getBlocksWithType reports `parent` as the page for every block).
+// blocks (getPageBlocks reports `parent` as the page for every block).
 let realParent = (b: BlockData) => b.listData?.parent ?? b.parent;
 
 // Index of the last block in the folded section that begins at `headingIndex`
@@ -81,8 +79,7 @@ const moveFoldedHeadingSection = async (
   let folded = useUIState.getState().foldedBlocks;
   if (block.type !== "heading" || !folded.includes(block.value)) return false;
 
-  let allBlocks =
-    (await rep.query((tx) => getBlocksWithType(tx, block.parent))) || [];
+  let allBlocks = getPageBlocks(rep, block.parent);
   let rootBlocks = childrenOf(allBlocks, block.parent, block.parent);
   let start = rootBlocks.findIndex((b) => b.value === block.value);
   if (start === -1) return false;
@@ -104,7 +101,7 @@ const moveMultipleBlocks = async (
   let parent = realParent(sortedBlocks[0]);
   if (!sortedBlocks.every((b) => realParent(b) === parent)) return false;
 
-  let allBlocks = (await rep.query((tx) => getBlocksWithType(tx, page))) || [];
+  let allBlocks = getPageBlocks(rep, page);
   let siblings = childrenOf(allBlocks, page, parent);
   let selected = new Set(sortedBlocks.map((b) => b.value));
   let indices = siblings

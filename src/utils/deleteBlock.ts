@@ -2,7 +2,7 @@ import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { scanIndex } from "src/replicache/utils";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getPageBlocks } from "src/replicache/getBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { UndoManager } from "src/undoManager";
 
@@ -55,8 +55,7 @@ export async function deleteBlock(
       useUIState.getState().setSelectedBlocks([]);
     } else {
       // if the page is a doc, focus the previous block (or if there isn't a prev block, focus the next block)
-      let siblings =
-        (await rep?.query((tx) => getBlocksWithType(tx, parent))) || [];
+      let siblings = getPageBlocks(rep, parent);
 
       let selectedBlocks = useUIState.getState().selectedBlocks;
       let firstSelected = selectedBlocks[0];

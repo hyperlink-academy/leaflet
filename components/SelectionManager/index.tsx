@@ -6,7 +6,7 @@ import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
-import { getBlocksWithType, isBlockHidden } from "src/replicache/getBlocks";
+import { getPageBlocks, isBlockHidden } from "src/replicache/getBlocks";
 import {
   indent,
   outdentFull,
@@ -39,13 +39,9 @@ export function SelectionManager() {
         metaKey: true,
         key: "ArrowUp",
         handler: async () => {
-          let [firstBlock] =
-            (await rep?.query((tx) =>
-              getBlocksWithType(
-                tx,
-                useUIState.getState().selectedBlocks[0].parent,
-              ),
-            )) || [];
+          let [firstBlock] = rep
+            ? getPageBlocks(rep, useUIState.getState().selectedBlocks[0].parent)
+            : [];
           if (firstBlock) focusBlock(firstBlock, { type: "start" });
         },
       },
@@ -53,13 +49,9 @@ export function SelectionManager() {
         metaKey: true,
         key: "ArrowDown",
         handler: async () => {
-          let blocks =
-            (await rep?.query((tx) =>
-              getBlocksWithType(
-                tx,
-                useUIState.getState().selectedBlocks[0].parent,
-              ),
-            )) || [];
+          let blocks = rep
+            ? getPageBlocks(rep, useUIState.getState().selectedBlocks[0].parent)
+            : [];
           let folded = useUIState.getState().foldedBlocks;
           blocks = blocks.filter((f) => !isBlockHidden(f, folded));
           let lastBlock = blocks[blocks.length - 1];
