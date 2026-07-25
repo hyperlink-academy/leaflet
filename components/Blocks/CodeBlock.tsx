@@ -50,26 +50,8 @@ export function CodeBlock(props: BlockProps & { preview?: boolean }) {
     );
   }, []);
 
-  if (props.preview)
-    return (
-      <div className="codeBlock w-full flex flex-col rounded-md gap-0.5 ">
-        <BlockLayout
-          isSelected={focusedBlock}
-          hasBackground="accent"
-          borderOnHover
-          className="p-0! min-h-10 sm:min-h-12"
-        >
-          <pre className="codeBlockRendered overflow-auto! font-mono p-2 sm:p-3 w-full h-full">
-            {content?.data.value === "" || content?.data.value === undefined ? (
-              <div className="text-tertiary italic">write some code…</div>
-            ) : (
-              content?.data.value
-            )}
-          </pre>
-        </BlockLayout>
-      </div>
-    );
-
+  // In preview, html stays null (the effect above bails), so the plain
+  // un-highlighted <pre> branch below renders.
   return (
     <div className="codeBlock w-full flex flex-col rounded-md gap-0.5 ">
       <BlockLayout
@@ -123,7 +105,7 @@ export function CodeBlock(props: BlockProps & { preview?: boolean }) {
           />
         )}
       </BlockLayout>
-      {permissions.write && (
+      {permissions.write && !props.preview && (
         <div className="text-sm text-tertiary flex w-full justify-between gap-4">
           <div className="codeBlockTheme grow flex gap-1">
             Theme:{" "}

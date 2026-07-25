@@ -36,7 +36,7 @@ export const StandardSitePublicationBlock = (
         className="standardSitePublicationBlock p-0! overflow-hidden!"
       >
         <div className="bg-bg-page">
-          <StandardSitePublicationItemPlaceholder animate={false} />
+          <StandardSitePublicationItemPlaceholder />
         </div>
       </BlockLayout>
     );

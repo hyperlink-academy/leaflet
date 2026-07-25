@@ -40,7 +40,7 @@ export const StandardSitePostBlock = (
         className="standardSitePostBlock p-0! overflow-hidden!"
       >
         <div className="bg-bg-page">
-          <StandardSitePostItemPlaceholder size={size} animate={false} />
+          <StandardSitePostItemPlaceholder size={size} />
         </div>
       </BlockLayout>
     );

@@ -66,19 +66,16 @@ export function StandardSitePostItem({
 export function StandardSitePostItemPlaceholder({
   size,
   pageWidth,
-  animate = true,
 }: {
   size: StandardSitePostSize;
   pageWidth?: number;
-  animate?: boolean;
 }) {
-  const pulse = animate ? "animate-pulse" : "";
   if (size === "small") {
     return (
       <>
         <div className="transparent-container flex w-full grow flex-col gap-1 p-3 ">
-          <div className={`h-7 w-2/3 bg-border-light rounded ${pulse}`} />
-          <div className={`h-4 w-32 bg-border-light rounded ${pulse}`} />
+          <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
+          <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
         </div>
         <hr className="last:hidden border-border-light" />
       </>
@@ -91,15 +88,13 @@ export function StandardSitePostItemPlaceholder({
         <div className="transparent-container flex w-full gap-3 items-stretch sm:min-h-36">
           <div className="flex w-full gap-2 grow flex-col justify-between min-w-0 pl-3 p-3">
             <div className="flex flex-col gap-2">
-              <div className={`h-7 w-2/3 bg-border-light rounded ${pulse}`} />
-              <div className={`h-4 w-full bg-border-light rounded ${pulse}`} />
-              <div className={`h-4 w-5/6 bg-border-light rounded ${pulse}`} />
+              <div className="h-7 w-2/3 bg-border-light rounded animate-pulse" />
+              <div className="h-4 w-full bg-border-light rounded animate-pulse" />
+              <div className="h-4 w-5/6 bg-border-light rounded animate-pulse" />
             </div>
-            <div className={`h-4 w-32 bg-border-light rounded ${pulse}`} />
+            <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
           </div>
-          <div
-            className={`self-start shrink-0 aspect-square w-16 sm:w-36 bg-border-light rounded ${pulse}`}
-          />
+          <div className="self-start shrink-0 aspect-square w-16 sm:w-36 bg-border-light rounded animate-pulse" />
         </div>
         <hr className="last:hidden border-border-light" />
       </>
@@ -113,24 +108,24 @@ export function StandardSitePostItemPlaceholder({
         className={`transparent-container flex flex-col items-stretch ${widePage ? "sm:flex-row sm:gap-2 gap-0" : ""} w-full items-start`}
       >
         <div
-          className={`bg-border-light rounded ${pulse} shrink-0 ${widePage ? "w-full sm:w-auto sm:h-[244px] aspect-[3/2]" : "w-full aspect-[1.91/1]"}`}
+          className={`bg-border-light rounded animate-pulse shrink-0 ${widePage ? "w-full sm:w-auto sm:h-[244px] aspect-[3/2]" : "w-full aspect-[1.91/1]"}`}
         />
         <div
           className={`flex w-full grow flex-col gap-2 justify-between p-3 pb-2 ${widePage ? "sm:pb-3" : ""}`}
         >
           <div className="flex flex-col gap-2">
             <div
-              className={`h-7 w-1/3 bg-border-light rounded ${pulse} ${widePage ? "sm:h-8" : ""}`}
+              className={`h-7 w-1/3 bg-border-light rounded animate-pulse ${widePage ? "sm:h-8" : ""}`}
             />
             <div
-              className={`h-5 w-full bg-border-light rounded ${pulse} ${widePage ? "sm:h-6" : ""}`}
+              className={`h-5 w-full bg-border-light rounded animate-pulse ${widePage ? "sm:h-6" : ""}`}
             />
             <div
-              className={`h-5 w-5/6 bg-border-light rounded ${pulse} ${widePage ? "sm:h-6" : ""}`}
+              className={`h-5 w-5/6 bg-border-light rounded animate-pulse ${widePage ? "sm:h-6" : ""}`}
             />
           </div>
           <div
-            className={`h-4 w-32 bg-border-light rounded ${pulse} ${widePage ? "sm:h-5" : ""}`}
+            className={`h-4 w-32 bg-border-light rounded animate-pulse ${widePage ? "sm:h-5" : ""}`}
           />
         </div>
       </div>

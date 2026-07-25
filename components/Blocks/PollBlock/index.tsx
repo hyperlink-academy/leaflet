@@ -42,21 +42,11 @@ const PollPreview = (props: { entityID: string }) => {
       className="poll flex flex-col gap-2 w-full"
     >
       {pollOptions.map((option) => (
-        <PollPreviewOption key={option.id} entityID={option.data.value} />
+        <ButtonSecondary key={option.id} className="pollOption grow max-w-full">
+          &nbsp;
+        </ButtonSecondary>
       ))}
     </BlockLayout>
-  );
-};
-
-const PollPreviewOption = (props: { entityID: string }) => {
-  let optionName = useEntity(props.entityID, "poll-option/name")?.data.value;
-  if (!optionName) return null;
-  return (
-    <div className="flex gap-2 items-center">
-      <ButtonSecondary className={`pollOption grow max-w-full flex`}>
-        {optionName}
-      </ButtonSecondary>
-    </div>
   );
 };
 
