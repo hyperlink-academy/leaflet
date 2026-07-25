@@ -482,6 +482,75 @@ const shifttab =
     return true;
   };
 
+// Enter with the caret at the start of a block inserts the empty block above
+// the current one, leaving content, caret, and focus untouched. Chained so
+// that under key-repeat each insertion reads the sibling positions the
+// previous one committed — otherwise two repeats generate colliding
+// fractional keys from the same neighbors and sort unpredictably.
+let insertAboveChain: Promise<unknown> = Promise.resolve();
+const insertEmptyBlockAbove = async (
+  propsRef: PropsRef,
+  repRef: RefObject<Replicache<ReplicacheMutators> | null>,
+) => {
+  let rep = repRef.current;
+  if (!rep) return;
+  let listData = propsRef.current.listData;
+  let parent = listData ? listData.parent : propsRef.current.parent;
+  let siblings = (
+    await rep.query((tx) => scanIndex(tx).eav(parent, "card/block"))
+  ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let index = siblings.findIndex(
+    (sib) => sib.data.value === propsRef.current.entityID,
+  );
+  let position = generateKeyBetween(
+    siblings[index - 1]?.data.position || null,
+    siblings[index]?.data.position || propsRef.current.position,
+  );
+  let list;
+  if (listData) {
+    let [listStyle] = await rep.query((tx) =>
+      scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+    );
+    let [checked] = await rep.query((tx) =>
+      scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
+    );
+    list = {
+      listStyle: listStyle?.data.value,
+      checklist: checked?.data.value,
+    };
+  }
+  let newEntityID = v7();
+  await rep.mutate.addBlock({
+    newEntityID,
+    factID: v7(),
+    permission_set: propsRef.current.entity_set.set,
+    parent,
+    type: "text",
+    position,
+    list,
+  });
+  if (propsRef.current.alignment !== "left") {
+    await rep.mutate.assertFact({
+      entity: newEntityID,
+      attribute: "block/text-alignment",
+      data: {
+        type: "text-alignment-type-union",
+        value: propsRef.current.alignment,
+      },
+    });
+  }
+  let [textSize] = await rep.query((tx) =>
+    scanIndex(tx).eav(propsRef.current.entityID, "block/text-size"),
+  );
+  if (textSize) {
+    await rep.mutate.assertFact({
+      entity: newEntityID,
+      attribute: "block/text-size",
+      data: { type: "text-size-union", value: textSize.data.value },
+    });
+  }
+};
+
 const enter =
   (
     propsRef: PropsRef,
@@ -504,6 +573,30 @@ const enter =
       // they resolve instead of closing it synchronously.
       um.startGroup();
       shifttab(propsRef, repRef)().finally(() => um.endGroup());
+      return true;
+    }
+    // At the start of a block nothing precedes the caret, so the "split" is
+    // really "insert an empty block above": create it and leave this block's
+    // content, caret, and focus alone. This is what makes holding Enter safe —
+    // the split path below hands focus and content to a block whose editor
+    // hasn't mounted yet, and key-repeat outruns that hand-off; here there is
+    // nothing to hand off, and after any genuine split the caret lands at the
+    // start of the new block so subsequent repeats take this path. The undo
+    // group opens inside the chain thunk so each keypress stays its own step
+    // (overlapping startGroups would merge by depth-counting).
+    if (
+      state.selection.empty &&
+      state.selection.anchor <= 1 &&
+      propsRef.current.pageType !== "canvas"
+    ) {
+      insertAboveChain = insertAboveChain.then(async () => {
+        um.startGroup();
+        try {
+          await insertEmptyBlockAbove(propsRef, repRef);
+        } finally {
+          um.endGroup();
+        }
+      });
       return true;
     }
     // Splitting the block to make a new list item / text block runs its
