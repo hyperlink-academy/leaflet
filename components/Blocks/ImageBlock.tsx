@@ -4,10 +4,9 @@ import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import Image from "next/image";
-import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { generateKeyBetween } from "fractional-indexing";
 import { addImage, localImages } from "src/utils/addImage";
+import { addBlockBelow } from "src/utils/addBlockBelow";
 import { setCoverImageFromEntity } from "src/utils/setCoverImageFromEntity";
 import { elementId } from "src/utils/elementId";
 import { useEffect, useState } from "react";
@@ -37,14 +36,14 @@ import { CheckTiny } from "components/Icons/CheckTiny";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
-  let image = useEntity(props.value, "block/image");
+  let image = useEntity(props.entityID, "block/image");
   let entity_set = useEntitySetContext();
-  let isSelected = useIsBlockSelected(props.value);
-  let isFullBleed = useEntity(props.value, "image/full-bleed")?.data.value;
+  let isSelected = useIsBlockSelected(props.entityID);
+  let isFullBleed = useEntity(props.entityID, "image/full-bleed")?.data.value;
   let isFirst = props.previousBlock === null;
   let isLast = props.nextBlock === null;
 
-  let altText = useEntity(props.value, "image/alt")?.data.value;
+  let altText = useEntity(props.entityID, "image/alt")?.data.value;
 
   // Snapshot of every image in the post, taken the first time the lightbox
   // opens, so it can page through them all (gallery images included) starting on
@@ -61,22 +60,22 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 
   let openLightbox = () => {
     let ids = rep ? getPostImageEntities(rep, props.parent) : [];
-    let index = ids.indexOf(props.value);
+    let index = ids.indexOf(props.entityID);
     // Fall back to just this image if it isn't in the gathered list (e.g. on the
     // canvas, or before the write has settled).
     if (index === -1) {
-      ids = [props.value];
+      ids = [props.entityID];
       index = 0;
     }
     setLightbox({ ids, index });
   };
 
   let nextIsFullBleed = useEntity(
-    props.nextBlock && props.nextBlock.value,
+    props.nextBlock && props.nextBlock.entityID,
     "image/full-bleed",
   )?.data.value;
   let prevIsFullBleed = useEntity(
-    props.previousBlock && props.previousBlock.value,
+    props.previousBlock && props.previousBlock.entityID,
     "image/full-bleed",
   )?.data.value;
 
@@ -95,14 +94,12 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     await undoManager.withUndoGroup(async () => {
       let entity = props.entityID;
       if (!entity) {
-        entity = v7();
-        await rep?.mutate.addBlock({
+        entity = await addBlockBelow(rep, {
           parent: props.parent,
-          factID: v7(),
+          position: props.position,
+          nextPosition: props.nextPosition,
           permission_set: entity_set.set,
           type: "text",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID: entity,
         });
       }
       await rep.mutate.assertFact({
@@ -229,12 +226,12 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       )}
       {!props.preview ? (
         <ImageAltButton
-          entityID={props.value}
+          entityID={props.entityID}
           selected={!!isSelected}
           canEdit={entity_set.permissions.write}
         />
       ) : null}
-      {!props.preview ? <CoverImageButton entityID={props.value} /> : null}
+      {!props.preview ? <CoverImageButton entityID={props.entityID} /> : null}
     </BlockLayout>
   );
 }

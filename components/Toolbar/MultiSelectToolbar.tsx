@@ -36,7 +36,7 @@ export const MultiselectToolbar = (props: {
             if (!rep) return;
             let [sortedSelection] = await getSortedSelection(rep);
             await deleteBlock(
-              sortedSelection.map((b) => b.value),
+              sortedSelection.map((b) => b.entityID),
               rep,
               undoManager,
             );

@@ -10,9 +10,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
-import { elementId } from "src/utils/elementId";
-import { generateKeyBetween } from "fractional-indexing";
-import { v7 } from "uuid";
+import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
 
 import { Block } from "./Block";
 import { useEffect, useMemo, useState } from "react";
@@ -109,24 +107,15 @@ export function Blocks(props: { entityID: string }) {
               if (useUIState.getState().foldedBlocks.includes(h))
                 useUIState.getState().toggleFold(h);
             });
-            let newEntityID = v7();
-            await rep.rep?.mutate.addBlock({
+            if (!rep.rep) return;
+            let newEntityID = await addBlockBelow(rep.rep, {
               parent: props.entityID,
-              factID: v7(),
+              position: lastRootBlock?.position || null,
+              nextPosition: null,
               permission_set: entity_set.set,
               type: "text",
-              position: generateKeyBetween(
-                lastRootBlock?.position || null,
-                null,
-              ),
-              newEntityID,
             });
-
-            setTimeout(() => {
-              document
-                .getElementById(elementId.block(newEntityID).text)
-                ?.focus();
-            }, 10);
+            focusNewTextBlock(newEntityID);
           } else {
             lastVisibleBlock && focusBlock(lastVisibleBlock, { type: "end" });
           }
@@ -146,13 +135,13 @@ export function Blocks(props: { entityID: string }) {
             <Block
               pageType="doc"
               {...f}
-              key={f.value}
-              entityID={f.value}
+              key={f.entityID}
+              entityID={f.entityID}
               parent={props.entityID}
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}
               nextPosition={nextPosition}
-              headingFoldable={foldableHeadings.has(f.value)}
+              headingFoldable={foldableHeadings.has(f.entityID)}
             />
           );
         })}
@@ -193,7 +182,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   let lastBlockIsEmpty = useEditorStates((s) => {
     let editor =
       props.lastBlock?.type === "text"
-        ? s.editorStates[props.lastBlock.value]?.editor
+        ? s.editorStates[props.lastBlock.entityID]?.editor
         : null;
     return !editor || editor.doc.content.size <= 2;
   });
@@ -209,22 +198,15 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
       <div
         className="h-6 hover:cursor-text italic text-tertiary grow"
         onMouseDown={async () => {
-          let newEntityID = v7();
-          await rep?.mutate.addBlock({
+          if (!rep) return;
+          let newEntityID = await addBlockBelow(rep, {
             parent: props.entityID,
-            type: "text",
-            factID: v7(),
+            position: props.lastBlock?.position || null,
+            nextPosition: null,
             permission_set: entity_set.set,
-            position: generateKeyBetween(
-              props.lastBlock?.position || null,
-              null,
-            ),
-            newEntityID,
+            type: "text",
           });
-
-          setTimeout(() => {
-            document.getElementById(elementId.block(newEntityID).text)?.focus();
-          }, 10);
+          focusNewTextBlock(newEntityID);
         }}
       >
         {/* this is here as a fail safe, in case a new page is created and there are no blocks in it yet,
@@ -260,7 +242,6 @@ const BlockListBottom = (props: {
     <div
       className="blockListClickableBottomArea grow shrink-0 h-[50vh]"
       onClick={() => {
-        let newEntityID = v7();
         if (
           // if the last visible(not-folded) block is a text block, focus it
           props.lastRootBlock &&
@@ -271,23 +252,15 @@ const BlockListBottom = (props: {
             { ...props.lastVisibleBlock, type: "text" },
             { type: "end" },
           );
-        } else {
+        } else if (rep) {
           // else add a new text block at the end and focus it
-          rep?.mutate.addBlock({
-            permission_set: entity_set.set,
-            factID: v7(),
+          addBlockBelow(rep, {
             parent: props.entityID,
+            position: props.lastRootBlock?.position || null,
+            nextPosition: null,
+            permission_set: entity_set.set,
             type: "text",
-            position: generateKeyBetween(
-              props.lastRootBlock?.position || null,
-              null,
-            ),
-            newEntityID,
-          });
-
-          setTimeout(() => {
-            document.getElementById(elementId.block(newEntityID).text)?.focus();
-          }, 10);
+          }).then(focusNewTextBlock);
         }
       }}
       onDragOver={(e) => {

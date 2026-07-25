@@ -2,7 +2,7 @@ import { useIsBlockSelected } from "src/useUIState";
 import { BlockLayout, BlockProps } from "./Block";
 
 export const HorizontalRule = (props: BlockProps) => {
-  let isSelected = useIsBlockSelected(props.value);
+  let isSelected = useIsBlockSelected(props.entityID);
   return (
     <BlockLayout
       isSelected={!!isSelected}

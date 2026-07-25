@@ -4,7 +4,10 @@ import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
-import { StandardSitePublicationItem } from "./StandardSitePublicationItem";
+import {
+  StandardSitePublicationItem,
+  StandardSitePublicationItemPlaceholder,
+} from "./StandardSitePublicationItem";
 import { WithPublicationTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 
@@ -19,9 +22,24 @@ export const StandardSitePublicationBlock = (
     "standard-site-publication/show-publication-theme",
   );
   let showPubTheme = showPubThemeFact?.data.value !== false;
-  let { data: publication } = useStandardSitePublication(uri);
+  let { data: publication } = useStandardSitePublication(
+    props.preview ? null : uri,
+  );
 
   if (!uri) return null;
+
+  if (props.preview)
+    return (
+      <BlockLayout
+        isSelected={!!isSelected}
+        borderOnHover
+        className="standardSitePublicationBlock p-0! overflow-hidden!"
+      >
+        <div className="bg-bg-page">
+          <StandardSitePublicationItemPlaceholder animate={false} />
+        </div>
+      </BlockLayout>
+    );
 
   if (!publication)
     return (

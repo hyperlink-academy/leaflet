@@ -50,7 +50,7 @@ export type Block = {
   factID: string;
   parent: string;
   position: string;
-  value: string;
+  entityID: string;
   type: Fact<"block/type">["data"]["value"];
   headingLevel?: number;
   // Ancestor heading entity IDs whose sections contain this block (outermost
@@ -69,9 +69,6 @@ export type Block = {
 };
 export type BlockProps = {
   pageType: Fact<"page/type">["data"]["value"];
-  entityID: string;
-  parent: string;
-  position: string;
   nextBlock: Block | null;
   previousBlock: Block | null;
   nextPosition: string | null;
@@ -98,7 +95,7 @@ export const Block = memo(function Block(
     if (isTextBlock[props.type]) return;
     if (isLongPress.current) {
       focusBlock(
-        { type: props.type, value: props.entityID, parent: props.parent },
+        { type: props.type, entityID: props.entityID, parent: props.parent },
         { type: "start" },
       );
     }
@@ -110,7 +107,7 @@ export const Block = memo(function Block(
       s.focusedEntity?.entityType === "block" &&
       s.focusedEntity.entityID === props.entityID,
   );
-  let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   let alignmentStyle =
     props.type === "button" || props.type === "image"
@@ -247,7 +244,6 @@ function deepEqualsBlockProps(
     "parent",
     "position",
     "factID",
-    "value",
     "type",
     "nextPosition",
     "headingFoldable",
@@ -287,7 +283,7 @@ function neighborEquals(prev: Block | null, next: Block | null) {
     prev.factID === next.factID &&
     prev.parent === next.parent &&
     prev.position === next.position &&
-    prev.value === next.value &&
+    prev.entityID === next.entityID &&
     prev.type === next.type &&
     deepEquals(prev.listData, next.listData)
   );
@@ -364,12 +360,12 @@ const BlockMultiselectIndicator = (props: BlockProps) => {
   let multiselectState = useUIState((s) => {
     if (
       s.selectedBlocks.length <= 1 ||
-      !s.selectedBlocks.some((b) => b.value === props.entityID)
+      !s.selectedBlocks.some((b) => b.entityID === props.entityID)
     )
       return null;
-    let next = s.selectedBlocks.some((b) => b.value === props.nextBlock?.value);
+    let next = s.selectedBlocks.some((b) => b.entityID === props.nextBlock?.entityID);
     let prev = s.selectedBlocks.some(
-      (b) => b.value === props.previousBlock?.value,
+      (b) => b.entityID === props.previousBlock?.entityID,
     );
     return `${next ? "n" : ""}${prev ? "p" : ""}`;
   });
@@ -569,12 +565,12 @@ export const ListMarker = (
     className?: string;
   },
 ) => {
-  let checklist = useEntity(props.value, "block/check-list");
-  let listStyle = useEntity(props.value, "block/list-style");
-  let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
-  let children = useEntity(props.value, "card/block");
+  let checklist = useEntity(props.entityID, "block/check-list");
+  let listStyle = useEntity(props.entityID, "block/list-style");
+  let headingLevel = useEntity(props.entityID, "block/heading-level")?.data.value;
+  let children = useEntity(props.entityID, "card/block");
   let folded =
-    useUIState((s) => s.foldedBlocks.includes(props.value)) &&
+    useUIState((s) => s.foldedBlocks.includes(props.entityID)) &&
     children.length > 0;
 
   let depth = props.listData?.depth;
@@ -603,12 +599,12 @@ export const ListMarker = (
     if (newNumber === currentDisplay) {
       // Remove override if it matches the computed number
       await rep.mutate.retractAttribute({
-        entity: props.value,
+        entity: props.entityID,
         attribute: "block/list-number",
       });
     } else {
       await rep.mutate.assertFact({
-        entity: props.value,
+        entity: props.entityID,
         attribute: "block/list-number",
         data: { type: "number", value: newNumber },
       });
@@ -640,7 +636,7 @@ export const ListMarker = (
       <button
         onClick={() => {
           if (children.length > 0)
-            useUIState.getState().toggleFold(props.value);
+            useUIState.getState().toggleFold(props.entityID);
         }}
         className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
@@ -695,7 +691,7 @@ export const ListMarker = (
           onClick={() => {
             if (permissions.write)
               rep?.mutate.assertFact({
-                entity: props.value,
+                entity: props.entityID,
                 attribute: "block/check-list",
                 data: { type: "boolean", value: !checklist.data.value },
               });

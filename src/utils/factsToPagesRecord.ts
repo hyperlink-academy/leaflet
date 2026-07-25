@@ -173,7 +173,7 @@ export async function processBlocksToPages(opts: {
             (delimiterIndex !== -1 && blockIndex > delimiterIndex);
           if (blockOrList.type === "block") {
             const alignmentValue = scan.eav(
-              blockOrList.block.value,
+              blockOrList.block.entityID,
               "block/text-alignment",
             )[0]?.data.value;
             const alignment: ExcludeString<
@@ -369,7 +369,7 @@ export async function processBlocksToPages(opts: {
       return [stringValue, facets] as const;
     };
     if (b.type === "card") {
-      const [page] = scan.eav(b.value, "block/card");
+      const [page] = scan.eav(b.entityID, "block/card");
       if (!page) return;
       const [pageType] = scan.eav(page.data.value, "page/type");
 
@@ -400,9 +400,9 @@ export async function processBlocksToPages(opts: {
     }
 
     if (b.type === "bluesky-post") {
-      const [post] = scan.eav(b.value, "block/bluesky-post");
+      const [post] = scan.eav(b.entityID, "block/bluesky-post");
       if (!post || !post.data.value.post) return;
-      const [hostFact] = scan.eav(b.value, "bluesky-post/host");
+      const [hostFact] = scan.eav(b.entityID, "bluesky-post/host");
       const block: $Typed<PubLeafletBlocksBskyPost.Main> = {
         $type: ids.PubLeafletBlocksBskyPost,
         postRef: {
@@ -414,11 +414,11 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type === "standard-site-post") {
-      const [uri] = scan.eav(b.value, "block/standard-site-post");
+      const [uri] = scan.eav(b.entityID, "block/standard-site-post");
       if (!uri) return;
-      const [sizeFact] = scan.eav(b.value, "standard-site-post/size");
+      const [sizeFact] = scan.eav(b.entityID, "standard-site-post/size");
       const [showPubThemeFact] = scan.eav(
-        b.value,
+        b.entityID,
         "standard-site-post/show-publication-theme",
       );
       const block: $Typed<PubLeafletBlocksStandardSitePost.Main> = {
@@ -432,10 +432,10 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type === "standard-site-publication") {
-      const [uri] = scan.eav(b.value, "block/standard-site-publication");
+      const [uri] = scan.eav(b.entityID, "block/standard-site-publication");
       if (!uri) return;
       const [showPubThemeFact] = scan.eav(
-        b.value,
+        b.entityID,
         "standard-site-publication/show-publication-theme",
       );
       const block: $Typed<PubLeafletBlocksStandardSitePublication.Main> = {
@@ -461,9 +461,9 @@ export async function processBlocksToPages(opts: {
     }
 
     if (b.type === "heading") {
-      const [headingLevel] = scan.eav(b.value, "block/heading-level");
+      const [headingLevel] = scan.eav(b.entityID, "block/heading-level");
 
-      const [stringValue, facets] = getBlockContent(b.value);
+      const [stringValue, facets] = getBlockContent(b.entityID);
       const block: $Typed<PubLeafletBlocksHeader.Main> = {
         $type: "pub.leaflet.blocks.header",
         level: Math.floor(headingLevel?.data.value || 1),
@@ -474,7 +474,7 @@ export async function processBlocksToPages(opts: {
     }
 
     if (b.type === "blockquote") {
-      const [stringValue, facets] = getBlockContent(b.value);
+      const [stringValue, facets] = getBlockContent(b.entityID);
       const block: $Typed<PubLeafletBlocksBlockquote.Main> = {
         $type: ids.PubLeafletBlocksBlockquote,
         plaintext: stringValue,
@@ -484,8 +484,8 @@ export async function processBlocksToPages(opts: {
     }
 
     if (b.type == "text") {
-      const [stringValue, facets] = getBlockContent(b.value);
-      const [textSize] = scan.eav(b.value, "block/text-size");
+      const [stringValue, facets] = getBlockContent(b.entityID);
+      const [textSize] = scan.eav(b.entityID, "block/text-size");
       const block: $Typed<PubLeafletBlocksText.Main> = {
         $type: ids.PubLeafletBlocksText,
         plaintext: stringValue,
@@ -495,12 +495,12 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type === "embed" || b.type === "html") {
-      const [url] = scan.eav(b.value, "embed/url");
+      const [url] = scan.eav(b.entityID, "embed/url");
       // embed-typed blocks may carry an embed/html fact from before html
       // embeds were split into their own block type
-      const [html] = scan.eav(b.value, "embed/html");
-      const [height] = scan.eav(b.value, "embed/height");
-      const [aspectRatio] = scan.eav(b.value, "embed/aspect-ratio");
+      const [html] = scan.eav(b.entityID, "embed/html");
+      const [height] = scan.eav(b.entityID, "embed/height");
+      const [aspectRatio] = scan.eav(b.entityID, "embed/aspect-ratio");
       if (!url && !html) return;
       const blockHeight = Math.floor(height?.data.value || 600);
       const block: $Typed<
@@ -525,10 +525,10 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type == "image") {
-      const [image] = scan.eav(b.value, "block/image");
+      const [image] = scan.eav(b.entityID, "block/image");
       if (!image) return;
-      const [altText] = scan.eav(b.value, "image/alt");
-      const [fullBleed] = scan.eav(b.value, "image/full-bleed");
+      const [altText] = scan.eav(b.entityID, "image/alt");
+      const [fullBleed] = scan.eav(b.entityID, "image/full-bleed");
       const blobref = await hooks.uploadImage(image.data.src, { membersOnly });
       if (!blobref) return;
       const block: $Typed<PubLeafletBlocksImage.Main> = {
@@ -545,7 +545,7 @@ export async function processBlocksToPages(opts: {
     }
     if (b.type === "image-gallery") {
       const imageFacts = scan
-        .eav(b.value, "gallery/image")
+        .eav(b.entityID, "gallery/image")
         .toSorted((a, c) => (a.data.position > c.data.position ? 1 : -1));
       const images = (
         await Promise.all(
@@ -573,9 +573,9 @@ export async function processBlocksToPages(opts: {
       ).filter((i): i is PubLeafletBlocksImageGallery.Image => i !== null);
       if (images.length === 0) return;
 
-      const [format] = scan.eav(b.value, "gallery/format");
-      const [gap] = scan.eav(b.value, "gallery/gap");
-      const [maxWidth] = scan.eav(b.value, "gallery/max-width");
+      const [format] = scan.eav(b.entityID, "gallery/format");
+      const [gap] = scan.eav(b.entityID, "gallery/gap");
+      const [maxWidth] = scan.eav(b.entityID, "gallery/max-width");
       const block: $Typed<PubLeafletBlocksImageGallery.Main> = {
         $type: "pub.leaflet.blocks.imageGallery",
         images,
@@ -588,14 +588,14 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type === "link") {
-      const [previewImage] = scan.eav(b.value, "link/preview");
-      const [description] = scan.eav(b.value, "link/description");
-      const [src] = scan.eav(b.value, "link/url");
+      const [previewImage] = scan.eav(b.entityID, "link/preview");
+      const [description] = scan.eav(b.entityID, "link/description");
+      const [src] = scan.eav(b.entityID, "link/url");
       if (!src) return;
       const blobref = previewImage
         ? await hooks.uploadImage(previewImage.data.src, { membersOnly })
         : undefined;
-      const [title] = scan.eav(b.value, "link/title");
+      const [title] = scan.eav(b.entityID, "link/title");
       const block: $Typed<PubLeafletBlocksWebsite.Main> = {
         $type: "pub.leaflet.blocks.website",
         previewImage: blobref,
@@ -606,8 +606,8 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type === "code") {
-      const [language] = scan.eav(b.value, "block/code-language");
-      const [code] = scan.eav(b.value, "block/code");
+      const [language] = scan.eav(b.entityID, "block/code-language");
+      const [code] = scan.eav(b.entityID, "block/code");
       const [theme] = scan.eav(root_entity, "theme/code-theme");
       const block: $Typed<PubLeafletBlocksCode.Main> = {
         $type: "pub.leaflet.blocks.code",
@@ -618,7 +618,7 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type === "math") {
-      const [math] = scan.eav(b.value, "block/math");
+      const [math] = scan.eav(b.entityID, "block/math");
       const block: $Typed<PubLeafletBlocksMath.Main> = {
         $type: "pub.leaflet.blocks.math",
         tex: math?.data.value || "",
@@ -628,7 +628,7 @@ export async function processBlocksToPages(opts: {
     if (b.type === "poll") {
       if (!hooks.uploadPoll) return;
 
-      const pollOptions = scan.eav(b.value, "poll/options");
+      const pollOptions = scan.eav(b.entityID, "poll/options");
       const options: PubLeafletPollDefinition.Option[] = pollOptions.map(
         (opt) => {
           const optionName = scan.eav(opt.data.value, "poll-option/name")?.[0];
@@ -645,7 +645,7 @@ export async function processBlocksToPages(opts: {
         options,
       };
 
-      const result = await hooks.uploadPoll(b.value, pollRecord);
+      const result = await hooks.uploadPoll(b.entityID, pollRecord);
       if (!result) return;
 
       const block: $Typed<PubLeafletBlocksPoll.Main> = {
@@ -658,8 +658,8 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type === "button") {
-      const [text] = scan.eav(b.value, "button/text");
-      const [url] = scan.eav(b.value, "button/url");
+      const [text] = scan.eav(b.entityID, "button/text");
+      const [url] = scan.eav(b.entityID, "button/url");
       if (!text || !url) return;
       const block: $Typed<PubLeafletBlocksButton.Main> = {
         $type: "pub.leaflet.blocks.button",
@@ -669,14 +669,14 @@ export async function processBlocksToPages(opts: {
       return block;
     }
     if (b.type === "posts-list") {
-      const [viewFact] = scan.eav(b.value, "posts-list/view");
+      const [viewFact] = scan.eav(b.entityID, "posts-list/view");
       const [highlightFact] = scan.eav(
-        b.value,
+        b.entityID,
         "posts-list/highlight-first-post",
       );
-      const filterTagFacts = scan.eav(b.value, "posts-list/filter-tag");
+      const filterTagFacts = scan.eav(b.entityID, "posts-list/filter-tag");
       const filterByTags = filterTagFacts.map((f) => f.data.value);
-      const [limitFact] = scan.eav(b.value, "posts-list/limit");
+      const [limitFact] = scan.eav(b.entityID, "posts-list/limit");
       const limit = limitFact?.data.value;
       const block: $Typed<PubLeafletBlocksPostsList.Main> = {
         $type: "pub.leaflet.blocks.postsList",
@@ -712,7 +712,7 @@ export async function processBlocksToPages(opts: {
 
           const block: Block = {
             type: blockType.data.value,
-            value: blockEntity,
+            entityID: blockEntity,
             parent: pageID,
             position: "",
             factID: canvasBlock.id,

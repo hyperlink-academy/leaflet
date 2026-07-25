@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       // Collect all entity IDs we need facts for
       let entityIds = new Set<string>();
       for (let b of blocks) {
-        entityIds.add(b.value);
+        entityIds.add(b.entityID);
       }
       let allFacts = await getAllFactsForEntities(tx, [...entityIds]);
 
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       for (let b of blocks) {
         if (b.type === "card") {
           let cardFacts = allFacts.filter(
-            (f) => f.entity === b.value && f.attribute === "block/card",
+            (f) => f.entity === b.entityID && f.attribute === "block/card",
           );
           if (cardFacts[0]) {
             let cardEntityId = (cardFacts[0].data as any).value;
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       for (let b of blocks) {
         if (b.type === "card") {
           let cardFacts = allFacts.filter(
-            (f) => f.entity === b.value && f.attribute === "block/card",
+            (f) => f.entity === b.entityID && f.attribute === "block/card",
           );
           if (cardFacts[0]) {
             let cardEntityId = (cardFacts[0].data as any).value;
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
       for (let b of blocks) {
         if (b.type === "card") {
           let cardFacts = allFacts.filter(
-            (f) => f.entity === b.value && f.attribute === "block/card",
+            (f) => f.entity === b.entityID && f.attribute === "block/card",
           );
           if (cardFacts[0]) {
             let cardEntityId = (cardFacts[0].data as any).value;
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
       let title = "";
       if (titleBlock) {
         let textFact = allFacts.find(
-          (f) => f.entity === titleBlock.value && f.attribute === "block/text",
+          (f) => f.entity === titleBlock.entityID && f.attribute === "block/text",
         );
         if (textFact) {
           title = extractPlaintext((textFact.data as any).value);

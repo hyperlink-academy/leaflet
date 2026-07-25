@@ -25,7 +25,7 @@ import { EmptyState } from "components/EmptyState";
 type PostsListView = "small" | "medium";
 
 export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
-  let isSelected = useIsBlockSelected(props.value);
+  let isSelected = useIsBlockSelected(props.entityID);
 
   if (props.preview) {
     return (

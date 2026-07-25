@@ -17,7 +17,7 @@ export function TextAlignmentToolbar() {
       if (focusedBlock?.entityType === "page" || !focusedBlock) return null;
       rep?.mutate.assertFact(
         blocks.map((b) => ({
-          entity: b.value,
+          entity: b.entityID,
           attribute: "block/text-alignment",
           data: { type: "text-alignment-type-union", value: alignment },
         })),

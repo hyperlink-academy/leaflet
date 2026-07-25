@@ -109,7 +109,7 @@ function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
                   />
                 )}
                 <RenderedTextBlock
-                  entityID={leafletMetadata[0].value}
+                  entityID={leafletMetadata[0].entityID}
                   type="text"
                 />
               </div>
@@ -122,7 +122,7 @@ function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
                   <ListMarker {...leafletMetadata[1]} className="pt-[8px]!" />
                 )}
                 <RenderedTextBlock
-                  entityID={leafletMetadata[1].value}
+                  entityID={leafletMetadata[1].entityID}
                   type="text"
                 />
               </div>
@@ -135,7 +135,7 @@ function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
                   <ListMarker {...leafletMetadata[2]} className="pt-[8px]!" />
                 )}
                 <RenderedTextBlock
-                  entityID={leafletMetadata[2].value}
+                  entityID={leafletMetadata[2].entityID}
                   type="text"
                 />
               </div>
@@ -229,7 +229,6 @@ function PagePreview(props: { entityID: string }) {
           return (
             <BlockPreview
               pageType="doc"
-              entityID={b.value}
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}
               nextPosition={""}

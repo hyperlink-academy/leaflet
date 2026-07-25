@@ -491,9 +491,12 @@ let useTitle = (entityID: string) => {
   let blocks = useBlocks(rootPage).filter(
     (b) => b.type === "text" || b.type === "heading",
   );
-  let firstBlock = canvasBlocks[0] || blocks[0];
+  // Canvas items are fact data (entity in .value); linear blocks are Blocks
+  // (entity in .entityID) — read each arm's own field.
+  let firstBlockEntity = canvasBlocks[0]?.value ?? blocks[0]?.entityID ?? null;
+  let firstBlockType = canvasBlocks[0]?.type ?? blocks[0]?.type;
 
-  let firstBlockText = useEntity(firstBlock?.value, "block/text")?.data.value;
+  let firstBlockText = useEntity(firstBlockEntity, "block/text")?.data.value;
 
   const leafletTitle = useMemo(() => {
     if (!firstBlockText) return "Untitled";
@@ -507,7 +510,7 @@ let useTitle = (entityID: string) => {
   // Only handle second block logic for linear documents, not canvas
   let isCanvas = canvasBlocks.length > 0;
   let secondBlock = !isCanvas ? blocks[1] : undefined;
-  let secondBlockTextValue = useEntity(secondBlock?.value || null, "block/text")
+  let secondBlockTextValue = useEntity(secondBlock?.entityID || null, "block/text")
     ?.data.value;
   const secondBlockText = useMemo(() => {
     if (!secondBlockTextValue) return "";
@@ -521,8 +524,8 @@ let useTitle = (entityID: string) => {
   let entitiesToDelete = useMemo(() => {
     let etod: string[] = [];
     // Only delete first block if it's a heading type
-    if (firstBlock?.type === "heading") {
-      etod.push(firstBlock.value);
+    if (firstBlockType === "heading" && firstBlockEntity) {
+      etod.push(firstBlockEntity);
     }
     // Delete second block if it's empty text (only for linear documents)
     if (
@@ -530,10 +533,10 @@ let useTitle = (entityID: string) => {
       secondBlockText.trim() === "" &&
       secondBlock?.type === "text"
     ) {
-      etod.push(secondBlock.value);
+      etod.push(secondBlock.entityID);
     }
     return etod;
-  }, [firstBlock, secondBlockText, secondBlock, isCanvas]);
+  }, [firstBlockEntity, firstBlockType, secondBlockText, secondBlock, isCanvas]);
 
   return { title: leafletTitle, entitiesToDelete };
 };

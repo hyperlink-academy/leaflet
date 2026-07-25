@@ -41,7 +41,7 @@ async function renderList(l: List, tx: ReadTransaction): Promise<string> {
   let children = (
     await Promise.all(l.children.map(async (c) => await renderList(c, tx)))
   ).join("\n");
-  let [checked] = await scanIndex(tx).eav(l.block.value, "block/check-list");
+  let [checked] = await scanIndex(tx).eav(l.block.entityID, "block/check-list");
 
   // Check if nested children are ordered or unordered
   let isOrdered = l.children[0]?.block.listData?.listStyle === "ordered";
@@ -93,7 +93,7 @@ const BlockTypeToHTML: {
   html: async () => null,
   signup: async () => null,
   "bluesky-post": async (b, tx) => {
-    let [post] = await scanIndex(tx).eav(b.value, "block/bluesky-post");
+    let [post] = await scanIndex(tx).eav(b.entityID, "block/bluesky-post");
     if (!post) return null;
     return (
       <div
@@ -103,13 +103,13 @@ const BlockTypeToHTML: {
     );
   },
   "standard-site-post": async (b, tx) => {
-    let [uri] = await scanIndex(tx).eav(b.value, "block/standard-site-post");
+    let [uri] = await scanIndex(tx).eav(b.entityID, "block/standard-site-post");
     if (!uri) return null;
     return <div data-type="standard-site-post" data-uri={uri.data.value} />;
   },
   "standard-site-publication": async (b, tx) => {
     let [uri] = await scanIndex(tx).eav(
-      b.value,
+      b.entityID,
       "block/standard-site-publication",
     );
     if (!uri) return null;
@@ -118,7 +118,7 @@ const BlockTypeToHTML: {
     );
   },
   math: async (b, tx, a) => {
-    let [math] = await scanIndex(tx).eav(b.value, "block/math");
+    let [math] = await scanIndex(tx).eav(b.entityID, "block/math");
     const html = Katex.renderToString(math?.data.value || "", {
       displayMode: true,
       throwOnError: false,
@@ -142,12 +142,12 @@ const BlockTypeToHTML: {
   "horizontal-rule": async () => <hr />,
   "members-only-delimiter": async () => null,
   image: async (b, tx, a) => {
-    let [src] = await scanIndex(tx).eav(b.value, "block/image");
+    let [src] = await scanIndex(tx).eav(b.entityID, "block/image");
     if (!src) return "";
     return <img src={src.data.src} data-alignment={a} />;
   },
   "image-gallery": async (b, tx, a) => {
-    let images = (await scanIndex(tx).eav(b.value, "gallery/image")).sort(
+    let images = (await scanIndex(tx).eav(b.entityID, "gallery/image")).sort(
       (x, y) => (x.data.position > y.data.position ? 1 : -1),
     );
     let sources = await Promise.all(
@@ -166,8 +166,8 @@ const BlockTypeToHTML: {
     );
   },
   code: async (b, tx, a) => {
-    let [code] = await scanIndex(tx).eav(b.value, "block/code");
-    let [lang] = await scanIndex(tx).eav(b.value, "block/code-language");
+    let [code] = await scanIndex(tx).eav(b.entityID, "block/code");
+    let [lang] = await scanIndex(tx).eav(b.entityID, "block/code-language");
     let language = lang?.data.value;
     // data-lang preserves the exact language for Leaflet→Leaflet paste; the
     // language-* class on <code> is what htmlToMarkdown turns into a fenced
@@ -181,8 +181,8 @@ const BlockTypeToHTML: {
     );
   },
   button: async (b, tx, a) => {
-    let [text] = await scanIndex(tx).eav(b.value, "button/text");
-    let [url] = await scanIndex(tx).eav(b.value, "button/url");
+    let [text] = await scanIndex(tx).eav(b.entityID, "button/text");
+    let [url] = await scanIndex(tx).eav(b.entityID, "button/url");
     if (!text || !url) return "";
     return (
       <a href={url.data.value} data-type="button" data-alignment={a}>
@@ -191,7 +191,7 @@ const BlockTypeToHTML: {
     );
   },
   blockquote: async (b, tx, a) => {
-    let [value] = await scanIndex(tx).eav(b.value, "block/text");
+    let [value] = await scanIndex(tx).eav(b.entityID, "block/text");
     return (
       <RenderYJSFragment
         value={value?.data.value}
@@ -204,9 +204,9 @@ const BlockTypeToHTML: {
     );
   },
   heading: async (b, tx, a) => {
-    let [value] = await scanIndex(tx).eav(b.value, "block/text");
+    let [value] = await scanIndex(tx).eav(b.entityID, "block/text");
     let [headingLevel] = await scanIndex(tx).eav(
-      b.value,
+      b.entityID,
       "block/heading-level",
     );
     let wrapper = ("h" + (headingLevel?.data.value || 1)) as "h1" | "h2" | "h3";
@@ -222,8 +222,8 @@ const BlockTypeToHTML: {
     );
   },
   link: async (b, tx, a) => {
-    let [url] = await scanIndex(tx).eav(b.value, "link/url");
-    let [title] = await scanIndex(tx).eav(b.value, "link/title");
+    let [url] = await scanIndex(tx).eav(b.entityID, "link/url");
+    let [title] = await scanIndex(tx).eav(b.entityID, "link/title");
     if (!url) return "";
     return (
       <a href={url.data.value} target="_blank">
@@ -232,7 +232,7 @@ const BlockTypeToHTML: {
     );
   },
   card: async (b, tx, a) => {
-    let [card] = await scanIndex(tx).eav(b.value, "block/card");
+    let [card] = await scanIndex(tx).eav(b.entityID, "block/card");
     let facts = await getAllFacts(tx, card.data.value);
     return (
       <div
@@ -243,8 +243,8 @@ const BlockTypeToHTML: {
     );
   },
   text: async (b, tx, a) => {
-    let [value] = await scanIndex(tx).eav(b.value, "block/text");
-    let [textSize] = await scanIndex(tx).eav(b.value, "block/text-size");
+    let [value] = await scanIndex(tx).eav(b.entityID, "block/text");
+    let [textSize] = await scanIndex(tx).eav(b.entityID, "block/text-size");
 
     return (
       <RenderYJSFragment
@@ -262,7 +262,7 @@ const BlockTypeToHTML: {
 };
 
 async function renderBlock(b: Block, tx: ReadTransaction) {
-  let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
+  let [alignment] = await scanIndex(tx).eav(b.entityID, "block/text-alignment");
   let toHtml = BlockTypeToHTML[b.type];
   let element = await toHtml(b, tx, alignment?.data.value);
   return renderToStaticMarkup(element);

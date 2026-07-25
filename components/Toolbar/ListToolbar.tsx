@@ -16,7 +16,7 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
     focusedBlock?.entityType === "block" ? focusedBlock.parent : null,
   );
 
-  let block = siblings.find((s) => s.value === focusedBlock?.entityID);
+  let block = siblings.find((s) => s.entityID === focusedBlock?.entityID);
 
   let { rep, undoManager } = useReplicache();
 
@@ -82,9 +82,9 @@ export const ListToolbar = (props: { onClose: () => void }) => {
   );
   let isList = useEntity(focusedBlock?.entityID || null, "block/is-list");
 
-  let block = siblings.find((s) => s.value === focusedBlock?.entityID);
+  let block = siblings.find((s) => s.entityID === focusedBlock?.entityID);
   let previousBlock =
-    siblings[siblings.findIndex((b) => b.value === focusedBlock?.entityID) - 1];
+    siblings[siblings.findIndex((b) => b.entityID === focusedBlock?.entityID) - 1];
   let { rep, undoManager } = useReplicache();
 
   useEffect(() => {

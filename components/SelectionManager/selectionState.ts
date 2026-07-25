@@ -16,16 +16,16 @@ export const getSortedSelection = async (
   if (!selectedBlocks[0]) return [[], []];
   let siblings = getPageBlocks(rep, selectedBlocks[0].parent);
   let sortedBlocks = siblings.filter((s) => {
-    let selected = selectedBlocks.find((sb) => sb.value === s.value);
+    let selected = selectedBlocks.find((sb) => sb.entityID === s.entityID);
     return selected;
   });
   let sortedBlocksWithChildren = siblings.filter((s) => {
-    let selected = selectedBlocks.find((sb) => sb.value === s.value);
+    let selected = selectedBlocks.find((sb) => sb.entityID === s.entityID);
     if (s.listData && !selected) {
       //Select the children of folded list blocks (in order to copy them)
       return s.listData.path.find(
         (p) =>
-          selectedBlocks.find((sb) => sb.value === p.entity) &&
+          selectedBlocks.find((sb) => sb.entityID === p.entity) &&
           foldedBlocks.includes(p.entity),
       );
     }

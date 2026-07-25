@@ -20,14 +20,19 @@ export function StandardSitePublicationItem({ uri }: { uri: string }) {
   return <StandardSitePublicationItemView publication={data} />;
 }
 
-function StandardSitePublicationItemPlaceholder() {
+export function StandardSitePublicationItemPlaceholder({
+  animate = true,
+}: {
+  animate?: boolean;
+} = {}) {
+  const pulse = animate ? "animate-pulse" : "";
   return (
     <div className="transparent-container flex w-full gap-3 items-start p-3">
-      <div className="shrink-0 w-12 h-12 rounded-full bg-border-light animate-pulse" />
+      <div className={`shrink-0 w-12 h-12 rounded-full bg-border-light ${pulse}`} />
       <div className="flex flex-col gap-2 grow min-w-0 pt-1">
-        <div className="h-6 w-1/2 bg-border-light rounded animate-pulse" />
-        <div className="h-4 w-full bg-border-light rounded animate-pulse" />
-        <div className="h-4 w-32 bg-border-light rounded animate-pulse" />
+        <div className={`h-6 w-1/2 bg-border-light rounded ${pulse}`} />
+        <div className={`h-4 w-full bg-border-light rounded ${pulse}`} />
+        <div className={`h-4 w-32 bg-border-light rounded ${pulse}`} />
       </div>
     </div>
   );

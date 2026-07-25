@@ -8,6 +8,7 @@ import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
+import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
@@ -32,8 +33,6 @@ import { getAspectRatio } from "src/utils/aspectRatio";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
 import { addMentionToEditor } from "app/(app)/[leaflet_id]/publish/BskyPostEditorProsemirror";
-import { v7 } from "uuid";
-import { generateKeyBetween } from "fractional-indexing";
 
 const HeadingStyle = {
   1: "font-bold [font-family:var(--theme-heading-font)]",
@@ -292,7 +291,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
               useUIState
                 .getState()
                 .focusAndSelectBlock({
-                  value: props.entityID,
+                  entityID: props.entityID,
                   parent: props.parent,
                 });
             }, 5);
@@ -538,7 +537,7 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
           focusBlock(
             {
               type: props.type,
-              value: props.entityID,
+              entityID: props.entityID,
               parent: props.parent,
             },
             { type: "end" },
@@ -659,14 +658,12 @@ const useMentionState = (entityID: string, blockProps: BlockProps) => {
           });
         } else {
           // Create a new block below
-          targetEntityID = v7();
-          await rep.mutate.addBlock({
-            permission_set: entity_set.set,
-            factID: v7(),
-            type: "embed",
-            newEntityID: targetEntityID,
+          targetEntityID = await addBlockBelow(rep, {
             parent: props.parent,
-            position: generateKeyBetween(props.position, props.nextPosition),
+            position: props.position,
+            nextPosition: props.nextPosition,
+            permission_set: entity_set.set,
+            type: "embed",
           });
           // Remove the @ from the current block's editor
           const view = useEditorStates.getState().editorStates[entityID]?.view;

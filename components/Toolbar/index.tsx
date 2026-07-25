@@ -58,7 +58,7 @@ export const Toolbar = (props: {
   // mode-reset effect below) only when the selection's membership actually
   // changes, not on every store write that rebuilds the array.
   let selectionKey = useUIState((s) =>
-    s.selectedBlocks.map((b) => b.value).join(" "),
+    s.selectedBlocks.map((b) => b.entityID).join(" "),
   );
   let isMultiselect = useUIState((s) => s.selectedBlocks.length > 1);
 

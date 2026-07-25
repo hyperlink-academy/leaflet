@@ -154,8 +154,8 @@ test("mirror matches a full-fact rebuild through structural mutations", async ()
     type: "text",
     newEntityID: v7(),
     position: generateKeyBetween(
-      blocks.find((b) => b.value === entities[4])!.position,
-      blocks.find((b) => b.value === entities[5])!.position,
+      blocks.find((b) => b.entityID === entities[4])!.position,
+      blocks.find((b) => b.entityID === entities[5])!.position,
     ),
   });
   await settle();
@@ -172,7 +172,7 @@ test("mirror matches a full-fact rebuild through structural mutations", async ()
   await settle();
   await expectParity(rep, ROOT);
   expect(
-    getBlocksFromMirror(mirror, ROOT).find((b) => b.value === child)?.listData
+    getBlocksFromMirror(mirror, ROOT).find((b) => b.entityID === child)?.listData
       ?.parent,
   ).toBe(entities[3]);
 
@@ -181,7 +181,7 @@ test("mirror matches a full-fact rebuild through structural mutations", async ()
   await settle();
   await expectParity(rep, ROOT);
   expect(
-    getBlocksFromMirror(mirror, ROOT).find((b) => b.value === entities[7]),
+    getBlocksFromMirror(mirror, ROOT).find((b) => b.entityID === entities[7]),
   ).toBe(undefined);
 
   // Un-list a block

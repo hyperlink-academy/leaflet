@@ -42,7 +42,7 @@ function computeFootnotes(
     });
 
   let sorted = [
-    ...cardBlocks.map((b) => ({ value: b.value })),
+    ...cardBlocks.map((b) => ({ value: b.entityID })),
     ...sortedCanvasBlocks,
   ];
 

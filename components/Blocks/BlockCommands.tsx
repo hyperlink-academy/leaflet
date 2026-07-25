@@ -424,7 +424,7 @@ export const blockCommands: Command[] = [
           setTimeout(
             () =>
               focusBlock(
-                { parent: props.parent, value: entity, type: "text" },
+                { parent: props.parent, entityID: entity, type: "text" },
                 { type: "end" },
               ),
             100,
@@ -464,7 +464,7 @@ export const blockCommands: Command[] = [
           setTimeout(
             () =>
               focusBlock(
-                { parent: props.parent, value: entity, type: "text" },
+                { parent: props.parent, entityID: entity, type: "text" },
                 { type: "end" },
               ),
             100,

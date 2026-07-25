@@ -12,7 +12,7 @@ import { useSpring, animated } from "@react-spring/web";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 import { DatePicker } from "components/DatePicker";
 
-export function DateTimeBlock(props: BlockProps) {
+export function DateTimeBlock(props: BlockProps & { preview?: boolean }) {
   const [isClient, setIsClient] = useState(false);
   let initialPageLoad = useHasPageLoaded();
 
@@ -29,7 +29,63 @@ export function DateTimeBlock(props: BlockProps) {
       </div>
     );
 
+  if (props.preview) return <DateTimeBlockPreview {...props} />;
+
   return <BaseDateTimeBlock {...props} initalLoad={initialPageLoad} />;
+}
+
+function DateTimeBlockPreview(props: BlockProps) {
+  let { permissions } = useEntitySetContext();
+  let isSelected = useIsBlockSelected(props.entityID);
+  let dateFact = useEntity(props.entityID, "block/date-time");
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
+  let selectedDate = dateFact ? new Date(dateFact.data.value) : null;
+  return (
+    <BlockLayout
+      isSelected={!!isSelected}
+      className={`flex flex-row gap-2 group/date w-64 z-1 border-transparent!
+      ${alignment === "center" ? "justify-center" : alignment === "right" ? "justify-end" : "justify-start"}
+      `}
+    >
+      <BlockCalendarSmall className="text-tertiary" />
+      {selectedDate ? (
+        <div className="font-bold">
+          <DateTimeText
+            selectedDate={selectedDate}
+            dateOnly={dateFact?.data.dateOnly}
+          />
+        </div>
+      ) : (
+        <div className="italic text-tertiary text-left">
+          {permissions.write ? "add a date and time..." : "TBD..."}
+        </div>
+      )}
+    </BlockLayout>
+  );
+}
+
+function DateTimeText(props: { selectedDate: Date; dateOnly?: boolean }) {
+  return (
+    <>
+      {props.selectedDate.toLocaleDateString(undefined, {
+        month: "short",
+        year:
+          new Date().getFullYear() !== props.selectedDate.getFullYear()
+            ? "numeric"
+            : undefined,
+        day: "numeric",
+      })}{" "}
+      {!props.dateOnly ? (
+        <span>
+          |{" "}
+          {props.selectedDate.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "numeric",
+          })}
+        </span>
+      ) : null}
+    </>
+  );
 }
 
 function BaseDateTimeBlock(props: BlockProps & { initalLoad?: boolean }) {
@@ -131,23 +187,10 @@ function BaseDateTimeBlock(props: BlockProps & { initalLoad?: boolean }) {
               ${!permissions.write ? "" : "group-hover/date:underline"}
               `}
               >
-                {selectedDate.toLocaleDateString(undefined, {
-                  month: "short",
-                  year:
-                    new Date().getFullYear() !== selectedDate.getFullYear()
-                      ? "numeric"
-                      : undefined,
-                  day: "numeric",
-                })}{" "}
-                {!dateFact.data.dateOnly ? (
-                  <span>
-                    |{" "}
-                    {selectedDate.toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "numeric",
-                    })}
-                  </span>
-                ) : null}
+                <DateTimeText
+                  selectedDate={selectedDate}
+                  dateOnly={dateFact.data.dateOnly}
+                />
               </div>
             ) : (
               <div

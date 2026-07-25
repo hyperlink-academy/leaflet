@@ -6,6 +6,7 @@ import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 import { indent, outdent } from "src/utils/list-operations";
+import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 import { BlockProps } from "./Block";
@@ -25,7 +26,7 @@ export function useBlockKeyboardHandlers(
   let entity_set = useEntitySetContext();
 
   let isSelected = useUIState((s) =>
-    s.selectedBlocks.some((b) => b.value === props.entityID),
+    s.selectedBlocks.some((b) => b.entityID === props.entityID),
   );
 
   // The listener reads the latest props/state through refs so it attaches
@@ -235,7 +236,7 @@ async function Enter({ e, props, rep, entity_set }: Args) {
       },
     });
     focusBlock(
-      { type: "text", value: newEntityID, parent: props.parent },
+      { type: "text", entityID: newEntityID, parent: props.parent },
       { type: "start" },
     );
     return;
@@ -267,19 +268,15 @@ async function Enter({ e, props, rep, entity_set }: Args) {
 
   // if it's not a list, create a new block between current and next block
   if (!props.listData) {
-    position = generateKeyBetween(props.position, props.nextPosition);
-    await rep?.mutate.addBlock({
-      newEntityID,
-      factID: v7(),
-      permission_set: entity_set.set,
+    newEntityID = await addBlockBelow(rep, {
       parent: props.parent,
+      position: props.position,
+      nextPosition: props.nextPosition,
+      permission_set: entity_set.set,
       type: "text",
-      position,
     });
   }
-  setTimeout(() => {
-    document.getElementById(elementId.block(newEntityID).text)?.focus();
-  }, 10);
+  focusNewTextBlock(newEntityID);
 }
 
 function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
@@ -287,7 +284,7 @@ function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
   if (areYouSure) {
     setAreYouSure(false);
     focusBlock(
-      { type: "card", value: props.entityID, parent: props.parent },
+      { type: "card", entityID: props.entityID, parent: props.parent },
       { type: "start" },
     );
   }

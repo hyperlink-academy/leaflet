@@ -6,6 +6,7 @@ import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
+  StandardSitePostItemPlaceholder,
   type StandardSitePostSize,
 } from "./StandardSitePostItem";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
@@ -27,9 +28,22 @@ export const StandardSitePostBlock = (
   let showPubTheme = showPubThemeFact?.data.value !== false;
   let editorPub = useLeafletPublicationData();
   let currentPublicationUri = editorPub.data?.publications?.uri ?? null;
-  let { data: post } = useStandardSitePost(uri);
+  let { data: post } = useStandardSitePost(props.preview ? null : uri);
 
   if (!uri) return null;
+
+  if (props.preview)
+    return (
+      <BlockLayout
+        isSelected={!!isSelected}
+        borderOnHover
+        className="standardSitePostBlock p-0! overflow-hidden!"
+      >
+        <div className="bg-bg-page">
+          <StandardSitePostItemPlaceholder size={size} animate={false} />
+        </div>
+      </BlockLayout>
+    );
 
   if (!post)
     return (

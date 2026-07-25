@@ -40,7 +40,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   	  ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={() => {
             focusBlock(
-              { type: props.type, value: props.entityID, parent: props.parent },
+              { type: props.type, entityID: props.entityID, parent: props.parent },
               { type: "start" },
             );
           }}

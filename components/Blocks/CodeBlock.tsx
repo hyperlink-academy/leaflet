@@ -16,7 +16,7 @@ import { elementId } from "src/utils/elementId";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 import { focusBlock } from "src/utils/focusBlock";
 
-export function CodeBlock(props: BlockProps) {
+export function CodeBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, rootEntity } = useReplicache();
   let content = useEntity(props.entityID, "block/code");
   let lang =
@@ -32,6 +32,7 @@ export function CodeBlock(props: BlockProps) {
   const [html, setHTML] = useState<string | null>(null);
 
   useLayoutEffect(() => {
+    if (props.preview) return;
     if (!content) return;
     void codeToHtml(content.data.value, {
       lang,
@@ -40,14 +41,35 @@ export function CodeBlock(props: BlockProps) {
     }).then((h) => {
       setHTML(h.replaceAll("<br>", "\n"));
     });
-  }, [content, lang, theme]);
+  }, [content, lang, theme, props.preview]);
 
   const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
     focusBlock(
-      { parent: props.parent, value: props.value, type: "code" },
+      { parent: props.parent, entityID: props.entityID, type: "code" },
       { type: "end" },
     );
   }, []);
+
+  if (props.preview)
+    return (
+      <div className="codeBlock w-full flex flex-col rounded-md gap-0.5 ">
+        <BlockLayout
+          isSelected={focusedBlock}
+          hasBackground="accent"
+          borderOnHover
+          className="p-0! min-h-10 sm:min-h-12"
+        >
+          <pre className="codeBlockRendered overflow-auto! font-mono p-2 sm:p-3 w-full h-full">
+            {content?.data.value === "" || content?.data.value === undefined ? (
+              <div className="text-tertiary italic">write some code…</div>
+            ) : (
+              content?.data.value
+            )}
+          </pre>
+        </BlockLayout>
+      </div>
+    );
+
   return (
     <div className="codeBlock w-full flex flex-col rounded-md gap-0.5 ">
       <BlockLayout

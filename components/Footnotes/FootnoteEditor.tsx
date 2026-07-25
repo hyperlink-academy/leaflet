@@ -120,7 +120,7 @@ function EditableFootnote(props: {
             .then((type) => {
               if (!type) return;
               focusBlock(
-                { value: blockID, type, parent: pageID },
+                { entityID: blockID, type, parent: pageID },
                 {
                   type: "afterFootnote",
                   footnoteEntityID: props.footnoteEntityID,

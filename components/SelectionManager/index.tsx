@@ -67,7 +67,7 @@ export function SelectionManager() {
           for (let block of sortedBlocks) {
             if (!block.listData) {
               await rep?.mutate.assertFact({
-                entity: block.value,
+                entity: block.entityID,
                 attribute: "block/is-list",
                 data: { type: "boolean", value: true },
               });
@@ -85,12 +85,12 @@ export function SelectionManager() {
           let [sortedBlocks] = await getSortedSelectionBound();
           for (let block of sortedBlocks) {
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/heading-level",
               data: { type: "number", value: 1 },
             });
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/type",
               data: { type: "block-type-union", value: "heading" },
             });
@@ -105,12 +105,12 @@ export function SelectionManager() {
           let [sortedBlocks] = await getSortedSelectionBound();
           for (let block of sortedBlocks) {
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/heading-level",
               data: { type: "number", value: 2 },
             });
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/type",
               data: { type: "block-type-union", value: "heading" },
             });
@@ -125,12 +125,12 @@ export function SelectionManager() {
           let [sortedBlocks] = await getSortedSelectionBound();
           for (let block of sortedBlocks) {
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/heading-level",
               data: { type: "number", value: 3 },
             });
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/type",
               data: { type: "block-type-union", value: "heading" },
             });
@@ -146,20 +146,20 @@ export function SelectionManager() {
           for (let block of sortedBlocks) {
             // Convert to text block
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/type",
               data: { type: "block-type-union", value: "text" },
             });
             // Remove heading level if exists
             let headingLevel = await rep?.query((tx) =>
-              scanIndex(tx).eav(block.value, "block/heading-level"),
+              scanIndex(tx).eav(block.entityID, "block/heading-level"),
             );
             if (headingLevel?.[0]) {
               await rep?.mutate.retractFact({ factID: headingLevel[0].id });
             }
             // Remove text-size to make it default
             let textSizeFact = await rep?.query((tx) =>
-              scanIndex(tx).eav(block.value, "block/text-size"),
+              scanIndex(tx).eav(block.entityID, "block/text-size"),
             );
             if (textSizeFact?.[0]) {
               await rep?.mutate.retractFact({ factID: textSizeFact[0].id });
@@ -176,20 +176,20 @@ export function SelectionManager() {
           for (let block of sortedBlocks) {
             // Convert to text block
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/type",
               data: { type: "block-type-union", value: "text" },
             });
             // Remove heading level if exists
             let headingLevel = await rep?.query((tx) =>
-              scanIndex(tx).eav(block.value, "block/heading-level"),
+              scanIndex(tx).eav(block.entityID, "block/heading-level"),
             );
             if (headingLevel?.[0]) {
               await rep?.mutate.retractFact({ factID: headingLevel[0].id });
             }
             // Set text size to large
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/text-size",
               data: { type: "text-size-union", value: "large" },
             });
@@ -205,20 +205,20 @@ export function SelectionManager() {
           for (let block of sortedBlocks) {
             // Convert to text block
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/type",
               data: { type: "block-type-union", value: "text" },
             });
             // Remove heading level if exists
             let headingLevel = await rep?.query((tx) =>
-              scanIndex(tx).eav(block.value, "block/heading-level"),
+              scanIndex(tx).eav(block.entityID, "block/heading-level"),
             );
             if (headingLevel?.[0]) {
               await rep?.mutate.retractFact({ factID: headingLevel[0].id });
             }
             // Set text size to small
             await rep?.mutate.assertFact({
-              entity: block.value,
+              entity: block.entityID,
               attribute: "block/text-size",
               data: { type: "text-size-union", value: "small" },
             });
@@ -252,7 +252,7 @@ export function SelectionManager() {
           let [sortedBlocks, siblings] = await getSortedSelectionBound();
           if (!sortedBlocks[0].listData && sortedBlocks[0].type !== "heading")
             return;
-          useUIState.getState().toggleFold(sortedBlocks[0].value);
+          useUIState.getState().toggleFold(sortedBlocks[0].entityID);
         },
       },
     ];
@@ -264,7 +264,7 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
               schema.marks.underline,
             );
           },
@@ -275,7 +275,7 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
               schema.marks.em,
             );
           },
@@ -286,7 +286,7 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
               schema.marks.strong,
             );
           },
@@ -297,7 +297,7 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
               schema.marks.highlight,
               {
                 color: useUIState.getState().lastUsedHighlight,
@@ -311,7 +311,7 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
               schema.marks.strikethrough,
             );
           },
@@ -335,21 +335,21 @@ export function SelectionManager() {
             let firstBlock = sortedBlocks[0];
 
             await rep?.mutate.removeBlock(
-              selectedBlocks.map((block) => ({ blockEntity: block.value })),
+              selectedBlocks.map((block) => ({ blockEntity: block.entityID })),
             );
-            useUIState.getState().closePage(selectedBlocks.map((b) => b.value));
+            useUIState.getState().closePage(selectedBlocks.map((b) => b.entityID));
 
             let nextBlock =
               siblings?.[
-                siblings.findIndex((s) => s.value === firstBlock.value) - 1
+                siblings.findIndex((s) => s.entityID === firstBlock.entityID) - 1
               ];
             if (nextBlock) {
               useUIState.getState().setSelectedBlock({
-                value: nextBlock.value,
+                entityID: nextBlock.entityID,
                 parent: nextBlock.parent,
               });
               let type = await rep?.query((tx) =>
-                scanIndex(tx).eav(nextBlock.value, "block/type"),
+                scanIndex(tx).eav(nextBlock.entityID, "block/type"),
               );
               if (!type?.[0]) return;
               if (
@@ -358,7 +358,7 @@ export function SelectionManager() {
               )
                 focusBlock(
                   {
-                    value: nextBlock.value,
+                    entityID: nextBlock.entityID,
                     type: "text",
                     parent: nextBlock.parent,
                   },
@@ -379,7 +379,7 @@ export function SelectionManager() {
             let firstBlock = sortedBlocks[0];
             if (!firstBlock) return;
             let type = await rep?.query((tx) =>
-              scanIndex(tx).eav(firstBlock.value, "block/type"),
+              scanIndex(tx).eav(firstBlock.entityID, "block/type"),
             );
             if (!type?.[0]) return;
             useUIState.getState().setSelectedBlock(firstBlock);
@@ -397,16 +397,16 @@ export function SelectionManager() {
               return;
             let b = focusedBlock;
             let focusedBlockIndex = sortedBlocks.findIndex(
-              (s) => s.value == b.entityID,
+              (s) => s.entityID == b.entityID,
             );
             if (focusedBlockIndex === 0) {
-              let index = siblings.findIndex((s) => s.value === b.entityID);
+              let index = siblings.findIndex((s) => s.entityID === b.entityID);
               let nextSelectedBlock = siblings[index - 1];
               if (!nextSelectedBlock) return;
 
               scrollIntoViewIfNeeded(
                 document.getElementById(
-                  elementId.block(nextSelectedBlock.value).container,
+                  elementId.block(nextSelectedBlock.entityID).container,
                 ),
                 false,
               );
@@ -416,25 +416,25 @@ export function SelectionManager() {
               useUIState.getState().setFocusedBlock({
                 entityType: "block",
                 parent: nextSelectedBlock.parent,
-                entityID: nextSelectedBlock.value,
+                entityID: nextSelectedBlock.entityID,
               });
             } else {
               let nextBlock = sortedBlocks[sortedBlocks.length - 2];
               useUIState.getState().setFocusedBlock({
                 entityType: "block",
                 parent: b.parent,
-                entityID: nextBlock.value,
+                entityID: nextBlock.entityID,
               });
               scrollIntoViewIfNeeded(
                 document.getElementById(
-                  elementId.block(nextBlock.value).container,
+                  elementId.block(nextBlock.entityID).container,
                 ),
                 false,
               );
               if (sortedBlocks.length === 2) {
                 useEditorStates
                   .getState()
-                  .editorStates[nextBlock.value]?.view?.focus();
+                  .editorStates[nextBlock.entityID]?.view?.focus();
               }
               useUIState
                 .getState()
@@ -448,7 +448,7 @@ export function SelectionManager() {
           let firstBlock = sortedSelection[0];
           if (!firstBlock) return;
           let type = await rep?.query((tx) =>
-            scanIndex(tx).eav(firstBlock.value, "block/type"),
+            scanIndex(tx).eav(firstBlock.entityID, "block/type"),
           );
           if (!type?.[0]) return;
           useUIState.getState().setSelectedBlock(firstBlock);
@@ -463,7 +463,7 @@ export function SelectionManager() {
           let lastBlock = sortedSelection[sortedSelection.length - 1];
           if (!lastBlock) return;
           let type = await rep?.query((tx) =>
-            scanIndex(tx).eav(lastBlock.value, "block/type"),
+            scanIndex(tx).eav(lastBlock.entityID, "block/type"),
           );
           if (!type?.[0]) return;
           useUIState.getState().setSelectedBlock(lastBlock);
@@ -486,17 +486,17 @@ export function SelectionManager() {
           } else {
             for (let i = 0; i < siblings.length; i++) {
               let block = siblings[i];
-              if (!sortedSelection.find((s) => s.value === block.value))
+              if (!sortedSelection.find((s) => s.entityID === block.entityID))
                 continue;
               if (
-                sortedSelection.find((s) => s.value === block.listData?.parent)
+                sortedSelection.find((s) => s.entityID === block.listData?.parent)
               )
                 continue;
               let parentoffset = 1;
               let previousBlock = siblings[i - parentoffset];
               while (
                 previousBlock &&
-                sortedSelection.find((s) => previousBlock.value === s.value)
+                sortedSelection.find((s) => previousBlock.entityID === s.entityID)
               ) {
                 parentoffset += 1;
                 previousBlock = siblings[i - parentoffset];
@@ -519,7 +519,7 @@ export function SelectionManager() {
             let lastBlock = sortedSelection[sortedSelection.length - 1];
             if (!lastBlock) return;
             let type = await rep?.query((tx) =>
-              scanIndex(tx).eav(lastBlock.value, "block/type"),
+              scanIndex(tx).eav(lastBlock.entityID, "block/type"),
             );
             if (!type?.[0]) return;
             useUIState.getState().setSelectedBlock(lastBlock);
@@ -538,10 +538,10 @@ export function SelectionManager() {
               return;
             let b = focusedBlock;
             let focusedBlockIndex = sortedSelection.findIndex(
-              (s) => s.value == b.entityID,
+              (s) => s.entityID == b.entityID,
             );
             if (focusedBlockIndex === sortedSelection.length - 1) {
-              let index = siblings.findIndex((s) => s.value === b.entityID);
+              let index = siblings.findIndex((s) => s.entityID === b.entityID);
               let nextSelectedBlock = siblings[index + 1];
               if (!nextSelectedBlock) return;
               useUIState.getState().addBlockToSelection({
@@ -550,35 +550,35 @@ export function SelectionManager() {
 
               scrollIntoViewIfNeeded(
                 document.getElementById(
-                  elementId.block(nextSelectedBlock.value).container,
+                  elementId.block(nextSelectedBlock.entityID).container,
                 ),
                 false,
               );
               useUIState.getState().setFocusedBlock({
                 entityType: "block",
                 parent: nextSelectedBlock.parent,
-                entityID: nextSelectedBlock.value,
+                entityID: nextSelectedBlock.entityID,
               });
             } else {
               let nextBlock = sortedSelection[1];
               useUIState
                 .getState()
-                .removeBlockFromSelection({ value: b.entityID });
+                .removeBlockFromSelection({ entityID: b.entityID });
               scrollIntoViewIfNeeded(
                 document.getElementById(
-                  elementId.block(nextBlock.value).container,
+                  elementId.block(nextBlock.entityID).container,
                 ),
                 false,
               );
               useUIState.getState().setFocusedBlock({
                 entityType: "block",
                 parent: b.parent,
-                entityID: nextBlock.value,
+                entityID: nextBlock.entityID,
               });
               if (sortedSelection.length === 2) {
                 useEditorStates
                   .getState()
-                  .editorStates[nextBlock.value]?.view?.focus();
+                  .editorStates[nextBlock.entityID]?.view?.focus();
               }
             }
           }

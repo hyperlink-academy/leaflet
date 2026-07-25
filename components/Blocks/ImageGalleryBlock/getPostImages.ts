@@ -15,10 +15,10 @@ export function getPostImageEntities(
   let blocks = getBlocksFromMirror(mirror, pageEntity);
   let result: string[] = [];
   for (let b of blocks) {
-    if (b.type === "image") result.push(b.value);
+    if (b.type === "image") result.push(b.entityID);
     else if (b.type === "image-gallery") {
       let images = mirror
-        .eav(b.value, "gallery/image")
+        .eav(b.entityID, "gallery/image")
         .toSorted((x, y) => (x.data.position > y.data.position ? 1 : -1));
       for (let image of images) result.push(image.data.value);
     }

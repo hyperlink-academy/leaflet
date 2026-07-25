@@ -3,7 +3,7 @@ import { LockTiny } from "components/Icons/LockTiny";
 import { BlockProps } from "./Block";
 
 export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
-  let isSelected = useIsBlockSelected(props.value);
+  let isSelected = useIsBlockSelected(props.entityID);
   return (
     <div
       className={`my-2 w-full flex items-center gap-2 text-tertiary text-sm

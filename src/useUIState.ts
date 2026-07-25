@@ -2,7 +2,7 @@ import { Block } from "components/Blocks/Block";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
 
-type SelectedBlock = Pick<Block, "value" | "parent">;
+type SelectedBlock = Pick<Block, "entityID" | "parent">;
 
 export type FocusedEntity =
   | { entityType: "page"; entityID: string }
@@ -63,14 +63,14 @@ export const useUIState = create(
           };
         }),
       setFocusedBlock: (b: FocusedEntity) => set(() => ({ focusedEntity: b })),
-      // Callers often pass full block-prop objects; store only {value, parent}
+      // Callers often pass full block-prop objects; store only {entityID, parent}
       // so selection entries stay slim and identity-stable. Re-selecting the
       // current selection bails without notifying subscribers.
       setSelectedBlock: (block: SelectedBlock) =>
         set((state) => {
           if (
             state.selectedBlocks.length === 1 &&
-            state.selectedBlocks[0].value === block.value &&
+            state.selectedBlocks[0].entityID === block.entityID &&
             state.selectedBlocks[0].parent === block.parent
           )
             return state;
@@ -80,32 +80,32 @@ export const useUIState = create(
         set(() => ({ selectedBlocks: blocks.map(selectionEntry) })),
       addBlockToSelection: (block: SelectedBlock) =>
         set((state) => {
-          if (state.selectedBlocks.find((b) => b.value === block.value))
+          if (state.selectedBlocks.find((b) => b.entityID === block.entityID))
             return state;
           return {
             selectedBlocks: [...state.selectedBlocks, selectionEntry(block)],
           };
         }),
-      removeBlockFromSelection: (block: { value: string }) =>
+      removeBlockFromSelection: (block: { entityID: string }) =>
         set((state) => {
           return {
             selectedBlocks: state.selectedBlocks.filter(
-              (f) => f.value !== block.value,
+              (f) => f.entityID !== block.entityID,
             ),
           };
         }),
       // Focus + select a single block in one store write, so the hot
       // focus-move path (arrow keys, clicks, enter) notifies subscribers once
       // instead of twice. Bails entirely if nothing changes.
-      focusAndSelectBlock: (block: { value: string; parent: string }) =>
+      focusAndSelectBlock: (block: SelectedBlock) =>
         set((state) => {
           let sameSelection =
             state.selectedBlocks.length === 1 &&
-            state.selectedBlocks[0].value === block.value &&
+            state.selectedBlocks[0].entityID === block.entityID &&
             state.selectedBlocks[0].parent === block.parent;
           let sameFocus =
             state.focusedEntity?.entityType === "block" &&
-            state.focusedEntity.entityID === block.value &&
+            state.focusedEntity.entityID === block.entityID &&
             state.focusedEntity.parent === block.parent;
           if (sameSelection && sameFocus) return state;
           return {
@@ -116,7 +116,7 @@ export const useUIState = create(
               ? state.focusedEntity
               : {
                   entityType: "block" as const,
-                  entityID: block.value,
+                  entityID: block.entityID,
                   parent: block.parent,
                 },
           };
@@ -126,9 +126,9 @@ export const useUIState = create(
 );
 
 const selectionEntry = (block: SelectedBlock): SelectedBlock => ({
-  value: block.value,
+  entityID: block.entityID,
   parent: block.parent,
 });
 
 export const useIsBlockSelected = (entityID: string) =>
-  useUIState((s) => s.selectedBlocks.some((b) => b.value === entityID));
+  useUIState((s) => s.selectedBlocks.some((b) => b.entityID === entityID));

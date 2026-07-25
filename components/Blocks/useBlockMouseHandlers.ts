@@ -52,10 +52,10 @@ export function useBlockMouseHandlers(props: Block) {
     if ((e.target as Element).tagName === "OPTION") return;
     if (isMobile && isScrolling) return;
     if (!write) return;
-    useSelectingMouse.setState({ start: props.value });
+    useSelectingMouse.setState({ start: props.entityID });
     if (e.shiftKey) {
       if (
-        useUIState.getState().selectedBlocks[0]?.value === props.value &&
+        useUIState.getState().selectedBlocks[0]?.entityID === props.entityID &&
         useUIState.getState().selectedBlocks.length === 1
       )
         return;
@@ -87,13 +87,13 @@ export function useBlockMouseHandlers(props: Block) {
       let selection = useSelectingMouse.getState();
       if (!selection.start) return;
       let siblings = rep ? getPageBlocks(rep, props.parent) : [];
-      let startIndex = siblings.findIndex((b) => b.value === selection.start);
+      let startIndex = siblings.findIndex((b) => b.entityID === selection.start);
       if (startIndex === -1) return;
-      let endIndex = siblings.findIndex((b) => b.value === props.value);
+      let endIndex = siblings.findIndex((b) => b.entityID === props.entityID);
       let start = Math.min(startIndex, endIndex);
       let end = Math.max(startIndex, endIndex);
       let selected = siblings.slice(start, end + 1).map((b) => ({
-        value: b.value,
+        entityID: b.entityID,
         parent: props.parent,
       }));
       useUIState.getState().setSelectedBlocks(selected);

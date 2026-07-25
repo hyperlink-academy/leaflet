@@ -178,7 +178,7 @@ export async function getPageBlocks(
       result.push(...children);
     } else {
       result.push({
-        value: blockEntityId,
+        entityID: blockEntityId,
         position: (ref.data as any).position,
         factID: ref.id,
         type: (typeFact.data as any).value,
@@ -234,7 +234,7 @@ async function getListChildren(
 
   return [
     {
-      value: rootValue,
+      entityID: rootValue,
       position: (root.data as any).position,
       factID: root.id,
       type: (typeFact.data as any).value,
@@ -353,33 +353,33 @@ async function renderBlockToHTML(
   b: Block,
   allFacts: FactRow[],
 ): Promise<string> {
-  let [alignment] = factsLookup(allFacts, b.value, "block/text-alignment");
+  let [alignment] = factsLookup(allFacts, b.entityID, "block/text-alignment");
   let a = alignment ? (alignment.data as any).value : undefined;
 
   switch (b.type) {
     case "text": {
-      let [value] = factsLookup(allFacts, b.value, "block/text");
+      let [value] = factsLookup(allFacts, b.entityID, "block/text");
       return renderYjsToHTML(value?.data.value, "p", a ? { "data-alignment": a } : undefined);
     }
     case "heading": {
-      let [value] = factsLookup(allFacts, b.value, "block/text");
-      let [headingLevel] = factsLookup(allFacts, b.value, "block/heading-level");
+      let [value] = factsLookup(allFacts, b.entityID, "block/text");
+      let [headingLevel] = factsLookup(allFacts, b.entityID, "block/heading-level");
       let wrapper = ("h" + ((headingLevel?.data as any)?.value || 1)) as "h1" | "h2" | "h3";
       return renderYjsToHTML(value?.data.value, wrapper, a ? { "data-alignment": a } : undefined);
     }
     case "blockquote": {
-      let [value] = factsLookup(allFacts, b.value, "block/text");
+      let [value] = factsLookup(allFacts, b.entityID, "block/text");
       return renderYjsToHTML(value?.data.value, "blockquote", a ? { "data-alignment": a } : undefined);
     }
     case "code": {
-      let [code] = factsLookup(allFacts, b.value, "block/code");
-      let [lang] = factsLookup(allFacts, b.value, "block/code-language");
+      let [code] = factsLookup(allFacts, b.entityID, "block/code");
+      let [lang] = factsLookup(allFacts, b.entityID, "block/code-language");
       let langValue = (lang?.data as any)?.value as string | undefined;
       let codeAttr = langValue ? ` class="language-${escapeHtml(langValue)}"` : "";
       return `<pre><code${codeAttr}>${escapeHtml((code?.data as any)?.value || "")}</code></pre>`;
     }
     case "image": {
-      let [src] = factsLookup(allFacts, b.value, "block/image");
+      let [src] = factsLookup(allFacts, b.entityID, "block/image");
       if (!src) return "";
       let alignAttr = a ? ` data-alignment="${escapeHtml(a)}"` : "";
       return `<img src="${escapeHtml((src.data as any).src)}"${alignAttr}/>`;
@@ -387,26 +387,26 @@ async function renderBlockToHTML(
     case "horizontal-rule":
       return "<hr/>";
     case "card": {
-      let [card] = factsLookup(allFacts, b.value, "block/card");
+      let [card] = factsLookup(allFacts, b.entityID, "block/card");
       if (!card) return "";
       let cardEntityId = (card.data as any).value;
       let title = await getSubpageTitle(allFacts, cardEntityId);
       return `<a href="subpage:${cardEntityId}">${escapeHtml(title || "Untitled")}</a>`;
     }
     case "link": {
-      let [url] = factsLookup(allFacts, b.value, "link/url");
-      let [title] = factsLookup(allFacts, b.value, "link/title");
+      let [url] = factsLookup(allFacts, b.entityID, "link/url");
+      let [title] = factsLookup(allFacts, b.entityID, "link/title");
       if (!url) return "";
       return `<a href="${escapeHtml((url.data as any).value)}" target="_blank">${escapeHtml((title?.data as any)?.value || "")}</a>`;
     }
     case "button": {
-      let [text] = factsLookup(allFacts, b.value, "button/text");
-      let [url] = factsLookup(allFacts, b.value, "button/url");
+      let [text] = factsLookup(allFacts, b.entityID, "button/text");
+      let [url] = factsLookup(allFacts, b.entityID, "button/url");
       if (!text || !url) return "";
       return `<a href="${escapeHtml((url.data as any).value)}">${escapeHtml((text.data as any).value)}</a>`;
     }
     case "math": {
-      let [math] = factsLookup(allFacts, b.value, "block/math");
+      let [math] = factsLookup(allFacts, b.entityID, "block/math");
       return `<code>${escapeHtml((math?.data as any)?.value || "")}</code>`;
     }
     default:
@@ -441,7 +441,7 @@ async function renderListToHTML(l: List, allFacts: FactRow[]): Promise<string> {
     await Promise.all(l.children.map((c) => renderListToHTML(c, allFacts)))
   ).join("\n");
 
-  let checkedFacts = factsLookup(allFacts, l.block.value, "block/check-list");
+  let checkedFacts = factsLookup(allFacts, l.block.entityID, "block/check-list");
   let checked = checkedFacts[0];
 
   let isOrdered = l.children[0]?.block.listData?.listStyle === "ordered";

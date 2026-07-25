@@ -75,8 +75,10 @@ const usePageTitle = (entityID: string) => {
   let blocks = useBlocks(entityID).filter(
     (b) => b.type === "text" || b.type === "heading",
   );
-  let firstBlock = canvasBlocks[0] || blocks[0];
-  let content = useEntity(firstBlock?.value, "block/text");
+  // Canvas items are fact data (entity in .value); linear blocks are Blocks
+  // (entity in .entityID) — read each arm's own field.
+  let firstBlockEntity = canvasBlocks[0]?.value ?? blocks[0]?.entityID ?? null;
+  let content = useEntity(firstBlockEntity, "block/text");
   useEffect(() => {
     if (content) {
       let doc = new Y.Doc();

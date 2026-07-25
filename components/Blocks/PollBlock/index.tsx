@@ -22,13 +22,42 @@ import { usePollBlockUIState } from "./pollBlockState";
 
 export const PollBlock = (
   props: BlockProps & {
+    preview?: boolean;
     areYouSure?: boolean;
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
   let { data: pub } = useLeafletPublicationData();
+  if (props.preview) return <PollPreview entityID={props.entityID} />;
   if (!pub) return <LeafletPollBlock {...props} />;
   return <PublicationPollBlock {...props} />;
+};
+
+const PollPreview = (props: { entityID: string }) => {
+  let pollOptions = useEntity(props.entityID, "poll/options");
+  return (
+    <BlockLayout
+      isSelected={false}
+      hasBackground={"accent"}
+      className="poll flex flex-col gap-2 w-full"
+    >
+      {pollOptions.map((option) => (
+        <PollPreviewOption key={option.id} entityID={option.data.value} />
+      ))}
+    </BlockLayout>
+  );
+};
+
+const PollPreviewOption = (props: { entityID: string }) => {
+  let optionName = useEntity(props.entityID, "poll-option/name")?.data.value;
+  if (!optionName) return null;
+  return (
+    <div className="flex gap-2 items-center">
+      <ButtonSecondary className={`pollOption grow max-w-full flex`}>
+        {optionName}
+      </ButtonSecondary>
+    </div>
+  );
 };
 
 const LeafletPollBlock = (

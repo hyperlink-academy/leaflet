@@ -1,10 +1,9 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { generateKeyBetween } from "fractional-indexing";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { BlockProps, BlockLayout } from "./Block";
-import { v7 } from "uuid";
+import { addBlockBelow } from "src/utils/addBlockBelow";
 import { useSmoker } from "components/Toast";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
@@ -177,14 +176,12 @@ const URLEmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     onAddBelow: async (block) => {
       await undoManager.withUndoGroup(async () => {
         if (!rep) return;
-        let newEntityID = v7();
-        await rep.mutate.addBlock({
-          permission_set: entity_set.set,
-          factID: v7(),
+        let newEntityID = await addBlockBelow(rep, {
           parent: props.parent,
+          position: props.position,
+          nextPosition: props.nextPosition,
+          permission_set: entity_set.set,
           type: block.type === "text" ? "text" : "card",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID,
         });
         await assertBlockData(newEntityID, block);
       });
@@ -312,7 +309,7 @@ const EmbedEditButton = (props: {
         e.preventDefault();
         e.stopPropagation();
         focusBlock(
-          { type: props.type, value: props.entityID, parent: props.parent },
+          { type: props.type, entityID: props.entityID, parent: props.parent },
           { type: "start" },
         );
         props.onClick();
@@ -356,7 +353,7 @@ const EmptyEmbedBlock = (
         style={sizing.sizeStyle}
         onMouseDown={() => {
           focusBlock(
-            { type: props.type, value: props.entityID, parent: props.parent },
+            { type: props.type, entityID: props.entityID, parent: props.parent },
             { type: "start" },
           );
         }}
@@ -415,34 +412,30 @@ const BlockEmbedInput = (
       return;
     }
     if (!rep) return;
-    let textEntity = v7();
-    await rep.mutate.addBlock({
-      permission_set: entity_set.set,
-      factID: v7(),
+    let textEntity = await addBlockBelow(rep, {
       parent: props.parent,
+      position: props.position,
+      nextPosition: props.nextPosition,
+      permission_set: entity_set.set,
       type: "text",
-      position: generateKeyBetween(props.position, props.nextPosition),
-      newEntityID: textEntity,
     });
     focusBlock(
-      { value: textEntity, type: "text", parent: props.parent },
+      { entityID: textEntity, type: "text", parent: props.parent },
       { type: "start" },
     );
   };
 
   let submitUrl = async () => {
+    if (!rep) return;
     await undoManager.withUndoGroup(async () => {
       let entity = props.entityID;
       if (!entity) {
-        entity = v7();
-
-        await rep?.mutate.addBlock({
-          permission_set: entity_set.set,
-          factID: v7(),
+        entity = await addBlockBelow(rep, {
           parent: props.parent,
+          position: props.position,
+          nextPosition: props.nextPosition,
+          permission_set: entity_set.set,
           type: "embed",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID: entity,
         });
       }
       let link = linkValue;
@@ -551,15 +544,12 @@ const BlockEmbedInput = (
       try {
         let entity = props.entityID;
         if (!entity) {
-          entity = v7();
-
-          await rep.mutate.addBlock({
-            permission_set: entity_set.set,
-            factID: v7(),
+          entity = await addBlockBelow(rep, {
             parent: props.parent,
+            position: props.position,
+            nextPosition: props.nextPosition,
+            permission_set: entity_set.set,
             type: "html",
-            position: generateKeyBetween(props.position, props.nextPosition),
-            newEntityID: entity,
           });
         }
         let facts: Parameters<typeof rep.mutate.assertFact>[0] = [

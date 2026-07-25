@@ -1,10 +1,9 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { generateKeyBetween } from "fractional-indexing";
 import { useCallback, useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
 import { BlockProps, BlockLayout } from "./Block";
-import { v7 } from "uuid";
+import { addBlockBelow } from "src/utils/addBlockBelow";
 import { useSmoker } from "components/Toast";
 
 import { Separator } from "components/Layout";
@@ -26,7 +25,8 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   if (!url) {
-    if (!permissions.write) return null;
+    // Previews are inert; never mount the settings form in one.
+    if (!permissions.write || props.preview) return null;
     return <ButtonBlockSettings {...props} />;
   }
 
@@ -71,15 +71,13 @@ const ButtonBlockSettings = (props: BlockProps) => {
   let submit = async () => {
     await undoManager.withUndoGroup(async () => {
       let entity = props.entityID;
-      if (!entity) {
-        entity = v7();
-        await rep?.mutate.addBlock({
-          permission_set: entity_set.set,
-          factID: v7(),
+      if (!entity && rep) {
+        entity = await addBlockBelow(rep, {
           parent: props.parent,
+          position: props.position,
+          nextPosition: props.nextPosition,
+          permission_set: entity_set.set,
           type: "card",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID: entity,
         });
       }
 
@@ -115,19 +113,17 @@ const ButtonBlockSettings = (props: BlockProps) => {
         },
       });
 
-      let textEntity = v7();
-      await rep.mutate.addBlock({
-        permission_set: entity_set.set,
-        factID: v7(),
+      let textEntity = await addBlockBelow(rep, {
         parent: props.parent,
+        position: props.position,
+        nextPosition: props.nextPosition,
+        permission_set: entity_set.set,
         type: "text",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: textEntity,
       });
 
       focusBlock(
         {
-          value: textEntity,
+          entityID: textEntity,
           type: "text",
           parent: props.parent,
         },

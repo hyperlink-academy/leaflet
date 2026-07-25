@@ -9,7 +9,7 @@ export function orderListItems(
 ) {
   if (!block.listData) return;
   rep?.mutate.assertFact({
-    entity: block.value,
+    entity: block.entityID,
     attribute: "block/list-style",
     data: { type: "list-style-union", value: "ordered" },
   });
@@ -22,7 +22,7 @@ export function unorderListItems(
   if (!block.listData) return;
   // Remove list-style attribute to convert back to unordered
   rep?.mutate.retractAttribute({
-    entity: block.value,
+    entity: block.entityID,
     attribute: "block/list-style",
   });
 }
@@ -55,7 +55,7 @@ export async function indent(
     rep?.mutate.addLastBlock({
       parent: newParentEntity,
       factID: block.factID,
-      entity: block.value,
+      entity: block.entityID,
     });
   if (undoManager) await undoManager.withUndoGroup(run);
   else await run();
@@ -74,16 +74,16 @@ export async function outdentFull(
   let run = async () => {
     // make this block not a list
     await rep?.mutate.assertFact({
-      entity: block.value,
+      entity: block.entityID,
       attribute: "block/is-list",
       data: { type: "boolean", value: false },
     });
 
     let after = listData.path.find((f) => f.depth === 1)?.entity;
 
-    if (after && after !== block.value)
+    if (after && after !== block.entityID)
       await rep?.mutate.moveBlock({
-        block: block.value,
+        block: block.entityID,
         oldParent: listData.parent,
         newParent: block.parent,
         position: { type: "after", entity: after },
@@ -91,9 +91,9 @@ export async function outdentFull(
 
     // move all the childen to the be under it as a level 1 list item
     await rep?.mutate.moveChildren({
-      oldParent: block.value,
+      oldParent: block.entityID,
       newParent: block.parent,
-      after: block.value,
+      after: block.entityID,
     });
   };
   if (undoManager) await undoManager.withUndoGroup(run);
@@ -118,14 +118,14 @@ export async function outdent(
   if (listData.depth === 1) {
     let run = async () => {
       await rep?.mutate.assertFact({
-        entity: block.value,
+        entity: block.entityID,
         attribute: "block/is-list",
         data: { type: "boolean", value: false },
       });
       await rep?.mutate.moveChildren({
-        oldParent: block.value,
+        oldParent: block.entityID,
         newParent: block.parent,
-        after: block.value,
+        after: block.entityID,
       });
     };
     if (undoManager) await undoManager.withUndoGroup(run);
@@ -150,7 +150,7 @@ export async function outdent(
     if (foldState && foldState.foldedBlocks.includes(parent))
       foldState.toggleFold(parent);
     await rep?.mutate.outdentBlock({
-      block: block.value,
+      block: block.entityID,
       newParent: parent,
       oldParent: listData.parent,
       after,
@@ -171,8 +171,8 @@ export async function multiSelectOutdent(
   let pageParent = siblings[0]?.parent;
   if (!pageParent) return;
 
-  let selectedSet = new Set(sortedSelection.map((b) => b.value));
-  let selectedEntities = sortedSelection.map((b) => b.value);
+  let selectedSet = new Set(sortedSelection.map((b) => b.entityID));
+  let selectedEntities = sortedSelection.map((b) => b.entityID);
 
   // Check if all selected list items are at depth 1 → convert to text
   let allAtDepth1 = sortedSelection.every(
@@ -184,7 +184,7 @@ export async function multiSelectOutdent(
       // Convert depth-1 items to plain text (outdent handles this)
       for (let i = siblings.length - 1; i >= 0; i--) {
         let block = siblings[i];
-        if (!selectedSet.has(block.value)) continue;
+        if (!selectedSet.has(block.entityID)) continue;
         if (!block.listData) continue;
         await outdent(block, null, rep, foldState, selectedEntities);
       }
@@ -192,14 +192,14 @@ export async function multiSelectOutdent(
       // Normal outdent: iterate backward through siblings
       for (let i = siblings.length - 1; i >= 0; i--) {
         let block = siblings[i];
-        if (!selectedSet.has(block.value)) continue;
+        if (!selectedSet.has(block.entityID)) continue;
         if (!block.listData) continue;
         if (block.listData.depth === 1) continue;
 
         // Skip if parent is selected AND parent's depth > 1
         let parentEntity = block.listData.parent;
         if (selectedSet.has(parentEntity)) {
-          let parentBlock = siblings.find((s) => s.value === parentEntity);
+          let parentBlock = siblings.find((s) => s.entityID === parentEntity);
           if (parentBlock?.listData && parentBlock.listData.depth > 1) continue;
         }
 

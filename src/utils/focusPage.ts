@@ -58,7 +58,7 @@ export async function focusPage(
         if (!blockType) return null;
 
         return {
-          value: firstBlock.data.value,
+          entityID: firstBlock.data.value,
           type: blockType.data.value,
           parent: firstBlock.entity,
           position: firstBlock.data.position,

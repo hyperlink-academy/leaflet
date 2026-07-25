@@ -67,12 +67,12 @@ export const TextBlockKeymap = (
           let next = propsRef.current.nextBlock;
           useUIState.setState({
             selectedBlocks: [
-              { value: propsRef.current.value, parent: propsRef.current.parent },
-              { value: next.value, parent: next.parent },
+              { entityID: propsRef.current.entityID, parent: propsRef.current.parent },
+              { entityID: next.entityID, parent: next.parent },
             ],
             focusedEntity: {
               entityType: "block",
-              entityID: next.value,
+              entityID: next.entityID,
               parent: propsRef.current.parent,
             },
           });
@@ -90,12 +90,12 @@ export const TextBlockKeymap = (
           let previous = propsRef.current.previousBlock;
           useUIState.setState({
             selectedBlocks: [
-              { value: propsRef.current.value, parent: propsRef.current.parent },
-              { value: previous.value, parent: previous.parent },
+              { entityID: propsRef.current.entityID, parent: propsRef.current.parent },
+              { entityID: previous.entityID, parent: previous.parent },
             ],
             focusedEntity: {
               entityType: "block",
-              entityID: previous.value,
+              entityID: previous.entityID,
               parent: propsRef.current.parent,
             },
           });
@@ -295,13 +295,13 @@ const backspace =
         repRef.current?.mutate.moveChildren({
           oldParent: propsRef.current.entityID,
           newParent: propsRef.current.previousBlock?.listData
-            ? propsRef.current.previousBlock.value
+            ? propsRef.current.previousBlock.entityID
             : propsRef.current.listData.parent || propsRef.current.parent,
           after:
             propsRef.current.previousBlock?.listData?.path.find(
               (f) => f.depth === depth,
             )?.entity ||
-            propsRef.current.previousBlock?.value ||
+            propsRef.current.previousBlock?.entityID ||
             null,
         }),
       );
@@ -331,7 +331,7 @@ const backspace =
           () =>
             focusBlock(
               {
-                value: propsRef.current.entityID,
+                entityID: propsRef.current.entityID,
                 type: "text",
                 parent: propsRef.current.parent,
               },
@@ -355,7 +355,7 @@ const backspace =
 
     let block = !!propsRef.current.previousBlock
       ? useEditorStates.getState().editorStates[
-          propsRef.current.previousBlock.value
+          propsRef.current.previousBlock.entityID
         ]
       : null;
     if (
@@ -366,7 +366,7 @@ const backspace =
     ) {
       mutate(
         repRef.current?.mutate.removeBlock({
-          blockEntity: propsRef.current.previousBlock.value,
+          blockEntity: propsRef.current.previousBlock.entityID,
         }),
       );
       return finish(true);
@@ -402,7 +402,7 @@ const backspace =
 
     let mergedBlock = propsRef.current.previousBlock;
     let removedBlock = {
-      value: propsRef.current.entityID,
+      entityID: propsRef.current.entityID,
       type: propsRef.current.type,
       parent: propsRef.current.parent,
     };
@@ -428,7 +428,7 @@ const backspace =
         let attempts = 0;
         let run = () => {
           let editor =
-            useEditorStates.getState().editorStates[removedBlock.value];
+            useEditorStates.getState().editorStates[removedBlock.entityID];
           if (!editor?.view || editor.editor.doc.content.size <= 2) {
             if (attempts++ < 50) setTimeout(run, 10);
             return;
@@ -464,7 +464,7 @@ const backspace =
       block.view.dispatch(tr);
     } else {
       let newState = block.editor.apply(tr);
-      setEditorState(mergedBlock.value, { editor: newState });
+      setEditorState(mergedBlock.entityID, { editor: newState });
     }
 
     return finish(true);
@@ -835,7 +835,7 @@ const enter =
         }
         focusBlock(
           {
-            value: newEntityID,
+            entityID: newEntityID,
             parent: propsRef.current.parent,
             type: "text",
           },
@@ -848,7 +848,7 @@ const enter =
     asyncRun()
       .then(() => {
         useUIState.getState().setSelectedBlock({
-          value: newEntityID,
+          entityID: newEntityID,
           parent: propsRef.current.parent,
         });
 
@@ -915,7 +915,7 @@ const metaA =
         let allBlocks = getPageBlocks(repRef.current, propsRef.current.parent);
         useUIState.setState({
           selectedBlocks: allBlocks.map((b) => ({
-            value: b.value,
+            entityID: b.entityID,
             parent: propsRef.current.parent,
           })),
         });

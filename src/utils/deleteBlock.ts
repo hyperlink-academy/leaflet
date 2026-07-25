@@ -63,29 +63,29 @@ export async function deleteBlock(
 
       let prevBlock =
         siblings?.[
-          siblings.findIndex((s) => s.value === firstSelected?.value) - 1
+          siblings.findIndex((s) => s.entityID === firstSelected?.entityID) - 1
         ];
       let prevBlockType = await rep?.query((tx) =>
-        scanIndex(tx).eav(prevBlock?.value, "block/type"),
+        scanIndex(tx).eav(prevBlock?.entityID, "block/type"),
       );
 
       let nextBlock =
         siblings?.[
-          siblings.findIndex((s) => s.value === lastSelected.value) + 1
+          siblings.findIndex((s) => s.entityID === lastSelected.entityID) + 1
         ];
       let nextBlockType = await rep?.query((tx) =>
-        scanIndex(tx).eav(nextBlock?.value, "block/type"),
+        scanIndex(tx).eav(nextBlock?.entityID, "block/type"),
       );
 
       if (prevBlock) {
         useUIState.getState().setSelectedBlock({
-          value: prevBlock.value,
+          entityID: prevBlock.entityID,
           parent: prevBlock.parent,
         });
 
         focusBlock(
           {
-            value: prevBlock.value,
+            entityID: prevBlock.entityID,
             type: prevBlockType?.[0].data.value,
             parent: prevBlock.parent,
           },
@@ -93,13 +93,13 @@ export async function deleteBlock(
         );
       } else {
         useUIState.getState().setSelectedBlock({
-          value: nextBlock.value,
+          entityID: nextBlock.entityID,
           parent: nextBlock.parent,
         });
 
         focusBlock(
           {
-            value: nextBlock.value,
+            entityID: nextBlock.entityID,
             type: nextBlockType?.[0]?.data.value,
             parent: nextBlock.parent,
           },

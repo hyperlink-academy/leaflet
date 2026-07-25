@@ -26,7 +26,7 @@ function computeHeadingSections(blocks: Block[]): void {
       while (stack.length > 0 && stack[stack.length - 1].level >= level)
         stack.pop();
     if (stack.length) block.headingPath = stack.map((s) => s.entity);
-    if (isHeading) stack.push({ entity: block.value, level });
+    if (isHeading) stack.push({ entity: block.entityID, level });
   }
 }
 
@@ -36,7 +36,7 @@ function computeHeadingSections(blocks: Block[]): void {
 export function isBlockHidden(block: Block, foldedBlocks: string[]): boolean {
   return (
     (block.listData?.path.some(
-      (p) => foldedBlocks.includes(p.entity) && p.entity !== block.value,
+      (p) => foldedBlocks.includes(p.entity) && p.entity !== block.entityID,
     ) ??
       false) ||
     (block.headingPath?.some((h) => foldedBlocks.includes(h)) ?? false)
@@ -108,7 +108,8 @@ function assembleBlocks(scan: SyncScan, entityID: string): Block[] {
           );
           return [
             {
-              ...root.data,
+              entityID: root.data.value,
+              position: root.data.position,
               factID: root.id,
               type: type.data.value,
               parent: b.entity,
@@ -129,7 +130,8 @@ function assembleBlocks(scan: SyncScan, entityID: string): Block[] {
       }
       return [
         {
-          ...b.data,
+          entityID: b.data.value,
+          position: b.data.position,
           factID: b.id,
           type: type.data.value,
           parent: b.entity,
