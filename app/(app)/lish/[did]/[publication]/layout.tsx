@@ -64,5 +64,8 @@ export async function generateMetadata(props: {
           },
         }
       : undefined,
+    other: {
+      "at:canonical": publication.uri,
+    },
   };
 }
