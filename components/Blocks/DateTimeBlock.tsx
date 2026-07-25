@@ -12,7 +12,7 @@ import { useSpring, animated } from "@react-spring/web";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 import { DatePicker } from "components/DatePicker";
 
-export function DateTimeBlock(props: BlockProps & { preview?: boolean }) {
+export function DateTimeBlock(props: BlockProps) {
   const [isClient, setIsClient] = useState(false);
   let initialPageLoad = useHasPageLoaded();
 
@@ -29,31 +29,7 @@ export function DateTimeBlock(props: BlockProps & { preview?: boolean }) {
       </div>
     );
 
-  if (props.preview) return <DateTimeBlockPreview {...props} />;
-
   return <BaseDateTimeBlock {...props} initalLoad={initialPageLoad} />;
-}
-
-function DateTimeBlockPreview(props: BlockProps) {
-  let dateFact = useEntity(props.entityID, "block/date-time");
-  return (
-    <BlockLayout
-      isSelected={false}
-      className="flex flex-row gap-2 w-64 border-transparent!"
-    >
-      <BlockCalendarSmall className="text-tertiary" />
-      {dateFact ? (
-        <div className="font-bold">
-          {new Date(dateFact.data.value).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-          })}
-        </div>
-      ) : (
-        <div className="italic text-tertiary">TBD...</div>
-      )}
-    </BlockLayout>
-  );
 }
 
 function BaseDateTimeBlock(props: BlockProps & { initalLoad?: boolean }) {
