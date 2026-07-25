@@ -93,9 +93,6 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
           selectedBlocks: [],
           focusedEntity: { entityType: "page", entityID: props.entityID },
         }));
-        useUIState.setState({
-          focusedEntity: { entityType: "page", entityID: props.entityID },
-        });
         document
           .getElementById(elementId.page(props.entityID).container)
           ?.scrollIntoView({
@@ -405,7 +402,13 @@ function CanvasBlock(props: {
       nextBlock: null,
       previousBlock: null,
     };
-  }, [props, type?.data.value]);
+  }, [
+    props.preview,
+    props.entityID,
+    props.factID,
+    props.parent,
+    type?.data.value,
+  ]);
   useBlockKeyboardHandlers(blockProps, areYouSure, setAreYouSure);
   let mouseHandlers = useBlockMouseHandlers(blockProps);
 

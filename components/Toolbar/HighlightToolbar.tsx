@@ -1,7 +1,6 @@
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { schema } from "components/Blocks/TextBlock/schema";
-import { TextSelection } from "prosemirror-state";
 import {
   TextDecorationButton,
   toggleMarkInFocusedBlock,
@@ -18,7 +17,6 @@ import { ColorPicker } from "components/ThemeManager/Pickers/ColorPicker";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEffect, useMemo, useState } from "react";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
-import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 
 import { Separator, ShortcutKey } from "components/Layout";
 import { ToolbarButton } from ".";
@@ -30,9 +28,9 @@ import { PaintSmall } from "components/Icons/PaintSmall";
 import { isMac } from "src/utils/isDevice";
 
 export const HighlightButton = (props: {
-  lastUsedHighlight: string;
   setToolbarState: (s: "highlight") => void;
 }) => {
+  let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
   return (
     <div className="flex items-center gap-1">
       <TextDecorationButton
@@ -58,14 +56,14 @@ export const HighlightButton = (props: {
             </div>
           </div>
         }
-        attrs={{ color: props.lastUsedHighlight }}
+        attrs={{ color: lastUsedHighlight }}
         mark={schema.marks.highlight}
         icon={
           <HighlightSmall
             highlightColor={
-              props.lastUsedHighlight === "1"
+              lastUsedHighlight === "1"
                 ? theme.colors["highlight-1"]
-                : props.lastUsedHighlight === "2"
+                : lastUsedHighlight === "2"
                   ? theme.colors["highlight-2"]
                   : theme.colors["highlight-3"]
             }
@@ -88,8 +86,6 @@ export const HighlightButton = (props: {
 
 export const HighlightToolbar = (props: {
   onClose: () => void;
-  lastUsedHighlight: "1" | "2" | "3";
-  setLastUsedHighlight: (color: "1" | "2" | "3") => void;
   pageID: string;
 }) => {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -110,21 +106,9 @@ export const HighlightToolbar = (props: {
   return (
     <div className="flex w-full justify-between items-center gap-4 text-secondary">
       <div className="flex items-center gap-[6px]">
-        <HighlightColorButton
-          color="1"
-          lastUsedHighlight={props.lastUsedHighlight}
-          setLastUsedHightlight={props.setLastUsedHighlight}
-        />
-        <HighlightColorButton
-          color="2"
-          lastUsedHighlight={props.lastUsedHighlight}
-          setLastUsedHightlight={props.setLastUsedHighlight}
-        />
-        <HighlightColorButton
-          color="3"
-          lastUsedHighlight={props.lastUsedHighlight}
-          setLastUsedHightlight={props.setLastUsedHighlight}
-        />
+        <HighlightColorButton color="1" />
+        <HighlightColorButton color="2" />
+        <HighlightColorButton color="3" />
 
         <Separator classname="h-6!" />
         <HighlightColorSettings pageID={props.pageID} />
@@ -133,33 +117,8 @@ export const HighlightToolbar = (props: {
   );
 };
 
-const HighlightColorButton = (props: {
-  color: "1" | "2" | "3";
-  lastUsedHighlight: "1" | "2" | "3";
-  setLastUsedHightlight: (color: "1" | "2" | "3") => void;
-}) => {
-  let focusedBlock = useUIState((s) => s.focusedEntity);
-  let focusedEditor = useEditorStates((s) =>
-    focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
-  );
-  let hasMark: boolean = false;
-  if (focusedEditor) {
-    let { to, from, $cursor } = focusedEditor.editor.selection as TextSelection;
-
-    let mark = rangeHasMark(
-      focusedEditor.editor,
-      schema.marks.highlight,
-      from,
-      to,
-    );
-    if ($cursor)
-      hasMark = !!schema.marks.highlight.isInSet(
-        focusedEditor.editor.storedMarks || $cursor.marks(),
-      );
-    else {
-      hasMark = !!mark;
-    }
-  }
+const HighlightColorButton = (props: { color: "1" | "2" | "3" }) => {
+  let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
   return (
     <button
       onMouseDown={(e) => {
@@ -167,11 +126,11 @@ const HighlightColorButton = (props: {
         toggleMarkInFocusedBlock(schema.marks.highlight, {
           color: props.color,
         });
-        props.setLastUsedHightlight(props.color);
+        useUIState.setState({ lastUsedHighlight: props.color });
       }}
     >
       <div
-        className={`w-6 h-6 rounded-md flex items-center justify-center ${props.lastUsedHighlight === props.color ? "bg-border" : ""}`}
+        className={`w-6 h-6 rounded-md flex items-center justify-center ${lastUsedHighlight === props.color ? "bg-border" : ""}`}
       >
         <div
           className={`w-5 h-5 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}

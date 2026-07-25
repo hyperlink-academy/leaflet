@@ -14,12 +14,7 @@ export function focusBlock(
 ) {
   // focus the block
   flushSync(() => {
-    useUIState.getState().setSelectedBlock(block);
-    useUIState.getState().setFocusedBlock({
-      entityType: "block",
-      entityID: block.value,
-      parent: block.parent,
-    });
+    useUIState.getState().focusAndSelectBlock(block);
   });
   scrollIntoViewIfNeeded(
     document.getElementById(elementId.block(block.value).container),

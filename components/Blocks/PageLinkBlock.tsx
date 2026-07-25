@@ -4,7 +4,7 @@ import { focusBlock } from "src/utils/focusBlock";
 
 import { focusPage } from "src/utils/focusPage";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -25,11 +25,11 @@ export function PageLinkBlock(
     useEntity(page?.data.value || null, "page/type")?.data.value || "doc";
   let { rep } = useReplicache();
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
 
-  let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
+  let isOpen = useUIState((s) =>
+    s.openPages.includes(page?.data.value || ""),
+  );
   if (!page)
     return <div>An error occured, there should be a page linked here!</div>;
 

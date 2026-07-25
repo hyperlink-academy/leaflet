@@ -10,7 +10,6 @@ import {
 import { LeafletFooter } from "./Footer";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
-import { useUIState } from "src/useUIState";
 import { LeafletLayout } from "components/LeafletLayout";
 import { WelcomeModal } from "./WelcomeModal";
 import { AddToHomeEffect } from "./AddToHomeEffect";

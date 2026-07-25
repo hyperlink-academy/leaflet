@@ -1,4 +1,4 @@
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { BlockProps, BlockLayout } from "../Block";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useCallback, useEffect, useState } from "react";
@@ -37,9 +37,7 @@ const LeafletPollBlock = (
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let { permissions } = useEntitySetContext();
 
   let { data: pollData } = usePollData();

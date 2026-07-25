@@ -1,6 +1,6 @@
 import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
@@ -16,9 +16,7 @@ import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThem
 export const StandardSitePostBlock = (
   props: BlockProps & { preview?: boolean },
 ) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let uri = useEntity(props.entityID, "block/standard-site-post")?.data.value;
   let sizeFact = useEntity(props.entityID, "standard-site-post/size");
   let size: StandardSitePostSize = sizeFact?.data.value ?? "medium";

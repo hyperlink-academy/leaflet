@@ -1,5 +1,5 @@
 import { schema } from "components/Blocks/TextBlock/schema";
-import { TextSelection } from "prosemirror-state";
+import { EditorState, TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { useEffect, useState } from "react";
@@ -13,23 +13,25 @@ import { useReplicache } from "src/replicache";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { LinkSmall } from "components/Icons/LinkSmall";
 
+const linkSelectionState = (
+  editor: EditorState | undefined,
+): { isLink: boolean; disabled: boolean } => {
+  if (!editor) return { isLink: false, disabled: true };
+  let isLink = false;
+  let { to, from, $cursor } = editor.selection as TextSelection;
+  if ($cursor) isLink = !!schema.marks.link.isInSet($cursor.marks());
+  if (to !== from) isLink = !!rangeHasMark(editor, schema.marks.link, from, to);
+  return { isLink, disabled: editor.selection.empty && !isLink };
+};
+
 export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
-  let focusedBlock = useUIState((s) => s.focusedEntity);
-  let focusedEditor = useEditorStates((s) =>
-    focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
+  let focusedBlockID = useUIState((s) => s.focusedEntity?.entityID);
+  let editorFor = (s: ReturnType<typeof useEditorStates.getState>) =>
+    focusedBlockID ? s.editorStates[focusedBlockID]?.editor : undefined;
+  let isLink = useEditorStates((s) => linkSelectionState(editorFor(s)).isLink);
+  let disabled = useEditorStates(
+    (s) => linkSelectionState(editorFor(s)).disabled,
   );
-  let isLink;
-  if (focusedEditor) {
-    let { to, from, $cursor } = focusedEditor.editor.selection as TextSelection;
-    if ($cursor) isLink = !!schema.marks.link.isInSet($cursor.marks());
-    if (to !== from)
-      isLink = !!rangeHasMark(
-        focusedEditor.editor,
-        schema.marks.link,
-        from,
-        to,
-      );
-  }
 
   return (
     <ToolbarButton
@@ -38,9 +40,7 @@ export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
         e.preventDefault();
         props.setToolbarState("link");
       }}
-      disabled={
-        !focusedEditor || (focusedEditor?.editor.selection.empty && !isLink)
-      }
+      disabled={disabled}
       tooltipContent={
         <div className="text-accent-contrast underline">Inline Link</div>
       }

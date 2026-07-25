@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useUIState } from "src/useUIState";
 import { useEditorStates } from "src/state/useEditorState";
 
@@ -24,14 +24,20 @@ export function useBlockKeyboardHandlers(
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
 
-  let isSelected = useUIState((s) => {
-    let selectedBlocks = s.selectedBlocks;
-    return !!s.selectedBlocks.find((b) => b.value === props.entityID);
-  });
+  let isSelected = useUIState((s) =>
+    s.selectedBlocks.some((b) => b.value === props.entityID),
+  );
+
+  // The listener reads the latest props/state through refs so it attaches
+  // once per selection instead of being torn down and re-added on every
+  // render of a selected block.
+  let latest = useRef({ props, entity_set, areYouSure, setAreYouSure });
+  latest.current = { props, entity_set, areYouSure, setAreYouSure };
 
   useEffect(() => {
     if (!isSelected || !rep) return;
     let listener = async (e: KeyboardEvent) => {
+      let { props, entity_set, areYouSure, setAreYouSure } = latest.current;
       // keymapping for textBlocks is handled in TextBlock/keymap
       if (e.defaultPrevented) return;
       //if no permissions, do nothing
@@ -77,7 +83,7 @@ export function useBlockKeyboardHandlers(
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [entity_set, isSelected, props, rep, areYouSure, setAreYouSure]);
+  }, [isSelected, rep, undoManager]);
 }
 
 type Args = {

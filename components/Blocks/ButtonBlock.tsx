@@ -2,7 +2,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { useCallback, useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { BlockProps, BlockLayout } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
@@ -22,9 +22,7 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   let text = useEntity(props.entityID, "button/text");
   let url = useEntity(props.entityID, "button/url");
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   if (!url) {
@@ -62,9 +60,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
   let smoker = useSmoker();
   let entity_set = useEntitySetContext();
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
 
   let [textValue, setTextValue] = useState("");
   let [urlValue, setUrlValue] = useState("");

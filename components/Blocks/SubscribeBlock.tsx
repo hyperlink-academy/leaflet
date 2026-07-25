@@ -1,4 +1,4 @@
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { BlockProps, BlockLayout } from "./Block";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
@@ -12,9 +12,7 @@ export const SubscribeBlock = (
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   // Source publication data from the leaflet editor's provider — the dashboard
   // PublicationSWRProvider (usePublicationData) isn't mounted in the post
   // editor, so reading newsletter settings from it always came back empty and

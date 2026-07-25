@@ -64,13 +64,17 @@ export const TextBlockKeymap = (
         state.doc.content.size - 1 === state.selection.to
       ) {
         if (propsRef.current.nextBlock) {
-          useUIState
-            .getState()
-            .setSelectedBlocks([propsRef.current, propsRef.current.nextBlock]);
-          useUIState.getState().setFocusedBlock({
-            entityType: "block",
-            entityID: propsRef.current.nextBlock.value,
-            parent: propsRef.current.parent,
+          let next = propsRef.current.nextBlock;
+          useUIState.setState({
+            selectedBlocks: [
+              { value: propsRef.current.value, parent: propsRef.current.parent },
+              { value: next.value, parent: next.parent },
+            ],
+            focusedEntity: {
+              entityType: "block",
+              entityID: next.value,
+              parent: propsRef.current.parent,
+            },
           });
 
           document.getSelection()?.removeAllRanges();
@@ -83,16 +87,17 @@ export const TextBlockKeymap = (
     "Shift-ArrowUp": (state, _dispatch, view) => {
       if (state.selection.from <= 1 || state.selection.to <= 1) {
         if (propsRef.current.previousBlock) {
-          useUIState
-            .getState()
-            .setSelectedBlocks([
-              propsRef.current,
-              propsRef.current.previousBlock,
-            ]);
-          useUIState.getState().setFocusedBlock({
-            entityType: "block",
-            entityID: propsRef.current.previousBlock.value,
-            parent: propsRef.current.parent,
+          let previous = propsRef.current.previousBlock;
+          useUIState.setState({
+            selectedBlocks: [
+              { value: propsRef.current.value, parent: propsRef.current.parent },
+              { value: previous.value, parent: previous.parent },
+            ],
+            focusedEntity: {
+              entityType: "block",
+              entityID: previous.value,
+              parent: propsRef.current.parent,
+            },
           });
 
           document.getSelection()?.removeAllRanges();

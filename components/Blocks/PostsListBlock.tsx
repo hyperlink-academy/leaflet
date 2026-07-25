@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
 import {
@@ -25,9 +25,7 @@ import { EmptyState } from "components/EmptyState";
 type PostsListView = "small" | "medium";
 
 export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
-  let isSelected = useUIState(
-    (s) => !!s.selectedBlocks.find((b) => b.value === props.value),
-  );
+  let isSelected = useIsBlockSelected(props.value);
 
   if (props.preview) {
     return (

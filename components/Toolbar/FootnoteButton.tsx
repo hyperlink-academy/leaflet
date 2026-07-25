@@ -3,7 +3,6 @@ import { useUIState } from "src/useUIState";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { insertFootnote } from "components/Blocks/TextBlock/insertFootnote";
-import { TooltipButton } from "components/Buttons";
 import { Props } from "components/Icons/Props";
 import { ToolbarButton } from ".";
 

@@ -188,16 +188,20 @@ function foldableParents(blocks: Block[]): string[] {
 function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
-  let editorState = useEditorStates((s) =>
-    props.lastBlock?.type === "text"
-      ? s.editorStates[props.lastBlock.value]
-      : null,
-  );
+  // Boolean selector so this doesn't re-render on every keystroke in the
+  // last block.
+  let lastBlockIsEmpty = useEditorStates((s) => {
+    let editor =
+      props.lastBlock?.type === "text"
+        ? s.editorStates[props.lastBlock.value]?.editor
+        : null;
+    return !editor || editor.doc.content.size <= 2;
+  });
 
   if (!entity_set.permissions.write) return null;
   if (
     (props.lastBlock?.type === "text" || props.lastBlock?.type === "heading") &&
-    (!editorState?.editor || editorState.editor.doc.content.size <= 2)
+    lastBlockIsEmpty
   )
     return null;
   return (

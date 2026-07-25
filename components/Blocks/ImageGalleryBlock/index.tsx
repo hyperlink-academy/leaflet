@@ -2,7 +2,7 @@
 
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "../Block";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { addImage } from "src/utils/addImage";
 import { useState } from "react";
@@ -24,9 +24,7 @@ import { ImageGalleryOptions, EditGalleryImages } from "./ImageGalleryOptions";
 export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.value),
-  );
+  let isSelected = useIsBlockSelected(props.value);
 
   let imageFacts = useEntity(props.value, "gallery/image");
   let format =

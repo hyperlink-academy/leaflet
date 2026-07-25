@@ -3,7 +3,7 @@ import { BlockProps, BlockLayout } from "./Block";
 import { Popover } from "components/Popover";
 import { useEffect, useMemo, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { setHours, setMinutes } from "date-fns";
 import { Separator } from "react-aria-components";
 import { Checkbox } from "components/Checkbox";
@@ -47,9 +47,7 @@ function BaseDateTimeBlock(props: BlockProps & { initalLoad?: boolean }) {
       `${selectedDate.getHours().toString().padStart(2, "0")}:${selectedDate.getMinutes().toString().padStart(2, "0")}`,
   );
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
 
   let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 

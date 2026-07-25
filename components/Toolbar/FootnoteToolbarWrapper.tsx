@@ -9,16 +9,13 @@ import { addShortcut } from "src/shortcuts";
 import { FootnoteTextToolbar } from "./FootnoteTextToolbar";
 import { useIsMobile } from "src/hooks/isMobile";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { ToolbarPageTypeProvider } from ".";
 
 type FootnoteToolbarState = "default" | "link";
 
 export const FootnoteToolbar = (props: { pageID: string }) => {
   let [toolbarState, setToolbarState] =
     useState<FootnoteToolbarState>("default");
-  let focusedEntity = useUIState((s) => s.focusedEntity);
-  let activeEditor = useEditorStates((s) =>
-    focusedEntity ? s.editorStates[focusedEntity.entityID] : null,
-  );
 
   useEffect(() => {
     if (toolbarState !== "default") return;
@@ -36,7 +33,8 @@ export const FootnoteToolbar = (props: { pageID: string }) => {
 
   let isMobile = useIsMobile();
   return (
-    <Tooltip.Provider>
+    <ToolbarPageTypeProvider pageID={props.pageID}>
+      <Tooltip.Provider>
       <div
         className={`toolbar flex gap-2 items-center justify-between w-full
         ${isMobile ? "" : "h-[26px]"}`}
@@ -47,7 +45,11 @@ export const FootnoteToolbar = (props: { pageID: string }) => {
           ) : toolbarState === "link" ? (
             <InlineLinkToolbar
               onClose={() => {
-                activeEditor?.view?.focus();
+                let focusedEntity = useUIState.getState().focusedEntity;
+                if (focusedEntity)
+                  useEditorStates
+                    .getState()
+                    .editorStates[focusedEntity.entityID]?.view?.focus();
                 setToolbarState("default");
               }}
             />
@@ -73,6 +75,7 @@ export const FootnoteToolbar = (props: { pageID: string }) => {
           <CloseTiny />
         </button>
       </div>
-    </Tooltip.Provider>
+      </Tooltip.Provider>
+    </ToolbarPageTypeProvider>
   );
 };

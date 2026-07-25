@@ -7,6 +7,7 @@ import { useUIState } from "src/useUIState";
 import { theme } from "tailwind.config";
 import { BaseTextareaBlock } from "./BaseTextareaBlock";
 import { elementId } from "src/utils/elementId";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 export function MathBlock(props: BlockProps) {
   let content = useEntity(props.entityID, "block/math");
@@ -14,6 +15,7 @@ export function MathBlock(props: BlockProps) {
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
   let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
   const { html, error } = useMemo(() => {
     try {
       const html = Katex.renderToString(content?.data.value || "", {
@@ -40,6 +42,8 @@ export function MathBlock(props: BlockProps) {
       <BaseTextareaBlock
         id={elementId.block(props.entityID).input}
         block={props}
+        rep={rep}
+        permissionSet={entity_set.set}
         spellCheck={false}
         autoCapitalize="none"
         autoCorrect="off"

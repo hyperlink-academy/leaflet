@@ -2,13 +2,13 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { elementId } from "src/utils/elementId";
 import { useReplicache, useEntity } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
-import { EditorState, TextSelection } from "prosemirror-state";
+import { TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
 import { useEditorStates } from "src/state/useEditorState";
@@ -225,9 +225,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
 
   let rep = useReplicache();
 
-  let selected = useUIState(
-    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let selected = useIsBlockSelected(props.entityID);
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
   let alignmentClass = {
     left: "text-left",
@@ -242,9 +240,6 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
         ? "textSizeLarge text-primary"
         : "text-primary";
 
-  let editorState = useEditorStates(
-    (s) => s.editorStates[props.entityID],
-  )?.editor;
   const {
     viewRef,
     mentionOpen,
@@ -277,6 +272,8 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {
+            let editorState =
+              useEditorStates.getState().editorStates[props.entityID]?.editor;
             if (
               ["***", "---", "___"].includes(
                 editorState?.doc.textContent.trim() || "",
@@ -292,14 +289,12 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
           onFocus={() => {
             handleMentionOpenChange(false);
             setTimeout(() => {
-              useUIState.getState().setSelectedBlock(props);
-              useUIState.setState(() => ({
-                focusedEntity: {
-                  entityType: "block",
-                  entityID: props.entityID,
+              useUIState
+                .getState()
+                .focusAndSelectBlock({
+                  value: props.entityID,
                   parent: props.parent,
-                },
-              }));
+                });
             }, 5);
           }}
           id={elementId.block(props.entityID).text}
@@ -336,47 +331,79 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
             coords={mentionCoords}
           />
         )}
-        {editorState?.doc.textContent.length === 0 &&
-        props.previousBlock === null &&
-        props.nextBlock === null ? (
-          // if this is the only block on the page and is empty or is a canvas, show placeholder
-          <div
-            style={
-              props.type === "heading"
-                ? { fontSize: headingFontSize[headingLevel?.data.value || 1] }
-                : undefined
-            }
-            className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
-              ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
-              `}
-          >
-            {props.type === "text"
-              ? "write something..."
-              : headingLevel?.data.value === 3
-                ? "Subheader"
-                : headingLevel?.data.value === 2
-                  ? "Header"
-                  : "Title"}
-            <div className=" text-xs font-normal">
-              or type &quot;/&quot; to add a block
-            </div>
-          </div>
-        ) : editorState?.doc.textContent.length === 0 && focused ? (
-          // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
-          <CommandOptions {...props} className={props.className} />
-        ) : null}
-
-        {editorState?.doc.textContent.startsWith("/") && selected && (
-          <BlockCommandBar
-            props={props}
-            searchValue={editorState.doc.textContent.slice(1)}
+        {/* The overlays subscribe to the block's editor text; only mount them
+            when one of them could show, so unfocused blocks carry no
+            per-keystroke store subscription at all. */}
+        {((props.previousBlock === null && props.nextBlock === null) ||
+          focused ||
+          selected) && (
+          <TextBlockOverlays
+            {...props}
+            focused={focused}
+            selected={selected}
+            headingLevel={headingLevel?.data.value}
+            alignmentClass={alignmentClass}
+            textStyle={textStyle}
           />
         )}
       </div>
-      <BlockifyLink entityID={props.entityID} editorState={editorState} />
+      {focused && <BlockifyLink entityID={props.entityID} />}
     </>
   );
 }
+
+const TextBlockOverlays = (
+  props: BlockProps & {
+    className?: string;
+    focused: boolean;
+    selected: boolean;
+    headingLevel: number | undefined;
+    alignmentClass: string;
+    textStyle: string;
+  },
+) => {
+  let textContent = useEditorStates(
+    (s) => s.editorStates[props.entityID]?.editor.doc.textContent,
+  );
+  if (textContent === undefined) return null;
+  return (
+    <>
+      {textContent.length === 0 &&
+      props.previousBlock === null &&
+      props.nextBlock === null ? (
+        // if this is the only block on the page and is empty or is a canvas, show placeholder
+        <div
+          style={
+            props.type === "heading"
+              ? { fontSize: headingFontSize[props.headingLevel || 1] }
+              : undefined
+          }
+          className={`${props.className} ${props.alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
+              ${props.type === "heading" ? HeadingStyle[props.headingLevel || 1] : props.textStyle}
+              `}
+        >
+          {props.type === "text"
+            ? "write something..."
+            : props.headingLevel === 3
+              ? "Subheader"
+              : props.headingLevel === 2
+                ? "Header"
+                : "Title"}
+          <div className=" text-xs font-normal">
+            or type &quot;/&quot; to add a block
+          </div>
+        </div>
+      ) : textContent.length === 0 && props.focused ? (
+        // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
+        <CommandOptions {...props} className={props.className} />
+      ) : null}
+
+      {textContent.startsWith("/") && props.selected && (
+        <BlockCommandBar props={props} searchValue={textContent.slice(1)} />
+      )}
+    </>
+  );
+};
 
 const blueskyclients = [
   "blacksky.community/",
@@ -390,29 +417,27 @@ const blueskyclients = [
   "deer.social/",
 ];
 
-const BlockifyLink = (props: {
-  entityID: string;
-  editorState: EditorState | undefined;
-}) => {
+const BlockifyLink = (props: { entityID: string }) => {
   let [loading, setLoading] = useState(false);
-  let { editorState } = props;
   let rep = useReplicache();
   let smoker = useSmoker();
-  let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
+  let textContent = useEditorStates(
+    (s) => s.editorStates[props.entityID]?.editor.doc.textContent,
+  );
 
   let isBlueskyPost =
-    blueskyclients.some((client) =>
-      editorState?.doc.textContent.includes(client),
-    ) && editorState?.doc.textContent.includes("post");
+    textContent !== undefined &&
+    blueskyclients.some((client) => textContent.includes(client)) &&
+    textContent.includes("post");
   // only if the line starts with http or https and doesn't have other content
   // if its bluesky, change text to embed post
 
   if (
-    focused &&
-    editorState &&
-    betterIsUrl(editorState.doc.textContent) &&
-    !editorState.doc.textContent.includes(" ")
+    textContent !== undefined &&
+    betterIsUrl(textContent) &&
+    !textContent.includes(" ")
   ) {
+    let content = textContent;
     return (
       <button
         onClick={async (e) => {
@@ -420,7 +445,7 @@ const BlockifyLink = (props: {
           await rep.undoManager.withUndoGroup(async () => {
             if (isBlueskyPost) {
               let success = await addBlueskyPostBlock(
-                editorState.doc.textContent,
+                content,
                 props.entityID,
                 rep.rep!,
               );
@@ -435,11 +460,7 @@ const BlockifyLink = (props: {
                 });
             } else {
               setLoading(true);
-              await addLinkBlock(
-                editorState.doc.textContent,
-                props.entityID,
-                rep.rep!,
-              );
+              await addLinkBlock(content, props.entityID, rep.rep!);
               setLoading(false);
             }
           });
@@ -535,7 +556,10 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
 };
 
 const useMentionState = (entityID: string, blockProps: BlockProps) => {
-  let view = useEditorStates((s) => s.editorStates[entityID])?.view;
+  // Select the view directly: it's stable for the lifetime of the mount, so
+  // this never re-renders on typing (the full entry object is rebuilt on
+  // every transaction).
+  let view = useEditorStates((s) => s.editorStates[entityID]?.view);
   let viewRef = useRef(view || null);
   viewRef.current = view || null;
 

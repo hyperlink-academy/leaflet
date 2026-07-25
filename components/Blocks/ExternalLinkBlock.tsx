@@ -2,7 +2,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockProps, BlockLayout } from "./Block";
 import { v7 } from "uuid";
@@ -25,9 +25,7 @@ export const ExternalLinkBlock = (
   let description = useEntity(props.entityID, "link/description");
   let url = useEntity(props.entityID, "link/url");
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   useEffect(() => {
     if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
@@ -116,9 +114,7 @@ export const ExternalLinkBlock = (
 };
 
 const BlockLinkInput = (props: BlockProps & { preview?: boolean }) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
   let { rep, undoManager } = useReplicache();

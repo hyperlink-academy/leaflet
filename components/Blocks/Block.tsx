@@ -2,7 +2,7 @@
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
 import { memo, useEffect, useState } from "react";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
 import { useLongPress } from "src/hooks/useLongPress";
@@ -104,9 +104,7 @@ export const Block = memo(function Block(
     }
   });
 
-  let selected = useUIState(
-    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let selected = useIsBlockSelected(props.entityID);
   let focused = useUIState(
     (s) =>
       s.focusedEntity?.entityType === "block" &&
@@ -236,109 +234,63 @@ export const Block = memo(function Block(
   );
 }, deepEqualsBlockProps);
 
+// Everything the Block render tree reads off its props. headingLevel /
+// headingPath / listData.checked / listData.listStart are deliberately not
+// compared: they're re-fetched via useEntity or unused by this subtree.
 function deepEqualsBlockProps(
   prevProps: BlockProps & { preview?: boolean },
   nextProps: BlockProps & { preview?: boolean },
 ): boolean {
-  // Compare primitive fields
-  if (
-    prevProps.pageType !== nextProps.pageType ||
-    prevProps.entityID !== nextProps.entityID ||
-    prevProps.parent !== nextProps.parent ||
-    prevProps.position !== nextProps.position ||
-    prevProps.factID !== nextProps.factID ||
-    prevProps.value !== nextProps.value ||
-    prevProps.type !== nextProps.type ||
-    prevProps.nextPosition !== nextProps.nextPosition ||
-    prevProps.headingFoldable !== nextProps.headingFoldable ||
-    prevProps.preview !== nextProps.preview
-  ) {
-    return false;
-  }
+  const scalarKeys = [
+    "pageType",
+    "entityID",
+    "parent",
+    "position",
+    "factID",
+    "value",
+    "type",
+    "nextPosition",
+    "headingFoldable",
+    "preview",
+  ] as const;
+  if (scalarKeys.some((k) => prevProps[k] !== nextProps[k])) return false;
 
-  // Compare listData if present
-  if (prevProps.listData !== nextProps.listData) {
-    if (!prevProps.listData || !nextProps.listData) {
-      return false; // One is undefined, the other isn't
-    }
+  if (!listDataEquals(prevProps.listData, nextProps.listData)) return false;
 
-    if (
-      prevProps.listData.checklist !== nextProps.listData.checklist ||
-      prevProps.listData.parent !== nextProps.listData.parent ||
-      prevProps.listData.depth !== nextProps.listData.depth ||
-      prevProps.listData.displayNumber !== nextProps.listData.displayNumber ||
-      prevProps.listData.listStyle !== nextProps.listData.listStyle
-    ) {
-      return false;
-    }
+  return (
+    neighborEquals(prevProps.nextBlock, nextProps.nextBlock) &&
+    neighborEquals(prevProps.previousBlock, nextProps.previousBlock)
+  );
+}
 
-    // Compare path array
-    if (prevProps.listData.path.length !== nextProps.listData.path.length) {
-      return false;
-    }
+function listDataEquals(prev: Block["listData"], next: Block["listData"]) {
+  if (prev === next) return true;
+  if (!prev || !next) return false;
+  return (
+    prev.checklist === next.checklist &&
+    prev.parent === next.parent &&
+    prev.depth === next.depth &&
+    prev.displayNumber === next.displayNumber &&
+    prev.listStyle === next.listStyle &&
+    prev.path.length === next.path.length &&
+    prev.path.every(
+      (p, i) =>
+        p.depth === next.path[i].depth && p.entity === next.path[i].entity,
+    )
+  );
+}
 
-    for (let i = 0; i < prevProps.listData.path.length; i++) {
-      if (
-        prevProps.listData.path[i].depth !== nextProps.listData.path[i].depth ||
-        prevProps.listData.path[i].entity !== nextProps.listData.path[i].entity
-      ) {
-        return false;
-      }
-    }
-  }
-
-  // Compare nextBlock
-  if (prevProps.nextBlock !== nextProps.nextBlock) {
-    if (!prevProps.nextBlock || !nextProps.nextBlock) {
-      return false; // One is null, the other isn't
-    }
-
-    if (
-      prevProps.nextBlock.factID !== nextProps.nextBlock.factID ||
-      prevProps.nextBlock.parent !== nextProps.nextBlock.parent ||
-      prevProps.nextBlock.position !== nextProps.nextBlock.position ||
-      prevProps.nextBlock.value !== nextProps.nextBlock.value ||
-      prevProps.nextBlock.type !== nextProps.nextBlock.type
-    ) {
-      return false;
-    }
-
-    // Compare nextBlock's listData (using deepEquals for simplicity)
-    if (
-      !deepEquals(prevProps.nextBlock.listData, nextProps.nextBlock.listData)
-    ) {
-      return false;
-    }
-  }
-
-  // Compare previousBlock
-  if (prevProps.previousBlock !== nextProps.previousBlock) {
-    if (!prevProps.previousBlock || !nextProps.previousBlock) {
-      return false; // One is null, the other isn't
-    }
-
-    if (
-      prevProps.previousBlock.factID !== nextProps.previousBlock.factID ||
-      prevProps.previousBlock.parent !== nextProps.previousBlock.parent ||
-      prevProps.previousBlock.position !== nextProps.previousBlock.position ||
-      prevProps.previousBlock.value !== nextProps.previousBlock.value ||
-      prevProps.previousBlock.type !== nextProps.previousBlock.type
-    ) {
-      return false;
-    }
-
-    // Compare previousBlock's listData (using deepEquals for simplicity)
-    if (
-      !deepEquals(
-        prevProps.previousBlock.listData,
-        nextProps.previousBlock.listData,
-      )
-    ) {
-      return false;
-    }
-  }
-
-  return true;
+function neighborEquals(prev: Block | null, next: Block | null) {
+  if (prev === next) return true;
+  if (!prev || !next) return false;
+  return (
+    prev.factID === next.factID &&
+    prev.parent === next.parent &&
+    prev.position === next.position &&
+    prev.value === next.value &&
+    prev.type === next.type &&
+    deepEquals(prev.listData, next.listData)
+  );
 }
 
 export const BaseBlock = (
@@ -404,39 +356,37 @@ const BlockTypeComponents: {
 };
 
 const BlockMultiselectIndicator = (props: BlockProps) => {
-  let { rep } = useReplicache();
-  let isMobile = useIsMobile();
-
   let first = props.previousBlock === null;
 
-  let isMultiselected = useUIState(
-    (s) =>
-      !!s.selectedBlocks.find((b) => b.value === props.entityID) &&
-      s.selectedBlocks.length > 1,
-  );
+  // One packed primitive selector instead of three array scans: null when not
+  // multiselected, otherwise which neighbors are also selected (for corner
+  // rounding).
+  let multiselectState = useUIState((s) => {
+    if (
+      s.selectedBlocks.length <= 1 ||
+      !s.selectedBlocks.some((b) => b.value === props.entityID)
+    )
+      return null;
+    let next = s.selectedBlocks.some((b) => b.value === props.nextBlock?.value);
+    let prev = s.selectedBlocks.some(
+      (b) => b.value === props.previousBlock?.value,
+    );
+    return `${next ? "n" : ""}${prev ? "p" : ""}`;
+  });
 
-  let nextBlockSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
-  );
-  let prevBlockSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
-  );
-
-  if (isMultiselected)
+  if (multiselectState !== null)
     return (
-      <>
-        <div
-          className={`
+      <div
+        className={`
           blockSelectionBG multiselected selected
           pointer-events-none
           bg-border-light
           absolute right-2 left-2 bottom-0
           ${first ? "top-1" : "top-0"}
-          ${!prevBlockSelected && "rounded-t-md"}
-          ${!nextBlockSelected && "rounded-b-md"}
+          ${!multiselectState.includes("p") && "rounded-t-md"}
+          ${!multiselectState.includes("n") && "rounded-b-md"}
           `}
-        />
-      </>
+      />
     );
 };
 

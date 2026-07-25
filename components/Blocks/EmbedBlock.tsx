@@ -2,7 +2,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { BlockProps, BlockLayout } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
@@ -94,9 +94,7 @@ const EmbedBlockShell = (props: {
   sizing: ReturnType<typeof useEmbedSizing>;
   children: ReactNode;
 }) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   return (
     <div className={props.sizing.wrapperClassName}>
       <BlockLayout
@@ -335,9 +333,7 @@ const EmptyEmbedBlock = (
   },
 ) => {
   let sizing = useEmbedSizing(props);
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
 
   useEffect(() => {
     let input = document.getElementById(elementId.block(props.entityID).input);
@@ -382,9 +378,7 @@ const BlockEmbedInput = (
     onDone?: () => void;
   },
 ) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
 
   let entity_set = useEntitySetContext();
   let mode = props.type === "html" ? "html" : "url";

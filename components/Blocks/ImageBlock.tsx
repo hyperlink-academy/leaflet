@@ -2,7 +2,7 @@
 
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import Image from "next/image";
 import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -39,9 +39,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
   let image = useEntity(props.value, "block/image");
   let entity_set = useEntitySetContext();
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.value),
-  );
+  let isSelected = useIsBlockSelected(props.value);
   let isFullBleed = useEntity(props.value, "image/full-bleed")?.data.value;
   let isFirst = props.previousBlock === null;
   let isLast = props.nextBlock === null;

@@ -1,5 +1,5 @@
 import { BlockProps, BlockLayout } from "./Block";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
 import { focusPage } from "src/utils/focusPage";
 
@@ -9,9 +9,7 @@ export const MailboxBlock = (
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let archive = useEntity(props.entityID, "mailbox/archive");
   let { rep } = useReplicache();
   return (

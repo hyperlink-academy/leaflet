@@ -17,7 +17,6 @@ import { BackToPubButton } from "./actions/BackToPubButton";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { useEntity, useReplicache } from "src/replicache";
-import { block } from "sharp";
 import { PostSettings } from "components/PostSettings";
 import useSWR from "swr";
 import { getHomeDocs } from "app/(app)/(home-pages)/(writer)/home/storage";
