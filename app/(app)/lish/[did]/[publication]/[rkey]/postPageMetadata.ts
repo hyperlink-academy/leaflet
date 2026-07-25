@@ -67,6 +67,9 @@ export async function postPageMetadata(props: {
   // compete with the custom-domain version in search results.
   let canonical: string | undefined;
   let feedTypes: Record<string, string> | undefined;
+  let other: Metadata["other"] = {
+    "at:canonical": document.uri,
+  };
   if (publication) {
     let url = getDocumentURL(docRecord, document.uri, publication);
     if (url.startsWith("http")) canonical = url;
@@ -78,6 +81,7 @@ export async function postPageMetadata(props: {
         "application/feed+json": `${pubRecord.url}/json`,
       };
     }
+    other["at:alternate"] = publication.uri;
   }
 
   return {
@@ -105,5 +109,6 @@ export async function postPageMetadata(props: {
       " - " +
       document.documents_in_publications[0]?.publications?.name,
     description: docRecord?.description || "",
+    other,
   };
 }

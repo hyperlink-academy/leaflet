@@ -57,6 +57,9 @@ export async function generateMetadata(props: {
     },
     title: docRecord.title,
     description: docRecord?.description || "",
+    other: {
+      "at:canonical": document.uri,
+    },
   };
 }
 
