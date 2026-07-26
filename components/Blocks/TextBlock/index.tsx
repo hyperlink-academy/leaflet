@@ -81,7 +81,7 @@ export function TextBlock(
           // width) pushes the clip edge out so a caret centered on the first
           // or last column isn't cut in half — the caret dot is 7px wide, so
           // it needs 3.5px of room past the text edge
-          className={`yjs-cursor-clip w-full box-content px-1.5 -mx-1.5 relative group overflow-x-clip ${!initialized ? "hidden" : ""}`}
+          className={`yjs-cursor-clip w-full box-content px-1.5 -mx-1.5 relative group ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
           <BaseTextBlock {...props} />
