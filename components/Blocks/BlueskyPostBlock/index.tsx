@@ -1,7 +1,7 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useEffect } from "react";
 import { useEntity } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { BlockProps, BlockLayout } from "../Block";
 import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
@@ -14,9 +14,7 @@ import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let post = useEntity(props.entityID, "block/bluesky-post")?.data.value;
   let clientHost = useEntity(props.entityID, "bluesky-post/host")?.data.value;
 
@@ -42,7 +40,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   	  ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={() => {
             focusBlock(
-              { type: props.type, value: props.entityID, parent: props.parent },
+              { type: props.type, entityID: props.entityID, parent: props.parent },
               { type: "start" },
             );
           }}

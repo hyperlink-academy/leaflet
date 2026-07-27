@@ -20,7 +20,7 @@ export function StandardSitePublicationItem({ uri }: { uri: string }) {
   return <StandardSitePublicationItemView publication={data} />;
 }
 
-function StandardSitePublicationItemPlaceholder() {
+export function StandardSitePublicationItemPlaceholder() {
   return (
     <div className="transparent-container flex w-full gap-3 items-start p-3">
       <div className="shrink-0 w-12 h-12 rounded-full bg-border-light animate-pulse" />

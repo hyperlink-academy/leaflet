@@ -218,6 +218,11 @@ export const PubLeafletBlocksImage: LexiconDoc = {
           description:
             "Whether the image should extend to the full width of the container, ignoring padding.",
         },
+        width: {
+          type: "integer",
+          description:
+            "Display width of the image in pixels, capped at the page width.",
+        },
       },
     },
     aspectRatio: {
@@ -390,7 +395,38 @@ export const PubLeafletBlocksIFrame: LexiconDoc = {
         html: {
           type: "string",
           description:
-            "Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url.",
+            "DEPRECATED — use pub.leaflet.blocks.html instead. Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url.",
+        },
+        height: { type: "integer", minimum: 16, maximum: 1600 },
+        aspectRatio: {
+          type: "ref",
+          ref: "#aspectRatio",
+        },
+      },
+    },
+    aspectRatio: {
+      type: "object",
+      required: ["width", "height"],
+      properties: {
+        width: { type: "integer" },
+        height: { type: "integer" },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksHtml: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.html",
+  defs: {
+    main: {
+      type: "object",
+      required: ["html"],
+      properties: {
+        html: {
+          type: "string",
+          description:
+            "Inline HTML rendered via a sandboxed iframe's srcdoc attribute.",
         },
         height: { type: "integer", minimum: 16, maximum: 1600 },
         aspectRatio: {
@@ -490,6 +526,7 @@ export const PubLeafletBlocksSignup: LexiconDoc = {
 
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
+  PubLeafletBlocksHtml,
   PubLeafletBlocksText,
   PubLeafletBlocksBlockQuote,
   PubLeafletBlocksHeader,

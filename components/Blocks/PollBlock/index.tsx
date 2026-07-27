@@ -1,4 +1,4 @@
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { BlockProps, BlockLayout } from "../Block";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useCallback, useEffect, useState } from "react";
@@ -22,13 +22,32 @@ import { usePollBlockUIState } from "./pollBlockState";
 
 export const PollBlock = (
   props: BlockProps & {
+    preview?: boolean;
     areYouSure?: boolean;
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
   let { data: pub } = useLeafletPublicationData();
+  if (props.preview) return <PollPreview entityID={props.entityID} />;
   if (!pub) return <LeafletPollBlock {...props} />;
   return <PublicationPollBlock {...props} />;
+};
+
+const PollPreview = (props: { entityID: string }) => {
+  let pollOptions = useEntity(props.entityID, "poll/options");
+  return (
+    <BlockLayout
+      isSelected={false}
+      hasBackground={"accent"}
+      className="poll flex flex-col gap-2 w-full"
+    >
+      {pollOptions.map((option) => (
+        <ButtonSecondary key={option.id} className="pollOption grow max-w-full">
+          &nbsp;
+        </ButtonSecondary>
+      ))}
+    </BlockLayout>
+  );
 };
 
 const LeafletPollBlock = (
@@ -37,9 +56,7 @@ const LeafletPollBlock = (
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let { permissions } = useEntitySetContext();
 
   let { data: pollData } = usePollData();

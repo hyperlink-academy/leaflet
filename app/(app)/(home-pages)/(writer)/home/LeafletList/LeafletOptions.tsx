@@ -330,6 +330,13 @@ function useArchiveMutations() {
           (l) => l.permission_tokens?.id === tokenId,
         );
         if (item) item.archived = archived;
+        // get_publication_data derives `drafts` from leaflets_in_publications
+        // on the server, so the cache holds a second copy of each row that
+        // won't see the update above.
+        const draft = data.drafts.find(
+          (d) => d.permission_tokens?.id === tokenId,
+        );
+        if (draft) (draft._raw as { archived?: boolean }).archived = archived;
       });
     },
     removeFromLists: (tokenId: string) => {
@@ -340,6 +347,10 @@ function useArchiveMutations() {
           );
       });
       mutatePublicationData(mutatePub, (data) => {
+        const draftIndex = data.drafts.findIndex(
+          (d) => d.permission_tokens?.id === tokenId,
+        );
+        if (draftIndex !== -1) data.drafts.splice(draftIndex, 1);
         if (!data.publication) return;
         data.publication.leaflets_in_publications =
           data.publication.leaflets_in_publications.filter(

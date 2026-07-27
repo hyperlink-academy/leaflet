@@ -226,6 +226,13 @@ export async function publishToPublication({
   // written to the site.standard.document record.
   let contributors: SiteStandardDocument.Contributor[] = [];
   if (publication_uri) {
+    // Credit whoever published in the byline.
+    await supabaseServerClient
+      .from("leaflet_contributors")
+      .upsert(
+        { leaflet: leaflet_id, contributor_did: identity.atp_did },
+        { onConflict: "leaflet,contributor_did", ignoreDuplicates: true },
+      );
     let { data: contributorRows } = await supabaseServerClient
       .from("leaflet_contributors")
       .select("contributor_did")

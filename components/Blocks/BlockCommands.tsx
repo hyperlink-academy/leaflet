@@ -39,7 +39,7 @@ import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
 import { LockTiny } from "components/Icons/LockTiny";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getPageBlocks } from "src/replicache/getBlocks";
 
 type Props = {
   parent: string;
@@ -342,6 +342,14 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Embed HTML",
+    icon: <BlockEmbedSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      await createBlockWithType(rep, props, "html");
+    },
+  },
+  {
     name: "Bluesky Post",
     icon: <BlockBlueskySmall />,
     type: "block",
@@ -416,7 +424,7 @@ export const blockCommands: Command[] = [
           setTimeout(
             () =>
               focusBlock(
-                { parent: props.parent, value: entity, type: "text" },
+                { parent: props.parent, entityID: entity, type: "text" },
                 { type: "end" },
               ),
             100,
@@ -456,7 +464,7 @@ export const blockCommands: Command[] = [
           setTimeout(
             () =>
               focusBlock(
-                { parent: props.parent, value: entity, type: "text" },
+                { parent: props.parent, entityID: entity, type: "text" },
                 { type: "end" },
               ),
             100,
@@ -504,10 +512,8 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props, um) => {
       // The command is hidden once a delimiter exists, but re-check before
       // inserting in case the filter is working off stale data.
-      let existing = await rep.query((tx) =>
-        getBlocksWithType(tx, props.parent),
-      );
-      if (existing?.some((b) => b.type === "members-only-delimiter")) return;
+      let existing = getPageBlocks(rep, props.parent);
+      if (existing.some((b) => b.type === "members-only-delimiter")) return;
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "members-only-delimiter");
       um.add({

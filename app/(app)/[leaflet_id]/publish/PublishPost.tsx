@@ -591,7 +591,7 @@ const PublishPostSuccess = (props: {
 }) => {
   let uri = props.publication_uri ? new AtUri(props.publication_uri) : null;
   return (
-    <div className="frosted-container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto">
+    <div className="frosted-container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto place-self-center">
       <PublishIllustration posts_in_pub={props.posts_in_pub} />
       <h2 className="pt-2">Published!</h2>
       {uri && props.record ? (

@@ -1,11 +1,10 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { generateKeyBetween } from "fractional-indexing";
 import { useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { addLinkBlock } from "src/utils/addLinkBlock";
+import { addBlockBelow } from "src/utils/addBlockBelow";
 import { BlockProps, BlockLayout } from "./Block";
-import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
@@ -25,9 +24,7 @@ export const ExternalLinkBlock = (
   let description = useEntity(props.entityID, "link/description");
   let url = useEntity(props.entityID, "link/url");
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   useEffect(() => {
     if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
@@ -53,7 +50,7 @@ export const ExternalLinkBlock = (
           ${props.pageType === "canvas" && "bg-bg-page"}`}
         onMouseDown={() => {
           focusBlock(
-            { type: props.type, value: props.entityID, parent: props.parent },
+            { type: props.type, entityID: props.entityID, parent: props.parent },
             { type: "start" },
           );
         }}
@@ -116,44 +113,38 @@ export const ExternalLinkBlock = (
 };
 
 const BlockLinkInput = (props: BlockProps & { preview?: boolean }) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
   let { rep, undoManager } = useReplicache();
   let submit = async () => {
+    if (!rep) return;
     await undoManager.withUndoGroup(async () => {
       let linkEntity = props.entityID;
       if (!linkEntity) {
-        linkEntity = v7();
-
-        await rep?.mutate.addBlock({
-          permission_set: entity_set.set,
-          factID: v7(),
+        linkEntity = await addBlockBelow(rep, {
           parent: props.parent,
+          position: props.position,
+          nextPosition: props.nextPosition,
+          permission_set: entity_set.set,
           type: "card",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID: linkEntity,
         });
       }
       let link = linkValue;
       if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
       await addLinkBlock(link, linkEntity, rep);
 
-      let textEntity = v7();
-      await rep?.mutate.addBlock({
-        permission_set: entity_set.set,
-        factID: v7(),
+      let textEntity = await addBlockBelow(rep, {
         parent: props.parent,
+        position: props.position,
+        nextPosition: props.nextPosition,
+        permission_set: entity_set.set,
         type: "text",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: textEntity,
       });
 
       focusBlock(
         {
-          value: textEntity,
+          entityID: textEntity,
           type: "text",
           parent: props.parent,
         },

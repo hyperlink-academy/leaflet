@@ -12,13 +12,12 @@ import {
 
 const is$typed = _is$typed,
   validate = _validate
-const id = 'pub.leaflet.blocks.iframe'
+const id = 'pub.leaflet.blocks.html'
 
 export interface Main {
-  $type?: 'pub.leaflet.blocks.iframe'
-  url?: string
-  /** DEPRECATED — use pub.leaflet.blocks.html instead. Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url. */
-  html?: string
+  $type?: 'pub.leaflet.blocks.html'
+  /** Inline HTML rendered via a sandboxed iframe's srcdoc attribute. */
+  html: string
   height?: number
   aspectRatio?: AspectRatio
 }
@@ -34,7 +33,7 @@ export function validateMain<V>(v: V) {
 }
 
 export interface AspectRatio {
-  $type?: 'pub.leaflet.blocks.iframe#aspectRatio'
+  $type?: 'pub.leaflet.blocks.html#aspectRatio'
   width: number
   height: number
 }

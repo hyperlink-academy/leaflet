@@ -22,6 +22,8 @@ export interface Main {
   aspectRatio: AspectRatio
   /** Whether the image should extend to the full width of the container, ignoring padding. */
   fullBleed?: boolean
+  /** Display width of the image in pixels, capped at the page width. */
+  width?: number
 }
 
 const hashMain = 'main'

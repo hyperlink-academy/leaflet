@@ -100,6 +100,7 @@ export function LinearDocumentPage({
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}
           showFirstLast={preferences.showFirstLast === true && !isSubpage}
+          direction={preferences.prevNextDirection}
         />
         <ExpandedInteractions
           pageId={pageId}

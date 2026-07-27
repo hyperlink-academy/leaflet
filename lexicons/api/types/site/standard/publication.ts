@@ -41,6 +41,7 @@ export interface Preferences {
   showMentions: boolean
   showPrevNext: boolean
   showFirstLast: boolean
+  prevNextDirection: 'ltr' | 'rtl' | (string & {})
   showRecommends: boolean
 }
 

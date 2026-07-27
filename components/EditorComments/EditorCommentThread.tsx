@@ -8,7 +8,6 @@ import { generateKeyBetween } from "fractional-indexing";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useIdentityData } from "components/IdentityProvider";
-import { useUIState } from "src/useUIState";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { CheckTiny } from "components/Icons/CheckTiny";

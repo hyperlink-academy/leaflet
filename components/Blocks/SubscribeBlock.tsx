@@ -1,4 +1,4 @@
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { BlockProps, BlockLayout } from "./Block";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
@@ -8,13 +8,12 @@ import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 // page renders the same form via PostContent.tsx's signup case.
 export const SubscribeBlock = (
   props: BlockProps & {
+    preview?: boolean;
     areYouSure?: boolean;
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   // Source publication data from the leaflet editor's provider — the dashboard
   // PublicationSWRProvider (usePublicationData) isn't mounted in the post
   // editor, so reading newsletter settings from it always came back empty and
@@ -27,6 +26,21 @@ export const SubscribeBlock = (
 
   let publicationName = normalizedPublication?.name || "Subscribe";
   let publicationDescription = normalizedPublication?.description;
+
+  if (props.preview)
+    return (
+      <BlockLayout
+        isSelected={false}
+        className="accent-container rounded-lg! border-none! p-0! text-center justify-center"
+      >
+        <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
+          <h3 className="leading-snug text-secondary">{publicationName}</h3>
+          {publicationDescription && (
+            <div className="text-tertiary">{publicationDescription}</div>
+          )}
+        </div>
+      </BlockLayout>
+    );
 
   return (
     <BlockLayout

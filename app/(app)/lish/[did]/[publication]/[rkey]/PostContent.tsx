@@ -17,6 +17,7 @@ import {
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksStandardSitePublication,
+  PubLeafletBlocksHtml,
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
@@ -312,6 +313,16 @@ export let Block = ({
         />
       );
     }
+    case PubLeafletBlocksHtml.isMain(b.block): {
+      return (
+        <PublishedIframeBlock
+          html={b.block.html}
+          height={b.block.height}
+          aspectRatio={b.block.aspectRatio}
+          pageId={pageId}
+        />
+      );
+    }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
     }
@@ -528,6 +539,11 @@ export let Block = ({
                 width={b.block.aspectRatio?.width}
                 className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
                 src={src}
+                style={
+                  !isFullBleed && b.block.width
+                    ? { width: b.block.width, maxWidth: "100%", height: "auto" }
+                    : undefined
+                }
               />
             </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
@@ -670,7 +686,7 @@ function PublishedIframeBlock(props: {
   url?: string;
   html?: string;
   height?: number;
-  aspectRatio?: PubLeafletBlocksIframe.AspectRatio;
+  aspectRatio?: { width: number; height: number };
   pageId?: string;
 }) {
   let parentPage = props.pageId

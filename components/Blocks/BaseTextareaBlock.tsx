@@ -5,9 +5,7 @@ import {
 import { BlockProps } from "./Block";
 import { getCoordinatesInTextarea } from "src/utils/getCoordinatesInTextarea";
 import { focusBlock } from "src/utils/focusBlock";
-import { generateKeyBetween } from "fractional-indexing";
-import { v7 } from "uuid";
-import { elementId } from "src/utils/elementId";
+import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 
@@ -35,22 +33,13 @@ export function BaseTextareaBlock(props: BaseTextareaBlockProps) {
           permissionSet
         ) {
           e.preventDefault();
-          let newEntityID = v7();
-          rep.mutate.addBlock({
+          addBlockBelow(rep, {
             parent: block.parent,
-            type: "text",
-            factID: v7(),
+            position: block.position,
+            nextPosition: block.nextPosition || null,
             permission_set: permissionSet,
-            position: generateKeyBetween(
-              block.position,
-              block.nextPosition || null,
-            ),
-            newEntityID,
-          });
-
-          setTimeout(() => {
-            document.getElementById(elementId.block(newEntityID).text)?.focus();
-          }, 10);
+            type: "text",
+          }).then(focusNewTextBlock);
           return true;
         }
 

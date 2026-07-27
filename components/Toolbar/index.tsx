@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { TextBlockTypeToolbar } from "./TextBlockTypeToolbar";
 import { InlineLinkToolbar } from "./InlineLinkToolbar";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-import { useEntity, useReplicache } from "src/replicache";
+import { Fact, useEntity } from "src/replicache";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { addShortcut } from "src/shortcuts";
 import { ListToolbar } from "./ListToolbar";
@@ -26,9 +26,26 @@ export type ToolbarTypes =
   | "heading"
   | "text-alignment"
   | "list"
-  | "linkBlock"
-  | "img-alt-text"
   | "image";
+
+// The page type of the page the toolbar is acting on, provided once by the
+// toolbar shell so each ToolbarButton doesn't need its own pair of
+// focusedEntity + page/type subscriptions.
+const ToolbarPageTypeContext = createContext<
+  Fact<"page/type">["data"]["value"] | undefined
+>(undefined);
+
+export const ToolbarPageTypeProvider = (props: {
+  pageID: string;
+  children: React.ReactNode;
+}) => {
+  let pageType = useEntity(props.pageID, "page/type")?.data.value;
+  return (
+    <ToolbarPageTypeContext.Provider value={pageType}>
+      {props.children}
+    </ToolbarPageTypeContext.Provider>
+  );
+};
 
 export const Toolbar = (props: {
   pageID: string;
@@ -37,14 +54,13 @@ export const Toolbar = (props: {
 }) => {
   let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
 
-  let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
-  let selectedBlocks = useUIState((s) => s.selectedBlocks);
-
-  let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
-  let setLastUsedHighlight = (color: "1" | "2" | "3") =>
-    useUIState.setState({
-      lastUsedHighlight: color,
-    });
+  // The selection as a stable string key: re-renders (and re-runs the
+  // mode-reset effect below) only when the selection's membership actually
+  // changes, not on every store write that rebuilds the array.
+  let selectionKey = useUIState((s) =>
+    s.selectedBlocks.map((b) => b.entityID).join(" "),
+  );
+  let isMultiselect = useUIState((s) => s.selectedBlocks.length > 1);
 
   useEffect(() => {
     if (toolbarState !== "default") return;
@@ -66,7 +82,7 @@ export const Toolbar = (props: {
     props.blockType === "blockquote";
 
   useEffect(() => {
-    if (selectedBlocks.length > 1) {
+    if (isMultiselect) {
       setToolbarState("multiselect");
       return;
     }
@@ -78,85 +94,84 @@ export const Toolbar = (props: {
     }
     if (props.blockType === "button" || props.blockType === "datetime") {
       setToolbarState("text-alignment");
-    } else null;
-  }, [props.blockType, selectedBlocks]);
+    }
+  }, [props.blockType, isMultiselect, selectionKey]);
 
   let isMobile = useIsMobile();
   return (
-    <Tooltip.Provider>
-      <div
-        className={`toolbar flex gap-2 items-center justify-between w-full
+    <ToolbarPageTypeProvider pageID={props.pageID}>
+      <Tooltip.Provider>
+        <div
+          className={`toolbar flex gap-2 items-center justify-between w-full
         ${isMobile ? "" : "h-[26px]"}`}
-      >
-        <div className="toolbarOptions flex gap-1 sm:gap-[6px] items-center grow">
-          {toolbarState === "default" ? (
-            <TextToolbar
-              lastUsedHighlight={lastUsedHighlight}
-              setToolbarState={(s) => {
-                setToolbarState(s);
-              }}
-            />
-          ) : toolbarState === "highlight" ? (
-            <HighlightToolbar
-              pageID={props.pageID}
-              onClose={() => setToolbarState("default")}
-              lastUsedHighlight={lastUsedHighlight}
-              setLastUsedHighlight={(color: "1" | "2" | "3") =>
-                setLastUsedHighlight(color)
-              }
-            />
-          ) : toolbarState === "list" ? (
-            <ListToolbar onClose={() => setToolbarState("default")} />
-          ) : toolbarState === "link" ? (
-            <InlineLinkToolbar
-              onClose={() => {
-                activeEditor?.view?.focus();
-                setToolbarState("default");
-              }}
-            />
-          ) : toolbarState === "heading" ? (
-            <TextBlockTypeToolbar onClose={() => setToolbarState("default")} />
-          ) : toolbarState === "text-alignment" ? (
-            <TextAlignmentToolbar />
-          ) : toolbarState === "image" ? (
-            <ImageToolbar setToolbarState={setToolbarState} />
-          ) : toolbarState === "multiselect" ? (
-            <MultiselectToolbar setToolbarState={setToolbarState} />
-          ) : null}
-        </div>
-        {/* if the thing is are you sure state, don't show the x... is each thing handling its own are you sure? theres no need for that */}
-
-        <button
-          className="toolbarBackToDefault hover:text-accent-contrast"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            if (
-              toolbarState === "multiselect" ||
-              toolbarState === "image" ||
-              toolbarState === "default"
-            ) {
-              // close the toolbar
-              useUIState.setState(() => ({
-                focusedEntity: {
-                  entityType: "page",
-                  entityID: props.pageID,
-                },
-                selectedBlocks: [],
-              }));
-            } else {
-              if (props.blockType === "image") {
-                setToolbarState("image");
-              }
-              if (isTextBlock) {
-                setToolbarState("default");
-              }
-            }
-          }}
         >
-          <CloseTiny />
-        </button>
-      </div>
-    </Tooltip.Provider>
+          <div className="toolbarOptions flex gap-1 sm:gap-[6px] items-center grow">
+            {toolbarState === "default" ? (
+              <TextToolbar
+                setToolbarState={(s) => {
+                  setToolbarState(s);
+                }}
+              />
+            ) : toolbarState === "highlight" ? (
+              <HighlightToolbar
+                pageID={props.pageID}
+                onClose={() => setToolbarState("default")}
+              />
+            ) : toolbarState === "list" ? (
+              <ListToolbar onClose={() => setToolbarState("default")} />
+            ) : toolbarState === "link" ? (
+              <InlineLinkToolbar
+                onClose={() => {
+                  useEditorStates
+                    .getState()
+                    .editorStates[props.blockID]?.view?.focus();
+                  setToolbarState("default");
+                }}
+              />
+            ) : toolbarState === "heading" ? (
+              <TextBlockTypeToolbar
+                onClose={() => setToolbarState("default")}
+              />
+            ) : toolbarState === "text-alignment" ? (
+              <TextAlignmentToolbar />
+            ) : toolbarState === "image" ? (
+              <ImageToolbar setToolbarState={setToolbarState} />
+            ) : toolbarState === "multiselect" ? (
+              <MultiselectToolbar setToolbarState={setToolbarState} />
+            ) : null}
+          </div>
+          <button
+            className="toolbarBackToDefault hover:text-accent-contrast"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              if (
+                toolbarState === "multiselect" ||
+                toolbarState === "image" ||
+                toolbarState === "default"
+              ) {
+                // close the toolbar
+                useUIState.setState(() => ({
+                  focusedEntity: {
+                    entityType: "page",
+                    entityID: props.pageID,
+                  },
+                  selectedBlocks: [],
+                }));
+              } else {
+                if (props.blockType === "image") {
+                  setToolbarState("image");
+                }
+                if (isTextBlock) {
+                  setToolbarState("default");
+                }
+              }
+            }}
+          >
+            <CloseTiny />
+          </button>
+        </div>
+      </Tooltip.Provider>
+    </ToolbarPageTypeProvider>
   );
 };
 
@@ -169,32 +184,23 @@ export const ToolbarButton = (props: {
   disabled?: boolean;
   hiddenOnCanvas?: boolean;
 }) => {
-  let focusedEntity = useUIState((s) => s.focusedEntity);
-  let isDisabled = props.disabled;
-
-  let focusedEntityType = useEntity(
-    focusedEntity?.entityType === "page"
-      ? focusedEntity.entityID
-      : focusedEntity?.parent || null,
-    "page/type",
-  );
-  if (focusedEntityType?.data.value === "canvas" && props.hiddenOnCanvas)
-    return;
+  let pageType = useContext(ToolbarPageTypeContext);
+  if (pageType === "canvas" && props.hiddenOnCanvas) return null;
   return (
     <TooltipButton
       onMouseDown={async (e) => {
         e.preventDefault();
         props.onClick && (await props.onClick(e));
       }}
-      disabled={isDisabled}
+      disabled={props.disabled}
       tooltipContent={props.tooltipContent}
       className={`
         flex items-center rounded-md border border-transparent
         ${props.className}
         ${
-          props.active && !isDisabled
+          props.active && !props.disabled
             ? "bg-border-light text-primary"
-            : isDisabled
+            : props.disabled
               ? "text-border cursor-not-allowed"
               : "text-secondary  hover:text-primary hover:border-border  active:bg-border-light active:text-primary"
         }

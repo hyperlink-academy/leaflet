@@ -2,6 +2,7 @@ import { theme } from "tailwind.config";
 
 export const Toggle = (props: {
   toggle: boolean;
+  fullWidth?: boolean;
   onToggle: () => void;
   disabledColor1?: string;
   disabledColor2?: string;
@@ -10,7 +11,7 @@ export const Toggle = (props: {
   return (
     <button
       type="button"
-      className="toggle flex gap-2 items-start justify-start text-left"
+      className={`toggle flex gap-2 text-left ${props.fullWidth ? "justify-between flex-row-reverse" : "items-start justify-start "}`}
       onClick={() => {
         props.onToggle();
       }}

@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
           null,
         );
       } else if ("after" in pos) {
-        let targetIdx = sorted.findIndex((b) => b.value === pos.after);
+        let targetIdx = sorted.findIndex((b) => b.entityID === pos.after);
         if (targetIdx === -1) {
           throw Response.json({ error: "Block not found for 'after'" }, { status: 404 });
         }
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
           sorted[targetIdx + 1]?.position || null,
         );
       } else if ("before" in pos) {
-        let targetIdx = sorted.findIndex((b) => b.value === pos.before);
+        let targetIdx = sorted.findIndex((b) => b.entityID === pos.before);
         if (targetIdx === -1) {
           throw Response.json({ error: "Block not found for 'before'" }, { status: 404 });
         }
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
       if (pos === "start" && sorted.length > 0) {
         nextBound = sorted[0].position;
       } else if (typeof pos === "object" && "before" in pos) {
-        let targetIdx = sorted.findIndex((b) => b.value === pos.before);
+        let targetIdx = sorted.findIndex((b) => b.entityID === pos.before);
         nextBound = sorted[targetIdx].position;
       }
 

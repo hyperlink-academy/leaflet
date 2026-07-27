@@ -33,7 +33,10 @@ export function clientMutationContext(
       return cb({ supabase, tx });
     },
     async createEntity({ entityID }) {
-      tx.set(entityID, true);
+      // Must be awaited: an un-awaited tx write lets the mutator resolve — and
+      // replicache commit the transaction — while the write is still pending,
+      // which drops writes and corrupts the commit's watch diff.
+      await tx.set(entityID, true);
       return true;
     },
     scanIndex: {

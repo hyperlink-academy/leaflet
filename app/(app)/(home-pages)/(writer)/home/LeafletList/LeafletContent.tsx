@@ -52,7 +52,6 @@ export const LeafletContent = (props: {
             return (
               <BlockPreview
                 pageType="doc"
-                entityID={b.value}
                 previousBlock={arr[index - 1] || null}
                 nextBlock={arr[index + 1] || null}
                 nextPosition={""}

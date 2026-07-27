@@ -487,7 +487,7 @@ async function bulkPaste({
   if (lastBulk) {
     focusBlock(
       {
-        value: lastBulk.entityID,
+        entityID: lastBulk.entityID,
         type: lastBulk.type,
         parent: lastBulk.parent,
       },
@@ -496,7 +496,7 @@ async function bulkPaste({
   } else if (activeReuse) {
     focusBlock(
       {
-        value: propsRef.current.entityID,
+        entityID: propsRef.current.entityID,
         type: activeReuse.type,
         parent: propsRef.current.parent,
       },
@@ -1444,7 +1444,7 @@ const createBlockFromHTMLLegacy = (
     if (last && !hasChildren && !first) {
       focusBlock(
         {
-          value: entityID,
+          entityID: entityID,
           type: type,
           parent: parent,
         },

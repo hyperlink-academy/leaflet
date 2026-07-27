@@ -2,7 +2,7 @@
 
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "../Block";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { addImage } from "src/utils/addImage";
 import { useState } from "react";
@@ -24,16 +24,14 @@ import { ImageGalleryOptions, EditGalleryImages } from "./ImageGalleryOptions";
 export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.value),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
 
-  let imageFacts = useEntity(props.value, "gallery/image");
+  let imageFacts = useEntity(props.entityID, "gallery/image");
   let format =
-    useEntity(props.value, "gallery/format")?.data.value ?? DEFAULT_FORMAT;
-  let gap = useEntity(props.value, "gallery/gap")?.data.value ?? DEFAULT_GAP;
+    useEntity(props.entityID, "gallery/format")?.data.value ?? DEFAULT_FORMAT;
+  let gap = useEntity(props.entityID, "gallery/gap")?.data.value ?? DEFAULT_GAP;
   let maxWidth =
-    useEntity(props.value, "gallery/max-width")?.data.value ??
+    useEntity(props.entityID, "gallery/max-width")?.data.value ??
     DEFAULT_MAX_WIDTH;
 
   let [editOpen, setEditOpen] = useState(false);
@@ -48,7 +46,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
         if (!file.type.startsWith("image/")) continue;
         let imageEntity = v7();
         await rep.mutate.addGalleryImage({
-          galleryEntity: props.value,
+          galleryEntity: props.entityID,
           imageEntity,
           factID: v7(),
           permission_set: entity_set.set,
@@ -101,7 +99,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
       extraOptions={
         !props.preview ? (
           <ImageGalleryOptions
-            entityID={props.value}
+            entityID={props.entityID}
             format={format}
             gap={gap}
             maxWidth={maxWidth}
@@ -156,7 +154,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
 
       {!props.preview && (
         <EditGalleryImages
-          entityID={props.value}
+          entityID={props.entityID}
           imageFacts={imageFacts}
           open={editOpen}
           onOpenChange={setEditOpen}

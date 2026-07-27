@@ -1,4 +1,4 @@
-import { Mark, MarkType } from "prosemirror-model";
+import { MarkType } from "prosemirror-model";
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { toggleMark } from "prosemirror-commands";
@@ -8,31 +8,30 @@ import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { ShortcutKey } from "components/Layout";
 import { setMark } from "src/utils/prosemirror/setMark";
 
+// Whether the focused block's current selection carries the mark. Returns a
+// boolean from the store selector (rather than subscribing to the editor state
+// object) so buttons only re-render when the answer flips, not on every
+// transaction.
+export function useMarkActive(mark: MarkType) {
+  let focusedBlockID = useUIState((s) => s.focusedEntity?.entityID);
+  return useEditorStates((s) => {
+    let editor = focusedBlockID
+      ? s.editorStates[focusedBlockID]?.editor
+      : undefined;
+    if (!editor) return false;
+    let { to, from, $cursor } = editor.selection as TextSelection;
+    if ($cursor) return !!mark.isInSet(editor.storedMarks || $cursor.marks());
+    return !!rangeHasMark(editor, mark, from, to);
+  });
+}
+
 export function TextDecorationButton(props: {
   mark: MarkType;
   attrs?: any;
   icon: React.ReactNode;
   tooltipContent: React.ReactNode;
 }) {
-  let focusedBlock = useUIState((s) => s.focusedEntity);
-  let focusedEditor = useEditorStates((s) =>
-    focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
-  );
-  let hasMark: boolean = false;
-  let mark: Mark | null = null;
-  if (focusedEditor) {
-    let { to, from, $cursor, $to, $from } = focusedEditor.editor
-      .selection as TextSelection;
-
-    mark = rangeHasMark(focusedEditor.editor, props.mark, from, to);
-    if ($cursor)
-      hasMark = !!props.mark.isInSet(
-        focusedEditor.editor.storedMarks || $cursor.marks(),
-      );
-    else {
-      hasMark = !!mark;
-    }
-  }
+  let hasMark = useMarkActive(props.mark);
 
   return (
     <ToolbarButton
@@ -56,7 +55,7 @@ export function toggleMarkInFocusedBlock(markT: MarkType, attrs?: any) {
     : null;
   if (!editor) return;
   let { view } = editor;
-  let { to, from, $cursor, $to, $from } = view.state.selection as TextSelection;
+  let { to, from, $cursor } = view.state.selection as TextSelection;
   let mark = rangeHasMark(view.state, markT, from, to);
   if (
     to === from &&

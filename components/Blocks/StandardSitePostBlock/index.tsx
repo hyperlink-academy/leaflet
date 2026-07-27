@@ -1,11 +1,12 @@
 import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
+  StandardSitePostItemPlaceholder,
   type StandardSitePostSize,
 } from "./StandardSitePostItem";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
@@ -16,9 +17,7 @@ import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThem
 export const StandardSitePostBlock = (
   props: BlockProps & { preview?: boolean },
 ) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   let uri = useEntity(props.entityID, "block/standard-site-post")?.data.value;
   let sizeFact = useEntity(props.entityID, "standard-site-post/size");
   let size: StandardSitePostSize = sizeFact?.data.value ?? "medium";
@@ -29,9 +28,22 @@ export const StandardSitePostBlock = (
   let showPubTheme = showPubThemeFact?.data.value !== false;
   let editorPub = useLeafletPublicationData();
   let currentPublicationUri = editorPub.data?.publications?.uri ?? null;
-  let { data: post } = useStandardSitePost(uri);
+  let { data: post } = useStandardSitePost(props.preview ? null : uri);
 
   if (!uri) return null;
+
+  if (props.preview)
+    return (
+      <BlockLayout
+        isSelected={!!isSelected}
+        borderOnHover
+        className="standardSitePostBlock p-0! overflow-hidden!"
+      >
+        <div className="bg-bg-page">
+          <StandardSitePostItemPlaceholder size={size} />
+        </div>
+      </BlockLayout>
+    );
 
   if (!post)
     return (
