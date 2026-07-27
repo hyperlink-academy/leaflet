@@ -130,6 +130,7 @@
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.21.2",
     "esbuild": "^0.25.4",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.38",
     "prettier": "3.2.5",
     "supabase": "^1.187.3",

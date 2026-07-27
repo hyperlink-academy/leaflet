@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Capture clipboard HTML</title>
+    <style>
+      body {
+        font: 14px/1.5 system-ui, sans-serif;
+        max-width: 60rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      #drop {
+        border: 2px dashed #999;
+        border-radius: 8px;
+        padding: 2rem;
+        min-height: 6rem;
+        color: #666;
+      }
+      textarea {
+        width: 100%;
+        height: 24rem;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        margin-top: 1rem;
+      }
+      button {
+        margin-top: 0.5rem;
+        padding: 0.4rem 0.8rem;
+      }
+      code {
+        background: #f2f2f2;
+        padding: 0 0.25em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Capture clipboard HTML</h1>
+    <p>
+      Copy something out of Google Docs / Word / Notion / Pages, click the box
+      below, and paste. The exact <code>text/html</code> the app put on the
+      clipboard appears underneath — save it as
+      <code>src/utils/paste/__fixtures__/captured/&lt;source&gt;.html</code> and
+      <code>capturedFixtures.test.ts</code> will start checking it.
+    </p>
+    <div id="drop" contenteditable="true">Click here and paste…</div>
+    <button id="copy">Copy the captured HTML</button>
+    <textarea id="out" readonly></textarea>
+    <script>
+      const drop = document.getElementById("drop");
+      const out = document.getElementById("out");
+      drop.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const html = e.clipboardData.getData("text/html");
+        const text = e.clipboardData.getData("text/plain");
+        out.value = html || text;
+        drop.textContent = html
+          ? `Captured ${html.length} bytes of text/html.`
+          : `No text/html on the clipboard — captured ${text.length} bytes of text/plain instead.`;
+      });
+      document.getElementById("copy").addEventListener("click", () => {
+        out.select();
+        document.execCommand("copy");
+      });
+    </script>
+  </body>
+</html>

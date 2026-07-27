@@ -49,8 +49,70 @@ function remarkTightListify() {
   };
 }
 
+// Pasted plain text is usually prose where every newline is meant as a
+// paragraph break, so single newlines get expanded into blank lines. Markdown
+// constructs that are defined by adjacent lines — fenced code, blockquotes,
+// tables, setext headings — break apart if that expansion runs through them.
+function expandSoftLineBreaks(markdown: string): string {
+  const lines = markdown.split("\n");
+  const out: string[] = [];
+  const isQuote = (l: string) => /^\s{0,3}>/.test(l);
+  const isTableRow = (l: string) => /^\s{0,3}\|/.test(l);
+  const isSetextUnderline = (l: string) => /^\s{0,3}(=+|-{2,})\s*$/.test(l);
+  let fence: string | null = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    out.push(line);
+    const fenceMarker = line.match(/^\s{0,3}(`{3,}|~{3,})/)?.[1];
+    if (fence) {
+      if (fenceMarker && line.trim().startsWith(fence)) fence = null;
+      continue;
+    }
+    if (fenceMarker) {
+      fence = fenceMarker;
+      continue;
+    }
+    const next = lines[i + 1];
+    if (next === undefined || !next.trim() || !line.trim()) continue;
+    if (isSetextUnderline(next)) continue;
+    if (isQuote(line) && isQuote(next)) continue;
+    if (isTableRow(line) && isTableRow(next)) continue;
+    out.push("");
+  }
+  return out.join("\n");
+}
+
+function escapeHTML(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// remarkRehype runs without allowDangerousHtml, so every raw-HTML node in the
+// source is discarded. That's fine for markup that carries no text of its own
+// (a stray <br>, an inline <span> whose text remark keeps as a sibling), but a
+// plain-text paste of actual HTML — copied out of a terminal or a code editor —
+// would otherwise disappear entirely.
+function rawHTMLWouldLoseText(markdown: string): boolean {
+  const tree = unified().use(remarkParse).use(remarkGfm).parse(markdown);
+  let lost = false;
+  visit(tree, "html", (node: { value?: string }) => {
+    if ((node.value || "").replace(/<[^>]*>/g, "").trim()) lost = true;
+  });
+  return lost;
+}
+
 export function markdownToHtml(markdown: string): string {
-  markdown = markdown.replace(/\n(?=[^\n])/g, "\n\n");
+  const source = markdown;
+  if (rawHTMLWouldLoseText(source)) {
+    return source
+      .split("\n")
+      .map((line) => `<p>${escapeHTML(line)}</p>`)
+      .join("\n");
+  }
+  markdown = expandSoftLineBreaks(markdown);
   return String(
     unified()
       .use(remarkParse) // Parse markdown content to a syntax tree

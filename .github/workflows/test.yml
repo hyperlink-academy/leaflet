@@ -7,6 +7,11 @@ on:
     paths:
       - "**/*.test.ts"
       - "src/replicache/**"
+      # Paste pipeline: the fixtures aren't .test.ts, and the block builder
+      # parses through the TextBlock schema, so a schema change moves marks.
+      - "src/utils/paste/**"
+      - "src/htmlMarkdownParsers.ts"
+      - "components/Blocks/TextBlock/**"
       - "supabase/migrations/**"
       - "supabase/config.toml"
       - "vitest.config.ts"
