@@ -31,6 +31,7 @@ export function ImageOptions(props: {
       align="end"
       sideOffset={6}
       className="w-sm"
+      onOpenAutoFocus={(e) => e.preventDefault()}
       trigger={<SettingsTriggerButton aria-label="Image Settings" />}
     >
       <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
