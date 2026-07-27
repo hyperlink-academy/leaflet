@@ -9,25 +9,20 @@ import { getPosAtCoordinates } from "./getCoordinatesInTextarea";
 import { flushSync } from "react-dom";
 
 export function focusBlock(
-  block: Pick<Block, "type" | "value" | "parent">,
+  block: Pick<Block, "type" | "entityID" | "parent">,
   position: Position,
 ) {
   // focus the block
   flushSync(() => {
-    useUIState.getState().setSelectedBlock(block);
-    useUIState.getState().setFocusedBlock({
-      entityType: "block",
-      entityID: block.value,
-      parent: block.parent,
-    });
+    useUIState.getState().focusAndSelectBlock(block);
   });
   scrollIntoViewIfNeeded(
-    document.getElementById(elementId.block(block.value).container),
+    document.getElementById(elementId.block(block.entityID).container),
     false,
   );
   if (block.type === "math" || block.type === "code") {
     let el = document.getElementById(
-      elementId.block(block.value).input,
+      elementId.block(block.entityID).input,
     ) as HTMLTextAreaElement;
     let pos;
     if (position.type === "start") {
@@ -67,7 +62,7 @@ export function focusBlock(
   }
   // if its a text block, and not an empty block that is last on the page,
   // focus the editor using the mouse position if needed
-  let nextBlockID = block.value;
+  let nextBlockID = block.entityID;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
   if (!nextBlock || !nextBlock.view) {
     waitForViewAndFocus(nextBlockID, position);

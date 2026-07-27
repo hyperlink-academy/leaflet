@@ -2,7 +2,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { BlockProps } from "../Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
@@ -15,9 +15,7 @@ import { CheckTiny } from "components/Icons/CheckTiny";
 
 export const BlueskyPostEmpty = (props: BlockProps) => {
   let { rep } = useReplicache();
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
 
   let entity_set = useEntitySetContext();
   let [urlValue, setUrlValue] = useState("");

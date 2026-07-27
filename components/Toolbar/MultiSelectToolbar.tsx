@@ -1,5 +1,4 @@
-import { useUIState } from "src/useUIState";
-import { ReplicacheMutators, useReplicache } from "src/replicache";
+import { useReplicache } from "src/replicache";
 import { ToolbarButton } from "./index";
 import { copySelection } from "src/utils/copySelection";
 import { useSmoker, useToaster } from "components/Toast";
@@ -37,7 +36,7 @@ export const MultiselectToolbar = (props: {
             if (!rep) return;
             let [sortedSelection] = await getSortedSelection(rep);
             await deleteBlock(
-              sortedSelection.map((b) => b.value),
+              sortedSelection.map((b) => b.entityID),
               rep,
               undoManager,
             );
@@ -60,11 +59,7 @@ export const MultiselectToolbar = (props: {
         >
           <TrashSmall />
         </ToolbarButton>
-        <ToolbarButton
-          disabled={false}
-          tooltipContent="Copy Selected Blocks"
-          onClick={handleCopy}
-        >
+        <ToolbarButton tooltipContent="Copy Selected Blocks" onClick={handleCopy}>
           <CopySmall />
         </ToolbarButton>
         <TextAlignmentButton setToolbarState={props.setToolbarState} />

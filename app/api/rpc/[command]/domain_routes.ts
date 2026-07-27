@@ -3,6 +3,9 @@ import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { NextApiResponse } from "next";
 
+const VERCEL_PROJECT = "prj_9jX4tmYCISnm176frFxk07fF74kG";
+const VERCEL_TEAM = "team_42xaJiZMTw9Sr7i0DcLTae9d";
+
 export const get_domain_status = makeRoute({
   route: "get_domain_status",
   input: z.object({
@@ -10,43 +13,43 @@ export const get_domain_status = makeRoute({
   }),
   handler: async ({ domain }, { vercel }: Pick<Env, "vercel">) => {
     try {
-      let [status, config] = await Promise.all([
-        vercel.domains.getDomain({
+      let [projectDomain, config] = await Promise.all([
+        vercel.projects.getProjectDomain({
+          idOrName: VERCEL_PROJECT,
+          teamId: VERCEL_TEAM,
           domain,
-          teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
         }),
         vercel.domains.getDomainConfig({
           domain,
-          teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+          teamId: VERCEL_TEAM,
         }),
       ]);
+
+      if (!projectDomain.verified) {
+        // Vercel only re-checks ownership and kicks off certificate issuance
+        // when the verify endpoint is POSTed (the dashboard's refresh button
+        // does this) — pending domains otherwise stay pending indefinitely.
+        try {
+          let result = await vercel.projects.verifyProjectDomain({
+            idOrName: VERCEL_PROJECT,
+            teamId: VERCEL_TEAM,
+            domain,
+          });
+          if (result.verified) return { config };
+        } catch (e) {
+          console.log(e);
+        }
+        if (!projectDomain.verification) {
+          return { config };
+        }
+        return {
+          verification: projectDomain.verification,
+          config,
+        } as const;
+      }
       return { config };
     } catch (e) {
       let errorResponse = e as NextApiResponse;
-      if (errorResponse.statusCode === 403) {
-        try {
-          let [verification, config] = await Promise.all([
-            vercel.projects.getProjectDomain({
-              idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
-              teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
-              domain,
-            }),
-            vercel.domains.getDomainConfig({
-              domain,
-              teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
-            }),
-          ]);
-          if (!verification.verification) {
-            return { config };
-          }
-          return {
-            verification: verification.verification,
-            config,
-          } as const;
-        } catch (e) {
-          return { error: true };
-        }
-      }
       if (errorResponse.statusCode === 404)
         return { error: "Not Found" } as const;
       return { error: true };
@@ -62,8 +65,8 @@ export const get_leaflet_subdomain_status = makeRoute({
   handler: async ({ domain }, { vercel }: Pick<Env, "vercel">) => {
     try {
       let c = await vercel.projects.getProjectDomain({
-        idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
-        teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+        idOrName: VERCEL_PROJECT,
+        teamId: VERCEL_TEAM,
         domain: `${domain}.leaflet.pub`,
       });
       return { config: c };

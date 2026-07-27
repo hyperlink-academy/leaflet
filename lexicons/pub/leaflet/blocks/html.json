@@ -1,17 +1,16 @@
 {
   "lexicon": 1,
-  "id": "pub.leaflet.blocks.iframe",
+  "id": "pub.leaflet.blocks.html",
   "defs": {
     "main": {
       "type": "object",
+      "required": [
+        "html"
+      ],
       "properties": {
-        "url": {
-          "type": "string",
-          "format": "uri"
-        },
         "html": {
           "type": "string",
-          "description": "DEPRECATED — use pub.leaflet.blocks.html instead. Inline HTML rendered via the iframe's srcdoc attribute. Takes precedence over url."
+          "description": "Inline HTML rendered via a sandboxed iframe's srcdoc attribute."
         },
         "height": {
           "type": "integer",

@@ -67,6 +67,7 @@ function buildLeafletRecord(
           showPrevNext: preferences.showPrevNext,
           showRecommends: preferences.showRecommends,
           showFirstLast: preferences.showFirstLast,
+          prevNextDirection: preferences.prevNextDirection,
         }
       : undefined,
   };
@@ -116,6 +117,7 @@ function buildStandardRecord(
           showPrevNext: preferences.showPrevNext,
           showRecommends: preferences.showRecommends,
           showFirstLast: preferences.showFirstLast,
+          prevNextDirection: preferences.prevNextDirection,
         }
       : undefined,
   };

@@ -93,9 +93,6 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
           selectedBlocks: [],
           focusedEntity: { entityType: "page", entityID: props.entityID },
         }));
-        useUIState.setState({
-          focusedEntity: { entityType: "page", entityID: props.entityID },
-        });
         document
           .getElementById(elementId.page(props.entityID).container)
           ?.scrollIntoView({
@@ -117,7 +114,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
             permission_set: entity_set.set,
           });
           focusBlock(
-            { type: "text", parent: props.entityID, value: newEntityID },
+            { type: "text", parent: props.entityID, entityID: newEntityID },
             { type: "start" },
           );
         }
@@ -261,7 +258,7 @@ const AddCanvasBlockButton = (props: {
           });
           setTimeout(() => {
             focusBlock(
-              { type: "text", value: newEntityID, parent: props.entityID },
+              { type: "text", entityID: newEntityID, parent: props.entityID },
               { type: "start" },
             );
           }, 20);
@@ -363,7 +360,7 @@ function CanvasBlock(props: {
         focusBlock(
           {
             type: type?.data.value || "text",
-            value: props.entityID,
+            entityID: props.entityID,
             parent: props.parent,
           },
           { type: "start" },
@@ -405,7 +402,13 @@ function CanvasBlock(props: {
       nextBlock: null,
       previousBlock: null,
     };
-  }, [props, type?.data.value]);
+  }, [
+    props.preview,
+    props.entityID,
+    props.factID,
+    props.parent,
+    type?.data.value,
+  ]);
   useBlockKeyboardHandlers(blockProps, areYouSure, setAreYouSure);
   let mouseHandlers = useBlockMouseHandlers(blockProps);
 

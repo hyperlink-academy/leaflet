@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       if (pageEntity instanceof Response) return pageEntity;
 
       let blocks = await getPageBlocks(tx, pageEntity);
-      let entityIds = blocks.map((b) => b.value);
+      let entityIds = blocks.map((b) => b.entityID);
       let allFacts = await getAllFactsForEntities(tx, entityIds);
 
       let results: {
@@ -46,30 +46,30 @@ export async function GET(req: NextRequest) {
           b.type === "blockquote"
         ) {
           let textFact = allFacts.find(
-            (f) => f.entity === b.value && f.attribute === "block/text",
+            (f) => f.entity === b.entityID && f.attribute === "block/text",
           );
           if (textFact) {
             let plaintext = extractPlaintext((textFact.data as any).value);
             if (plaintext.toLowerCase().includes(queryLower)) {
-              results.push({ blockId: b.value, type: b.type, text: plaintext });
+              results.push({ blockId: b.entityID, type: b.type, text: plaintext });
             }
           }
         } else if (b.type === "code") {
           let codeFact = allFacts.find(
-            (f) => f.entity === b.value && f.attribute === "block/code",
+            (f) => f.entity === b.entityID && f.attribute === "block/code",
           );
           if (codeFact) {
             let code = (codeFact.data as any).value as string;
             if (code.toLowerCase().includes(queryLower)) {
               let langFact = allFacts.find(
                 (f) =>
-                  f.entity === b.value && f.attribute === "block/code-language",
+                  f.entity === b.entityID && f.attribute === "block/code-language",
               );
               let language = langFact
                 ? ((langFact.data as any).value as string)
                 : undefined;
               results.push({
-                blockId: b.value,
+                blockId: b.entityID,
                 type: b.type,
                 text: code,
                 ...(language ? { language } : {}),

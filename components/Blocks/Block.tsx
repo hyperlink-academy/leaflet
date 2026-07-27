@@ -2,7 +2,7 @@
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
 import { memo, useEffect, useState } from "react";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
 import { useLongPress } from "src/hooks/useLongPress";
@@ -16,7 +16,7 @@ import { ImageBlock } from "./ImageBlock";
 import { ImageGalleryBlock } from "./ImageGalleryBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
-import { EmbedBlock } from "./EmbedBlock";
+import { EmbedBlock, HTMLBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { AreYouSure } from "./DeleteBlock";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -50,7 +50,7 @@ export type Block = {
   factID: string;
   parent: string;
   position: string;
-  value: string;
+  entityID: string;
   type: Fact<"block/type">["data"]["value"];
   headingLevel?: number;
   // Ancestor heading entity IDs whose sections contain this block (outermost
@@ -69,9 +69,6 @@ export type Block = {
 };
 export type BlockProps = {
   pageType: Fact<"page/type">["data"]["value"];
-  entityID: string;
-  parent: string;
-  position: string;
   nextBlock: Block | null;
   previousBlock: Block | null;
   nextPosition: string | null;
@@ -98,21 +95,19 @@ export const Block = memo(function Block(
     if (isTextBlock[props.type]) return;
     if (isLongPress.current) {
       focusBlock(
-        { type: props.type, value: props.entityID, parent: props.parent },
+        { type: props.type, entityID: props.entityID, parent: props.parent },
         { type: "start" },
       );
     }
   });
 
-  let selected = useUIState(
-    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let selected = useIsBlockSelected(props.entityID);
   let focused = useUIState(
     (s) =>
       s.focusedEntity?.entityType === "block" &&
       s.focusedEntity.entityID === props.entityID,
   );
-  let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   let alignmentStyle =
     props.type === "button" || props.type === "image"
@@ -236,109 +231,62 @@ export const Block = memo(function Block(
   );
 }, deepEqualsBlockProps);
 
+// Everything the Block render tree reads off its props. headingLevel /
+// headingPath / listData.checked / listData.listStart are deliberately not
+// compared: they're re-fetched via useEntity or unused by this subtree.
 function deepEqualsBlockProps(
   prevProps: BlockProps & { preview?: boolean },
   nextProps: BlockProps & { preview?: boolean },
 ): boolean {
-  // Compare primitive fields
-  if (
-    prevProps.pageType !== nextProps.pageType ||
-    prevProps.entityID !== nextProps.entityID ||
-    prevProps.parent !== nextProps.parent ||
-    prevProps.position !== nextProps.position ||
-    prevProps.factID !== nextProps.factID ||
-    prevProps.value !== nextProps.value ||
-    prevProps.type !== nextProps.type ||
-    prevProps.nextPosition !== nextProps.nextPosition ||
-    prevProps.headingFoldable !== nextProps.headingFoldable ||
-    prevProps.preview !== nextProps.preview
-  ) {
-    return false;
-  }
+  const scalarKeys = [
+    "pageType",
+    "entityID",
+    "parent",
+    "position",
+    "factID",
+    "type",
+    "nextPosition",
+    "headingFoldable",
+    "preview",
+  ] as const;
+  if (scalarKeys.some((k) => prevProps[k] !== nextProps[k])) return false;
 
-  // Compare listData if present
-  if (prevProps.listData !== nextProps.listData) {
-    if (!prevProps.listData || !nextProps.listData) {
-      return false; // One is undefined, the other isn't
-    }
+  if (!listDataEquals(prevProps.listData, nextProps.listData)) return false;
 
-    if (
-      prevProps.listData.checklist !== nextProps.listData.checklist ||
-      prevProps.listData.parent !== nextProps.listData.parent ||
-      prevProps.listData.depth !== nextProps.listData.depth ||
-      prevProps.listData.displayNumber !== nextProps.listData.displayNumber ||
-      prevProps.listData.listStyle !== nextProps.listData.listStyle
-    ) {
-      return false;
-    }
+  return (
+    neighborEquals(prevProps.nextBlock, nextProps.nextBlock) &&
+    neighborEquals(prevProps.previousBlock, nextProps.previousBlock)
+  );
+}
 
-    // Compare path array
-    if (prevProps.listData.path.length !== nextProps.listData.path.length) {
-      return false;
-    }
+function listDataEquals(prev: Block["listData"], next: Block["listData"]) {
+  if (prev === next) return true;
+  if (!prev || !next) return false;
+  return (
+    prev.checklist === next.checklist &&
+    prev.parent === next.parent &&
+    prev.depth === next.depth &&
+    prev.displayNumber === next.displayNumber &&
+    prev.listStyle === next.listStyle &&
+    prev.path.length === next.path.length &&
+    prev.path.every(
+      (p, i) =>
+        p.depth === next.path[i].depth && p.entity === next.path[i].entity,
+    )
+  );
+}
 
-    for (let i = 0; i < prevProps.listData.path.length; i++) {
-      if (
-        prevProps.listData.path[i].depth !== nextProps.listData.path[i].depth ||
-        prevProps.listData.path[i].entity !== nextProps.listData.path[i].entity
-      ) {
-        return false;
-      }
-    }
-  }
-
-  // Compare nextBlock
-  if (prevProps.nextBlock !== nextProps.nextBlock) {
-    if (!prevProps.nextBlock || !nextProps.nextBlock) {
-      return false; // One is null, the other isn't
-    }
-
-    if (
-      prevProps.nextBlock.factID !== nextProps.nextBlock.factID ||
-      prevProps.nextBlock.parent !== nextProps.nextBlock.parent ||
-      prevProps.nextBlock.position !== nextProps.nextBlock.position ||
-      prevProps.nextBlock.value !== nextProps.nextBlock.value ||
-      prevProps.nextBlock.type !== nextProps.nextBlock.type
-    ) {
-      return false;
-    }
-
-    // Compare nextBlock's listData (using deepEquals for simplicity)
-    if (
-      !deepEquals(prevProps.nextBlock.listData, nextProps.nextBlock.listData)
-    ) {
-      return false;
-    }
-  }
-
-  // Compare previousBlock
-  if (prevProps.previousBlock !== nextProps.previousBlock) {
-    if (!prevProps.previousBlock || !nextProps.previousBlock) {
-      return false; // One is null, the other isn't
-    }
-
-    if (
-      prevProps.previousBlock.factID !== nextProps.previousBlock.factID ||
-      prevProps.previousBlock.parent !== nextProps.previousBlock.parent ||
-      prevProps.previousBlock.position !== nextProps.previousBlock.position ||
-      prevProps.previousBlock.value !== nextProps.previousBlock.value ||
-      prevProps.previousBlock.type !== nextProps.previousBlock.type
-    ) {
-      return false;
-    }
-
-    // Compare previousBlock's listData (using deepEquals for simplicity)
-    if (
-      !deepEquals(
-        prevProps.previousBlock.listData,
-        nextProps.previousBlock.listData,
-      )
-    ) {
-      return false;
-    }
-  }
-
-  return true;
+function neighborEquals(prev: Block | null, next: Block | null) {
+  if (prev === next) return true;
+  if (!prev || !next) return false;
+  return (
+    prev.factID === next.factID &&
+    prev.parent === next.parent &&
+    prev.position === next.position &&
+    prev.entityID === next.entityID &&
+    prev.type === next.type &&
+    deepEquals(prev.listData, next.listData)
+  );
 }
 
 export const BaseBlock = (
@@ -388,6 +336,7 @@ const BlockTypeComponents: {
   "image-gallery": ImageGalleryBlock,
   link: ExternalLinkBlock,
   embed: EmbedBlock,
+  html: HTMLBlock,
   mailbox: MailboxBlock,
   datetime: DateTimeBlock,
   rsvp: RSVPBlock,
@@ -403,39 +352,37 @@ const BlockTypeComponents: {
 };
 
 const BlockMultiselectIndicator = (props: BlockProps) => {
-  let { rep } = useReplicache();
-  let isMobile = useIsMobile();
-
   let first = props.previousBlock === null;
 
-  let isMultiselected = useUIState(
-    (s) =>
-      !!s.selectedBlocks.find((b) => b.value === props.entityID) &&
-      s.selectedBlocks.length > 1,
-  );
+  // One packed primitive selector instead of three array scans: null when not
+  // multiselected, otherwise which neighbors are also selected (for corner
+  // rounding).
+  let multiselectState = useUIState((s) => {
+    if (
+      s.selectedBlocks.length <= 1 ||
+      !s.selectedBlocks.some((b) => b.entityID === props.entityID)
+    )
+      return null;
+    let next = s.selectedBlocks.some((b) => b.entityID === props.nextBlock?.entityID);
+    let prev = s.selectedBlocks.some(
+      (b) => b.entityID === props.previousBlock?.entityID,
+    );
+    return `${next ? "n" : ""}${prev ? "p" : ""}`;
+  });
 
-  let nextBlockSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
-  );
-  let prevBlockSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
-  );
-
-  if (isMultiselected)
+  if (multiselectState !== null)
     return (
-      <>
-        <div
-          className={`
+      <div
+        className={`
           blockSelectionBG multiselected selected
           pointer-events-none
           bg-border-light
           absolute right-2 left-2 bottom-0
           ${first ? "top-1" : "top-0"}
-          ${!prevBlockSelected && "rounded-t-md"}
-          ${!nextBlockSelected && "rounded-b-md"}
+          ${!multiselectState.includes("p") && "rounded-t-md"}
+          ${!multiselectState.includes("n") && "rounded-b-md"}
           `}
-        />
-      </>
+      />
     );
 };
 
@@ -618,12 +565,12 @@ export const ListMarker = (
     className?: string;
   },
 ) => {
-  let checklist = useEntity(props.value, "block/check-list");
-  let listStyle = useEntity(props.value, "block/list-style");
-  let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
-  let children = useEntity(props.value, "card/block");
+  let checklist = useEntity(props.entityID, "block/check-list");
+  let listStyle = useEntity(props.entityID, "block/list-style");
+  let headingLevel = useEntity(props.entityID, "block/heading-level")?.data.value;
+  let children = useEntity(props.entityID, "card/block");
   let folded =
-    useUIState((s) => s.foldedBlocks.includes(props.value)) &&
+    useUIState((s) => s.foldedBlocks.includes(props.entityID)) &&
     children.length > 0;
 
   let depth = props.listData?.depth;
@@ -652,12 +599,12 @@ export const ListMarker = (
     if (newNumber === currentDisplay) {
       // Remove override if it matches the computed number
       await rep.mutate.retractAttribute({
-        entity: props.value,
+        entity: props.entityID,
         attribute: "block/list-number",
       });
     } else {
       await rep.mutate.assertFact({
-        entity: props.value,
+        entity: props.entityID,
         attribute: "block/list-number",
         data: { type: "number", value: newNumber },
       });
@@ -689,7 +636,7 @@ export const ListMarker = (
       <button
         onClick={() => {
           if (children.length > 0)
-            useUIState.getState().toggleFold(props.value);
+            useUIState.getState().toggleFold(props.entityID);
         }}
         className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
@@ -744,7 +691,7 @@ export const ListMarker = (
           onClick={() => {
             if (permissions.write)
               rep?.mutate.assertFact({
-                entity: props.value,
+                entity: props.entityID,
                 attribute: "block/check-list",
                 data: { type: "boolean", value: !checklist.data.value },
               });

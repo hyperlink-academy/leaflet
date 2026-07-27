@@ -13,10 +13,8 @@ import { EditorCommentButton } from "./EditorCommentButton";
 import { Props } from "components/Icons/Props";
 import { isMac } from "src/utils/isDevice";
 
-export const TextToolbar = (props: {
-  lastUsedHighlight: string;
-  setToolbarState: (s: ToolbarTypes) => void;
-}) => {
+// The bold/italic/strike trio, shared with the footnote toolbar.
+export const TextMarkButtons = () => {
   return (
     <>
       <TextDecorationButton
@@ -71,10 +69,17 @@ export const TextToolbar = (props: {
         mark={schema.marks.strikethrough}
         icon={<StrikethroughSmall />}
       />
-      <HighlightButton
-        lastUsedHighlight={props.lastUsedHighlight}
-        setToolbarState={props.setToolbarState}
-      />
+    </>
+  );
+};
+
+export const TextToolbar = (props: {
+  setToolbarState: (s: ToolbarTypes) => void;
+}) => {
+  return (
+    <>
+      <TextMarkButtons />
+      <HighlightButton setToolbarState={props.setToolbarState} />
       <Separator classname="h-6!" />
       <LinkButton setToolbarState={props.setToolbarState} />
       <Separator classname="h-6!" />

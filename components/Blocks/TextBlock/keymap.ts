@@ -22,7 +22,7 @@ import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getPageBlocks } from "src/replicache/getBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
 type PropsRef = RefObject<
@@ -64,13 +64,17 @@ export const TextBlockKeymap = (
         state.doc.content.size - 1 === state.selection.to
       ) {
         if (propsRef.current.nextBlock) {
-          useUIState
-            .getState()
-            .setSelectedBlocks([propsRef.current, propsRef.current.nextBlock]);
-          useUIState.getState().setFocusedBlock({
-            entityType: "block",
-            entityID: propsRef.current.nextBlock.value,
-            parent: propsRef.current.parent,
+          let next = propsRef.current.nextBlock;
+          useUIState.setState({
+            selectedBlocks: [
+              { entityID: propsRef.current.entityID, parent: propsRef.current.parent },
+              { entityID: next.entityID, parent: next.parent },
+            ],
+            focusedEntity: {
+              entityType: "block",
+              entityID: next.entityID,
+              parent: propsRef.current.parent,
+            },
           });
 
           document.getSelection()?.removeAllRanges();
@@ -83,16 +87,17 @@ export const TextBlockKeymap = (
     "Shift-ArrowUp": (state, _dispatch, view) => {
       if (state.selection.from <= 1 || state.selection.to <= 1) {
         if (propsRef.current.previousBlock) {
-          useUIState
-            .getState()
-            .setSelectedBlocks([
-              propsRef.current,
-              propsRef.current.previousBlock,
-            ]);
-          useUIState.getState().setFocusedBlock({
-            entityType: "block",
-            entityID: propsRef.current.previousBlock.value,
-            parent: propsRef.current.parent,
+          let previous = propsRef.current.previousBlock;
+          useUIState.setState({
+            selectedBlocks: [
+              { entityID: propsRef.current.entityID, parent: propsRef.current.parent },
+              { entityID: previous.entityID, parent: previous.parent },
+            ],
+            focusedEntity: {
+              entityType: "block",
+              entityID: previous.entityID,
+              parent: propsRef.current.parent,
+            },
           });
 
           document.getSelection()?.removeAllRanges();
@@ -290,13 +295,13 @@ const backspace =
         repRef.current?.mutate.moveChildren({
           oldParent: propsRef.current.entityID,
           newParent: propsRef.current.previousBlock?.listData
-            ? propsRef.current.previousBlock.value
+            ? propsRef.current.previousBlock.entityID
             : propsRef.current.listData.parent || propsRef.current.parent,
           after:
             propsRef.current.previousBlock?.listData?.path.find(
               (f) => f.depth === depth,
             )?.entity ||
-            propsRef.current.previousBlock?.value ||
+            propsRef.current.previousBlock?.entityID ||
             null,
         }),
       );
@@ -326,7 +331,7 @@ const backspace =
           () =>
             focusBlock(
               {
-                value: propsRef.current.entityID,
+                entityID: propsRef.current.entityID,
                 type: "text",
                 parent: propsRef.current.parent,
               },
@@ -350,7 +355,7 @@ const backspace =
 
     let block = !!propsRef.current.previousBlock
       ? useEditorStates.getState().editorStates[
-          propsRef.current.previousBlock.value
+          propsRef.current.previousBlock.entityID
         ]
       : null;
     if (
@@ -361,7 +366,7 @@ const backspace =
     ) {
       mutate(
         repRef.current?.mutate.removeBlock({
-          blockEntity: propsRef.current.previousBlock.value,
+          blockEntity: propsRef.current.previousBlock.entityID,
         }),
       );
       return finish(true);
@@ -397,7 +402,7 @@ const backspace =
 
     let mergedBlock = propsRef.current.previousBlock;
     let removedBlock = {
-      value: propsRef.current.entityID,
+      entityID: propsRef.current.entityID,
       type: propsRef.current.type,
       parent: propsRef.current.parent,
     };
@@ -423,7 +428,7 @@ const backspace =
         let attempts = 0;
         let run = () => {
           let editor =
-            useEditorStates.getState().editorStates[removedBlock.value];
+            useEditorStates.getState().editorStates[removedBlock.entityID];
           if (!editor?.view || editor.editor.doc.content.size <= 2) {
             if (attempts++ < 50) setTimeout(run, 10);
             return;
@@ -459,7 +464,7 @@ const backspace =
       block.view.dispatch(tr);
     } else {
       let newState = block.editor.apply(tr);
-      setEditorState(mergedBlock.value, { editor: newState });
+      setEditorState(mergedBlock.entityID, { editor: newState });
     }
 
     return finish(true);
@@ -481,6 +486,75 @@ const shifttab =
     });
     return true;
   };
+
+// Enter with the caret at the start of a block inserts the empty block above
+// the current one, leaving content, caret, and focus untouched. Chained so
+// that under key-repeat each insertion reads the sibling positions the
+// previous one committed — otherwise two repeats generate colliding
+// fractional keys from the same neighbors and sort unpredictably.
+let insertAboveChain: Promise<unknown> = Promise.resolve();
+const insertEmptyBlockAbove = async (
+  propsRef: PropsRef,
+  repRef: RefObject<Replicache<ReplicacheMutators> | null>,
+) => {
+  let rep = repRef.current;
+  if (!rep) return;
+  let listData = propsRef.current.listData;
+  let parent = listData ? listData.parent : propsRef.current.parent;
+  let siblings = (
+    await rep.query((tx) => scanIndex(tx).eav(parent, "card/block"))
+  ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let index = siblings.findIndex(
+    (sib) => sib.data.value === propsRef.current.entityID,
+  );
+  let position = generateKeyBetween(
+    siblings[index - 1]?.data.position || null,
+    siblings[index]?.data.position || propsRef.current.position,
+  );
+  let list;
+  if (listData) {
+    let [listStyle] = await rep.query((tx) =>
+      scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+    );
+    let [checked] = await rep.query((tx) =>
+      scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
+    );
+    list = {
+      listStyle: listStyle?.data.value,
+      checklist: checked?.data.value,
+    };
+  }
+  let newEntityID = v7();
+  await rep.mutate.addBlock({
+    newEntityID,
+    factID: v7(),
+    permission_set: propsRef.current.entity_set.set,
+    parent,
+    type: "text",
+    position,
+    list,
+  });
+  if (propsRef.current.alignment !== "left") {
+    await rep.mutate.assertFact({
+      entity: newEntityID,
+      attribute: "block/text-alignment",
+      data: {
+        type: "text-alignment-type-union",
+        value: propsRef.current.alignment,
+      },
+    });
+  }
+  let [textSize] = await rep.query((tx) =>
+    scanIndex(tx).eav(propsRef.current.entityID, "block/text-size"),
+  );
+  if (textSize) {
+    await rep.mutate.assertFact({
+      entity: newEntityID,
+      attribute: "block/text-size",
+      data: { type: "text-size-union", value: textSize.data.value },
+    });
+  }
+};
 
 const enter =
   (
@@ -504,6 +578,30 @@ const enter =
       // they resolve instead of closing it synchronously.
       um.startGroup();
       shifttab(propsRef, repRef)().finally(() => um.endGroup());
+      return true;
+    }
+    // At the start of a block nothing precedes the caret, so the "split" is
+    // really "insert an empty block above": create it and leave this block's
+    // content, caret, and focus alone. This is what makes holding Enter safe —
+    // the split path below hands focus and content to a block whose editor
+    // hasn't mounted yet, and key-repeat outruns that hand-off; here there is
+    // nothing to hand off, and after any genuine split the caret lands at the
+    // start of the new block so subsequent repeats take this path. The undo
+    // group opens inside the chain thunk so each keypress stays its own step
+    // (overlapping startGroups would merge by depth-counting).
+    if (
+      state.selection.empty &&
+      state.selection.anchor <= 1 &&
+      propsRef.current.pageType !== "canvas"
+    ) {
+      insertAboveChain = insertAboveChain.then(async () => {
+        um.startGroup();
+        try {
+          await insertEmptyBlockAbove(propsRef, repRef);
+        } finally {
+          um.endGroup();
+        }
+      });
       return true;
     }
     // Splitting the block to make a new list item / text block runs its
@@ -737,7 +835,7 @@ const enter =
         }
         focusBlock(
           {
-            value: newEntityID,
+            entityID: newEntityID,
             parent: propsRef.current.parent,
             type: "text",
           },
@@ -750,7 +848,7 @@ const enter =
     asyncRun()
       .then(() => {
         useUIState.getState().setSelectedBlock({
-          value: newEntityID,
+          entityID: newEntityID,
           parent: propsRef.current.parent,
         });
 
@@ -813,16 +911,15 @@ const metaA =
         state.tr.setSelection(TextSelection.create(state.doc, from)),
       );
       view?.dom.blur();
-      repRef.current?.query(async (tx) => {
-        let allBlocks =
-          (await getBlocksWithType(tx, propsRef.current.parent)) || [];
+      if (repRef.current) {
+        let allBlocks = getPageBlocks(repRef.current, propsRef.current.parent);
         useUIState.setState({
           selectedBlocks: allBlocks.map((b) => ({
-            value: b.value,
+            entityID: b.entityID,
             parent: propsRef.current.parent,
           })),
         });
-      });
+      }
       return true;
     }
   };

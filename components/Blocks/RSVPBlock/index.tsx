@@ -1,11 +1,9 @@
 "use client";
 import { BlockProps, BlockLayout } from "components/Blocks/Block";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 
 export function RSVPBlock(props: BlockProps) {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   return (
     <BlockLayout
       isSelected={!!isSelected}

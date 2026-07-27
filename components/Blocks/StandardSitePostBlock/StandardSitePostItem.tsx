@@ -63,7 +63,7 @@ export function StandardSitePostItem({
   );
 }
 
-function StandardSitePostItemPlaceholder({
+export function StandardSitePostItemPlaceholder({
   size,
   pageWidth,
 }: {

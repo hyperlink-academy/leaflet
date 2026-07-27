@@ -16,7 +16,7 @@ import { elementId } from "src/utils/elementId";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 import { focusBlock } from "src/utils/focusBlock";
 
-export function CodeBlock(props: BlockProps) {
+export function CodeBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, rootEntity } = useReplicache();
   let content = useEntity(props.entityID, "block/code");
   let lang =
@@ -32,6 +32,7 @@ export function CodeBlock(props: BlockProps) {
   const [html, setHTML] = useState<string | null>(null);
 
   useLayoutEffect(() => {
+    if (props.preview) return;
     if (!content) return;
     void codeToHtml(content.data.value, {
       lang,
@@ -40,14 +41,17 @@ export function CodeBlock(props: BlockProps) {
     }).then((h) => {
       setHTML(h.replaceAll("<br>", "\n"));
     });
-  }, [content, lang, theme]);
+  }, [content, lang, theme, props.preview]);
 
   const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
     focusBlock(
-      { parent: props.parent, value: props.value, type: "code" },
+      { parent: props.parent, entityID: props.entityID, type: "code" },
       { type: "end" },
     );
   }, []);
+
+  // In preview, html stays null (the effect above bails), so the plain
+  // un-highlighted <pre> branch below renders.
   return (
     <div className="codeBlock w-full flex flex-col rounded-md gap-0.5 ">
       <BlockLayout
@@ -101,7 +105,7 @@ export function CodeBlock(props: BlockProps) {
           />
         )}
       </BlockLayout>
-      {permissions.write && (
+      {permissions.write && !props.preview && (
         <div className="text-sm text-tertiary flex w-full justify-between gap-4">
           <div className="codeBlockTheme grow flex gap-1">
             Theme:{" "}

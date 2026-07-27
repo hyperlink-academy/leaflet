@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { blockCommands } from "./BlockCommands";
 import { useEntity, useReplicache } from "src/replicache";
-import { useSubscribe } from "src/replicache/useSubscribe";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
   useLeafletPublicationData,
@@ -41,13 +40,8 @@ export const BlockCommandBar = ({
   let membershipsEnabled =
     !!pub?.publications?.publication_membership_settings?.enabled;
   let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
-  let hasMembersDelimiter = useSubscribe(
-    rep,
-    async (tx) => {
-      let blocks = await getBlocksWithType(tx, props.parent);
-      return !!blocks?.some((b) => b.type === "members-only-delimiter");
-    },
-    { default: false, dependencies: [props.parent] },
+  let hasMembersDelimiter = useBlocks(props.parent).some(
+    (b) => b.type === "members-only-delimiter",
   );
 
   // This clears '/' AND anything typed after it

@@ -17,6 +17,7 @@ import {
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksStandardSitePublication,
+  PubLeafletBlocksHtml,
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
@@ -305,6 +306,16 @@ export let Block = ({
       return (
         <PublishedIframeBlock
           url={b.block.url}
+          html={b.block.html}
+          height={b.block.height}
+          aspectRatio={b.block.aspectRatio}
+          pageId={pageId}
+        />
+      );
+    }
+    case PubLeafletBlocksHtml.isMain(b.block): {
+      return (
+        <PublishedIframeBlock
           html={b.block.html}
           height={b.block.height}
           aspectRatio={b.block.aspectRatio}
@@ -672,7 +683,7 @@ function PublishedIframeBlock(props: {
   url?: string;
   html?: string;
   height?: number;
-  aspectRatio?: PubLeafletBlocksIframe.AspectRatio;
+  aspectRatio?: { width: number; height: number };
   pageId?: string;
 }) {
   let parentPage = props.pageId

@@ -503,6 +503,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "link"
       | "mailbox"
       | "embed"
+      | "html"
       | "button"
       | "poll"
       | "bluesky-post"

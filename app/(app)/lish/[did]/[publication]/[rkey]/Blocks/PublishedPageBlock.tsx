@@ -1,7 +1,6 @@
 "use client";
 
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
 import { CSSProperties, useRef } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { PostContent, Block } from "../PostContent";

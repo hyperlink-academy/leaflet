@@ -1,4 +1,4 @@
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { BlockLayout, BlockProps } from "./Block";
 import { useMemo } from "react";
 import { AsyncValueInput } from "components/Input";
@@ -29,9 +29,7 @@ export const PublicationPollBlock = (
 ) => {
   let { data: publicationData, normalizedDocument } =
     useLeafletPublicationData();
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+  let isSelected = useIsBlockSelected(props.entityID);
   // Check if this poll has been published in a publication document
   const isPublished = useMemo(() => {
     if (!normalizedDocument) return false;

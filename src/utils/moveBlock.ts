@@ -1,21 +1,19 @@
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getPageBlocks } from "src/replicache/getBlocks";
 import { useUIState } from "src/useUIState";
 
-type BlockData = NonNullable<
-  Awaited<ReturnType<typeof getBlocksWithType>>
->[number];
+type BlockData = ReturnType<typeof getPageBlocks>[number];
 
 // A block's real parent for ordering: its list container, or the page for root
-// blocks (getBlocksWithType reports `parent` as the page for every block).
+// blocks (getPageBlocks reports `parent` as the page for every block).
 let realParent = (b: BlockData) => b.listData?.parent ?? b.parent;
 
 // Index of the last block in the folded section that begins at `headingIndex`
 // (the heading itself plus every following block whose headingPath includes it).
 let sectionEnd = (siblings: BlockData[], headingIndex: number) => {
-  let heading = siblings[headingIndex].value;
+  let heading = siblings[headingIndex].entityID;
   let end = headingIndex;
   while (
     end + 1 < siblings.length &&
@@ -38,7 +36,7 @@ let relocateRun = (
   direction: "up" | "down",
   folded: string[],
 ) => {
-  let run = siblings.slice(first, last + 1).map((b) => b.value);
+  let run = siblings.slice(first, last + 1).map((b) => b.entityID);
   let anchor: string | null;
   if (direction === "up") {
     if (first === 0) return; // already at the top
@@ -47,18 +45,18 @@ let relocateRun = (
     // heading so we land above it rather than within its hidden content.
     let foldedAncestor = prev.headingPath?.find((h) => folded.includes(h));
     let targetIndex = foldedAncestor
-      ? siblings.findIndex((b) => b.value === foldedAncestor)
+      ? siblings.findIndex((b) => b.entityID === foldedAncestor)
       : first - 1;
-    anchor = siblings[targetIndex - 1]?.value ?? null;
+    anchor = siblings[targetIndex - 1]?.entityID ?? null;
   } else {
     if (last === siblings.length - 1) return; // already at the bottom
     let next = siblings[last + 1];
     // If the next unit is itself a folded heading, hop past its whole section.
     let targetIndex =
-      next.type === "heading" && folded.includes(next.value)
+      next.type === "heading" && folded.includes(next.entityID)
         ? sectionEnd(siblings, last + 1)
         : last + 1;
-    anchor = siblings[targetIndex].value;
+    anchor = siblings[targetIndex].entityID;
   }
   rep.mutate.moveBlocks({ parent, blocks: run, after: anchor });
 };
@@ -79,12 +77,11 @@ const moveFoldedHeadingSection = async (
   direction: "up" | "down",
 ): Promise<boolean> => {
   let folded = useUIState.getState().foldedBlocks;
-  if (block.type !== "heading" || !folded.includes(block.value)) return false;
+  if (block.type !== "heading" || !folded.includes(block.entityID)) return false;
 
-  let allBlocks =
-    (await rep.query((tx) => getBlocksWithType(tx, block.parent))) || [];
+  let allBlocks = getPageBlocks(rep, block.parent);
   let rootBlocks = childrenOf(allBlocks, block.parent, block.parent);
-  let start = rootBlocks.findIndex((b) => b.value === block.value);
+  let start = rootBlocks.findIndex((b) => b.entityID === block.entityID);
   if (start === -1) return false;
   let end = sectionEnd(rootBlocks, start);
   relocateRun(rep, block.parent, rootBlocks, start, end, direction, folded);
@@ -104,11 +101,11 @@ const moveMultipleBlocks = async (
   let parent = realParent(sortedBlocks[0]);
   if (!sortedBlocks.every((b) => realParent(b) === parent)) return false;
 
-  let allBlocks = (await rep.query((tx) => getBlocksWithType(tx, page))) || [];
+  let allBlocks = getPageBlocks(rep, page);
   let siblings = childrenOf(allBlocks, page, parent);
-  let selected = new Set(sortedBlocks.map((b) => b.value));
+  let selected = new Set(sortedBlocks.map((b) => b.entityID));
   let indices = siblings
-    .map((b, i) => (selected.has(b.value) ? i : -1))
+    .map((b, i) => (selected.has(b.entityID) ? i : -1))
     .filter((i) => i >= 0);
   if (indices.length === 0) return false;
   let first = indices[0];
@@ -117,7 +114,7 @@ const moveMultipleBlocks = async (
   // A selected folded heading carries its hidden section along with it.
   for (let i = first; i <= last; i++) {
     let b = siblings[i];
-    if (b.type === "heading" && folded.includes(b.value))
+    if (b.type === "heading" && folded.includes(b.entityID))
       last = Math.max(last, sectionEnd(siblings, i));
   }
   relocateRun(rep, parent, siblings, first, last, direction, folded);
@@ -133,10 +130,10 @@ export const moveBlockUp = async (rep: Replicache<ReplicacheMutators>) => {
   let block = sortedBlocks[0];
   if (block && (await moveFoldedHeadingSection(rep, block, "up"))) return;
   let previousBlock =
-    siblings?.[siblings.findIndex((s) => s.value === block.value) - 1];
-  if (previousBlock.value === block.listData?.parent) {
+    siblings?.[siblings.findIndex((s) => s.entityID === block.entityID) - 1];
+  if (previousBlock.entityID === block.listData?.parent) {
     previousBlock =
-      siblings?.[siblings.findIndex((s) => s.value === block.value) - 2];
+      siblings?.[siblings.findIndex((s) => s.entityID === block.entityID) - 2];
   }
 
   if (
@@ -155,14 +152,14 @@ export const moveBlockUp = async (rep: Replicache<ReplicacheMutators>) => {
     if (useUIState.getState().foldedBlocks.includes(newParent.entity))
       useUIState.getState().toggleFold(newParent.entity);
     rep?.mutate.moveBlock({
-      block: block.value,
+      block: block.entityID,
       oldParent: block.listData?.parent,
       newParent: newParent.entity,
       position: { type: "end" },
     });
   } else {
     rep?.mutate.moveBlockUp({
-      entityID: block.value,
+      entityID: block.entityID,
       parent: block.listData?.parent || block.parent,
     });
   }
@@ -180,38 +177,38 @@ export const moveBlockDown = async (
   let block = sortedBlocks[0];
   if (block && (await moveFoldedHeadingSection(rep, block, "down"))) return;
   let nextBlock = siblings
-    .slice(siblings.findIndex((s) => s.value === block.value) + 1)
+    .slice(siblings.findIndex((s) => s.entityID === block.entityID) + 1)
     .find(
       (f) =>
         f.listData &&
         block.listData &&
-        !f.listData.path.find((f) => f.entity === block.value),
+        !f.listData.path.find((f) => f.entity === block.entityID),
     );
   if (
     nextBlock?.listData &&
     block.listData &&
     nextBlock.listData.depth === block.listData.depth - 1
   ) {
-    if (useUIState.getState().foldedBlocks.includes(nextBlock.value))
-      useUIState.getState().toggleFold(nextBlock.value);
+    if (useUIState.getState().foldedBlocks.includes(nextBlock.entityID))
+      useUIState.getState().toggleFold(nextBlock.entityID);
     rep?.mutate.moveBlock({
-      block: block.value,
+      block: block.entityID,
       oldParent: block.listData?.parent,
-      newParent: nextBlock.value,
+      newParent: nextBlock.entityID,
       position: { type: "first" },
     });
   } else {
     // Moving down past a folded heading lands the block inside its hidden
     // section; unfold it so the moved block stays visible.
     let visibleNext =
-      siblings[siblings.findIndex((s) => s.value === block.value) + 1];
+      siblings[siblings.findIndex((s) => s.entityID === block.entityID) + 1];
     if (
       visibleNext?.type === "heading" &&
-      useUIState.getState().foldedBlocks.includes(visibleNext.value)
+      useUIState.getState().foldedBlocks.includes(visibleNext.entityID)
     )
-      useUIState.getState().toggleFold(visibleNext.value);
+      useUIState.getState().toggleFold(visibleNext.entityID);
     rep?.mutate.moveBlockDown({
-      entityID: block.value,
+      entityID: block.entityID,
       parent: block.listData?.parent || block.parent,
       permission_set: permission_set,
     });

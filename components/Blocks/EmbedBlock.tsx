@@ -1,10 +1,9 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { generateKeyBetween } from "fractional-indexing";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { BlockProps, BlockLayout } from "./Block";
-import { v7 } from "uuid";
+import { addBlockBelow } from "src/utils/addBlockBelow";
 import { useSmoker } from "components/Toast";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
@@ -14,6 +13,7 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useDrag } from "src/hooks/useDrag";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { CheckTiny } from "components/Icons/CheckTiny";
+import { EditTiny } from "components/Icons/EditTiny";
 import { DotLoader } from "components/utils/DotLoader";
 import {
   LinkPreviewBody,
@@ -32,16 +32,17 @@ import { ToggleGroup } from "components/ToggleGroup";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
-  let entity_set = useEntitySetContext();
-  let { permissions } = entity_set;
-  let { rep, undoManager } = useReplicache();
-  let url = useEntity(props.entityID, "embed/url");
+  // Blocks written before html embeds were split into their own block type
+  // have type "embed" with an embed/html fact.
   let html = useEntity(props.entityID, "embed/html");
-  let isCanvasBlock = props.pageType === "canvas";
+  if (html) return <HTMLBlock {...props} />;
+  return <URLEmbedBlock {...props} />;
+};
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+const useEmbedSizing = (props: BlockProps & { preview?: boolean }) => {
+  let { rep } = useReplicache();
+  let { permissions } = useEntitySetContext();
+  let isCanvasBlock = props.pageType === "canvas";
 
   let height = useEntity(props.entityID, "embed/height")?.data.value || 360;
   let aspectRatio = useEntity(props.entityID, "embed/aspect-ratio")?.data.value;
@@ -74,6 +75,45 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         {...heightHandle.handlers}
       />
     ) : null;
+
+  let sizeStyle = aspectRatio
+    ? { aspectRatio }
+    : { height: height + (heightHandle.dragDelta?.y || 0) };
+
+  return {
+    aspectRatio,
+    resizeHandle,
+    sizeStyle,
+    wrapperClassName: `w-full ${!aspectRatio && heightHandle.dragDelta ? "pointer-events-none" : ""}`,
+  };
+};
+
+const EmbedBlockShell = (props: {
+  entityID: string;
+  sizing: ReturnType<typeof useEmbedSizing>;
+  children: ReactNode;
+}) => {
+  let isSelected = useIsBlockSelected(props.entityID);
+  return (
+    <div className={props.sizing.wrapperClassName}>
+      <BlockLayout
+        isSelected={!!isSelected}
+        className="flex flex-col relative w-full overflow-hidden group/embedBlock p-0!"
+      >
+        {props.children}
+      </BlockLayout>
+      {props.sizing.resizeHandle}
+    </div>
+  );
+};
+
+const URLEmbedBlock = (props: BlockProps & { preview?: boolean }) => {
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
+  let { rep, undoManager } = useReplicache();
+  let url = useEntity(props.entityID, "embed/url");
+  let sizing = useEmbedSizing(props);
+  let [isEditing, setIsEditing] = useState(false);
 
   let assertBlockData = useCallback(
     async (entityID: string, block: EmbedBlockData) => {
@@ -136,27 +176,17 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     onAddBelow: async (block) => {
       await undoManager.withUndoGroup(async () => {
         if (!rep) return;
-        let newEntityID = v7();
-        await rep.mutate.addBlock({
-          permission_set: entity_set.set,
-          factID: v7(),
+        let newEntityID = await addBlockBelow(rep, {
           parent: props.parent,
+          position: props.position,
+          nextPosition: props.nextPosition,
+          permission_set: entity_set.set,
           type: block.type === "text" ? "text" : "card",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID,
         });
         await assertBlockData(newEntityID, block);
       });
     },
   });
-
-  useEffect(() => {
-    if (props.preview) return;
-    let input = document.getElementById(elementId.block(props.entityID).input);
-    if (isSelected) {
-      input?.focus();
-    } else input?.blur();
-  }, [isSelected, props.entityID, props.preview]);
 
   let bgPage = useColorAttribute(null, "theme/page-background");
   let primary = useColorAttribute(null, "theme/primary");
@@ -181,93 +211,176 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     iframeSrc?.includes("youtube.com") || iframeSrc?.includes("youtu.be");
 
   if (props.preview) return null;
-  if (!url && !html) {
+  if (!url) {
     if (!permissions.write) return null;
+    return <EmptyEmbedBlock {...props} />;
+  }
+  if (isEditing) {
     return (
-      <div
-        className={`w-full ${!aspectRatio && heightHandle.dragDelta ? "pointer-events-none" : ""}`}
-      >
-        <label
-          id={props.preview ? undefined : elementId.block(props.entityID).input}
-          htmlFor={embedInputId(props.entityID)}
-          className={`
-            w-full p-2
-            text-tertiary hover:text-accent-contrast hover:cursor-pointer
-            flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
-            ${isSelected ? "border-2 border-tertiary" : "border border-border"}
-            ${props.pageType === "canvas" && "bg-bg-page"}`}
-          style={
-            aspectRatio
-              ? { aspectRatio }
-              : { height: height + (heightHandle.dragDelta?.y || 0) }
-          }
-          onMouseDown={() => {
-            focusBlock(
-              { type: props.type, value: props.entityID, parent: props.parent },
-              { type: "start" },
-            );
-          }}
-        >
-          <BlockEmbedInput {...props} />
-        </label>
-        {resizeHandle}
-      </div>
+      <EmptyEmbedBlock
+        {...props}
+        initialUrl={url.data.value}
+        isEditingExisting
+        onDone={() => setIsEditing(false)}
+      />
     );
   }
 
   return (
-    <div
-      className={`w-full ${!aspectRatio && heightHandle.dragDelta ? "pointer-events-none" : ""}`}
-    >
-      <BlockLayout
-        isSelected={!!isSelected}
-        className="flex flex-col relative w-full overflow-hidden group/embedBlock p-0!"
-      >
-        {html ? (
-          <iframe
-            className="w-full"
-            style={{ height: height + (heightHandle.dragDelta?.y || 0) }}
-            srcDoc={html.data.value}
-            sandbox={srcDocSandbox}
-            allow="fullscreen"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          ></iframe>
-        ) : (
-          <iframe
-            ref={iframeRef}
-            className={aspectRatio ? "w-full h-auto" : "w-full"}
-            style={
-              aspectRatio
-                ? { aspectRatio }
-                : { height: height + (heightHandle.dragDelta?.y || 0) }
-            }
-            src={iframeSrc}
-            allow="fullscreen"
-            loading="lazy"
-            referrerPolicy={
-              isYouTube ? "strict-origin-when-cross-origin" : "no-referrer"
-            }
-          ></iframe>
-        )}
-      </BlockLayout>
+    <EmbedBlockShell entityID={props.entityID} sizing={sizing}>
+      <iframe
+        ref={iframeRef}
+        className={sizing.aspectRatio ? "w-full h-auto" : "w-full"}
+        style={sizing.sizeStyle}
+        src={iframeSrc}
+        allow="fullscreen"
+        loading="lazy"
+        referrerPolicy={
+          isYouTube ? "strict-origin-when-cross-origin" : "no-referrer"
+        }
+      ></iframe>
+      {permissions.write && (
+        <EmbedEditButton
+          entityID={props.entityID}
+          parent={props.parent}
+          type={props.type}
+          onClick={() => setIsEditing(true)}
+        />
+      )}
+    </EmbedBlockShell>
+  );
+};
 
-      {resizeHandle}
+export const HTMLBlock = (props: BlockProps & { preview?: boolean }) => {
+  let { permissions } = useEntitySetContext();
+  let html = useEntity(props.entityID, "embed/html");
+  let sizing = useEmbedSizing(props);
+  let [isEditing, setIsEditing] = useState(false);
+
+  if (props.preview) return null;
+  if (!html) {
+    if (!permissions.write) return null;
+    return <EmptyEmbedBlock {...props} />;
+  }
+  if (isEditing) {
+    return (
+      <EmptyEmbedBlock
+        {...props}
+        initialHtml={html.data.value}
+        isEditingExisting
+        onDone={() => setIsEditing(false)}
+      />
+    );
+  }
+
+  return (
+    <EmbedBlockShell entityID={props.entityID} sizing={sizing}>
+      <iframe
+        className={sizing.aspectRatio ? "w-full h-auto" : "w-full"}
+        style={sizing.sizeStyle}
+        srcDoc={html.data.value}
+        sandbox={srcDocSandbox}
+        allow="fullscreen"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+      ></iframe>
+      {permissions.write && (
+        <EmbedEditButton
+          entityID={props.entityID}
+          parent={props.parent}
+          type={props.type}
+          onClick={() => setIsEditing(true)}
+        />
+      )}
+    </EmbedBlockShell>
+  );
+};
+
+const EmbedEditButton = (props: {
+  entityID: string;
+  parent: string;
+  type: BlockProps["type"];
+  onClick: () => void;
+}) => {
+  return (
+    <button
+      aria-label="Edit embed"
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        focusBlock(
+          { type: props.type, entityID: props.entityID, parent: props.parent },
+          { type: "start" },
+        );
+        props.onClick();
+      }}
+      className="absolute top-2 right-2 z-10 p-1 opaque-container text-secondary"
+    >
+      <EditTiny />
+    </button>
+  );
+};
+
+const EmptyEmbedBlock = (
+  props: BlockProps & {
+    initialUrl?: string;
+    initialHtml?: string;
+    isEditingExisting?: boolean;
+    onDone?: () => void;
+  },
+) => {
+  let sizing = useEmbedSizing(props);
+  let isSelected = useIsBlockSelected(props.entityID);
+
+  useEffect(() => {
+    let input = document.getElementById(elementId.block(props.entityID).input);
+    if (isSelected) {
+      input?.focus();
+    } else input?.blur();
+  }, [isSelected, props.entityID]);
+
+  return (
+    <div className={sizing.wrapperClassName}>
+      <label
+        id={elementId.block(props.entityID).input}
+        htmlFor={embedInputId(props.entityID)}
+        className={`
+          w-full p-2
+          text-tertiary hover:text-accent-contrast hover:cursor-pointer
+          flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
+          ${isSelected ? "border-2 border-tertiary" : "border border-border"}
+          ${props.pageType === "canvas" && "bg-bg-page"}`}
+        style={sizing.sizeStyle}
+        onMouseDown={() => {
+          focusBlock(
+            { type: props.type, entityID: props.entityID, parent: props.parent },
+            { type: "start" },
+          );
+        }}
+      >
+        <BlockEmbedInput {...props} />
+      </label>
+      {sizing.resizeHandle}
     </div>
   );
 };
 
 const embedInputId = (entityID: string) => `${entityID}-embed-input`;
 
-const BlockEmbedInput = (props: BlockProps) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
+const BlockEmbedInput = (
+  props: BlockProps & {
+    initialUrl?: string;
+    initialHtml?: string;
+    isEditingExisting?: boolean;
+    onDone?: () => void;
+  },
+) => {
+  let isSelected = useIsBlockSelected(props.entityID);
 
   let entity_set = useEntitySetContext();
-  let [mode, setMode] = useState<"url" | "html">("url");
-  let [linkValue, setLinkValue] = useState("");
-  let [htmlValue, setHtmlValue] = useState("");
+  let mode = props.type === "html" ? "html" : "url";
+  let [linkValue, setLinkValue] = useState(props.initialUrl ?? "");
+  let [htmlValue, setHtmlValue] = useState(props.initialHtml ?? "");
   let [loading, setLoading] = useState(false);
   let { rep, undoManager } = useReplicache();
 
@@ -291,19 +404,38 @@ const BlockEmbedInput = (props: BlockProps) => {
     });
   };
 
+  // Re-editing an existing embed just closes the input back into the shell;
+  // only the initial creation flow chains an empty caption block below.
+  let finishAfterSubmit = async () => {
+    if (props.isEditingExisting) {
+      props.onDone?.();
+      return;
+    }
+    if (!rep) return;
+    let textEntity = await addBlockBelow(rep, {
+      parent: props.parent,
+      position: props.position,
+      nextPosition: props.nextPosition,
+      permission_set: entity_set.set,
+      type: "text",
+    });
+    focusBlock(
+      { entityID: textEntity, type: "text", parent: props.parent },
+      { type: "start" },
+    );
+  };
+
   let submitUrl = async () => {
+    if (!rep) return;
     await undoManager.withUndoGroup(async () => {
       let entity = props.entityID;
       if (!entity) {
-        entity = v7();
-
-        await rep?.mutate.addBlock({
-          permission_set: entity_set.set,
-          factID: v7(),
+        entity = await addBlockBelow(rep, {
           parent: props.parent,
-          type: "card",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID: entity,
+          position: props.position,
+          nextPosition: props.nextPosition,
+          permission_set: entity_set.set,
+          type: "embed",
         });
       }
       let link = linkValue;
@@ -326,8 +458,13 @@ const BlockEmbedInput = (props: BlockProps) => {
         if (res.status === 200) {
           let data = await (res.json() as LinkPreviewMetadataResult);
           if (data.leafletPost) {
-            await assertStandardSitePostFacts(rep, entity, data.leafletPost.uri);
+            await assertStandardSitePostFacts(
+              rep,
+              entity,
+              data.leafletPost.uri,
+            );
             setLoading(false);
+            await finishAfterSubmit();
             return;
           }
           if (data.leafletPublication) {
@@ -337,6 +474,7 @@ const BlockEmbedInput = (props: BlockProps) => {
               data.leafletPublication.uri,
             );
             setLoading(false);
+            await finishAfterSubmit();
             return;
           }
           if (data.success && data.data.links?.player?.[0]) {
@@ -395,24 +533,7 @@ const BlockEmbedInput = (props: BlockProps) => {
         setLoading(false);
       }
 
-      let textEntity = v7();
-      await rep.mutate.addBlock({
-        permission_set: entity_set.set,
-        factID: v7(),
-        parent: props.parent,
-        type: "text",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: textEntity,
-      });
-
-      focusBlock(
-        {
-          value: textEntity,
-          type: "text",
-          parent: props.parent,
-        },
-        { type: "start" },
-      );
+      await finishAfterSubmit();
     });
   };
 
@@ -423,15 +544,12 @@ const BlockEmbedInput = (props: BlockProps) => {
       try {
         let entity = props.entityID;
         if (!entity) {
-          entity = v7();
-
-          await rep.mutate.addBlock({
-            permission_set: entity_set.set,
-            factID: v7(),
+          entity = await addBlockBelow(rep, {
             parent: props.parent,
-            type: "card",
-            position: generateKeyBetween(props.position, props.nextPosition),
-            newEntityID: entity,
+            position: props.position,
+            nextPosition: props.nextPosition,
+            permission_set: entity_set.set,
+            type: "html",
           });
         }
         let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
@@ -450,20 +568,7 @@ const BlockEmbedInput = (props: BlockProps) => {
         }
         await rep.mutate.assertFact(facts);
 
-        let textEntity = v7();
-        await rep.mutate.addBlock({
-          permission_set: entity_set.set,
-          factID: v7(),
-          parent: props.parent,
-          type: "text",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID: textEntity,
-        });
-
-        focusBlock(
-          { value: textEntity, type: "text", parent: props.parent },
-          { type: "start" },
-        );
+        await finishAfterSubmit();
       } finally {
         setLoading(false);
       }
@@ -504,32 +609,22 @@ const BlockEmbedInput = (props: BlockProps) => {
       }}
     >
       <div className="w-full flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "url", label: "URL" },
-              { value: "html", label: "HTML" },
-            ]}
-          />
-          <ToggleGroup
-            value={
-              (aspectRatioFact?.data.value ?? "fixed") as
-                | "fixed"
-                | "4/3"
-                | "1/1"
-                | "4/1"
-            }
-            onChange={setAspectRatio}
-            options={[
-              { value: "fixed", label: "Fixed" },
-              { value: "4/3", label: "4:3" },
-              { value: "1/1", label: "1:1" },
-              { value: "4/1", label: "4:1" },
-            ]}
-          />
-        </div>
+        <ToggleGroup
+          value={
+            (aspectRatioFact?.data.value ?? "fixed") as
+              | "fixed"
+              | "4/3"
+              | "1/1"
+              | "4/1"
+          }
+          onChange={setAspectRatio}
+          options={[
+            { value: "fixed", label: "Fixed" },
+            { value: "4/3", label: "4:3" },
+            { value: "1/1", label: "1:1" },
+            { value: "4/1", label: "4:1" },
+          ]}
+        />
         <button
           type="submit"
           id="embed-block-submit"
