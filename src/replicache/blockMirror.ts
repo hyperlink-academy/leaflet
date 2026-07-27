@@ -36,7 +36,7 @@ function isMirroredFact(value: unknown): value is Fact<MirroredAttribute> {
 }
 
 // Listeners receive the set of mirrored attributes touched by a commit (plus
-// the pseudo-key "initialized" when that flips) so each consumer can skip
+// the pseudo-key "populated" on the first diff) so each consumer can skip
 // recomputing when nothing it reads changed — e.g. useBlocks ignores
 // canvas/block position updates streaming in during a canvas drag.
 type MirrorListener = (changed: ReadonlySet<string>) => void;
@@ -50,9 +50,14 @@ export class BlockStructureMirror {
   private byEntityAttribute = new Map<string, Fact<MirroredAttribute>[]>();
   private listeners = new Set<MirrorListener>();
   private pendingChanged: Set<string> | null = null;
-  // Mirrors the "initialized" key the sync engine sets once the first pull
-  // lands; until it flips consumers fall back to initialFacts.
-  initialized = false;
+  // Whether the watch has delivered its first diff, which (with
+  // initialValuesInFirstDiff) carries every key already in the store — so the
+  // buckets are only trustworthy once this is true. Set by the arrival of a
+  // diff, never derived from its contents, so a wrong diff can't unset it.
+  // Whether the store itself holds real data is a separate question, answered
+  // by the sync engine's "initialized" key — read from the store by consumers,
+  // not tracked here.
+  populated = false;
 
   constructor(rep: Replicache<ReplicacheMutators>) {
     rep.experimentalWatch((diff) => this.apply(diff), {
@@ -98,15 +103,11 @@ export class BlockStructureMirror {
 
   private apply(diff: ExperimentalNoIndexDiff) {
     let changed = new Set<string>();
+    if (!this.populated) {
+      this.populated = true;
+      changed.add("populated");
+    }
     for (let op of diff) {
-      if (op.key === "initialized") {
-        let initialized = op.op !== "del" && !!op.newValue;
-        if (initialized !== this.initialized) {
-          this.initialized = initialized;
-          changed.add("initialized");
-        }
-        continue;
-      }
       // A change can move a fact between buckets (e.g. moveChildren rewrites
       // a card/block fact onto a different parent), so treat it as del + add.
       if (op.op === "del" || op.op === "change") {

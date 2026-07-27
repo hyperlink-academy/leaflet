@@ -100,7 +100,7 @@ async function expectParity(rep: Replicache<any>, entityID: string) {
 test("mirror matches a full-fact rebuild through structural mutations", async () => {
   let rep = makeRep();
   let mirror = getBlockStructureMirror(rep as any);
-  expect(mirror.initialized).toBe(false);
+  expect(mirror.populated).toBe(false);
 
   await (rep.mutate as any).initialize();
 
@@ -141,7 +141,7 @@ test("mirror matches a full-fact rebuild through structural mutations", async ()
     list: {},
   });
   await settle();
-  expect(mirror.initialized).toBe(true);
+  expect(mirror.populated).toBe(true);
   let blocks = getBlocksFromMirror(mirror, ROOT);
   expect(blocks.length).toBe(13);
   await expectParity(rep, ROOT);
