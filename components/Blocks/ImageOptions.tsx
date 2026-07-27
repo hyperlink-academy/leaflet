@@ -35,7 +35,6 @@ export function ImageOptions(props: {
     >
       <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
         <CoverImageControl entityID={props.entityID} />
-        <hr className="border-border-light" />
         <Toggle
           fullWidth
           toggle={isFullBleed}
@@ -223,6 +222,7 @@ function CoverImageControl(props: { entityID: string }) {
           Use as Cover Image
         </div>
       </Toggle>
+      <hr className="border-border-light" />
     </>
   );
 }
