@@ -85,7 +85,7 @@ function MaxWidthControl(props: {
 
   let maxWidth = useEntity(props.entityID, "image/max-width")?.data.value;
 
-  const MAX_WIDTH_MIN = 100;
+  const MAX_WIDTH_MIN = 10;
   const MAX_WIDTH_MAX = pageWidth - PAGE_PADDING;
   const MAX_WIDTH_STEP = 10;
 
