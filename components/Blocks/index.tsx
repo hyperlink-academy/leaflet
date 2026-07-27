@@ -91,7 +91,13 @@ export function Blocks(props: { entityID: string }) {
 
   return (
     <div
-      className={`blocks w-full flex flex-col outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
+      // flow-root, not flex-col: a flex container re-runs the flex algorithm
+      // over every item when anything inside any one of them changes, so a
+      // single keystroke cost a full-document layout that grew linearly with
+      // block count (378ms/60 keystrokes at 3000 blocks, vs 156ms as flow-root).
+      // flow-root rather than plain block so the first block's margin can't
+      // collapse out through the container's top edge.
+      className={`blocks w-full flow-root outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
       onClick={async (e) => {
         if (!permissions.write) return;
         if (useUIState.getState().selectedBlocks.length > 1) return;
