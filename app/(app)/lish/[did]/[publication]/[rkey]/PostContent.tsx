@@ -539,6 +539,11 @@ export let Block = ({
                 width={b.block.aspectRatio?.width}
                 className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
                 src={src}
+                style={
+                  !isFullBleed && b.block.width
+                    ? { width: b.block.width, maxWidth: "100%", height: "auto" }
+                    : undefined
+                }
               />
             </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}

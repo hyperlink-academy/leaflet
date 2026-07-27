@@ -529,6 +529,7 @@ export async function processBlocksToPages(opts: {
       if (!image) return;
       const [altText] = scan.eav(b.entityID, "image/alt");
       const [fullBleed] = scan.eav(b.entityID, "image/full-bleed");
+      const [maxWidth] = scan.eav(b.entityID, "image/max-width");
       const blobref = await hooks.uploadImage(image.data.src, { membersOnly });
       if (!blobref) return;
       const block: $Typed<PubLeafletBlocksImage.Main> = {
@@ -540,6 +541,7 @@ export async function processBlocksToPages(opts: {
         },
         alt: altText ? altText.data.value : undefined,
         fullBleed: fullBleed?.data.value || undefined,
+        ...(maxWidth !== undefined && { width: Math.floor(maxWidth.data.value) }),
       };
       return block;
     }

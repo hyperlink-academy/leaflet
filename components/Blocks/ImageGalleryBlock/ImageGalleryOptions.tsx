@@ -61,6 +61,7 @@ export function ImageGalleryOptions(props: {
   return (
     <Popover
       asChild
+      side="top"
       align="end"
       sideOffset={6}
       className=" w-full sm:w-md"
