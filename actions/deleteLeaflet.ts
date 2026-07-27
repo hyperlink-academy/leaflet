@@ -12,6 +12,7 @@ import { PermissionToken } from "src/replicache";
 import { pool } from "supabase/pool";
 import { getIdentityData } from "./getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
+import { isConfirmedContributor } from "src/contributorPermissions";
 
 export async function deleteLeaflet(permission_token: PermissionToken) {
   const client = await pool.connect();
@@ -45,9 +46,18 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
       const isOwner = leafletInPubs.some(
         (pub: any) => pub.publications.identity_did === identity.atp_did,
       );
-      if (!isOwner) {
+      let isMember = isOwner;
+      if (!isMember && identity.atp_did) {
+        for (const pub of leafletInPubs) {
+          if (await isConfirmedContributor(pub.publication, identity.atp_did)) {
+            isMember = true;
+            break;
+          }
+        }
+      }
+      if (!isMember) {
         throw new Error(
-          "Unauthorized: You must own the publication to delete this leaflet",
+          "Unauthorized: You must be a member of the publication to delete this leaflet",
         );
       }
     }
@@ -107,23 +117,7 @@ export async function archivePost(token: string) {
     .eq("token", token)
     .eq("identity", identity.id);
 
-  // Check if leaflet is in any publications where user is the creator
-  let { data: leafletInPubs } = await supabaseServerClient
-    .from("leaflets_in_publications")
-    .select("publication, publications!inner(identity_did)")
-    .eq("leaflet", token);
-
-  if (leafletInPubs) {
-    for (let pub of leafletInPubs) {
-      if (pub.publications.identity_did === identity.atp_did) {
-        await supabaseServerClient
-          .from("leaflets_in_publications")
-          .update({ archived: true })
-          .eq("leaflet", token)
-          .eq("publication", pub.publication);
-      }
-    }
-  }
+  await setArchivedInPublications(token, identity.atp_did, true);
 
   refresh();
   return;
@@ -140,24 +134,35 @@ export async function unarchivePost(token: string) {
     .eq("token", token)
     .eq("identity", identity.id);
 
-  // Check if leaflet is in any publications where user is the creator
+  await setArchivedInPublications(token, identity.atp_did, false);
+
+  refresh();
+  return;
+}
+
+// Archive/unarchive the leaflet in any publications where the user is a
+// member (owner or confirmed contributor), so it moves in and out of the
+// publication dashboard's draft list too.
+async function setArchivedInPublications(
+  token: string,
+  atp_did: string | null,
+  archived: boolean,
+) {
   let { data: leafletInPubs } = await supabaseServerClient
     .from("leaflets_in_publications")
     .select("publication, publications!inner(identity_did)")
     .eq("leaflet", token);
+  if (!leafletInPubs || !atp_did) return;
 
-  if (leafletInPubs) {
-    for (let pub of leafletInPubs) {
-      if (pub.publications.identity_did === identity.atp_did) {
-        await supabaseServerClient
-          .from("leaflets_in_publications")
-          .update({ archived: false })
-          .eq("leaflet", token)
-          .eq("publication", pub.publication);
-      }
-    }
+  for (let pub of leafletInPubs) {
+    let isMember =
+      pub.publications.identity_did === atp_did ||
+      (await isConfirmedContributor(pub.publication, atp_did));
+    if (!isMember) continue;
+    await supabaseServerClient
+      .from("leaflets_in_publications")
+      .update({ archived })
+      .eq("leaflet", token)
+      .eq("publication", pub.publication);
   }
-
-  refresh();
-  return;
 }
