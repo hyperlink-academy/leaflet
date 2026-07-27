@@ -15,6 +15,8 @@ import { LoginModal } from "components/LoginButton";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { Modal } from "components/Modal";
 import { MembershipSubscribe } from "components/Memberships/MembershipSubscribeStep";
+import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
 
 export type Tier = {
   id: string;
@@ -22,12 +24,18 @@ export type Tier = {
   description: string | null;
   monthly_price_cents: number;
   annual_price_cents: number | null;
+  // The always-free tier: subscribing to it just follows the pub (no paid
+  // membership, so members-only posts stay locked), so it never routes to
+  // payment. Exactly one per publication.
+  is_free: boolean;
 };
 
 export type WalletCard = {
   brand: string | null;
   last4: string | null;
 };
+
+const isFreeTier = (tier: Tier) => tier.is_free;
 
 const formatPrice = (cents: number) =>
   (cents / 100).toLocaleString("en-US", {
@@ -101,6 +109,16 @@ export function JoinTiers(props: {
     : props.handle
       ? `@${props.handle}`
       : null;
+
+  // Free-tier state: whether the reader already subscribes to the pub (via the
+  // account type it uses), and the tiers to render with the free tier last.
+  const viewerSub = useViewerSubscription(props.publicationUri);
+  const isSubscribed = props.newsletterMode
+    ? viewerSub.emailSubscribed
+    : viewerSub.atprotoSubscribed;
+  const renderTiers = [...props.tiers].sort(
+    (a, b) => Number(a.is_free) - Number(b.is_free),
+  );
 
   // Creates the subscription with the saved card and acts on the result. Returns
   // "navigating" when it sends the browser elsewhere (success or hosted-invoice
@@ -236,16 +254,6 @@ export function JoinTiers(props: {
     );
   }
 
-  if (props.tiers.length === 0) {
-    return (
-      <Shell name={props.publicationName}>
-        <div className="opaque-container px-4 py-6 text-center text-secondary">
-          No membership tiers are available yet. Check back soon!
-        </div>
-      </Shell>
-    );
-  }
-
   return (
     <Shell name={props.publicationName}>
       {hasAnnual && (
@@ -260,70 +268,87 @@ export function JoinTiers(props: {
           />
         </div>
       )}
-      <div className="flex sm:flex-col flex-col">
-        {props.tiers.map((tier) => (
-          <div
-            key={tier.id}
-            className="opaque-container relative flex flex-col basis-1 gap-1 p-4 pt-3 max-w-md mx-auto w-fill"
-          >
-            {props.unlocksPost && (
-              <span className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-accent-1 px-2 py-0.5 text-xs font-bold text-accent-2">
-                <CheckTiny className="w-3 h-3 shrink-0" />
-                Unlocks this post
-              </span>
-            )}
-            <h3 className="text-primary text-[20px]">{tier.name}</h3>
-            {tier.description && (
-              <p className="text-secondary text-sm leading-snug">
-                {tier.description}
-              </p>
-            )}
-            <ButtonPrimary
-              fullWidth
-              type="button"
-              className="self-start mt-3"
-              disabled={busyTierId !== null}
-              onClick={() =>
-                canPayDirectly ? proceedToPayment(tier) : setSubscribeTier(tier)
-              }
+      <div className="flex sm:flex-row gap-2 flex-col w-full ">
+        {renderTiers.map((tier) => {
+          const free = isFreeTier(tier);
+          return (
+            <div
+              key={tier.id}
+              className="opaque-container relative flex flex-col gap-1 p-4 pt-3 max-w-md w-full"
             >
-              {busyTierId === tier.id ? (
-                <DotLoader />
-              ) : (
-                `Join for ${tierPriceLabel(tier, effectiveCadence(tier))}`
+              {props.unlocksPost && (
+                <span className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-accent-1 px-2 py-0.5 text-xs font-bold text-accent-2">
+                  <CheckTiny className="w-3 h-3 shrink-0" />
+                  Unlocks post
+                </span>
               )}
-            </ButtonPrimary>
-            {props.walletCard?.last4 && (
-              <p className="text-tertiary text-xs">
-                Bill to card ending in
-                {props.walletCard.last4}
-              </p>
-            )}
-            {canPayDirectly && subscribingAs && (
-              <p className="text-tertiary text-xs">
-                Subscribing as {subscribingAs}
-              </p>
-            )}
-          </div>
-        ))}
+              <h3 className="text-primary text-[20px]">{tier.name}</h3>
+              {tier.description && (
+                <p className="text-secondary text-sm leading-snug">
+                  {tier.description}
+                </p>
+              )}
+              {free ? (
+                isSubscribed ? (
+                  <div className="mt-3">
+                    <ManageSubscription
+                      publicationUri={props.publicationUri}
+                      publicationUrl={props.publicationUrl}
+                      newsletterMode={props.newsletterMode}
+                      user={viewerSub}
+                    />
+                  </div>
+                ) : (
+                  <ButtonPrimary
+                    fullWidth
+                    type="button"
+                    className="self-start mt-3"
+                    onClick={() => setSubscribeTier(tier)}
+                  >
+                    Subscribe for free
+                  </ButtonPrimary>
+                )
+              ) : (
+                <>
+                  <ButtonPrimary
+                    fullWidth
+                    type="button"
+                    className="self-start mt-3"
+                    disabled={busyTierId !== null}
+                    onClick={() =>
+                      canPayDirectly
+                        ? proceedToPayment(tier)
+                        : setSubscribeTier(tier)
+                    }
+                  >
+                    {busyTierId === tier.id ? (
+                      <DotLoader />
+                    ) : (
+                      `Join for ${tierPriceLabel(tier, effectiveCadence(tier))}`
+                    )}
+                  </ButtonPrimary>
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <p className="text-tertiary text-sm text-center">
         {!props.walletCard?.last4 ? (
-          props.loggedIn ? (
-            <>
-              You'll add a card securely through Stripe before your first join.
-            </>
-          ) : (
+          props.loggedIn ? null : (
             <>
               Already Subscribed?{" "}
               <LoginModal trigger={<div className="underline">Sign in</div>} />
             </>
           )
         ) : (
-          <>Subscribe with card ending in {props.walletCard.last4}</>
+          <>Bill to card ending in {props.walletCard.last4}</>
         )}
       </p>
+      {subscribingAs && (
+        <p className="text-tertiary text-xs">Subscribing as {subscribingAs}</p>
+      )}
 
       <Modal
         open={subscribeTier !== null}

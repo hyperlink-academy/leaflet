@@ -20,7 +20,7 @@ async function fetchPublicationForJoin(did: string, publicationName: string) {
       `uri, name, identity_did, record,
        publication_membership_settings(enabled),
        publication_newsletter_settings(enabled),
-       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, stripe_price_monthly_id)`,
+       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, stripe_price_monthly_id, is_free)`,
     )
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publicationName))
@@ -54,9 +54,9 @@ export default async function JoinPage(props: {
 
   const record = normalizePublicationRecord(publication.record);
   const tiers = publication.publication_membership_tiers
-    // Requiring a monthly price id guards against half-provisioned tiers a
-    // reader couldn't actually subscribe to.
-    .filter((t) => t.active && t.stripe_price_monthly_id)
+    // The free tier has no Stripe price; paid tiers need a monthly price id to
+    // guard against half-provisioned tiers a reader couldn't subscribe to.
+    .filter((t) => t.active && (t.is_free || t.stripe_price_monthly_id))
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((t) => ({
       id: t.id,
@@ -64,6 +64,7 @@ export default async function JoinPage(props: {
       description: t.description,
       monthly_price_cents: t.monthly_price_cents,
       annual_price_cents: t.annual_price_cents,
+      is_free: t.is_free,
     }));
 
   const identity = await getIdentityData();

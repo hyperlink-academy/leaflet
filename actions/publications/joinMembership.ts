@@ -177,7 +177,8 @@ export async function subscribeToTier(args: {
     return Err("memberships_not_enabled");
   if (identity.atp_did && identity.atp_did === publication.identity_did)
     return Err("own_publication");
-  if (!tier) return Err("tier_not_found");
+  // The free tier isn't a paid membership — it's reached via the subscribe flow.
+  if (!tier || tier.is_free) return Err("tier_not_found");
 
   const priceId =
     args.cadence === "year"

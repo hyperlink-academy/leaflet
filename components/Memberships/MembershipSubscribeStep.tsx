@@ -5,7 +5,10 @@ import { ButtonPrimary } from "components/Buttons";
 import { Modal } from "components/Modal";
 import { useToaster } from "components/Toast";
 import { EmailInput, EmailConfirm } from "components/Subscribe/EmailSubscribe";
-import { SubscribeWithHandle } from "components/Subscribe/HandleSubscribe";
+import {
+  SubscribeWithHandle,
+  AtSubscribeSuccess,
+} from "components/Subscribe/HandleSubscribe";
 import { LinkIdentityModal } from "components/Subscribe/LinkIdentityModal";
 import { SUBSCRIBE_ERROR_MESSAGES } from "components/Subscribe/subscribeErrors";
 import { redirectToEmailSubscribe } from "components/Subscribe/SubscribeButton";
@@ -30,20 +33,35 @@ export function MembershipSubscribe(props: {
   const [confirming, setConfirming] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [atSuccessOpen, setAtSuccessOpen] = useState(false);
 
   if (!props.newsletterMode) {
     return (
-      <SubscribeWithHandle
-        autoFocus
-        publicationUri={props.publicationUri}
-        subscribeLabel="Next"
-        user={{
-          loggedIn: props.loggedIn,
-          email: props.email ?? undefined,
-          handle: props.handle ?? undefined,
-        }}
-        onSubscribed={props.onSubscribed}
-      />
+      <>
+        <SubscribeWithHandle
+          autoFocus
+          publicationUri={props.publicationUri}
+          subscribeLabel="Next"
+          // We're already in the join flow — don't bounce to /join; show the
+          // success modal in place and continue via onSubscribed on close.
+          skipJoinRedirect
+          user={{
+            loggedIn: props.loggedIn,
+            email: props.email ?? undefined,
+            handle: props.handle ?? undefined,
+          }}
+          onAtSuccess={() => setAtSuccessOpen(true)}
+        />
+        <Modal
+          open={atSuccessOpen}
+          onOpenChange={(open) => {
+            setAtSuccessOpen(open);
+            if (!open) props.onSubscribed();
+          }}
+        >
+          <AtSubscribeSuccess />
+        </Modal>
+      </>
     );
   }
 

@@ -242,6 +242,7 @@ export async function getMyMembershipForPublication(
       .select("id, name, monthly_price_cents, annual_price_cents, sort_order")
       .eq("publication", publicationUri)
       .eq("active", true)
+      .eq("is_free", false)
       .order("sort_order", { ascending: true }),
   ]);
   if (!row) return null;
@@ -298,6 +299,7 @@ export async function getMyMemberships(): Promise<MyMembershipsData | null> {
         .select("id, publication, name, monthly_price_cents, annual_price_cents, sort_order")
         .in("publication", publicationUris)
         .eq("active", true)
+        .eq("is_free", false)
     : { data: [] };
   const tiersByPublication = new Map<string, AvailableTier[]>();
   for (const t of (allTiers ?? []).sort((a, b) => a.sort_order - b.sort_order)) {

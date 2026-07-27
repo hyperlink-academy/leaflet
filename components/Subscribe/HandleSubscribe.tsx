@@ -64,6 +64,10 @@ export const SubscribeWithHandle = (props: {
   // Overrides the "Subscribe" copy on the action button (e.g. the membership
   // join flow, where subscribing is a step toward paying).
   subscribeLabel?: React.ReactNode;
+  // Skip the redirect to the membership /join page after a one-click subscribe
+  // to a memberships-enabled pub. Set by callers already in the join flow so the
+  // reader stays on the post and onAtSuccess/onSubscribed fire instead.
+  skipJoinRedirect?: boolean;
   user: {
     loggedIn: boolean;
     email: string | undefined;
@@ -133,8 +137,10 @@ export const SubscribeWithHandle = (props: {
         setSubscribing(false);
         return;
       }
-      if (result.joinUrl) {
+      if (result.joinUrl && !props.skipJoinRedirect) {
         // Memberships enabled — go pick a tier instead of the success modal.
+        // Callers already inside the join flow set skipJoinRedirect so the
+        // reader stays put and gets the normal success handling instead.
         window.location.href = result.joinUrl;
         return;
       }

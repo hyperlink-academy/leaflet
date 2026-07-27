@@ -42,7 +42,7 @@ export async function getPostPageData(
           publication_subscriptions(*),
           publication_newsletter_settings(enabled),
           publication_membership_settings(enabled),
-          publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order),
+          publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, is_free),
           publication_contributors(contributor_did, confirmed),
           publication_pages(id, path, title, record_uri, sort_order))
         ),
@@ -85,6 +85,7 @@ export async function getPostPageData(
       monthly_price_cents: t.monthly_price_cents,
       annual_price_cents: t.annual_price_cents,
       currency: t.currency,
+      is_free: t.is_free,
     }));
   let membersOnly: { gated: boolean; tiers: typeof membershipTiers } = {
     gated: false,

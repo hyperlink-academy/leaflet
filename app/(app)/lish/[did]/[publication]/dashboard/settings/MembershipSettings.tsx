@@ -24,6 +24,7 @@ type Tier = {
   currency: string;
   active: boolean;
   sort_order: number;
+  is_free: boolean;
 };
 
 const formatPrice = (cents: number) =>
@@ -43,7 +44,9 @@ export const MembershipSettings = () => {
   let tiers = ((data?.publication?.publication_membership_tiers ??
     []) as Tier[])
     .filter((t) => t.active)
-    .toSorted((a, b) => a.sort_order - b.sort_order);
+    .toSorted(
+      (a, b) => Number(a.is_free) - Number(b.is_free) || a.sort_order - b.sort_order,
+    );
   let chargesEnabled = !!identity?.connectedAccount?.charges_enabled;
 
   let [enabling, setEnabling] = useState(false);
@@ -144,9 +147,15 @@ export const MembershipSettings = () => {
                   </div>
                 )}
                 <div className="text-secondary text-sm">
-                  {formatPrice(tier.monthly_price_cents)}/month
-                  {tier.annual_price_cents != null &&
-                    ` · ${formatPrice(tier.annual_price_cents)}/year`}
+                  {tier.is_free ? (
+                    "Free"
+                  ) : (
+                    <>
+                      {formatPrice(tier.monthly_price_cents)}/month
+                      {tier.annual_price_cents != null &&
+                        ` · ${formatPrice(tier.annual_price_cents)}/year`}
+                    </>
+                  )}
                 </div>
               </div>
               <ButtonSecondary
@@ -191,6 +200,7 @@ const TierEditorModal = (props: {
   onSaved: () => Promise<void>;
 }) => {
   let toaster = useToaster();
+  let isFree = !!props.tier?.is_free;
   let [name, setName] = useState(props.tier?.name ?? "");
   let [description, setDescription] = useState(props.tier?.description ?? "");
   let [monthly, setMonthly] = useState(
@@ -213,27 +223,34 @@ const TierEditorModal = (props: {
 
   let onSave = async () => {
     if (saving) return;
-    let monthlyCents = parsePrice(monthly);
-    if (!name.trim() || monthlyCents === null || monthlyCents < 100) {
-      toaster({
-        type: "error",
-        content: "Tiers need a name and a monthly price of at least $1.",
-      });
+    if (!name.trim()) {
+      toaster({ type: "error", content: "Tiers need a name." });
       return;
     }
-    let annualCents = parsePrice(annual);
-    if (annual.trim() && (annualCents === null || annualCents < 100)) {
-      toaster({
-        type: "error",
-        content: "Annual price must be at least $1, or left blank.",
-      });
-      return;
+    // The free tier keeps its price; only name/description are editable.
+    let monthlyCents = isFree ? 0 : parsePrice(monthly);
+    let annualCents = isFree ? null : parsePrice(annual);
+    if (!isFree) {
+      if (monthlyCents === null || monthlyCents < 100) {
+        toaster({
+          type: "error",
+          content: "Tiers need a monthly price of at least $1.",
+        });
+        return;
+      }
+      if (annual.trim() && (annualCents === null || annualCents < 100)) {
+        toaster({
+          type: "error",
+          content: "Annual price must be at least $1, or left blank.",
+        });
+        return;
+      }
     }
     let input: MembershipTierInput = {
       id: props.tier?.id,
       name: name.trim(),
       description: description.trim() || null,
-      monthly_price_cents: monthlyCents,
+      monthly_price_cents: monthlyCents ?? 0,
       annual_price_cents: annualCents,
       sort_order: props.tier?.sort_order,
     };
@@ -310,41 +327,48 @@ const TierEditorModal = (props: {
             onChange={(e) => setDescription(e.currentTarget.value)}
           />
         </div>
-        <div className="flex gap-2">
-          <div className="flex flex-col gap-1 grow">
-            <label className="text-secondary font-bold" htmlFor="tierMonthly">
-              Monthly ($)
-            </label>
-            <Input
-              id="tierMonthly"
-              className="input-with-border w-full text-primary"
-              type="number"
-              min="1"
-              step="0.01"
-              value={monthly}
-              placeholder="5"
-              onChange={(e) => setMonthly(e.currentTarget.value)}
-            />
+        {isFree ? (
+          <div className="text-tertiary text-sm leading-snug">
+            The free tier lets readers subscribe without paying. It's always
+            free and can't be removed — you can only rename it.
           </div>
-          <div className="flex flex-col gap-1 grow">
-            <label className="text-secondary font-bold" htmlFor="tierAnnual">
-              Annual ($){" "}
-              <span className="font-normal text-tertiary">(optional)</span>
-            </label>
-            <Input
-              id="tierAnnual"
-              className="input-with-border w-full text-primary"
-              type="number"
-              min="1"
-              step="0.01"
-              value={annual}
-              placeholder="50"
-              onChange={(e) => setAnnual(e.currentTarget.value)}
-            />
+        ) : (
+          <div className="flex gap-2">
+            <div className="flex flex-col gap-1 grow">
+              <label className="text-secondary font-bold" htmlFor="tierMonthly">
+                Monthly ($)
+              </label>
+              <Input
+                id="tierMonthly"
+                className="input-with-border w-full text-primary"
+                type="number"
+                min="1"
+                step="0.01"
+                value={monthly}
+                placeholder="5"
+                onChange={(e) => setMonthly(e.currentTarget.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1 grow">
+              <label className="text-secondary font-bold" htmlFor="tierAnnual">
+                Annual ($){" "}
+                <span className="font-normal text-tertiary">(optional)</span>
+              </label>
+              <Input
+                id="tierAnnual"
+                className="input-with-border w-full text-primary"
+                type="number"
+                min="1"
+                step="0.01"
+                value={annual}
+                placeholder="50"
+                onChange={(e) => setAnnual(e.currentTarget.value)}
+              />
+            </div>
           </div>
-        </div>
+        )}
         <div className="flex justify-between items-center pt-1">
-          {props.tier ? (
+          {props.tier && !isFree ? (
             <ButtonSecondary type="button" disabled={deleting} onClick={onDelete}>
               {deleting ? <DotLoader /> : "Remove"}
             </ButtonSecondary>
