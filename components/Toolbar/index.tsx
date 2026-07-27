@@ -118,7 +118,11 @@ export const Toolbar = (props: {
                 onClose={() => setToolbarState("default")}
               />
             ) : toolbarState === "list" ? (
-              <ListToolbar onClose={() => setToolbarState("default")} />
+              <ListToolbar
+                onClose={() =>
+                  setToolbarState(isMultiselect ? "multiselect" : "default")
+                }
+              />
             ) : toolbarState === "link" ? (
               <InlineLinkToolbar
                 onClose={() => {
@@ -130,7 +134,9 @@ export const Toolbar = (props: {
               />
             ) : toolbarState === "heading" ? (
               <TextBlockTypeToolbar
-                onClose={() => setToolbarState("default")}
+                onClose={() =>
+                  setToolbarState(isMultiselect ? "multiselect" : "default")
+                }
               />
             ) : toolbarState === "text-alignment" ? (
               <TextAlignmentToolbar />
@@ -157,6 +163,8 @@ export const Toolbar = (props: {
                   },
                   selectedBlocks: [],
                 }));
+              } else if (isMultiselect) {
+                setToolbarState("multiselect");
               } else {
                 if (props.blockType === "image") {
                   setToolbarState("image");
