@@ -629,6 +629,13 @@ body.cmd-held .ProseMirror a {
 .footnote-scope {
   counter-reset: footnote;
 }
+/* In the editor the .footnote-scope element is display:contents (see
+   Page.tsx), and browsers drop counter-reset on a display:contents box — so
+   every ref would self-instantiate the counter and render "1". Reset on the
+   real block-list box, which wraps all the inline refs, so numbering counts. */
+.blocks {
+  counter-reset: footnote;
+}
 .footnote-ref {
   counter-increment: footnote;
   cursor: pointer;
