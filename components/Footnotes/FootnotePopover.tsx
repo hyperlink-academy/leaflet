@@ -41,7 +41,9 @@ export function FootnotePopover() {
     if (!anchorElement || !footnote) return footnote?.index ?? 0;
     let container = anchorElement.closest(".footnote-scope");
     if (!container) return footnote.index;
-    let allRefs = Array.from(container.querySelectorAll(".footnote-ref"));
+    let allRefs = Array.from(
+      container.querySelectorAll(".footnote-ref"),
+    ).filter((ref) => !ref.closest(".pageLinkBlockWrapper"));
     let pos = allRefs.indexOf(anchorElement);
     return pos >= 0 ? pos + 1 : footnote.index;
   }, [anchorElement, footnote]);
