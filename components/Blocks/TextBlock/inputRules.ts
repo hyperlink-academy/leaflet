@@ -23,106 +23,115 @@ const anchorInCodeMark = (state: EditorState, start: number, end: number) => {
   const endMarks = state.doc.resolve(end).marks();
   return !!codeMark.isInSet(startMarks) || !!codeMark.isInSet(endMarks);
 };
+
+// Inline text-decoration markdown shortcuts (bold, italic, code, strikethrough,
+// highlight). Shared with the footnote editor so it accepts the same syntax as
+// the main text block — see footnoteInputRules below.
+export const inlineMarkInputRules = (): InputRule[] => [
+  //Strikethrough
+  new InputRule(/\~\~([^*]+)\~\~$/, (state, match, start, end) => {
+    if (anchorInCodeMark(state, start, end)) return null;
+    const [fullMatch, content] = match;
+    const { tr } = state;
+    if (content) {
+      tr.replaceWith(start, end, state.schema.text(content))
+        .addMark(
+          start,
+          start + content.length,
+          schema.marks.strikethrough.create(),
+        )
+        .removeStoredMark(schema.marks.strikethrough);
+      return tr;
+    }
+    return null;
+  }),
+
+  //Highlight
+  new InputRule(/\=\=([^*]+)\=\=$/, (state, match, start, end) => {
+    if (anchorInCodeMark(state, start, end)) return null;
+    const [fullMatch, content] = match;
+    const { tr } = state;
+    if (content) {
+      tr.replaceWith(start, end, state.schema.text(content))
+        .addMark(
+          start,
+          start + content.length,
+          schema.marks.highlight.create({
+            color: useUIState.getState().lastUsedHighlight || "1",
+          }),
+        )
+        .removeStoredMark(schema.marks.highlight);
+      return tr;
+    }
+    return null;
+  }),
+
+  //Bold
+  new InputRule(/\*\*([^*]+)\*\*$/, (state, match, start, end) => {
+    if (anchorInCodeMark(state, start, end)) return null;
+    const [fullMatch, content] = match;
+    const { tr } = state;
+    if (content) {
+      tr.replaceWith(start, end, state.schema.text(content))
+        .addMark(start, start + content.length, schema.marks.strong.create())
+        .removeStoredMark(schema.marks.strong);
+      return tr;
+    }
+    return null;
+  }),
+
+  //Code
+  new InputRule(/\`([^`]+)\`$/, (state, match, start, end) => {
+    if (anchorInCodeMark(state, start, end)) return null;
+    const [fullMatch, content] = match;
+    const { tr } = state;
+    if (content) {
+      const startIndex = start + fullMatch.indexOf("`");
+      tr.replaceWith(startIndex, end, state.schema.text(content))
+        .addMark(
+          startIndex,
+          startIndex + content.length,
+          schema.marks.code.create(),
+        )
+        .removeStoredMark(schema.marks.code);
+      return tr;
+    }
+    return null;
+  }),
+
+  //Italic
+  new InputRule(/(?:^|[^*])\*([^*]+)\*$/, (state, match, start, end) => {
+    if (anchorInCodeMark(state, start, end)) return null;
+    const [fullMatch, content] = match;
+    const { tr } = state;
+    if (content) {
+      const startIndex = start + fullMatch.indexOf("*");
+      tr.replaceWith(startIndex, end, state.schema.text(content))
+        .addMark(
+          startIndex,
+          startIndex + content.length,
+          schema.marks.em.create(),
+        )
+        .removeStoredMark(schema.marks.em);
+      return tr;
+    }
+    return null;
+  }),
+];
+
+// Footnotes hold inline content only, so they get the mark shortcuts without any
+// of the block-level rules (lists, headings, code blocks, nested footnotes).
+export const footnoteInputRules = () =>
+  inputRules({ rules: inlineMarkInputRules() });
+
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   openMentionAutocomplete?: () => void,
 ) =>
   inputRules({
-    //Strikethrough
     rules: [
-      new InputRule(/\~\~([^*]+)\~\~$/, (state, match, start, end) => {
-        if (anchorInCodeMark(state, start, end)) return null;
-        const [fullMatch, content] = match;
-        const { tr } = state;
-        if (content) {
-          tr.replaceWith(start, end, state.schema.text(content))
-            .addMark(
-              start,
-              start + content.length,
-              schema.marks.strikethrough.create(),
-            )
-            .removeStoredMark(schema.marks.strikethrough);
-          return tr;
-        }
-        return null;
-      }),
-
-      //Highlight
-      new InputRule(/\=\=([^*]+)\=\=$/, (state, match, start, end) => {
-        if (anchorInCodeMark(state, start, end)) return null;
-        const [fullMatch, content] = match;
-        const { tr } = state;
-        if (content) {
-          tr.replaceWith(start, end, state.schema.text(content))
-            .addMark(
-              start,
-              start + content.length,
-              schema.marks.highlight.create({
-                color: useUIState.getState().lastUsedHighlight || "1",
-              }),
-            )
-            .removeStoredMark(schema.marks.highlight);
-          return tr;
-        }
-        return null;
-      }),
-
-      //Bold
-      new InputRule(/\*\*([^*]+)\*\*$/, (state, match, start, end) => {
-        if (anchorInCodeMark(state, start, end)) return null;
-        const [fullMatch, content] = match;
-        const { tr } = state;
-        if (content) {
-          tr.replaceWith(start, end, state.schema.text(content))
-            .addMark(
-              start,
-              start + content.length,
-              schema.marks.strong.create(),
-            )
-            .removeStoredMark(schema.marks.strong);
-          return tr;
-        }
-        return null;
-      }),
-
-      //Code
-      new InputRule(/\`([^`]+)\`$/, (state, match, start, end) => {
-        if (anchorInCodeMark(state, start, end)) return null;
-        const [fullMatch, content] = match;
-        const { tr } = state;
-        if (content) {
-          const startIndex = start + fullMatch.indexOf("`");
-          tr.replaceWith(startIndex, end, state.schema.text(content))
-            .addMark(
-              startIndex,
-              startIndex + content.length,
-              schema.marks.code.create(),
-            )
-            .removeStoredMark(schema.marks.code);
-          return tr;
-        }
-        return null;
-      }),
-
-      //Italic
-      new InputRule(/(?:^|[^*])\*([^*]+)\*$/, (state, match, start, end) => {
-        if (anchorInCodeMark(state, start, end)) return null;
-        const [fullMatch, content] = match;
-        const { tr } = state;
-        if (content) {
-          const startIndex = start + fullMatch.indexOf("*");
-          tr.replaceWith(startIndex, end, state.schema.text(content))
-            .addMark(
-              startIndex,
-              startIndex + content.length,
-              schema.marks.em.create(),
-            )
-            .removeStoredMark(schema.marks.em);
-          return tr;
-        }
-        return null;
-      }),
+      ...inlineMarkInputRules(),
 
       // Code Block
       new InputRule(/^```\s$/, (state, match) => {
