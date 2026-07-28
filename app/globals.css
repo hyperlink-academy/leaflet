@@ -629,6 +629,12 @@ body.cmd-held .ProseMirror a {
 .footnote-scope {
   counter-reset: footnote;
 }
+/* A page link renders the linked page's own text (its first lines and the
+   thumbnail), footnote refs included. Those belong to the other page, so give
+   them a counter of their own rather than letting them advance this page's. */
+.pageLinkBlockWrapper {
+  counter-reset: footnote;
+}
 .footnote-ref {
   counter-increment: footnote;
   cursor: pointer;
