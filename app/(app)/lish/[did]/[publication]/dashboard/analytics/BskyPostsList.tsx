@@ -1,15 +1,21 @@
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { AtUri } from "@atproto/syntax";
-import { AppBskyFeedPost } from "@atproto/api";
+import {
+  AppBskyEmbedExternal,
+  AppBskyEmbedRecordWithMedia,
+  AppBskyFeedDefs,
+  AppBskyFeedPost,
+} from "@atproto/api";
 import { Avatar } from "components/Avatar";
-import { BskyEmbed } from "components/Blocks/BlueskyPostBlock/BskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
+import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { RecommendEmptyTiny } from "components/Icons/RecommendTiny";
 import { PostInfo } from "app/(app)/lish/[did]/[publication]/[rkey]/BskyPostContent";
 import type { PublicationBskyPost } from "app/api/rpc/[command]/get_publication_bsky_posts";
+import { usePublicationData } from "../PublicationSWRProvider";
 import { ListSkeleton } from "./Skeletons";
 
 // The Bluesky posts (created via publish/share/quote flows) that have driven
@@ -21,6 +27,20 @@ export const BskyPostsList = (props: {
   selectedRef: string | undefined;
   setSelectedRef: (ref: string | undefined) => void;
 }) => {
+  let { data } = usePublicationData();
+  // Same path → document mapping TopPages uses, to name the post a Bluesky
+  // post's link points at.
+  let docsByPath = useMemo(() => {
+    let map = new Map<string, { title: string }>();
+    for (let doc of data?.documents || []) {
+      let path = doc.record.path || "";
+      map.set(path.startsWith("/") ? path : `/${path}`, {
+        title: doc.record.title,
+      });
+    }
+    return map;
+  }, [data?.documents]);
+
   if (props.isLoading) return <ListSkeleton />;
   if (props.posts.length === 0)
     return (
@@ -35,6 +55,7 @@ export const BskyPostsList = (props: {
         <Fragment key={row.uri}>
           <BskyPostRow
             row={row}
+            docsByPath={docsByPath}
             selected={props.selectedRef === row.ref}
             onSelect={() =>
               props.setSelectedRef(
@@ -51,6 +72,7 @@ export const BskyPostsList = (props: {
 
 const BskyPostRow = (props: {
   row: PublicationBskyPost;
+  docsByPath: Map<string, { title: string }>;
   selected: boolean;
   onSelect: () => void;
 }) => {
@@ -72,7 +94,7 @@ const BskyPostRow = (props: {
 
   // Row-click toggles the traffic filter via an overlay button (the pattern
   // BskyPostContent uses): content is pointer-events-none so clicks fall
-  // through to the overlay, with the embed and links opted back in.
+  // through to the overlay, with the links opted back in.
   let rowClass = `relative flex justify-between gap-4 px-1 py-2 rounded-md ${
     props.selected ? "bg-[var(--accent-light)]" : ""
   }`;
@@ -106,6 +128,7 @@ const BskyPostRow = (props: {
   }
 
   let record = post.record as AppBskyFeedPost.Record;
+  let referenced = referencedPost(post.embed, props.docsByPath);
   return (
     <div className={rowClass}>
       {overlay}
@@ -114,7 +137,7 @@ const BskyPostRow = (props: {
           <Avatar
             src={post.author.avatar}
             displayName={post.author.displayName || post.author.handle}
-            size="small"
+            size="tiny"
           />
         </div>
         <div className="flex flex-col min-w-0 grow">
@@ -124,23 +147,29 @@ const BskyPostRow = (props: {
             createdAt={record.createdAt}
             compact
           />
-          <div className="text-secondary text-sm mt-0.5">
+          <div className="text-secondary text-xs mt-0.5 line-clamp-2">
             <BlueskyRichText record={record} />
           </div>
-          {post.embed && (
-            <div
-              className="mt-1.5 pointer-events-auto relative"
-              onClick={(e) => e.stopPropagation()}
+          {referenced && (
+            <a
+              className="pointer-events-auto relative flex items-center gap-1 text-xs text-tertiary mt-1 min-w-0 w-fit max-w-full hover:text-accent-contrast"
+              href={referenced.url}
+              target="_blank"
+              rel="noreferrer"
             >
-              <BskyEmbed
-                content={post.embed}
-                postUrl={bskyUrl}
-                compact
-                className="text-sm"
-              />
-            </div>
+              {referenced.isQuote ? (
+                <QuoteTiny className="shrink-0" />
+              ) : (
+                <ArrowRightTiny className="shrink-0" />
+              )}
+              <span className="truncate">
+                {referenced.isQuote
+                  ? `Quotes “${referenced.title}”`
+                  : referenced.title}
+              </span>
+            </a>
           )}
-          <div className="flex gap-3 items-center text-tertiary text-xs mt-1.5">
+          <div className="flex gap-3 items-center text-tertiary text-xs mt-1">
             {(post.likeCount ?? 0) > 0 && (
               <div className="flex items-center gap-1">
                 <RecommendEmptyTiny />
@@ -174,3 +203,36 @@ const BskyPostRow = (props: {
     </div>
   );
 };
+
+// Which publication post the Bluesky post's link card points at, resolved by
+// path against this publication's documents, and whether the link is a quote
+// share (an /l-quote/ url). `url` is the link stripped of its utm params so
+// visiting it from the dashboard doesn't count as Bluesky-referred traffic.
+function referencedPost(
+  embed: AppBskyFeedDefs.PostView["embed"],
+  docsByPath: Map<string, { title: string }>,
+): { title: string; url: string; isQuote: boolean } | null {
+  let external: AppBskyEmbedExternal.ViewExternal | undefined;
+  if (AppBskyEmbedExternal.isView(embed)) external = embed.external;
+  else if (
+    AppBskyEmbedRecordWithMedia.isView(embed) &&
+    AppBskyEmbedExternal.isView(embed.media)
+  )
+    external = embed.media.external;
+  if (!external) return null;
+
+  try {
+    let url = new URL(external.uri);
+    let isQuote = url.pathname.includes("/l-quote/");
+    let basePath = url.pathname.split("/l-quote/")[0];
+    let doc = docsByPath.get(basePath);
+    url.search = "";
+    return {
+      title: doc?.title || external.title || basePath,
+      url: url.toString(),
+      isQuote,
+    };
+  } catch {
+    return null;
+  }
+}
