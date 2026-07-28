@@ -243,7 +243,7 @@ export const PublicationAnalytics = (props: {
           metric={trafficMetric}
         />
         <hr className="mt-2 mb-4 border-border-light " />
-        <div className="flex flex-col sm:flex-row gap-4 mt-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-col gap-4 mt-2 shrink-0">
           <TopPages
             pages={analyticsData?.topPages || []}
             selectedPost={selectedPost}
