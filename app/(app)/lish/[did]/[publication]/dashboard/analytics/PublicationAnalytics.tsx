@@ -16,6 +16,7 @@ import {
   TrafficMetric,
 } from "./TrafficChart";
 import { SubscribersChart } from "./SubscribersChart";
+import { BskyPostsList } from "./BskyPostsList";
 
 export const PublicationAnalytics = (props: {
   showPageBackground: boolean;
@@ -89,6 +90,27 @@ export const PublicationAnalytics = (props: {
         ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
         ...(selectedPost ? { path: `/${selectedPost.path}` } : {}),
         ...(selectedReferrer ? { referrer_host: selectedReferrer } : {}),
+      });
+      return res?.result;
+    },
+  );
+
+  let { data: bskyPostsData, isLoading: bskyPostsLoading } = useSWR(
+    publicationUri
+      ? [
+          "publication-bsky-posts",
+          publicationUri,
+          dateRange.from?.toISOString(),
+          dateRange.to?.toISOString(),
+          selectedPost?.path,
+        ]
+      : null,
+    async () => {
+      let res = await callRPC("get_publication_bsky_posts", {
+        publication_uri: publicationUri!,
+        ...(dateRange.from ? { from: dateRange.from.toISOString() } : {}),
+        ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
+        ...(selectedPost ? { path: `/${selectedPost.path}` } : {}),
       });
       return res?.result;
     },
@@ -209,6 +231,24 @@ export const PublicationAnalytics = (props: {
             isLoading={analyticsLoading}
           />
         </div>
+      </div>
+      <div
+        className={`analyticsBskyPosts rounded-lg border ${
+          props.showPageBackground
+            ? "border-border-light sm:px-4 sm:py-3 py-2 px-3"
+            : "border-transparent"
+        }`}
+        style={{
+          backgroundColor: props.showPageBackground
+            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+            : "transparent",
+        }}
+      >
+        <h3>Bluesky Posts</h3>
+        <BskyPostsList
+          posts={bskyPostsData?.posts || []}
+          isLoading={bskyPostsLoading}
+        />
       </div>
       <div
         className={`analyticsSubCount rounded-lg border ${

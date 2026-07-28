@@ -246,12 +246,79 @@ export type PublicationTopPagesOutput = InferOutputRow<
   typeof publicationTopPages
 >;
 
+/**
+ * publication_bsky_traffic – pageviews attributed to specific Bluesky posts.
+ *
+ * Links we embed in Bluesky posts carry utm_source=bluesky and
+ * utm_content=<did>/<rkey> (see src/utils/bskyPostUtm.ts), so grouping by
+ * utm_content yields per-post traffic. queryParams is a JSON-encoded object.
+ */
+export const publicationBskyTraffic = defineEndpoint(
+  "publication_bsky_traffic",
+  {
+    description: "Pageviews per referring Bluesky post for a publication",
+    tokens: [PROD_READ_TOKEN],
+    params: {
+      domains: p.string(),
+      date_from: p.string().optional(),
+      date_to: p.string().optional(),
+      path: p.string().optional(),
+      limit: p.int32().optional(25),
+    },
+    nodes: [
+      node({
+        name: "endpoint",
+        sql: `
+        SELECT
+          JSONExtractString(queryParams, 'utm_content') AS post_ref,
+          count() AS pageviews,
+          uniq(deviceId) AS visitors
+        FROM analytics_events
+        WHERE eventType = 'pageview'
+          AND domain(origin) IN splitByChar(',', {{String(domains)}})
+          AND JSONExtractString(queryParams, 'utm_source') = 'bluesky'
+          AND JSONExtractString(queryParams, 'utm_content') != ''
+          {% if defined(date_from) %}
+            AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
+          {% end %}
+          {% if defined(date_to) %}
+            AND fromUnixTimestamp64Milli(timestamp) <= parseDateTimeBestEffort({{String(date_to)}})
+          {% end %}
+          {% if defined(path) %}
+            AND path = {{String(path)}}
+          {% end %}
+        GROUP BY post_ref
+        ORDER BY pageviews DESC
+        LIMIT {{Int32(limit, 25)}}
+      `,
+      }),
+    ],
+    output: {
+      post_ref: t.string(),
+      pageviews: t.uint64(),
+      visitors: t.uint64(),
+    },
+  },
+);
+
+export type PublicationBskyTrafficParams = InferParams<
+  typeof publicationBskyTraffic
+>;
+export type PublicationBskyTrafficOutput = InferOutputRow<
+  typeof publicationBskyTraffic
+>;
+
 // ============================================================================
 // Client
 // ============================================================================
 
 export const tinybird = new Tinybird({
   datasources: { analyticsEvents },
-  pipes: { publicationTraffic, publicationTopReferrers, publicationTopPages },
+  pipes: {
+    publicationTraffic,
+    publicationTopReferrers,
+    publicationTopPages,
+    publicationBskyTraffic,
+  },
   devMode: false,
 });
