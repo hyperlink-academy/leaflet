@@ -5,6 +5,9 @@ import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin } from "y-prosemirror";
 import { schema } from "components/Blocks/TextBlock/schema";
+import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
+import { footnoteInputRules } from "components/Blocks/TextBlock/inputRules";
+import { highlightSelectionPlugin } from "components/Blocks/TextBlock/plugins";
 import { stripCommentMarks } from "components/Blocks/TextBlock/stripCommentMarks";
 import { useReplicache, useEntity } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
@@ -86,12 +89,11 @@ function EditableFootnote(props: {
       ySyncPlugin(value),
       cursorPlugin,
       keymap({
-        "Meta-b": toggleMark(schema.marks.strong),
-        "Ctrl-b": toggleMark(schema.marks.strong),
-        "Meta-u": toggleMark(schema.marks.underline),
-        "Ctrl-u": toggleMark(schema.marks.underline),
-        "Meta-i": toggleMark(schema.marks.em),
-        "Ctrl-i": toggleMark(schema.marks.em),
+        ...formattingKeymap(schema.marks),
+        "Ctrl-Meta-h": (...args) =>
+          toggleMark(schema.marks.highlight, {
+            color: useUIState.getState().lastUsedHighlight,
+          })(...args),
         "Shift-Enter": (state, dispatch) => {
           let hardBreak = schema.nodes.hard_break.create();
           if (dispatch) {
@@ -130,7 +132,9 @@ function EditableFootnote(props: {
           return true;
         },
       }),
+      footnoteInputRules(),
       keymap(baseKeymap),
+      highlightSelectionPlugin,
       autolink({
         type: schema.marks.link,
         shouldAutoLink: () => true,
