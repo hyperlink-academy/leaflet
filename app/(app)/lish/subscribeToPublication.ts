@@ -15,16 +15,13 @@ import {
   Notification,
   pingIdentityToUpdateNotification,
 } from "src/notifications";
-import { membershipJoinUrl } from "src/membership.server";
 import { v7 } from "uuid";
 
 let leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
 
 type SubscribeResult =
-  // joinUrl is set when the publication has paid memberships enabled — callers
-  // send the new subscriber to the tier page instead of a success toast/modal.
-  | { success: true; hasFeed: boolean; joinUrl?: string }
+  | { success: true; hasFeed: boolean }
   | { success: false; error: OAuthSessionError };
 
 export async function subscribeToPublication(
@@ -53,18 +50,15 @@ export async function subscribeToPublication(
     credentialSession.fetchHandler.bind(credentialSession),
   );
 
-  let [{ data: existingSubscription }, joinUrl] = await Promise.all([
-    supabaseServerClient
-      .from("publication_subscriptions")
-      .select("uri")
-      .eq("identity", credentialSession.did!)
-      .eq("publication", publication)
-      .maybeSingle(),
-    membershipJoinUrl(publication),
-  ]);
+  let { data: existingSubscription } = await supabaseServerClient
+    .from("publication_subscriptions")
+    .select("uri")
+    .eq("identity", credentialSession.did!)
+    .eq("publication", publication)
+    .maybeSingle();
   if (existingSubscription) {
     revalidatePath("/lish/[did]/[publication]", "layout");
-    return { success: true, hasFeed: true, joinUrl: joinUrl ?? undefined };
+    return { success: true, hasFeed: true };
   }
 
   let record = await agent.site.standard.graph.subscription.create(
@@ -101,7 +95,6 @@ export async function subscribeToPublication(
   return {
     success: true,
     hasFeed: true,
-    joinUrl: joinUrl ?? undefined,
   };
 }
 

@@ -33,7 +33,7 @@ type SubscribeMode = "email" | "atproto";
 // Logged-out email subscribe goes through the main-site email-login flow with a
 // `subscribe` after-sign-in action, so the session is minted on the main site
 // and handed back to the custom domain (see postAuthRedirect).
-export function redirectToEmailSubscribe(email: string, publicationUri: string) {
+function redirectToEmailSubscribe(email: string, publicationUri: string) {
   let base = mainSiteAuthBase() || window.location.origin;
   let url = new URL("/api/auth/email-login", base);
   url.searchParams.set("email", email);

@@ -76,9 +76,9 @@ export async function resumeMembership(
 //
 // Only works between paid tiers: a free-tier "member" is just a subscriber
 // with no membership row or Stripe subscription, so a free→paid upgrade must
-// go through the join/payment flow instead (JoinTiers and JoinMembershipModal
-// route on the presence of an active paid membership). If a caller gets here
-// anyway, the missing stripe_subscription_id fails as not_found below.
+// go through the join/payment flow instead (JoinMembershipFlow routes on the
+// presence of an active paid membership). If a caller gets here anyway, the
+// missing stripe_subscription_id fails as not_found below.
 export async function switchMembership(args: {
   membershipId: string;
   tierId: string;

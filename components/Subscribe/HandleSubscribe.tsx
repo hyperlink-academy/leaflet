@@ -61,13 +61,6 @@ export const SubscribeWithHandle = (props: {
   onSubscribed?: () => void;
   onAtSuccess?: () => void;
   leading?: React.ReactNode;
-  // Overrides the "Subscribe" copy on the action button (e.g. the membership
-  // join flow, where subscribing is a step toward paying).
-  subscribeLabel?: React.ReactNode;
-  // Skip the redirect to the membership /join page after a one-click subscribe
-  // to a memberships-enabled pub. Set by callers already in the join flow so the
-  // reader stays on the post and onAtSuccess/onSubscribed fire instead.
-  skipJoinRedirect?: boolean;
   user: {
     loggedIn: boolean;
     email: string | undefined;
@@ -137,13 +130,6 @@ export const SubscribeWithHandle = (props: {
         setSubscribing(false);
         return;
       }
-      if (result.joinUrl && !props.skipJoinRedirect) {
-        // Memberships enabled — go pick a tier instead of the success modal.
-        // Callers already inside the join flow set skipJoinRedirect so the
-        // reader stays put and gets the normal success handling instead.
-        window.location.href = result.joinUrl;
-        return;
-      }
       if (props.onAtSuccess) {
         props.onAtSuccess();
       } else {
@@ -175,9 +161,7 @@ export const SubscribeWithHandle = (props: {
           <>
             {avatar}
             <div className="flex grow  min-w-0">
-              <div className="shrink-0 pr-[6px]">
-                {props.subscribeLabel ?? "Subscribe"}
-              </div>
+              <div className="shrink-0 pr-[6px]">Subscribe</div>
               {!props.compact && (
                 <span className="grow truncate min-w-0">
                   as {props.user.handle}
@@ -267,7 +251,7 @@ export const SubscribeWithHandle = (props: {
               redirectToOauthForSubscribe(trimmed, false);
             }}
             action=<div className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm min-w-20 shrink-0">
-              {props.subscribeLabel ?? "Subscribe"}
+              Subscribe
             </div>
           />
           {props.publicationUrl && (

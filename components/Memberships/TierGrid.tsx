@@ -55,9 +55,9 @@ export function subscribeErrorMessage(error: string): string {
   }
 }
 
-// The membership tier cards plus the monthly/annual toggle, shared by the
-// /join page + paywall (JoinTiers) and the paid subscribe modal
-// (JoinMembershipModal). The viewer's standing drives the paid buttons' copy:
+// The membership tier cards plus the monthly/annual toggle, rendered by the
+// paid join flow (JoinMembershipFlow). The viewer's standing drives the paid
+// buttons' copy:
 // no subscription → "Join", subscribed on the free tier → "Upgrade" (their
 // cost goes up from $0), an active paid membership → the current tier reads
 // "Current plan" while monthly-pricier tiers say "Upgrade" and the rest

@@ -163,11 +163,6 @@ export const EmailButton = (props: {
       });
       return false;
     }
-    if (res.joinUrl) {
-      // Memberships enabled — go pick a tier instead of the success toast.
-      window.location.href = res.joinUrl;
-      return null;
-    }
     return true;
   };
 

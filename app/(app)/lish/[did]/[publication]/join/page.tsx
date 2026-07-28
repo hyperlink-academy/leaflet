@@ -1,17 +1,15 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabaseServerClient } from "supabase/serverClient";
-import { getIdentityData } from "actions/getIdentityData";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
-import { isActiveMembership, filterJoinableTiers } from "src/membership";
-import { getReaderMembership } from "src/membership.server";
+import { filterJoinableTiers } from "src/membership";
 import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
-import { JoinTiers } from "./JoinTiers";
+import { JoinPageContent } from "./JoinPageContent";
 
 async function fetchPublicationForJoin(did: string, publicationName: string) {
   const { data } = await supabaseServerClient
@@ -56,29 +54,13 @@ export default async function JoinPage(props: {
   const tiers = filterJoinableTiers(
     publication.publication_membership_tiers,
   ).map((t) => ({
-      id: t.id,
-      name: t.name,
-      description: t.description,
-      monthly_price_cents: t.monthly_price_cents,
-      annual_price_cents: t.annual_price_cents,
-      is_free: t.is_free,
-    }));
-
-  const identity = await getIdentityData();
-  const [membership, wallet] = identity
-    ? await Promise.all([
-        getReaderMembership(publication.uri, identity.id),
-        supabaseServerClient
-          .from("stripe_wallets")
-          .select("card_brand, card_last4")
-          .eq("identity_id", identity.id)
-          .maybeSingle()
-          .then((r) => r.data),
-      ])
-    : [null, null];
-  const walletCard = wallet?.card_last4
-    ? { brand: wallet.card_brand, last4: wallet.card_last4 }
-    : null;
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    monthly_price_cents: t.monthly_price_cents,
+    annual_price_cents: t.annual_price_cents,
+    is_free: t.is_free,
+  }));
 
   return (
     <PublicationThemeProvider
@@ -90,7 +72,7 @@ export default async function JoinPage(props: {
         pub_creator={publication.identity_did}
       >
         <div className="publicationJoinPage w-full h-full min-h-screen flex flex-col items-center px-3 py-8 sm:py-12 overflow-y-auto">
-          <JoinTiers
+          <JoinPageContent
             publicationUri={publication.uri}
             publicationName={publication.name}
             publicationUrl={getPublicationURL(publication)}
@@ -98,23 +80,6 @@ export default async function JoinPage(props: {
               !!publication.publication_newsletter_settings?.enabled
             }
             tiers={tiers}
-            loggedIn={!!identity}
-            isOwner={
-              !!identity?.atp_did &&
-              identity.atp_did === publication.identity_did
-            }
-            membership={
-              membership && isActiveMembership(membership)
-                ? {
-                    id: membership.id,
-                    tierId: membership.tier,
-                    cadence: membership.cadence,
-                  }
-                : null
-            }
-            email={identity?.email ?? null}
-            handle={identity?.bsky_profiles?.handle ?? null}
-            walletCard={walletCard}
           />
         </div>
       </PublicationBackgroundProvider>

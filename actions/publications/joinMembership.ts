@@ -32,9 +32,9 @@ export type MembershipJoinViewer = {
   walletCard: { brand: string | null; last4: string | null } | null;
 };
 
-// Viewer-scoped state JoinTiers needs when it renders outside the /join page
-// (the paywall's join modal); the page itself loads the same data during
-// server render. Only ever returns the caller's own membership/wallet info.
+// Viewer-scoped state for the paid join flow (JoinMembershipFlow), fetched
+// client-side when the flow opens. Only ever returns the caller's own
+// membership/wallet info.
 export async function getMembershipJoinViewer(
   publicationUri: string,
 ): Promise<MembershipJoinViewer> {
