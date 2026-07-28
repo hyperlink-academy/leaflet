@@ -172,7 +172,7 @@ export const PageWrapper = (props: {
       >
         <div
           className={`postPageContent footnote-scope static
-          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          ${props.fullPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}

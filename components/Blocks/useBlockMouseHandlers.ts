@@ -63,6 +63,12 @@ export function useBlockMouseHandlers(props: Block) {
       useUIState.getState().addBlockToSelection(props);
     } else {
       if (e.isDefaultPrevented()) return;
+      // Text/heading/blockquote blocks own their focus through the ProseMirror
+      // editor: it focuses natively and drops the caret at the click point.
+      // Focusing here as well fights that (flickering the caret start→end) and
+      // fires even for clicks in the block's padding/margin where there's no
+      // text — so let the editor's own onFocus handle it.
+      if (isTextBlock[props.type]) return;
       useUIState.getState().focusAndSelectBlock(props);
 
       // scroll to the page containing the block, if offscreen

@@ -35,10 +35,10 @@ import { Mention, MentionAutocomplete } from "components/Mention";
 import { addMentionToEditor } from "app/(app)/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
-  1: "font-bold [font-family:var(--theme-heading-font)]",
-  2: "font-bold [font-family:var(--theme-heading-font)]",
-  3: "font-bold text-secondary [font-family:var(--theme-heading-font)]",
-  4: "font-bold text-secondary [font-family:var(--theme-heading-font)]",
+  1: "font-bold leading-snug [font-family:var(--theme-heading-font)]",
+  2: "font-bold leading-snug [font-family:var(--theme-heading-font)]",
+  3: "font-bold leading-snug [font-family:var(--theme-heading-font)]",
+  4: "font-bold leading-snug text-secondary [font-family:var(--theme-heading-font)]",
 } as { [level: number]: string };
 
 const headingFontSize = {
@@ -257,7 +257,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
   return (
     <>
       <div
-        className={`flex items-center justify-between
+        className={`relative flex items-center justify-between
           ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
           ${
             props.type === "blockquote"

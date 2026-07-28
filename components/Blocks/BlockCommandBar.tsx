@@ -116,7 +116,7 @@ export const BlockCommandBar = ({
       onOpenChange={() => clearCommandSearchText()}
     >
       {commandResults.length === 0 ? (
-        <div className="w-full text-tertiary text-center italic py-2 px-2 ">
+        <div className="w-full text-tertiary text-center italic px-2 ">
           No blocks found
         </div>
       ) : (

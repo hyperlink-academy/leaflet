@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Test: Leaflet embed subscribe form</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 480px;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        line-height: 1.4;
+      }
+      form {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+      input[type="email"] {
+        flex: 1;
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font: inherit;
+      }
+      button {
+        padding: 0.4rem 0.8rem;
+        border: 0;
+        border-radius: 4px;
+        background: #222;
+        color: #fff;
+        font: inherit;
+        cursor: pointer;
+      }
+      code {
+        background: #f3f3f3;
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Subscribe embed test</h1>
+    <p>
+      Posts to <code>http://localhost:3000/api/subscribe_email</code>. Should
+      redirect back to the publication page with the confirm modal open.
+    </p>
+    <form action="http://localhost:3000/api/subscribe_email" method="post">
+      <input
+        type="hidden"
+        name="publication"
+        value="at://did:plc:btxrwcaeyodrap5mnjw2fvmz/site.standard.publication/3lppk75kw7k26"
+      />
+      <input
+        type="email"
+        name="email"
+        placeholder="you@example.com"
+        required
+      />
+      <button type="submit">Subscribe</button>
+    </form>
+  </body>
+</html>

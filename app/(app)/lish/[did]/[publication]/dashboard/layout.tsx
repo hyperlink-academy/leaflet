@@ -120,7 +120,7 @@ export default async function PublicationDashboardLayout(props: {
           }
           tabs={{
             Drafts: { href: baseHref, icon: <ArchiveSmall /> },
-            Posts: { href: `${baseHref}/posts`, icon: <PublishSmall /> },
+            Published: { href: `${baseHref}/posts`, icon: <PublishSmall /> },
             ...(isOwner
               ? {
                   Subs: {
