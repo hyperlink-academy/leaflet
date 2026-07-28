@@ -13,6 +13,7 @@ import { ShareTiny } from "../Icons/ShareTiny";
 import { DotLoader } from "../utils/DotLoader";
 import { useIdentityData } from "../IdentityProvider";
 import { publishPostToBsky } from "app/(app)/[leaflet_id]/publish/publishBskyPost";
+import { viewerPostLangs } from "src/utils/bskyPostLangs";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
@@ -183,6 +184,7 @@ export const BskyShareModal = (props: {
       publicationUri: props.pubUri,
       preferUrlScreenshot: useScreenshot,
       prefetchedThumb,
+      langs: viewerPostLangs(),
     });
     setPosting(false);
     if (!res.success) {

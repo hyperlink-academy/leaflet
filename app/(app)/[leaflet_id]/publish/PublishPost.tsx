@@ -10,6 +10,7 @@ import Link from "next/link";
 
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { publishPostToBsky } from "./publishBskyPost";
+import { viewerPostLangs } from "src/utils/bskyPostLangs";
 import { ShareOptions, type ShareState } from "./ShareOptions";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
@@ -220,6 +221,7 @@ const PublishPostForm = (
         // For publications the post must be authored by the owner's PDS (where
         // the record lives); standalone publishes leave this undefined.
         ownerDid: props.publication_uri ? props.publicationOwnerDid : undefined,
+        langs: viewerPostLangs(),
       });
       if (!bskyResult.success && isOAuthSessionError(bskyResult.error)) {
         setIsLoading(false);

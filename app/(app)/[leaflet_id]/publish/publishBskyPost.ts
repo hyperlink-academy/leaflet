@@ -48,6 +48,7 @@ export async function publishPostToBsky(args: {
   // /api/quote_screenshot while the share modal was open, so publishing doesn't
   // block on a fresh browser render.
   prefetchedThumb?: string;
+  langs?: string[];
 }): Promise<PublishBskyResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -184,6 +185,8 @@ export async function publishPostToBsky(args: {
       text: args.text,
       createdAt: new Date().toISOString(),
       facets,
+      // The post lexicon caps langs at 3 entries.
+      langs: args.langs?.filter(Boolean).slice(0, 3),
       embed: {
         $type: "app.bsky.embed.external",
         external,
