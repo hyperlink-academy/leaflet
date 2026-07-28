@@ -31,11 +31,11 @@ export function ImageOptions(props: {
       align="end"
       sideOffset={6}
       className="w-sm"
+      onOpenAutoFocus={(e) => e.preventDefault()}
       trigger={<SettingsTriggerButton aria-label="Image Settings" />}
     >
       <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
         <CoverImageControl entityID={props.entityID} />
-        <hr className="border-border-light" />
         <Toggle
           fullWidth
           toggle={isFullBleed}
@@ -85,7 +85,7 @@ function MaxWidthControl(props: {
 
   let maxWidth = useEntity(props.entityID, "image/max-width")?.data.value;
 
-  const MAX_WIDTH_MIN = 100;
+  const MAX_WIDTH_MIN = 10;
   const MAX_WIDTH_MAX = pageWidth - PAGE_PADDING;
   const MAX_WIDTH_STEP = 10;
 
@@ -223,6 +223,7 @@ function CoverImageControl(props: { entityID: string }) {
           Use as Cover Image
         </div>
       </Toggle>
+      <hr className="border-border-light" />
     </>
   );
 }

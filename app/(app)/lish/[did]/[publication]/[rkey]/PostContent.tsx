@@ -106,7 +106,9 @@ export function PostContent({
   return (
     <div
       //The postContent class is important for QuoteHandler
-      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-0 ${className}`}
+      // See components/Blocks/index.tsx — flex over a long block list makes any
+      // change inside one block re-run the flex algorithm over all of them.
+      className={`postContent flow-root sm:px-4 px-3 sm:pt-3 pt-2 pb-0 ${className}`}
     >
       {blocks.map((b, index) => {
         return (
