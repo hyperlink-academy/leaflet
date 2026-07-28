@@ -35,10 +35,10 @@ import { Mention, MentionAutocomplete } from "components/Mention";
 import { addMentionToEditor } from "app/(app)/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
-  1: "font-bold leading-snug [font-family:var(--theme-heading-font)]",
-  2: "font-bold leading-snug [font-family:var(--theme-heading-font)]",
-  3: "font-bold leading-snug [font-family:var(--theme-heading-font)]",
-  4: "font-bold leading-snug text-secondary [font-family:var(--theme-heading-font)]",
+  1: "font-bold leading-tight pb-1 [font-family:var(--theme-heading-font)]",
+  2: "font-bold leading-tight pb-1 [font-family:var(--theme-heading-font)]",
+  3: "font-bold leading-tight pb-1 [font-family:var(--theme-heading-font)]",
+  4: "font-bold leading-snug pb-1 text-secondary [font-family:var(--theme-heading-font)]",
 } as { [level: number]: string };
 
 const headingFontSize = {
@@ -288,12 +288,10 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
           onFocus={() => {
             handleMentionOpenChange(false);
             setTimeout(() => {
-              useUIState
-                .getState()
-                .focusAndSelectBlock({
-                  entityID: props.entityID,
-                  parent: props.parent,
-                });
+              useUIState.getState().focusAndSelectBlock({
+                entityID: props.entityID,
+                parent: props.parent,
+              });
             }, 5);
           }}
           id={elementId.block(props.entityID).text}
