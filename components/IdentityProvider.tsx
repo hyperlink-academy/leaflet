@@ -15,7 +15,8 @@ export type InterfaceState = {
   dashboards: { [id: string]: DashboardState | undefined };
 };
 export type Identity = Awaited<ReturnType<typeof getIdentityData>>;
-let IdentityContext = createContext({
+// Exported for test harness pages that mock the viewer (app/test/*).
+export let IdentityContext = createContext({
   identity: null as Identity,
   mutate: (() => {}) as KeyedMutator<Identity>,
 });

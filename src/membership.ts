@@ -129,6 +129,22 @@ export function truncatePagesAtMembersDelimiter(pages: unknown[]): void {
   }
 }
 
+// Tiers a reader can actually join: active, and either free or provisioned in
+// Stripe (a paid tier without a monthly price id is half-created and can't be
+// subscribed to). Shared by the /join page and getJoinableTiers.
+export function filterJoinableTiers<
+  T extends {
+    active: boolean;
+    is_free: boolean;
+    stripe_price_monthly_id: string | null;
+    sort_order: number;
+  },
+>(tiers: T[]): T[] {
+  return tiers
+    .filter((t) => t.active && (t.is_free || t.stripe_price_monthly_id))
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
 export type MembershipStatusFields = {
   status: string | null;
   current_period_end: string | null;

@@ -1,76 +1,28 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { SpeedyLink } from "components/SpeedyLink";
-import { ToggleGroup } from "components/ToggleGroup";
 import {
   subscribeToTier,
   createWalletCheckoutSession,
   saveWalletCardFromSession,
 } from "actions/publications/joinMembership";
+import { switchMembership } from "actions/memberships";
 import { LoginModal } from "components/LoginButton";
-import { CheckTiny } from "components/Icons/CheckTiny";
 import { Modal } from "components/Modal";
 import { MembershipSubscribe } from "components/Memberships/MembershipSubscribeStep";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
-
-export type Tier = {
-  id: string;
-  name: string;
-  description: string | null;
-  monthly_price_cents: number;
-  annual_price_cents: number | null;
-  // The always-free tier: subscribing to it just follows the pub (no paid
-  // membership, so members-only posts stay locked), so it never routes to
-  // payment. Exactly one per publication.
-  is_free: boolean;
-};
-
-export type WalletCard = {
-  brand: string | null;
-  last4: string | null;
-};
-
-const isFreeTier = (tier: Tier) => tier.is_free;
-
-const formatPrice = (cents: number) =>
-  (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
-  });
-
-function tierPriceCents(tier: Tier, cadence: "month" | "year") {
-  return cadence === "year" && tier.annual_price_cents != null
-    ? tier.annual_price_cents
-    : tier.monthly_price_cents;
-}
-
-function tierPriceLabel(tier: Tier, cadence: "month" | "year") {
-  const annual = cadence === "year" && tier.annual_price_cents != null;
-  return `${formatPrice(tierPriceCents(tier, cadence))}/${annual ? "yr" : "mo"}`;
-}
-
-function subscribeErrorMessage(error: string): string {
-  switch (error) {
-    case "already_member":
-      return "You're already a member!";
-    case "email_required":
-      return "Add an email to your account before joining.";
-    case "no_card":
-      return "Please add a card to continue.";
-    case "no_connected_account":
-      return "This publication can't accept payments right now.";
-    case "not_authenticated":
-      return "Sign in to become a member.";
-    default:
-      return "We couldn't complete your join. Please try again!";
-  }
-}
+import {
+  TierGrid,
+  isFreeTier,
+  subscribeErrorMessage,
+  type Tier,
+  type Cadence,
+} from "components/Memberships/TierGrid";
+import { readJoinResume } from "components/Memberships/joinReturn";
 
 export function JoinTiers(props: {
   publicationUri: string;
@@ -79,27 +31,28 @@ export function JoinTiers(props: {
   tiers: Tier[];
   loggedIn: boolean;
   isOwner: boolean;
-  isMember: boolean;
+  // The viewer's active paid membership, if any — switches happen in place
+  // (prorated) instead of creating a new subscription.
+  membership?: {
+    id: string;
+    tierId: string | null;
+    cadence: string | null;
+  } | null;
   email?: string | null;
   handle?: string | null;
-  walletCard: WalletCard | null;
-  unlocksPost?: boolean;
+  walletCard: { brand: string | null; last4: string | null } | null;
   newsletterMode: boolean;
-  publicationDescription?: string;
-  onRefresh?: () => void | Promise<void>;
-  loginRedirect?: () => string;
 }) {
   const toaster = useToaster();
   const router = useRouter();
-  const hasAnnual = props.tiers.some((t) => t.annual_price_cents != null);
-  const [cadence, setCadence] = useState<"month" | "year">("month");
+  const [cadence, setCadence] = useState<Cadence>("month");
   const [busyTierId, setBusyTierId] = useState<string | null>(null);
   const [processingReturn, setProcessingReturn] = useState(false);
   // The tier whose subscribe step is open in the modal; when the reader
   // finishes subscribing we move it straight into payment setup.
   const [subscribeTier, setSubscribeTier] = useState<Tier | null>(null);
 
-  const effectiveCadence = (tier: Tier): "month" | "year" =>
+  const effectiveCadence = (tier: Tier): Cadence =>
     tier.annual_price_cents != null ? cadence : "month";
 
   const canPayDirectly =
@@ -110,22 +63,18 @@ export function JoinTiers(props: {
       ? `@${props.handle}`
       : null;
 
-  // Free-tier state: whether the reader already subscribes to the pub (via the
-  // account type it uses), and the tiers to render with the free tier last.
   const viewerSub = useViewerSubscription(props.publicationUri);
   const isSubscribed = props.newsletterMode
     ? viewerSub.emailSubscribed
     : viewerSub.atprotoSubscribed;
-  const renderTiers = [...props.tiers].sort(
-    (a, b) => Number(a.is_free) - Number(b.is_free),
-  );
+  const membership = props.membership ?? null;
 
   // Creates the subscription with the saved card and acts on the result. Returns
   // "navigating" when it sends the browser elsewhere (success or hosted-invoice
   // fallback), so callers keep their spinner; "error" when it stayed put.
   const runSubscribe = async (
     tierId: string,
-    joinCadence: "month" | "year",
+    joinCadence: Cadence,
   ): Promise<"navigating" | "error"> => {
     const res = await subscribeToTier({
       publicationUri: props.publicationUri,
@@ -157,18 +106,15 @@ export function JoinTiers(props: {
     return "error";
   };
 
-  // Returning from the hosted setup page: save the card, drop the markers from
-  // the URL, then either auto-complete the intended join (if the tier came along)
-  // or refresh so the server re-renders with the saved card (one-click buttons).
+  // Returning from the hosted setup page: save the card, then either
+  // auto-complete the intended join (if the tier came along) or refresh so the
+  // server re-renders with the saved card (one-click buttons).
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("wallet_session");
-    if (!sessionId) return;
-    const joinTier = params.get("join_tier");
-    const joinCadence = params.get("join_cadence");
+    const resume = readJoinResume();
+    // Only wallet returns land on /join; auth returns resume in the modal.
+    if (resume?.kind !== "wallet") return;
     setProcessingReturn(true);
-    saveWalletCardFromSession(sessionId).then(async (res) => {
-      window.history.replaceState(null, "", window.location.pathname);
+    saveWalletCardFromSession(resume.sessionId).then(async (res) => {
       if (!res.ok) {
         setProcessingReturn(false);
         toaster({
@@ -177,11 +123,11 @@ export function JoinTiers(props: {
         });
         return;
       }
-      if (joinTier && (joinCadence === "month" || joinCadence === "year")) {
-        const outcome = await runSubscribe(joinTier, joinCadence);
+      if (resume.tierId && resume.cadence) {
+        const outcome = await runSubscribe(resume.tierId, resume.cadence);
         if (outcome === "navigating") return; // keep the spinner while we leave
       }
-      await (props.onRefresh ? props.onRefresh() : router.refresh());
+      router.refresh();
       setProcessingReturn(false);
     });
   }, []);
@@ -209,6 +155,43 @@ export function JoinTiers(props: {
     if (outcome === "error") setBusyTierId(null);
   };
 
+  // Prorated in-place switch for an active paid membership.
+  const runSwitch = async (tier: Tier) => {
+    if (!membership) return;
+    setBusyTierId(tier.id);
+    const res = await switchMembership({
+      membershipId: membership.id,
+      tierId: tier.id,
+      cadence: effectiveCadence(tier),
+    });
+    setBusyTierId(null);
+    if (!res.ok) {
+      toaster({
+        type: "error",
+        content: "We couldn't switch your plan. Please try again!",
+      });
+      return;
+    }
+    toaster({ type: "success", content: "Plan updated!" });
+    router.refresh();
+  };
+
+  const selectTier = (tier: Tier) => {
+    if (isFreeTier(tier)) {
+      setSubscribeTier(tier);
+      return;
+    }
+    // An active paid membership switches in place. Everyone else — including
+    // free-tier subscribers upgrading — goes through the payment flow, since
+    // the free tier has no Stripe subscription to switch from.
+    if (membership) {
+      runSwitch(tier);
+      return;
+    }
+    if (canPayDirectly) proceedToPayment(tier);
+    else setSubscribeTier(tier);
+  };
+
   if (processingReturn) {
     return (
       <Shell name={props.publicationName}>
@@ -232,120 +215,49 @@ export function JoinTiers(props: {
     );
   }
 
-  if (props.isMember) {
-    return (
-      <Shell name={props.publicationName}>
-        <div className="opaque-container px-4 py-6 text-center flex flex-col gap-2">
-          <div className="font-bold text-primary">You're already a member!</div>
-          <SpeedyLink
-            href="/memberships"
-            className="text-accent-contrast font-bold"
-          >
-            Manage your membership
-          </SpeedyLink>
-          <SpeedyLink
-            href={props.publicationUrl}
-            className="text-accent-contrast font-bold"
-          >
-            Back to {props.publicationName}
-          </SpeedyLink>
-        </div>
-      </Shell>
-    );
-  }
-
   return (
     <Shell name={props.publicationName}>
-      {hasAnnual && (
-        <div className="flex justify-center">
-          <ToggleGroup
-            value={cadence}
-            onChange={setCadence}
-            options={[
-              { value: "month", label: "Monthly" },
-              { value: "year", label: "Annual" },
-            ]}
-          />
-        </div>
-      )}
-      <div className="flex sm:flex-row gap-2 flex-col w-full ">
-        {renderTiers.map((tier) => {
-          const free = isFreeTier(tier);
-          return (
-            <div
-              key={tier.id}
-              className="opaque-container relative flex flex-col gap-1 p-4 pt-3 max-w-md w-full"
-            >
-              {props.unlocksPost && (
-                <span className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-accent-1 px-2 py-0.5 text-xs font-bold text-accent-2">
-                  <CheckTiny className="w-3 h-3 shrink-0" />
-                  Unlocks post
-                </span>
-              )}
-              <h3 className="text-primary text-[20px]">{tier.name}</h3>
-              {tier.description && (
-                <p className="text-secondary text-sm leading-snug">
-                  {tier.description}
-                </p>
-              )}
-              {free ? (
-                isSubscribed ? (
-                  <div className="mt-3">
-                    <ManageSubscription
-                      publicationUri={props.publicationUri}
-                      publicationUrl={props.publicationUrl}
-                      newsletterMode={props.newsletterMode}
-                      user={viewerSub}
-                    />
-                  </div>
-                ) : (
-                  <ButtonPrimary
-                    fullWidth
-                    type="button"
-                    className="self-start mt-3"
-                    onClick={() => setSubscribeTier(tier)}
-                  >
-                    Subscribe for free
-                  </ButtonPrimary>
-                )
-              ) : (
-                <>
-                  <ButtonPrimary
-                    fullWidth
-                    type="button"
-                    className="self-start mt-3"
-                    disabled={busyTierId !== null}
-                    onClick={() =>
-                      canPayDirectly
-                        ? proceedToPayment(tier)
-                        : setSubscribeTier(tier)
-                    }
-                  >
-                    {busyTierId === tier.id ? (
-                      <DotLoader />
-                    ) : (
-                      `Join for ${tierPriceLabel(tier, effectiveCadence(tier))}`
-                    )}
-                  </ButtonPrimary>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <TierGrid
+        tiers={props.tiers}
+        cadence={cadence}
+        onCadenceChange={setCadence}
+        busyTierId={busyTierId}
+        isSubscribed={isSubscribed}
+        currentTierId={membership?.tierId}
+        onSelectTier={selectTier}
+        renderFreeAction={(tier) =>
+          isSubscribed ? (
+            <ManageSubscription
+              publicationUri={props.publicationUri}
+              publicationUrl={props.publicationUrl}
+              newsletterMode={props.newsletterMode}
+              user={viewerSub}
+            />
+          ) : undefined
+        }
+      />
 
-      <p className="text-tertiary text-sm text-center">
-        {!props.walletCard?.last4 ? (
-          props.loggedIn ? null : (
-            <>
-              Already Subscribed?{" "}
-              <LoginModal trigger={<div className="underline">Sign in</div>} />
-            </>
-          )
-        ) : (
-          <>Bill to card ending in {props.walletCard.last4}</>
-        )}
-      </p>
+      {membership ? (
+        <p className="text-tertiary text-sm text-center">
+          Switching adjusts your next invoice with a prorated credit or charge.{" "}
+          <SpeedyLink href="/memberships" className="underline">
+            Manage your membership
+          </SpeedyLink>
+        </p>
+      ) : (
+        <p className="text-tertiary text-sm text-center">
+          {!props.walletCard?.last4 ? (
+            props.loggedIn ? null : (
+              <>
+                Already Subscribed?{" "}
+                <LoginModal trigger={<div className="underline">Sign in</div>} />
+              </>
+            )
+          ) : (
+            <>Bill to card ending in {props.walletCard.last4}</>
+          )}
+        </p>
+      )}
       {subscribingAs && (
         <p className="text-tertiary text-xs">Subscribing as {subscribingAs}</p>
       )}
@@ -369,7 +281,9 @@ export function JoinTiers(props: {
           onSubscribed={() => {
             const tier = subscribeTier;
             setSubscribeTier(null);
-            if (tier) proceedToPayment(tier);
+            // The free tier is just the subscription itself — no payment step.
+            if (tier && !isFreeTier(tier)) proceedToPayment(tier);
+            else router.refresh();
           }}
         />
       </Modal>

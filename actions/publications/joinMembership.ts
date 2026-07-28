@@ -11,18 +11,24 @@ import {
   provisionCardOnAccount,
   walletCheckoutSessionCard,
 } from "stripe/wallet";
-import { isActiveMembership } from "src/membership";
+import { isActiveMembership, filterJoinableTiers } from "src/membership";
 import { getReaderMembership, notifyNewMember } from "src/membership.server";
 import { Ok, Err, type Result } from "src/result";
+import type { Tier } from "components/Memberships/TierGrid";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
 
 export type MembershipJoinViewer = {
   loggedIn: boolean;
   isOwner: boolean;
-  isMember: boolean;
-  email: string | null;
-  handle: string | null;
+  // The viewer's active membership, for the switch/upgrade flow. Always a paid
+  // tier — the free tier is a plain subscription with no membership row. Its
+  // presence is what "is a member" means, so consumers derive that from here.
+  membership: {
+    id: string;
+    tierId: string | null;
+    cadence: string | null;
+  } | null;
   walletCard: { brand: string | null; last4: string | null } | null;
 };
 
@@ -37,10 +43,7 @@ export async function getMembershipJoinViewer(
     return {
       loggedIn: false,
       isOwner: false,
-      isMember: false,
-
-      email: null,
-      handle: null,
+      membership: null,
       walletCard: null,
     };
   const [{ data: publication }, membership, { data: wallet }] =
@@ -61,14 +64,41 @@ export async function getMembershipJoinViewer(
     loggedIn: true,
     isOwner:
       !!identity.atp_did && identity.atp_did === publication?.identity_did,
-    isMember: isActiveMembership(membership),
-
-    email: identity.email ?? null,
-    handle: identity.bsky_profiles?.handle ?? null,
+    membership:
+      membership && isActiveMembership(membership)
+        ? {
+            id: membership.id,
+            tierId: membership.tier,
+            cadence: membership.cadence,
+          }
+        : null,
     walletCard: wallet?.card_last4
       ? { brand: wallet.card_brand, last4: wallet.card_last4 }
       : null,
   };
+}
+
+// The joinable tier list for a publication — what PaidSubscribeButton needs to
+// decide a pub takes paid memberships and to render the join modal. Empty when
+// memberships are disabled.
+export async function getJoinableTiers(publicationUri: string): Promise<Tier[]> {
+  const { data } = await supabaseServerClient
+    .from("publications")
+    .select(
+      `publication_membership_settings(enabled),
+       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order, stripe_price_monthly_id, is_free)`,
+    )
+    .eq("uri", publicationUri)
+    .maybeSingle();
+  if (!data?.publication_membership_settings?.enabled) return [];
+  return filterJoinableTiers(data.publication_membership_tiers).map((t) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    monthly_price_cents: t.monthly_price_cents,
+    annual_price_cents: t.annual_price_cents,
+    is_free: t.is_free,
+  }));
 }
 
 // First-time card collection is a Stripe-hosted setup-mode Checkout page (no

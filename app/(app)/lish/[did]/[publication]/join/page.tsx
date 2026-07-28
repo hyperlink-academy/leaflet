@@ -5,7 +5,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
-import { isActiveMembership } from "src/membership";
+import { isActiveMembership, filterJoinableTiers } from "src/membership";
 import { getReaderMembership } from "src/membership.server";
 import {
   PublicationThemeProvider,
@@ -53,12 +53,9 @@ export default async function JoinPage(props: {
     notFound();
 
   const record = normalizePublicationRecord(publication.record);
-  const tiers = publication.publication_membership_tiers
-    // The free tier has no Stripe price; paid tiers need a monthly price id to
-    // guard against half-provisioned tiers a reader couldn't subscribe to.
-    .filter((t) => t.active && (t.is_free || t.stripe_price_monthly_id))
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((t) => ({
+  const tiers = filterJoinableTiers(
+    publication.publication_membership_tiers,
+  ).map((t) => ({
       id: t.id,
       name: t.name,
       description: t.description,
@@ -97,7 +94,6 @@ export default async function JoinPage(props: {
             publicationUri={publication.uri}
             publicationName={publication.name}
             publicationUrl={getPublicationURL(publication)}
-            publicationDescription={record?.description}
             newsletterMode={
               !!publication.publication_newsletter_settings?.enabled
             }
@@ -107,7 +103,15 @@ export default async function JoinPage(props: {
               !!identity?.atp_did &&
               identity.atp_did === publication.identity_did
             }
-            isMember={isActiveMembership(membership)}
+            membership={
+              membership && isActiveMembership(membership)
+                ? {
+                    id: membership.id,
+                    tierId: membership.tier,
+                    cadence: membership.cadence,
+                  }
+                : null
+            }
             email={identity?.email ?? null}
             handle={identity?.bsky_profiles?.handle ?? null}
             walletCard={walletCard}

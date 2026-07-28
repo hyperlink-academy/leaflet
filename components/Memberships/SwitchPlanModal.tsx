@@ -13,13 +13,7 @@ import {
   type MyMembership,
   type AvailableTier,
 } from "actions/memberships";
-
-export const formatPrice = (cents: number) =>
-  (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
-  });
+import { formatPrice } from "components/Memberships/TierGrid";
 
 export function membershipPrice(m: MyMembership): string | null {
   const cents = m.cadence === "year" ? m.annualPriceCents : m.monthlyPriceCents;

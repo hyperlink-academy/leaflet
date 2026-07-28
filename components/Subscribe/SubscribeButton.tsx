@@ -25,6 +25,8 @@ import { mainSiteAuthBase } from "src/utils/customDomain";
 import { useViewerSubscription } from "./viewerSubscription";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import { PaidSubscribeButton } from "./PaidSubscribeButton";
+import { useJoinableTiers } from "components/Memberships/useJoinableTiers";
 
 type SubscribeMode = "email" | "atproto";
 
@@ -51,10 +53,6 @@ export type SubscribeProps = {
   publicationName: string;
   publicationDescription?: string;
   newsletterMode: boolean;
-  // Fires once the reader has finished subscribing (email confirmed, atproto
-  // follow succeeded, or a one-click subscribe). The membership paywall uses
-  // this to move a new subscriber straight into paid-tier payment setup.
-  onSubscribed?: () => void;
 };
 
 export const SubscribePanel = (props: SubscribeProps) => {
@@ -96,11 +94,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [linkModalOpen, setLinkModalOpen] = useState(false);
   let [subscribeMode, setSubscribeMode] = useState<SubscribeMode>("email");
-
-  const markSubscribed = () => {
-    setLocallySubscribed(true);
-    props.onSubscribed?.();
-  };
+  const joinable = useJoinableTiers(props.publicationUri);
 
   const viewerHandle = identity?.bsky_profiles?.handle;
   const viewerAtpDid = identity?.atp_did;
@@ -136,6 +130,9 @@ export const SubscribeInput = (props: SubscribeProps) => {
   const modeMenu = (
     <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
+  // Paid memberships replace the subscribe form with the paid join flow.
+  if (joinable.hasPaidTiers && joinable.tiers)
+    return <PaidSubscribeButton {...props} tiers={joinable.tiers} />;
   return (
     <>
       {isSubscribed ? (
@@ -196,7 +193,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               publicationUrl={props.publicationUrl}
               email={user.email}
               handle={user.handle}
-              onSubscribed={markSubscribed}
+              onSubscribed={() => setLocallySubscribed(true)}
             />
           ) : subscribeMode === "email" ? (
             <EmailInput
@@ -239,7 +236,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           user={user}
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
-          onSubscribed={markSubscribed}
+          onSubscribed={() => setLocallySubscribed(true)}
         />
       )}
       {props.newsletterMode && needsLinkConfirmation && (
@@ -263,7 +260,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
         onOpenChange={(open) => {
           setAtSuccessOpen(open);
           if (!open) {
-            markSubscribed();
+            setLocallySubscribed(true);
             mutateIdentity();
             router.refresh();
           }
@@ -277,7 +274,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           onOpenChange={(open) => {
             setConfirmOpen(open);
             if (!open) {
-              if (confirmState === "success") markSubscribed();
+              if (confirmState === "success") setLocallySubscribed(true);
               setConfirmState("confirm");
               setLinkToCurrent(false);
             }
@@ -319,6 +316,11 @@ export const SubscribeInput = (props: SubscribeProps) => {
 export const SubscribeButton = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
   let [locallySubscribed, setLocallySubscribed] = useState(false);
+  const joinable = useJoinableTiers(props.publicationUri);
+
+  // Paid memberships replace the one-click subscribe with the paid join flow.
+  if (joinable.hasPaidTiers && joinable.tiers)
+    return <PaidSubscribeButton {...props} tiers={joinable.tiers} />;
 
   const showManage = props.newsletterMode
     ? user.emailSubscribed
@@ -380,7 +382,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
   );
 };
 
-const SubscribeInputModeMenu = (props: {
+export const SubscribeInputModeMenu = (props: {
   mode: SubscribeMode;
   onChange: (mode: SubscribeMode) => void;
 }) => {

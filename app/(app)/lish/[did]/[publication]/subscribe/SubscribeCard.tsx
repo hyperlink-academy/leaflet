@@ -4,10 +4,6 @@ import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
-// The page-level PublicationThemeProvider already sets every theme CSS variable
-// (--bg-leaflet, --bg-page, --primary, --accent-*, fonts) on the whole subtree,
-// so the card just consumes them via Tailwind classes. It uses the page-background
-// surface (--bg-page) so it stands out from the leaflet background behind it.
 export const SubscribeCard = (props: {
   record: NormalizedPublication;
   uri: string;

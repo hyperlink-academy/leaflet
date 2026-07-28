@@ -5,6 +5,7 @@ import { useActorTypeahead } from "src/hooks/useActorTypeahead";
 import { DotLoader } from "components/utils/DotLoader";
 import { theme } from "tailwind.config";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
+import { INPUT_HIGHLIGHT_CLASS } from "./inputHighlight";
 
 export const HandleInput = (props: {
   autoFocus?: boolean;
@@ -15,6 +16,13 @@ export const HandleInput = (props: {
   compact?: boolean;
   loading?: boolean;
   onSubmit?: (handle: string) => void;
+  // Fires on every keystroke and on suggestion select, for callers that stash
+  // the handle instead of submitting (e.g. the paid join modal).
+  onChange?: (value: string) => void;
+  // Flags the input as needing attention (e.g. a tier was picked before a
+  // handle was entered); cleared on focus via onFocus.
+  highlight?: boolean;
+  onFocus?: () => void;
 }) => {
   let {
     handleValue,
@@ -34,6 +42,7 @@ export const HandleInput = (props: {
     setDropdownOpen(false);
     setSuggestions([]);
     setHighlighted(undefined);
+    props.onChange?.(selected);
     props.onSubmit?.(selected);
   };
 
@@ -57,7 +66,7 @@ export const HandleInput = (props: {
       className="w-(--radix-popover-trigger-width)!"
       trigger={
         <div
-          className={`handleInput input-with-border relative py-0! flex items-center gap-2 w-full ${props.large && "px-2!"} ${props.className}`}
+          className={`handleInput input-with-border relative py-0! flex items-center gap-2 w-full ${props.large && "px-2!"} ${props.highlight ? INPUT_HIGHLIGHT_CLASS : ""} ${props.className}`}
           style={
             props.loading
               ? {
@@ -79,7 +88,11 @@ export const HandleInput = (props: {
             placeholder="atmosphere.handle"
             size={0}
             value={handleValue}
-            onChange={(e) => setHandleValue(e.target.value)}
+            onChange={(e) => {
+              setHandleValue(e.target.value);
+              props.onChange?.(e.target.value);
+            }}
+            onFocus={props.onFocus}
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
@@ -98,7 +111,7 @@ export const HandleInput = (props: {
           />
           {props.loading ? (
             <DotLoader />
-          ) : props.onSubmit ? (
+          ) : props.onSubmit && props.action ? (
             <button
               type="button"
               onClick={(e) => {

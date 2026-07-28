@@ -14,6 +14,7 @@ import {
   deleteMembershipTier,
   type MembershipTierInput,
 } from "actions/publications/membershipSettings";
+import { formatPrice } from "components/Memberships/TierGrid";
 
 type Tier = {
   id: string;
@@ -26,13 +27,6 @@ type Tier = {
   sort_order: number;
   is_free: boolean;
 };
-
-const formatPrice = (cents: number) =>
-  (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
-  });
 
 export const MembershipSettings = () => {
   let { data, mutate } = usePublicationData();
