@@ -63,6 +63,14 @@ export const PublicationAnalytics = (props: {
     toParams: (v) => ({ referrer: v ?? null }),
   });
 
+  // ?bsky_post=<did>/<rkey> — filter traffic to visits from a single Bluesky post
+  let [selectedBskyPost, setSelectedBskyPost] = useQueryState<
+    string | undefined
+  >({
+    fromParams: (get) => get("bsky_post") ?? undefined,
+    toParams: (v) => ({ bsky_post: v ?? null }),
+  });
+
   // ?metric=pageviews — toggle between "visitors" (default) and "pageviews"
   let [trafficMetric, setTrafficMetric] = useQueryState<TrafficMetric>({
     fromParams: (get) =>
@@ -81,6 +89,7 @@ export const PublicationAnalytics = (props: {
           dateRange.to?.toISOString(),
           selectedPost?.path,
           selectedReferrer,
+          selectedBskyPost,
         ]
       : null,
     async () => {
@@ -90,6 +99,7 @@ export const PublicationAnalytics = (props: {
         ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
         ...(selectedPost ? { path: `/${selectedPost.path}` } : {}),
         ...(selectedReferrer ? { referrer_host: selectedReferrer } : {}),
+        ...(selectedBskyPost ? { bsky_post: selectedBskyPost } : {}),
       });
       return res?.result;
     },
@@ -134,6 +144,14 @@ export const PublicationAnalytics = (props: {
       return res?.result;
     },
   );
+
+  let selectedBskyPostLabel = useMemo(() => {
+    if (!selectedBskyPost) return undefined;
+    let row = bskyPostsData?.posts.find((p) => p.ref === selectedBskyPost);
+    return row?.post
+      ? `Bluesky post by @${row.post.author.handle}`
+      : "Bluesky post";
+  }, [selectedBskyPost, bskyPostsData?.posts]);
 
   let filledTraffic = useMemo(
     () =>
@@ -201,7 +219,15 @@ export const PublicationAnalytics = (props: {
                 <>
                   <ArrowRightTiny className="text-border shrink-0" />
                   <div className="text-tertiary min-w-24 truncate">
-                    {selectedReferrer} hello this is reddit
+                    {selectedReferrer}
+                  </div>
+                </>
+              )}
+              {selectedBskyPost && (
+                <>
+                  <ArrowRightTiny className="text-border shrink-0" />
+                  <div className="text-tertiary min-w-24 truncate">
+                    {selectedBskyPostLabel}
                   </div>
                 </>
               )}
@@ -248,6 +274,8 @@ export const PublicationAnalytics = (props: {
         <BskyPostsList
           posts={bskyPostsData?.posts || []}
           isLoading={bskyPostsLoading}
+          selectedRef={selectedBskyPost}
+          setSelectedRef={setSelectedBskyPost}
         />
       </div>
       <div

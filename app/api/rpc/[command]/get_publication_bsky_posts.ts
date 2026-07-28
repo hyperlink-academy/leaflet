@@ -12,6 +12,8 @@ export type GetPublicationBskyPostsReturnType = Awaited<
 >;
 
 export type PublicationBskyPost = {
+  // "<did>/<rkey>" as carried in utm_content; the value to filter analytics by
+  ref: string;
   uri: string;
   pageviews: number;
   visitors: number;
@@ -73,6 +75,7 @@ export const get_publication_bsky_posts = makeRoute({
 
     const rows = trafficResult.data
       .map((row) => ({
+        ref: row.post_ref,
         uri: bskyPostUriFromUtmContent(row.post_ref),
         pageviews: Number(row.pageviews),
         visitors: Number(row.visitors),

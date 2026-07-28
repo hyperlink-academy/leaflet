@@ -95,6 +95,7 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
     date_to: p.string().optional(),
     path: p.string().optional(),
     referrer_host: p.string().optional(),
+    bsky_post: p.string().optional(),
   },
   tokens: [PROD_READ_TOKEN],
   nodes: [
@@ -119,6 +120,10 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
           {% end %}
           {% if defined(referrer_host) %}
             AND domain(referrer) = {{String(referrer_host)}}
+          {% end %}
+          {% if defined(bsky_post) %}
+            AND JSONExtractString(queryParams, 'utm_source') = 'bluesky'
+            AND JSONExtractString(queryParams, 'utm_content') = {{String(bsky_post)}}
           {% end %}
         GROUP BY day
         ORDER BY day ASC
@@ -151,6 +156,7 @@ export const publicationTopReferrers = defineEndpoint(
       date_to: p.string().optional(),
       path: p.string().optional(),
       referrer_host: p.string().optional(),
+      bsky_post: p.string().optional(),
       limit: p.int32().optional(10),
     },
     nodes: [
@@ -176,6 +182,10 @@ export const publicationTopReferrers = defineEndpoint(
           {% end %}
           {% if defined(referrer_host) %}
             AND domain(referrer) = {{String(referrer_host)}}
+          {% end %}
+          {% if defined(bsky_post) %}
+            AND JSONExtractString(queryParams, 'utm_source') = 'bluesky'
+            AND JSONExtractString(queryParams, 'utm_content') = {{String(bsky_post)}}
           {% end %}
         GROUP BY referrer_host
         ORDER BY pageviews DESC
@@ -208,6 +218,7 @@ export const publicationTopPages = defineEndpoint("publication_top_pages", {
     date_from: p.string().optional(),
     date_to: p.string().optional(),
     referrer_host: p.string().optional(),
+    bsky_post: p.string().optional(),
     limit: p.int32().optional(10),
   },
   nodes: [
@@ -228,6 +239,10 @@ export const publicationTopPages = defineEndpoint("publication_top_pages", {
           {% end %}
           {% if defined(referrer_host) %}
             AND domain(referrer) = {{String(referrer_host)}}
+          {% end %}
+          {% if defined(bsky_post) %}
+            AND JSONExtractString(queryParams, 'utm_source') = 'bluesky'
+            AND JSONExtractString(queryParams, 'utm_content') = {{String(bsky_post)}}
           {% end %}
         GROUP BY path
         ORDER BY pageviews DESC

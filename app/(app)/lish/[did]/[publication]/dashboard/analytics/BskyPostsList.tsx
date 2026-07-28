@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { AtUri } from "@atproto/syntax";
 import { AppBskyFeedPost } from "@atproto/api";
 import { Avatar } from "components/Avatar";
+import { BskyEmbed } from "components/Blocks/BlueskyPostBlock/BskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
@@ -13,9 +14,12 @@ import { ListSkeleton } from "./Skeletons";
 
 // The Bluesky posts (created via publish/share/quote flows) that have driven
 // traffic to this publication, with each post's content and interactions.
+// Clicking a post scopes the traffic chart to visits from that post.
 export const BskyPostsList = (props: {
   posts: PublicationBskyPost[];
   isLoading: boolean;
+  selectedRef: string | undefined;
+  setSelectedRef: (ref: string | undefined) => void;
 }) => {
   if (props.isLoading) return <ListSkeleton />;
   if (props.posts.length === 0)
@@ -29,7 +33,15 @@ export const BskyPostsList = (props: {
     <div className="flex flex-col pt-1">
       {props.posts.map((row) => (
         <Fragment key={row.uri}>
-          <BskyPostRow row={row} />
+          <BskyPostRow
+            row={row}
+            selected={props.selectedRef === row.ref}
+            onSelect={() =>
+              props.setSelectedRef(
+                props.selectedRef === row.ref ? undefined : row.ref,
+              )
+            }
+          />
           <hr className="border-border-light last:hidden" />
         </Fragment>
       ))}
@@ -37,7 +49,11 @@ export const BskyPostsList = (props: {
   );
 };
 
-const BskyPostRow = (props: { row: PublicationBskyPost }) => {
+const BskyPostRow = (props: {
+  row: PublicationBskyPost;
+  selected: boolean;
+  onSelect: () => void;
+}) => {
   let { post, pageviews, visitors, uri } = props.row;
   let atUri = new AtUri(uri);
   let bskyUrl = `https://bsky.app/profile/${post?.author.handle ?? atUri.host}/post/${atUri.rkey}`;
@@ -54,11 +70,30 @@ const BskyPostRow = (props: { row: PublicationBskyPost }) => {
     </div>
   );
 
+  // Row-click toggles the traffic filter via an overlay button (the pattern
+  // BskyPostContent uses): content is pointer-events-none so clicks fall
+  // through to the overlay, with the embed and links opted back in.
+  let rowClass = `relative flex justify-between gap-4 px-1 py-2 rounded-md ${
+    props.selected ? "bg-[var(--accent-light)]" : ""
+  }`;
+  let overlay = (
+    <button
+      className="absolute inset-0"
+      aria-label={
+        props.selected
+          ? "Clear Bluesky post filter"
+          : "Filter traffic to this Bluesky post"
+      }
+      onClick={props.onSelect}
+    />
+  );
+
   if (!post) {
     return (
-      <div className="flex justify-between gap-4 px-1 py-2 items-center text-sm">
+      <div className={`${rowClass} items-center text-sm`}>
+        {overlay}
         <a
-          className="text-tertiary italic hover:underline min-w-0 truncate"
+          className="pointer-events-auto relative text-tertiary italic hover:underline min-w-0 truncate"
           href={bskyUrl}
           target="_blank"
           rel="noreferrer"
@@ -72,9 +107,10 @@ const BskyPostRow = (props: { row: PublicationBskyPost }) => {
 
   let record = post.record as AppBskyFeedPost.Record;
   return (
-    <div className="flex justify-between gap-4 px-1 py-2">
-      <div className="flex gap-2 min-w-0 grow">
-        <div className="shrink-0">
+    <div className={rowClass}>
+      {overlay}
+      <div className="flex gap-2 min-w-0 grow pointer-events-none">
+        <div className="shrink-0 pointer-events-auto">
           <Avatar
             src={post.author.avatar}
             displayName={post.author.displayName || post.author.handle}
@@ -91,6 +127,19 @@ const BskyPostRow = (props: { row: PublicationBskyPost }) => {
           <div className="text-secondary text-sm mt-0.5">
             <BlueskyRichText record={record} />
           </div>
+          {post.embed && (
+            <div
+              className="mt-1.5 pointer-events-auto relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <BskyEmbed
+                content={post.embed}
+                postUrl={bskyUrl}
+                compact
+                className="text-sm"
+              />
+            </div>
+          )}
           <div className="flex gap-3 items-center text-tertiary text-xs mt-1.5">
             {(post.likeCount ?? 0) > 0 && (
               <div className="flex items-center gap-1">
@@ -111,7 +160,7 @@ const BskyPostRow = (props: { row: PublicationBskyPost }) => {
               </div>
             )}
             <a
-              className="hover:text-accent-contrast"
+              className="hover:text-accent-contrast pointer-events-auto relative"
               href={bskyUrl}
               target="_blank"
               rel="noreferrer"
