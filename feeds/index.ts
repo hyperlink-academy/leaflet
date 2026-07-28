@@ -78,9 +78,8 @@ app.get("/xrpc/parts.page.mention.search", async (c) => {
 const SKELETON_COLUMNS = `uri, sort_date, postRef:data->postRef, bskyPostRef:data->bskyPostRef, publishedAt:data->>publishedAt`;
 
 app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
-  let auth = await validateAuth(c.req, serviceDid);
   let feed = c.req.query("feed");
-  if (!auth || !feed) return c.json({ feed: [] });
+  if (!feed) return c.json({ feed: [] });
   let cursor = c.req.query("cursor");
   let parsedCursor;
   if (cursor) {
@@ -92,6 +91,9 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   let feedAtURI = new AtUri(feed);
   let posts;
   let query;
+  // The quotes feed isn't personalized, so serve it without auth — the bsky
+  // appview omits the viewer JWT for logged-out requests, feed previews, and
+  // crawlers, and those should still see the feed.
   if (feedAtURI.rkey == "bsky-leaflet-quotes") {
     let query = supabaseServerClient
       .from("document_mentions_in_bsky")
@@ -105,6 +107,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       );
 
     let { data, error } = await query;
+    if (error) console.error("bsky-leaflet-quotes skeleton query error:", error);
     let posts = data || [];
 
     let lastPost = posts[posts.length - 1];
@@ -116,6 +119,8 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       }),
     });
   }
+  let auth = await validateAuth(c.req, serviceDid);
+  if (!auth) return c.json({ feed: [] });
   if (feedAtURI.rkey === "bsky-follows-leaflets") {
     if (!cursor) {
       console.log("Sending event");
@@ -214,10 +219,22 @@ const validateAuth = async (
   }
   const jwt = authorization.replace("Bearer ", "").trim();
   const nsid = parseReqNsid({ url: req.path });
-  const parsed = await verifyJwt(jwt, serviceDid, nsid, async (did: string) => {
-    return didResolver.resolveAtprotoKey(did);
-  });
-  return parsed.iss;
+  // verifyJwt throws on a bad/expired token; treat that as unauthenticated
+  // rather than letting the whole skeleton request 500.
+  try {
+    const parsed = await verifyJwt(
+      jwt,
+      serviceDid,
+      nsid,
+      async (did: string) => {
+        return didResolver.resolveAtprotoKey(did);
+      },
+    );
+    return parsed.iss;
+  } catch (err) {
+    console.error("feed skeleton auth failed:", err);
+    return null;
+  }
 };
 
 serve({ fetch: app.fetch, port: 3030 });
