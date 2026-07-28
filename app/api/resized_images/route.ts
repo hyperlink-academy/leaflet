@@ -1,9 +1,12 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import sharp from "sharp";
 import { supabaseServerClient } from "supabase/serverClient";
 import { snapToImageWidth } from "supabase/imageSizes";
+import {
+  encodeImageVariant,
+  parseImageFormat,
+} from "src/utils/serverImageEncoding";
 
 // Downscaling for storage images, used by the next/image loader
 // (supabase/supabase-image-loader.js). Resizing here with sharp instead of
@@ -47,14 +50,15 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const path = url.searchParams.get("path") ?? "";
   const width = parseDimension(url.searchParams.get("width"));
+  const format = parseImageFormat(url.searchParams.get("format"));
 
   const bucket = path.split("/")[0];
   if (!SOURCE_BUCKETS.has(bucket) || path.includes(".."))
     return new NextResponse(null, { status: 400 });
 
-  if (!width) return redirect(publicUrl(path));
+  if (!width && !format) return redirect(publicUrl(path));
 
-  const variantPath = `resized/w${width}/${path}`;
+  const variantPath = `resized/${format ? `${format}/` : ""}w${width ?? 0}/${path}`;
   const variantUrl = publicUrl(`${VARIANT_BUCKET}/${variantPath}`);
 
   const existing = await fetch(variantUrl, { method: "HEAD" });
@@ -65,16 +69,18 @@ export async function GET(req: NextRequest) {
   const original = Buffer.from(await origin.arrayBuffer());
 
   try {
-    // rotate() applies EXIF orientation, which imgproxy did implicitly.
-    // withoutEnlargement mirrors imgproxy's no-upscale default.
-    const resized = await sharp(original, { animated: true })
-      .rotate()
-      .resize({ width, withoutEnlargement: true })
-      .toBuffer({ resolveWithObject: true });
+    const output = await encodeImageVariant(original, {
+      format,
+      resize: width ? { width, withoutEnlargement: true } : undefined,
+    });
+    // Already email-safe with no resize asked for, so there is no variant
+    // worth storing.
+    if (!output) return redirect(publicUrl(path));
+
     const { error } = await supabaseServerClient.storage
       .from(VARIANT_BUCKET)
-      .upload(variantPath, new Uint8Array(resized.data), {
-        contentType: `image/${resized.info.format}`,
+      .upload(variantPath, new Uint8Array(output.data), {
+        contentType: `image/${output.format}`,
         // storage-js expects seconds, not a header value.
         cacheControl: "31536000",
         upsert: true,

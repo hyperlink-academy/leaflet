@@ -101,7 +101,10 @@ export async function prepareImage(
       try {
         const uploadBlob = isAnimated
           ? file
-          : await encodeBitmapToWebP(bitmap, { quality: 0.92 });
+          : await encodeBitmapToWebP(bitmap, {
+              quality: 0.92,
+              preferLossless: file.type === "image/png",
+            });
         bitmap.close();
         await client.storage
           .from("minilink-user-assets")

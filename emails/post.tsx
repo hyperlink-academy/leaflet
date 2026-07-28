@@ -1156,7 +1156,12 @@ const BlockRenderer = ({
     );
   }
   if (PubLeafletBlocksImage.isMain(block)) {
-    const src = blobRefToSrc(block.image.ref, did, assetsBaseUrl);
+    const src = blobRefToSrc(block.image.ref, did, assetsBaseUrl, {
+      // The email body is ~600px wide, so the 1200 rung covers it at retina
+      // density; the full-resolution blob would be pure wasted bytes.
+      width: 1200,
+      format: "email",
+    });
     // Deliberately no numeric `width`/`height` HTML attributes: Outlook
     // honors those over CSS `max-width`, so a 1200px natural-size photo
     // would blow out our 28rem container. `max-width: <natural>px` keeps
@@ -1173,7 +1178,10 @@ const BlockRenderer = ({
   }
   if (PubLeafletBlocksWebsite.isMain(block)) {
     const previewSrc = block.previewImage
-      ? blobRefToSrc(block.previewImage.ref, did, assetsBaseUrl)
+      ? blobRefToSrc(block.previewImage.ref, did, assetsBaseUrl, {
+          width: 360,
+          format: "email",
+        })
       : undefined;
     return (
       <LinkBlock

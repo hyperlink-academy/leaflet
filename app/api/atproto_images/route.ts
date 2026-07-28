@@ -2,9 +2,12 @@ export const runtime = "nodejs";
 
 import { IdResolver } from "@atproto/identity";
 import { NextRequest, NextResponse } from "next/server";
-import sharp from "sharp";
 import { supabaseServerClient } from "supabase/serverClient";
 import { snapToImageWidth } from "supabase/imageSizes";
+import {
+  encodeImageVariant,
+  parseImageFormat,
+} from "src/utils/serverImageEncoding";
 
 let idResolver = new IdResolver();
 
@@ -123,11 +126,12 @@ export async function GET(req: NextRequest) {
 
   const width = parseDimension(url.searchParams.get("width"));
   const height = parseDimension(url.searchParams.get("height"));
+  const format = parseImageFormat(url.searchParams.get("format"));
 
-  if (width || height) {
+  if (width || height || format) {
     // Thumbnail: resized once with sharp (Supabase's image transform bills
     // per origin image per month), stored, and served by redirect.
-    const variantPath = `${COVER_IMAGE_PREFIX}/resized/w${width ?? 0}-h${height ?? 0}/${params.cid}`;
+    const variantPath = `${COVER_IMAGE_PREFIX}/resized/${format ? `${format}/` : ""}w${width ?? 0}-h${height ?? 0}/${params.cid}`;
     const variantUrl = publicUrl(variantPath);
     const existing = await fetch(variantUrl, { method: "HEAD" });
     if (existing.ok) return redirect(variantUrl);
@@ -141,22 +145,21 @@ export async function GET(req: NextRequest) {
       }
       if (bytes) {
         try {
-          // rotate() applies EXIF orientation, which imgproxy did
-          // implicitly. withoutEnlargement mirrors imgproxy's no-upscale
-          // default.
-          const resized = await sharp(Buffer.from(bytes), { animated: true })
-            .rotate()
-            .resize({
-              width,
-              height,
-              fit: "inside",
-              withoutEnlargement: true,
-            })
-            .toBuffer({ resolveWithObject: true });
+          const output = await encodeImageVariant(Buffer.from(bytes), {
+            format,
+            resize:
+              width || height
+                ? { width, height, fit: "inside", withoutEnlargement: true }
+                : undefined,
+          });
+          // Already email-safe with no resize asked for, so there is no
+          // variant worth storing.
+          if (!output) return redirect(original.url);
+
           const { error } = await supabaseServerClient.storage
             .from(COVER_IMAGE_BUCKET)
-            .upload(variantPath, new Uint8Array(resized.data), {
-              contentType: `image/${resized.info.format}`,
+            .upload(variantPath, new Uint8Array(output.data), {
+              contentType: `image/${output.format}`,
               cacheControl: "31536000",
               upsert: true,
             });
