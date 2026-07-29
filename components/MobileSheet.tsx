@@ -120,6 +120,10 @@ export const MobileSheet = ({
         if (!("touches" in event)) return;
         if ((scrollerRef.current?.scrollTop ?? 0) > 0) return;
         if (dy <= 0) return;
+        // An active text selection means the touch is dragging iOS selection
+        // handles — preventDefaulting those touchmoves cancels the native
+        // selection drag, so let WebKit own the touch.
+        if ((window.getSelection()?.toString().length ?? 0) > 0) return;
         m = { engagedAt: my, base: dragY.get() };
       }
       if (event.cancelable) event.preventDefault();
