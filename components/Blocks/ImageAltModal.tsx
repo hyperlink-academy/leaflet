@@ -78,7 +78,7 @@ function ImageAltModalContent(props: {
         <img
           src={src}
           alt={altText}
-          className="w-full max-h-[40vh] object-contain rounded-md"
+          className="max-w-full w-fit self-center max-h-[40vh] object-contain rounded-md"
         />
       )}
       <textarea

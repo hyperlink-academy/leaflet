@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "TZ=UTC next dev --turbo -H 127.0.0.1",
     "test": "vitest run",
+    "test:unit": "vitest run --exclude '**/node_modules/**' --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run integration.test",
     "test:watch": "vitest",
     "publish-lexicons": "tsx lexicons/publish.ts",
     "generate-db-types": "supabase gen types --local > supabase/database.types.ts && drizzle-kit introspect && rm -rf ./drizzle/*.sql ./drizzle/meta",
@@ -130,6 +132,7 @@
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.21.2",
     "esbuild": "^0.25.4",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.38",
     "prettier": "3.2.5",
     "supabase": "^1.187.3",

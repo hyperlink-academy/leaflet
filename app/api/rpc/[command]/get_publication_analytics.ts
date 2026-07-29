@@ -16,9 +16,12 @@ export const get_publication_analytics = makeRoute({
     to: z.string().optional(),
     path: z.string().optional(),
     referrer_host: z.string().optional(),
+    // "<did>/<rkey>" ref of a Bluesky post (utm_content format) to scope
+    // traffic to visits arriving from that specific post
+    bsky_post: z.string().optional(),
   }),
   handler: async (
-    { publication_uri, from, to, path, referrer_host },
+    { publication_uri, from, to, path, referrer_host, bsky_post },
     { supabase }: Pick<Env, "supabase">,
   ) => {
     const identity = await getIdentityData();
@@ -62,6 +65,7 @@ export const get_publication_analytics = makeRoute({
         ...(to ? { date_to: to } : {}),
         ...(path ? { path } : {}),
         ...(referrer_host ? { referrer_host } : {}),
+        ...(bsky_post ? { bsky_post } : {}),
       }),
       tinybird.publicationTopReferrers.query({
         domains,
@@ -69,6 +73,7 @@ export const get_publication_analytics = makeRoute({
         ...(to ? { date_to: to } : {}),
         ...(path ? { path } : {}),
         ...(referrer_host ? { referrer_host } : {}),
+        ...(bsky_post ? { bsky_post } : {}),
         limit: 10,
       }),
       tinybird.publicationTopPages.query({
@@ -76,6 +81,7 @@ export const get_publication_analytics = makeRoute({
         ...(from ? { date_from: from } : {}),
         ...(to ? { date_to: to } : {}),
         ...(referrer_host ? { referrer_host } : {}),
+        ...(bsky_post ? { bsky_post } : {}),
         limit: 20,
       }),
     ]);

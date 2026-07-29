@@ -24,7 +24,7 @@ import {
 import type { OAuthSessionError } from "src/atproto-oauth";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blobRefToSrc, EMAIL_ICON_TRANSFORM } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/api";
 
 type RequestError =
@@ -65,12 +65,14 @@ export async function requestPublicationEmailSubscription(
   const normalizedPub = normalizePublicationRecord(publication?.record);
   const pubName = normalizedPub?.name;
   const pubUrl = normalizedPub?.url;
-  const assetsBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
+  const assetsBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
   const pubIcon = normalizedPub?.icon
     ? blobRefToSrc(
         normalizedPub.icon.ref,
         new AtUri(publicationUri).host,
         assetsBaseUrl,
+        EMAIL_ICON_TRANSFORM,
       )
     : undefined;
 
@@ -356,4 +358,3 @@ async function linkEmailToCurrentIdentity(
   if (!merged.ok) return Err("database_error");
   return Ok(current.id);
 }
-

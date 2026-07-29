@@ -1,0 +1,32 @@
+name: Integration tests
+
+# The only tests that need the local Supabase stack (PostgREST over a migrated
+# db), which costs minutes to boot — hence the narrow path filter. Everything
+# else runs in test-unit.yml on every PR. On pushes to main the test job in
+# main.yml runs the whole suite unconditionally and gates the supabase deploy.
+on:
+  pull_request:
+    paths:
+      - "**/*.integration.test.ts"
+      - "src/replicache/**"
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - "vitest.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/test-integration.yml"
+      - ".github/actions/run-tests/**"
+
+concurrency:
+  group: test-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    name: vitest (integration)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/run-tests
+        with:
+          command: npm run test:integration

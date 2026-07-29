@@ -1,0 +1,23 @@
+name: Unit tests
+
+# Everything that doesn't need the Supabase stack: the paste pipeline, the CVR
+# and block-mirror suites. The whole thing is a couple of seconds, so it runs on
+# every PR rather than carrying a path filter that could miss a caller.
+on: pull_request
+
+concurrency:
+  group: test-unit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    name: vitest (unit)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+      - run: npm i
+      - run: npm run test:unit

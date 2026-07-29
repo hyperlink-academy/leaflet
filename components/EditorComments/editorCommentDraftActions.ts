@@ -121,6 +121,12 @@ export async function submitEditorCommentDraft({
   }
   let position = generateKeyBetween(beforePosition, afterPosition);
 
+  // Clear the draft decoration in its own step-less transaction (no undo
+  // entry) before the mark transaction: the mark's pre-state is what undo
+  // restores, and clearing in the same transaction would bake the draft
+  // highlight into that snapshot, resurrecting it on undo.
+  view.dispatch(view.state.tr.setMeta(commentDraftKey, null));
+
   // The comment's facts and its anchor mark undo as one step. The mark
   // transaction is dispatched as a bulkOp so trackUndoRedo adds it to this
   // group instead of starting its own.
@@ -130,6 +136,7 @@ export async function submitEditorCommentDraft({
       commentEntityID,
       blockID: draft.blockID,
       permission_set: permissionSet,
+      commentFactID: v7(),
       position,
       authorDid,
       createdAt: new Date().toISOString(),
@@ -155,7 +162,6 @@ export async function submitEditorCommentDraft({
       if (!ids.includes(commentEntityID)) ids.push(commentEntityID);
       tr.addMark(segFrom, segTo, markType.create({ commentID: ids.join(" ") }));
     });
-    tr.setMeta(commentDraftKey, null);
     tr.setMeta("bulkOp", true);
     view.dispatch(tr);
   } finally {

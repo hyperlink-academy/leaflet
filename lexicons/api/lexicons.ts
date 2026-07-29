@@ -1490,6 +1490,11 @@ export const schemaDict = {
             description:
               'Whether the image should extend to the full width of the container, ignoring padding.',
           },
+          width: {
+            type: 'integer',
+            description:
+              'Display width of the image in pixels, capped at the page width.',
+          },
         },
       },
       aspectRatio: {

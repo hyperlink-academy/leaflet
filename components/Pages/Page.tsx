@@ -145,8 +145,14 @@ export const PageWrapper = (props: {
         ref={ref}
         onClick={props.onClickAction}
         id={props.id}
+        // footnote-scope (the counter-reset the inline footnote numbers count
+        // from) has to sit here rather than on the contents div below: that div
+        // is display:contents in the card-border layout, and counter properties
+        // on a box-less element are ignored, so every block started its own
+        // counter and inline refs all rendered as 1.
         className={`
       pageScrollWrapper
+      footnote-scope
       publicationScrollContainer
       grow relative
       shrink-0 snap-center
@@ -171,8 +177,8 @@ export const PageWrapper = (props: {
 `}
       >
         <div
-          className={`postPageContent footnote-scope static
-          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          className={`postPageContent static
+          ${props.fullPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}

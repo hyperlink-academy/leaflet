@@ -7,11 +7,12 @@ import { useUIState } from "src/useUIState";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { addShortcut } from "src/shortcuts";
 import { FootnoteTextToolbar } from "./FootnoteTextToolbar";
+import { HighlightToolbar } from "./HighlightToolbar";
 import { useIsMobile } from "src/hooks/isMobile";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { ToolbarPageTypeProvider } from ".";
 
-type FootnoteToolbarState = "default" | "link";
+type FootnoteToolbarState = "default" | "link" | "highlight";
 
 export const FootnoteToolbar = (props: { pageID: string }) => {
   let [toolbarState, setToolbarState] =
@@ -42,6 +43,11 @@ export const FootnoteToolbar = (props: { pageID: string }) => {
         <div className="toolbarOptions flex gap-1 sm:gap-[6px] items-center grow">
           {toolbarState === "default" ? (
             <FootnoteTextToolbar setToolbarState={setToolbarState} />
+          ) : toolbarState === "highlight" ? (
+            <HighlightToolbar
+              pageID={props.pageID}
+              onClose={() => setToolbarState("default")}
+            />
           ) : toolbarState === "link" ? (
             <InlineLinkToolbar
               onClose={() => {

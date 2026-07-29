@@ -104,11 +104,11 @@ function PublishedPostItem(props: {
                   : doc.record.title}
               </h3>
             </a>
-            <div className="flex justify-start items-start flex-row gap-2">
+            <div className="flex justify-start items-center flex-row gap-2">
               {doc.postSend ? <PostSendStatus send={doc.postSend} /> : null}
               {leaflet && leaflet.permission_tokens && canEdit && (
                 <>
-                  <SpeedyLink className="pt-[6px]" href={`/${leaflet.leaflet}`}>
+                  <SpeedyLink href={`/${leaflet.leaflet}`}>
                     <EditTiny />
                   </SpeedyLink>
 
@@ -268,7 +268,7 @@ function PostSendStatus(props: {
     return (
       <Popover
         trigger={
-          <div className="accent-container flex h-6 place-items-center font-bold text-accent-contrast text-xs px-1.5">
+          <div className="accent-container flex place-items-center font-bold text-accent-contrast text-xs px-1.5">
             SENT
           </div>
         }

@@ -11,41 +11,38 @@ export type ConnectedAccountState = {
   details_submitted: boolean;
 };
 
-// Stripe Connect (Accounts v2) merchant account so the publisher can collect
-// payments. A "full" dashboard requires both fees_collector and losses_collector
-// to be "stripe"; other combinations are rejected as
-// account_controller_unsupported_configuration. The publisher owns the account
-// and carries loss liability; members are charged directly on it and our platform
-// cut arrives as application fees (application_fee_percent).
+// Stripe Connect (Accounts v1) merchant account so the publisher can collect
+// payments. The controller properties are the Standard-account configuration:
+// full dashboard, Stripe collects its fees from the account, and Stripe carries
+// loss liability. The publisher owns the account; members are charged directly
+// on it and our platform cut arrives as application fees
+// (application_fee_percent).
 export async function createConnectedMerchantAccount(args: {
   email: string;
   displayName?: string;
   identityId: string;
 }) {
-  return getStripe().v2.core.accounts.create(
+  return getStripe().accounts.create(
     {
-      contact_email: args.email,
-      display_name: args.displayName,
+      email: args.email,
       // Required to onboard; default US until we collect the publisher's country.
-      identity: { country: "US" },
-      configuration: {
-        merchant: {
-          capabilities: { card_payments: { requested: true } },
-        },
+      country: "US",
+      controller: {
+        fees: { payer: "account" },
+        losses: { payments: "stripe" },
+        stripe_dashboard: { type: "full" },
       },
-      dashboard: "full",
-      defaults: {
-        responsibilities: {
-          fees_collector: "stripe",
-          losses_collector: "stripe",
-        },
-      },
+      capabilities: { card_payments: { requested: true } },
+      ...(args.displayName
+        ? { business_profile: { name: args.displayName } }
+        : {}),
       metadata: { identity_id: args.identityId },
-      include: ["configuration.merchant", "requirements"],
     },
     // Keyed on the identity so a retried or concurrent onboarding call returns
-    // the account already created instead of orphaning a second one.
-    { idempotencyKey: `connect-account-${args.identityId}` },
+    // the account already created instead of orphaning a second one. The "v1"
+    // marks the endpoint: replaying the pre-port v2 key against this endpoint
+    // inside Stripe's idempotency window would error instead of creating.
+    { idempotencyKey: `connect-account-v1-${args.identityId}` },
   );
 }
 
@@ -55,21 +52,17 @@ export async function createOnboardingLink(args: {
   refreshUrl: string;
   returnUrl: string;
 }) {
-  return getStripe().v2.core.accountLinks.create({
+  return getStripe().accountLinks.create({
     account: args.accountId,
-    use_case: {
-      type: "account_onboarding",
-      account_onboarding: {
-        configurations: ["merchant"],
-        refresh_url: args.refreshUrl,
-        return_url: args.returnUrl,
-      },
-    },
+    type: "account_onboarding",
+    refresh_url: args.refreshUrl,
+    return_url: args.returnUrl,
   });
 }
 
-// The v1 Accounts endpoint returns the familiar charges_enabled/payouts_enabled/
-// details_submitted flags for v2 accounts too.
+// Also works for accounts created via Accounts v2 before the v1 port: the v1
+// Accounts endpoint returns the same charges_enabled/payouts_enabled/
+// details_submitted flags for those.
 export async function syncConnectedAccountState(
   stripeAccountId: string,
 ): Promise<ConnectedAccountState> {

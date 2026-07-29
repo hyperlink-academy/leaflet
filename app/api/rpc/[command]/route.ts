@@ -22,6 +22,7 @@ import { get_document_recommends } from "./get_document_recommends";
 import { get_hot_feed } from "./get_hot_feed";
 import { get_document_interactions } from "./get_document_interactions";
 import { get_publication_analytics } from "./get_publication_analytics";
+import { get_publication_bsky_posts } from "./get_publication_bsky_posts";
 import { get_publication_subscribers_timeseries } from "./get_publication_subscribers_timeseries";
 import { get_user_mention_services } from "./get_user_mention_services";
 import { proxy_mention_search } from "./proxy_mention_search";
@@ -60,6 +61,7 @@ let Routes = [
   get_hot_feed,
   get_document_interactions,
   get_publication_analytics,
+  get_publication_bsky_posts,
   get_publication_subscribers_timeseries,
   get_user_mention_services,
   proxy_mention_search,

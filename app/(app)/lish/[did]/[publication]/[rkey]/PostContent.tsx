@@ -65,6 +65,16 @@ import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 
+// Mirrors HeadingStyle in components/Blocks/TextBlock/index.tsx so published
+// headers match the editor exactly. Keep the two in sync — see the
+// mirror-editor-block-styles skill.
+const HeadingStyle: { [level: number]: string } = {
+  1: "font-bold leading-tight pb-1 [font-family:var(--theme-heading-font)]",
+  2: "font-bold leading-tight pb-1 [font-family:var(--theme-heading-font)]",
+  3: "font-bold leading-tight pb-1 [font-family:var(--theme-heading-font)]",
+  4: "font-bold leading-snug pb-1 text-secondary [font-family:var(--theme-heading-font)]",
+};
+
 type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
@@ -106,7 +116,9 @@ export function PostContent({
   return (
     <div
       //The postContent class is important for QuoteHandler
-      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-0 ${className}`}
+      // See components/Blocks/index.tsx — flex over a long block list makes any
+      // change inside one block re-run the flex algorithm over all of them.
+      className={`postContent flow-root sm:px-4 px-3 sm:pt-3 pt-2 pb-0 ${className}`}
     >
       {blocks.map((b, index) => {
         return (
@@ -211,10 +223,29 @@ export let Block = ({
 
   let isHeading = PubLeafletBlocksHeader.isMain(b.block);
 
+  // Headers carry a level-based top margin so they read as a new section,
+  // matching the editor (components/Blocks/Block.tsx). Tightened to mt-1 after
+  // another heading, and dropped entirely right after a horizontal rule.
+  let topMargin: string;
+  if (PubLeafletBlocksHeader.isMain(b.block)) {
+    let prevBlock = previousBlock?.block;
+    topMargin = isFirst
+      ? "mt-1 sm:mt-2"
+      : PubLeafletBlocksHorizontalRule.isMain(prevBlock)
+        ? ""
+        : PubLeafletBlocksHeader.isMain(prevBlock)
+          ? "mt-1"
+          : ({ 1: "mt-5 sm:mt-6", 2: "mt-4 sm:mt-5", 3: "mt-2 sm:mt-3" }[
+              b.block.level ?? 1
+            ] ?? "mt-2 sm:mt-3");
+  } else {
+    topMargin = isFirst ? "mt-0" : "mt-1";
+  }
+
   let className = `
     postBlockWrapper
     min-h-7
-    ${isFirst ? "mt-0" : "mt-1"} ${isLast ? "mb-3 sm:mb-4" : isHeading ? "mb-0!" : "mb-2"}
+    ${topMargin} ${isLast ? "mb-3 sm:mb-4" : isHeading ? "mb-0!" : "mb-2"}
     ${isList && "isListItem mb-0! "}
     ${alignment}
     `;
@@ -541,6 +572,11 @@ export let Block = ({
                 width={b.block.aspectRatio?.width}
                 className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
                 src={src}
+                style={
+                  !isFullBleed && b.block.width
+                    ? { width: b.block.width, maxWidth: "100%", height: "auto" }
+                    : undefined
+                }
               />
             </button>
             {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
@@ -576,9 +612,21 @@ export let Block = ({
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p
-          className={`textBlock ${className} ${b.block.textSize === "small" ? "text-sm text-secondary" : b.block.textSize === "large" ? "text-lg" : ""}`}
+          className={`textBlock ${className} ${b.block.textSize === "small" ? "text-secondary" : "text-primary"}`}
           {...blockProps}
-          style={{ ...blockProps.style, fontSize: blockTextSize.p }}
+          // em-based so small/large scale with the theme's custom base font
+          // size, matching the editor's .textSizeSmall/.textSizeLarge classes.
+          // An inline font-size is required here because it would otherwise be
+          // clobbered by the base blockTextSize.p size.
+          style={{
+            ...blockProps.style,
+            fontSize:
+              b.block.textSize === "small"
+                ? "0.875em"
+                : b.block.textSize === "large"
+                  ? "1.125em"
+                  : blockTextSize.p,
+          }}
         >
           <TextBlock
             facets={b.block.facets}
@@ -616,7 +664,7 @@ export let Block = ({
       if (b.block.level === 1)
         return (
           <h1
-            className={`h1Block ${className}`}
+            className={`h1Block ${className} ${HeadingStyle[1]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}
           >
@@ -626,7 +674,7 @@ export let Block = ({
       if (b.block.level === 2)
         return (
           <h2
-            className={`h2Block ${className}`}
+            className={`h2Block ${className} ${HeadingStyle[2]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}
           >
@@ -636,7 +684,7 @@ export let Block = ({
       if (b.block.level === 3)
         return (
           <h3
-            className={`h3Block ${className}`}
+            className={`h3Block ${className} ${HeadingStyle[3]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}
           >
@@ -645,7 +693,7 @@ export let Block = ({
         );
       return (
         <h6
-          className={`h6Block ${className}`}
+          className={`h6Block ${className} ${HeadingStyle[4]}`}
           {...headingProps}
           style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}
         >
@@ -804,7 +852,7 @@ function ListItem(props: {
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
-        className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+        className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
       />
       {isChecklist && (
         <div
@@ -890,7 +938,7 @@ function OrderedListItem(props: {
   let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
-      <div className="listMarker shrink-0 mx-2 z-1 mt-[4px]">
+      <div className="listMarker shrink-0 ml-2 z-1 mt-[4px]">
         {calculatedIndex}.
       </div>
       {isChecklist && (

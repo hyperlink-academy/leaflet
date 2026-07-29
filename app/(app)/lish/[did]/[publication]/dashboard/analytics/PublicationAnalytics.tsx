@@ -16,6 +16,7 @@ import {
   TrafficMetric,
 } from "./TrafficChart";
 import { SubscribersChart } from "./SubscribersChart";
+import { BskyPostsList } from "./BskyPostsList";
 
 export const PublicationAnalytics = (props: {
   showPageBackground: boolean;
@@ -62,6 +63,14 @@ export const PublicationAnalytics = (props: {
     toParams: (v) => ({ referrer: v ?? null }),
   });
 
+  // ?bsky_post=<did>/<rkey> — filter traffic to visits from a single Bluesky post
+  let [selectedBskyPost, setSelectedBskyPost] = useQueryState<
+    string | undefined
+  >({
+    fromParams: (get) => get("bsky_post") ?? undefined,
+    toParams: (v) => ({ bsky_post: v ?? null }),
+  });
+
   // ?metric=pageviews — toggle between "visitors" (default) and "pageviews"
   let [trafficMetric, setTrafficMetric] = useQueryState<TrafficMetric>({
     fromParams: (get) =>
@@ -80,6 +89,7 @@ export const PublicationAnalytics = (props: {
           dateRange.to?.toISOString(),
           selectedPost?.path,
           selectedReferrer,
+          selectedBskyPost,
         ]
       : null,
     async () => {
@@ -89,6 +99,28 @@ export const PublicationAnalytics = (props: {
         ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
         ...(selectedPost ? { path: `/${selectedPost.path}` } : {}),
         ...(selectedReferrer ? { referrer_host: selectedReferrer } : {}),
+        ...(selectedBskyPost ? { bsky_post: selectedBskyPost } : {}),
+      });
+      return res?.result;
+    },
+  );
+
+  let { data: bskyPostsData, isLoading: bskyPostsLoading } = useSWR(
+    publicationUri
+      ? [
+          "publication-bsky-posts",
+          publicationUri,
+          dateRange.from?.toISOString(),
+          dateRange.to?.toISOString(),
+          selectedPost?.path,
+        ]
+      : null,
+    async () => {
+      let res = await callRPC("get_publication_bsky_posts", {
+        publication_uri: publicationUri!,
+        ...(dateRange.from ? { from: dateRange.from.toISOString() } : {}),
+        ...(dateRange.to ? { to: endOfDay(dateRange.to).toISOString() } : {}),
+        ...(selectedPost ? { path: `/${selectedPost.path}` } : {}),
       });
       return res?.result;
     },
@@ -112,6 +144,14 @@ export const PublicationAnalytics = (props: {
       return res?.result;
     },
   );
+
+  let selectedBskyPostLabel = useMemo(() => {
+    if (!selectedBskyPost) return undefined;
+    let row = bskyPostsData?.posts.find((p) => p.ref === selectedBskyPost);
+    return row?.post
+      ? `Bluesky post by @${row.post.author.handle}`
+      : "Bluesky post";
+  }, [selectedBskyPost, bskyPostsData?.posts]);
 
   let filledTraffic = useMemo(
     () =>
@@ -179,7 +219,15 @@ export const PublicationAnalytics = (props: {
                 <>
                   <ArrowRightTiny className="text-border shrink-0" />
                   <div className="text-tertiary min-w-24 truncate">
-                    {selectedReferrer} hello this is reddit
+                    {selectedReferrer}
+                  </div>
+                </>
+              )}
+              {selectedBskyPost && (
+                <>
+                  <ArrowRightTiny className="text-border shrink-0" />
+                  <div className="text-tertiary min-w-24 truncate">
+                    {selectedBskyPostLabel}
                   </div>
                 </>
               )}
@@ -195,7 +243,7 @@ export const PublicationAnalytics = (props: {
           metric={trafficMetric}
         />
         <hr className="mt-2 mb-4 border-border-light " />
-        <div className="flex flex-col sm:flex-row gap-4 mt-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-col gap-4 mt-2 shrink-0">
           <TopPages
             pages={analyticsData?.topPages || []}
             selectedPost={selectedPost}
@@ -209,6 +257,26 @@ export const PublicationAnalytics = (props: {
             isLoading={analyticsLoading}
           />
         </div>
+      </div>
+      <div
+        className={`analyticsBskyPosts rounded-lg border ${
+          props.showPageBackground
+            ? "border-border-light sm:px-4 sm:py-3 py-2 px-3"
+            : "border-transparent"
+        }`}
+        style={{
+          backgroundColor: props.showPageBackground
+            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+            : "transparent",
+        }}
+      >
+        <h3>Bluesky Posts</h3>
+        <BskyPostsList
+          posts={bskyPostsData?.posts || []}
+          isLoading={bskyPostsLoading}
+          selectedRef={selectedBskyPost}
+          setSelectedRef={setSelectedBskyPost}
+        />
       </div>
       <div
         className={`analyticsSubCount rounded-lg border ${

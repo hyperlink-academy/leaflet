@@ -277,6 +277,11 @@ const ImageBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  // Display width of the image (px), capped at the page width.
+  "image/max-width": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const GalleryBlockAttributes = {

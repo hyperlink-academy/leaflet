@@ -8,6 +8,21 @@ export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
 
+// Toolbar actions run against the selection, but the toolbar is also shown for
+// a block that has focus without ever having been selected (e.g. focused
+// programmatically after a block is created), so fall back to that block.
+export const getSelectedOrFocusedBlocks = async (
+  rep: Replicache<ReplicacheMutators>,
+) => {
+  let [sortedBlocks] = await getSortedSelection(rep);
+  if (sortedBlocks.length > 0) return sortedBlocks;
+  let focused = useUIState.getState().focusedEntity;
+  if (!focused || focused.entityType !== "block") return [];
+  return getPageBlocks(rep, focused.parent).filter(
+    (s) => s.entityID === focused.entityID,
+  );
+};
+
 export const getSortedSelection = async (
   rep: Replicache<ReplicacheMutators>,
 ) => {

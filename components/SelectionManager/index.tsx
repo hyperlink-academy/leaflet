@@ -8,10 +8,11 @@ import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
 import { getPageBlocks, isBlockHidden } from "src/replicache/getBlocks";
 import {
-  indent,
-  outdentFull,
+  multiSelectIndent,
   multiSelectOutdent,
+  toggleListForBlocks,
 } from "src/utils/list-operations";
+import { setTextBlockStyle } from "src/utils/blockTypeOperations";
 import { addShortcut, Shortcut } from "src/shortcuts";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
@@ -63,18 +64,8 @@ export function SelectionManager() {
         altKey: true,
         key: ["l", "¬"],
         handler: async () => {
-          let [sortedBlocks, siblings] = await getSortedSelectionBound();
-          for (let block of sortedBlocks) {
-            if (!block.listData) {
-              await rep?.mutate.assertFact({
-                entity: block.entityID,
-                attribute: "block/is-list",
-                data: { type: "boolean", value: true },
-              });
-            } else {
-              await outdentFull(block, rep);
-            }
-          }
+          let [sortedBlocks] = await getSortedSelectionBound();
+          await toggleListForBlocks(sortedBlocks, rep);
         },
       },
       {
@@ -83,18 +74,7 @@ export function SelectionManager() {
         key: ["1", "¡"],
         handler: async () => {
           let [sortedBlocks] = await getSortedSelectionBound();
-          for (let block of sortedBlocks) {
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/heading-level",
-              data: { type: "number", value: 1 },
-            });
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "heading" },
-            });
-          }
+          await setTextBlockStyle(sortedBlocks, { style: "heading", level: 1 }, rep);
         },
       },
       {
@@ -103,18 +83,7 @@ export function SelectionManager() {
         key: ["2", "™"],
         handler: async () => {
           let [sortedBlocks] = await getSortedSelectionBound();
-          for (let block of sortedBlocks) {
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/heading-level",
-              data: { type: "number", value: 2 },
-            });
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "heading" },
-            });
-          }
+          await setTextBlockStyle(sortedBlocks, { style: "heading", level: 2 }, rep);
         },
       },
       {
@@ -123,18 +92,7 @@ export function SelectionManager() {
         key: ["3", "£"],
         handler: async () => {
           let [sortedBlocks] = await getSortedSelectionBound();
-          for (let block of sortedBlocks) {
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/heading-level",
-              data: { type: "number", value: 3 },
-            });
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "heading" },
-            });
-          }
+          await setTextBlockStyle(sortedBlocks, { style: "heading", level: 3 }, rep);
         },
       },
       {
@@ -143,28 +101,11 @@ export function SelectionManager() {
         key: ["0", "º"],
         handler: async () => {
           let [sortedBlocks] = await getSortedSelectionBound();
-          for (let block of sortedBlocks) {
-            // Convert to text block
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "text" },
-            });
-            // Remove heading level if exists
-            let headingLevel = await rep?.query((tx) =>
-              scanIndex(tx).eav(block.entityID, "block/heading-level"),
-            );
-            if (headingLevel?.[0]) {
-              await rep?.mutate.retractFact({ factID: headingLevel[0].id });
-            }
-            // Remove text-size to make it default
-            let textSizeFact = await rep?.query((tx) =>
-              scanIndex(tx).eav(block.entityID, "block/text-size"),
-            );
-            if (textSizeFact?.[0]) {
-              await rep?.mutate.retractFact({ factID: textSizeFact[0].id });
-            }
-          }
+          await setTextBlockStyle(
+            sortedBlocks,
+            { style: "text", size: "default" },
+            rep,
+          );
         },
       },
       {
@@ -173,27 +114,11 @@ export function SelectionManager() {
         key: ["+", "≠"],
         handler: async () => {
           let [sortedBlocks] = await getSortedSelectionBound();
-          for (let block of sortedBlocks) {
-            // Convert to text block
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "text" },
-            });
-            // Remove heading level if exists
-            let headingLevel = await rep?.query((tx) =>
-              scanIndex(tx).eav(block.entityID, "block/heading-level"),
-            );
-            if (headingLevel?.[0]) {
-              await rep?.mutate.retractFact({ factID: headingLevel[0].id });
-            }
-            // Set text size to large
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/text-size",
-              data: { type: "text-size-union", value: "large" },
-            });
-          }
+          await setTextBlockStyle(
+            sortedBlocks,
+            { style: "text", size: "large" },
+            rep,
+          );
         },
       },
       {
@@ -202,27 +127,11 @@ export function SelectionManager() {
         key: ["-", "–"],
         handler: async () => {
           let [sortedBlocks] = await getSortedSelectionBound();
-          for (let block of sortedBlocks) {
-            // Convert to text block
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "text" },
-            });
-            // Remove heading level if exists
-            let headingLevel = await rep?.query((tx) =>
-              scanIndex(tx).eav(block.entityID, "block/heading-level"),
-            );
-            if (headingLevel?.[0]) {
-              await rep?.mutate.retractFact({ factID: headingLevel[0].id });
-            }
-            // Set text size to small
-            await rep?.mutate.assertFact({
-              entity: block.entityID,
-              attribute: "block/text-size",
-              data: { type: "text-size-union", value: "small" },
-            });
-          }
+          await setTextBlockStyle(
+            sortedBlocks,
+            { style: "text", size: "small" },
+            rep,
+          );
         },
       },
       {
@@ -484,31 +393,11 @@ export function SelectionManager() {
               toggleFold,
             });
           } else {
-            for (let i = 0; i < siblings.length; i++) {
-              let block = siblings[i];
-              if (!sortedSelection.find((s) => s.entityID === block.entityID))
-                continue;
-              if (
-                sortedSelection.find((s) => s.entityID === block.listData?.parent)
-              )
-                continue;
-              let parentoffset = 1;
-              let previousBlock = siblings[i - parentoffset];
-              while (
-                previousBlock &&
-                sortedSelection.find((s) => previousBlock.entityID === s.entityID)
-              ) {
-                parentoffset += 1;
-                previousBlock = siblings[i - parentoffset];
-              }
-              if (!block.listData || !previousBlock.listData) continue;
-              let { foldedBlocks, toggleFold } = useUIState.getState();
-
-              await indent(block, previousBlock, rep, {
-                foldedBlocks,
-                toggleFold,
-              });
-            }
+            let { foldedBlocks, toggleFold } = useUIState.getState();
+            await multiSelectIndent(sortedSelection, siblings, rep, {
+              foldedBlocks,
+              toggleFold,
+            });
           }
         }
         if (e.key === "ArrowDown") {

@@ -33,7 +33,7 @@ export function ImageAltButton(props: {
   // Readers get the plain ALT pill + preview, shared with published posts.
   if (!canEdit)
     return <ReadOnlyAltText alt={alt ?? ""} className={props.className} />;
-
+  let imageSize = useEntity(props.entityID, "image/max-width")?.data.value;
   return (
     <div
       // Hide the alt preview only when focus leaves the whole group — moving
@@ -61,13 +61,13 @@ export function ImageAltButton(props: {
                 // Keep focus on the ALT button through the click so the preview
                 // doesn't blur-close and reflow the buttons mid-click.
                 onMouseDown={(e) => e.preventDefault()}
-                className="hover:cursor-pointer  opaque-container border-2! border-secondary! rounded-md! h-5 text-secondary"
+                className={`hover:cursor-pointer  opaque-container border-2! border-secondary! rounded-md! h-5 text-secondary`}
               >
                 {hasAlt ? (
                   <EditTiny />
                 ) : (
-                  <div className="text-xs font-bold px-1 leading-tight ">
-                    ADD ALT
+                  <div className="text-xs font-bold px-1 leading-tight w-max">
+                    {imageSize && imageSize < 100 ? "+ ALT" : "ADD ALT"}
                   </div>
                 )}
               </div>

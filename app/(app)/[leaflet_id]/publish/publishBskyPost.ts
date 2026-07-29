@@ -18,6 +18,7 @@ import { screenshotBskyCardImage } from "src/utils/bskyCardScreenshot";
 import { uploadCoverImageThumb } from "src/utils/uploadCoverImageThumb";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import { truncateDocumentRecordForPDS } from "src/membership";
+import { addBskyPostUtm, BskyUtmCampaign } from "src/utils/bskyPostUtm";
 
 type StrongRef = {
   $type: "com.atproto.repo.strongRef";
@@ -47,6 +48,7 @@ export async function publishPostToBsky(args: {
   // /api/quote_screenshot while the share modal was open, so publishing doesn't
   // block on a fresh browser render.
   prefetchedThumb?: string;
+  langs?: string[];
 }): Promise<PublishBskyResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -106,12 +108,39 @@ export async function publishPostToBsky(args: {
     (await uploadCoverImageThumb(coverImage, coverImageDid, uploadThumb)) ??
     undefined;
 
+  // The post's rkey is minted before the record is created so the shared link
+  // can carry the post's identity in its utm params: analytics later resolves
+  // utm_content back to this post's at-uri to attribute traffic to it.
+  // Screenshots keep using the clean args.url — the params don't change the
+  // page and would only bust the client's prefetch.
+  let postRkey = TID.nextStr();
+  let campaign: BskyUtmCampaign = args.url.includes("/l-quote/")
+    ? "quote"
+    : rkey
+      ? "publish"
+      : "share";
+  let taggedUrl = addBskyPostUtm(args.url, {
+    did: credentialSession.did!,
+    rkey: postRkey,
+    campaign,
+  });
+  // Any link facet in the composed text pointing at the shared page gets the
+  // same tagged url (byte ranges are untouched — only the link target changes).
+  let facets = args.facets.map((facet) => ({
+    ...facet,
+    features: facet.features.map((feature) =>
+      AppBskyRichtextFacet.isLink(feature) && feature.uri === args.url
+        ? { ...feature, uri: taggedUrl }
+        : feature,
+    ),
+  }));
+
   // associatedRefs hangs off the external embed card alongside uri/title/etc.
   // It isn't in the published @atproto/api types yet, so widen External here.
   let external: AppBskyEmbedExternal.External & {
     associatedRefs?: StrongRef[];
   } = {
-    uri: args.url,
+    uri: taggedUrl,
     title,
     description: description ?? "",
   };
@@ -150,12 +179,14 @@ export async function publishPostToBsky(args: {
   let post = await bsky.app.bsky.feed.post.create(
     {
       repo: credentialSession.did!,
-      rkey: TID.nextStr(),
+      rkey: postRkey,
     },
     {
       text: args.text,
       createdAt: new Date().toISOString(),
-      facets: args.facets,
+      facets,
+      // The post lexicon caps langs at 3 entries.
+      langs: args.langs?.filter(Boolean).slice(0, 3),
       embed: {
         $type: "app.bsky.embed.external",
         external,

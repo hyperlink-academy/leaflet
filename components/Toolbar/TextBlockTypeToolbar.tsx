@@ -4,13 +4,16 @@ import {
   Header3Small,
 } from "components/Icons/BlockTextSmall";
 import { Props } from "components/Icons/Props";
+import { QuoteSmall } from "components/Icons/QuoteSmall";
 import { ShortcutKey, Separator } from "components/Layout";
 import { ToolbarButton } from "components/Toolbar";
+import { getSelectedOrFocusedBlocks } from "components/SelectionManager/selectionState";
 import { TextSelection } from "prosemirror-state";
 import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
+import { setTextBlockStyle, TextBlockStyle } from "src/utils/blockTypeOperations";
 
 export const TextBlockTypeToolbar = (props: {
   onClose: () => void;
@@ -26,32 +29,42 @@ export const TextBlockTypeToolbar = (props: {
   let textSize = useEntity(focusedBlock?.entityID || null, "block/text-size");
   let { rep, undoManager } = useReplicache();
 
-  let setLevel = useCallback(
-    async (level: number) => {
-      if (!focusedBlock) return;
-      let entityID = focusedBlock.entityID;
-      if (
-        blockType?.data.value !== "text" &&
-        blockType?.data.value !== "heading"
-      ) {
+  let setStyle = useCallback(
+    async (style: TextBlockStyle) => {
+      if (!rep) return;
+      // Changing block/type remounts the focused block's editor, so stash the
+      // caret and put it back afterwards or the user is dropped out of the doc.
+      let focused = useUIState.getState().focusedEntity;
+      let previousSelection =
+        focused?.entityType === "block"
+          ? useEditorStates.getState().editorStates[focused.entityID]?.editor
+              .selection
+          : undefined;
+
+      let blocks = await getSelectedOrFocusedBlocks(rep);
+      await setTextBlockStyle(blocks, style, rep, undoManager);
+
+      // Refocusing would collapse a multi-block selection down to one editor.
+      if (blocks.length !== 1) return;
+      if (!focused || focused.entityType !== "block" || !previousSelection)
         return;
-      }
-      await undoManager.withUndoGroup(async () => {
-        await rep?.mutate.assertFact({
-          entity: entityID,
-          attribute: "block/heading-level",
-          data: { type: "number", value: level },
-        });
-        if (blockType.data.value === "text") {
-          await rep?.mutate.assertFact({
-            entity: entityID,
-            attribute: "block/type",
-            data: { type: "block-type-union", value: "heading" },
-          });
-        }
-      });
+      let newEditor = useEditorStates.getState().editorStates[focused.entityID];
+      if (!newEditor) return;
+      newEditor.view?.dispatch(
+        newEditor.editor.tr.setSelection(
+          TextSelection.create(
+            newEditor.editor.doc,
+            Math.min(previousSelection.anchor, newEditor.editor.doc.content.size),
+          ),
+        ),
+      );
+      newEditor.view?.focus();
     },
-    [rep, focusedBlock, blockType, undoManager],
+    [rep, undoManager],
+  );
+  let setLevel = useCallback(
+    (level: number) => setStyle({ style: "heading", level }),
+    [setStyle],
   );
   return (
     // This Toolbar should close once the user starts typing again
@@ -119,36 +132,7 @@ export const TextBlockTypeToolbar = (props: {
       <Separator classname="h-6!" />
       <ToolbarButton
         className={`px-[6px] ${props.className}`}
-        onClick={async () => {
-          await undoManager.withUndoGroup(async () => {
-            if (headingLevel)
-              await rep?.mutate.retractFact({ factID: headingLevel.id });
-            if (textSize)
-              await rep?.mutate.retractFact({ factID: textSize.id });
-            if (!focusedBlock || !blockType) return;
-            if (blockType.data.value !== "text") {
-              let existingEditor =
-                useEditorStates.getState().editorStates[focusedBlock.entityID];
-              let selection = existingEditor?.editor.selection;
-              await rep?.mutate.assertFact({
-                entity: focusedBlock?.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "text" },
-              });
-
-              let newEditor =
-                useEditorStates.getState().editorStates[focusedBlock.entityID];
-              if (!newEditor || !selection) return;
-              newEditor.view?.dispatch(
-                newEditor.editor.tr.setSelection(
-                  TextSelection.create(newEditor.editor.doc, selection.anchor),
-                ),
-              );
-
-              newEditor.view?.focus();
-            }
-          });
-        }}
+        onClick={() => setStyle({ style: "text", size: "default" })}
         active={
           blockType?.data.value === "text" &&
           textSize?.data.value !== "small" &&
@@ -160,27 +144,7 @@ export const TextBlockTypeToolbar = (props: {
       </ToolbarButton>
       <ToolbarButton
         className={`px-[6px] text-lg ${props.className}`}
-        onClick={async () => {
-          if (!focusedBlock || !blockType) return;
-          await undoManager.withUndoGroup(async () => {
-            if (blockType.data.value !== "text") {
-              // Convert to text block first if it's a heading
-              if (headingLevel)
-                await rep?.mutate.retractFact({ factID: headingLevel.id });
-              await rep?.mutate.assertFact({
-                entity: focusedBlock.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "text" },
-              });
-            }
-            // Set text size to large
-            await rep?.mutate.assertFact({
-              entity: focusedBlock.entityID,
-              attribute: "block/text-size",
-              data: { type: "text-size-union", value: "large" },
-            });
-          });
-        }}
+        onClick={() => setStyle({ style: "text", size: "large" })}
         active={
           blockType?.data.value === "text" && textSize?.data.value === "large"
         }
@@ -190,33 +154,36 @@ export const TextBlockTypeToolbar = (props: {
       </ToolbarButton>
       <ToolbarButton
         className={`px-[6px] text-sm text-secondary ${props.className}`}
-        onClick={async () => {
-          if (!focusedBlock || !blockType) return;
-          await undoManager.withUndoGroup(async () => {
-            if (blockType.data.value !== "text") {
-              // Convert to text block first if it's a heading
-              if (headingLevel)
-                await rep?.mutate.retractFact({ factID: headingLevel.id });
-              await rep?.mutate.assertFact({
-                entity: focusedBlock.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "text" },
-              });
-            }
-            // Set text size to small
-            await rep?.mutate.assertFact({
-              entity: focusedBlock.entityID,
-              attribute: "block/text-size",
-              data: { type: "text-size-union", value: "small" },
-            });
-          });
-        }}
+        onClick={() => setStyle({ style: "text", size: "small" })}
         active={
           blockType?.data.value === "text" && textSize?.data.value === "small"
         }
         tooltipContent={<div>Small Text</div>}
       >
         <div className="leading-[1.625rem]">Small</div>
+      </ToolbarButton>
+      <Separator classname="h-6!" />
+      <ToolbarButton
+        className={props.className}
+        onClick={() =>
+          setStyle(
+            blockType?.data.value === "blockquote"
+              ? { style: "text", size: "default" }
+              : { style: "blockquote" },
+          )
+        }
+        active={blockType?.data.value === "blockquote"}
+        tooltipContent={
+          <div className="flex flex-col justify-center">
+            <div className="font-bold text-center">Block Quote</div>
+            <div className="flex gap-1 font-normal">
+              start line with
+              <ShortcutKey>&gt;</ShortcutKey>
+            </div>
+          </div>
+        }
+      >
+        <QuoteSmall />
       </ToolbarButton>
     </>
   );
@@ -228,7 +195,7 @@ export function TextBlockTypeButton(props: {
 }) {
   return (
     <ToolbarButton
-      tooltipContent={<div>Text Size</div>}
+      tooltipContent={<div>Text Style</div>}
       className={`${props.className}`}
       onClick={() => {
         props.setToolbarState("heading");

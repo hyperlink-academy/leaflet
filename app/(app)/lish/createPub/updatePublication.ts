@@ -125,19 +125,21 @@ export async function updatePublication({
   name,
   description,
   iconFile,
+  removeIcon,
   preferences,
 }: {
   uri: string;
   name: string;
   description?: string;
   iconFile?: File | null;
+  removeIcon?: boolean;
   preferences?: Omit<PubLeafletPublication.Preferences, "$type">;
 }): Promise<UpdatePublicationResult> {
   return withPublicationUpdate(
     uri,
     async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
       // Upload icon if provided
-      let iconBlob = normalizedPub?.icon;
+      let iconBlob = removeIcon ? undefined : normalizedPub?.icon;
       if (iconFile && iconFile.size > 0) {
         const uploadResult = await agent.com.atproto.repo.uploadBlob(
           new Uint8Array(await iconFile.arrayBuffer()),

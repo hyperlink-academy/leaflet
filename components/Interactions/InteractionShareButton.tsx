@@ -13,10 +13,12 @@ import { ShareTiny } from "../Icons/ShareTiny";
 import { DotLoader } from "../utils/DotLoader";
 import { useIdentityData } from "../IdentityProvider";
 import { publishPostToBsky } from "app/(app)/[leaflet_id]/publish/publishBskyPost";
+import { viewerPostLangs } from "src/utils/bskyPostLangs";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { LoginContent } from "components/LoginButton";
+import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import {
   NormalizedDocument,
   NormalizedPublication,
@@ -183,11 +185,16 @@ export const BskyShareModal = (props: {
       publicationUri: props.pubUri,
       preferUrlScreenshot: useScreenshot,
       prefetchedThumb,
+      langs: viewerPostLangs(),
     });
     setPosting(false);
     if (!res.success) {
       toaster({
-        content: "Hmm… Something went wrong. Try again!",
+        content: isOAuthSessionError(res.error) ? (
+          <OAuthErrorMessage error={res.error} />
+        ) : (
+          "Hmm… Something went wrong. Try again!"
+        ),
         type: "error",
       });
       return;

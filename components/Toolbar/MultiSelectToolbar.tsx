@@ -5,12 +5,15 @@ import { useSmoker, useToaster } from "components/Toast";
 
 import { Props } from "components/Icons/Props";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
+import { TextBlockTypeButton } from "./TextBlockTypeToolbar";
+import { ListButton } from "./ListToolbar";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
 import { deleteBlock } from "src/utils/deleteBlock";
 import { Separator, ShortcutKey } from "components/Layout";
+import { ToolbarTypes } from ".";
 
 export const MultiselectToolbar = (props: {
-  setToolbarState: (state: "multiselect" | "text-alignment") => void;
+  setToolbarState: (state: ToolbarTypes) => void;
 }) => {
   const { rep, undoManager } = useReplicache();
   const smoker = useSmoker();
@@ -62,8 +65,10 @@ export const MultiselectToolbar = (props: {
         <ToolbarButton tooltipContent="Copy Selected Blocks" onClick={handleCopy}>
           <CopySmall />
         </ToolbarButton>
-        <TextAlignmentButton setToolbarState={props.setToolbarState} />
         <Separator classname="h-6!" />
+        <TextBlockTypeButton setToolbarState={props.setToolbarState} />
+        <TextAlignmentButton setToolbarState={props.setToolbarState} />
+        <ListButton setToolbarState={props.setToolbarState} />
       </div>
     </div>
   );

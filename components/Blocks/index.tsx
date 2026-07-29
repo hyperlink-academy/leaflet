@@ -19,7 +19,6 @@ import { useHandleDrop } from "./useHandleDrop";
 import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
 
 export function Blocks(props: { entityID: string }) {
-  let rep = useReplicache();
   let isPageFocused = useUIState((s) => {
     let focusedElement = s.focusedEntity;
     let focusedPageID =
@@ -28,8 +27,6 @@ export function Blocks(props: { entityID: string }) {
         : focusedElement?.parent;
     return focusedPageID === props.entityID;
   });
-  let { permissions } = useEntitySetContext();
-  let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
   let foldedBlocks = useUIState((s) => s.foldedBlocks);
   let foldableHeadings = useMemo(
@@ -91,36 +88,13 @@ export function Blocks(props: { entityID: string }) {
 
   return (
     <div
-      className={`blocks w-full flex flex-col outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
-      onClick={async (e) => {
-        if (!permissions.write) return;
-        if (useUIState.getState().selectedBlocks.length > 1) return;
-        if (e.target === e.currentTarget) {
-          if (
-            !lastVisibleBlock ||
-            (lastVisibleBlock.type !== "text" &&
-              lastVisibleBlock.type !== "heading")
-          ) {
-            // Appending lands after the last root block; if that sits inside a
-            // folded heading section, unfold it so the new block is visible.
-            lastRootBlock?.headingPath?.forEach((h) => {
-              if (useUIState.getState().foldedBlocks.includes(h))
-                useUIState.getState().toggleFold(h);
-            });
-            if (!rep.rep) return;
-            let newEntityID = await addBlockBelow(rep.rep, {
-              parent: props.entityID,
-              position: lastRootBlock?.position || null,
-              nextPosition: null,
-              permission_set: entity_set.set,
-              type: "text",
-            });
-            focusNewTextBlock(newEntityID);
-          } else {
-            lastVisibleBlock && focusBlock(lastVisibleBlock, { type: "end" });
-          }
-        }
-      }}
+      // flow-root, not flex-col: a flex container re-runs the flex algorithm
+      // over every item when anything inside any one of them changes, so a
+      // single keystroke cost a full-document layout that grew linearly with
+      // block count (378ms/60 keystrokes at 3000 blocks, vs 156ms as flow-root).
+      // flow-root rather than plain block so the first block's margin can't
+      // collapse out through the container's top edge.
+      className={`blocks w-full flow-root outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
     >
       {blocks
         .filter((f) => !isBlockHidden(f, foldedBlocks))
@@ -240,7 +214,7 @@ const BlockListBottom = (props: {
 
   return (
     <div
-      className="blockListClickableBottomArea grow shrink-0 h-[50vh]"
+      className="blockListClickableBottomArea grow min-h-[50vh]"
       onClick={() => {
         if (
           // if the last visible(not-folded) block is a text block, focus it

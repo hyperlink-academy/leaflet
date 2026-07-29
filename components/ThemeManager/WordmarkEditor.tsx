@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import * as Slider from "@radix-ui/react-slider";
 import { useEntity, useReplicache } from "src/replicache";
 import { addImage } from "src/utils/addImage";
 import { Radio } from "components/Checkbox";
 import { Input } from "components/Input";
+import { SpeedyLink } from "components/SpeedyLink";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 
 const DEFAULT_WORDMARK_WIDTH = 200;
@@ -63,6 +65,7 @@ export function useDraftWordmark() {
 export function WordmarkEditor() {
   let { src, width, pageWidth, setImage, setWidth, remove } =
     useDraftWordmark();
+  let params = useParams<{ did: string; publication: string }>();
   let [mode, setMode] = useState<"logo" | "wordmark">(
     src ? "wordmark" : "logo",
   );
@@ -90,29 +93,42 @@ export function WordmarkEditor() {
     <div className="wordmarkEditor flex flex-col gap-3 w-xs text-primary">
       <h3 className="font-bold text-primary">Header Options</h3>
 
-      <Radio
-        type="radio"
-        id="wordmark-mode-logo"
-        name="wordmark-mode"
-        value="logo"
-        checked={mode === "logo"}
-        onChange={(e) => {
-          if (!e.currentTarget.checked) return;
-          setMode("logo");
-          if (src) onRemove();
-        }}
-      >
-        <div className="flex flex-col leading-snug">
-          <div className="font-bold text-primary">
-            Use Logo and Publication Name
-          </div>
-          {mode === "wordmark" && (
-            <div className="text-sm font-normal text-teritary">
-              Logo will still appear in links and previews of this publication
+      <div className="flex flex-col gap-1">
+        <Radio
+          type="radio"
+          id="wordmark-mode-logo"
+          name="wordmark-mode"
+          value="logo"
+          checked={mode === "logo"}
+          onChange={(e) => {
+            if (!e.currentTarget.checked) return;
+            setMode("logo");
+            if (src) onRemove();
+          }}
+        >
+          <div className="flex flex-col leading-snug">
+            <div className="font-bold text-primary">
+              Use Logo and Publication Name
             </div>
-          )}
+            {mode === "wordmark" && (
+              <div className="text-sm font-normal text-teritary">
+                Still appears in links and previews of this publication
+              </div>
+            )}
+          </div>
+        </Radio>
+        {/* Outside the Radio: it renders a label, so a link inside it would
+            also flip the radio. */}
+        <div className="pl-5 text-sm font-normal text-tertiary">
+          Change the logo and name in{" "}
+          <SpeedyLink
+            className="text-accent-contrast"
+            href={`/lish/${params.did}/${params.publication}/dashboard/settings`}
+          >
+            settings
+          </SpeedyLink>
         </div>
-      </Radio>
+      </div>
 
       <hr className="border-0 border-t border-border-light" />
 

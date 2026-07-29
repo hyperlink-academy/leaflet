@@ -1,6 +1,12 @@
 name: Run tests
 description: Install deps, start the local Supabase stack, and run the vitest suite
 
+inputs:
+  command:
+    description: Test command to run once the stack is up
+    required: false
+    default: npm test
+
 runs:
   using: composite
   steps:
@@ -43,5 +49,5 @@ runs:
           echo "No new images pulled; nothing to cache"
         fi
       shell: bash
-    - run: npm test
+    - run: ${{ inputs.command }}
       shell: bash

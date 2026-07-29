@@ -161,6 +161,116 @@ export async function outdent(
   }
 }
 
+export async function multiSelectIndent(
+  sortedSelection: Block[],
+  siblings: Block[],
+  rep: Replicache<ReplicacheMutators>,
+  foldState: { foldedBlocks: string[]; toggleFold: (entityID: string) => void },
+  undoManager?: UndoManager,
+): Promise<void> {
+  // Tracked locally so a parent unfolded to receive one block isn't re-folded
+  // when the next block indents under it too.
+  let foldedBlocks = [...foldState.foldedBlocks];
+  let toggleFold = (entityID: string) => {
+    foldedBlocks = foldedBlocks.filter((f) => f !== entityID);
+    foldState.toggleFold(entityID);
+  };
+
+  let run = async () => {
+    for (let i = 0; i < siblings.length; i++) {
+      let block = siblings[i];
+      if (!sortedSelection.find((s) => s.entityID === block.entityID)) continue;
+      // A block whose list parent is also selected rides along with it.
+      if (sortedSelection.find((s) => s.entityID === block.listData?.parent))
+        continue;
+      let parentoffset = 1;
+      let previousBlock = siblings[i - parentoffset];
+      while (
+        previousBlock &&
+        sortedSelection.find((s) => previousBlock.entityID === s.entityID)
+      ) {
+        parentoffset += 1;
+        previousBlock = siblings[i - parentoffset];
+      }
+      if (!block.listData || !previousBlock?.listData) continue;
+      await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
+    }
+  };
+  if (undoManager) await undoManager.withUndoGroup(run);
+  else await run();
+}
+
+// All-or-nothing rather than a per-block flip: on a mixed selection the user is
+// reaching for "make these a list", not "invert each one".
+export async function toggleListForBlocks(
+  blocks: Block[],
+  rep?: Replicache<ReplicacheMutators> | null,
+  undoManager?: UndoManager,
+) {
+  if (!rep || blocks.length === 0) return;
+  let allLists = blocks.every((b) => !!b.listData);
+  let run = async () => {
+    for (let block of blocks) {
+      if (allLists) {
+        await outdentFull(block, rep);
+      } else if (!block.listData) {
+        await rep.mutate.assertFact({
+          entity: block.entityID,
+          attribute: "block/is-list",
+          data: { type: "boolean", value: true },
+        });
+      }
+    }
+  };
+  if (undoManager) await undoManager.withUndoGroup(run);
+  else await run();
+}
+
+export async function setListStyleForBlocks(
+  blocks: Block[],
+  style: "ordered" | "unordered",
+  rep?: Replicache<ReplicacheMutators> | null,
+  undoManager?: UndoManager,
+) {
+  if (!rep) return;
+  let run = async () => {
+    for (let block of blocks) {
+      if (style === "ordered") orderListItems(block, rep);
+      else unorderListItems(block, rep);
+    }
+  };
+  if (undoManager) await undoManager.withUndoGroup(run);
+  else await run();
+}
+
+export async function toggleChecklistForBlocks(
+  blocks: Block[],
+  rep?: Replicache<ReplicacheMutators> | null,
+  undoManager?: UndoManager,
+) {
+  if (!rep) return;
+  let listBlocks = blocks.filter((b) => !!b.listData);
+  if (listBlocks.length === 0) return;
+  let allChecklists = listBlocks.every((b) => b.listData?.checklist);
+  let run = async () => {
+    for (let block of listBlocks) {
+      if (allChecklists)
+        await rep.mutate.retractAttribute({
+          entity: block.entityID,
+          attribute: "block/check-list",
+        });
+      else if (!block.listData?.checklist)
+        await rep.mutate.assertFact({
+          entity: block.entityID,
+          attribute: "block/check-list",
+          data: { type: "boolean", value: false },
+        });
+    }
+  };
+  if (undoManager) await undoManager.withUndoGroup(run);
+  else await run();
+}
+
 export async function multiSelectOutdent(
   sortedSelection: Block[],
   siblings: Block[],

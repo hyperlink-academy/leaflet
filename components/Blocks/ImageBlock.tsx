@@ -2,37 +2,21 @@
 
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
-import { useIsBlockSelected, useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import Image from "next/image";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { addImage, localImages } from "src/utils/addImage";
 import { addBlockBelow } from "src/utils/addBlockBelow";
-import { setCoverImageFromEntity } from "src/utils/setCoverImageFromEntity";
 import { elementId } from "src/utils/elementId";
 import { useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
-import { EditTiny } from "components/Icons/EditTiny";
-import { set } from "colorjs.io/fn";
 import { ImageAltButton } from "./ImageAltButton";
+import { ImageOptions } from "./ImageOptions";
 import {
   ImageGalleryLightbox,
   EditorLightboxSlide,
 } from "./ImageGalleryBlock/ImageGalleryLightbox";
 import { getPostImageEntities } from "./ImageGalleryBlock/getPostImages";
-import {
-  useLeafletPublicationData,
-  useLeafletPublicationPage,
-} from "components/PageSWRDataProvider";
-import {
-  ImageCoverImage,
-  ImageCoverImageRemove,
-} from "components/Icons/ImageCoverImage";
-import {
-  ButtonPrimary,
-  ButtonSecondary,
-  ButtonTertiary,
-} from "components/Buttons";
-import { CheckTiny } from "components/Icons/CheckTiny";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
@@ -40,6 +24,10 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let entity_set = useEntitySetContext();
   let isSelected = useIsBlockSelected(props.entityID);
   let isFullBleed = useEntity(props.entityID, "image/full-bleed")?.data.value;
+  let maxWidth = useEntity(props.entityID, "image/max-width")?.data.value;
+  // Live width while the settings slider is being dragged, before it commits to
+  // the fact; null hands rendering back to the committed value.
+  let [previewWidth, setPreviewWidth] = useState<number | null>(null);
   let isFirst = props.previousBlock === null;
   let isLast = props.nextBlock === null;
 
@@ -169,22 +157,40 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let localSrc = localImages.get(image.data.src);
 
   let blockClassName = `
-    relative group/image border-transparent! p-0! w-fit!
-    ${isFullBleed && "-mx-[14px] sm:-mx-[18px] rounded-[0px]! sm:outline-offset-[-16px]! -outline-offset[-12px]!"}
+    relative group/image border-transparent! p-0!
+    ${
+      isFullBleed
+        ? "w-[calc(100%+28px)]! sm:w-[calc(100%+36px)]! -mx-[14px] sm:-mx-[18px] rounded-[0px]! sm:outline-offset-[-16px]! -outline-offset[-12px]!"
+        : "w-fit!"
+    }
     ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-[5px]" : "") : ""}
     ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-[9px]" : "") : ""}
     `;
+  
+  let displayWidth = previewWidth ?? maxWidth;
+  let imageStyle =
+    displayWidth && !isFullBleed
+      ? { width: displayWidth, maxWidth: "100%", height: "auto" as const }
+      : undefined;
 
   return (
     <BlockLayout
-      hasAlignment
+      hasAlignment={!isFullBleed}
       isSelected={!!isSelected}
       className={blockClassName}
       optionsClassName={isFullBleed ? "top-[-8px]! border-none!" : ""}
+      extraOptions={
+        !props.preview ? (
+          <ImageOptions
+            entityID={props.entityID}
+            onPreviewWidth={setPreviewWidth}
+          />
+        ) : undefined
+      }
     >
       <button
         type="button"
-        className={`block w-fit ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
+        className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
         onClick={() => {
           if (canOpenLightbox) openLightbox();
         }}
@@ -197,6 +203,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             src={localSrc ?? image.data.fallback}
             height={image?.data.height}
             width={image?.data.width}
+            className={isFullBleed ? "w-full" : undefined}
+            style={imageStyle}
           />
         ) : (
           <Image
@@ -207,6 +215,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             }
             height={image?.data.height}
             width={image?.data.width}
+            className={isFullBleed ? "w-full" : undefined}
+            style={imageStyle}
           />
         )}
       </button>
@@ -218,9 +228,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             if (i === null) setLightbox(null);
           }}
           renderSlide={(i) =>
-            lightbox ? (
-              <EditorLightboxSlide entityID={lightbox.ids[i]} />
-            ) : null
+            lightbox ? <EditorLightboxSlide entityID={lightbox.ids[i]} /> : null
           }
         />
       )}
@@ -231,71 +239,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           canEdit={entity_set.permissions.write}
         />
       ) : null}
-      {!props.preview ? <CoverImageButton entityID={props.entityID} /> : null}
     </BlockLayout>
   );
 }
-
-const CoverImageButton = (props: { entityID: string }) => {
-  let { rep, rootEntity } = useReplicache();
-  let entity_set = useEntitySetContext();
-  let { data: pubData } = useLeafletPublicationData();
-  let publicationPage = useLeafletPublicationPage();
-  let image = useEntity(props.entityID, "block/image");
-  let alt = useEntity(props.entityID, "image/alt")?.data.value;
-  let coverEntity = useEntity(rootEntity, "root/cover-image")?.data.value;
-  let coverImage = useEntity(coverEntity ?? null, "block/image");
-  let isFocused = useUIState(
-    (s) => s.focusedEntity?.entityID === props.entityID,
-  );
-
-  // Only show if focused, in a publication, with write permissions, and an
-  // image to copy. Publication pages (e.g. an About page) have no cover image.
-  if (
-    !isFocused ||
-    !pubData?.publications ||
-    !entity_set.permissions.write ||
-    publicationPage ||
-    !image
-  )
-    return null;
-
-  // The cover is a standalone copy sharing this block's src, so a matching src
-  // means this block is the current cover.
-  let isCoverImage = !!coverImage && coverImage.data.src === image.data.src;
-  if (isCoverImage)
-    return (
-      <ButtonSecondary
-        className="absolute top-2 right-2"
-        onClick={async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (coverEntity)
-            await rep?.mutate.deleteEntity({ entity: coverEntity });
-        }}
-      >
-        Remove Cover Image
-        <ImageCoverImageRemove />
-      </ButtonSecondary>
-    );
-
-  return (
-    <ButtonPrimary
-      className="absolute top-2 right-2"
-      onClick={async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!rep) return;
-        await setCoverImageFromEntity(rep, {
-          rootEntity,
-          permission_set: entity_set.set,
-          image: image.data,
-          alt,
-        });
-      }}
-    >
-      Use as Cover Image
-      <ImageCoverImage />
-    </ButtonPrimary>
-  );
-};

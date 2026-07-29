@@ -4,7 +4,17 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { metaKey } from "src/utils/metaKey";
 import { ToolbarButton } from ".";
-import { indent, outdent, outdentFull, orderListItems, unorderListItems } from "src/utils/list-operations";
+import {
+  multiSelectIndent,
+  multiSelectOutdent,
+  setListStyleForBlocks,
+  toggleChecklistForBlocks,
+  toggleListForBlocks,
+} from "src/utils/list-operations";
+import {
+  getSelectedOrFocusedBlocks,
+  getSortedSelection,
+} from "components/SelectionManager/selectionState";
 import { useEffect } from "react";
 import { Props } from "components/Icons/Props";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
@@ -12,11 +22,6 @@ import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let isList = useEntity(focusedBlock?.entityID || null, "block/is-list");
-  let siblings = useBlocks(
-    focusedBlock?.entityType === "block" ? focusedBlock.parent : null,
-  );
-
-  let block = siblings.find((s) => s.entityID === focusedBlock?.entityID);
 
   let { rep, undoManager } = useReplicache();
 
@@ -37,18 +42,11 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
             </div>
           </div>
         }
-        onClick={(e) => {
+        onClick={async (e) => {
           e.preventDefault();
-          if (!focusedBlock || !block) return;
-          if (!isList?.data.value) {
-            rep?.mutate.assertFact({
-              entity: focusedBlock?.entityID,
-              attribute: "block/is-list",
-              data: { value: true, type: "boolean" },
-            });
-          } else {
-            outdentFull(block, rep, undoManager);
-          }
+          if (!rep) return;
+          let blocks = await getSelectedOrFocusedBlocks(rep);
+          await toggleListForBlocks(blocks, rep, undoManager);
         }}
       >
         <ListUnorderedSmall />
@@ -70,8 +68,6 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
 
 export const ListToolbar = (props: { onClose: () => void }) => {
   let focusedBlock = useUIState((s) => s.focusedEntity);
-  let foldedBlocks = useUIState((s) => s.foldedBlocks);
-  let toggleFold = useUIState((s) => s.toggleFold);
   let siblings = useBlocks(
     focusedBlock?.entityType === "block" ? focusedBlock.parent : null,
   );
@@ -107,13 +103,14 @@ export const ListToolbar = (props: { onClose: () => void }) => {
           </div>
         }
         onClick={async () => {
-          if (!rep || !block) return;
-          await outdent(
-            block,
-            previousBlock,
+          if (!rep) return;
+          let [sortedSelection, visibleSiblings] = await getSortedSelection(rep);
+          let { foldedBlocks, toggleFold } = useUIState.getState();
+          await multiSelectOutdent(
+            sortedSelection,
+            visibleSiblings,
             rep,
             { foldedBlocks, toggleFold },
-            undefined,
             undoManager,
           );
         }}
@@ -134,10 +131,12 @@ export const ListToolbar = (props: { onClose: () => void }) => {
           previousBlock.listData.depth < block?.listData?.depth!
         }
         onClick={async () => {
-          if (!rep || !block || !previousBlock) return;
-          await indent(
-            block,
-            previousBlock,
+          if (!rep) return;
+          let [sortedSelection, visibleSiblings] = await getSortedSelection(rep);
+          let { foldedBlocks, toggleFold } = useUIState.getState();
+          await multiSelectIndent(
+            sortedSelection,
+            visibleSiblings,
             rep,
             { foldedBlocks, toggleFold },
             undoManager,
@@ -150,9 +149,10 @@ export const ListToolbar = (props: { onClose: () => void }) => {
       <ToolbarButton
         disabled={!isList?.data.value}
         tooltipContent="Unordered List"
-        onClick={() => {
-          if (!block || !rep) return;
-          unorderListItems(block, rep);
+        onClick={async () => {
+          if (!rep) return;
+          let blocks = await getSelectedOrFocusedBlocks(rep);
+          await setListStyleForBlocks(blocks, "unordered", rep, undoManager);
         }}
       >
         <ListUnorderedSmall />
@@ -160,9 +160,10 @@ export const ListToolbar = (props: { onClose: () => void }) => {
       <ToolbarButton
         disabled={!isList?.data.value}
         tooltipContent="Ordered List"
-        onClick={() => {
-          if (!block || !rep) return;
-          orderListItems(block, rep);
+        onClick={async () => {
+          if (!rep) return;
+          let blocks = await getSelectedOrFocusedBlocks(rep);
+          await setListStyleForBlocks(blocks, "ordered", rep, undoManager);
         }}
       >
         <ListOrderedSmall />
@@ -170,6 +171,7 @@ export const ListToolbar = (props: { onClose: () => void }) => {
       <Separator classname="h-6" />
       <ToolbarButton
         disabled={!isList?.data.value}
+        active={!!isCheckbox}
         tooltipContent=<div className="flex flex-col gap-1 justify-center">
           <div className="text-center">Add a Checkbox</div>
           <div className="flex gap-1 font-normal">
@@ -177,20 +179,10 @@ export const ListToolbar = (props: { onClose: () => void }) => {
             <ShortcutKey>]</ShortcutKey>
           </div>
         </div>
-        onClick={() => {
-          if (!focusedBlock) return;
-
-          if (!isCheckbox) {
-            rep?.mutate.assertFact({
-              entity: focusedBlock.entityID,
-              attribute: "block/check-list",
-              data: { type: "boolean", value: false },
-            });
-          } else {
-            rep?.mutate.retractFact({
-              factID: isCheckbox.id,
-            });
-          }
+        onClick={async () => {
+          if (!rep) return;
+          let blocks = await getSelectedOrFocusedBlocks(rep);
+          await toggleChecklistForBlocks(blocks, rep, undoManager);
         }}
       >
         <ListCheckboxSmall />
