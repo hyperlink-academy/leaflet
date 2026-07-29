@@ -56,6 +56,7 @@ export function EditorCommentThread(props: {
     try {
       await rep.rep.mutate.createEditorCommentReply({
         replyEntityID: v7(),
+        replyFactID: v7(),
         commentEntityID: props.commentEntityID,
         permission_set: entity_set.set,
         position: generateKeyBetween(lastPosition, null),

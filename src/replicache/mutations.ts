@@ -1100,6 +1100,10 @@ const createEditorComment: Mutation<{
   commentEntityID: string;
   blockID: string;
   permission_set: string;
+  // Caller-generated so the client and server mint the same fact id for this
+  // cardinality-many fact; undo retracts by id, and a diverged id leaves the
+  // fact orphaned on the server to resurrect on the next pull.
+  commentFactID: string;
   position: string;
   authorDid: string;
   createdAt: string;
@@ -1109,6 +1113,7 @@ const createEditorComment: Mutation<{
 }> = async (args, ctx) => {
   await createAuthoredEntity(ctx, { ...args, entityID: args.commentEntityID });
   await ctx.assertFact({
+    id: args.commentFactID,
     entity: args.blockID,
     attribute: "block/comment",
     data: {
@@ -1133,6 +1138,8 @@ const createEditorCommentReply: Mutation<{
   replyEntityID: string;
   commentEntityID: string;
   permission_set: string;
+  // Caller-generated for the same client/server id agreement as commentFactID
+  replyFactID: string;
   position: string;
   authorDid: string;
   createdAt: string;
@@ -1140,6 +1147,7 @@ const createEditorCommentReply: Mutation<{
 }> = async (args, ctx) => {
   await createAuthoredEntity(ctx, { ...args, entityID: args.replyEntityID });
   await ctx.assertFact({
+    id: args.replyFactID,
     entity: args.commentEntityID,
     attribute: "comment/reply",
     data: {
