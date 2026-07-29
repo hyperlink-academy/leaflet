@@ -40,7 +40,10 @@ function redirectToEmailSubscribe(email: string, publicationUri: string) {
   url.searchParams.set("redirect", window.location.href);
   url.searchParams.set(
     "action",
-    encodeActionToSearchParam({ action: "subscribe", publication: publicationUri }),
+    encodeActionToSearchParam({
+      action: "subscribe",
+      publication: publicationUri,
+    }),
   );
   window.location.href = url.toString();
 }
@@ -299,7 +302,10 @@ export const SubscribeInput = (props: SubscribeProps) => {
                 );
                 setConfirming(false);
                 if (!res.ok) {
-                  toaster({ type: "error", content: ERROR_MESSAGES[res.error] });
+                  toaster({
+                    type: "error",
+                    content: ERROR_MESSAGES[res.error],
+                  });
                   return;
                 }
                 setConfirmState("success");
@@ -320,7 +326,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
 
   // Paid memberships replace the one-click subscribe with the paid join flow.
   if (joinable.hasPaidTiers && joinable.tiers)
-    return <PaidSubscribeButton {...props} tiers={joinable.tiers} />;
+    return <PaidSubscribeButton {...props} tiers={joinable.tiers} compact />;
 
   const showManage = props.newsletterMode
     ? user.emailSubscribed

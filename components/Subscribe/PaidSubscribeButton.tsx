@@ -25,6 +25,7 @@ export const PaidSubscribeButton = (
     unlocksPost?: boolean;
     // Test-harness seam, threaded to the modal.
     viewerOverride?: MembershipJoinViewer;
+    compact?: boolean;
   },
 ) => {
   const user = useViewerSubscription(props.publicationUri);
@@ -57,7 +58,7 @@ export const PaidSubscribeButton = (
         />
       ) : (
         <ButtonPrimary
-          compact
+          compact={props.compact}
           type="button"
           className="pubPageSubscribe text-sm!"
           onClick={() => setOpen(true)}

@@ -59,10 +59,10 @@ export function subscribeErrorMessage(error: string): string {
 // paid join flow (JoinMembershipFlow). The viewer's standing drives the paid
 // buttons' copy:
 // no subscription → "Join", subscribed on the free tier → "Upgrade" (their
-// cost goes up from $0), an active paid membership → the current tier reads
-// "Current plan" while monthly-pricier tiers say "Upgrade" and the rest
-// "Switch". Flow decisions (payment vs prorated switch) stay with the caller
-// via onSelectTier.
+// cost goes up from $0), an active paid membership → monthly-pricier tiers say
+// "Upgrade" and the rest "Switch". Whichever tier the viewer is on — free by
+// subscription, paid by membership — reads "Subscribed". Flow decisions
+// (payment vs prorated switch) stay with the caller via onSelectTier.
 export function TierGrid(props: {
   tiers: Tier[];
   cadence: Cadence;
@@ -73,15 +73,13 @@ export function TierGrid(props: {
   currentTierId?: string | null;
   unlocksPost?: boolean;
   onSelectTier: (tier: Tier) => void;
-  // Replaces the free tier's action (e.g. ManageSubscription once subscribed);
-  // returning undefined falls back to the standard button.
-  renderFreeAction?: (tier: Tier) => React.ReactNode;
 }) {
   const hasAnnual = props.tiers.some((t) => t.annual_price_cents != null);
   const effectiveCadence = (tier: Tier): Cadence =>
     tier.annual_price_cents != null ? props.cadence : "month";
   const renderTiers = [...props.tiers].sort(
-    (a, b) => tierPriceCents(a, props.cadence) - tierPriceCents(b, props.cadence),
+    (a, b) =>
+      tierPriceCents(a, props.cadence) - tierPriceCents(b, props.cadence),
   );
 
   const currentTier = props.currentTierId
@@ -105,46 +103,51 @@ export function TierGrid(props: {
 
   return (
     <>
-      {hasAnnual && (
-        <div className="flex justify-center">
-          <ToggleGroup
-            value={props.cadence}
-            onChange={props.onCadenceChange}
-            options={[
-              { value: "month", label: "Monthly" },
-              { value: "year", label: "Annual" },
-            ]}
-          />
-        </div>
-      )}
-      <div className="flex sm:flex-row gap-2 flex-col w-full ">
+      <div className="flex justify-center pb-4">
+        <ToggleGroup
+          value={props.cadence}
+          onChange={props.onCadenceChange}
+          optionClassName="px-8"
+          options={[
+            { value: "month", label: "Monthly" },
+            { value: "year", label: "Annual" },
+          ]}
+        />
+      </div>
+
+      <div className="tierGroup flex sm:flex-row gap-2 flex-col w-full items-stretch min-h-0 grow">
         {renderTiers.map((tier) => {
           const free = isFreeTier(tier);
-          const isCurrent = tier.id === props.currentTierId;
-          const freeAction = free ? props.renderFreeAction?.(tier) : undefined;
+          // A free-tier subscriber has no membership row to name a tier, so
+          // being subscribed with no paid membership is what puts them on free.
+          const isCurrent = props.currentTierId
+            ? tier.id === props.currentTierId
+            : free && props.isSubscribed;
           return (
             <div
               key={tier.id}
-              className="opaque-container relative flex flex-col gap-1 p-4 pt-3 max-w-md w-full"
+              className="tier opaque-container rounded-lg! relative flex flex-col p-4 pt-3 max-w-md w-full max-h-full"
             >
-              {props.unlocksPost && (
-                <span className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-accent-1 px-2 py-0.5 text-xs font-bold text-accent-2">
-                  <CheckTiny className="w-3 h-3 shrink-0" />
-                  Unlocks post
-                </span>
-              )}
-              <h3 className="text-primary text-[20px]">{tier.name}</h3>
-              {tier.description && (
-                <p className="text-secondary text-sm leading-snug">
-                  {tier.description}
-                </p>
-              )}
-              {free ? (
-                (freeAction && <div className="mt-3">{freeAction}</div>) || (
+              <div className="flex flex-col gap-1 grow min-h-0 overflow-y-scroll">
+                <h3 className="text-primary text-[20px]">{tier.name}</h3>
+                {tier.description && (
+                  <p className="text-secondary text-sm leading-snug pb-3">
+                    {tier.description}
+                  </p>
+                )}
+              </div>
+              <div className="tierJoinButton shrink-0 flex flex-col gap-2">
+                <hr className="border-border-light" />
+                {isCurrent ? (
+                  <ButtonSecondary fullWidth type="button" disabled>
+                    <span className="flex items-center gap-1">
+                      <CheckTiny className="shrink-0" /> Subscribed
+                    </span>
+                  </ButtonSecondary>
+                ) : free ? (
                   <ButtonSecondary
                     fullWidth
                     type="button"
-                    className="self-start mt-3"
                     disabled={props.busyTierId !== null}
                     onClick={() => props.onSelectTier(tier)}
                   >
@@ -154,32 +157,28 @@ export function TierGrid(props: {
                       "Subscribe for free"
                     )}
                   </ButtonSecondary>
-                )
-              ) : isCurrent ? (
-                <ButtonSecondary
-                  fullWidth
-                  type="button"
-                  className="self-start mt-3"
-                  disabled
-                >
-                  <span className="flex items-center gap-1">
-                    <CheckTiny className="shrink-0" /> Current plan
-                  </span>
-                </ButtonSecondary>
-              ) : (
-                <ButtonPrimary
-                  fullWidth
-                  type="button"
-                  className="self-start mt-3"
-                  disabled={props.busyTierId !== null}
-                  onClick={() => props.onSelectTier(tier)}
-                >
-                  {props.busyTierId === tier.id ? (
-                    <DotLoader />
-                  ) : (
-                    paidLabel(tier)
-                  )}
-                </ButtonPrimary>
+                ) : (
+                  <ButtonPrimary
+                    fullWidth
+                    type="button"
+                    disabled={props.busyTierId !== null}
+                    onClick={() => props.onSelectTier(tier)}
+                  >
+                    {props.busyTierId === tier.id ? (
+                      <DotLoader />
+                    ) : (
+                      paidLabel(tier)
+                    )}
+                  </ButtonPrimary>
+                )}
+              </div>
+              {props.unlocksPost && (
+                <div className="tierPostUnlockIndicator absolute -bottom-3.5 left-0 right-0 flex justify-center">
+                  <div className="opaque-container rounded-full! flex items-center gap-1 mx-auto  px-2 py-0.5 text-xs font-bold text-accent-contrast ">
+                    <CheckTiny className="w-3 h-3 shrink-0" />
+                    Unlocks post
+                  </div>
+                </div>
               )}
             </div>
           );

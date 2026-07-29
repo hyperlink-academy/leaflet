@@ -3,6 +3,8 @@ import { useState } from "react";
 import { IdentityContext, type Identity } from "components/IdentityProvider";
 import { ToggleGroup } from "components/ToggleGroup";
 import { PaidSubscribeButton } from "components/Subscribe/PaidSubscribeButton";
+import { JoinMembershipModal } from "components/Memberships/JoinMembershipModal";
+import { ButtonSecondary } from "components/Buttons";
 import type { Tier } from "components/Memberships/TierGrid";
 import type { MembershipJoinViewer } from "actions/publications/joinMembership";
 
@@ -36,15 +38,19 @@ const TIERS: Tier[] = [
   },
 ];
 
-// Build a logged-in identity the viewer is NOT subscribed to, with both an
-// email and a handle so either subscribe mode can one-click.
-function makeIdentity(): Identity {
+// Build a logged-in identity with both an email and a handle so either
+// subscribe mode can one-click.
+function makeIdentity(subscribed: boolean): Identity {
   return {
     atp_did: "did:plc:example",
     email: "reader@example.com",
     bsky_profiles: { handle: "reader.bsky.social" },
-    publication_subscriptions: [],
-    publication_email_subscribers: [],
+    publication_subscriptions: subscribed
+      ? [{ publication: PUBLICATION_URI }]
+      : [],
+    publication_email_subscribers: subscribed
+      ? [{ publication: PUBLICATION_URI, state: "confirmed" }]
+      : [],
     publication_memberships: [],
   } as unknown as Identity;
 }
@@ -68,13 +74,17 @@ function MockIdentity(props: {
 function Checkbox(props: {
   label: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-1.5 text-sm text-secondary select-none">
+    <label
+      className={`flex items-center gap-1.5 text-sm select-none ${props.disabled ? "text-tertiary" : "text-secondary"}`}
+    >
       <input
         type="checkbox"
         checked={props.checked}
+        disabled={props.disabled}
         onChange={(e) => props.onChange(e.target.checked)}
       />
       {props.label}
@@ -86,8 +96,12 @@ export default function PaidSubscribePreviewPage() {
   let [subscribeVia, setSubscribeVia] = useState<"email" | "handle">("email");
   let [loggedIn, setLoggedIn] = useState(false);
   let [hasCard, setHasCard] = useState(false);
+  let [subscribed, setSubscribed] = useState(false);
+  let [modalOpen, setModalOpen] = useState(false);
 
-  const identity = loggedIn ? makeIdentity() : null;
+  // Only a signed-in reader can be a known subscriber.
+  const isSubscribed = loggedIn && subscribed;
+  const identity = loggedIn ? makeIdentity(isSubscribed) : null;
   const viewer: MembershipJoinViewer = {
     loggedIn,
     isOwner: false,
@@ -111,17 +125,40 @@ export default function PaidSubscribePreviewPage() {
         <Checkbox
           label="card saved"
           checked={hasCard}
+          disabled={!loggedIn}
           onChange={setHasCard}
+        />
+        <Checkbox
+          label="already subscribed"
+          checked={subscribed}
+          disabled={!loggedIn}
+          onChange={setSubscribed}
         />
       </div>
       <MockIdentity identity={identity}>
         <PaidSubscribeButton
           // Remount when a toggle flips so the modal's internal state resets.
-          key={`${subscribeVia}-${loggedIn}-${hasCard}`}
+          key={`${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}`}
           publicationUri={PUBLICATION_URI}
           publicationUrl={PUBLICATION_URL}
           publicationName="Test Publication"
           publicationDescription="A publication for previewing the paid subscribe flow."
+          newsletterMode={subscribeVia === "email"}
+          tiers={TIERS}
+          viewerOverride={viewer}
+        />
+        {/* A subscribed viewer gets the manage control instead of Subscribe, so
+            the join modal needs its own way in to stay previewable. */}
+        <ButtonSecondary compact onClick={() => setModalOpen(true)}>
+          Open join modal
+        </ButtonSecondary>
+        <JoinMembershipModal
+          key={`modal-${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}`}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          publicationUri={PUBLICATION_URI}
+          publicationUrl={PUBLICATION_URL}
+          publicationName="Test Publication"
           newsletterMode={subscribeVia === "email"}
           tiers={TIERS}
           viewerOverride={viewer}

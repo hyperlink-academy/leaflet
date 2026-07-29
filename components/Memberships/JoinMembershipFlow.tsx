@@ -5,7 +5,6 @@ import { mutate } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster, useSmoker } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
-import { CheckTiny } from "components/Icons/CheckTiny";
 import { EmailInput, EmailConfirm } from "components/Subscribe/EmailSubscribe";
 import { HandleInput } from "components/Subscribe/HandleInput";
 import { AtmosphericHandleInfo } from "components/Subscribe/HandleSubscribe";
@@ -44,12 +43,6 @@ import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { LoginModal } from "components/LoginButton";
 
-// The identity input wrapper, so a missing-identity smoker can anchor to it.
-const IDENTITY_INPUT_ID = "join-membership-identity-input";
-
-// The paid subscribe flow, hosted in a modal by JoinMembershipModal and
-// rendered inline on the /join page:
-//
 // 1. collect who's subscribing (email or Atmosphere
 // handle — or the session identity when signed in)
 // 2. select a tier.
@@ -101,8 +94,6 @@ export function JoinMembershipFlow(props: {
   // Signed in but missing the identity being subscribed with — the tier we
   // continue to once the reader confirms linking it (mirrors SubscribeInput).
   const [linkTier, setLinkTier] = useState<Tier | null>(null);
-  // Set when the reader picks a tier before typing their email/handle: rings
-  // the input instead of firing a toast, and clears when they focus it.
   const [inputMissing, setInputMissing] = useState(false);
   const resumeHandled = useRef(false);
 
@@ -459,35 +450,18 @@ export function JoinMembershipFlow(props: {
     if (identity) {
       if (hasNeededIdentity) return free ? freeJoin(tier) : payWithViewer(tier);
       if (mode === "email" ? !validEmail(email) : !handle.trim())
-        return flagMissingIdentity();
+        return setInputMissing(true);
       setLinkTier(tier);
       return;
     }
 
     // Logged out: sign in/up with the typed identity first, then pay.
     if (mode === "email") {
-      if (!validEmail(email)) return flagMissingIdentity();
+      if (!validEmail(email)) return setInputMissing(true);
       return startEmailAuth(tier);
     }
-    if (!handle.trim()) return flagMissingIdentity();
+    if (!handle.trim()) return setInputMissing(true);
     redirectToOauthJoin(tier, false);
-  };
-
-  // Picked a tier before entering an email/handle: ring the input and pop an
-  // error smoker anchored to it (so it reads even if the input is scrolled to).
-  const flagMissingIdentity = () => {
-    setInputMissing(true);
-    const rect = document
-      .getElementById(IDENTITY_INPUT_ID)
-      ?.getBoundingClientRect();
-    smoker({
-      error: true,
-      text:
-        mode === "email"
-          ? "enter your email first!"
-          : "enter your handle first!",
-      position: { x: rect ? rect.left + 12 : 0, y: rect ? rect.top : 0 },
-    });
   };
 
   const modeMenu = <SubscribeInputModeMenu mode={mode} onChange={setMode} />;
@@ -516,7 +490,7 @@ export function JoinMembershipFlow(props: {
           This is your publication — readers see your membership tiers here.
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="memberSignUp flex flex-col max-h-[80vh] max-w-3xl">
           <div className="text-center flex flex-col gap-1 max-w-md mx-auto">
             <h2 className="text-primary leading-snug text-xl">
               Become a member of <br />
@@ -524,14 +498,11 @@ export function JoinMembershipFlow(props: {
             </h2>
           </div>
           {subscribingAs ? (
-            <p className="text-tertiary text-sm text-center">
-              Subscribing as {subscribingAs}
+            <p className="text-tertiary text-lg text-center pt-1 pb-4">
+              Subscribe as {subscribingAs}
             </p>
           ) : (
-            <div
-              id={IDENTITY_INPUT_ID}
-              className="flex flex-col gap-1 max-w-sm w-full mx-auto"
-            >
+            <div className="flex flex-col gap-1 max-w-sm w-full mx-auto pt-3 pb-3">
               {props.newsletterMode && mode === "email" ? (
                 <EmailInput
                   value={email}
@@ -576,15 +547,8 @@ export function JoinMembershipFlow(props: {
             currentTierId={viewer?.membership?.tierId}
             unlocksPost={props.unlocksPost}
             onSelectTier={selectTier}
-            renderFreeAction={() =>
-              isSubscribed ? (
-                <div className="text-accent-contrast font-bold text-sm flex items-center gap-1 justify-center">
-                  <CheckTiny /> Subscribed
-                </div>
-              ) : undefined
-            }
           />{" "}
-          <p className="text-tertiary text-sm text-center">
+          <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
             {viewer?.membership ? (
               "Switching memberships will prorate your bill this month."
             ) : viewer?.walletCard?.last4 ? (
