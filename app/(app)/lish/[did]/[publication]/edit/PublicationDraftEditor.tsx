@@ -20,6 +20,7 @@ import {
   useCardBorderHiddenContext,
 } from "components/ThemeManager/ThemeProvider";
 import { usePublicationNavEntries } from "./usePublicationNavEntries";
+import { PublicationEditMobileFooter } from "./PublicationEditMobileFooter";
 
 export function PublicationDraftEditor(props: {
   token: PermissionToken;
@@ -70,6 +71,7 @@ export function PublicationDraftEditor(props: {
                 />
               </DraftLeafletBackground>
             </div>
+            <PublicationEditMobileFooter />
           </div>
         </LeafletThemeProvider>
       </EntitySetProvider>
