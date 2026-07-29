@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
-import { mutate } from "swr";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
@@ -39,7 +38,7 @@ import {
 type SettingsView = "all" | "theme";
 
 export function SettingsContent(props: { showPageBackground: boolean }) {
-  let { data } = usePublicationData();
+  let { data, mutate } = usePublicationData();
   let { publication: pubData } = data || {};
   let { identity } = useIdentityData();
   let isOwner =
@@ -57,6 +56,9 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
   );
   let [iconFile, setIconFile] = useState<File | null>(null);
   let [iconPreview, setIconPreview] = useState<string | null>(null);
+  // Removal is tracked separately from the preview so a background revalidation
+  // (which re-syncs iconPreview from the record) can't resurrect a removed icon.
+  let [iconRemoved, setIconRemoved] = useState(false);
 
   let [showInDiscover, setShowInDiscover] = useState(
     record?.preferences?.showInDiscover === undefined
@@ -110,6 +112,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
     if (nameValue !== (record.name || "")) return true;
     if (descriptionValue !== (record.description || "")) return true;
     if (iconFile !== null) return true;
+    if (iconRemoved && record.icon) return true;
 
     let savedShowInDiscover =
       record.preferences?.showInDiscover === undefined
@@ -159,6 +162,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
     nameValue,
     descriptionValue,
     iconFile,
+    iconRemoved,
     showInDiscover,
     showComments,
     showMentions,
@@ -194,6 +198,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
             name: nameValue,
             description: descriptionValue,
             iconFile: iconFile,
+            removeIcon: iconRemoved,
             preferences: {
               showInDiscover,
               showComments,
@@ -227,7 +232,10 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         }
 
         toast({ type: "success", content: "Settings saved!" });
-        mutate("publication-data");
+        if (iconRemoved) setIconPreview(null);
+        setIconFile(null);
+        setIconRemoved(false);
+        mutate();
       }}
     >
       <div className="flex flex-col gap-6 relative ">
@@ -237,9 +245,16 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           setNameValue={setNameValue}
           descriptionValue={descriptionValue}
           setDescriptionValue={setDescriptionValue}
-          iconPreview={iconPreview}
-          setIconPreview={setIconPreview}
-          setIconFile={setIconFile}
+          iconPreview={iconRemoved ? null : iconPreview}
+          setIcon={(file, preview) => {
+            setIconFile(file);
+            setIconPreview(preview);
+            setIconRemoved(false);
+          }}
+          removeIcon={() => {
+            setIconFile(null);
+            setIconRemoved(true);
+          }}
           onIconError={(content) => toast({ type: "error", content })}
         />
 

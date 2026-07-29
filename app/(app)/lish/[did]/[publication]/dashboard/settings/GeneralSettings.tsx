@@ -2,8 +2,8 @@ import { useRef } from "react";
 import { Input } from "components/Input";
 import { AddTiny } from "components/Icons/AddTiny";
 import { DashboardContainer } from "./SettingsContent";
-import { EditTiny } from "components/Icons/EditTiny";
 import { encodeIconFile } from "src/utils/imageEncoding";
+import { Separator } from "components/Layout";
 
 export function GeneralSettings(props: {
   nameValue: string;
@@ -11,28 +11,19 @@ export function GeneralSettings(props: {
   descriptionValue: string;
   setDescriptionValue: (v: string) => void;
   iconPreview: string | null;
-  setIconPreview: (v: string | null) => void;
-  setIconFile: (f: File | null) => void;
+  setIcon: (file: File, preview: string) => void;
+  removeIcon: () => void;
   onIconError: (message: string) => void;
 }) {
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <DashboardContainer section="General Settings">
-
       <div className="flex flex-col gap-2 pb-2">
         <p className=" text-secondary  font-bold">
           Logo <span className="font-normal">(optional)</span>
         </p>
-        <div className="relative w-fit">
-          {props.iconPreview && (
-            <div
-              className="absolute top-0 -right-1 rounded-full bg-accent-1 text-accent-2 p-1 cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <EditTiny />
-            </div>
-          )}
+        <div className="flex flex-col items-center gap-1 w-fit">
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center cursor-pointer  ${props.iconPreview ? "border border-border-light hover:outline-border" : "border border-dotted border-accent-contrast hover:outline-accent-contrast"} selected-outline`}
             onClick={() => fileInputRef.current?.click()}
@@ -47,6 +38,20 @@ export function GeneralSettings(props: {
               <AddTiny className="text-accent-1" />
             )}
           </div>
+          {props.iconPreview && (
+            <div className="flex gap-2 text-sm text-accent-contrast items-center">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Change
+              </button>
+              <Separator classname="h-4!" />
+              <button type="button" onClick={props.removeIcon}>
+                Remove
+              </button>
+            </div>
+          )}
         </div>
         <input
           type="file"
@@ -55,13 +60,12 @@ export function GeneralSettings(props: {
           ref={fileInputRef}
           onChange={async (e) => {
             const file = e.target.files?.[0];
+            e.currentTarget.value = "";
             if (!file) return;
             try {
               const processed = await encodeIconFile(file);
-              props.setIconFile(processed);
-              props.setIconPreview(URL.createObjectURL(processed));
+              props.setIcon(processed, URL.createObjectURL(processed));
             } catch {
-              props.setIconFile(null);
               props.onIconError(
                 "We couldn't process that image. Try a JPEG, PNG, or WebP.",
               );
