@@ -6,7 +6,10 @@ import {
   OAuthSession,
 } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
-import { oauth_metadata } from "app/api/oauth/[route]/oauth-metadata";
+import {
+  oauth_metadata,
+  oauth_store_key_prefix,
+} from "app/api/oauth/[route]/oauth-metadata";
 import { supabaseServerClient } from "supabase/serverClient";
 
 import Client from "ioredis";
@@ -29,12 +32,13 @@ export function createOauthClient(): Promise<NodeOAuthClient> {
 }
 
 async function buildOauthClient(): Promise<NodeOAuthClient> {
-  let keyset =
-    process.env.NODE_ENV === "production"
-      ? await Promise.all([
-          JoseKey.fromImportable(process.env.JOSE_PRIVATE_KEY_1!),
-        ])
-      : undefined;
+  // Only the confidential (private_key_jwt) client declares a jwks_uri; public
+  // clients — dev and preview deployments — need no keyset.
+  let keyset = oauth_metadata.jwks_uri
+    ? await Promise.all([
+        JoseKey.fromImportable(process.env.JOSE_PRIVATE_KEY_1!),
+      ])
+    : undefined;
   let requestLock: RuntimeLock | undefined;
   if (process.env.NODE_ENV === "production" && process.env.REDIS_URL) {
     const client = new Client(process.env.REDIS_URL);
@@ -67,15 +71,19 @@ async function buildOauthClient(): Promise<NodeOAuthClient> {
   });
 }
 
+const storeKey = (key: string) => oauth_store_key_prefix + key;
+
 let stateStore = {
   async set(key: string, state: NodeSavedState): Promise<void> {
-    await supabaseServerClient.from("oauth_state_store").upsert({ key, state });
+    await supabaseServerClient
+      .from("oauth_state_store")
+      .upsert({ key: storeKey(key), state });
   },
   async get(key: string): Promise<NodeSavedState | undefined> {
     let { data } = await supabaseServerClient
       .from("oauth_state_store")
       .select("state")
-      .eq("key", key)
+      .eq("key", storeKey(key))
       .single();
     return (data?.state as NodeSavedState) || undefined;
   },
@@ -83,7 +91,7 @@ let stateStore = {
     await supabaseServerClient
       .from("oauth_state_store")
       .delete()
-      .eq("key", key);
+      .eq("key", storeKey(key));
   },
 };
 
@@ -91,13 +99,13 @@ let sessionStore = {
   async set(key: string, session: NodeSavedSession): Promise<void> {
     await supabaseServerClient
       .from("oauth_session_store")
-      .upsert({ key, session });
+      .upsert({ key: storeKey(key), session });
   },
   async get(key: string): Promise<NodeSavedSession | undefined> {
     let { data } = await supabaseServerClient
       .from("oauth_session_store")
       .select("session")
-      .eq("key", key)
+      .eq("key", storeKey(key))
       .single();
     return (data?.session as NodeSavedSession) || undefined;
   },
@@ -105,7 +113,7 @@ let sessionStore = {
     await supabaseServerClient
       .from("oauth_session_store")
       .delete()
-      .eq("key", key);
+      .eq("key", storeKey(key));
   },
 };
 
