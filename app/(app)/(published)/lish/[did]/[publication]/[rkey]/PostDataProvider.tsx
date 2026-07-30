@@ -1,5 +1,6 @@
 "use client";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
+import useSWRImmutable from "swr/immutable";
 import { AppBskyFeedDefs } from "@atproto/api";
 import type { PubLeafletContent } from "lexicons/api";
 import { DocumentProvider } from "contexts/DocumentContext";
@@ -44,41 +45,31 @@ export function PostDataProvider(props: {
 }) {
   const { document, initial } = props;
   const { identity, identityPending } = useIdentityData();
-  const [unlocked, setUnlocked] = useState<UnlockedPost | null>(null);
-  const [status, setStatus] = useState<UnlockStatus>("idle");
 
   const documentUri = document.uri;
-  const shouldUnlock =
-    !!document.membersOnly?.gated && !unlocked && !!identity?.id;
-  // While the session's viewer identity is still resolving, an entitled member
-  // would otherwise see a fully-enabled join CTA for a post they own — surface
-  // the pending state through the same channel the unlock uses.
-  const effectiveStatus =
-    status === "idle" &&
-    identityPending &&
-    !!document.membersOnly?.gated &&
-    !unlocked
-      ? "loading"
-      : status;
+  const gated = !!document.membersOnly?.gated;
+  // Keyed per (post, viewer) in the SWR module cache so the unlock survives
+  // navigations — a member returning to a post they already unlocked renders
+  // the full content on the first frame instead of re-flashing the paywall
+  // while a fresh entitlement check round-trips. A join completes via a full
+  // page reload, so a cached { entitled: false } can't go stale mid-session.
+  const { data, error } = useSWRImmutable(
+    gated && identity?.id ? ["unlocked-post", documentUri, identity.id] : null,
+    () => getUnlockedPost(documentUri),
+  );
+  const unlocked: UnlockedPost | null = data?.entitled ? data : null;
 
-  useEffect(() => {
-    if (!shouldUnlock) return;
-    let cancelled = false;
-    setStatus("loading");
-    getUnlockedPost(documentUri).then(
-      (result) => {
-        if (cancelled) return;
-        setStatus("idle");
-        if (result.entitled) setUnlocked(result);
-      },
-      () => {
-        if (!cancelled) setStatus("error");
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [shouldUnlock, documentUri, identity?.id]);
+  // While the viewer identity or the unlock itself is still resolving, an
+  // entitled member would otherwise see a fully-enabled join CTA for a post
+  // they can read — surface the pending state until the check settles.
+  const effectiveStatus: UnlockStatus =
+    !gated || unlocked
+      ? "idle"
+      : error
+        ? "error"
+        : identityPending || (identity?.id && !data)
+          ? "loading"
+          : "idle";
 
   const resources = unlocked ?? initial;
   const documentValue = useMemo(

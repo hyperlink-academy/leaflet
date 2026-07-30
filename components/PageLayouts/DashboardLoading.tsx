@@ -12,3 +12,14 @@ export function DashboardLoading() {
     </div>
   );
 }
+
+// Full-viewport variant for the Suspense boundaries wrapping the identity
+// route groups' request-coupled layouts, where no shell exists yet to slot
+// into.
+export function FullPageLoading() {
+  return (
+    <div className="w-full h-full flex items-center justify-center text-tertiary">
+      <LoadingTiny className="animate-spin" />
+    </div>
+  );
+}

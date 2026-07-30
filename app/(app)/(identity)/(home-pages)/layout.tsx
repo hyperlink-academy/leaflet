@@ -1,15 +1,30 @@
+import { Suspense } from "react";
 import { getIdentityData } from "actions/getIdentityData";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { NavStateTracker } from "components/NavStateTracker";
+import { FullPageLoading } from "components/PageLayouts/DashboardLoading";
 import {
   ThemeProvider,
   ThemeBackgroundProvider,
 } from "components/ThemeManager/ThemeProvider";
 import { ReplicacheProvider, type Fact } from "src/replicache";
 
-export default async function HomePagesLayout(props: {
+// Synchronous shell + suspended inner, same as the (identity) layout above:
+// navigations that mount this segment fresh (e.g. editor → home) suspend
+// inside the already-committed (identity) boundary, which won't re-show its
+// fallback mid-transition — so this segment needs its own boundary to commit
+// against while getIdentityData resolves.
+export default function HomePagesLayout(props: {
   children: React.ReactNode;
 }) {
+  return (
+    <Suspense fallback={<FullPageLoading />}>
+      <HomePagesLayoutInner>{props.children}</HomePagesLayoutInner>
+    </Suspense>
+  );
+}
+
+async function HomePagesLayoutInner(props: { children: React.ReactNode }) {
   let identityData = await getIdentityData();
   if (!identityData?.home_leaflet)
     return (
