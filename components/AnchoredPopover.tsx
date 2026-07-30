@@ -102,7 +102,7 @@ export function AnchoredPopover(props: {
               return;
             onClose();
           }}
-          className={`z-50 bg-bg-page border border-border rounded-lg shadow-md w-[min(calc(100vw-24px),320px)] ${className ?? ""}`}
+          className={`portalStyles z-50 bg-bg-page border border-border rounded-lg shadow-md w-[min(calc(100vw-24px),320px)] ${className ?? ""}`}
         >
           {children}
           <RadixPopover.Arrow asChild width={16} height={8}>

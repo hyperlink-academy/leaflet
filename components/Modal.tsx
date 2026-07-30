@@ -52,6 +52,7 @@ export const Modal = ({
               : undefined
           }
           className={`
+          portalStyles
           z-50 fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           overflow-y-scroll no-scrollbar max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] flex flex-col w-full sm:w-max text-primary
           `}

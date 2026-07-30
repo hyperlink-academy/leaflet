@@ -44,7 +44,7 @@ export const Menu = (props: {
               sideOffset={4}
               collisionPadding={16}
               className={`
-                dropdownMenu z-20 p-1
+                dropdownMenu portalStyles z-20 p-1
                 flex flex-col gap-0.5
                 border border-border rounded-md shadow-md
                 ${props.className}

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { IdentityContext, type Identity } from "components/IdentityProvider";
 import { ToggleGroup } from "components/ToggleGroup";
 import { PaidSubscribeButton } from "components/Subscribe/PaidSubscribeButton";
+import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import { JoinMembershipModal } from "components/Memberships/JoinMembershipModal";
 import { ButtonSecondary } from "components/Buttons";
 import type { Tier } from "components/Memberships/TierGrid";
@@ -92,12 +93,19 @@ function Checkbox(props: {
   );
 }
 
+// Non-default heading and body fonts, so the theme fonts the modal picks up are
+// visibly different from the app's default Quattro.
+const THEME_FONTS = {
+  theme: { headingFont: "lora", bodyFont: "atkinson-hyperlegible" },
+} as const;
+
 export default function PaidSubscribePreviewPage() {
   let [subscribeVia, setSubscribeVia] = useState<"email" | "handle">("email");
   let [loggedIn, setLoggedIn] = useState(false);
   let [hasCard, setHasCard] = useState(false);
   let [subscribed, setSubscribed] = useState(false);
   let [modalOpen, setModalOpen] = useState(false);
+  let [themeFonts, setThemeFonts] = useState(true);
 
   // Only a signed-in reader can be a known subscriber.
   const isSubscribed = loggedIn && subscribed;
@@ -110,65 +118,79 @@ export default function PaidSubscribePreviewPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-6">
-      <h1>Paid Subscribe Button</h1>
-      <div className="flex items-center gap-4 flex-wrap justify-center">
-        <ToggleGroup
-          value={subscribeVia}
-          onChange={setSubscribeVia}
-          options={[
-            { value: "email", label: "Email subscribe" },
-            { value: "handle", label: "Handle subscribe" },
-          ]}
-        />
-        <Checkbox label="logged in" checked={loggedIn} onChange={setLoggedIn} />
-        <Checkbox
-          label="card saved"
-          checked={hasCard}
-          disabled={!loggedIn}
-          onChange={setHasCard}
-        />
-        <Checkbox
-          label="already subscribed"
-          checked={subscribed}
-          disabled={!loggedIn}
-          onChange={setSubscribed}
-        />
-      </div>
-      <MockIdentity identity={identity}>
-        <PaidSubscribeButton
-          // Remount when a toggle flips so the modal's internal state resets.
-          key={`${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}`}
-          publicationUri={PUBLICATION_URI}
-          publicationUrl={PUBLICATION_URL}
-          publicationName="Test Publication"
-          publicationDescription="A publication for previewing the paid subscribe flow."
-          newsletterMode={subscribeVia === "email"}
-          tiers={TIERS}
-          viewerOverride={viewer}
-        />
-        {/* A subscribed viewer gets the manage control instead of Subscribe, so
+    <PublicationThemeProvider
+      record={themeFonts ? (THEME_FONTS as any) : undefined}
+      pub_creator="did:plc:example"
+    >
+      <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-6">
+        <h1>Paid Subscribe Button</h1>
+        <div className="flex items-center gap-4 flex-wrap justify-center">
+          <ToggleGroup
+            value={subscribeVia}
+            onChange={setSubscribeVia}
+            options={[
+              { value: "email", label: "Email subscribe" },
+              { value: "handle", label: "Handle subscribe" },
+            ]}
+          />
+          <Checkbox
+            label="logged in"
+            checked={loggedIn}
+            onChange={setLoggedIn}
+          />
+          <Checkbox
+            label="card saved"
+            checked={hasCard}
+            disabled={!loggedIn}
+            onChange={setHasCard}
+          />
+          <Checkbox
+            label="already subscribed"
+            checked={subscribed}
+            disabled={!loggedIn}
+            onChange={setSubscribed}
+          />
+          <Checkbox
+            label="theme fonts"
+            checked={themeFonts}
+            onChange={setThemeFonts}
+          />
+        </div>
+        <MockIdentity identity={identity}>
+          <PaidSubscribeButton
+            // Remount when a toggle flips so the modal's internal state resets.
+            key={`${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}`}
+            publicationUri={PUBLICATION_URI}
+            publicationUrl={PUBLICATION_URL}
+            publicationName="Test Publication"
+            publicationDescription="A publication for previewing the paid subscribe flow."
+            newsletterMode={subscribeVia === "email"}
+            tiers={TIERS}
+            viewerOverride={viewer}
+          />
+          {/* A subscribed viewer gets the manage control instead of Subscribe, so
             the join modal needs its own way in to stay previewable. */}
-        <ButtonSecondary compact onClick={() => setModalOpen(true)}>
-          Open join modal
-        </ButtonSecondary>
-        <JoinMembershipModal
-          key={`modal-${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}`}
-          open={modalOpen}
-          onOpenChange={setModalOpen}
-          publicationUri={PUBLICATION_URI}
-          publicationUrl={PUBLICATION_URL}
-          publicationName="Test Publication"
-          newsletterMode={subscribeVia === "email"}
-          tiers={TIERS}
-          viewerOverride={viewer}
-        />
-      </MockIdentity>
-      <p className="text-tertiary text-sm max-w-md text-center">
-        Tier clicks call the real server actions against a fake publication, so
-        expect error toasts past the first step — this page is for eyeballing
-        the modal states.
-      </p>
-    </div>
+          <ButtonSecondary compact onClick={() => setModalOpen(true)}>
+            Open join modal
+          </ButtonSecondary>
+          <JoinMembershipModal
+            key={`modal-${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}`}
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            publicationUri={PUBLICATION_URI}
+            publicationUrl={PUBLICATION_URL}
+            publicationName="Test Publication"
+            newsletterMode={subscribeVia === "email"}
+            tiers={TIERS}
+            viewerOverride={viewer}
+          />
+        </MockIdentity>
+        <p className="text-tertiary text-sm max-w-md text-center">
+          Tier clicks call the real server actions against a fake publication,
+          so expect error toasts past the first step — this page is for
+          eyeballing the modal states.
+        </p>
+      </div>
+    </PublicationThemeProvider>
   );
 }

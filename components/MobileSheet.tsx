@@ -178,7 +178,7 @@ export const MobileSheet = ({
                       }
                     : {}),
                 }}
-                className="mobileSheet z-50 fixed bottom-0 left-0 right-0 w-full h-[85dvh] flex flex-col text-primary"
+                className="mobileSheet portalStyles z-50 fixed bottom-0 left-0 right-0 w-full h-[85dvh] flex flex-col text-primary"
               >
                 <div className="opaque-container pwa-padding-bottom flex flex-col rounded-b-none! rounded-t-lg! h-full overflow-hidden">
                   <div

@@ -165,7 +165,7 @@ export const TooltipButton = (props: {
               side={props.side ? props.side : undefined}
               sideOffset={6}
               alignOffset={12}
-              className="z-10  rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+              className="portalStyles z-10  rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
               style={{
                 backgroundColor:
                   "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)",

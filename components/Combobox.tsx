@@ -114,7 +114,7 @@ export const Combobox = ({
           onOpenAutoFocus={(e) => e.preventDefault()}
           style={zIndex !== undefined ? { zIndex } : undefined}
           className={`
-            commandMenuContent group/cmd-menu
+            commandMenuContent portalStyles group/cmd-menu
             z-20 w-[264px]
             flex data-[side=top]:items-end items-start
             ${className}

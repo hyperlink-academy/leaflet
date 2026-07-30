@@ -24,7 +24,7 @@ export function JoinMembershipModal(props: {
     <Modal
       open={props.open}
       onOpenChange={props.onOpenChange}
-      className="max-w-full w-fit p-4 pt-3 sm:p-6 sm:pt-5"
+      className="max-w-full w-fit p-4 pt-3 sm:p-6 sm:pt-5 bg-[var(--color-bg-light)]!"
     >
       <JoinMembershipFlow
         active={props.open}

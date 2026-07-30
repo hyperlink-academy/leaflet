@@ -348,8 +348,21 @@ export const BaseThemeProvider = ({
       "--page-width-setting",
       (pageWidth || 624).toString(),
     );
+
+    // Also publish the theme fonts at :root so surfaces portaled out of
+    // .leafletWrapper (modals) can pick them up. Nothing in the app chrome
+    // reads these variables, so this doesn't leak the theme font into the UI.
+    for (let [name, value] of [
+      ["--theme-heading-font", headingFontValue],
+      ["--theme-font", bodyFontValue],
+    ] as const) {
+      if (value) el?.style.setProperty(name, value);
+      else el?.style.removeProperty(name);
+    }
   }, [
     local,
+    headingFontValue,
+    bodyFontValue,
     bgLeaflet,
     bgPage,
     primary,
