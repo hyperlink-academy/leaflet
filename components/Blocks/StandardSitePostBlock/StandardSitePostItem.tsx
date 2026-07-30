@@ -207,7 +207,6 @@ export function StandardSitePostItemView({
     hideInteractions || noInteractions ? undefined : (
       <InteractionPreview
         postRecord={post.record}
-        shareType="strong"
         quotesCount={post.mentionsCount}
         commentsCount={commentsCount}
         recommendsCount={post.recommendsCount}

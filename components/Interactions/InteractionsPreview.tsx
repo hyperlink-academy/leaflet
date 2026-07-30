@@ -23,7 +23,6 @@ export const InteractionPreview = (props: {
   showComments: boolean;
   showMentions: boolean;
   showRecommends: boolean;
-  shareType: "none" | "weak" | "strong";
 }) => {
   return (
     <div
@@ -46,7 +45,6 @@ export const InteractionPreview = (props: {
       />
       <InteractionShareButton
         postRecord={props.postRecord}
-        type={props.shareType}
         postUrl={props.postUrl}
         documentUri={props.documentUri}
         publication={props.publication}

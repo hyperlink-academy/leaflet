@@ -41,15 +41,12 @@ export const InteractionShareButton = (props: {
   documentUri?: string;
   publication?: NormalizedPublication;
   pubUri: string | undefined;
-  type: "none" | "weak" | "strong";
   trigger?: React.ReactNode;
 }) => {
   let { identity } = useIdentityData();
 
   let smoker = useSmoker();
   let [shareModalOpen, setShareModalOpen] = useState(false);
-
-  if (props.type === "none") return;
 
   function postOwnerDid(uri: string): string | null {
     try {
@@ -64,7 +61,7 @@ export const InteractionShareButton = (props: {
       <Menu
         trigger={
           <div
-            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.type === "strong" ? "text-accent-contrast" : ""}`}
+            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold`}
           >
             {props.trigger ? (
               props.trigger

@@ -133,7 +133,6 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         documentUri={props.documents.uri}
         publication={pubRecord}
         pubUri={props.publication?.uri}
-        type="weak"
       />
     </div>
   );

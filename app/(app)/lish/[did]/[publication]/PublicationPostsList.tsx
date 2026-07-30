@@ -150,7 +150,6 @@ export function PublicationPostsList({
             const interactions = (
               <InteractionPreview
                 postRecord={doc_record}
-                shareType="weak"
                 quotesCount={quotes}
                 commentsCount={comments}
                 recommendsCount={recommends}
