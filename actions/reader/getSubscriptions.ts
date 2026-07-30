@@ -2,7 +2,7 @@
 
 import { AtpAgent } from "@atproto/api";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { Json } from "supabase/database.types";
 import { supabaseServerClient } from "supabase/serverClient";
 import { idResolver } from "src/identity";
@@ -22,7 +22,7 @@ export async function getSubscriptions(
   // If no DID provided, use logged-in user's DID
   let identity = did;
   if (!identity) {
-    const auth_res = await getIdentityData();
+    const auth_res = await getAuthIdentity();
     if (!auth_res?.atp_did) return { subscriptions: [], nextCursor: null };
     identity = auth_res.atp_did;
   }

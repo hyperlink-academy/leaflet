@@ -1,9 +1,13 @@
 import { getIdentityData } from "actions/getIdentityData";
+import { getHomeLeaflet } from "src/homeLeaflet";
 
 import { HomeContent } from "./HomeLayout";
 
 export default async function Home() {
-  let auth_res = await getIdentityData();
+  let [auth_res, home_leaflet] = await Promise.all([
+    getIdentityData(),
+    getHomeLeaflet(),
+  ]);
 
   let titleOf = (pt: {
     leaflets_in_publications?: { title: string | null }[] | null;
@@ -30,7 +34,7 @@ export default async function Home() {
   return (
     <HomeContent
       titles={titles}
-      entityID={auth_res?.home_leaflet?.root_entity || null}
+      entityID={home_leaflet?.root_entity || null}
     />
   );
 }

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { tinybird } from "lib/tinybird";
 
 export type GetPublicationAnalyticsReturnType = Awaited<
@@ -24,7 +24,7 @@ export const get_publication_analytics = makeRoute({
     { publication_uri, from, to, path, referrer_host, bsky_post },
     { supabase }: Pick<Env, "supabase">,
   ) => {
-    const identity = await getIdentityData();
+    const identity = await getAuthIdentity();
     if (
       !identity?.atp_did ||
       !identity.entitlements?.publication_analytics ||

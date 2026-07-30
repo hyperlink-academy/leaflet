@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
 import { idResolver } from "src/identity";
@@ -52,7 +52,7 @@ export async function inviteContributor(
   publication_uri: string,
   handle: string,
 ): Promise<Result<ContributorRow, ContributorActionError>> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err("unauthorized");
 
   let publication = await loadPublication(publication_uri);
@@ -96,7 +96,7 @@ export async function removeContributor(
   publication_uri: string,
   contributor_did: string,
 ): Promise<Result<null, ContributorActionError>> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err("unauthorized");
 
   let publication = await loadPublication(publication_uri);
@@ -138,7 +138,7 @@ export async function removeContributor(
 export async function acceptContributorInvitation(
   publication_uri: string,
 ): Promise<Result<null, ContributorActionError>> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err("unauthorized");
 
   let { data: invite } = await supabaseServerClient

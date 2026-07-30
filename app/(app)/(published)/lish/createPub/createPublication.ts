@@ -6,7 +6,7 @@ import {
   SiteStandardPublication,
 } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { Vercel } from "@vercel/sdk";
@@ -47,7 +47,7 @@ export async function createPublication({
   if (!isSubdomainValid.success) {
     return { success: false };
   }
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,

@@ -7,7 +7,7 @@ import {
   SiteStandardPublication,
 } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
@@ -47,7 +47,7 @@ async function withPublicationUpdate(
   recordBuilder: RecordBuilder,
 ): Promise<UpdatePublicationResult> {
   // Get identity and validate authentication
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,

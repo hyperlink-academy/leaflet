@@ -1,7 +1,7 @@
 "use server";
 
 import { AtpBaseClient } from "lexicons/api";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -22,7 +22,7 @@ export async function deletePublication(
 ): Promise<
   { success: true } | { success: false; error: string | OAuthSessionError }
 > {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return { success: false, error: "Not authenticated" };
   }

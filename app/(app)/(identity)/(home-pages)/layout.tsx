@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getIdentityData } from "actions/getIdentityData";
+import { getHomeLeaflet } from "src/homeLeaflet";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { NavStateTracker } from "components/NavStateTracker";
 import { FullPageLoading } from "components/PageLayouts/DashboardLoading";
@@ -13,7 +13,7 @@ import { ReplicacheProvider, type Fact } from "src/replicache";
 // navigations that mount this segment fresh (e.g. editor → home) suspend
 // inside the already-committed (identity) boundary, which won't re-show its
 // fallback mid-transition — so this segment needs its own boundary to commit
-// against while getIdentityData resolves.
+// against while the home leaflet resolves.
 export default function HomePagesLayout(props: {
   children: React.ReactNode;
 }) {
@@ -25,8 +25,8 @@ export default function HomePagesLayout(props: {
 }
 
 async function HomePagesLayoutInner(props: { children: React.ReactNode }) {
-  let identityData = await getIdentityData();
-  if (!identityData?.home_leaflet)
+  let home_leaflet = await getHomeLeaflet();
+  if (!home_leaflet)
     return (
       <>
         <NavStateTracker />
@@ -34,20 +34,20 @@ async function HomePagesLayoutInner(props: { children: React.ReactNode }) {
       </>
     );
   let facts =
-    (identityData?.home_leaflet?.permission_token_rights[0].entity_sets?.entities.flatMap(
+    (home_leaflet.permission_token_rights[0].entity_sets?.entities.flatMap(
       (e) => e.facts,
     ) || []) as Fact<any>[];
 
-  let root_entity = identityData.home_leaflet.root_entity;
+  let root_entity = home_leaflet.root_entity;
   return (
     <ReplicacheProvider
-      rootEntity={identityData.home_leaflet.root_entity}
-      token={identityData.home_leaflet}
-      name={identityData.home_leaflet.root_entity}
+      rootEntity={root_entity}
+      token={home_leaflet}
+      name={root_entity}
       initialFacts={facts}
     >
       <EntitySetProvider
-        set={identityData.home_leaflet.permission_token_rights[0].entity_set}
+        set={home_leaflet.permission_token_rights[0].entity_set}
       >
         <ThemeProvider entityID={root_entity}>
           <ThemeBackgroundProvider entityID={root_entity}>

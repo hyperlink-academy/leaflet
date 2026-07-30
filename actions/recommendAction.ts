@@ -1,7 +1,7 @@
 "use server";
 
 import { AtpBaseClient, SiteStandardGraphRecommend } from "lexicons/api";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
 import { AtUri, Un$Typed } from "@atproto/api";
@@ -23,7 +23,7 @@ type RecommendResult =
 export async function recommendAction(args: {
   document: string;
 }): Promise<RecommendResult> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,
@@ -110,7 +110,7 @@ export async function recommendAction(args: {
 export async function unrecommendAction(args: {
   document: string;
 }): Promise<RecommendResult> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,

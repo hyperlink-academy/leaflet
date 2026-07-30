@@ -4,7 +4,7 @@ import {
   restoreOAuthSession,
   OAuthSessionError,
 } from "src/atproto-oauth";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { AtpBaseClient, AtUri } from "@atproto/api";
 import { PubLeafletPollVote } from "lexicons/api";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -19,7 +19,7 @@ export async function voteOnPublishedPoll(
   { success: true } | { success: false; error: string | OAuthSessionError }
 > {
   try {
-    const identity = await getIdentityData();
+    const identity = await getAuthIdentity();
 
     if (!identity?.atp_did) {
       return { success: false, error: "Not authenticated" };

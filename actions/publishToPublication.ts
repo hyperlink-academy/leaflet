@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidatePublicationPaths } from "src/utils/revalidatePublication";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import {
   AtpBaseClient,
   PubLeafletBlocksBskyPost,
@@ -89,7 +89,7 @@ export async function publishToPublication({
   // own record out of those feeds.
   showInDiscover?: boolean;
 }): Promise<PublishResult> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,

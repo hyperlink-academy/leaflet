@@ -1,10 +1,10 @@
 "use server";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { hydrateNotifications } from "src/notifications";
 import { supabaseServerClient } from "supabase/serverClient";
 
 export async function getNotifications(limit?: number) {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity?.atp_did) return [];
   let query = supabaseServerClient
     .from("notifications")
@@ -18,7 +18,7 @@ export async function getNotifications(limit?: number) {
 }
 
 export async function markAsRead() {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity?.atp_did) return [];
   await supabaseServerClient
     .from("notifications")

@@ -1,8 +1,12 @@
 import { getIdentityData } from "actions/getIdentityData";
+import { getHomeLeaflet } from "src/homeLeaflet";
 import { LooseleafsContent } from "./LooseleafsLayout";
 
 export default async function Home() {
-  let auth_res = await getIdentityData();
+  let [auth_res, home_leaflet] = await Promise.all([
+    getIdentityData(),
+    getHomeLeaflet(),
+  ]);
 
   let titles =
     auth_res?.permission_token_on_homepage.reduce(
@@ -20,7 +24,7 @@ export default async function Home() {
 
   return (
     <LooseleafsContent
-      entityID={auth_res?.home_leaflet?.root_entity || null}
+      entityID={home_leaflet?.root_entity || null}
       titles={titles}
     />
   );

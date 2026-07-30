@@ -8,7 +8,7 @@ import {
 } from "@atproto/api";
 import { TID } from "@atproto/common";
 import { AtUri } from "@atproto/syntax";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { idResolver } from "src/identity";
@@ -50,7 +50,7 @@ export async function publishPostToBsky(args: {
   prefetchedThumb?: string;
   langs?: string[];
 }): Promise<PublishBskyResult> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,

@@ -1,14 +1,14 @@
 "use server";
 
 import { AppBskyActorDefs, Agent as BskyAgent } from "@atproto/api";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { createOauthClient } from "src/atproto-oauth";
 const leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
 
 export async function fixFeeds() {
   const oauthClient = await createOauthClient();
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     throw new Error("Invalid identity data");
   }

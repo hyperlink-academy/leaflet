@@ -168,16 +168,3 @@ export function isEntitledToGatedPost(input: {
   }
   return isActiveMembership(input.membership);
 }
-
-// Client-side check over the memberships embedded in identity data.
-export function getActiveMembership<
-  M extends MembershipStatusFields & { publication: string },
->(
-  identity: { publication_memberships?: M[] | null } | null | undefined,
-  publicationUri: string,
-): M | null {
-  const m = identity?.publication_memberships?.find(
-    (m) => m.publication === publicationUri,
-  );
-  return m && isActiveMembership(m) ? m : null;
-}

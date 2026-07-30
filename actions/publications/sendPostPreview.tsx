@@ -2,7 +2,7 @@
 
 import { render } from "@react-email/render";
 import { BlobRef } from "@atproto/lexicon";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getCurrentDeploymentDomain } from "src/utils/getCurrentDeploymentDomain";
 import { Ok, Err, type Result } from "src/result";
@@ -44,7 +44,7 @@ export async function sendPostPreview(args: {
   description?: string;
   to: string;
 }): Promise<Result<null, SendPreviewError>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err("unauthorized");
 
   const email = args.to.trim().toLowerCase();
@@ -113,7 +113,9 @@ export async function sendPostPreview(args: {
   // `contributors` field doesn't exist yet at preview time, so we read the
   // draft's `leaflet_contributors`. Fall back to the current user's handle
   // (previous behavior) when there are no contributors.
-  let authorName: string | undefined = identity.bsky_profiles?.handle ?? undefined;
+  let authorName: string | undefined =
+    (await getProfiles([identity.atp_did])).get(identity.atp_did)?.handle ??
+    undefined;
   if (args.leaflet_id) {
     // Verify the leaflet actually belongs to this publication before reading
     // its contributors, so a client can't pass an arbitrary leaflet_id and

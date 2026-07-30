@@ -3,7 +3,6 @@ import { callRPC } from "app/api/rpc/client";
 import { createPublication } from "./createPublication";
 import { ButtonPrimary } from "components/Buttons";
 import { AddSmall } from "components/Icons/AddSmall";
-import { useIdentityData } from "components/IdentityProvider";
 import { Input, InputWithLabel } from "components/Input";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";

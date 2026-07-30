@@ -1,7 +1,9 @@
 import { cookies, headers } from "next/headers";
+import { cache } from "react";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isProductionDomain } from "./utils/isProductionDeployment";
 import { isUuid } from "./utils/isUuid";
+import { getValidAuthToken, keyEntitlements } from "./identityPayload";
 import { SESSION_MARKER_COOKIE } from "./sessionMarker";
 
 export const AUTH_TOKEN_COOKIE = "auth_token";
@@ -60,4 +62,46 @@ export async function resolveAuthToken(tokenId: string | undefined) {
     .maybeSingle();
   if (!data?.confirmed || !data.identities) return null;
   return { tokenId: data.id, identity: data.identities };
+}
+
+// The auth gate for server actions and RPC handlers: the identity row plus the
+// two things authorization actually branches on (entitlements, connected
+// Stripe account). Same token validation as getIdentityData, but none of its
+// page-data embeds — server actions are separate requests, so React cache()
+// never dedupes them and each one would otherwise pay for the caller's whole
+// home-page fact tree. Deliberately not a "use server" module: exporting an
+// async fn from one would publish it as a client-callable endpoint.
+export const getAuthIdentity = cache(uncachedGetAuthIdentity);
+async function uncachedGetAuthIdentity() {
+  let auth_token = await getValidAuthToken();
+  let auth_res = auth_token
+    ? await supabaseServerClient
+        .from("email_auth_tokens")
+        .select(
+          `*,
+          identities(
+            *,
+            user_entitlements(entitlement_key, granted_at, expires_at, source, metadata),
+            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted)
+          )`,
+        )
+        .eq("id", auth_token)
+        .eq("confirmed", true)
+        .single()
+    : null;
+  if (!auth_res?.data?.identities) return null;
+
+  // Pull the raw embeds off the identity so spreading it below doesn't leak
+  // them alongside the processed `entitlements` / `connectedAccount`.
+  const {
+    user_entitlements: entitlementRows,
+    stripe_connected_accounts: connectedAccount,
+    ...identity
+  } = auth_res.data.identities;
+
+  return {
+    ...identity,
+    entitlements: keyEntitlements(entitlementRows),
+    connectedAccount: connectedAccount ?? null,
+  };
 }

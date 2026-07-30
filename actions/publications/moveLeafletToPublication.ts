@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { supabaseServerClient } from "supabase/serverClient";
 
@@ -10,7 +10,7 @@ export async function moveLeafletToPublication(
   metadata: { title: string; description: string },
   entitiesToDelete: string[],
 ) {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) return null;
   let { data: publication } = await supabaseServerClient
     .from("publications")

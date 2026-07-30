@@ -1,7 +1,7 @@
 "use server";
 
 import { AtpBaseClient, PubLeafletComment } from "lexicons/api";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import {
   restoreOAuthSession,
@@ -36,7 +36,7 @@ export async function publishComment(args: {
     attachment: PubLeafletComment.Record["attachment"];
   };
 }): Promise<PublishCommentResult> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,

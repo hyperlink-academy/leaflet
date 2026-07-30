@@ -1,13 +1,13 @@
 "use server";
 
 import { InterfaceState } from "components/IdentityProvider";
-import { getIdentityData } from "./getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 
 export async function updateIdentityInterfaceState(
   interfaceState: InterfaceState,
 ) {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity) return;
   await supabaseServerClient
     .from("identities")

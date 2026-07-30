@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
 import { isAdminEmail } from "src/adminAllowlist";
@@ -28,7 +28,7 @@ export type AdminUserSearchResult = {
 };
 
 async function getAdminIdentity() {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !isAdminEmail(identity.email)) return null;
   return identity;
 }

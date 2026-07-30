@@ -3,7 +3,7 @@ import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { getCache } from "@vercel/functions";
 import { Vercel } from "@vercel/sdk";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -28,9 +28,15 @@ async function expireDomainCache(domain: string) {
 }
 
 async function assertOwnsDomain(domain: string) {
-  let identity = await getIdentityData();
-  if (!identity || !identity.custom_domains.find((d) => d.domain === domain))
-    return null;
+  let identity = await getAuthIdentity();
+  if (!identity) return null;
+  let { data: owned } = await supabase
+    .from("custom_domains")
+    .select("domain")
+    .eq("identity_id", identity.id)
+    .eq("domain", domain)
+    .maybeSingle();
+  if (!owned) return null;
   return identity;
 }
 
@@ -47,7 +53,7 @@ async function clearAllAssignments(domain: string) {
 // ==============
 
 export async function addDomain(domain: string) {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || (!identity.email && !identity.atp_did)) return {};
   if (
     domain.includes("leaflet.pub") &&
@@ -145,9 +151,8 @@ export async function assignDomainToPublication({
   domain: string;
   publication_uri: string;
 }) {
-  let identity = await getIdentityData();
+  let identity = await assertOwnsDomain(domain);
   if (!identity || !identity.atp_did) return null;
-  if (!identity.custom_domains.find((d) => d.domain === domain)) return null;
 
   let { data: publication } = await supabase
     .from("publications")
@@ -186,13 +191,17 @@ export async function removeDomainAssignment({
 
 // Remove a single route assignment by ID.
 export async function removeDomainRoute({ routeId }: { routeId: string }) {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity) return null;
 
-  let allRoutes = identity.custom_domains.flatMap(
-    (d) => d.custom_domain_routes,
-  );
-  let route = allRoutes.find((r) => r.id === routeId);
+  let { data: domains } = await supabase
+    .from("custom_domains")
+    .select("custom_domain_routes(id, domain)")
+    .eq("identity_id", identity.id);
+
+  let route = (domains || [])
+    .flatMap((d) => d.custom_domain_routes)
+    .find((r) => r.id === routeId);
   if (!route) return null;
 
   await supabase.from("custom_domain_routes").delete().eq("id", routeId);

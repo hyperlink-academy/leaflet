@@ -1,7 +1,7 @@
 "use server";
 
 import { AtpBaseClient } from "lexicons/api";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -30,7 +30,7 @@ export async function subscribeToPublication(
   publication: string,
   redirectRoute?: string,
 ): Promise<SubscribeResult | never> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return redirect(
       buildOauthLoginUrl(
@@ -190,7 +190,7 @@ type UnsubscribeResult =
 export async function unsubscribeToPublication(
   publication: string,
 ): Promise<UnsubscribeResult> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,

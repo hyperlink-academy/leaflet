@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import type {
   NormalizedDocument,
@@ -17,7 +17,7 @@ export type Cursor = {
 export async function getReaderFeed(
   cursor?: Cursor | null,
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
-  let auth_res = await getIdentityData();
+  let auth_res = await getAuthIdentity();
   if (!auth_res?.atp_did) return { posts: [], nextCursor: null };
 
   const { data: rawFeed, error } = await supabaseServerClient.rpc(

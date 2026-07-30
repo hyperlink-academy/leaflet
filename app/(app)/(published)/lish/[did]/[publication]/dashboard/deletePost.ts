@@ -1,7 +1,7 @@
 "use server";
 
 import { AtpBaseClient } from "lexicons/api";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import {
   restoreOAuthSession,
   OAuthSessionError,
@@ -87,7 +87,7 @@ async function revalidateDocPublications(document_uri: string) {
 export async function deletePost(
   document_uri: string
 ): Promise<{ success: true } | { success: false; error: PostMutationError }> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,
@@ -138,7 +138,7 @@ export async function deletePost(
 export async function unpublishPost(
   document_uri: string
 ): Promise<{ success: true } | { success: false; error: PostMutationError }> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,

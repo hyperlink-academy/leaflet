@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 
 export type GetUserRecommendationsReturnType = Awaited<
   ReturnType<(typeof get_user_recommendations)["handler"]>
@@ -13,7 +13,7 @@ export const get_user_recommendations = makeRoute({
     documentUris: z.array(z.string()),
   }),
   handler: async ({ documentUris }, { supabase }: Pick<Env, "supabase">) => {
-    const identity = await getIdentityData();
+    const identity = await getAuthIdentity();
     const currentUserDid = identity?.atp_did;
 
     if (!currentUserDid || documentUris.length === 0) {

@@ -10,7 +10,7 @@ import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { readNavEntries } from "src/utils/publicationNavEntries";
 import { OAuthSessionError, restoreOAuthSession } from "src/atproto-oauth";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { leafletToPublicationPageRecord } from "src/utils/leafletToPublicationPageRecord";
 import {
   extractThemeFromFacts,
@@ -49,7 +49,7 @@ export async function publishPublicationPages({
 }: {
   publication_uri: string;
 }): Promise<PublishPagesResult> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,
