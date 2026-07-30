@@ -12,7 +12,7 @@ export function PublicationPostItemSmall(props: CommonProps) {
       <PostLink href={props.href} />
       {props.pubInfo}
       {props.title && (
-        <h3 className="text-primary leading-snug pb-1">
+        <h3 className="text-primary leading-snug">
           {props.title}
           {props.membersOnly && <MembersBadge />}
         </h3>

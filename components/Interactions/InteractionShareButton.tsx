@@ -69,10 +69,7 @@ export const InteractionShareButton = (props: {
             {props.trigger ? (
               props.trigger
             ) : (
-              <>
-                <ShareTiny />
-                Share
-              </>
+              <ShareTiny role="img" aria-label="Share" />
             )}
           </div>
         }

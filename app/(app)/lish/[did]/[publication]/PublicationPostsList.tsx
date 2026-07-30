@@ -4,13 +4,13 @@ import React, { useMemo } from "react";
 import { AtUri } from "@atproto/api";
 import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
 import { InteractionPreview } from "components/Interactions/InteractionsPreview";
-import { LocalizedDate } from "./LocalizedDate";
 import { PublicationPostItem } from "./DefaultPublicationHomepage";
 import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,
   PublicationPostItemLarge,
 } from "./PublicationPostItem";
+import { LocalizedDate } from "./LocalizedDate";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
@@ -143,23 +143,21 @@ export function PublicationPostsList({
             const date = doc_record.publishedAt ? (
               <LocalizedDate
                 dateString={doc_record.publishedAt}
-                options={{
-                  year: "numeric",
-                  month: "long",
-                  day: "2-digit",
-                }}
+                omitYear
+                options={{ year: "2-digit", month: "short", day: "numeric" }}
               />
             ) : undefined;
             const interactions = (
               <InteractionPreview
                 postRecord={doc_record}
-                shareType="none"
+                shareType="weak"
                 quotesCount={quotes}
                 commentsCount={comments}
                 recommendsCount={recommends}
                 documentUri={post.uri}
                 tags={tags}
                 pubUri={publication.uri}
+                publication={publicationRecord || undefined}
                 postUrl={docUrl}
                 showComments={
                   publicationRecord?.preferences?.showComments !== false
