@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SubscribeWithHandle, AtSubscribeSuccess } from "./HandleSubscribe";
 import { EmailInput, EmailButton, EmailConfirm } from "./EmailSubscribe";
@@ -92,6 +92,15 @@ export const SubscribeInput = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
   const { identity, mutate: mutateIdentity } = useIdentityData();
   let [email, setEmail] = useState(user.email ?? "");
+  // On a published page identity resolves after first paint, so the initial
+  // value above is always the logged-out one. Without this the email field
+  // stays empty while EmailInput disables itself on the identity's email being
+  // known — an input that can be neither typed into nor submitted. Only seeds
+  // an untouched field, so it can't clobber what someone is typing.
+  useEffect(() => {
+    if (user.email)
+      setEmail((current) => (current === "" ? user.email! : current));
+  }, [user.email]);
   let [requesting, setRequesting] = useState(false);
   let [confirming, setConfirming] = useState(false);
   let [confirmOpen, setConfirmOpen] = useState(false);

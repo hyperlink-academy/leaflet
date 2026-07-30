@@ -4,7 +4,7 @@ import { getHomeDocs } from "src/utils/homeDocsStorage";
 import useSWR from "swr";
 import { PermissionToken, useEntity } from "src/replicache";
 import { LeafletListItem } from "./LeafletList/LeafletListItem";
-import { useIdentityData } from "components/IdentityProvider";
+import { useIdentityData, type Identity } from "components/IdentityProvider";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import {
   type DashboardState,
@@ -35,6 +35,25 @@ export type Leaflet = {
     >["leaflets_to_documents"];
   };
 };
+
+// The casts feeding StaticLeafletDataContext below widen getIdentityData's rows
+// to get_leaflet_data's much richer shape, which means a narrowed select in
+// getIdentityData type-checks fine and only shows up as wrong output —
+// useLeafletPublicationStatus silently falling back from the publication's own
+// URL to the /p/ permalink. Pin the columns it reads.
+type LeafletsInPublications = NonNullable<
+  Exclude<
+    Identity,
+    null
+  >["permission_token_on_homepage"][number]["permission_tokens"]["leaflets_in_publications"]
+>[number];
+type _ShareLinkColumnsPresent = LeafletsInPublications extends {
+  documents: { data: unknown } | null;
+  publications: { uri: string; record: unknown } | null;
+}
+  ? true
+  : never;
+const _shareLinkColumnsPresent: _ShareLinkColumnsPresent = true;
 
 export const HomeContent = (props: {
   entityID: string | null;
@@ -67,9 +86,7 @@ export const HomeContent = (props: {
       (leaflet) => leaflet.archived === true,
     ) ||
       (identity.contributor_leaflets ?? []).some((row) =>
-        row.permission_tokens.leaflets_in_publications?.some(
-          (l) => l.archived,
-        ),
+        row.permission_tokens.leaflets_in_publications?.some((l) => l.archived),
       ));
 
   return (

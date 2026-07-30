@@ -4,11 +4,14 @@ import {
   projectPublicationForClient,
 } from "src/utils/postPageProjection";
 
-// Keys that must never reach a client payload: draft_leaflet is a
-// permission_tokens id that /[leaflet_id] grants edit access on with no auth
-// check, and the subscription/member/contributor embeds are reader PII.
+// Keys that must never reach a client payload: draft_leaflet and
+// leaflets_in_publications.leaflet are both permission_tokens ids that
+// /[leaflet_id] grants edit access on with no auth check, and the
+// subscription/member/contributor embeds are reader PII.
 const FORBIDDEN = [
   "draft_leaflet",
+  "leaflets_in_publications",
+  "leaflet",
   "publication_subscriptions",
   "publication_email_subscribers",
   "publication_memberships",
@@ -75,15 +78,11 @@ describe("post page client projection", () => {
     expect(Object.keys(projected).sort()).toEqual([
       "data",
       "documents_in_publications",
-      "leaflets_in_publications",
       "uri",
     ]);
     expect(
       Object.keys(projected.documents_in_publications[0].publications).sort(),
     ).toEqual(["identity_did", "name", "record", "uri"]);
-    expect(Object.keys(projected.leaflets_in_publications[0])).toEqual([
-      "leaflet",
-    ]);
   });
 
   test("publication context exposes the newsletter flag, not the rows", () => {

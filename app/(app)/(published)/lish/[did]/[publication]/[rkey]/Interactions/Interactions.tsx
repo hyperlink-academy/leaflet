@@ -8,7 +8,7 @@ import { useDocument } from "contexts/DocumentContext";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { Tag } from "components/Tags";
 import { prefetchQuotesData } from "./Quotes";
-import { useIdentityData } from "components/IdentityProvider";
+import { usePostEditLink } from "../usePostEditLink";
 import { EditTiny } from "components/Icons/EditTiny";
 import { RecommendButton } from "components/Interactions/RecommendButton";
 import { DiscussionButton } from "components/Interactions/DiscussionButton";
@@ -280,7 +280,6 @@ export const ExpandedInteractions = (props: {
     normalizedDocument,
     normalizedPublication,
     publication,
-    leafletId,
   } = useDocument();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
@@ -389,7 +388,7 @@ export const ExpandedInteractions = (props: {
                 </div>
               }
             />
-            <EditButton publication={publication} leafletId={leafletId} />
+            <EditButton publication={publication} documentUri={document_uri} />
           </DrawerThreadContext.Provider>
         )}
       </div>
@@ -437,20 +436,19 @@ function getQuoteCountFromArray(
 
 const EditButton = (props: {
   publication: { identity_did: string } | null;
-  leafletId: string | null;
+  documentUri: string;
 }) => {
-  let { identity } = useIdentityData();
-  if (
-    identity &&
-    identity.atp_did === props.publication?.identity_did &&
-    props.leafletId
-  )
+  let editLink = usePostEditLink(
+    props.documentUri,
+    props.publication?.identity_did,
+  );
+  if (editLink)
     return (
       // Trails the row out of flow: the row is centered, so on a published page
       // (where identity only resolves after first paint) an in-flow pill would
       // re-center every other interaction button underneath the reader.
       <a
-        href={`https://leaflet.pub/${props.leafletId}`}
+        href={editLink}
         className="absolute left-full ml-2 sm:ml-4 top-0 flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-md !border-accent-1 !outline-accent-1 h-fit whitespace-nowrap"
       >
         <EditTiny />

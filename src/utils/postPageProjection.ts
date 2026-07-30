@@ -43,12 +43,13 @@ type DocumentRow = {
   uri: string;
   data: Json;
   documents_in_publications: { publications: PublicationRow | null }[];
-  leaflets_in_publications: { leaflet: string }[];
 };
 
-// PostHeader reads the publication link and the owner's edit link straight off
-// these raw relation shapes, so they survive projection — trimmed to the
-// columns it touches.
+// PostHeader reads the publication link straight off this raw relation shape,
+// so it survives projection — trimmed to the columns it touches. The sibling
+// `leaflets_in_publications.leaflet` is deliberately absent: it is a
+// permission_tokens id that /[leaflet_id] honours with no auth check, so the
+// owner's edit affordance fetches it from getPostEditLink instead.
 export function projectDocumentRowForClient(document: DocumentRow) {
   const rawPub = document.documents_in_publications[0]?.publications;
   return {
@@ -66,8 +67,5 @@ export function projectDocumentRowForClient(document: DocumentRow) {
           },
         ]
       : [],
-    leaflets_in_publications: document.leaflets_in_publications.map((l) => ({
-      leaflet: l.leaflet,
-    })),
   };
 }

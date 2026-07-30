@@ -19,7 +19,6 @@ export type DocumentContextValue = Pick<
   | "commentsCount"
   | "commentsCountByPage"
   | "mentions"
-  | "leafletId"
   | "recommendsCount"
 > &
   // Optional so non-post DocumentProvider consumers (publication pages,

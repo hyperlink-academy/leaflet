@@ -67,7 +67,6 @@ export function useDocumentDiscussionData(
         commentsCount: data?.comments.length ?? 0,
         commentsCountByPage,
         mentions: [],
-        leafletId: null,
         recommendsCount: 0,
       } as unknown as DocumentContextValue)
     : null;

@@ -52,8 +52,6 @@ function makeFakeDocument(
     comments_on_documents: [],
     mentions: [],
     document_mentions_in_bsky: [],
-    leaflets_in_publications: [],
-    leafletId: null,
     recommendsCount: 0,
     documents_in_publications: publication
       ? [{ publications: publication }]
@@ -104,7 +102,6 @@ export function PostPreview(props: {
     commentsCount: 0,
     commentsCountByPage: {},
     mentions: [],
-    leafletId: null,
     recommendsCount: 0,
   };
 

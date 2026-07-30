@@ -82,7 +82,8 @@ export default async function middleware(req: NextRequest) {
   // previous callback wrote for logged-out visitors) — not a session.
   let externalToken = req.cookies.get("external_auth_token")?.value;
   let hasAuth =
-    req.cookies.has("auth_token") || (!!externalToken && externalToken !== "null");
+    req.cookies.has("auth_token") ||
+    (!!externalToken && externalToken !== "null");
   // Sessions minted before the marker existed need it backfilled so published
   // pages know to fetch identity client-side.
   let backfillMarker = hasAuth && !req.cookies.has(SESSION_MARKER_COOKIE);
@@ -90,7 +91,12 @@ export default async function middleware(req: NextRequest) {
     if (!backfillMarker) return res;
     let out = res ?? NextResponse.next();
     out.cookies.set(SESSION_MARKER_COOKIE, "1", {
-      maxAge: 60 * 60 * 24 * 365,
+      // Match the lifetime of whichever cookie we're mirroring: external_auth_token
+      // is a session cookie, so a persistent marker would outlive it and make
+      // every published page view fetch an identity that no longer exists.
+      ...(req.cookies.has("auth_token")
+        ? { maxAge: 60 * 60 * 24 * 365 }
+        : undefined),
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     });
@@ -173,8 +179,10 @@ async function receiveAuthCallback(req: NextRequest) {
   let response = NextResponse.redirect(url.toString());
   if (payload.auth_token) {
     response.cookies.set("external_auth_token", payload.auth_token);
+    // Session-scoped to match external_auth_token above, which carries no
+    // maxAge; a longer-lived marker would keep triggering identity fetches on
+    // cacheable pages after the session cookie is gone.
     response.cookies.set(SESSION_MARKER_COOKIE, "1", {
-      maxAge: 60 * 60 * 24 * 365,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     });

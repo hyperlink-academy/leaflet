@@ -3,7 +3,7 @@ import { getPublicationURL } from "src/utils/getPublicationURL";
 import { Interactions, getQuoteCount } from "../Interactions/Interactions";
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { useIdentityData } from "components/IdentityProvider";
+import { usePostEditLink } from "../usePostEditLink";
 import { EditTiny } from "components/Icons/EditTiny";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -35,12 +35,12 @@ export function PostHeader(props: {
   };
   isCanvas?: boolean;
 }) {
-  let { identity } = useIdentityData();
   let document = props.data;
 
   const record = document?.normalizedDocument;
   let profile = props.profile;
   let pub = props.data?.documents_in_publications[0]?.publications;
+  let editLink = usePostEditLink(document?.uri, pub?.identity_did);
 
   if (!document?.data || !record) return null;
   return (
@@ -55,21 +55,18 @@ export function PostHeader(props: {
               {pub?.name}
             </SpeedyLink>
           )}
-          {identity &&
-            pub &&
-            identity.atp_did === pub.identity_did &&
-            document.leaflets_in_publications[0] && (
-              // Out of flow, in the header's own padding: identity only
-              // resolves after first paint on a published page, and in flow this
-              // takes width off the pub name — enough to wrap it and push the
-              // title and byline down.
-              <a
-                className="absolute -right-3 sm:-right-4 top-0 bottom-0 rounded-full flex place-items-center"
-                href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-              >
-                <EditTiny className="shrink-0" />
-              </a>
-            )}
+          {editLink && (
+            // Out of flow, in the header's own padding: identity only
+            // resolves after first paint on a published page, and in flow this
+            // takes width off the pub name — enough to wrap it and push the
+            // title and byline down.
+            <a
+              className="absolute -right-3 sm:-right-4 top-0 bottom-0 rounded-full flex place-items-center"
+              href={editLink}
+            >
+              <EditTiny className="shrink-0" />
+            </a>
+          )}
         </>
       }
       postTitle={record.title}

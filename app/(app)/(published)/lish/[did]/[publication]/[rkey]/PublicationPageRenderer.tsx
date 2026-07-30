@@ -179,7 +179,6 @@ export async function PublicationPageRenderer({
     commentsCount: 0,
     commentsCountByPage: {},
     mentions: [],
-    leafletId: null,
     recommendsCount: 0,
   };
 

@@ -15,6 +15,8 @@ export function getPublicAgent(): Agent {
 
 async function getAuthenticatedAgent(): Promise<Agent | null> {
   try {
+    // published-purity-ok: published pages reach this module only for
+    // getPublicAgent (profileCache/byline); nothing in that tree calls getAgent.
     const cookieStore = await cookies();
     const authToken =
       cookieStore.get("auth_token")?.value ||

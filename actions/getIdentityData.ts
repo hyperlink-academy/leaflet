@@ -35,8 +35,8 @@ async function uncachedGetIdentityData() {
                 title,
                 description,
                 permission_token_rights(*),
-                leaflets_to_documents(*, documents(uri, indexed_at)),
-                leaflets_in_publications(*, documents(uri, indexed_at))
+                leaflets_to_documents(*, documents(uri, indexed_at, data)),
+                leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
               )
             ),
             user_subscriptions(plan, status, current_period_end),
@@ -48,8 +48,8 @@ async function uncachedGetIdentityData() {
               permission_tokens!leaflet_contributors_leaflet_fkey!inner(
                 id, root_entity, title, description,
                 permission_token_rights(*),
-                leaflets_to_documents(*, documents(uri, indexed_at)),
-                leaflets_in_publications(*, documents(uri, indexed_at))
+                leaflets_to_documents(*, documents(uri, indexed_at, data)),
+                leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
               )
             ),
             publication_contributors!publication_contributors_contributor_did_fkey(

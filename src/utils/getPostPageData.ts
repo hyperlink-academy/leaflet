@@ -42,7 +42,6 @@ export const getPostPageData = cache(async function getPostPageData(
           publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order))
         ),
         document_mentions_in_bsky(uri, link),
-        leaflets_in_publications(leaflet),
         recommends_on_documents(count)
         `,
     )
@@ -236,7 +235,6 @@ export const getPostPageData = cache(async function getPostPageData(
     commentsCount,
     commentsCountByPage,
     mentions: document.document_mentions_in_bsky,
-    leafletId: document.leaflets_in_publications[0]?.leaflet || null,
     // Recommends data
     recommendsCount,
   };

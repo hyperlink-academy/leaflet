@@ -2,7 +2,13 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { getViewerIdentity } from "actions/viewerIdentity";
 import { getCurrentSessionToken } from "actions/savedAccounts";
-import { createContext, useContext, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 import useSWR, { KeyedMutator, mutate, useSWRConfig } from "swr";
 import type { DashboardState } from "./PageLayouts/dashboardState";
 import { supabaseBrowserClient } from "supabase/browserClient";
@@ -32,6 +38,11 @@ let IdentityContext = createContext({
   identityPending: false,
 });
 export const useIdentityData = () => useContext(IdentityContext);
+
+// The marker read has to land before paint, but this provider is also
+// server-rendered, where useLayoutEffect warns and never runs anyway.
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 // Use these (not bare mutate("identity")) after login/logout/subscribe state
 // changes so both provider flavors observe the change.
@@ -146,20 +157,29 @@ export function ViewerIdentityProvider(props: { children: React.ReactNode }) {
     revalidateIfStale: false,
     revalidateOnMount: false,
   });
+  // isValidating alone leaves a gap: it only flips once the fetcher below has
+  // actually started, so the frame right after hydration would render as
+  // logged-out for a viewer who has a session — the flash this flag exists to
+  // prevent. The marker is readable synchronously, so claim "pending" from it
+  // before the browser paints and drop the claim when the fetch settles.
+  const [markerPending, setMarkerPending] = useState(false);
+  useIsomorphicLayoutEffect(() => {
+    if (hasSessionMarker()) setMarkerPending(true);
+  }, []);
   // The marker gate is the fetch policy: sessions fetch once per hard load,
   // anonymous readers and crawlers never do. Runs even when seeded — the seed
   // may be stale (it outlives dashboard SSRs), and the fallback keeps the UI
   // populated while the refresh is in flight.
   useEffect(() => {
     if (!hasSessionMarker()) return;
-    mutate();
+    mutate().finally(() => setMarkerPending(false));
   }, []);
   return (
     <IdentityContext.Provider
       value={{
         identity: identity ?? null,
         mutate,
-        identityPending: !identity && isValidating,
+        identityPending: !identity && (markerPending || isValidating),
       }}
     >
       {props.children}
