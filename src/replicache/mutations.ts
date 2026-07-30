@@ -1030,6 +1030,8 @@ const createFootnote: Mutation<{
   footnoteEntityID: string;
   blockID: string;
   permission_set: string;
+  // Caller-generated for the same client/server id agreement as commentFactID
+  footnoteFactID: string;
   position: string;
 }> = async (args, ctx) => {
   await ctx.createEntity({
@@ -1037,6 +1039,7 @@ const createFootnote: Mutation<{
     permission_set: args.permission_set,
   });
   await ctx.assertFact({
+    id: args.footnoteFactID,
     entity: args.blockID,
     attribute: "block/footnote",
     data: {

@@ -60,6 +60,7 @@ export async function insertFootnote(
     footnoteEntityID,
     blockID,
     permission_set: permissionSet,
+    footnoteFactID: v7(),
     position,
   });
 
