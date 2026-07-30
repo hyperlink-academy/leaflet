@@ -41,6 +41,22 @@ export const MembersOnlyPaywall = () => {
 
   let pub = document?.publication;
   if (!pub) return null;
+
+  // The membership check runs client-side (the page itself is cached and
+  // anonymous). While it's pending the viewer may turn out to be an entitled
+  // member, so hold the join pitch — flashing it and then swapping in the full
+  // post reads as a glitch. "loading" only happens for viewers with a session
+  // marker; definitely-anonymous readers get the pitch immediately.
+  if (unlockStatus === "loading")
+    return (
+      <div className="membersOnlyPaywall my-4 flex flex-col items-center gap-2 text-center block-border bg-bg-page px-4 py-6">
+        <div className="flex items-center gap-1 font-bold text-secondary">
+          <LoadingTiny className="animate-spin shrink-0" />
+          Checking access
+        </div>
+      </div>
+    );
+
   let tiers = document?.membersOnly?.tiers ?? [];
   let cheapest = tiers[0]
     ? tiers.reduce((min, t) =>
@@ -61,19 +77,9 @@ export const MembersOnlyPaywall = () => {
           : ""}
         .
       </p>
-      {/* The membership check runs client-side (the page itself is cached and
-          anonymous), so a logged-in reader waits inside the card rather than
-          behind a page-level loader. */}
-      {unlockStatus === "loading" ? (
-        <ButtonPrimary type="button" disabled>
-          <LoadingTiny className="animate-spin shrink-0" />
-          Checking access
-        </ButtonPrimary>
-      ) : (
-        <ButtonPrimary type="button" onClick={() => setJoinOpen(true)}>
-          Become a member
-        </ButtonPrimary>
-      )}
+      <ButtonPrimary type="button" onClick={() => setJoinOpen(true)}>
+        Become a member
+      </ButtonPrimary>
       <JoinMembershipModal
         open={joinOpen}
         onOpenChange={setJoinOpen}
