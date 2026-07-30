@@ -32,13 +32,12 @@ export function createOauthClient(): Promise<NodeOAuthClient> {
 }
 
 async function buildOauthClient(): Promise<NodeOAuthClient> {
-  // Only the confidential (private_key_jwt) client declares a jwks_uri; public
-  // clients — dev and preview deployments — need no keyset.
-  let keyset = oauth_metadata.jwks_uri
-    ? await Promise.all([
-        JoseKey.fromImportable(process.env.JOSE_PRIVATE_KEY_1!),
-      ])
-    : undefined;
+  let keyset =
+    process.env.NODE_ENV === "production"
+      ? await Promise.all([
+          JoseKey.fromImportable(process.env.JOSE_PRIVATE_KEY_1!),
+        ])
+      : undefined;
   let requestLock: RuntimeLock | undefined;
   if (process.env.NODE_ENV === "production" && process.env.REDIS_URL) {
     const client = new Client(process.env.REDIS_URL);
