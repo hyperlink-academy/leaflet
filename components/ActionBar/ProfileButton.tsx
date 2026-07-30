@@ -107,7 +107,6 @@ export const ProfileButton = () => {
               href={`/p/${record.handle}`}
               onClick={() => {
                 setOpen(false);
-                setSidebarOpen(false);
               }}
             >
               <button type="button" className="flex gap-2 ">
@@ -135,7 +134,6 @@ export const ProfileButton = () => {
             href="/memberships"
             onClick={() => {
               setOpen(false);
-              setSidebarOpen(false);
             }}
           >
             <button type="button" className="flex gap-2">
