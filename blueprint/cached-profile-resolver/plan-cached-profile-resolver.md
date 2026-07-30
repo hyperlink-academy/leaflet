@@ -36,7 +36,7 @@
 ## Changes
 
 **New `src/identity/` module**
-- Move `idResolver` here from `app/(app)/(home-pages)/reader/idResolver.ts`; update all import sites.
+- Move `idResolver` here from `app/(app)/(identity)/(home-pages)/reader/idResolver.ts`; update all import sites.
 - Add a Redis-backed profile cache: `bsky-profile:` key prefix, 7d stale / 30d max, negative results cached at the same TTL.
 - Export only the batched `getProfiles(dids[])` form — no single-DID convenience method (callers always batch).
 - `Profile` type is a `Pick<AppBskyActorDefs.ProfileViewDetailed, "did" | "handle" | "displayName" | "avatar" | "description">` (or similar narrow shape) — only the fields consumers actually use.
@@ -59,9 +59,9 @@
 - Wrap the comments list in Suspense with the same inline skeleton fallback; the top-level author header stays blocking.
 
 **Consumer shape migration (all surfaces)**
-- The shared `Comment` type in `app/(app)/lish/[did]/[publication]/[rkey]/Interactions/Comments/index.tsx` changes from `bsky_profiles: { record: Json; did: string } | null` to `profile: { did, displayName, avatar, handle } | null`. Consumers read `profile.avatar` as a flat CDN URL string and `profile.displayName` directly.
+- The shared `Comment` type in `app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/Comments/index.tsx` changes from `bsky_profiles: { record: Json; did: string } | null` to `profile: { did, displayName, avatar, handle } | null`. Consumers read `profile.avatar` as a flat CDN URL string and `profile.displayName` directly.
 - `p/[didOrHandle]/comments/CommentsContent.tsx`: replace `blobRefToSrc(profile.record.avatar.ref, did)` with the flat `avatar` string; replace `comment.bsky_profiles?.record.displayName` reads with `comment.profile?.displayName`.
-- Notification components (`CommentNotication.tsx`, `ReplyNotification.tsx`, `CommentMentionNotification.tsx`, `RecommendNotification.tsx`, `FollowNotification.tsx`, and any others under `app/(app)/(home-pages)/(writer)/notifications/`) drop their `blobRefToSrc(profileRecord?.avatar?.ref, ...)` calls and read `profile.avatar` and `profile.displayName` off the flat shape attached by `hydrateNotifications`. Each touched component should also drop the now-unused `blobRefToSrc` import.
+- Notification components (`CommentNotication.tsx`, `ReplyNotification.tsx`, `CommentMentionNotification.tsx`, `RecommendNotification.tsx`, `FollowNotification.tsx`, and any others under `app/(app)/(identity)/(home-pages)/(writer)/notifications/`) drop their `blobRefToSrc(profileRecord?.avatar?.ref, ...)` calls and read `profile.avatar` and `profile.displayName` off the flat shape attached by `hydrateNotifications`. Each touched component should also drop the now-unused `blobRefToSrc` import.
 
 **Appview firehose invalidation**
 - Add an `ioredis` client to the appview process, configured from the same `REDIS_URL` env var the web app uses.

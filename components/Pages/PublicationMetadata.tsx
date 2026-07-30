@@ -12,7 +12,7 @@ import { AtUri } from "@atproto/syntax";
 import {
   getBasePublicationURL,
   getPublicationURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
+} from "src/utils/getPublicationURL";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { timeAgo } from "src/utils/timeAgo";
@@ -21,7 +21,7 @@ import { TagTiny } from "components/Icons/TagTiny";
 import { Popover } from "components/Popover";
 import { TagSelector } from "components/Tags";
 import { useIdentityData } from "components/IdentityProvider";
-import { PostHeaderLayout } from "app/(app)/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
+import { PostHeaderLayout } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
 import { Backdater } from "./Backdater";
 import { RecommendEmptyTiny } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";

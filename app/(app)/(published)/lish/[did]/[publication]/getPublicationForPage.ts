@@ -1,0 +1,63 @@
+import { cache } from "react";
+import { supabaseServerClient } from "supabase/serverClient";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
+
+// Memoized per request: the page body, its metadata, and any nested renderer
+// all resolve the publication from the same route params.
+export const fetchPublicationForPage = cache(
+  async function fetchPublicationForPage(did: string, publicationName: string) {
+    const { data } = await supabaseServerClient
+      .from("publications")
+      .select(
+        `uri, name, identity_did, record,
+       publication_newsletter_settings(enabled),
+       publication_pages(id, path, title, record, record_uri, sort_order)`,
+      )
+      .eq("identity_did", did)
+      .or(publicationNameOrUriFilter(did, publicationName))
+      .order("uri", { ascending: false })
+      .limit(1);
+    return data?.[0] ?? null;
+  },
+);
+
+// Just the record, for the metadata of routes that never load the publication
+// row itself (the group layout, and any page whose body doesn't need it).
+export const fetchPublicationRecordForMetadata = cache(
+  async function fetchPublicationRecordForMetadata(
+    did: string,
+    publicationName: string,
+  ) {
+    const { data } = await supabaseServerClient
+      .from("publications")
+      .select(`uri, record`)
+      .eq("identity_did", did)
+      .or(publicationNameOrUriFilter(did, publicationName))
+      .order("uri", { ascending: false })
+      .limit(1);
+    return data?.[0] ?? null;
+  },
+);
+
+export type PublicationForPage = NonNullable<
+  Awaited<ReturnType<typeof fetchPublicationForPage>>
+>;
+
+// Fetched separately from the publication row because most requests through
+// fetchPublicationForPage (every post URL, any page without a posts list)
+// never render the post list — loading every document's full record jsonb up
+// front made the common path pay for the rare one.
+export const fetchPublicationPostRows = cache(
+  async function fetchPublicationPostRows(publicationUri: string) {
+    const { data } = await supabaseServerClient
+      .from("documents_in_publications")
+      .select(
+        `members_only, documents(uri, data,
+         comments_on_documents(count),
+         document_mentions_in_bsky(count),
+         recommends_on_documents(count))`,
+      )
+      .eq("publication", publicationUri);
+    return data ?? [];
+  },
+);

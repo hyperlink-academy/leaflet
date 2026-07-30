@@ -35,7 +35,7 @@ The page is organized into three sections, each with its own controls row:
 
 ## Source components
 
-- `app/(app)/lish/[did]/[publication]/PublicationPostItem` exports
+- `app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem` exports
   `PublicationPostItemSmall`, `PublicationPostItemMedium`, and
   `PublicationPostItemLarge`.
 - Icons come from `components/Icons/`: `CommentTiny`, `TagTiny`, `ShareTiny`,
@@ -69,7 +69,7 @@ import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,
   PublicationPostItemLarge,
-} from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
+} from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { TagTiny } from "components/Icons/TagTiny";
 import { ShareTiny } from "components/Icons/ShareTiny";

@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isProductionDomain } from "./utils/isProductionDeployment";
 import { isUuid } from "./utils/isUuid";
+import { SESSION_MARKER_COOKIE } from "./sessionMarker";
 
 export const AUTH_TOKEN_COOKIE = "auth_token";
 // pending_merge_token carries a freshly-minted email_auth_token for the target
@@ -17,6 +18,13 @@ export async function setAuthToken(tokenID: string) {
     secure: process.env.NODE_ENV === "production",
     domain: isProductionDomain() ? host! : undefined,
     httpOnly: true,
+    sameSite: "lax",
+  });
+  c.set(SESSION_MARKER_COOKIE, "1", {
+    maxAge: 60 * 60 * 24 * 365,
+    secure: process.env.NODE_ENV === "production",
+    domain: isProductionDomain() ? host! : undefined,
+    httpOnly: false,
     sameSite: "lax",
   });
 }

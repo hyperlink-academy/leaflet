@@ -11,7 +11,7 @@ import {
   walletCheckoutSessionCard,
   type WalletRow,
 } from "stripe/wallet";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "src/utils/getPublicationURL";
 import { Ok, Err, type Result } from "src/result";
 
 type MembershipError =

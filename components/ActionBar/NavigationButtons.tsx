@@ -24,7 +24,7 @@ export function useIsOnWriterPage() {
 export const WriterButton = () => {
   let current = useIsOnWriterPage();
   return (
-    <SpeedyLink href={"/home"} className="hover:!no-underline">
+    <SpeedyLink eager href={"/home"} className="hover:!no-underline">
       <ActionButton
         className={"w-full!"}
         icon={<WriterSmall />}
@@ -38,7 +38,7 @@ export const WriterButton = () => {
 export const ReaderButton = (props: { subs: boolean }) => {
   let current = useIsActive("/reader");
   return (
-    <SpeedyLink href={"/reader"} className="hover:no-underline!">
+    <SpeedyLink eager href={"/reader"} className="hover:no-underline!">
       <ActionButton
         className="w-full!"
         icon={<ReaderUnreadSmall />}

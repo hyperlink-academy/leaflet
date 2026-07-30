@@ -9,7 +9,7 @@ user-invocable: true
 Leaflet renders every block **twice**, from two disconnected code paths:
 
 1. **Editor** (`components/Blocks/…`) — the interactive doc you write in.
-2. **Published post** (`app/(app)/lish/[did]/[publication]/[rkey]/…`) — the
+2. **Published post** (`app/(app)/(published)/lish/[did]/[publication]/[rkey]/…`) — the
    read-only version served at `leaflet.pub`, rendered from the AT-Protocol
    record (facets + block fields), not from the editor components.
 
@@ -56,13 +56,13 @@ anchor an editor overlay. If a change has no read-only visual effect, skip it.
 
 ### Published (the targets to update)
 
-- **`app/(app)/lish/[did]/[publication]/[rkey]/PostContent.tsx`** — the primary
+- **`app/(app)/(published)/lish/[did]/[publication]/[rkey]/PostContent.tsx`** — the primary
   target: the interactive published post. The `Block` component's `switch`
   renders each block type (`text` → `<p>`, `header` → `<h1/h2/h3/h6>`,
   `blockquote` → `<blockquote>`, lists, image, …) and builds the block-wrapper
   `className` (margins) + inline `style` (font size). **Most mirroring happens
   here.**
-- **`app/(app)/lish/[did]/[publication]/[rkey]/StaticPostContent.tsx`** — the
+- **`app/(app)/(published)/lish/[did]/[publication]/[rkey]/StaticPostContent.tsx`** — the
   static render for **feeds and email**. Minimal styling, no interactivity. Mirror
   here only when the change matters in a plain static context (and remember email
   strips a lot of CSS). Often out of scope; call it out rather than silently skip.

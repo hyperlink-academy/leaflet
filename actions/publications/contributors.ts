@@ -3,7 +3,6 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
-import { revalidatePath } from "next/cache";
 import { idResolver } from "src/identity";
 import { isPro } from "src/entitlements";
 
@@ -133,7 +132,6 @@ export async function removeContributor(
       .in("leaflet", leafletIds);
   }
 
-  revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
   return Ok(null);
 }
 
@@ -161,6 +159,5 @@ export async function acceptContributorInvitation(
     console.error("[contributors] accept failed:", error);
     return Err("database_error");
   }
-  revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
   return Ok(null);
 }

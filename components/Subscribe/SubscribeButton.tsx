@@ -9,8 +9,12 @@ import { SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES } from "./subscribeErrors";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
+import { ReservedGeometry } from "components/utils/ReservedGeometry";
 import { useToaster } from "components/Toast";
-import { useIdentityData } from "components/IdentityProvider";
+import {
+  refreshIdentityData,
+  useIdentityData,
+} from "components/IdentityProvider";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { Menu, MenuItem, RadioMenuGroup, RadioMenuItem } from "components/Menu";
@@ -22,11 +26,19 @@ import {
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { mainSiteAuthBase } from "src/utils/customDomain";
 
-import { useViewerSubscription } from "./viewerSubscription";
+import { useViewerSubscription, type ViewerUser } from "./viewerSubscription";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 
 type SubscribeMode = "email" | "atproto";
+
+const LOGGED_OUT_VIEWER: ViewerUser = {
+  loggedIn: false,
+  email: undefined,
+  handle: undefined,
+  atprotoSubscribed: false,
+  emailSubscribed: false,
+};
 
 // Logged-out email subscribe goes through the main-site email-login flow with a
 // `subscribe` after-sign-in action, so the session is minted on the main site
@@ -38,7 +50,10 @@ function redirectToEmailSubscribe(email: string, publicationUri: string) {
   url.searchParams.set("redirect", window.location.href);
   url.searchParams.set(
     "action",
-    encodeActionToSearchParam({ action: "subscribe", publication: publicationUri }),
+    encodeActionToSearchParam({
+      action: "subscribe",
+      publication: publicationUri,
+    }),
   );
   window.location.href = url.toString();
 }
@@ -115,6 +130,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
     }
     if (res.value.confirmed) {
       setConfirmState("success");
+      refreshIdentityData();
       router.refresh();
     }
     setConfirmOpen(true);
@@ -127,112 +143,131 @@ export const SubscribeInput = (props: SubscribeProps) => {
   const modeMenu = (
     <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
+  const emailForm = (
+    <EmailInput
+      publicationUrl={props.publicationUrl}
+      value={email}
+      onChange={setEmail}
+      disabled={user.loggedIn && !!user.email}
+      loading={requesting}
+      leading={modeMenu}
+      onSubmit={() => {
+        if (!email || requesting) return;
+        if (needsLinkConfirmation) {
+          setLinkModalOpen(true);
+          return;
+        }
+        redirectToEmailSubscribe(email, props.publicationUri);
+      }}
+      action={
+        <ButtonPrimary
+          type="submit"
+          compact
+          className="leading-tight! outline-none! text-sm!"
+        >
+          Subscribe
+        </ButtonPrimary>
+      }
+    />
+  );
+  // The form an anonymous reader gets: on a published page that's what static
+  // HTML ships and what the rest of the page is laid out around, so it's also
+  // the box every resolved state has to fit inside.
+  const anonymousForm = props.newsletterMode ? (
+    <div className="max-w-sm w-full mx-auto">{emailForm}</div>
+  ) : (
+    <SubscribeWithHandle
+      user={LOGGED_OUT_VIEWER}
+      publicationUri={props.publicationUri}
+      publicationUrl={props.publicationUrl}
+    />
+  );
   return (
     <>
-      {isSubscribed ? (
-        <>
-          <ManageSubscription
+      <ReservedGeometry reserve={anonymousForm}>
+        {isSubscribed ? (
+          <>
+            <ManageSubscription
+              publicationUri={props.publicationUri}
+              publicationUrl={props.publicationUrl}
+              newsletterMode={props.newsletterMode}
+              user={user}
+            />
+
+            {props.newsletterMode &&
+            user.atprotoSubscribed &&
+            !user.emailSubscribed ? (
+              <div
+                className="text-secondary  w-full text-sm p-2 pt-1.5 mt-1 rounded-md flex flex-col gap-1"
+                style={{
+                  background:
+                    "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 70%",
+                }}
+              >
+                <div className="font-bold">
+                  Opt in to get updates via email!
+                </div>
+                <div className="max-w-sm w-full mx-auto">
+                  <EmailInput
+                    publicationUrl={props.publicationUrl}
+                    value={email}
+                    onChange={setEmail}
+                    disabled={user.loggedIn && !!user.email}
+                    loading={requesting}
+                    onSubmit={async () => {
+                      if (requesting || !email) return;
+                      if (needsLinkConfirmation) {
+                        setLinkModalOpen(true);
+                        return;
+                      }
+                      await sendRequest(false);
+                    }}
+                    action={
+                      <ButtonPrimary
+                        type="submit"
+                        compact
+                        className="leading-tight! outline-none! text-sm!"
+                        disabled={requesting || !email}
+                      >
+                        Get Emails
+                      </ButtonPrimary>
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
+          </>
+        ) : props.newsletterMode ? (
+          <div className="max-w-sm w-full mx-auto">
+            {user.loggedIn && user.email ? (
+              <EmailButton
+                publicationUri={props.publicationUri}
+                publicationUrl={props.publicationUrl}
+                email={user.email}
+                handle={user.handle}
+                onSubscribed={() => setLocallySubscribed(true)}
+              />
+            ) : subscribeMode === "email" ? (
+              emailForm
+            ) : (
+              <SubscribeWithHandle
+                user={user}
+                publicationUri={props.publicationUri}
+                publicationUrl={props.publicationUrl}
+                onAtSuccess={() => setAtSuccessOpen(true)}
+                leading={modeMenu}
+              />
+            )}
+          </div>
+        ) : (
+          <SubscribeWithHandle
+            user={user}
             publicationUri={props.publicationUri}
             publicationUrl={props.publicationUrl}
-            newsletterMode={props.newsletterMode}
-            user={user}
+            onSubscribed={() => setLocallySubscribed(true)}
           />
-
-          {props.newsletterMode &&
-          user.atprotoSubscribed &&
-          !user.emailSubscribed ? (
-            <div
-              className="text-secondary  w-full text-sm p-2 pt-1.5 mt-1 rounded-md flex flex-col gap-1"
-              style={{
-                background:
-                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 70%",
-              }}
-            >
-              <div className="font-bold">Opt in to get updates via email!</div>
-              <div className="max-w-sm w-full mx-auto">
-                <EmailInput
-                  publicationUrl={props.publicationUrl}
-                  value={email}
-                  onChange={setEmail}
-                  disabled={user.loggedIn && !!user.email}
-                  loading={requesting}
-                  onSubmit={async () => {
-                    if (requesting || !email) return;
-                    if (needsLinkConfirmation) {
-                      setLinkModalOpen(true);
-                      return;
-                    }
-                    await sendRequest(false);
-                  }}
-                  action={
-                    <ButtonPrimary
-                      type="submit"
-                      compact
-                      className="leading-tight! outline-none! text-sm!"
-                      disabled={requesting || !email}
-                    >
-                      Get Emails
-                    </ButtonPrimary>
-                  }
-                />
-              </div>
-            </div>
-          ) : null}
-        </>
-      ) : props.newsletterMode ? (
-        <div className="max-w-sm w-full mx-auto">
-          {user.loggedIn && user.email ? (
-            <EmailButton
-              publicationUri={props.publicationUri}
-              publicationUrl={props.publicationUrl}
-              email={user.email}
-              handle={user.handle}
-              onSubscribed={() => setLocallySubscribed(true)}
-            />
-          ) : subscribeMode === "email" ? (
-            <EmailInput
-              publicationUrl={props.publicationUrl}
-              value={email}
-              onChange={setEmail}
-              disabled={user.loggedIn && !!user.email}
-              loading={requesting}
-              leading={modeMenu}
-              onSubmit={() => {
-                if (!email || requesting) return;
-                if (needsLinkConfirmation) {
-                  setLinkModalOpen(true);
-                  return;
-                }
-                redirectToEmailSubscribe(email, props.publicationUri);
-              }}
-              action={
-                <ButtonPrimary
-                  type="submit"
-                  compact
-                  className="leading-tight! outline-none! text-sm!"
-                >
-                  Subscribe
-                </ButtonPrimary>
-              }
-            />
-          ) : (
-            <SubscribeWithHandle
-              user={user}
-              publicationUri={props.publicationUri}
-              publicationUrl={props.publicationUrl}
-              onAtSuccess={() => setAtSuccessOpen(true)}
-              leading={modeMenu}
-            />
-          )}
-        </div>
-      ) : (
-        <SubscribeWithHandle
-          user={user}
-          publicationUri={props.publicationUri}
-          publicationUrl={props.publicationUrl}
-          onSubscribed={() => setLocallySubscribed(true)}
-        />
-      )}
+        )}
+      </ReservedGeometry>
       {props.newsletterMode && needsLinkConfirmation && (
         <LinkIdentityModal
           open={linkModalOpen}
@@ -293,10 +328,14 @@ export const SubscribeInput = (props: SubscribeProps) => {
                 );
                 setConfirming(false);
                 if (!res.ok) {
-                  toaster({ type: "error", content: ERROR_MESSAGES[res.error] });
+                  toaster({
+                    type: "error",
+                    content: ERROR_MESSAGES[res.error],
+                  });
                   return;
                 }
                 setConfirmState("success");
+                refreshIdentityData();
                 router.refresh();
               }}
             />
@@ -315,59 +354,52 @@ export const SubscribeButton = (props: SubscribeProps) => {
     ? user.emailSubscribed
     : user.atprotoSubscribed;
 
-  if (showManage || locallySubscribed) {
-    return (
-      <ManageSubscription
-        publicationUri={props.publicationUri}
-        publicationUrl={props.publicationUrl}
-        newsletterMode={props.newsletterMode}
-        user={user}
-      />
-    );
-  }
+  // What an anonymous reader gets — and the tallest state this button resolves
+  // into, so reserving it keeps the row's height fixed through identity landing.
+  const subscribeTrigger = (
+    <ButtonPrimary compact className="pubPageSubscribe text-sm!">
+      Subscribe
+    </ButtonPrimary>
+  );
 
-  if (!props.newsletterMode && user.loggedIn && user.handle) {
-    return (
-      <SubscribeWithHandle
-        compact
-        user={user}
-        publicationUri={props.publicationUri}
-        publicationUrl={props.publicationUrl}
-        onSubscribed={() => setLocallySubscribed(true)}
-      />
-    );
-  }
-
-  if (props.newsletterMode && user.loggedIn && user.email) {
-    return (
-      <EmailButton
-        compact
-        publicationUri={props.publicationUri}
-        publicationUrl={props.publicationUrl}
-        email={user.email}
-        handle={user.handle}
-        onSubscribed={() => setLocallySubscribed(true)}
-      />
-    );
-  }
-
-  // Nothing to one-click with — either logged out, or logged in but missing the
-  // identity this pub needs (a handle for atproto pubs, an email for
-  // newsletters). Both open the full SubscribePanel (pub name/description +
-  // form) in a modal.
   return (
-    <Modal
-      asChild
-      trigger={
-        <ButtonPrimary compact className="pubPageSubscribe text-sm!">
-          Subscribe
-        </ButtonPrimary>
-      }
-    >
-      <div className="w-md max-w-full">
-        <SubscribePanel {...props} />
-      </div>
-    </Modal>
+    <ReservedGeometry reserve={subscribeTrigger}>
+      {showManage || locallySubscribed ? (
+        <ManageSubscription
+          publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
+          newsletterMode={props.newsletterMode}
+          user={user}
+        />
+      ) : !props.newsletterMode && user.loggedIn && user.handle ? (
+        <SubscribeWithHandle
+          compact
+          user={user}
+          publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
+          onSubscribed={() => setLocallySubscribed(true)}
+        />
+      ) : props.newsletterMode && user.loggedIn && user.email ? (
+        <EmailButton
+          compact
+          publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
+          email={user.email}
+          handle={user.handle}
+          onSubscribed={() => setLocallySubscribed(true)}
+        />
+      ) : (
+        // Nothing to one-click with — either logged out, or logged in but
+        // missing the identity this pub needs (a handle for atproto pubs, an
+        // email for newsletters). Both open the full SubscribePanel (pub
+        // name/description + form) in a modal.
+        <Modal asChild trigger={subscribeTrigger}>
+          <div className="w-md max-w-full">
+            <SubscribePanel {...props} />
+          </div>
+        </Modal>
+      )}
+    </ReservedGeometry>
   );
 };
 

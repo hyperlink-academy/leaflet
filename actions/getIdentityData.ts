@@ -7,12 +7,14 @@ import { deduplicateByUri } from "src/utils/deduplicateRecords";
 import { getProfiles, type Profile } from "src/identity";
 import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
+import { isUuid } from "src/utils/isUuid";
 export const getIdentityData = cache(uncachedGetIdentityData);
 async function uncachedGetIdentityData() {
   let cookieStore = await cookies();
   let auth_token =
     cookieStore.get("auth_token")?.value ||
     cookieStore.get("external_auth_token")?.value;
+  if (auth_token && !isUuid(auth_token)) return null;
   let auth_res = auth_token
     ? await supabaseServerClient
         .from("email_auth_tokens")

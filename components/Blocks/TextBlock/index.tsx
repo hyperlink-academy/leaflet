@@ -32,7 +32,7 @@ import { blockTextSize } from "src/utils/blockTextSize";
 import { getAspectRatio } from "src/utils/aspectRatio";
 
 import { Mention, MentionAutocomplete } from "components/Mention";
-import { addMentionToEditor } from "app/(app)/[leaflet_id]/publish/BskyPostEditorProsemirror";
+import { addMentionToEditor } from "app/(app)/(identity)/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
   1: "font-bold leading-tight pb-1 [font-family:var(--theme-heading-font)]",

@@ -1,20 +1,19 @@
 "use client";
 import { Avatar } from "components/Avatar";
 import { ActionButton } from "./ActionButton";
-import { useIdentityData } from "components/IdentityProvider";
+import { useIdentityData, clearIdentityData } from "components/IdentityProvider";
 import { AccountSmall } from "components/Icons/AccountSmall";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { useIsMobile } from "src/hooks/isMobile";
 import { LogoutSmall } from "components/Icons/LogoutSmall";
-import { mutate } from "swr";
 import { SpeedyLink } from "components/SpeedyLink";
 import { Popover } from "components/Popover";
 import { Modal } from "components/Modal";
 import {
   InlineUpgradeToPro,
   UpgradeContent,
-} from "app/(app)/lish/[did]/[publication]/UpgradeModal";
-import { ManageProSubscription } from "app/(app)/lish/[did]/[publication]/dashboard/settings/ProSettings";
+} from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
+import { ManageProSubscription } from "app/(app)/(published)/lish/[did]/[publication]/dashboard/settings/ProSettings";
 import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
 import {
@@ -215,7 +214,7 @@ export const ProfileButton = () => {
             await fetch("/api/auth/logout");
             if (currentIdentity) removeSavedAccountEntry(currentIdentity);
             mutateSavedAccounts();
-            mutate("identity", null);
+            clearIdentityData();
           }}
         >
           <LogoutSmall />

@@ -1,0 +1,47 @@
+import { IdentityProviderServer } from "components/IdentityProviderServer";
+import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { CreatePubForm } from "./CreatePubForm";
+import { getIdentityData } from "actions/getIdentityData";
+import { LoginContent } from "components/LoginButton";
+
+async function CreatePubInner() {
+  let identity = await getIdentityData();
+  if (!identity)
+    return (
+      <div className="createPubPage relative w-full h-full flex items-stretch bg-bg-leaflet p-4">
+        <div className="createPubContent h-full flex items-center w-fit mx-auto">
+          <LoginContent pageView noEmailLogin />
+        </div>
+      </div>
+    );
+  return (
+    // Eventually this can pull from home theme?
+    <ThemeProvider entityID={null}>
+      <div className="createPubPage relative w-full h-full flex items-stretch bg-bg-leaflet p-4">
+        <div className="createPubContent h-full flex items-center max-w-sm w-full mx-auto">
+          <div className="createPubFormWrapper h-fit w-full flex flex-col gap-4">
+            <h2 className="text-center">Create Your Publication!</h2>
+            <div className="opaque-container rounded-lg! w-full sm:py-4 p-3">
+              <CreatePubForm />
+            </div>
+          </div>
+        </div>
+      </div>
+    </ThemeProvider>
+  );
+}
+
+// Explicit rather than incidental (via cookies()): guards against a future
+// revalidate/generateStaticParams landing on a shared segment above.
+export const dynamic = "force-dynamic";
+
+// Identity-gated surface inside the (published) group: shadow the
+// client-fetched viewer identity with a server-fed provider so chrome
+// renders correctly on the first frame.
+export default async function CreatePub() {
+  return (
+    <IdentityProviderServer>
+      <CreatePubInner />
+    </IdentityProviderServer>
+  );
+}

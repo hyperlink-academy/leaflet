@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { mutate } from "swr";
+import { clearIdentityData } from "components/IdentityProvider";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Modal } from "components/Modal";
 import { DotLoader } from "components/utils/DotLoader";
@@ -46,7 +46,7 @@ export const LinkIdentityModal = (props: {
               try {
                 await fetch("/api/auth/logout");
               } finally {
-                mutate("identity", null);
+                clearIdentityData();
                 router.refresh();
               }
             }}

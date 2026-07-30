@@ -7,10 +7,7 @@ import { getPollData } from "actions/pollActions";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { createContext, useContext, useMemo } from "react";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
-import {
-  getPublicationURL,
-  getDocumentURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL, getDocumentURL } from "src/utils/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,

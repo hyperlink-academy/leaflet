@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { revalidatePublicationPaths } from "src/utils/revalidatePublication";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import {
@@ -36,6 +38,7 @@ import {
 } from "src/membership";
 import {
   normalizeDocumentRecord,
+  normalizePublicationRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
 import {
@@ -482,6 +485,30 @@ export async function publishToPublication({
         });
       }
     }
+  }
+
+  // The standalone view exists for every published document, publication or
+  // not.
+  revalidatePath(`/p/${credentialSession.did}/${rkey}`);
+  if (publication_uri) {
+    const { data: pubRow } = await supabaseServerClient
+      .from("publications")
+      .select("record")
+      .eq("uri", publication_uri)
+      .maybeSingle();
+    const docPath = (record as { path?: string }).path;
+    revalidatePublicationPaths(
+      publication_uri,
+      normalizePublicationRecord(pubRow?.record)?.name,
+      [
+        "",
+        "/archive",
+        `/${rkey}`,
+        ...(docPath && docPath !== `/${rkey}`
+          ? [docPath.startsWith("/") ? docPath : `/${docPath}`]
+          : []),
+      ],
+    );
   }
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
