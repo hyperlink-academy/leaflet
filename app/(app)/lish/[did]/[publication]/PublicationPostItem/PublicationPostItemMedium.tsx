@@ -23,10 +23,12 @@ export function PublicationPostItemMedium(props: MediumProps) {
           className={`postItemInfo flex w-full grow flex-col justify-between min-w-0 py-2  ${props.inList ? "" : "px-3 py-2"} ${props.inList && !hasCoverImage ? "pr-0" : "pr-3"}`}
         >
           {props.pubInfo && props.pubInfo}
+          {props.membersOnly && <MembersBadge />}
 
           {/* Budget for title + description: the cover image's height
                 (w-24 / sm:w-48, square). useFitToHeight measures against it and
                 hands the title the lines it needs, the description the rest. */}
+
           <div
             ref={boxRef}
             className="postTitleAndDescription flex flex-col overflow-hidden grow min-h-0 "
@@ -37,7 +39,6 @@ export function PublicationPostItemMedium(props: MediumProps) {
                 className="postTitle text-primary leading-snug line-clamp-2"
               >
                 {props.title}
-                {/*{props.membersOnly && <MembersBadge />}*/}
               </h3>
             )}
             {/*the descriptionRef here is connected to useFitToHeight and is controlled the line clamp if theres not enough space for three lines*/}

@@ -38,9 +38,11 @@ export function PublicationPostItemLarge(props: LargeProps) {
       )}
 
       <div
-        className={`flex flex-col pt-2 ${widePage ? "sm:py-2 sm:px-4 " : ""} ${!props.inList && "px-3 py-2"}`}
+        className={`relative flex flex-col pt-2 ${widePage ? "sm:py-2 sm:px-4 " : ""} ${!props.inList && "px-3 py-2"}`}
       >
         {props.pubInfo}
+        {props.membersOnly && <MembersBadge />}
+
         <div
           ref={boxRef}
           className="postTitleAndContent flex flex-col gap-1 grow min-h-0 overflow-clip"
@@ -51,7 +53,6 @@ export function PublicationPostItemLarge(props: LargeProps) {
               className={`text-primary leading-snug text-lg  line-clamp-2 ${widePage ? "sm:text-xl " : ""}`}
             >
               {props.title}
-              {props.membersOnly && <MembersBadge />}
             </h3>
           )}
           <p

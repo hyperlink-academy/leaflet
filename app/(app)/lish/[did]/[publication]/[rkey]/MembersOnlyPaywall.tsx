@@ -21,7 +21,7 @@ export const MembersOnlyPaywall = () => {
     : null;
 
   return (
-    <div className="membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4">
+    <div className="membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6">
       <PubIcon
         icon={
           pub?.record?.icon
