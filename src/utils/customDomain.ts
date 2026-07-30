@@ -23,7 +23,12 @@ export const MAIN_SITE_URL =
 export function mainSiteAuthBase(hostname?: string): string {
   let host =
     hostname ?? (typeof window !== "undefined" ? window.location.hostname : "");
-  if (!host || isMainSiteHost(host)) return "";
+  // Vercel preview hosts serve the main app, but OAuth can't complete on them
+  // (deployment protection blocks the PDS's client-metadata fetch), so their
+  // logins run on the main site and receive the session back through the
+  // cross-site handoff like any other external host.
+  if (!host || (isMainSiteHost(host) && !host.endsWith(".vercel.app")))
+    return "";
   return MAIN_SITE_URL;
 }
 
@@ -44,14 +49,27 @@ export function buildOauthLoginUrl(
   },
   hostname?: string,
 ): string {
+  let base = mainSiteAuthBase(hostname);
+  let redirect = params.redirect;
+  // Off the main site the OAuth callback completes on MAIN_SITE_URL, where a
+  // relative redirect would resolve — stranding the user there — so anchor it
+  // to the originating host.
+  if (base && redirect && !/^https?:\/\//.test(redirect)) {
+    let origin = hostname
+      ? `https://${hostname}`
+      : typeof window !== "undefined"
+        ? window.location.origin
+        : "";
+    if (origin) redirect = new URL(redirect, origin).toString();
+  }
   let q = new URLSearchParams();
   if (params.handle) q.set("handle", params.handle);
-  if (params.redirect) q.set("redirect_url", params.redirect);
+  if (redirect) q.set("redirect_url", redirect);
   if (params.action) q.set("action", params.action);
   if (params.link) q.set("link", "true");
   if (params.signup) q.set("signup", "true");
   if (params.autoMerge) q.set("autoMerge", "true");
   if (params.reauth) q.set("reauth", "true");
   if (params.addAccount) q.set("addAccount", "true");
-  return `${mainSiteAuthBase(hostname)}/api/oauth/login?${q}`;
+  return `${base}/api/oauth/login?${q}`;
 }

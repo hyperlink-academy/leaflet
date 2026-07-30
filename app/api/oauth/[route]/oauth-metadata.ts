@@ -2,8 +2,6 @@ import {
   OAuthClientMetadata,
   OAuthClientMetadataInput,
 } from "@atproto/oauth-client-node";
-import { isProductionDomain } from "src/utils/isProductionDeployment";
-
 const hostname =
   process.env.NODE_ENV === "development"
     ? "http://localhost:3000"
@@ -24,6 +22,15 @@ const localconfig: OAuthClientMetadataInput = {
   dpop_bound_access_tokens: true,
 };
 
+// Vercel preview deployments use this config too, deliberately: atproto
+// requires the client_id metadata document to be publicly fetchable, which
+// deployment protection blocks. Instead previews act as the production client —
+// the PDS round-trip completes on leaflet.pub, which hands the session back to
+// the preview host via postAuthRedirect's encrypted cross-site handoff (the
+// custom-domain flow). This needs JOSE_PRIVATE_KEY_1, CROSS_SITE_AUTH_SECRET,
+// and REDIS_URL set in Vercel's Preview environment: the key to sign PARs and
+// refresh tokens, and the Redis request lock because preview and production
+// refresh the same session rows.
 const prodconfig: OAuthClientMetadataInput = {
   client_id: `${hostname}/api/oauth/metadata`,
   client_name: `Leaflet`,
@@ -44,46 +51,16 @@ const prodconfig: OAuthClientMetadataInput = {
   dpop_bound_access_tokens: true,
   jwks_uri: `${hostname}/api/oauth/jwks`,
 };
-
-// The branch URL (stable across pushes to a branch) rather than the per-deploy
-// URL, so the client identity — and any sessions bound to it — survive
-// redeploys. Always open previews via the branch alias: the callback lands on
-// this host and the auth cookie is host-only outside production.
-const preview_host = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
-
-// atproto requires client_id to be the publicly fetchable URL of this metadata
-// document, with redirect_uris on the same origin — so previews must identify
-// as their own host. A public client (token_endpoint_auth_method: none) skips
-// jwks/private-key provisioning; previews don't need long-lived tokens.
-const previewconfig: OAuthClientMetadataInput = {
-  client_id: `https://${preview_host}/api/oauth/metadata`,
-  client_name: `Leaflet (preview)`,
-  client_uri: `https://${preview_host}`,
-  redirect_uris: [`https://${preview_host}/api/oauth/callback`],
-  grant_types: [`authorization_code`, `refresh_token`],
-  response_types: [`code`],
-  application_type: `web`,
-  scope,
-  token_endpoint_auth_method: `none`,
-  dpop_bound_access_tokens: true,
-};
-
-// The !preview_host arm keeps a production build run outside Vercel (e.g.
-// `next build && next start` locally) on the prod client instead of a
-// `https://undefined` one.
 export const oauth_metadata =
-  process.env.NODE_ENV === "development"
-    ? localconfig
-    : isProductionDomain() || !preview_host
-      ? prodconfig
-      : previewconfig;
+  process.env.NODE_ENV === "development" ? localconfig : prodconfig;
 
 // Rows in oauth_state_store/oauth_session_store are shared by every deployment
 // pointing at the same database, but a saved session is only usable by the
-// client (client_id + DPoP keys) that created it — an unprefixed write from dev
-// or a preview would overwrite and break the production session saved under
-// the same DID. Namespace keys by client host; production stays unprefixed so
-// existing rows remain valid.
+// client (client_id + DPoP keys) that created it — an unprefixed write from
+// local dev would overwrite and break the production session saved under the
+// same DID. Namespace keys by client host; the production client (which
+// previews share, so their state/session rows interoperate with leaflet.pub's)
+// stays unprefixed so existing rows remain valid.
 export const oauth_store_key_prefix =
   oauth_metadata === prodconfig
     ? ""
