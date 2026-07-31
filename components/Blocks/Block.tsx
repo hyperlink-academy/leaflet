@@ -36,6 +36,7 @@ import { HorizontalRule } from "./HorizontalRule";
 import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
 import { SubscribeBlock } from "./SubscribeBlock";
+import { WordCounterBlock } from "./WordCounterBlock";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
@@ -349,6 +350,7 @@ const BlockTypeComponents: {
   heading: TextBlock,
   image: ImageBlock,
   "image-gallery": ImageGalleryBlock,
+  "word-counter": WordCounterBlock,
   link: ExternalLinkBlock,
   embed: EmbedBlock,
   html: HTMLBlock,

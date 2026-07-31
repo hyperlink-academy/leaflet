@@ -251,6 +251,16 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Word Counter",
+    icon: <ParagraphSmall />,
+    type: "block",
+    alternateNames: ["word count", "character count", "characters"],
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "word-counter");
+    },
+  },
+  {
     name: "External Link",
     icon: <LinkSmall />,
     type: "block",

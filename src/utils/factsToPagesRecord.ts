@@ -695,6 +695,9 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     }
+    // Word counters are an editor aid and intentionally have no published
+    // representation.
+    if (b.type === "word-counter") return;
     return;
   }
 

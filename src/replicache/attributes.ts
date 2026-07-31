@@ -156,6 +156,16 @@ const BlockAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  // Word Counter is an editor-only block. These preferences deliberately stay
+  // in the local document model and are omitted from published records.
+  "word-counter/only-count-below": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "word-counter/include-subpages": {
+    type: "boolean",
+    cardinality: "one",
+  },
 } as const;
 
 // Comments are authored by authenticated users; their facts carry an
@@ -521,7 +531,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "members-only-delimiter"
       | "posts-list"
       | "signup"
-      | "image-gallery";
+      | "image-gallery"
+      | "word-counter";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
