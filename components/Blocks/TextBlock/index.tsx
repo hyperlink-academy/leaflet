@@ -99,7 +99,10 @@ function IOSBS(props: BlockProps) {
   if (initialRender || !isIOS()) return null;
   return (
     <div
-      className="h-full w-full absolute cursor-text group-focus-within:hidden py-[18px]"
+      // z-[1] keeps this overlay hit-testable above BaseTextBlock's root div,
+      // which is position:relative and later in the DOM — without it the tap
+      // lands on ProseMirror directly and iOS scroll-jumps on native focus
+      className="h-full w-full absolute z-[1] cursor-text group-focus-within:hidden py-[18px]"
       onPointerUp={(e) => {
         e.preventDefault();
         focusBlock(props, {
