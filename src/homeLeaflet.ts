@@ -3,9 +3,8 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { getValidAuthToken } from "./identityPayload";
 
 // The viewer's home-page permission token with its whole fact tree, fetched
-// only by the routes that actually mount it. It used to ride along on
-// getIdentityData, which serializes into the client identity context — so the
-// facts shipped twice in the HTML on home pages and once for nothing on every
+// only by the routes that actually mount it — folding it into getIdentityData
+// would double-ship the facts in home-page HTML and add dead weight to every
 // other identity route. Deliberately not a "use server" module: exporting an
 // async fn from one would publish it as a client-callable endpoint.
 //

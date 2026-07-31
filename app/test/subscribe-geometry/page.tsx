@@ -1,6 +1,6 @@
 "use client";
-// Geometry harness for the identity-resolve layout-shift work (Stage 2.3/2.4).
-// Renders each real surface that hosts an identity-dependent control, with a
+// Geometry harness for identity-resolve layout shift. Renders each real
+// surface that hosts an identity-dependent control, with a
 // sentinel element after it, and lets a puppeteer script flip the identity in
 // place through the real SWR key — exactly what ViewerIdentityProvider does when
 // its fetch resolves.
