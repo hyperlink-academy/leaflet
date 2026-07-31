@@ -32,17 +32,23 @@ export async function createConnectedMerchantAccount(args: {
         losses: { payments: "stripe" },
         stripe_dashboard: { type: "full" },
       },
-      capabilities: { card_payments: { requested: true } },
+      // Stripe rejects card_payments unless transfers is requested with it,
+      // even though we only take direct charges on the account.
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
       ...(args.displayName
         ? { business_profile: { name: args.displayName } }
         : {}),
       metadata: { identity_id: args.identityId },
     },
     // Keyed on the identity so a retried or concurrent onboarding call returns
-    // the account already created instead of orphaning a second one. The "v1"
-    // marks the endpoint: replaying the pre-port v2 key against this endpoint
-    // inside Stripe's idempotency window would error instead of creating.
-    { idempotencyKey: `connect-account-v1-${args.identityId}` },
+    // the account already created instead of orphaning a second one. The suffix
+    // versions the request shape: replaying an older key against a changed
+    // request body inside Stripe's idempotency window would error instead of
+    // creating.
+    { idempotencyKey: `connect-account-v1b-${args.identityId}` },
   );
 }
 
