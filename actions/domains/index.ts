@@ -2,21 +2,14 @@
 import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { getCache } from "@vercel/functions";
-import { Vercel } from "@vercel/sdk";
 import { getAuthIdentity } from "src/auth";
+import { vercel, VERCEL_PROJECT, VERCEL_TEAM } from "src/vercel";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
   { cookies: {} },
 );
-
-const vercel = new Vercel({
-  bearerToken: process.env.VERCEL_TOKEN,
-});
-
-const VERCEL_PROJECT = "prj_9jX4tmYCISnm176frFxk07fF74kG";
-const VERCEL_TEAM = "team_42xaJiZMTw9Sr7i0DcLTae9d";
 
 // Shared helpers
 // ==============

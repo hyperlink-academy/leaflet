@@ -3,6 +3,7 @@ import * as path from "path";
 import * as dns from "dns/promises";
 import { AtpAgent } from "@atproto/api";
 import { deepEquals } from "src/utils/deepEquals";
+import { VERCEL_TEAM } from "src/vercel";
 
 function readLexiconFiles(): { id: string }[] {
   const lexiconDir = path.join("lexicons", "pub", "leaflet");
@@ -67,7 +68,7 @@ async function main() {
       let name = host.split(".").slice(0, -2).join(".") || "";
       console.log("creating txt record", name);
       let res = await fetch(
-        `https://api.vercel.com/v2/domains/leaflet.pub/records?teamId=team_42xaJiZMTw9Sr7i0DcLTae9d`,
+        `https://api.vercel.com/v2/domains/leaflet.pub/records?teamId=${VERCEL_TEAM}`,
         {
           method: "POST",
           headers: {

@@ -16,6 +16,9 @@ import { pool } from "supabase/pool";
 import { revalidateAllPublicationPaths } from "src/utils/revalidatePublication";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { cancelPublicationMemberSubscriptions } from "src/membership.server";
+import { getCache } from "@vercel/functions";
+import { isProductionDomain } from "src/utils/isProductionDeployment";
+import { vercel, VERCEL_PROJECT, VERCEL_TEAM } from "src/vercel";
 
 export async function deletePublication(
   publication_uri: string,
@@ -57,7 +60,7 @@ export async function deletePublication(
   }
 
   // Collect these BEFORE deleting the publication row — cascading deletes would remove the join rows.
-  let [docs, drafts] = await Promise.all([
+  let [docs, drafts, domains] = await Promise.all([
     supabaseServerClient
       .from("documents_in_publications")
       .select("document")
@@ -66,7 +69,21 @@ export async function deletePublication(
       .from("leaflets_in_publications")
       .select("leaflet")
       .eq("publication", publication_uri),
+    supabaseServerClient
+      .from("publication_domains")
+      .select("domain, custom_domains(identity_id)")
+      .eq("publication", publication_uri),
   ]);
+  // The default subdomain registered at creation is the only custom_domains row
+  // with no owning identity; user-added domains (identity_id set) just lose
+  // their publication_domains link via cascade and stay registered to the user.
+  let defaultDomains = (domains.data ?? [])
+    .filter(
+      (d) =>
+        d.domain.endsWith(".leaflet.pub") &&
+        d.custom_domains?.identity_id === null,
+    )
+    .map((d) => d.domain);
   let documentUris = Array.from(
     new Set([...(docs.data ?? []).map((r) => r.document)]),
   );
@@ -145,6 +162,50 @@ export async function deletePublication(
     .from("publications")
     .delete()
     .eq("uri", publication_uri);
+
+  // Release the default leaflet.pub subdomain so it can be reused. Subdomain
+  // availability is checked against the Vercel project, so remove the domain
+  // there first, and keep our rows for any domain whose removal fails — a
+  // deleted row with the domain still registered in Vercel would leave the
+  // subdomain unavailable with no trace of who held it.
+  let released = (
+    await Promise.all(
+      defaultDomains.map(async (domain) => {
+        if (isProductionDomain()) {
+          try {
+            await vercel.projects.removeProjectDomain({
+              idOrName: VERCEL_PROJECT,
+              teamId: VERCEL_TEAM,
+              domain,
+            });
+          } catch (e) {
+            console.log("Failed to remove domain from Vercel", domain, e);
+            return null;
+          }
+        }
+        return domain;
+      }),
+    )
+  ).filter((d): d is string => d !== null);
+  if (released.length > 0) {
+    // custom_domain_routes -> custom_domains doesn't cascade; clear any routes
+    // first so the domain delete can't hit the FK.
+    await supabaseServerClient
+      .from("custom_domain_routes")
+      .delete()
+      .in("domain", released);
+    await supabaseServerClient
+      .from("custom_domains")
+      .delete()
+      .in("domain", released);
+    await Promise.all(
+      released.map((domain) =>
+        getCache()
+          .expireTag(`domain:${domain}`)
+          .catch(() => {}),
+      ),
+    );
+  }
 
   return { success: true };
 }

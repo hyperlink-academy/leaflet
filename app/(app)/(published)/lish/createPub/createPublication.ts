@@ -9,8 +9,8 @@ import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
-import { Vercel } from "@vercel/sdk";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
+import { vercel, VERCEL_PROJECT, VERCEL_TEAM } from "src/vercel";
 import { string } from "zod";
 import { getPublicationType } from "src/utils/collectionHelpers";
 import { PubThemeDefaultsRGB } from "components/ThemeManager/themeDefaults";
@@ -18,10 +18,6 @@ import { createPublicationDraftLeaflet } from "actions/createPublicationDraftLea
 import { resolvePublicationTheme } from "lexicons/src/normalize";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
-const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
-const vercel = new Vercel({
-  bearerToken: VERCEL_TOKEN,
-});
 let subdomainValidator = string()
   .min(3)
   .max(63)
@@ -172,8 +168,8 @@ export async function createPublication({
   // Create the custom domain
   if (isProductionDomain()) {
     await vercel.projects.addProjectDomain({
-      idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
-      teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+      idOrName: VERCEL_PROJECT,
+      teamId: VERCEL_TEAM,
       requestBody: {
         name: domain,
       },

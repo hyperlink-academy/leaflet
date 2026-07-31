@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { pull } from "./pull";
 import { getFactsForRoots } from "./getFactsForRoots";
-import { Vercel } from "@vercel/sdk";
+import { vercel } from "src/vercel";
 import {
   get_domain_status,
   get_leaflet_subdomain_status,
@@ -32,10 +32,6 @@ let supabase = createClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
 
-const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
-const vercel = new Vercel({
-  bearerToken: VERCEL_TOKEN,
-});
 const Env = {
   supabase,
   vercel,
