@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { PubLeafletBlocksImageGallery } from "lexicons/api";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blobRefToSrc, POST_BODY_IMAGE_WIDTH } from "src/utils/blobRefToSrc";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import {
   DEFAULT_FORMAT,
@@ -27,7 +27,10 @@ export function PublishedImageGallery(props: {
   let images = useMemo<GalleryImage[]>(
     () =>
       block.images.map((i) => ({
-        src: blobRefToSrc(i.image.ref, did),
+        src: blobRefToSrc(i.image.ref, did, undefined, {
+          width: POST_BODY_IMAGE_WIDTH,
+        }),
+        fullSrc: blobRefToSrc(i.image.ref, did),
         alt: i.alt || "",
         width: i.aspectRatio.width,
         height: i.aspectRatio.height,

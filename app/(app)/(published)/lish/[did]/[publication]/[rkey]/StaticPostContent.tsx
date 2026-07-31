@@ -12,7 +12,7 @@ import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { blobRefToSrc, POST_BODY_IMAGE_WIDTH } from "src/utils/blobRefToSrc";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { blockTextSize } from "src/utils/blockTextSize";
@@ -109,7 +109,7 @@ let Block = async ({
             <div
               className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
-                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, baseUrl)})`,
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, baseUrl, { width: 360 })})`,
                 backgroundPosition: "center",
               }}
             />
@@ -123,7 +123,9 @@ let Block = async ({
           alt={b.block.alt}
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
-          src={blobRefToSrc(b.block.image.ref, did, baseUrl)}
+          src={blobRefToSrc(b.block.image.ref, did, baseUrl, {
+            width: POST_BODY_IMAGE_WIDTH,
+          })}
         />
       );
     }
@@ -141,7 +143,9 @@ let Block = async ({
               alt={image.alt}
               height={image.aspectRatio.height}
               width={image.aspectRatio.width}
-              src={blobRefToSrc(image.image.ref, did, baseUrl)}
+              src={blobRefToSrc(image.image.ref, did, baseUrl, {
+                width: POST_BODY_IMAGE_WIDTH,
+              })}
             />
           ))}
         </div>

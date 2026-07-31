@@ -5,8 +5,7 @@ import {
   PubLeafletPagesCanvas,
 } from "lexicons/api";
 import { useLeafletContent } from "contexts/LeafletContentContext";
-import { collectPostImages } from "./collectPostImages";
-import { GalleryImage } from "components/Blocks/ImageGalleryBlock/shared";
+import { collectPostImages, PostImage } from "./collectPostImages";
 import {
   ImageGalleryLightbox,
   LightboxSlide,
@@ -15,7 +14,7 @@ import {
 type Page = PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main;
 
 const OpenLightboxContext = createContext<
-  ((pageId: string | undefined, src: string) => void) | null
+  ((pageId: string | undefined, cid: string) => void) | null
 >(null);
 
 // Null on surfaces without a GlobalImageLightbox (publication pages), which is
@@ -23,25 +22,25 @@ const OpenLightboxContext = createContext<
 export const useOpenImageLightbox = () => useContext(OpenLightboxContext);
 
 // Wraps the published post route; standalone image blocks open the lightbox
-// via useOpenImageLightbox with their page and src, and every image on that
-// page is resolved here so the lightbox can page through them all.
+// via useOpenImageLightbox with their page and blob CID, and every image on
+// that page is resolved here so the lightbox can page through them all.
 export function GlobalImageLightbox(props: {
   did: string;
   children: React.ReactNode;
 }) {
   let [lightbox, setLightbox] = useState<{
-    images: GalleryImage[];
+    images: PostImage[];
     index: number;
   } | null>(null);
   const { pages } = useLeafletContent();
 
   let openAt = useCallback(
-    (pageId: string | undefined, src: string) => {
+    (pageId: string | undefined, cid: string) => {
       let page = pageId
         ? (pages as Page[]).find((p) => p.id === pageId)
         : (pages[0] as Page | undefined);
       let images = page ? collectPostImages(page, props.did) : [];
-      let index = images.findIndex((i) => i.src === src);
+      let index = images.findIndex((i) => i.cid === cid);
       if (index !== -1) setLightbox({ images, index });
     },
     [pages, props.did],

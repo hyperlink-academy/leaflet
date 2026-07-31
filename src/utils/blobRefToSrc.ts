@@ -11,13 +11,19 @@ import { BlobRef } from "@atproto/lexicon";
 // thumbnails so we don't ship the full-resolution blob to render a small image.
 // `format: "email"` transcodes away formats mail clients can't display; pass it
 // for anything rendered into an outgoing email.
+// The CID inside a blob ref (or the raw storage URL for draft images): a
+// stable identity for an image, independent of which display transform its
+// src was built with.
+export const blobRefCid = (b: BlobRef["ref"]) =>
+  (b as unknown as { $link: string })["$link"];
+
 export const blobRefToSrc = (
   b: BlobRef["ref"],
   did: string,
   baseUrl?: string,
   transform?: { width?: number; height?: number; format?: "email" },
 ) => {
-  const link = (b as unknown as { $link: string })["$link"];
+  const link = blobRefCid(b);
   const prefix = baseUrl ? baseUrl.replace(/\/$/, "") : "";
   if (link.startsWith("http://") || link.startsWith("https://")) {
     // A draft image, still living in storage rather than on a PDS. It needs
@@ -50,6 +56,11 @@ const storagePathFromPublicUrl = (url: string) => {
 // Display widths (px) for cover-image thumbnails, used to request a right-sized
 // transform instead of shipping the full-resolution blob.
 export const COVER_THUMBNAIL_WIDTH = { large: 800, medium: 360 };
+
+// Display width for images rendered inline in a post body: the ~600px content
+// column at retina density (see the ladder in supabase/imageSizes.js).
+// Lightboxes load the untransformed blob instead.
+export const POST_BODY_IMAGE_WIDTH = 1200;
 
 // Shared transform for publication icons rendered into emails.
 export const EMAIL_ICON_TRANSFORM = { width: 360, format: "email" } as const;

@@ -31,7 +31,11 @@ import { postsListFilterKey } from "src/utils/postsListPagination";
 import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import {
+  blobRefCid,
+  blobRefToSrc,
+  POST_BODY_IMAGE_WIDTH,
+} from "src/utils/blobRefToSrc";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
@@ -521,7 +525,7 @@ export let Block = ({
             <div
               className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
-                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did)})`,
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, undefined, { width: 360 })})`,
                 backgroundPosition: "center",
               }}
             />
@@ -530,7 +534,10 @@ export let Block = ({
       );
     }
     case PubLeafletBlocksImage.isMain(b.block): {
-      let src = blobRefToSrc(b.block.image.ref, did);
+      let src = blobRefToSrc(b.block.image.ref, did, undefined, {
+        width: POST_BODY_IMAGE_WIDTH,
+      });
+      let cid = blobRefCid(b.block.image.ref);
       let isFullBleed = b.block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -559,7 +566,7 @@ export let Block = ({
               type="button"
               className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-pointer" : ""}`}
               onClick={
-                canOpenLightbox ? () => openLightbox?.(pageId, src) : undefined
+                canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
               }
             >
               <img

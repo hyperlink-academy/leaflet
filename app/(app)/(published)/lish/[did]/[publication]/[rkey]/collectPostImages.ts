@@ -6,8 +6,16 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
 } from "lexicons/api";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import {
+  blobRefCid,
+  blobRefToSrc,
+  POST_BODY_IMAGE_WIDTH,
+} from "src/utils/blobRefToSrc";
 import { GalleryImage } from "components/Blocks/ImageGalleryBlock/shared";
+
+// The clicked image is found by blob CID, which is stable no matter what
+// display transform each renderer requests.
+export type PostImage = GalleryImage & { cid: string };
 
 // Canvas blocks render in visual order; sharing the comparator keeps the
 // lightbox paging through canvas images in the same order they appear.
@@ -25,13 +33,13 @@ export function canvasBlockOrder(
 export function collectPostImages(
   page: PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main,
   did: string,
-): GalleryImage[] {
+): PostImage[] {
   let blocks = PubLeafletPagesCanvas.isMain(page)
     ? [...(page.blocks || [])]
         .sort(canvasBlockOrder)
         .map((b) => ({ block: b.block }))
     : (page.blocks ?? []);
-  let images: GalleryImage[] = [];
+  let images: PostImage[] = [];
 
   let walkBlock = (b: {
     block: PubLeafletPagesLinearDocument.Block["block"];
@@ -39,7 +47,11 @@ export function collectPostImages(
     let block = b.block;
     if (PubLeafletBlocksImage.isMain(block)) {
       images.push({
-        src: blobRefToSrc(block.image.ref, did),
+        cid: blobRefCid(block.image.ref),
+        src: blobRefToSrc(block.image.ref, did, undefined, {
+          width: POST_BODY_IMAGE_WIDTH,
+        }),
+        fullSrc: blobRefToSrc(block.image.ref, did),
         alt: block.alt || "",
         width: block.aspectRatio?.width ?? 0,
         height: block.aspectRatio?.height ?? 0,
@@ -47,7 +59,11 @@ export function collectPostImages(
     } else if (PubLeafletBlocksImageGallery.isMain(block)) {
       for (let i of block.images)
         images.push({
-          src: blobRefToSrc(i.image.ref, did),
+          cid: blobRefCid(i.image.ref),
+          src: blobRefToSrc(i.image.ref, did, undefined, {
+            width: POST_BODY_IMAGE_WIDTH,
+          }),
+          fullSrc: blobRefToSrc(i.image.ref, did),
           alt: i.alt || "",
           width: i.aspectRatio.width,
           height: i.aspectRatio.height,
