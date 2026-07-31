@@ -5,7 +5,10 @@ import { useState, useRef, useEffect } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import { useReportCardVisible } from "./LeafletCardReplicache";
+import {
+  EAGERLY_VISIBLE_CARDS,
+  useReportCardVisible,
+} from "./LeafletCardReplicache";
 
 export const LeafletListItem = (props: {
   archived?: boolean | null;
@@ -20,7 +23,9 @@ export const LeafletListItem = (props: {
   const cardBorderHidden = useCardBorderHidden();
   const pubStatus = useLeafletPublicationStatus();
   const visibilityReporter = useReportCardVisible();
-  let [isOnScreen, setIsOnScreen] = useState(props.index < 16 ? true : false);
+  let [isOnScreen, setIsOnScreen] = useState(
+    props.index < EAGERLY_VISIBLE_CARDS,
+  );
   let previewRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {

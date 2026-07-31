@@ -4,6 +4,12 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 import { ReplicacheProvider, type PermissionToken } from "src/replicache";
 import { useLeafletFacts } from "./HomeLeafletFactsProvider";
 
+// Cards assumed on-screen before the IntersectionObserver has fired: they
+// render their preview and fetch facts immediately on mount. One constant for
+// both so the initial view resolves in a single batched getFactsForRoots call —
+// a card that renders eagerly but fetches lazily lands in a second RPC batch.
+export const EAGERLY_VISIBLE_CARDS = 16;
+
 const CardVisibilityContext = createContext<{
   notifyVisible: () => void;
 } | null>(null);

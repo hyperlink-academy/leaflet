@@ -13,7 +13,9 @@ import { ReplicacheProvider, type Fact } from "src/replicache";
 // navigations that mount this segment fresh (e.g. editor → home) suspend
 // inside the already-committed (identity) boundary, which won't re-show its
 // fallback mid-transition — so this segment needs its own boundary to commit
-// against while the home leaflet resolves.
+// against while the home leaflet resolves. (On initial loads the identity
+// provider's suspension surfaces at the (identity) boundary above, but the
+// home leaflet fetch below runs in parallel with it.)
 export default function HomePagesLayout(props: {
   children: React.ReactNode;
 }) {

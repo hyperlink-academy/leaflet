@@ -20,6 +20,11 @@ import { RecommendConfirmationToast } from "components/Interactions/RecommendCon
 // tree has rendered — the previous page just freezes with no feedback. (A
 // loading.tsx can't provide this; it only covers segments below the blocking
 // layout.)
+//
+// IdentityProviderServer is non-blocking (it hands the identity promise to
+// the client provider, which use()-suspends at this boundary), so the server
+// work in child segments — the home leaflet fetch, the editor's leaflet
+// queries — runs in parallel with the identity fetch instead of behind it.
 export default function IdentityLayout({
   children,
 }: {

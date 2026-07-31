@@ -10,8 +10,9 @@ import { getValidAuthToken } from "./identityPayload";
 //
 // Kept as a single token→identity→token join rather than getAuthIdentity()
 // followed by a permission_tokens lookup: this await gates the (home-pages)
-// Suspense boundary, and a sequential second round trip holds that boundary
-// in its loading fallback after the outer identity shell has already revealed.
+// Suspense boundary in parallel with the identity fetch, and a sequential
+// second round trip would hold that boundary in its fallback beyond the
+// slower of the two.
 export const getHomeLeaflet = cache(uncachedGetHomeLeaflet);
 async function uncachedGetHomeLeaflet() {
   let auth_token = await getValidAuthToken();

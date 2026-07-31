@@ -4,6 +4,7 @@ import { getViewerIdentity } from "actions/viewerIdentity";
 import { getCurrentSessionToken } from "actions/savedAccounts";
 import {
   createContext,
+  use,
   useContext,
   useEffect,
   useLayoutEffect,
@@ -69,10 +70,21 @@ export function mutateIdentityData(
 }
 export function IdentityContextProvider(props: {
   children: React.ReactNode;
-  initialValue: Identity;
+  // A promise lets the server mount this provider without awaiting identity
+  // first, so sibling server work (e.g. the home leaflet fetch) runs in
+  // parallel; use() suspends at the mounting segment's own boundary instead of
+  // holding up the whole RSC tree. identityPromise must be a server-created
+  // promise — a promise built during a client render changes each render and
+  // use() would suspend forever. Client-side callers (tests) pass the plain
+  // initialValue instead.
+  identityPromise?: Promise<Identity>;
+  initialValue?: Identity;
 }) {
+  const initialValue = props.identityPromise
+    ? use(props.identityPromise)
+    : (props.initialValue ?? null);
   let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
-    fallbackData: props.initialValue,
+    fallbackData: initialValue,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     revalidateIfStale: false,
@@ -81,8 +93,8 @@ export function IdentityContextProvider(props: {
   useEffect(() => {
     // revalidate:false — initialValue IS the fresh server value; the default
     // would kick off a redundant full getIdentityData round-trip per render.
-    mutate(props.initialValue, { revalidate: false });
-  }, [props.initialValue]);
+    mutate(initialValue, { revalidate: false });
+  }, [initialValue]);
   // Remember the current session in the saved-accounts list so the account
   // switcher can offer it later. The token is always re-fetched — the cookie
   // is httpOnly, and a re-login mints a fresh token for the same identity, so

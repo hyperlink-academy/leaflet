@@ -17,7 +17,10 @@ import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
 import { CreateNewLeafletButton } from "./Actions/CreateNewButton";
-import { LeafletCardReplicache } from "./LeafletList/LeafletCardReplicache";
+import {
+  EAGERLY_VISIBLE_CARDS,
+  LeafletCardReplicache,
+} from "./LeafletList/LeafletCardReplicache";
 
 export type Leaflet = {
   added_at: string;
@@ -197,7 +200,7 @@ export function LeafletList(props: {
           key={leaflet.id}
           leaflet={leaflet}
           loggedIn={!!identity}
-          eagerLoadFacts={index < 12}
+          eagerLoadFacts={index < EAGERLY_VISIBLE_CARDS}
         >
           <StaticLeafletDataContext
             value={{
