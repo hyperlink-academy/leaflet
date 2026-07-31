@@ -8,6 +8,7 @@ import {
   receive_auth_callback_route,
   decryptCrossSiteToken,
 } from "src/crossSiteAuth";
+import { SESSION_MARKER_COOKIE } from "src/sessionMarker";
 
 export const config = {
   matcher: [
@@ -77,18 +78,47 @@ export default async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname === receive_auth_callback_route)
     return receiveAuthCallback(req);
 
+  // Older sessions may carry external_auth_token="null" (a literal string the
+  // previous callback wrote for logged-out visitors) — not a session.
+  let externalToken = req.cookies.get("external_auth_token")?.value;
+  let hasAuth =
+    req.cookies.has("auth_token") ||
+    (!!externalToken && externalToken !== "null");
+  // Sessions minted before the marker existed need it backfilled so published
+  // pages know to fetch identity client-side.
+  let backfillMarker = hasAuth && !req.cookies.has(SESSION_MARKER_COOKIE);
+  let withMarker = (res?: NextResponse) => {
+    if (!backfillMarker) return res;
+    let out = res ?? NextResponse.next();
+    out.cookies.set(SESSION_MARKER_COOKIE, "1", {
+      // Match the lifetime of whichever cookie we're mirroring: external_auth_token
+      // is a session cookie, so a persistent marker would outlive it and make
+      // every published page view fetch an identity that no longer exists.
+      ...(req.cookies.has("auth_token")
+        ? { maxAge: 60 * 60 * 24 * 365 }
+        : undefined),
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+    // The page behind this response may be a publicly-cached ISR entry; a
+    // shared cache that stored this Set-Cookie would hand every anonymous
+    // reader a session marker (and with it a per-view identity fetch). This
+    // response fires once per legacy session, so making it uncacheable is
+    // cheap insurance.
+    out.headers.set("Cache-Control", "private, no-store");
+    return out;
+  };
+
   if (req.nextUrl.pathname === "/" && isMainSiteHost(hostname)) {
-    let hasAuth =
-      req.cookies.has("auth_token") || req.cookies.has("external_auth_token");
     if (hasAuth) {
       let navState = req.cookies.get("nav-state")?.value;
       let target = navState === "reader" ? "/reader" : "/home";
-      return NextResponse.redirect(new URL(target, req.url));
+      return withMarker(NextResponse.redirect(new URL(target, req.url)));
     }
   }
 
-  if (hostname === "leaflet.pub") return;
-  if (req.nextUrl.pathname === "/not-found") return;
+  if (hostname === "leaflet.pub") return withMarker();
+  if (req.nextUrl.pathname === "/not-found") return withMarker();
   let routes: DomainRoutes = null;
   let entry: DomainCacheEntry | null = null;
   try {
@@ -110,12 +140,14 @@ export default async function middleware(req: NextRequest) {
 
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {
-    if (req.nextUrl.pathname.startsWith("/lish")) return;
+    if (req.nextUrl.pathname.startsWith("/lish")) return withMarker();
     let aturi = new AtUri(pub?.uri);
-    return NextResponse.rewrite(
-      new URL(
-        `/lish/${aturi.host}/${aturi.rkey}${req.nextUrl.pathname}`,
-        req.url,
+    // Normalize the root path (no trailing slash) so the pub home shares one
+    // cache entry with /lish/:did/:rkey.
+    let path = req.nextUrl.pathname === "/" ? "" : req.nextUrl.pathname;
+    return withMarker(
+      NextResponse.rewrite(
+        new URL(`/lish/${aturi.host}/${aturi.rkey}${path}`, req.url),
       ),
     );
   }
@@ -124,13 +156,16 @@ export default async function middleware(req: NextRequest) {
       (r) => r.route === req.nextUrl.pathname,
     );
     if (route)
-      return NextResponse.rewrite(
-        new URL(`/${route.view_permission_token}`, req.url),
+      return withMarker(
+        NextResponse.rewrite(
+          new URL(`/${route.view_permission_token}`, req.url),
+        ),
       );
     else {
-      return NextResponse.redirect(new URL("/not-found", req.url));
+      return withMarker(NextResponse.redirect(new URL("/not-found", req.url)));
     }
   }
+  return withMarker();
 }
 
 async function receiveAuthCallback(req: NextRequest) {
@@ -142,6 +177,20 @@ async function receiveAuthCallback(req: NextRequest) {
 
   let url = new URL(payload.redirect);
   let response = NextResponse.redirect(url.toString());
-  response.cookies.set("external_auth_token", payload.auth_token || "null");
+  if (payload.auth_token) {
+    response.cookies.set("external_auth_token", payload.auth_token);
+    // Session-scoped to match external_auth_token above, which carries no
+    // maxAge; a longer-lived marker would keep triggering identity fetches on
+    // cacheable pages after the session cookie is gone.
+    response.cookies.set(SESSION_MARKER_COOKIE, "1", {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  } else {
+    // A literal "null" here would read as a live session forever — the cookie
+    // existing is what auth checks test for.
+    response.cookies.delete("external_auth_token");
+    response.cookies.delete(SESSION_MARKER_COOKIE);
+  }
   return response;
 }

@@ -1,6 +1,7 @@
 "use server";
 
-import { getIdentityData } from "./getIdentityData";
+import { getAuthIdentity } from "src/auth";
+import { getProfiles } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
 import {
@@ -11,7 +12,7 @@ import {
 export async function startStripeConnectOnboarding(
   returnUrl: string,
 ): Promise<Result<{ url: string }, string>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return Err("Not authenticated");
   if (!identity.email)
     return Err("Add an email to your account before setting up payments");
@@ -27,11 +28,14 @@ export async function startStripeConnectOnboarding(
   if (existing?.stripe_account_id) {
     stripeAccountId = existing.stripe_account_id;
   } else {
+    const handle = identity.atp_did
+      ? (await getProfiles([identity.atp_did])).get(identity.atp_did)?.handle
+      : undefined;
     let account;
     try {
       account = await createConnectedMerchantAccount({
         email: identity.email,
-        displayName: identity.bsky_profiles?.handle || identity.email,
+        displayName: handle || identity.email,
         identityId: identity.id,
       });
     } catch (e) {

@@ -1,0 +1,617 @@
+"use client";
+import { publishToPublication } from "actions/publishToPublication";
+import { DotLoader } from "components/utils/DotLoader";
+import { useState, useRef, useCallback, type CSSProperties } from "react";
+import { useLocalStorageState } from "src/hooks/useLocalStorageState";
+import { clearDraftDoc } from "src/utils/prosemirror/draftPersistence";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+
+import type { NormalizedPublication } from "src/utils/normalizeRecords";
+import { publishPostToBsky } from "actions/publishBskyPost";
+import { viewerPostLangs } from "src/utils/bskyPostLangs";
+import { ShareOptions, type ShareState } from "./ShareOptions";
+import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { AtUri } from "@atproto/syntax";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
+import { useReplicache } from "src/replicache";
+import { localImages } from "src/utils/addImage";
+import { uploadCoverImage } from "src/utils/uploadCoverImage";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { editorStateToFacetedText } from "components/BlueskyPostComposer/ProsemirrorEditor";
+import { EditorState } from "prosemirror-state";
+import { TagSelector } from "components/Tags";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
+import { PubIcon } from "components/ActionBar/Publications";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
+import { DatePicker, TimePicker } from "components/DatePicker";
+import { Popover } from "components/Popover";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { Separator } from "react-aria-components";
+import { setHours, setMinutes } from "date-fns";
+import {
+  ThemeBackgroundProvider,
+  ThemeProvider,
+} from "components/ThemeManager/ThemeProvider";
+import {
+  PublicationThemeProvider,
+  PublicationBackgroundProvider,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { useEntity } from "src/replicache";
+import { LeafletContent } from "app/(app)/(identity)/(home-pages)/(writer)/home/LeafletList/LeafletContent";
+import { Contributor } from "lexicons/api/types/site/standard/document";
+import {
+  BskyEmbed,
+  StandardSiteExternalEmbed,
+} from "components/Blocks/BlueskyPostBlock/BskyEmbed";
+
+type Props = {
+  title: string;
+  leaflet_id: string;
+  root_entity: string;
+  viewerProfile: ProfileViewDetailed;
+  publicationOwnerProfile?: ProfileViewDetailed;
+  publicationOwnerDid?: string;
+  description: string;
+  publication_uri?: string;
+  pubRecord?: NormalizedPublication | null;
+  posts_in_pub?: number;
+  newsletter_enabled?: boolean;
+  subscriberCount?: number;
+  entitiesToDelete?: string[];
+  hasDraft: boolean;
+};
+
+export function PublishPost(props: Props) {
+  let [publishState, setPublishState] = useState<
+    { state: "default" } | { state: "success"; post_url: string }
+  >({ state: "default" });
+  return (
+    <div className="publishPage w-screen min-h-screen bg-bg-page flex justify-center text-primary">
+      {publishState.state === "default" ? (
+        <PublishPostForm setPublishState={setPublishState} {...props} />
+      ) : (
+        <PublishPostSuccess
+          record={props.pubRecord}
+          publication_uri={props.publication_uri}
+          post_url={publishState.post_url}
+          posts_in_pub={(props.posts_in_pub || 0) + 1}
+        />
+      )}
+    </div>
+  );
+}
+
+const PublishPostForm = (
+  props: {
+    setPublishState: (s: { state: "success"; post_url: string }) => void;
+  } & Props,
+) => {
+  let editorStateRef = useRef<EditorState | null>(null);
+  // All publish-flow drafts (toggles, tags, backdate, the Bluesky post) are
+  // scoped to this document + destination so each publish keeps its own state
+  let publishKey = `publish:v1:${props.publication_uri ?? "looseleaf"}:${props.root_entity}`;
+  let bskyDraftKey = `${publishKey}:bsky`;
+  let [state, setState] = useState<"post-details" | "share-options">(
+    "post-details",
+  );
+  let [charCount, setCharCount] = useState(0);
+  let [shareState, setShareState, clearShareState] =
+    useLocalStorageState<ShareState>(`${publishKey}:share`, {
+      bluesky: true,
+      postToReaders: true,
+      email: true,
+      quiet: false,
+    });
+  let [isLoading, setIsLoading] = useState(false);
+  const nothingSelected =
+    !shareState.bluesky &&
+    !shareState.postToReaders &&
+    !shareState.email &&
+    !shareState.quiet;
+  let [oauthError, setOauthError] = useState<
+    import("src/atproto-oauth").OAuthSessionError | null
+  >(null);
+  let params = useParams();
+  let { rep } = useReplicache();
+
+  // For publications with drafts, use Replicache; otherwise use local state
+  let replicacheTags = useSubscribe(rep, (tx) =>
+    tx.get<string[]>("publication_tags"),
+  );
+  let [localTags, setLocalTags, clearLocalTags] = useLocalStorageState<
+    string[]
+  >(`${publishKey}:tags`, []);
+  let [showTagSelector, setShowTagSelector, clearShowTagSelector] =
+    useLocalStorageState<boolean>(`${publishKey}:showTags`, false);
+
+  // Stored as an ISO string (Date isn't JSON-serializable); undefined ⇒ "Now"
+  let [publishedAtISO, setPublishedAtISO, clearPublishedAt] =
+    useLocalStorageState<string | null>(`${publishKey}:publishedAt`, null);
+  let localPublishedAt = publishedAtISO ? new Date(publishedAtISO) : undefined;
+  let setLocalPublishedAt = useCallback(
+    (date: Date | undefined) =>
+      setPublishedAtISO(date ? date.toISOString() : null),
+    [setPublishedAtISO],
+  );
+  // The cover image lives on the document root as a root/cover-image reference,
+  // set from the draft editor.
+  let coverImageEntity =
+    useEntity(props.root_entity, "root/cover-image")?.data.value ?? null;
+  let coverImageSrc = useEntity(coverImageEntity, "block/image")?.data.src;
+  // The did that owns the publication record — needed to resolve the pub icon
+  // blob and to attribute the post's author in the social-preview embed.
+  let pubDid =
+    props.publicationOwnerDid ??
+    (props.publication_uri ? new AtUri(props.publication_uri).host : undefined);
+
+  // Get post preferences from Replicache state
+  let postPreferences = useSubscribe(rep, (tx) =>
+    tx.get<{
+      showComments?: boolean;
+      showMentions?: boolean;
+      showRecommends?: boolean;
+    } | null>("post_preferences"),
+  );
+
+  // Use Replicache tags only when we have a draft
+  const currentTags = props.hasDraft
+    ? Array.isArray(replicacheTags)
+      ? replicacheTags
+      : []
+    : localTags;
+
+  // Update tags via Replicache mutation or local state depending on context
+  const handleTagsChange = async (newTags: string[]) => {
+    if (props.hasDraft) {
+      await rep?.mutate.updatePublicationDraft({
+        tags: newTags,
+      });
+    } else {
+      setLocalTags(newTags);
+    }
+  };
+
+  async function submit() {
+    if (isLoading) return;
+    setIsLoading(true);
+    setOauthError(null);
+    await rep?.push();
+    let result = await publishToPublication({
+      root_entity: props.root_entity,
+      publication_uri: props.publication_uri,
+      leaflet_id: props.leaflet_id,
+      title: props.title,
+      description: props.description,
+      tags: currentTags,
+      entitiesToDelete: props.entitiesToDelete,
+      publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
+      postPreferences,
+      // Posting quietly forces every share channel off, mirroring the UI where
+      // checking "Post Quietly" unchecks all the other options.
+      sendEmail: shareState.email && !shareState.quiet,
+      showInDiscover: shareState.postToReaders && !shareState.quiet,
+    });
+
+    if (!result.success) {
+      setIsLoading(false);
+      if (isOAuthSessionError(result.error)) {
+        setOauthError(result.error);
+      }
+      return;
+    }
+
+    // Generate post URL based on whether it's in a publication or standalone
+    let post_url = props.pubRecord?.url
+      ? `${props.pubRecord.url}/${result.rkey}`
+      : `https://leaflet.pub/p/${props.viewerProfile.did}/${result.rkey}`;
+
+    let [text, facets] = editorStateRef.current
+      ? editorStateToFacetedText(editorStateRef.current)
+      : [];
+    if (shareState.bluesky && !shareState.quiet) {
+      let bskyResult = await publishPostToBsky({
+        facets: facets || [],
+        text: text || "",
+        url: post_url,
+        document_record: result.record,
+        rkey: result.rkey,
+        // For publications the post must be authored by the owner's PDS (where
+        // the record lives); standalone publishes leave this undefined.
+        ownerDid: props.publication_uri ? props.publicationOwnerDid : undefined,
+        langs: viewerPostLangs(),
+      });
+      if (!bskyResult.success && isOAuthSessionError(bskyResult.error)) {
+        setIsLoading(false);
+        setOauthError(bskyResult.error);
+        return;
+      }
+    }
+    setIsLoading(false);
+    // The post is out; drop the persisted publish draft so a later visit to
+    // this page starts clean rather than restoring stale toggles/text
+    clearShareState();
+    clearLocalTags();
+    clearShowTagSelector();
+    clearPublishedAt();
+    clearDraftDoc(bskyDraftKey);
+    props.setPublishState({ state: "success", post_url });
+  }
+
+  return (
+    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3 sm:py-8 py-4 text-primary">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <div className="frosted-container flex flex-col gap-3 sm:p-3 p-4">
+          {state === "post-details" ? (
+            <>
+              <h2>Publish: Post Details</h2>
+              <PublishingTo
+                publication_uri={props.publication_uri}
+                record={props.pubRecord}
+              />
+              <hr className="border-border-light" />
+
+              <BackdateOptions
+                publishedAt={localPublishedAt}
+                setPublishedAt={setLocalPublishedAt}
+              />
+              <hr className="border-border-light" />
+
+              <div className="flex justify-between  gap-4">
+                <div className="text-tertiary">Tags</div>
+                <div className="grow ">
+                  {currentTags.length !== 0 || showTagSelector === true ? (
+                    <div className="sm:w-sm sm:justify-self-end">
+                      <TagSelector
+                        rightAlign
+                        selectedTags={currentTags}
+                        setSelectedTags={handleTagsChange}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="hover:underline font-bold text-secondary float-end"
+                      onClick={() => {
+                        setShowTagSelector(true);
+                      }}
+                    >
+                      Add Tags
+                    </button>
+                  )}
+                </div>
+              </div>
+              <hr className="border-border-light" />
+              <div className="flex justify-between sm:flex-row flex-col gap-4">
+                <div className="text-tertiary shrink-0">Social Preview</div>
+                <div className="flex flex-col gap-1.5 w-full sm:max-w-sm">
+                  <StandardSiteExternalEmbed
+                    external={{
+                      uri: props.pubRecord?.url ?? "",
+                      title: props.title || "Untitled",
+                      description: props.description,
+                      thumb: coverImageSrc || undefined,
+                      source: {
+                        uri: props.pubRecord?.url,
+                        title: props.pubRecord?.name,
+                        icon:
+                          props.pubRecord?.icon && pubDid
+                            ? blobRefToSrc(props.pubRecord.icon.ref, pubDid)
+                            : undefined,
+                      },
+
+                      associatedRefs: pubDid
+                        ? [
+                            {
+                              uri: `at://${pubDid}/site.standard.document/preview`,
+                            },
+                          ]
+                        : undefined,
+                      createdAt: (localPublishedAt ?? new Date()).toISOString(),
+                    }}
+                  />
+
+                  <CoverImageControls
+                    rootEntity={props.root_entity}
+                    coverImageEntity={coverImageEntity}
+                  />
+                </div>
+              </div>
+              <hr className="border-border mb-2" />
+
+              <div className="flex justify-between">
+                <Link
+                  className="hover:no-underline! font-bold"
+                  href={`/${params.leaflet_id}`}
+                >
+                  Back
+                </Link>
+                <ButtonSecondary
+                  type="button"
+                  className="place-self-end h-[30px]"
+                  onClick={() => setState("share-options")}
+                >
+                  Next: Share
+                </ButtonSecondary>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2>Publish: Share Options</h2>
+              <ShareOptions
+                shareState={shareState}
+                setShareState={setShareState}
+                charCount={charCount}
+                setCharCount={setCharCount}
+                editorStateRef={editorStateRef}
+                title={props.title}
+                viewerProfile={props.viewerProfile}
+                publicationOwnerProfile={props.publicationOwnerProfile}
+                description={props.description}
+                pubRecord={props.pubRecord}
+                newsletter_enabled={props.newsletter_enabled}
+                subscriberCount={props.subscriberCount}
+                publication_uri={props.publication_uri}
+                root_entity={props.root_entity}
+                leaflet_id={props.leaflet_id}
+                publishedAt={localPublishedAt?.toISOString()}
+                bskyDraftKey={bskyDraftKey}
+                coverImageSrc={coverImageSrc}
+              />
+              <hr className="border-border mb-2" />
+
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between">
+                  <button
+                    type="button"
+                    className="font-bold text-accent-contrast"
+                    onClick={() => setState("post-details")}
+                  >
+                    Back
+                  </button>
+                  <ButtonPrimary
+                    type="submit"
+                    className="place-self-end h-[30px]"
+                    disabled={charCount > 300 || nothingSelected}
+                  >
+                    {isLoading ? (
+                      <DotLoader className="h-[23px]" />
+                    ) : (
+                      "Publish this Post!"
+                    )}
+                  </ButtonPrimary>
+                </div>
+                {oauthError && (
+                  <OAuthErrorMessage
+                    error={oauthError}
+                    className="text-right text-sm text-accent-contrast"
+                  />
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const CoverImageControls = (props: {
+  rootEntity: string;
+  coverImageEntity: string | null;
+}) => {
+  let { rep, permission_token } = useReplicache();
+  let permission_set = permission_token.permission_token_rights[0]?.entity_set;
+
+  const handleFile = async (file: File) => {
+    if (!rep || !permission_set) return;
+    await uploadCoverImage(rep, file, {
+      rootEntity: props.rootEntity,
+      permission_set,
+      existingCoverEntity: props.coverImageEntity,
+    });
+  };
+
+  if (!permission_set) return null;
+
+  return (
+    <div className="flex gap-3 justify-end items-center text-border text-sm">
+      {props.coverImageEntity && (
+        <>
+          <button
+            type="button"
+            className="hover:underline text-accent-contrast"
+            onClick={() => {
+              if (props.coverImageEntity)
+                rep?.mutate.deleteEntity({ entity: props.coverImageEntity });
+            }}
+          >
+            Remove
+          </button>
+          |
+        </>
+      )}
+      <label
+        className="hover:underline hover:cursor-pointer text-accent-contrast"
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        Change Cover
+        <input
+          className="hidden"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            let file = e.currentTarget.files?.[0];
+            if (file) handleFile(file);
+            e.currentTarget.value = "";
+          }}
+        />
+      </label>
+    </div>
+  );
+};
+
+const BackdateOptions = (props: {
+  publishedAt: Date | undefined;
+  setPublishedAt: (date: Date | undefined) => void;
+}) => {
+  const formattedDate = useLocalizedDate(
+    props.publishedAt?.toISOString() || "",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    },
+  );
+
+  const [timeValue, setTimeValue] = useState<string>(() => {
+    const date = props.publishedAt || new Date();
+    return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+  });
+
+  let currentTime = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`;
+
+  const handleTimeChange = (time: string) => {
+    setTimeValue(time);
+    if (!props.publishedAt) return;
+
+    const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
+    const newDate = setHours(setMinutes(props.publishedAt, minutes), hours);
+    const currentDate = new Date();
+
+    if (newDate > currentDate) {
+      props.setPublishedAt(currentDate);
+      setTimeValue(currentTime);
+    } else props.setPublishedAt(newDate);
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (!date) {
+      props.setPublishedAt(undefined);
+      return;
+    }
+    const [hours, minutes] = timeValue
+      .split(":")
+      .map((str) => parseInt(str, 10));
+    const newDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      hours,
+      minutes,
+    );
+    const currentDate = new Date();
+    if (newDate > currentDate) {
+      props.setPublishedAt(currentDate);
+      setTimeValue(currentTime);
+    } else props.setPublishedAt(newDate);
+  };
+
+  return (
+    <div className="flex justify-between gap-2">
+      <div className="text-tertiary">Publish Date</div>
+      <Popover
+        className="w-64 px-2!"
+        trigger={
+          props.publishedAt ? (
+            <div className="text-secondary font-bold hover:underline">
+              {formattedDate}
+            </div>
+          ) : (
+            <div className="text-secondary font-bold hover:underline">Now</div>
+          )
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <DatePicker
+            selected={props.publishedAt}
+            onSelect={handleDateChange}
+            disabled={(date) => date > new Date()}
+          />
+          <Separator className="border-border" />
+          <div className="flex gap-4 pb-1 items-center">
+            <TimePicker value={timeValue} onChange={handleTimeChange} />
+          </div>
+        </div>
+      </Popover>
+    </div>
+  );
+};
+
+const PublishingTo = (props: {
+  publication_uri?: string;
+  record?: NormalizedPublication | null;
+}) => {
+  if (props.publication_uri && props.record) {
+    return (
+      <div className="flex  justify-between gap-4">
+        <div className="text-tertiary">Publishing to</div>
+        <div className="flex gap-2 items-center ">
+          <div className="font-bold text-secondary">{props.record.name}</div>
+          <PubIcon
+            icon={
+              props.record.icon
+                ? blobRefToSrc(
+                    props.record.icon.ref,
+                    new AtUri(props.publication_uri).host,
+                  )
+                : undefined
+            }
+            pubName={props.record.name}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <h3>Publishing as</h3>
+      <div className="flex gap-2 items-center p-2 rounded-md bg-[var(--accent-light)]">
+        <LooseLeafSmall className="shrink-0" />
+        <div className="font-bold text-secondary">Looseleaf</div>
+      </div>
+    </div>
+  );
+};
+
+const PublishPostSuccess = (props: {
+  post_url: string;
+  publication_uri?: string;
+  record: Props["pubRecord"];
+  posts_in_pub: number;
+}) => {
+  let uri = props.publication_uri ? new AtUri(props.publication_uri) : null;
+  return (
+    <div className="frosted-container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto place-self-center">
+      <PublishIllustration posts_in_pub={props.posts_in_pub} />
+      <h2 className="pt-2">Published!</h2>
+      {uri && props.record ? (
+        <Link
+          className="hover:no-underline! font-bold place-self-center pt-2"
+          href={`/lish/${uri.host}/${encodeURIComponent(props.record.name || "")}/dashboard`}
+        >
+          <ButtonPrimary>Back to Dashboard</ButtonPrimary>
+        </Link>
+      ) : (
+        <Link
+          className="hover:no-underline! font-bold place-self-center pt-2"
+          href="/"
+        >
+          <ButtonPrimary>Back to Home</ButtonPrimary>
+        </Link>
+      )}
+      <a href={props.post_url}>See published post</a>
+    </div>
+  );
+};

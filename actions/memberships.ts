@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import {
@@ -11,7 +11,7 @@ import {
   walletCheckoutSessionCard,
   type WalletRow,
 } from "stripe/wallet";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "src/utils/getPublicationURL";
 import { Ok, Err, type Result } from "src/result";
 
 type MembershipError =
@@ -34,7 +34,7 @@ async function setCancelAtPeriodEnd(
   membershipId: string,
   cancel: boolean,
 ): Promise<Result<null, MembershipError>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   const m = await loadOwnedMembership(identity.id, membershipId);
   if (!m?.stripe_subscription_id || !m.stripe_account_id)
@@ -78,7 +78,7 @@ export async function switchMembership(args: {
   tierId: string;
   cadence: "month" | "year";
 }): Promise<Result<null, MembershipError>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   const m = await loadOwnedMembership(identity.id, args.membershipId);
   if (!m?.stripe_subscription_id || !m.stripe_account_id)
@@ -133,7 +133,7 @@ export async function switchMembership(args: {
 export async function updateWalletCard(sessionId: string): Promise<
   Result<{ failedPublications: string[] }, MembershipError>
 > {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   const stripe = getStripe();
   try {
@@ -221,7 +221,7 @@ export type MyMembershipsData = {
 export async function getMyMembershipForPublication(
   publicationUri: string,
 ): Promise<MyMembership | null> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return null;
 
   const [{ data: row }, { data: tiers }] = await Promise.all([
@@ -271,7 +271,7 @@ export async function getMyMembershipForPublication(
 }
 
 export async function getMyMemberships(): Promise<MyMembershipsData | null> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return null;
 
   const [{ data: rows }, { data: wallet }] = await Promise.all([

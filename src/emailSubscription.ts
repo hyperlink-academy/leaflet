@@ -1,5 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { publishAtprotoSubscriptionForDid } from "app/(app)/lish/subscribeToPublication";
+import { publishAtprotoSubscriptionForDid } from "actions/publications/subscribeToPublication";
 import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import {
   getSuppression,

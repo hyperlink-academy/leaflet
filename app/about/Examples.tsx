@@ -1,7 +1,7 @@
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { PubListing } from "app/(app)/(home-pages)/p/[didOrHandle]/PubListing";
+import { PubListing } from "app/(app)/(identity)/(home-pages)/p/[didOrHandle]/PubListing";
 import { idResolver } from "src/identity";
 import { SpeedyLink } from "components/SpeedyLink";
 

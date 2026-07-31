@@ -88,7 +88,12 @@ export const NavigationContent = (props: NavigationProps) => {
       {props.tabs && (
         <>
           {Object.entries(props.tabs).map(([name, { href, icon }]) => (
-            <SpeedyLink key={name} href={href} className="hover:no-underline!">
+            <SpeedyLink
+              eager
+              key={name}
+              href={href}
+              className="hover:no-underline!"
+            >
               <ActionButton
                 labelOnMobile
                 icon={icon ?? <TabsSmall />}
@@ -224,7 +229,7 @@ export const PageTitle = (props: {
   return (
     <div className="flex gap-2 w-full px-1 py-0.5 items-center ">
       {props.showBackButton && (
-        <SpeedyLink href={"/home"} className="flex items-center">
+        <SpeedyLink eager href={"/home"} className="flex items-center">
           <button>
             <GoToArrowLined
               className="accent-accent-contrast rotate-180 shrink-0"

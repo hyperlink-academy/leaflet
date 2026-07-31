@@ -44,6 +44,20 @@ export async function GET(req: NextRequest) {
     "Set-Cookie",
     `external_auth_token=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`,
   );
+  // The session marker mirrors wherever an auth cookie may live: domain-set
+  // (setAuthToken), dot-domain (legacy), and host-only (middleware mirror).
+  response.headers.append(
+    "Set-Cookie",
+    `leaflet_session=; Path=/; Domain=${domain}; Max-Age=0; Secure; SameSite=Lax`,
+  );
+  response.headers.append(
+    "Set-Cookie",
+    `leaflet_session=; Path=/; Domain=.${domain}; Max-Age=0; Secure; SameSite=Lax`,
+  );
+  response.headers.append(
+    "Set-Cookie",
+    `leaflet_session=; Path=/; Max-Age=0; Secure; SameSite=Lax`,
+  );
 
   return response;
 }

@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { LoginModal } from "components/LoginButton";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Input } from "components/Input";
-import { getIdentityData } from "actions/getIdentityData";
+import { getViewerIdentity } from "actions/viewerIdentity";
 
 export function LandingCTA() {
   let [loginOpen, setLoginOpen] = useState(false);
   let [signedIn, setSignedIn] = useState(false);
   useEffect(() => {
-    getIdentityData().then((identity) => setSignedIn(!!identity?.atp_did));
+    getViewerIdentity().then((identity) => setSignedIn(!!identity?.atp_did));
   }, []);
   return (
     <div className="flex items-center justify-end gap-4 sm:gap-6">

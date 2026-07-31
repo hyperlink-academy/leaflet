@@ -2,7 +2,7 @@ import { AtUri } from "@atproto/syntax";
 import { v7 } from "uuid";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "src/utils/getPublicationURL";
 import {
   type Notification,
   pingIdentityToUpdateNotification,

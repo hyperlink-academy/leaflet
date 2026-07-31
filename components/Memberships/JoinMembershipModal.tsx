@@ -5,7 +5,7 @@ import { DotLoader } from "components/utils/DotLoader";
 import {
   JoinTiers,
   type Tier,
-} from "app/(app)/lish/[did]/[publication]/join/JoinTiers";
+} from "app/(app)/(published)/lish/[did]/[publication]/join/JoinTiers";
 import {
   getMembershipJoinViewer,
   type MembershipJoinViewer,

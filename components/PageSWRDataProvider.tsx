@@ -7,10 +7,7 @@ import { getPollData } from "actions/pollActions";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { createContext, useContext, useMemo } from "react";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
-import {
-  getPublicationURL,
-  getDocumentURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL, getDocumentURL } from "src/utils/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import {
   normalizeDocumentRecord,
@@ -108,49 +105,43 @@ export function useLeafletPublicationStatus() {
   const data = useContext(StaticLeafletDataContext);
   if (!data) return null;
 
+  // Published state is read off the join rows' own `doc`/`document` columns
+  // rather than the `documents`/`publications` embeds: the home and looseleafs
+  // lists feed this context from getIdentityData, which carries the join rows
+  // without the record payloads that get_leaflet_data embeds. Both columns are
+  // FKs to documents.uri that cascade on delete, so a set column always means
+  // a live published document.
   const publishedInPublication = data.leaflets_in_publications?.find(
     (l) => l.doc,
   );
   const publishedStandalone = data.leaflets_to_documents?.find(
-    (l) => !!l.documents,
+    (l) => !!l.document,
   );
 
   const documentUri =
-    publishedInPublication?.documents?.uri ?? publishedStandalone?.document;
+    publishedInPublication?.doc ?? publishedStandalone?.document;
 
-  // Compute the full post URL for sharing
+  // The pretty URL needs the document and publication records; without them
+  // fall back to the canonical /p/ permalink, which resolves any document by
+  // its uri.
   let postShareLink: string | undefined;
-  if (
-    publishedInPublication?.publications &&
-    publishedInPublication.documents
-  ) {
+  const publishedRecord =
+    publishedInPublication?.documents ?? publishedStandalone?.documents;
+  if (documentUri && publishedRecord) {
     const normalizedDoc = normalizeDocumentRecord(
-      publishedInPublication.documents.data,
-      publishedInPublication.documents.uri,
+      publishedRecord.data,
+      documentUri,
     );
-    if (normalizedDoc) {
+    if (normalizedDoc)
       postShareLink = getDocumentURL(
         normalizedDoc,
-        publishedInPublication.documents.uri,
-        publishedInPublication.publications,
+        documentUri,
+        publishedInPublication?.publications ?? undefined,
       );
-    }
-  } else if (publishedStandalone?.document) {
-    const normalizedDoc = publishedStandalone.documents
-      ? normalizeDocumentRecord(
-          publishedStandalone.documents.data,
-          publishedStandalone.document,
-        )
-      : null;
-    if (normalizedDoc) {
-      postShareLink = getDocumentURL(
-        normalizedDoc,
-        publishedStandalone.document,
-      );
-    } else {
-      const docUri = new AtUri(publishedStandalone.document);
-      postShareLink = `/p/${docUri.host}/${docUri.rkey}`;
-    }
+  }
+  if (!postShareLink && documentUri) {
+    const docUri = new AtUri(documentUri);
+    postShareLink = `/p/${docUri.host}/${docUri.rkey}`;
   }
 
   return {

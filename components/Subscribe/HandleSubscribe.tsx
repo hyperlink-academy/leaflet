@@ -5,14 +5,17 @@ import { Popover } from "components/Popover";
 import Link from "next/link";
 import { useState } from "react";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
-import { subscribeToPublication } from "app/(app)/lish/subscribeToPublication";
+import { subscribeToPublication } from "actions/publications/subscribeToPublication";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import type { OAuthSessionError } from "src/atproto-oauth";
 import { HandleInput } from "./HandleInput";
 import { Avatar } from "components/Avatar";
-import { useIdentityData } from "components/IdentityProvider";
+import {
+  useIdentityData,
+  refreshIdentityData,
+} from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { LinkIdentityModal } from "./LinkIdentityModal";
 import { RSSTiny } from "components/Icons/RSSTiny";
@@ -144,6 +147,10 @@ export const SubscribeWithHandle = (props: {
         });
       }
       props.onSubscribed?.();
+      // onSubscribed only flips this instance's local state; the subscription
+      // now on the identity is what every other SubscribeButton on the page
+      // reads, and on a published page nothing else will refetch it.
+      refreshIdentityData();
       setSubscribing(false);
     };
     let subscribeButton = (

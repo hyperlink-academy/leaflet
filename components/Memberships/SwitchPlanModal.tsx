@@ -1,4 +1,5 @@
 "use client";
+import { refreshIdentityData } from "components/IdentityProvider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
@@ -57,6 +58,7 @@ export function MembershipActions(props: {
     }
     toaster({ type: "success", content: "Membership resumed." });
     props.onChanged?.();
+    refreshIdentityData();
     router.refresh();
   };
 
@@ -130,6 +132,7 @@ export function CancelMembershipForm(props: {
       content: "Membership will end at the period's end.",
     });
     props.onSuccess();
+    refreshIdentityData();
     router.refresh();
   };
 
@@ -214,6 +217,7 @@ export function SwitchPlanForm(props: {
     }
     toaster({ type: "success", content: "Plan updated." });
     props.onSuccess();
+    refreshIdentityData();
     router.refresh();
   };
 

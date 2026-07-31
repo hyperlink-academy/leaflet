@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getStripe } from "stripe/client";
 import { Ok, Err, type Result } from "src/result";
@@ -20,7 +20,7 @@ type TierError =
 
 async function assertPublicationOwner(publicationUri: string) {
   const [identity, { data: publication }] = await Promise.all([
-    getIdentityData(),
+    getAuthIdentity(),
     supabaseServerClient
       .from("publications")
       .select("identity_did")

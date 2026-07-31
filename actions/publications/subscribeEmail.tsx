@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
 import {
@@ -20,7 +20,7 @@ import {
   backfillAtprotoSubscriptionsForIdentity,
   publishAtprotoSubscriptionForDid,
   unsubscribeToPublication,
-} from "app/(app)/lish/subscribeToPublication";
+} from "actions/publications/subscribeToPublication";
 import type { OAuthSessionError } from "src/atproto-oauth";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
@@ -59,7 +59,7 @@ export async function requestPublicationEmailSubscription(
       .select("record")
       .eq("uri", publicationUri)
       .maybeSingle(),
-    getIdentityData(),
+    getAuthIdentity(),
   ]);
   if (!allowed.ok) return Err(allowed.error);
   const normalizedPub = normalizePublicationRecord(publication?.record);
@@ -183,7 +183,7 @@ export async function confirmPublicationEmailSubscription(
     if (!linkResult.ok) return linkResult;
     identityId = linkResult.value;
   } else {
-    const current = await getIdentityData();
+    const current = await getAuthIdentity();
     if (!current) return Err("subscriber_not_found");
     identityId = current.id;
   }
@@ -230,7 +230,7 @@ export async function confirmPublicationEmailSubscription(
 export async function unsubscribeFromPublication(
   publicationUri: string,
 ): Promise<Result<null, UnsubscribeError>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity?.id) return Err("unauthorized");
 
   // A viewer is "subscribed" if they have EITHER an email subscription OR an
@@ -315,7 +315,7 @@ async function linkEmailToCurrentIdentity(
   email: string,
 ): Promise<Result<string, ConfirmError>> {
   const [current, { data: existing }] = await Promise.all([
-    getIdentityData(),
+    getAuthIdentity(),
     supabaseServerClient
       .from("identities")
       .select("id, atp_did")

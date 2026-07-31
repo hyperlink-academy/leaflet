@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
@@ -25,7 +25,7 @@ type ConfirmError =
 
 async function assertPublicationOwner(publicationUri: string) {
   const [identity, { data: publication }] = await Promise.all([
-    getIdentityData(),
+    getAuthIdentity(),
     supabaseServerClient
       .from("publications")
       .select("identity_did")

@@ -71,7 +71,7 @@
 - Existing platform `route.ts` + handlers: remove the `publication_membership` branches from `handle_checkout_completed.ts` and `handle_subscription_updated.ts` (memberships no longer occur on the platform account); Leaflet Pro paths untouched.
 - Existing `connect/route.ts` (v2 account status) unchanged.
 
-### Join page UI (`app/(app)/lish/[did]/[publication]/join/`)
+### Join page UI (`app/(app)/(published)/lish/[did]/[publication]/join/`)
 - `page.tsx`: also load the viewer's wallet card + email presence.
 - `JoinTiers.tsx`: rework into a two-step flow.
   - Step 1: tier cards as today. Saved card ⇒ button reads "Join · price with ···last4" and calls `subscribeToTier` directly, handling `requires_action` via `stripe.confirmPayment`-style confirmation (Stripe.js initialized with the publisher's `stripeAccount` for the connected-account PaymentIntent).
@@ -80,7 +80,7 @@
 - New small client util `src/stripeClient.ts`: memoized `loadStripe` for the platform key and per-`stripeAccount` instances.
 
 ### Reader management UI (new)
-- New route on leaflet.pub, e.g. `app/(app)/(home-pages)/(writer)/memberships/page.tsx` — "Memberships & billing": membership list (cancel/resume/switch controls) + wallet card display with "Update card" (Payment Element in a modal, then `updateWalletCard`). Linked from home layout nav and from `/join` when already a member.
+- New route on leaflet.pub, e.g. `app/(app)/(identity)/(home-pages)/(writer)/memberships/page.tsx` — "Memberships & billing": membership list (cancel/resume/switch controls) + wallet card display with "Update card" (Payment Element in a modal, then `updateWalletCard`). Linked from home layout nav and from `/join` when already a member.
 
 ### Publisher surfaces
 - `dashboard/subs`: server loader joins active `publication_memberships` (+ tier name); `MergedSubscriber` gains `memberTier?: string`; `SubscriberListItem` renders a member badge; `SubscriberStatusFilter` gains a "Members" checkbox (`dashboardState`).

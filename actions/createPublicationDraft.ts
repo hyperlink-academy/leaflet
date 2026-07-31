@@ -1,11 +1,11 @@
 "use server";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { createNewLeaflet } from "./createNewLeaflet";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isConfirmedContributor } from "src/contributorPermissions";
 
 export async function createPublicationDraft(publication_uri: string) {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) return null;
 
   let { data: publication } = await supabaseServerClient

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { tinybird } from "lib/tinybird";
 import { AtpAgent, AppBskyFeedDefs } from "@atproto/api";
 import { fetchBskyPosts } from "src/utils/fetchBskyPosts";
@@ -35,7 +35,7 @@ export const get_publication_bsky_posts = makeRoute({
     { publication_uri, from, to, path },
     { supabase }: Pick<Env, "supabase">,
   ) => {
-    const identity = await getIdentityData();
+    const identity = await getAuthIdentity();
     if (
       !identity?.atp_did ||
       !identity.entitlements?.publication_analytics ||

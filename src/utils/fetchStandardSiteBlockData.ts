@@ -14,7 +14,7 @@ import {
   get_standard_site_publications,
   type StandardSitePublicationData,
 } from "app/api/rpc/[command]/get_standard_site_publications";
-import { extractBlocksByType } from "app/(app)/lish/[did]/[publication]/[rkey]/extractBlocksByType";
+import { extractBlocksByType } from "src/utils/extractBlocksByType";
 
 // Resolves the standard-site post/publication blocks referenced by a document's
 // blocks into renderable data keyed by AT-URI. Used by the newsletter send

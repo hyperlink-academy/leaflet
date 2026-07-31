@@ -147,15 +147,24 @@ export function isActiveMembership(
   return true;
 }
 
-// Client-side check over the memberships embedded in identity data.
-export function getActiveMembership<
-  M extends MembershipStatusFields & { publication: string },
->(
-  identity: { publication_memberships?: M[] | null } | null | undefined,
-  publicationUri: string,
-): M | null {
-  const m = identity?.publication_memberships?.find(
-    (m) => m.publication === publicationUri,
-  );
-  return m && isActiveMembership(m) ? m : null;
+// The full-access rule for a gated post, over already-fetched rows so the
+// decision is testable without a database: the publication owner, a confirmed
+// contributor, or an active member reads past the delimiter.
+export function isEntitledToGatedPost(input: {
+  viewerDid: string | null | undefined;
+  ownerDid: string | null | undefined;
+  contributors: { contributor_did: string; confirmed: boolean | null }[];
+  membership: MembershipStatusFields | null | undefined;
+}): boolean {
+  const { viewerDid } = input;
+  if (viewerDid) {
+    if (input.ownerDid && input.ownerDid === viewerDid) return true;
+    if (
+      input.contributors.some(
+        (c) => c.contributor_did === viewerDid && c.confirmed,
+      )
+    )
+      return true;
+  }
+  return isActiveMembership(input.membership);
 }

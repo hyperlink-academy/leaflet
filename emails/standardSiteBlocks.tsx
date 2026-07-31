@@ -3,10 +3,7 @@ import { AtUri } from "@atproto/syntax";
 import React, { type CSSProperties } from "react";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
-import {
-  getDocumentURL,
-  getPublicationURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL, getPublicationURL } from "src/utils/getPublicationURL";
 import { resolvePublicationTheme } from "lexicons/src/normalize";
 import {
   blobRefToSrc,

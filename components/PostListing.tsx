@@ -8,7 +8,7 @@ import type {
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { hasLeafletContent } from "lexicons/src/normalize";
-import type { Post } from "app/(app)/(home-pages)/reader/getReaderFeed";
+import type { Post } from "actions/reader/getReaderFeed";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -18,12 +18,12 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getDocumentURL } from "src/utils/getPublicationURL";
 import { RecommendButton } from "./Interactions/RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionButton } from "./Interactions/DiscussionButton";
 import { InteractionShareButton } from "./Interactions/InteractionShareButton";
-import { PublicationPostItemLarge } from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
+import { PublicationPostItemLarge } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
 
 export const PostListing = (props: Post & { selected?: boolean }) => {
   let pubRecord = props.publication?.pubRecord as

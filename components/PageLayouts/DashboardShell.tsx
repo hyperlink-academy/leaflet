@@ -45,6 +45,14 @@ export function DashboardShell(props: DashboardShellProps) {
                 const interactive = target.closest("a, button");
                 if (!interactive) return;
                 if (interactive.getAttribute("aria-haspopup")) return;
+                // Navigation links keep the sidebar open — it's the hub for
+                // hopping between dashboards, and its open state (module-level
+                // store) is meant to survive route changes. Only non-link
+                // actions dismiss it. closest("a"), not a tagName check: the
+                // nav links render a button INSIDE the anchor (SpeedyLink >
+                // ActionButton), so the innermost interactive element is a
+                // button even for navigations.
+                if (interactive.closest("a")) return;
                 setOpen(false);
               }}
             >

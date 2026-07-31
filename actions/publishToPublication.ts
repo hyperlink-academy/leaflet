@@ -1,7 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { revalidatePostPaths } from "src/utils/revalidatePublication";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import {
   AtpBaseClient,
   PubLeafletBlocksBskyPost,
@@ -36,6 +38,7 @@ import {
 } from "src/membership";
 import {
   normalizeDocumentRecord,
+  normalizePublicationRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
 import {
@@ -86,7 +89,7 @@ export async function publishToPublication({
   // own record out of those feeds.
   showInDiscover?: boolean;
 }): Promise<PublishResult> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,
@@ -482,6 +485,24 @@ export async function publishToPublication({
         });
       }
     }
+  }
+
+  // The standalone view exists for every published document, publication or
+  // not.
+  revalidatePath(`/p/${credentialSession.did}/${rkey}`);
+  if (publication_uri) {
+    const { data: pubRow } = await supabaseServerClient
+      .from("publications")
+      .select("record")
+      .eq("uri", publication_uri)
+      .maybeSingle();
+    const docPath = (record as { path?: string }).path;
+    revalidatePostPaths(
+      publication_uri,
+      normalizePublicationRecord(pubRow?.record)?.name,
+      rkey,
+      docPath,
+    );
   }
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };

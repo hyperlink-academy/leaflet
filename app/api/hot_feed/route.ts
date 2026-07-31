@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 
-import { getHotFeed } from "app/(app)/(home-pages)/reader/getHotFeed";
+import { getHotFeed } from "actions/reader/getHotFeed";
 
 // The hot feed is identical for every user and already served 5 minutes
 // stale from redis. Exposing it as a CDN-cacheable GET collapses every

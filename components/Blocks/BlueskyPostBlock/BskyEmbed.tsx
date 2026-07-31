@@ -13,7 +13,7 @@ import {
 } from "@atproto/api";
 import { useMemo, useState } from "react";
 import { Avatar } from "components/Avatar";
-import { LocalizedDate } from "app/(app)/lish/[did]/[publication]/LocalizedDate";
+import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 import { BlueskyVideoPlayer } from "./BlueskyVideoPlayer";
 import { PubIcon } from "components/ActionBar/Publications";
 import { getProfiles } from "src/identity";

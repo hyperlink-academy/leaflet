@@ -145,6 +145,6 @@ if (n.type === "your_type") {
 
 See the implementation in:
 - `src/notifications.ts:88-125` - Hydration logic
-- `app/lish/subscribeToPublication.ts:55-68` - Trigger
+- `actions/publications/subscribeToPublication.ts:55-68` - Trigger
 - `app/(home-pages)/notifications/FollowNotification.tsx` - Component
 - `app/(home-pages)/notifications/NotificationList.tsx:40-42` - Rendering

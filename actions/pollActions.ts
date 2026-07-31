@@ -1,7 +1,7 @@
 "use server";
 import { cookies } from "next/headers";
 import { v7 } from "uuid";
-import { getIdentityData } from "./getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 
 export async function getPollData(entity_sets: string[]) {
@@ -72,7 +72,7 @@ export async function voteOnPoll(
 ) {
   let voter_token = (await cookies()).get("poll_voter_token")?.value;
   if (!voter_token) {
-    let identity = await getIdentityData();
+    let identity = await getAuthIdentity();
     if (identity) voter_token = identity.id;
     else voter_token = v7();
     (await cookies()).set("poll_voter_token", voter_token, {

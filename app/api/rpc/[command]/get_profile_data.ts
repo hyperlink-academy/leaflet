@@ -4,7 +4,7 @@ import type { Env } from "./route";
 import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Agent } from "@atproto/api";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import {
   normalizePublicationRow,
@@ -33,7 +33,7 @@ export const get_profile_data = makeRoute({
       did = resolved;
     }
     let agent;
-    let authed_identity = await getIdentityData();
+    let authed_identity = await getAuthIdentity();
     if (authed_identity?.atp_did) {
       const restored = await restoreOAuthSession(authed_identity.atp_did);
       agent = restored.ok

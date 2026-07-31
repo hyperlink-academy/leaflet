@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import type * as MentionConfig from "lexicons/api/types/parts/page/mention/config";
 import type * as MentionService from "lexicons/api/types/parts/page/mention/service";
 
@@ -25,7 +25,7 @@ export const get_user_mention_services = makeRoute({
   route: "get_user_mention_services",
   input: z.object({}),
   handler: async (_input, { supabase }: Pick<Env, "supabase">) => {
-    let user = await getIdentityData();
+    let user = await getAuthIdentity();
     if (!user?.atp_did) return { result: { services: [] } };
     let services: string[];
     const cachedConfig = configCache.get(user.atp_did);

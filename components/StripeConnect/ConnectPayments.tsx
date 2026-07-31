@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { mutate } from "swr";
 import { ButtonPrimary } from "components/Buttons";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
-import { useIdentityData } from "components/IdentityProvider";
+import { useIdentityData, refreshIdentityData } from "components/IdentityProvider";
 import { startStripeConnectOnboarding } from "actions/startStripeConnectOnboarding";
 import { refreshStripeConnectAccount } from "actions/refreshStripeConnectAccount";
 
@@ -21,7 +20,7 @@ export function ConnectPayments() {
   useEffect(() => {
     if (connected && !connected.charges_enabled) {
       refreshStripeConnectAccount().then((r) => {
-        if (r.ok) mutate("identity");
+        if (r.ok) refreshIdentityData();
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
