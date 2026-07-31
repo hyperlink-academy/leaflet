@@ -1,8 +1,7 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { redirect } from "next/navigation";
-import { hydrateNotifications } from "src/notifications";
-import { supabaseServerClient } from "supabase/serverClient";
+import { getNotificationPage } from "src/notificationQueries";
 import { NotificationList } from "./NotificationList";
 
 export default async function NotificationsPage() {
@@ -20,10 +19,6 @@ export default async function NotificationsPage() {
 const NotificationContent = async () => {
   let identity = await getIdentityData();
   if (!identity?.atp_did) return redirect("/home");
-  let { data } = await supabaseServerClient
-    .from("notifications")
-    .select("*")
-    .eq("recipient", identity.atp_did);
-  let notifications = await hydrateNotifications(data || []);
-  return <NotificationList notifications={notifications} />;
+  let page = await getNotificationPage(identity.atp_did);
+  return <NotificationList fallbackPage={page} />;
 };

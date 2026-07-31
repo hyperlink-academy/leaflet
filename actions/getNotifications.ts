@@ -1,20 +1,18 @@
 "use server";
 import { getAuthIdentity } from "src/auth";
-import { hydrateNotifications } from "src/notifications";
+import {
+  getNotificationPage,
+  type NotificationCursor,
+  type NotificationPage,
+} from "src/notificationQueries";
 import { supabaseServerClient } from "supabase/serverClient";
 
-export async function getNotifications(limit?: number) {
+export async function getNotifications(
+  cursor?: NotificationCursor | null,
+): Promise<NotificationPage> {
   let identity = await getAuthIdentity();
-  if (!identity?.atp_did) return [];
-  let query = supabaseServerClient
-    .from("notifications")
-    .select("*")
-    .eq("recipient", identity.atp_did)
-    .order("created_at", { ascending: false });
-  if (limit) query.limit(limit);
-  let { data } = await query;
-  let notifications = await hydrateNotifications(data || []);
-  return notifications;
+  if (!identity?.atp_did) return { items: [], nextCursor: null };
+  return getNotificationPage(identity.atp_did, cursor);
 }
 
 export async function markAsRead() {
@@ -23,6 +21,7 @@ export async function markAsRead() {
   await supabaseServerClient
     .from("notifications")
     .update({ read: true })
-    .eq("recipient", identity.atp_did);
+    .eq("recipient", identity.atp_did)
+    .eq("read", false);
   return;
 }
