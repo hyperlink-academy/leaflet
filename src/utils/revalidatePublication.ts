@@ -28,6 +28,25 @@ export function revalidatePublicationPaths(
     for (const sub of subpaths) revalidatePath(`${base}${sub}`);
 }
 
+// A single post's pages: its base URL, the archive listing, its rkey path,
+// and its record `path` (if set to something other than the rkey) since
+// documents can publish under a custom path.
+export function revalidatePostPaths(
+  pubUri: string,
+  name: string | null | undefined,
+  rkey: string,
+  docPath: string | null | undefined,
+) {
+  revalidatePublicationPaths(pubUri, name, [
+    "",
+    "/archive",
+    `/${rkey}`,
+    ...(docPath && docPath !== `/${rkey}`
+      ? [docPath.startsWith("/") ? docPath : `/${docPath}`]
+      : []),
+  ]);
+}
+
 // For changes that touch every page of a publication (theme, name, base
 // path): enumerate the publication's published pages and post URLs and drop
 // them all. `names` should carry both the old and new name on a rename so

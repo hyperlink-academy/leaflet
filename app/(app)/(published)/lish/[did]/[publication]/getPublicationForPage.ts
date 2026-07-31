@@ -21,24 +21,6 @@ export const fetchPublicationForPage = cache(
   },
 );
 
-// Just the record, for the metadata of routes that never load the publication
-// row itself (the group layout, and any page whose body doesn't need it).
-export const fetchPublicationRecordForMetadata = cache(
-  async function fetchPublicationRecordForMetadata(
-    did: string,
-    publicationName: string,
-  ) {
-    const { data } = await supabaseServerClient
-      .from("publications")
-      .select(`uri, record`)
-      .eq("identity_did", did)
-      .or(publicationNameOrUriFilter(did, publicationName))
-      .order("uri", { ascending: false })
-      .limit(1);
-    return data?.[0] ?? null;
-  },
-);
-
 export type PublicationForPage = NonNullable<
   Awaited<ReturnType<typeof fetchPublicationForPage>>
 >;

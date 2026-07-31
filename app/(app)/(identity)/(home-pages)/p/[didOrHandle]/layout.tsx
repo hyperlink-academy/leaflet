@@ -10,9 +10,10 @@ import { ProfileLayout } from "./ProfileLayout";
 import { Agent } from "@atproto/api";
 import { get_profile_data } from "app/api/rpc/[command]/get_profile_data";
 import { Metadata } from "next";
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
 import { Avatar } from "components/Avatar";
+import { FullPageLoading } from "components/PageLayouts/DashboardLoading";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { TrendingSmall } from "components/Icons/TrendingSmall";
 import { NewSmall } from "components/Icons/NewSmall";
@@ -53,7 +54,23 @@ export async function generateMetadata(props: {
   return { title };
 }
 
-export default async function ProfilePageLayout(props: {
+// Synchronous shell + suspended inner, same as the (identity) and
+// (home-pages) layouts above: a fresh mount of this segment (e.g. home →
+// /p/handle) suspends inside their already-committed boundaries, which won't
+// re-show their fallback mid-transition — so this segment needs its own
+// boundary to commit against while the handle/profile resolve.
+export default function ProfilePageLayout(props: {
+  params: Promise<{ didOrHandle: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<FullPageLoading />}>
+      <ProfilePageLayoutInner {...props} />
+    </Suspense>
+  );
+}
+
+async function ProfilePageLayoutInner(props: {
   params: Promise<{ didOrHandle: string }>;
   children: React.ReactNode;
 }) {

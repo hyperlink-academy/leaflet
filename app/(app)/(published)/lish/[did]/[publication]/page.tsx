@@ -9,7 +9,6 @@ import { buildPublicationPosts } from "src/utils/buildPublicationPosts";
 import {
   fetchPublicationForPage,
   fetchPublicationPostRows,
-  fetchPublicationRecordForMetadata,
 } from "./getPublicationForPage";
 import { tryRenderPublicationPage } from "./tryRenderPublicationPage";
 import { getProfiles } from "src/identity";
@@ -35,7 +34,8 @@ export async function generateMetadata(props: {
   let did = decodeURIComponent(params.did);
   if (!did || !params.publication) return {};
 
-  let publication = await fetchPublicationRecordForMetadata(
+  // Same fetcher the page body uses, so the two share one query.
+  let publication = await fetchPublicationForPage(
     did,
     decodeURIComponent(params.publication),
   );

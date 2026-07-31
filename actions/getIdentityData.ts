@@ -8,8 +8,10 @@ import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 import {
   bskyProfileFromCache,
+  ENTITLEMENT_EMBEDS,
   getValidAuthToken,
   keyEntitlements,
+  SUBSCRIPTION_STATE_EMBEDS,
 } from "src/identityPayload";
 export const getIdentityData = cache(uncachedGetIdentityData);
 async function uncachedGetIdentityData() {
@@ -21,10 +23,7 @@ async function uncachedGetIdentityData() {
           `*,
           identities(
             *,
-            notifications(count),
-            publication_subscriptions(*),
-            publication_email_subscribers(publication, state),
-            publication_memberships(publication, tier, status, current_period_end, cancel_at_period_end),
+            ${SUBSCRIPTION_STATE_EMBEDS},
             custom_domains!custom_domains_identity_id_fkey(publication_domains(*, publications(name)), custom_domain_routes(*), *),
             permission_token_on_homepage(
               archived,
@@ -39,9 +38,7 @@ async function uncachedGetIdentityData() {
                 leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
               )
             ),
-            user_subscriptions(plan, status, current_period_end),
-            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted),
-            user_entitlements(entitlement_key, granted_at, expires_at, source, metadata),
+            ${ENTITLEMENT_EMBEDS},
             publications!publications_identity_did_fkey(*),
             leaflet_contributors!leaflet_contributors_contributor_did_fkey(
               created_at,

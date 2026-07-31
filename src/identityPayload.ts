@@ -18,6 +18,18 @@ export async function getValidAuthToken() {
   return auth_token;
 }
 
+// Embed fragments shared by getIdentityData and getViewerIdentity's
+// `identities(...)` selects. getIdentityData sandwiches dashboard-only embeds
+// between the two groups, so they can't be joined into one fragment.
+export const SUBSCRIPTION_STATE_EMBEDS = `notifications(count),
+            publication_subscriptions(*),
+            publication_email_subscribers(publication, state),
+            publication_memberships(publication, tier, status, current_period_end, cancel_at_period_end)`;
+
+export const ENTITLEMENT_EMBEDS = `user_subscriptions(plan, status, current_period_end),
+            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted),
+            user_entitlements(entitlement_key, granted_at, expires_at, source, metadata)`;
+
 export type EntitlementRow = {
   entitlement_key: string;
   granted_at: string;

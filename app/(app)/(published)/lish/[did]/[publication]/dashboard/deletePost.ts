@@ -10,7 +10,7 @@ import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { revalidatePath } from "next/cache";
-import { revalidatePublicationPaths } from "src/utils/revalidatePublication";
+import { revalidatePostPaths } from "src/utils/revalidatePublication";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 // An authorization failure, distinct from a (recoverable) expired OAuth
@@ -68,17 +68,11 @@ async function revalidateDocPublications(document_uri: string) {
     // Documents publish under record.path (usually "/<rkey>", but other
     // clients can write any path) — drop both spellings.
     const docPath = (row.documents?.data as { path?: string } | null)?.path;
-    revalidatePublicationPaths(
+    revalidatePostPaths(
       row.publications.uri,
       normalizePublicationRecord(row.publications.record)?.name,
-      [
-        "",
-        "/archive",
-        `/${docUri.rkey}`,
-        ...(docPath && docPath !== `/${docUri.rkey}`
-          ? [docPath.startsWith("/") ? docPath : `/${docPath}`]
-          : []),
-      ],
+      docUri.rkey,
+      docPath,
     );
   }
   revalidatePath(`/p/${docUri.host}/${docUri.rkey}`);

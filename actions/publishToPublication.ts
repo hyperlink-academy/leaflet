@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { revalidatePublicationPaths } from "src/utils/revalidatePublication";
+import { revalidatePostPaths } from "src/utils/revalidatePublication";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getAuthIdentity } from "src/auth";
 import {
@@ -497,17 +497,11 @@ export async function publishToPublication({
       .eq("uri", publication_uri)
       .maybeSingle();
     const docPath = (record as { path?: string }).path;
-    revalidatePublicationPaths(
+    revalidatePostPaths(
       publication_uri,
       normalizePublicationRecord(pubRow?.record)?.name,
-      [
-        "",
-        "/archive",
-        `/${rkey}`,
-        ...(docPath && docPath !== `/${rkey}`
-          ? [docPath.startsWith("/") ? docPath : `/${docPath}`]
-          : []),
-      ],
+      rkey,
+      docPath,
     );
   }
 

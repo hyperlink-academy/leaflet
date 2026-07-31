@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { fetchPublicationRecordForMetadata } from "./getPublicationForPage";
+import { fetchPublicationForPage } from "./getPublicationForPage";
 
 export default async function PublicationLayout(props: {
   children: React.ReactNode;
@@ -19,10 +19,8 @@ export async function generateMetadata(props: {
   if (!params.did || !params.publication) return { title: "Publication 404" };
 
   let publication_name = decodeURIComponent(params.publication);
-  let publication = await fetchPublicationRecordForMetadata(
-    did,
-    publication_name,
-  );
+  // Same fetcher the page body uses, so the two share one query.
+  let publication = await fetchPublicationForPage(did, publication_name);
   if (!publication) return { title: "Publication 404" };
 
   const pubRecord = normalizePublicationRecord(publication?.record);

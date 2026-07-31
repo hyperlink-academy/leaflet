@@ -5,8 +5,10 @@ import { cache } from "react";
 import { getProfiles } from "src/identity";
 import {
   bskyProfileFromCache,
+  ENTITLEMENT_EMBEDS,
   getValidAuthToken,
   keyEntitlements,
+  SUBSCRIPTION_STATE_EMBEDS,
 } from "src/identityPayload";
 import type { getIdentityData } from "./getIdentityData";
 
@@ -27,13 +29,8 @@ async function uncachedGetViewerIdentity(): Promise<Identity> {
           `*,
           identities(
             *,
-            notifications(count),
-            publication_subscriptions(*),
-            publication_email_subscribers(publication, state),
-            publication_memberships(publication, tier, status, current_period_end, cancel_at_period_end),
-            user_subscriptions(plan, status, current_period_end),
-            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted),
-            user_entitlements(entitlement_key, granted_at, expires_at, source, metadata)
+            ${SUBSCRIPTION_STATE_EMBEDS},
+            ${ENTITLEMENT_EMBEDS}
           )`,
         )
         .eq("identities.notifications.read", false)
