@@ -1,5 +1,6 @@
 "use client";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   DesktopNavigation,
@@ -21,6 +22,15 @@ type DashboardShellProps = {
 export function DashboardShell(props: DashboardShellProps) {
   let { id, children, ...navigationProps } = props;
   let { open, setOpen } = useSidebarStore();
+  // Each route-group layout renders its own shell, so navigating between them
+  // remounts this dialog while `open` persists in the module-level store. A
+  // mount that starts out open is that carry-over, not the user opening the
+  // sidebar — suppress the slide-in/overlay animations so the sidebar reads
+  // as continuously open across the navigation.
+  let [suppressOpenAnimation, setSuppressOpenAnimation] = useState(open);
+  useEffect(() => {
+    if (!open) setSuppressOpenAnimation(false);
+  }, [open]);
   let searchParams = useSearchParams();
   let showNotifications = searchParams.get("notifications") === "open";
 
@@ -32,9 +42,11 @@ export function DashboardShell(props: DashboardShellProps) {
         <DesktopNavigation {...navigationProps} />
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed z-50 inset-0 bg-primary opacity-60 data-[state=open]:animate-overlayShow" />
+            <Dialog.Overlay
+              className={`fixed z-50 inset-0 bg-primary opacity-60 ${suppressOpenAnimation ? "" : "data-[state=open]:animate-overlayShow"}`}
+            />
             <Dialog.Content
-              className="mobile-sidebar-content fixed z-50 left-0 top-0 h-dvh outline-none"
+              className={`mobile-sidebar-content ${suppressOpenAnimation ? "mobile-sidebar-skip-open-anim" : ""} fixed z-50 left-0 top-0 h-dvh outline-none`}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
                 // Clicks inside portaled layers (popovers, modals) bubble here

@@ -691,6 +691,11 @@ body.cmd-held .ProseMirror a {
 .mobile-sidebar-content[data-state="open"] {
   animation: mobile-sidebar-slide-in 80ms ease-out;
 }
+/* Set while the dialog is remounting already-open across a route change —
+   only a real closed→open transition should slide in. */
+.mobile-sidebar-content.mobile-sidebar-skip-open-anim[data-state="open"] {
+  animation: none;
+}
 .mobile-sidebar-content[data-state="closed"] {
   animation: mobile-sidebar-slide-out 80ms ease-in;
 }
