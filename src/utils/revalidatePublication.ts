@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 // ISR cache tags include the route group segment
 // (_N_T_/(published)/lish/...), so the pattern form
@@ -45,6 +46,59 @@ export function revalidatePostPaths(
       ? [docPath.startsWith("/") ? docPath : `/${docPath}`]
       : []),
   ]);
+}
+
+// Every cached page that lists or renders a document: the standalone /p/ URL
+// and, for each publication it belongs to, the post/index/archive paths.
+// Callable before the document row exists (nothing to look up → /p/ only) or
+// after it's gone: pass `snapshot` (captured pre-delete) and the join-row
+// lookup is skipped — publication names still resolve from the publications
+// table, which outlives the document.
+export async function revalidateDocumentPaths(
+  documentUri: string,
+  snapshot?: { publications: string[]; path?: string | null },
+) {
+  let docUri;
+  try {
+    docUri = new AtUri(documentUri);
+  } catch {
+    return;
+  }
+  let pubs: { uri: string; name: string | null | undefined }[] = [];
+  let docPath = snapshot?.path;
+  if (snapshot) {
+    if (snapshot.publications.length) {
+      const { data } = await supabaseServerClient
+        .from("publications")
+        .select("uri, record")
+        .in("uri", snapshot.publications);
+      pubs = snapshot.publications.map((uri) => ({
+        uri,
+        name: normalizePublicationRecord(
+          data?.find((r) => r.uri === uri)?.record,
+        )?.name,
+      }));
+    }
+  } else {
+    const { data: rows } = await supabaseServerClient
+      .from("documents_in_publications")
+      .select("publications(uri, record), documents(data)")
+      .eq("document", documentUri);
+    for (const row of rows ?? []) {
+      if (!row.publications) continue;
+      pubs.push({
+        uri: row.publications.uri,
+        name: normalizePublicationRecord(row.publications.record)?.name,
+      });
+      // Documents publish under record.path (usually "/<rkey>", but other
+      // clients can write any path) — drop both spellings.
+      docPath =
+        docPath ?? (row.documents?.data as { path?: string } | null)?.path;
+    }
+  }
+  for (const pub of pubs)
+    revalidatePostPaths(pub.uri, pub.name, docUri.rkey, docPath);
+  revalidatePath(`/p/${docUri.host}/${docUri.rkey}`);
 }
 
 // For changes that touch every page of a publication (theme, name, base

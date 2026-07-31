@@ -12,8 +12,10 @@ import { decodeQuotePosition } from "src/utils/quotePosition";
 // On-demand ISR: rendered on first request, then served from the CDN and
 // re-rendered in the background. The empty generateStaticParams is what opts a
 // dynamic-params route into caching at all — `revalidate` alone leaves it
-// fully dynamic. Writes invalidate eagerly via revalidatePublicationPaths.
-export const revalidate = 300;
+// fully dynamic. Writes invalidate eagerly — Leaflet's own actions in-process,
+// firehose-indexed writes via /api/appview_revalidate — so the timer only
+// backstops what nothing revalidates (Bluesky profiles, like/mention counts).
+export const revalidate = 3600;
 export async function generateStaticParams() {
   return [];
 }

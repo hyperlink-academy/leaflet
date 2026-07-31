@@ -3,6 +3,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { AtpAgent, AtUri } from "@atproto/api";
 import { idResolver } from "src/identity";
 import { pageHasMembersDelimiter } from "src/membership";
+import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import type { Json } from "supabase/database.types";
 
 // 1m, 2m, 4m, 8m, 16m, 32m, 1h, 2h, 4h, 8h, 8h, 8h (~37h total)
@@ -134,6 +135,14 @@ export const sync_document_metadata = inngest.createFunction(
         .update({ indexed: true })
         .eq("uri", document_uri)
         .select();
+    });
+
+    // For blob-offloaded records this function is the actual content writer
+    // (the appview skips both the upsert and its revalidation ping), so the
+    // ISR pages can only be dropped once inflation has landed.
+    await step.run("revalidate-paths", async () => {
+      await revalidateDocumentPaths(document_uri);
+      return { revalidated: true };
     });
 
     // Only fire newsletter broadcasts on first-time document creation. An

@@ -9,9 +9,7 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isConfirmedContributor } from "src/contributorPermissions";
-import { revalidatePath } from "next/cache";
-import { revalidatePostPaths } from "src/utils/revalidatePublication";
-import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 
 // An authorization failure, distinct from a (recoverable) expired OAuth
 // session. Callers surface session errors with a "sign in again" affordance;
@@ -55,28 +53,6 @@ async function resolveDocumentAuthority(
 }
 
 
-// Invalidate the cached reader pages that listed or rendered this post.
-// Looked up before the delete removes the join rows.
-async function revalidateDocPublications(document_uri: string) {
-  const docUri = new AtUri(document_uri);
-  const { data: rows } = await supabaseServerClient
-    .from("documents_in_publications")
-    .select("publications(uri, record), documents(data)")
-    .eq("document", document_uri);
-  for (const row of rows ?? []) {
-    if (!row.publications) continue;
-    // Documents publish under record.path (usually "/<rkey>", but other
-    // clients can write any path) — drop both spellings.
-    const docPath = (row.documents?.data as { path?: string } | null)?.path;
-    revalidatePostPaths(
-      row.publications.uri,
-      normalizePublicationRecord(row.publications.record)?.name,
-      docUri.rkey,
-      docPath,
-    );
-  }
-  revalidatePath(`/p/${docUri.host}/${docUri.rkey}`);
-}
 
 export async function deletePost(
   document_uri: string
@@ -109,7 +85,8 @@ export async function deletePost(
   );
   let uri = new AtUri(document_uri);
 
-  await revalidateDocPublications(document_uri);
+  // Invalidated before the delete removes the join rows the lookup needs.
+  await revalidateDocumentPaths(document_uri);
   await Promise.all([
     // Delete from both PDS collections (document exists in one or the other)
     agent.pub.leaflet.document.delete({
@@ -160,7 +137,8 @@ export async function unpublishPost(
   );
   let uri = new AtUri(document_uri);
 
-  await revalidateDocPublications(document_uri);
+  // Invalidated before the delete removes the join rows the lookup needs.
+  await revalidateDocumentPaths(document_uri);
   await Promise.all([
     // Delete from both PDS collections (document exists in one or the other)
     agent.pub.leaflet.document.delete({

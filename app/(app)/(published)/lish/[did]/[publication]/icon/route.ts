@@ -9,6 +9,17 @@ let idResolver = new IdResolver();
 
 export const dynamic = "force-dynamic";
 
+// The route is dynamic (it proxies a PDS blob), so caching happens entirely
+// via response headers. The no-icon fallback redirect gets the same CDN
+// lifetime as a rendered icon — every view of an icon-less publication hits
+// this route otherwise, and each miss costs a Supabase query plus a DID
+// resolution.
+const CACHE_HEADERS = {
+  "CDN-Cache-Control": "s-maxage=86400, stale-while-revalidate=86400",
+  "Cache-Control":
+    "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+};
+
 export async function GET(
   request: NextRequest,
   props: { params: Promise<{ did: string; publication: string }> },
@@ -33,12 +44,16 @@ export async function GET(
 
     const record = normalizePublicationRecord(publication?.record);
     if (!record?.icon)
-      return NextResponse.redirect(new URL("/icon.png", request.url));
+      return NextResponse.redirect(new URL("/icon.png", request.url), {
+        headers: CACHE_HEADERS,
+      });
 
     let identity = await idResolver.did.resolve(did);
     let service = identity?.service?.find((f) => f.id === "#atproto_pds");
     if (!service)
-      return NextResponse.redirect(new URL("/icon.png", request.url));
+      return NextResponse.redirect(new URL("/icon.png", request.url), {
+        headers: CACHE_HEADERS,
+      });
     let cid = (record.icon.ref as unknown as { $link: string })["$link"];
     const response = await fetch(
       `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${cid}`,
@@ -48,15 +63,14 @@ export async function GET(
       .resize({ width: 32, height: 32 })
       .toBuffer();
     return new Response(new Uint8Array(resizedImage), {
-      headers: {
-        "Content-Type": "image/png",
-        "CDN-Cache-Control": "s-maxage=86400, stale-while-revalidate=86400",
-        "Cache-Control":
-          "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
-      },
+      headers: { "Content-Type": "image/png", ...CACHE_HEADERS },
     });
   } catch (e) {
     console.log(e);
-    return NextResponse.redirect(new URL("/icon.png", request.url));
+    // Errors are likely transient (PDS fetch failures), so cache the fallback
+    // only briefly instead of pinning a broken icon for a day.
+    return NextResponse.redirect(new URL("/icon.png", request.url), {
+      headers: { "Cache-Control": "public, max-age=60, s-maxage=300" },
+    });
   }
 }
