@@ -1,10 +1,9 @@
-import { IdentityProviderServer } from "components/IdentityProviderServer";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { CreatePubForm } from "./CreatePubForm";
 import { getIdentityData } from "actions/getIdentityData";
 import { LoginContent } from "components/LoginButton";
 
-async function CreatePubInner() {
+export default async function CreatePub() {
   let identity = await getIdentityData();
   if (!identity)
     return (
@@ -34,14 +33,3 @@ async function CreatePubInner() {
 // Explicit rather than incidental (via cookies()): guards against a future
 // revalidate/generateStaticParams landing on a shared segment above.
 export const dynamic = "force-dynamic";
-
-// Identity-gated surface inside the (published) group: shadow the
-// client-fetched viewer identity with a server-fed provider so chrome
-// renders correctly on the first frame.
-export default async function CreatePub() {
-  return (
-    <IdentityProviderServer>
-      <CreatePubInner />
-    </IdentityProviderServer>
-  );
-}

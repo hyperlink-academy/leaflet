@@ -1,5 +1,5 @@
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
-import { UpgradeContent } from "../../UpgradeModal";
+import { UpgradeContent } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
 import { useCallback, useMemo } from "react";
 import { useQueryState } from "src/hooks/useQueryState";
 import { usePublicationData } from "../PublicationSWRProvider";

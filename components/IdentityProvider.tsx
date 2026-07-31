@@ -91,9 +91,19 @@ export function IdentityContextProvider(props: {
     revalidateOnMount: false,
   });
   useEffect(() => {
-    // revalidate:false — initialValue IS the fresh server value; the default
+    // revalidate:false — initialValue is a full server value; the default
     // would kick off a redundant full getIdentityData round-trip per render.
-    mutate(initialValue, { revalidate: false });
+    // Keep whichever snapshot was fetched later: nav payloads are prefetched
+    // and router-cached, so a seed can predate a client-side revalidation
+    // (e.g. the notifications page marks-all-read and refetches, but the
+    // eagerly-prefetched nav targets still carry the old unread count).
+    mutate(
+      (current) =>
+        current && initialValue && current.fetched_at > initialValue.fetched_at
+          ? current
+          : initialValue,
+      { revalidate: false },
+    );
   }, [initialValue]);
   // Remember the current session in the saved-accounts list so the account
   // switcher can offer it later. The token is always re-fetched — the cookie

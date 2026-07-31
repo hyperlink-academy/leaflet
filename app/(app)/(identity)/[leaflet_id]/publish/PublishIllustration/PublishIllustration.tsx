@@ -14,7 +14,7 @@ import {
   Star2,
   Star3,
 } from "./Stars";
-import { usePublicationData } from "app/(app)/(published)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { usePublicationData } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 // TODO

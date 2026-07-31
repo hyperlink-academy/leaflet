@@ -3,12 +3,12 @@
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/(app)/(published)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { DefaultPublicationHomepage } from "../DefaultPublicationHomepage";
+import { DefaultPublicationHomepage } from "app/(app)/(published)/lish/[did]/[publication]/DefaultPublicationHomepage";
 import { buildPublicationPosts } from "src/utils/buildPublicationPosts";
-import { LocalizedDate } from "../LocalizedDate";
+import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 import type { ReactNode } from "react";
 
 export function PubPreview(props: {

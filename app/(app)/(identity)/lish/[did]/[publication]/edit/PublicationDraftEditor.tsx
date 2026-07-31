@@ -12,7 +12,7 @@ import { EntitySetProvider } from "components/EntitySetProvider";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { Page } from "components/Pages/Page";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { NewPublicationHeader } from "../PublicationHeader";
+import { NewPublicationHeader } from "app/(app)/(published)/lish/[did]/[publication]/PublicationHeader";
 import { PublicationPagesEditNav } from "./PublicationPagesEditNav";
 import { PublicationEditHeader } from "./PublicationEditHeader";
 import {

@@ -1,7 +1,7 @@
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/(app)/(published)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useState } from "react";
 import type { Color } from "react-aria-components";
 import { pickers, SectionArrow } from "./ThemeSetter";

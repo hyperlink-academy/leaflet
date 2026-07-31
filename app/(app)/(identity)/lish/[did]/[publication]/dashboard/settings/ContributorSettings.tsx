@@ -23,7 +23,7 @@ import {
   removeContributor,
   type ContributorActionError,
 } from "actions/publications/contributors";
-import { UpgradeToProButton } from "../../UpgradeModal";
+import { UpgradeToProButton } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
 import { getBasePublicationURL } from "src/utils/getPublicationURL";
 
 const ERROR_MESSAGES: Record<ContributorActionError, string> = {

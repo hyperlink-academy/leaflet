@@ -8,8 +8,9 @@ import { RecommendConfirmationToast } from "components/Interactions/RecommendCon
 // Published, cacheable surfaces. Nothing in this layout (or reachable from any
 // page in this group) may read cookies()/headers()/searchParams outside a
 // Suspense boundary — identity arrives client-side via ViewerIdentityProvider.
-// Identity-gated routes nested in this tree (pub dashboard/edit/etc.) mount
-// their own server-fed IdentityContextProvider, which shadows this one.
+// Identity-gated pub surfaces (dashboard, edit, theme-settings, join,
+// contributor_accept, createPub) live in the (identity) sibling group under
+// the same /lish URLs, where the group layout provides server-fed identity.
 export default function PublishedLayout({
   children,
 }: {

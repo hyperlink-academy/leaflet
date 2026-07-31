@@ -13,7 +13,7 @@ import {
   InlineUpgradeToPro,
   UpgradeContent,
 } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
-import { ManageProSubscription } from "app/(app)/(published)/lish/[did]/[publication]/dashboard/settings/ProSettings";
+import { ManageProSubscription } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/settings/ProSettings";
 import { ManageDomains } from "components/Domains/ManageDomains";
 import { WebSmall } from "components/Icons/WebSmall";
 import {

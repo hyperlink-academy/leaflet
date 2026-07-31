@@ -16,7 +16,7 @@ import { UnpublishSmall } from "components/Icons/UnpublishSmall";
 import {
   deletePost,
   unpublishPost,
-} from "app/(app)/(published)/lish/[did]/[publication]/dashboard/deletePost";
+} from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/deletePost";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { HideSmall } from "components/Icons/HideSmall";
 import { hideDoc } from "src/utils/homeDocsStorage";
@@ -28,7 +28,7 @@ import {
 import {
   usePublicationData,
   mutatePublicationData,
-} from "app/(app)/(published)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { ShareButton } from "app/(app)/(identity)/[leaflet_id]/actions/ShareOptions";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 

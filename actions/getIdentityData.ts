@@ -107,6 +107,10 @@ async function uncachedGetIdentityData() {
       deduplicateByUri(rawContributorPubs).filter(isLeafletPublication);
     return {
       ...identity,
+      // Orders identity snapshots by when they were fetched, so the client
+      // provider can drop a stale seed (e.g. from a nav payload prefetched
+      // before a client-side revalidation) instead of overwriting newer data.
+      fetched_at: Date.now(),
       bsky_profiles: bskyProfileFromCache(profiles.get(atp_did) ?? null),
       publications,
       contributor_publications,
@@ -119,6 +123,7 @@ async function uncachedGetIdentityData() {
 
   return {
     ...identity,
+    fetched_at: Date.now(),
     bsky_profiles: null,
     publications: [],
     contributor_publications: [],

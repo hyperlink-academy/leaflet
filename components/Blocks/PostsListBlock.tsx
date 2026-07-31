@@ -5,7 +5,7 @@ import { BlockProps, BlockLayout } from "./Block";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/(app)/(published)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { PaginatedPublicationPostsList } from "app/(app)/(published)/lish/[did]/[publication]/PaginatedPublicationPostsList";
 import {
   POSTS_LIST_PAGE_SIZE,

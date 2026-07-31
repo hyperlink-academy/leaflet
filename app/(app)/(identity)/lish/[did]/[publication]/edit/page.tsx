@@ -1,4 +1,3 @@
-import { IdentityProviderServer } from "components/IdentityProviderServer";
 import React from "react";
 import type { Metadata } from "next";
 import type { Fact } from "src/replicache";
@@ -50,7 +49,7 @@ type Props = {
   params: Promise<{ did: string; publication: string }>;
 };
 
-async function PublicationEditPageInner(props: Props) {
+export default async function PublicationEditPage(props: Props) {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
   let publicationName = decodeURIComponent(params.publication);
@@ -160,14 +159,3 @@ const PageNotFound = () => (
     <p className="font-bold">Sorry, we can&apos;t find this publication!</p>
   </NotFoundLayout>
 );
-
-// Identity-gated surface inside the (published) group: shadow the
-// client-fetched viewer identity with a server-fed provider so chrome
-// renders correctly on the first frame.
-export default async function PublicationEditPage(props: Props) {
-  return (
-    <IdentityProviderServer>
-      <PublicationEditPageInner {...props} />
-    </IdentityProviderServer>
-  );
-}

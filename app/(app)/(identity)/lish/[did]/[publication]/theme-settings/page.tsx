@@ -1,4 +1,3 @@
-import { IdentityProviderServer } from "components/IdentityProviderServer";
 import type { Metadata } from "next";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getIdentityData } from "actions/getIdentityData";
@@ -8,12 +7,12 @@ import { AtUri } from "@atproto/syntax";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { ThemeSettingsContent } from "./ThemeSettingsContent";
-import { tryRenderPublicationPage } from "../tryRenderPublicationPage";
+import { tryRenderPublicationPage } from "app/(app)/(published)/lish/[did]/[publication]/tryRenderPublicationPage";
 import { LoginModal } from "components/LoginButton";
 
 export const metadata: Metadata = { robots: { index: false } };
 
-async function ThemeSettingsPageInner(props: {
+export default async function ThemeSettingsPage(props: {
   params: Promise<{ publication: string; did: string }>;
 }) {
   let params = await props.params;
@@ -89,16 +88,3 @@ const ThemeNotFound = () => {
 // Explicit rather than incidental (via cookies()): guards against a future
 // revalidate/generateStaticParams landing on a shared segment above.
 export const dynamic = "force-dynamic";
-
-// Identity-gated surface inside the (published) group: shadow the
-// client-fetched viewer identity with a server-fed provider so chrome
-// renders correctly on the first frame.
-export default async function ThemeSettingsPage(props: {
-  params: Promise<{ publication: string; did: string }>;
-}) {
-  return (
-    <IdentityProviderServer>
-      <ThemeSettingsPageInner {...props} />
-    </IdentityProviderServer>
-  );
-}

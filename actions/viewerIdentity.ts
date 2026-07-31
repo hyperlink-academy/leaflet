@@ -58,6 +58,7 @@ async function uncachedGetViewerIdentity(): Promise<Identity> {
 
   return {
     ...identity,
+    fetched_at: Date.now(),
     custom_domains: [],
     permission_token_on_homepage: [],
     bsky_profiles:

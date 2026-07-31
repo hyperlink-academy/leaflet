@@ -22,7 +22,10 @@ import {
   useCanSeePayments,
 } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
-import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
+import {
+  InlineUpgradeToPro,
+  UpgradeToProButton,
+} from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
 import { deletePublication } from "./deletePublication";

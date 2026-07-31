@@ -1,4 +1,3 @@
-import { IdentityProviderServer } from "components/IdentityProviderServer";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { getIdentityData } from "actions/getIdentityData";
@@ -39,7 +38,7 @@ export async function generateMetadata(props: {
   return { title: record?.name || "Untitled Publication", robots };
 }
 
-async function PublicationDashboardLayoutInner(props: {
+export default async function PublicationDashboardLayout(props: {
   children: React.ReactNode;
   params: Promise<{ publication: string; did: string }>;
 }) {
@@ -162,17 +161,3 @@ const PubNotFound = () => {
 // Explicit rather than incidental (via cookies()): guards against a future
 // revalidate/generateStaticParams landing on a shared segment above.
 export const dynamic = "force-dynamic";
-
-// Identity-gated surface inside the (published) group: shadow the
-// client-fetched viewer identity with a server-fed provider so chrome
-// renders correctly on the first frame.
-export default async function PublicationDashboardLayout(props: {
-  children: React.ReactNode;
-  params: Promise<{ publication: string; did: string }>;
-}) {
-  return (
-    <IdentityProviderServer>
-      <PublicationDashboardLayoutInner {...props} />
-    </IdentityProviderServer>
-  );
-}

@@ -1,4 +1,3 @@
-import { IdentityProviderServer } from "components/IdentityProviderServer";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -41,7 +40,7 @@ export async function generateMetadata(props: {
   return { title: `Join ${publication.name}` };
 }
 
-async function JoinPageInner(props: {
+export default async function JoinPage(props: {
   params: Promise<{ publication: string; did: string }>;
 }) {
   const params = await props.params;
@@ -115,16 +114,3 @@ async function JoinPageInner(props: {
 // Explicit rather than incidental (via cookies()): guards against a future
 // revalidate/generateStaticParams landing on a shared segment above.
 export const dynamic = "force-dynamic";
-
-// Identity-gated surface inside the (published) group: shadow the
-// client-fetched viewer identity with a server-fed provider so chrome
-// renders correctly on the first frame.
-export default async function JoinPage(props: {
-  params: Promise<{ publication: string; did: string }>;
-}) {
-  return (
-    <IdentityProviderServer>
-      <JoinPageInner {...props} />
-    </IdentityProviderServer>
-  );
-}

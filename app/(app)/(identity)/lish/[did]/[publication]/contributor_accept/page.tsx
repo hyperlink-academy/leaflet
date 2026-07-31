@@ -1,4 +1,3 @@
-import { IdentityProviderServer } from "components/IdentityProviderServer";
 import type { Metadata } from "next";
 import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
@@ -15,7 +14,7 @@ type Params = { did: string; publication: string };
 
 export const metadata: Metadata = { robots: { index: false } };
 
-async function ContributorAcceptPageInner(props: {
+export default async function ContributorAcceptPage(props: {
   params: Promise<Params>;
 }) {
   let params = await props.params;
@@ -114,16 +113,3 @@ async function ContributorAcceptPageInner(props: {
 // Explicit rather than incidental (via cookies()): guards against a future
 // revalidate/generateStaticParams landing on a shared segment above.
 export const dynamic = "force-dynamic";
-
-// Identity-gated surface inside the (published) group: shadow the
-// client-fetched viewer identity with a server-fed provider so chrome
-// renders correctly on the first frame.
-export default async function ContributorAcceptPage(props: {
-  params: Promise<Params>;
-}) {
-  return (
-    <IdentityProviderServer>
-      <ContributorAcceptPageInner {...props} />
-    </IdentityProviderServer>
-  );
-}
