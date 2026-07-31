@@ -26,6 +26,7 @@ import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { UnlinkTiny } from "components/Icons/UnlinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
+import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import type { CustomDomain } from "components/Domains/DomainList";
 
 export const PubDomainSettings = () => {
@@ -224,6 +225,37 @@ function PubDomainRow(props: {
                       },
                       { revalidate: false },
                     );
+                    let result;
+                    try {
+                      result = await updatePublicationBasePath({
+                        uri: props.publication_uri,
+                        base_path: props.domain,
+                      });
+                    } catch {
+                      props.mutatePubData();
+                      setLoading(false);
+                      toaster({
+                        content:
+                          "We couldn't set your default domain. Please try again!",
+                        type: "error",
+                      });
+                      return;
+                    }
+                    props.mutatePubData();
+                    setLoading(false);
+
+                    if (!result.success) {
+                      toaster({
+                        content: isOAuthSessionError(result.error) ? (
+                          <OAuthErrorMessage error={result.error} />
+                        ) : (
+                          "We couldn't set your default domain. Please try again!"
+                        ),
+                        type: "error",
+                      });
+                      return;
+                    }
+
                     toaster({
                       content: (
                         <div>
@@ -232,12 +264,6 @@ function PubDomainRow(props: {
                       ),
                       type: "success",
                     });
-                    await updatePublicationBasePath({
-                      uri: props.publication_uri,
-                      base_path: props.domain,
-                    });
-                    props.mutatePubData();
-                    setLoading(false);
                   }}
                   className="hover:text-accent-contrast"
                 >
