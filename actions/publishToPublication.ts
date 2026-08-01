@@ -1,7 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { revalidatePostPaths } from "src/utils/revalidatePublication";
+import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getAuthIdentity } from "src/auth";
 import {
@@ -38,7 +37,6 @@ import {
 } from "src/membership";
 import {
   normalizeDocumentRecord,
-  normalizePublicationRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
 import {
@@ -487,23 +485,10 @@ export async function publishToPublication({
     }
   }
 
-  // The standalone view exists for every published document, publication or
-  // not.
-  revalidatePath(`/p/${credentialSession.did}/${rkey}`);
-  if (publication_uri) {
-    const { data: pubRow } = await supabaseServerClient
-      .from("publications")
-      .select("record")
-      .eq("uri", publication_uri)
-      .maybeSingle();
-    const docPath = (record as { path?: string }).path;
-    revalidatePostPaths(
-      publication_uri,
-      normalizePublicationRecord(pubRow?.record)?.name,
-      rkey,
-      docPath,
-    );
-  }
+  // Runs after the documents/join-row writes above so the re-render reads the
+  // record this publish just wrote — including the title and description that
+  // the post's page metadata is built from.
+  await revalidateDocumentPaths(result.uri);
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
 }

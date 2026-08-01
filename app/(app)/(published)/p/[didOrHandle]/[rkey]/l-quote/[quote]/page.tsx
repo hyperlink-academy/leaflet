@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { decodeQuotePosition } from "src/utils/quotePosition";
-import PostPage from "app/(app)/(published)/p/[didOrHandle]/[rkey]/page";
+import { DocumentPageRenderer } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/DocumentPageRenderer";
+import { resolveDid } from "app/(app)/(published)/p/[didOrHandle]/resolveDid";
 
 // On-demand ISR: rendered on first request, then served from the CDN and
 // re-rendered in the background. The empty generateStaticParams is what opts a
@@ -17,8 +18,27 @@ export { generateMetadata } from "app/(app)/(published)/p/[didOrHandle]/[rkey]/p
 export default async function Post(props: {
   params: Promise<{ didOrHandle: string; rkey: string; quote: string }>;
 }) {
+  let params = await props.params;
   // Garbage quote params would each mint a permanent ISR entry.
-  if (!decodeQuotePosition(decodeURIComponent((await props.params).quote)))
-    notFound();
-  return <PostPage {...props} />;
+  let quotePosition = decodeQuotePosition(decodeURIComponent(params.quote));
+  if (!quotePosition) notFound();
+
+  let didOrHandle = decodeURIComponent(params.didOrHandle);
+  let did = await resolveDid(didOrHandle);
+  if (!did) notFound();
+  // Canonicalize handle URLs onto the DID form, matching the post page: the
+  // two spellings are separate cache entries and only the DID one is what
+  // publishing revalidates.
+  if (didOrHandle !== did)
+    redirect(
+      `/p/${encodeURIComponent(did)}/${params.rkey}/l-quote/${params.quote}`,
+    );
+
+  return (
+    <DocumentPageRenderer
+      did={did}
+      rkey={params.rkey}
+      openPageId={quotePosition.pageId}
+    />
+  );
 }
