@@ -30,22 +30,45 @@ export function revalidatePublicationPaths(
 }
 
 // A single post's pages: its base URL, the archive listing, its rkey path,
-// and its record `path` (if set to something other than the rkey) since
-// documents can publish under a custom path.
-export function revalidatePostPaths(
+// its record `path` (if set to something other than the rkey) since documents
+// can publish under a custom path, and the publication's own published pages,
+// any of which may carry a posts list that includes this post.
+function revalidatePostPaths(
   pubUri: string,
   name: string | null | undefined,
   rkey: string,
   docPath: string | null | undefined,
+  pagePaths: string[] = [],
 ) {
   revalidatePublicationPaths(pubUri, name, [
     "",
     "/archive",
     `/${rkey}`,
+    ...pagePaths,
     ...(docPath && docPath !== `/${rkey}`
       ? [docPath.startsWith("/") ? docPath : `/${docPath}`]
       : []),
   ]);
+}
+
+// Route-serving paths of each publication's published pages, keyed by
+// publication uri. External link tabs store a full URL in `path`; only real
+// routes count, and "/" is the publication base every caller already drops.
+async function publishedPagePathsByPublication(pubUris: string[]) {
+  const byPub = new Map<string, string[]>();
+  if (!pubUris.length) return byPub;
+  const { data } = await supabaseServerClient
+    .from("publication_pages")
+    .select("publication, path")
+    .in("publication", pubUris);
+  for (const row of data ?? []) {
+    if (!row.path || !row.path.startsWith("/") || row.path === "/") continue;
+    byPub.set(row.publication, [
+      ...(byPub.get(row.publication) ?? []),
+      row.path,
+    ]);
+  }
+  return byPub;
 }
 
 // Every cached page that lists or renders a document: the standalone /p/ URL
@@ -96,8 +119,19 @@ export async function revalidateDocumentPaths(
         docPath ?? (row.documents?.data as { path?: string } | null)?.path;
     }
   }
+  const pagePaths = await publishedPagePathsByPublication(
+    pubs.map((p) => p.uri),
+  );
   for (const pub of pubs)
-    revalidatePostPaths(pub.uri, pub.name, docUri.rkey, docPath);
+    revalidatePostPaths(
+      pub.uri,
+      pub.name,
+      docUri.rkey,
+      docPath,
+      pagePaths.get(pub.uri),
+    );
+  // Handle-form /p/ URLs canonical-redirect onto this one, so the did
+  // spelling is the only cache entry a document has here.
   revalidatePath(`/p/${docUri.host}/${docUri.rkey}`);
 }
 

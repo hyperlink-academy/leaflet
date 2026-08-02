@@ -117,6 +117,23 @@ const PublishPostForm = (
   let params = useParams();
   let { rep } = useReplicache();
 
+  // Title and description come from Replicache, the same source the editor's
+  // Update button uses. The server props were captured when this page rendered,
+  // and the router cache can serve that payload across an edit — publishing
+  // from it would write a title the author already changed.
+  let replicacheTitle = useSubscribe(rep, (tx) =>
+    tx.get<string>("publication_title"),
+  );
+  let replicacheDescription = useSubscribe(rep, (tx) =>
+    tx.get<string>("publication_description"),
+  );
+  let title =
+    typeof replicacheTitle === "string" ? replicacheTitle : props.title;
+  let description =
+    typeof replicacheDescription === "string"
+      ? replicacheDescription
+      : props.description;
+
   // For publications with drafts, use Replicache; otherwise use local state
   let replicacheTags = useSubscribe(rep, (tx) =>
     tx.get<string[]>("publication_tags"),
@@ -183,8 +200,8 @@ const PublishPostForm = (
       root_entity: props.root_entity,
       publication_uri: props.publication_uri,
       leaflet_id: props.leaflet_id,
-      title: props.title,
-      description: props.description,
+      title,
+      description,
       tags: currentTags,
       entitiesToDelete: props.entitiesToDelete,
       publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
@@ -295,8 +312,8 @@ const PublishPostForm = (
                   <StandardSiteExternalEmbed
                     external={{
                       uri: props.pubRecord?.url ?? "",
-                      title: props.title || "Untitled",
-                      description: props.description,
+                      title: title || "Untitled",
+                      description: description,
                       thumb: coverImageSrc || undefined,
                       source: {
                         uri: props.pubRecord?.url,
@@ -351,10 +368,10 @@ const PublishPostForm = (
                 charCount={charCount}
                 setCharCount={setCharCount}
                 editorStateRef={editorStateRef}
-                title={props.title}
+                title={title}
                 viewerProfile={props.viewerProfile}
                 publicationOwnerProfile={props.publicationOwnerProfile}
-                description={props.description}
+                description={description}
                 pubRecord={props.pubRecord}
                 newsletter_enabled={props.newsletter_enabled}
                 subscriberCount={props.subscriberCount}
