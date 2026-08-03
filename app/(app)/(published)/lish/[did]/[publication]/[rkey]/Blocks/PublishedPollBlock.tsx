@@ -17,7 +17,6 @@ import { getVoterIdentities, VoterIdentity } from "../getVoterIdentities";
 import { Json } from "supabase/database.types";
 import { InfoSmall } from "components/Icons/InfoSmall";
 import { LoginModal } from "components/LoginButton";
-import { ReservedGeometry } from "components/utils/ReservedGeometry";
 
 // Helper function to extract the first option from a vote record
 const getVoteOption = (voteRecord: any): string | null => {
@@ -147,29 +146,24 @@ export const PublishedPollBlock = (props: {
       }}
     >
       {displayResults ? (
-        // The ballot is what static HTML ships; a viewer who turns out to have
-        // voted already gets results in its place, in the same box, so the rest
-        // of the post doesn't jump when identity resolves.
-        <ReservedGeometry reserveWidth reserve={votingView}>
-          <div className="flex flex-col gap-2">
-            <PollResults
-              pollData={props.pollData}
-              hasVoted={hasVoted}
-              setShowResults={setShowResults}
-              optimisticVote={optimisticVote}
-            />
-            {!hasVoted && (
-              <div className="flex justify-start">
-                <button
-                  className="w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
-                  onClick={() => setShowResults(false)}
-                >
-                  Back to Voting
-                </button>
-              </div>
-            )}
-          </div>
-        </ReservedGeometry>
+        <div className="flex flex-col gap-2">
+          <PollResults
+            pollData={props.pollData}
+            hasVoted={hasVoted}
+            setShowResults={setShowResults}
+            optimisticVote={optimisticVote}
+          />
+          {!hasVoted && (
+            <div className="flex justify-start">
+              <button
+                className="w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
+                onClick={() => setShowResults(false)}
+              >
+                Back to Voting
+              </button>
+            </div>
+          )}
+        </div>
       ) : (
         votingView
       )}
