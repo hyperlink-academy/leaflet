@@ -5,7 +5,10 @@ import { v7 } from "uuid";
 import { prosemirrorToYDoc } from "y-prosemirror";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import { schema } from "components/Blocks/TextBlock/schema";
+import {
+  multiBlockSchema,
+  schema,
+} from "components/Blocks/TextBlock/schema";
 import type { Fact } from "src/replicache";
 import type { FactInput } from "src/replicache/mutations";
 import type { FilterAttributes } from "src/replicache/attributes";
@@ -230,16 +233,64 @@ function buildBlockFromHTML(
       finalType === "blockquote") &&
     child.tagName !== "PRE"
   ) {
+    // Footnote refs (spans carrying their definition's HTML, marked by
+    // normalizePastedHTML) each get their own entity holding the definition as
+    // block/text, plus a block/footnote reference on this block, ordered by
+    // appearance. Giving the span the schema's footnote shape makes
+    // parser.parse below emit a footnote node pointing at the minted entity.
+    const footnoteRefs = (
+      Array.from(
+        child.querySelectorAll("span[data-footnote-def]"),
+      ) as HTMLElement[]
+    ).filter((ref) => {
+      // A ref inside a nested list belongs to the nested item's own block
+      // (built recursively), not to the LI whose subtree it happens to sit in.
+      const list = ref.closest("ul, ol");
+      return !list || !child.contains(list);
+    });
+    const footnotePositions = generateNKeysBetween(
+      null,
+      null,
+      footnoteRefs.length,
+    );
+    footnoteRefs.forEach((ref, i) => {
+      const footnoteEntityID = v7();
+      ref.className = "footnote-ref";
+      ref.setAttribute("data-footnote-id", footnoteEntityID);
+      result.extraEntities.push({
+        entityID: footnoteEntityID,
+        permission_set,
+      });
+      facts.push({
+        // block/footnote is cardinality-many: without a caller-generated id
+        // the client and server mint diverging fact ids (see createFootnote).
+        id: v7(),
+        entity: entityID,
+        attribute: "block/footnote",
+        data: {
+          type: "ordered-reference",
+          value: footnoteEntityID,
+          position: footnotePositions[i],
+        },
+      });
+      facts.push({
+        entity: footnoteEntityID,
+        attribute: "block/text",
+        data: {
+          type: "text",
+          value: encodeYJSDoc(
+            parseFootnoteDefinition(ref.getAttribute("data-footnote-def")!),
+          ),
+        },
+      });
+    });
     const doc = parser.parse(child);
     parsedContent = doc;
-    const ydoc = prosemirrorToYDoc(doc, "prosemirror");
-    const update = Y.encodeStateAsUpdate(ydoc);
     facts.push({
       entity: entityID,
       attribute: "block/text",
-      data: { type: "text", value: base64.fromByteArray(update) },
+      data: { type: "text", value: encodeYJSDoc(doc) },
     });
-    ydoc.destroy();
   }
 
   // PRE → code body. data-lang is Leaflet's own exact language; fall back to a
@@ -438,6 +489,34 @@ function buildBlockFromHTML(
     parsedContent,
   });
   return result;
+}
+
+// A definition can hold several blocks, but a footnote's content is a single
+// text block (the schema's doc holds exactly one). Parse it with the
+// multi-block schema — which handles the whitespace, nesting, and marks of
+// arbitrary HTML — then join the blocks' inline content with hard breaks.
+const multiBlockParser = ProsemirrorDOMParser.fromSchema(multiBlockSchema);
+
+function parseFootnoteDefinition(html: string): ProsemirrorNode {
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  const inline: any[] = [];
+  multiBlockParser.parse(container).forEach((block) => {
+    if (block.content.size === 0) return;
+    if (inline.length > 0) inline.push({ type: "hard_break" });
+    block.forEach((node) => inline.push(node.toJSON()));
+  });
+  return schema.nodeFromJSON({
+    type: "doc",
+    content: [{ type: "paragraph", content: inline }],
+  });
+}
+
+function encodeYJSDoc(doc: ProsemirrorNode): string {
+  const ydoc = prosemirrorToYDoc(doc, "prosemirror");
+  const update = Y.encodeStateAsUpdate(ydoc);
+  ydoc.destroy();
+  return base64.fromByteArray(update);
 }
 
 // Block-level tags that become their own block when flattening pasted HTML.

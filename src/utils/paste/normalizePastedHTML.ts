@@ -43,6 +43,7 @@ const BLOCK_TAGS = new Set([
 
 export function normalizePastedHTML(root: HTMLElement) {
   const doc = root.ownerDocument;
+  extractFootnotes(root);
   inlineStylesheetMarks(root, doc);
   doc.querySelectorAll(NON_CONTENT_TAGS).forEach((el) => el.remove());
   removeWordParagraphMarks(root);
@@ -115,6 +116,86 @@ function expandMultiBlockQuotes(root: HTMLElement) {
     flushInlineRun();
     quote.replaceWith(...replacements);
   }
+}
+
+// Markdown renderers keep footnotes apart from where they're read: a numbered
+// ref link in the text pointing at a definition list at the bottom of the
+// document (GFM's <section data-footnotes>, python-markdown's
+// <div class="footnotes">, pandoc's <section class="footnotes">). Replace each
+// ref with a span carrying its definition's HTML (data-footnote-def) and drop
+// the section, so the block builder can mint footnote entities instead of
+// pasting the definitions as a trailing numbered list.
+const FOOTNOTE_SECTION_SELECTOR =
+  "section[data-footnotes], section.footnotes, div.footnotes";
+
+const FOOTNOTE_BACKREF_SELECTOR =
+  '[data-footnote-backref], .footnote-backref, .footnote-back, [role="doc-backlink"]';
+
+function extractFootnotes(root: HTMLElement) {
+  const doc = root.ownerDocument;
+  const sections = Array.from(root.querySelectorAll(FOOTNOTE_SECTION_SELECTOR));
+  if (sections.length === 0) return;
+
+  const definitions = new Map<string, HTMLElement>();
+  for (const s of sections)
+    for (const li of Array.from(s.querySelectorAll("li[id]")))
+      definitions.set(li.id, li as HTMLElement);
+
+  for (const anchor of Array.from(root.querySelectorAll('a[href^="#"]'))) {
+    // Anything inside a section is a backref or a ref within a definition, not
+    // a ref to mark; the whole section is removed below.
+    if (anchor.closest(FOOTNOTE_SECTION_SELECTOR)) continue;
+    const id = safeDecodeURIComponent(anchor.getAttribute("href")!.slice(1));
+    const definition = definitions.get(id);
+    if (!definition) continue;
+    const span = doc.createElement("span");
+    span.setAttribute(
+      "data-footnote-def",
+      cleanDefinitionHTML(definition, definitions),
+    );
+    span.textContent = anchor.textContent || "";
+    // GFM and python-markdown wrap the ref anchor in a <sup>; pandoc puts the
+    // <sup> inside the anchor. Replace whichever element is the whole marker.
+    const parent = anchor.parentElement;
+    if (parent?.tagName === "SUP" && parent.childNodes.length === 1)
+      parent.replaceWith(span);
+    else anchor.replaceWith(span);
+  }
+  for (const section of sections) section.remove();
+}
+
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function cleanDefinitionHTML(
+  li: HTMLElement,
+  definitions: Map<string, HTMLElement>,
+): string {
+  const doc = li.ownerDocument;
+  const clone = li.cloneNode(true) as HTMLElement;
+  for (const backref of Array.from(
+    clone.querySelectorAll(FOOTNOTE_BACKREF_SELECTOR),
+  )) {
+    // python-markdown glues the backref on with an &nbsp;, which the editor's
+    // parser preserves as content.
+    const prev = backref.previousSibling;
+    if (prev?.nodeType === Node.TEXT_NODE)
+      prev.textContent = prev.textContent!.replace(/\s+$/, "");
+    backref.remove();
+  }
+  // A footnote referenced from inside another footnote's definition can't be
+  // represented; keep its marker text.
+  for (const anchor of Array.from(clone.querySelectorAll('a[href^="#"]'))) {
+    const id = safeDecodeURIComponent(anchor.getAttribute("href")!.slice(1));
+    if (definitions.has(id))
+      anchor.replaceWith(doc.createTextNode(anchor.textContent || ""));
+  }
+  return clone.innerHTML;
 }
 
 // GFM task lists (and the checklists Notion/GitHub put on the clipboard) mark

@@ -1,6 +1,9 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import type { Mark } from "prosemirror-model";
+import * as Y from "yjs";
+import * as base64 from "base64-js";
+import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import type { BuildResult, BuiltBlock } from "./htmlToBlocks";
 import { buildBlocksFromPasteHTML } from "./htmlToBlocks";
 
@@ -107,6 +110,36 @@ function summarize(result: BuildResult): BlockSummary[] {
       buttonURL: factValue(b, "button/url"),
     };
   });
+}
+
+// The footnotes a block minted, in position order, with the definition text
+// decoded from each footnote entity's block/text fact.
+export function blockFootnotes(block: BuiltBlock) {
+  return block.facts
+    .filter((f) => f.attribute === "block/footnote")
+    .sort((a, b) =>
+      (a.data as any).position > (b.data as any).position ? 1 : -1,
+    )
+    .map((ref) => {
+      const entityID = (ref.data as any).value as string;
+      const content = block.facts.find(
+        (f) => f.entity === entityID && f.attribute === "block/text",
+      );
+      return {
+        entityID,
+        text: content ? decodeYJSText((content.data as any).value) : undefined,
+      };
+    });
+}
+
+function decodeYJSText(value: string): string {
+  const ydoc = new Y.Doc();
+  Y.applyUpdate(ydoc, base64.toByteArray(value));
+  return ydoc
+    .getXmlFragment("prosemirror")
+    .toArray()
+    .map((n) => YJSFragmentToString(n))
+    .join("");
 }
 
 function factValue(block: BuiltBlock, attribute: string) {
