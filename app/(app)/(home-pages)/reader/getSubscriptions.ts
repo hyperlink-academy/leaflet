@@ -51,20 +51,7 @@ export async function getSubscriptions(
 
   const hydratedSubscriptions = (
     await Promise.all(
-      pubs?.map(async (pub) => {
-        const normalizedRecord = normalizePublicationRecord(
-          pub.publications?.record,
-        );
-        if (!normalizedRecord) return null;
-        let id = await idResolver.did.resolve(pub.publications?.identity_did!);
-        return {
-          ...pub.publications!,
-          record: normalizedRecord,
-          authorProfile: id?.alsoKnownAs?.[0]
-            ? { handle: `@${id.alsoKnownAs[0].slice(5)}` }
-            : undefined,
-        } as PublicationSubscription;
-      }) || [],
+      pubs?.map((pub) => hydratePublication(pub.publications)) || [],
     )
   ).filter((sub): sub is PublicationSubscription => sub !== null);
   const nextCursor =
@@ -79,6 +66,46 @@ export async function getSubscriptions(
     subscriptions: hydratedSubscriptions,
     nextCursor,
   };
+}
+
+// Full listing data for specific publications, in the same shape as
+// getSubscriptions — used to pin paid memberships regardless of where they
+// fall in the paginated subscription list.
+export async function getPublicationsByUris(
+  uris: string[],
+): Promise<PublicationSubscription[]> {
+  if (uris.length === 0) return [];
+  let { data: pubs } = await supabaseServerClient
+    .from("publications")
+    .select(
+      `*, publication_subscriptions(*), publication_newsletter_settings(enabled), documents_in_publications(*, documents(*))`,
+    )
+    .in("uri", uris)
+    .order("documents(sort_date)", {
+      ascending: false,
+      referencedTable: "documents_in_publications",
+    })
+    .limit(1, { referencedTable: "documents_in_publications" });
+
+  return (await Promise.all((pubs ?? []).map(hydratePublication))).filter(
+    (pub): pub is PublicationSubscription => pub !== null,
+  );
+}
+
+async function hydratePublication<
+  T extends { record: Json | null; identity_did: string | null },
+>(pub: T | null): Promise<PublicationSubscription | null> {
+  if (!pub) return null;
+  const normalizedRecord = normalizePublicationRecord(pub.record);
+  if (!normalizedRecord) return null;
+  let id = await idResolver.did.resolve(pub.identity_did!);
+  return {
+    ...pub,
+    record: normalizedRecord,
+    authorProfile: id?.alsoKnownAs?.[0]
+      ? { handle: `@${id.alsoKnownAs[0].slice(5)}` }
+      : undefined,
+  } as unknown as PublicationSubscription;
 }
 
 export type PublicationSubscription = {

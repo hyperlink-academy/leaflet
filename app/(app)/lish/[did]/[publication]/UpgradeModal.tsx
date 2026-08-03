@@ -130,26 +130,6 @@ const UpgradeModal = (props: {
   );
 };
 
-export const InlineUpgradeToPro = (props: {
-  compact?: boolean;
-  onClick?: () => void;
-}) => {
-  return (
-    <div className="text-center  text-secondary">
-      <UpgradeToProButton
-        fullWidth
-        compact={props.compact}
-        onClick={props.onClick}
-      />
-      <div
-        className={`${props.compact ? `text-sm` : "text-base"} leading-snug text-tertiary pt-2`}
-      >
-        Analytics and Emails for all your pubs! <br /> Membership coming soon.
-      </div>
-    </div>
-  );
-};
-
 export const UpgradeToProButton = (props: {
   fullWidth?: boolean;
   compact?: boolean;

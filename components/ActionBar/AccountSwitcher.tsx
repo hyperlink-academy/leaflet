@@ -2,10 +2,7 @@
 import { useState } from "react";
 import { Avatar } from "components/Avatar";
 import { AddSmall } from "components/Icons/AddSmall";
-import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
-import { GoBackTiny } from "components/Icons/GoBackTiny";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
-import { RefreshSmall } from "components/Icons/RefreshSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
 import {
@@ -21,48 +18,18 @@ export function savedAccountLabel(entry: SavedAccountEntry) {
   return entry.displayName || entry.handle || entry.email || "Account";
 }
 
-function useOtherAccounts() {
+// The signed-in accounts this browser can switch between: the current account
+// (highlighted, from live profile data) first, then the saved others, then an
+// add-account button.
+export const AccountList = (props: {
+  current: { label: string; handle?: string; avatar?: string };
+  onAddAccount: () => void;
+}) => {
   let { identity } = useIdentityData();
   let { data: entries } = useSavedAccounts();
-  return {
-    identity,
-    entries,
-    otherAccounts: (entries ?? []).filter((e) => e.identity !== identity?.id),
-  };
-}
-
-export const SwitchAccountItem = (props: {
-  onShowAccounts: () => void;
-  onAddAccount: () => void;
-}) => {
-  let { otherAccounts } = useOtherAccounts();
-  return (
-    <>
-      <button
-        type="button"
-        className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
-        onClick={() => {
-          if (otherAccounts.length > 0) {
-            props.onShowAccounts();
-          } else {
-            props.onAddAccount();
-          }
-        }}
-      >
-        <RefreshSmall />
-        Switch Account
-        {otherAccounts.length > 0 && <ArrowRightTiny className="ml-auto" />}
-      </button>
-      <hr className="border-border-light border-dashed" />
-    </>
+  let otherAccounts = (entries ?? []).filter(
+    (e) => e.identity !== identity?.id,
   );
-};
-
-export const AccountList = (props: {
-  onBack: () => void;
-  onAddAccount: () => void;
-}) => {
-  let { otherAccounts } = useOtherAccounts();
   let [pendingToken, setPendingToken] = useState<string | null>(null);
   let toaster = useToaster();
 
@@ -82,7 +49,9 @@ export const AccountList = (props: {
     setPendingToken(null);
     toaster({
       content: (
-        <div className="font-bold">That session expired, please log in again!</div>
+        <div className="font-bold">
+          That session expired, please log in again!
+        </div>
       ),
       type: "error",
     });
@@ -90,15 +59,17 @@ export const AccountList = (props: {
 
   return (
     <div className="flex flex-col gap-0.5">
-      <button
-        type="button"
-        className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
-        onClick={props.onBack}
-      >
-        <GoBackTiny />
-        Back
-      </button>
-      <hr className="border-border-light border-dashed" />
+      <div className="menuItem -mx-[8px] bg-[var(--accent-light)] cursor-default items-center">
+        <Avatar src={props.current.avatar} displayName={props.current.label} />
+        <div className="flex flex-col leading-tight min-w-0 grow">
+          <span className="truncate">{props.current.label}</span>
+          {props.current.handle && (
+            <span className="text-xs text-secondary truncate">
+              @{props.current.handle}
+            </span>
+          )}
+        </div>
+      </div>
       {otherAccounts.map((entry) => (
         <button
           key={entry.token}

@@ -1,15 +1,21 @@
 "use client";
 import { useState } from "react";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
 import { usePublicationData } from "../PublicationSWRProvider";
-import { DashboardContainer } from "./SettingsContent";
+import { SettingsSection } from "components/SettingsLayout";
+import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import {
   enableMemberships,
+  disableMemberships,
   upsertMembershipTier,
   deleteMembershipTier,
   type MembershipTierInput,
@@ -28,101 +34,111 @@ type Tier = {
   is_free: boolean;
 };
 
-export const MembershipSettings = () => {
-  let { data, mutate } = usePublicationData();
+const AlphaBadge = () => (
+  <span className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
+    alpha
+  </span>
+);
+
+export const MonetizationSettings = () => {
+  let { data } = usePublicationData();
   let { identity } = useIdentityData();
-  let toaster = useToaster();
 
   let publicationUri = data?.publication?.uri;
   let enabled = data?.publication?.publication_membership_settings?.enabled;
-  let tiers = ((data?.publication?.publication_membership_tiers ??
-    []) as Tier[])
-    .filter((t) => t.active)
-    .toSorted(
-      (a, b) => Number(a.is_free) - Number(b.is_free) || a.sort_order - b.sort_order,
-    );
   let chargesEnabled = !!identity?.connectedAccount?.charges_enabled;
-
-  let [enabling, setEnabling] = useState(false);
-  let [editingTier, setEditingTier] = useState<Tier | "new" | null>(null);
 
   if (!publicationUri) return null;
 
-  if (!enabled) {
-    return (
-      <DashboardContainer
-        section={
-          <>
-            Paid Memberships
-            <span className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
-              alpha
-            </span>
-          </>
-        }
-        className="pb-4"
-      >
-        <div className="leading-snug text-secondary">
-          Offer paid membership tiers and share members-only content with
-          readers who support you.
-        </div>
-        {!chargesEnabled && (
-          <div className="leading-snug text-tertiary text-sm">
-            Set up payments above to enable paid memberships.
-          </div>
-        )}
-        <ButtonPrimary
-          type="button"
-          className="self-start"
-          disabled={enabling || !chargesEnabled}
-          onClick={async () => {
-            if (!publicationUri || enabling || !chargesEnabled) return;
-            setEnabling(true);
-            let res = await enableMemberships(publicationUri);
-            setEnabling(false);
-            if (!res.ok) {
-              toaster({
-                type: "error",
-                content:
-                  res.error === "no_connected_account"
-                    ? "Set up payments first to enable memberships."
-                    : "Failed to enable memberships.",
-              });
-              return;
-            }
-            toaster({ type: "success", content: "Memberships enabled!" });
-            await mutate();
-          }}
-        >
-          {enabling ? <DotLoader /> : "Enable Paid Memberships"}
-        </ButtonPrimary>
-      </DashboardContainer>
-    );
-  }
+  return (
+    <>
+      <SettingsSection title="Connect to Stripe">
+        <ConnectPayments />
+      </SettingsSection>
+      {chargesEnabled &&
+        (enabled ? (
+          <MembershipTiers publicationUri={publicationUri} />
+        ) : (
+          <EnableMonetization publicationUri={publicationUri} />
+        ))}
+    </>
+  );
+};
+
+const EnableMonetization = (props: { publicationUri: string }) => {
+  let { mutate } = usePublicationData();
+  let toaster = useToaster();
+  let [enabling, setEnabling] = useState(false);
 
   return (
-    <DashboardContainer
-      section={
+    <SettingsSection>
+      <div className="leading-snug text-secondary">
+        Enable Monetization to set up paid membership tiers.
+      </div>
+      <ButtonPrimary
+        type="button"
+        className="self-start"
+        disabled={enabling}
+        onClick={async () => {
+          if (enabling) return;
+          setEnabling(true);
+          let res = await enableMemberships(props.publicationUri);
+          setEnabling(false);
+          if (!res.ok) {
+            toaster({
+              type: "error",
+              content:
+                res.error === "no_connected_account"
+                  ? "Set up payments first to enable monetization."
+                  : "Failed to enable monetization.",
+            });
+            return;
+          }
+          toaster({ type: "success", content: "Monetization enabled!" });
+          await mutate();
+        }}
+      >
+        {enabling ? <DotLoader /> : "Enable Monetization"}
+      </ButtonPrimary>
+    </SettingsSection>
+  );
+};
+
+const MembershipTiers = (props: { publicationUri: string }) => {
+  let { data, mutate } = usePublicationData();
+  let toaster = useToaster();
+
+  let tiers = (
+    (data?.publication?.publication_membership_tiers ?? []) as Tier[]
+  )
+    .filter((t) => t.active)
+    .toSorted(
+      (a, b) =>
+        Number(a.is_free) - Number(b.is_free) || a.sort_order - b.sort_order,
+    );
+
+  let [editingTier, setEditingTier] = useState<Tier | "new" | null>(null);
+  let [disabling, setDisabling] = useState(false);
+
+  return (
+    <SettingsSection
+      title={
         <>
-          Paid Memberships
-          <span className="bg-accent-1 rounded-md px-1 text-accent-2 font-bold text-sm">
-            alpha
-          </span>
+          Membership Tiers
+          <AlphaBadge />
         </>
       }
       className="pb-4"
     >
       <div className="flex flex-col gap-4">
         <div className="text-secondary leading-snug">
-          Memberships are enabled. Readers can join a tier below to unlock
-          members-only content. Member payments are charged on your connected
-          account, so subscriptions, customers, payouts, and disputes all appear
-          in your own Stripe dashboard.
+          Readers can join a tier below to unlock members-only content. Member
+          payments are charged on your connected account, so subscriptions,
+          customers, payouts, and disputes all appear in your own Stripe
+          dashboard.
         </div>
 
-        <hr className="border-border-light" />
-
         <div className="flex flex-col gap-2">
-          <p className="text-secondary font-bold">Tiers</p>
           {tiers.length === 0 && (
             <p className="text-tertiary text-sm leading-snug">
               No tiers yet. Add one so readers can become members.
@@ -170,11 +186,39 @@ export const MembershipSettings = () => {
             Add Tier
           </ButtonPrimary>
         </div>
+
+        <hr className="border-border-light" />
+
+        <ButtonTertiary
+          type="button"
+          className="self-start"
+          disabled={disabling}
+          onClick={async () => {
+            if (disabling) return;
+            setDisabling(true);
+            let res = await disableMemberships(props.publicationUri);
+            setDisabling(false);
+            if (!res.ok) {
+              toaster({
+                type: "error",
+                content:
+                  res.error === "unsupported"
+                    ? "Monetization can't be turned off automatically yet — reach out and we'll help!"
+                    : "Failed to disable monetization.",
+              });
+              return;
+            }
+            toaster({ type: "success", content: "Monetization disabled." });
+            await mutate();
+          }}
+        >
+          {disabling ? <DotLoader /> : "Disable Monetization"}
+        </ButtonTertiary>
       </div>
 
       {editingTier !== null && (
         <TierEditorModal
-          publicationUri={publicationUri}
+          publicationUri={props.publicationUri}
           tier={editingTier === "new" ? null : editingTier}
           onClose={() => setEditingTier(null)}
           onSaved={async () => {
@@ -183,7 +227,7 @@ export const MembershipSettings = () => {
           }}
         />
       )}
-    </DashboardContainer>
+    </SettingsSection>
   );
 };
 
@@ -305,10 +349,7 @@ const TierEditorModal = (props: {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label
-            className="text-secondary font-bold"
-            htmlFor="tierDescription"
-          >
+          <label className="text-secondary font-bold" htmlFor="tierDescription">
             Description{" "}
             <span className="font-normal text-tertiary">(optional)</span>
           </label>
@@ -323,8 +364,8 @@ const TierEditorModal = (props: {
         </div>
         {isFree ? (
           <div className="text-tertiary text-sm leading-snug">
-            The free tier lets readers subscribe without paying. It's always
-            free and can't be removed — you can only rename it.
+            The free tier lets readers subscribe without paying. It&apos;s
+            always free and can&apos;t be removed — you can only rename it.
           </div>
         ) : (
           <div className="flex gap-2">
@@ -363,7 +404,11 @@ const TierEditorModal = (props: {
         )}
         <div className="flex justify-between items-center pt-1">
           {props.tier && !isFree ? (
-            <ButtonSecondary type="button" disabled={deleting} onClick={onDelete}>
+            <ButtonSecondary
+              type="button"
+              disabled={deleting}
+              onClick={onDelete}
+            >
               {deleting ? <DotLoader /> : "Remove"}
             </ButtonSecondary>
           ) : (

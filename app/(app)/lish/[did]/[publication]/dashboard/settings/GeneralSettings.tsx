@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Input } from "components/Input";
 import { AddTiny } from "components/Icons/AddTiny";
-import { DashboardContainer } from "./SettingsContent";
+import { SettingsSection } from "components/SettingsLayout";
 import { encodeIconFile } from "src/utils/imageEncoding";
 import { Separator } from "components/Layout";
 
@@ -18,7 +18,7 @@ export function GeneralSettings(props: {
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <DashboardContainer section="General Settings">
+    <SettingsSection title="General Settings">
       <div className="flex flex-col gap-2 pb-2">
         <p className=" text-secondary  font-bold">
           Logo <span className="font-normal">(optional)</span>
@@ -98,6 +98,6 @@ export function GeneralSettings(props: {
           onChange={(e) => props.setDescriptionValue(e.currentTarget.value)}
         />
       </label>
-    </DashboardContainer>
+    </SettingsSection>
   );
 }

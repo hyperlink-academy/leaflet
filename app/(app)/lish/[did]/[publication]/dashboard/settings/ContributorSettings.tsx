@@ -10,20 +10,18 @@ import { Avatar } from "components/Avatar";
 import { useToaster } from "components/Toast";
 import { useActorTypeahead } from "src/hooks/useActorTypeahead";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
-import { useIsPro } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 import {
   usePublicationData,
   mutatePublicationData,
 } from "../PublicationSWRProvider";
 import type { Profile } from "src/identity";
-import { DashboardContainer } from "./SettingsContent";
+import { SettingsSection } from "components/SettingsLayout";
 import {
   inviteContributor,
   removeContributor,
   type ContributorActionError,
 } from "actions/publications/contributors";
-import { UpgradeToProButton } from "../../UpgradeModal";
 import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
 
 const ERROR_MESSAGES: Record<ContributorActionError, string> = {
@@ -44,7 +42,6 @@ export function ContributorSettings() {
   let publicationUri = publication?.uri;
   let ownerDid = publication?.identity_did;
   let isOwner = !!identity?.atp_did && identity.atp_did === ownerDid;
-  let isPro = useIsPro();
 
   if (!publicationUri || !publication || !identity) return null;
 
@@ -58,7 +55,6 @@ export function ContributorSettings() {
   return isOwner ? (
     <OwnerContributorSettings
       publicationUri={publicationUri}
-      isPro={isPro}
       acceptLink={acceptLink}
     />
   ) : (
@@ -71,7 +67,6 @@ export function ContributorSettings() {
 
 function OwnerContributorSettings(props: {
   publicationUri: string;
-  isPro: boolean;
   acceptLink: string;
 }) {
   let toaster = useToaster();
@@ -145,24 +140,15 @@ function OwnerContributorSettings(props: {
   };
 
   return (
-    <DashboardContainer section="Contributors" className="pb-4">
+    <SettingsSection className="pb-4">
       <div className="leading-snug text-secondary">
-        Invite others to write and publish to this publication. Posts are
-        published from your PDS.
+        Invite others to write and publish to this publication. <br />
+        Posts written by others are still owned by you.
       </div>
 
-      {!props.isPro ? (
-        <div className="flex flex-col gap-2 mt-2">
-          <div className="text-tertiary text-sm leading-snug">
-            Inviting contributors requires Leaflet Pro.
-          </div>
-          <UpgradeToProButton />
-        </div>
-      ) : (
-        <div className="mt-2">
-          <InviteHandleInput onInvite={handleInvite} loading={adding} />
-        </div>
-      )}
+      <div className="mt-2">
+        <InviteHandleInput onInvite={handleInvite} loading={adding} />
+      </div>
 
       <ContributorList
         rows={contributors}
@@ -171,7 +157,7 @@ function OwnerContributorSettings(props: {
         acceptLink={props.acceptLink}
         emptyMessage="No contributors yet."
       />
-    </DashboardContainer>
+    </SettingsSection>
   );
 }
 
@@ -388,7 +374,7 @@ function ContributorLeaveSettings(props: {
   };
 
   return (
-    <DashboardContainer section="Contributor" className="pb-4">
+    <SettingsSection title="Contributor" className="pb-4">
       <div className="text-secondary leading-snug">
         You're a contributor on this publication.
       </div>
@@ -426,6 +412,6 @@ function ContributorLeaveSettings(props: {
           </div>
         </div>
       </Modal>
-    </DashboardContainer>
+    </SettingsSection>
   );
 }

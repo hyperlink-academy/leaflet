@@ -14,6 +14,8 @@ export const ProfileSubscriptionsContent = (props: {
   did: string;
   subscriptions: PublicationSubscription[];
   nextCursor: Cursor | null;
+
+  excludeUris?: string[];
 }) => {
   const getKey = (
     pageIndex: number,
@@ -71,18 +73,18 @@ export const ProfileSubscriptionsContent = (props: {
     return () => observer.disconnect();
   }, [data, size, setSize, isValidating]);
 
-  const allSubscriptions = data
-    ? data.flatMap((page) => page.subscriptions)
-    : [];
+  const subscriptions = (
+    data ? data.flatMap((page) => page.subscriptions) : []
+  ).filter((sub) => !props.excludeUris?.includes(sub.uri));
 
-  if (allSubscriptions.length === 0 && !isValidating) {
+  if (subscriptions.length === 0 && !isValidating) {
     return <EmptyState title="No subscriptions yet" />;
   }
 
   return (
     <div className="relative">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-4">
-        {allSubscriptions.map((sub) => (
+        {subscriptions.map((sub) => (
           <PubListing
             constrainHeight
             showSubscribeButton

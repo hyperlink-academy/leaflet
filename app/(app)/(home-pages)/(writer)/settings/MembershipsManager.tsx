@@ -19,6 +19,7 @@ import {
   type MyMembershipsData,
 } from "actions/memberships";
 import { createWalletCheckoutSession } from "actions/publications/joinMembership";
+import { SettingsSection } from "components/SettingsLayout";
 
 export function MembershipsManager(props: { initial: MyMembershipsData }) {
   const { memberships, wallet } = props.initial;
@@ -35,7 +36,7 @@ export function MembershipsManager(props: { initial: MyMembershipsData }) {
     if (!sessionId) return;
     setProcessingReturn(true);
     updateWalletCard(sessionId).then((res) => {
-      window.history.replaceState(null, "", window.location.pathname);
+      window.history.replaceState(null, "", "/settings?tab=billing");
       setProcessingReturn(false);
       if (!res.ok) {
         toaster({
@@ -58,22 +59,19 @@ export function MembershipsManager(props: { initial: MyMembershipsData }) {
   }, []);
 
   return (
-    <div className="max-w-prose w-full flex flex-col gap-4">
-      <h1 className="sm:text-xl text-lg">Memberships &amp; billing</h1>
-
+    <>
       <WalletCardSection wallet={wallet} processing={processingReturn} />
 
-      <div className="flex flex-col gap-3">
-        <h2 className="text-base text-secondary font-bold">Your memberships</h2>
+      <SettingsSection title="Your Memberships">
         {memberships.length === 0 ? (
-          <div className="opaque-container px-4 py-6 text-center text-secondary">
+          <div className="px-4 py-6 text-center text-secondary">
             You're not a paying member of any publication yet.
           </div>
         ) : (
           memberships.map((m) => <MembershipRow key={m.id} membership={m} />)
         )}
-      </div>
-    </div>
+      </SettingsSection>
+    </>
   );
 }
 
@@ -89,7 +87,7 @@ function WalletCardSection(props: {
     if (redirecting) return;
     setRedirecting(true);
     const res = await createWalletCheckoutSession({
-      returnUrl: window.location.origin + "/memberships",
+      returnUrl: window.location.origin + "/settings",
     });
     if (!res.ok) {
       setRedirecting(false);
@@ -103,39 +101,42 @@ function WalletCardSection(props: {
   };
 
   return (
-    <div className="opaque-container px-4 py-4 flex items-center justify-between gap-3 flex-wrap">
-      <div className="flex flex-col">
-        <div className="text-secondary font-bold">Payment card</div>
-        {props.processing ? (
-          <div className="text-tertiary text-sm">Updating…</div>
-        ) : card?.card_last4 ? (
-          <div className="text-secondary text-sm">
-            {(card.card_brand ?? "Card").replace(/^\w/, (c) => c.toUpperCase())}{" "}
-            ···{card.card_last4}
-            {card.card_exp_month && card.card_exp_year
-              ? ` · expires ${String(card.card_exp_month).padStart(2, "0")}/${String(
-                  card.card_exp_year,
-                ).slice(-2)}`
-              : ""}
-          </div>
-        ) : (
-          <div className="text-tertiary text-sm">No card on file yet.</div>
-        )}
+    <SettingsSection title="Payment Card">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-col">
+          {props.processing ? (
+            <div className="text-tertiary text-sm">Updating…</div>
+          ) : card?.card_last4 ? (
+            <div className="text-secondary text-sm">
+              {(card.card_brand ?? "Card").replace(/^\w/, (c) =>
+                c.toUpperCase(),
+              )}{" "}
+              ···{card.card_last4}
+              {card.card_exp_month && card.card_exp_year
+                ? ` · expires ${String(card.card_exp_month).padStart(2, "0")}/${String(
+                    card.card_exp_year,
+                  ).slice(-2)}`
+                : ""}
+            </div>
+          ) : (
+            <div className="text-tertiary text-sm">No card on file yet.</div>
+          )}
+        </div>
+        <ButtonSecondary
+          type="button"
+          disabled={redirecting || props.processing}
+          onClick={openCardForm}
+        >
+          {redirecting ? (
+            <DotLoader />
+          ) : card?.card_last4 ? (
+            "Update card"
+          ) : (
+            "Add card"
+          )}
+        </ButtonSecondary>
       </div>
-      <ButtonSecondary
-        type="button"
-        disabled={redirecting || props.processing}
-        onClick={openCardForm}
-      >
-        {redirecting ? (
-          <DotLoader />
-        ) : card?.card_last4 ? (
-          "Update card"
-        ) : (
-          "Add card"
-        )}
-      </ButtonSecondary>
-    </div>
+    </SettingsSection>
   );
 }
 

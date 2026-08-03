@@ -11,41 +11,64 @@ import {
 import { updatePublication } from "app/(app)/lish/createPub/updatePublication";
 import { PubDomainSettings } from "./PubDomainSettings";
 import { GeneralSettings } from "./GeneralSettings";
-import { PostSettings } from "./PostSettings";
-import { ThemeSettings } from "./ThemeSettings";
-import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import { ManageProSubscription, NewsletterSettings } from "./ProSettings";
+import { ThemeAndLayoutSettings } from "./ThemeAndLayoutSettings";
+import { ShareSettings } from "./ShareSettings";
+import { NewsletterSettings } from "./NewsletterSettings";
 import { ContributorSettings } from "./ContributorSettings";
-import {
-  useIsPro,
-  useCanSeePro,
-  useCanSeePayments,
-} from "src/hooks/useEntitlement";
+import { MonetizationSettings } from "./MembershipSettings";
+import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
-import { InlineUpgradeToPro, UpgradeToProButton } from "../../UpgradeModal";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
 import { deletePublication } from "./deletePublication";
 import { useRouter } from "next/navigation";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
-import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
-import { MembershipSettings } from "./MembershipSettings";
+import { SettingsPageLayout, SettingsSection } from "components/SettingsLayout";
 import {
   resolvePrevNextDirection,
   type PrevNextDirection,
 } from "src/utils/mergePreferences";
 
-type SettingsView = "all" | "theme";
+export type PubSettingsTab =
+  | "general"
+  | "monetization"
+  | "contributors"
+  | "newsletter";
 
-export function SettingsContent(props: { showPageBackground: boolean }) {
+// The tabs the current viewer can see; non-owners (contributors) get none and
+// see only the contributor view.
+export function usePubSettingsTabs(): {
+  value: PubSettingsTab;
+  label: string;
+}[] {
+  let { data } = usePublicationData();
+  let { identity } = useIdentityData();
+  let isOwner =
+    !!identity?.atp_did && identity.atp_did === data?.publication?.identity_did;
+  let isPro = useIsPro();
+  let canSeePayments = useCanSeePayments();
+
+  if (!isOwner) return [];
+  return [
+    { value: "general" as const, label: "General" },
+    ...(canSeePayments
+      ? [{ value: "monetization" as const, label: "Monetization" }]
+      : []),
+    ...(isPro
+      ? [
+          { value: "contributors" as const, label: "Contributors" },
+          { value: "newsletter" as const, label: "Newsletter" },
+        ]
+      : []),
+  ];
+}
+
+export function SettingsContent(props: { tab: PubSettingsTab }) {
   let { data, mutate } = usePublicationData();
   let { publication: pubData } = data || {};
   let { identity } = useIdentityData();
   let isOwner =
     !!identity?.atp_did && identity.atp_did === pubData?.identity_did;
-  let isPro = useIsPro();
-  let canSeePro = useCanSeePro();
-  let canSeePayments = useCanSeePayments();
   let record = useNormalizedPublicationRecord();
   let [loading, setLoading] = useState(false);
   let toast = useToaster();
@@ -65,8 +88,6 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
       ? true
       : record.preferences.showInDiscover,
   );
-
-  // --- Post Settings state ---
   let [showComments, setShowComments] = useState(
     record?.preferences?.showComments === undefined
       ? true
@@ -176,17 +197,39 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
   // edit the publication's general/theme/post/domain/pro settings or delete it.
   if (!isOwner) {
     return (
-      <div className="flex flex-col w-full pb-8">
-        <div className="flex flex-col gap-6 relative">
-          <ContributorSettings />
-        </div>
-      </div>
+      <SettingsPageLayout>
+        <ContributorSettings />
+      </SettingsPageLayout>
+    );
+  }
+
+  if (props.tab === "monetization") {
+    return (
+      <SettingsPageLayout>
+        <MonetizationSettings />
+      </SettingsPageLayout>
+    );
+  }
+
+  if (props.tab === "contributors") {
+    return (
+      <SettingsPageLayout>
+        <ContributorSettings />
+      </SettingsPageLayout>
+    );
+  }
+
+  if (props.tab === "newsletter") {
+    return (
+      <SettingsPageLayout>
+        <NewsletterSettings />
+      </SettingsPageLayout>
     );
   }
 
   return (
     <form
-      className="flex flex-col w-full pb-8"
+      className="flex flex-col w-full"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!pubData) return;
@@ -238,8 +281,7 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
         mutate();
       }}
     >
-      <div className="flex flex-col gap-6 relative ">
-        {/* ── General Settings ── */}
+      <SettingsPageLayout className="relative">
         <GeneralSettings
           nameValue={nameValue}
           setNameValue={setNameValue}
@@ -258,68 +300,38 @@ export function SettingsContent(props: { showPageBackground: boolean }) {
           onIconError={(content) => toast({ type: "error", content })}
         />
 
-        <DashboardContainer section="Theme and Layout">
-          <ThemeSettings />
-        </DashboardContainer>
-
-        {/* ── Post Settings ── */}
-        <PostSettings
-          showComments={showComments}
-          setShowComments={setShowComments}
-          showMentions={showMentions}
-          setShowMentions={setShowMentions}
-          showRecommends={showRecommends}
-          setShowRecommends={setShowRecommends}
+        <ThemeAndLayoutSettings
           showPrevNext={showPrevNext}
           setShowPrevNext={setShowPrevNext}
           showFirstLast={showFirstLast}
           setShowFirstLast={setShowFirstLast}
           prevNextDirection={prevNextDirection}
           setPrevNextDirection={setPrevNextDirection}
+        />
+
+        <ShareSettings
+          showComments={showComments}
+          setShowComments={setShowComments}
+          showMentions={showMentions}
+          setShowMentions={setShowMentions}
+          showRecommends={showRecommends}
+          setShowRecommends={setShowRecommends}
           showInDiscover={showInDiscover}
           setShowInDiscover={setShowInDiscover}
         />
 
-        <DashboardContainer section="Domains">
+        <SettingsSection title="Domains">
           <div className="text-secondary">
             <PubDomainSettings />
           </div>
-        </DashboardContainer>
+        </SettingsSection>
 
-        <ContributorSettings />
-
-        {canSeePayments && (
-          <>
-            <DashboardContainer section="Monetization">
-              <ConnectPayments />
-            </DashboardContainer>
-            <MembershipSettings />
-          </>
-        )}
-
-        {canSeePro && !isPro ? (
-          <DashboardContainer section="Leaflet Pro" className="pb-4">
-            <UpgradeToProButton />
-          </DashboardContainer>
-        ) : (
-          <>
-            <DashboardContainer section="Leaflet Pro" className="pb-4">
-              <ManageProSubscription compact />
-            </DashboardContainer>
-            <NewsletterSettings />
-          </>
-        )}
-        <div className="flex flex-col gap-1">
-          <hr className="border-border border-2" />
-          <hr className="border-border border-2" />
-        </div>
-
-        <DashboardContainer section="DANGER!" className="pb-4">
+        <SettingsSection title="DANGER!" className="pb-4">
           <DeletePublication />
-        </DashboardContainer>
+        </SettingsSection>
 
         {hasUnsavedChanges && <SettingsFooter loading={loading} />}
-      </div>
+      </SettingsPageLayout>
     </form>
   );
 }
@@ -367,29 +379,6 @@ function SettingsFooter(props: { loading: boolean }) {
     </div>
   );
 }
-
-export const DashboardContainer = (props: {
-  children: React.ReactNode;
-  className?: string;
-  section?: React.ReactNode;
-}) => {
-  let cardBorderHidden = useCardBorderHidden();
-  return (
-    <div
-      className={`container flex flex-col rounded-lg! gap-2 p-3 sm:px-4 ${!cardBorderHidden ? "" : "bg-transparent!"} ${props.className}`}
-    >
-      {props.section && (
-        <>
-          <h3 className="font-bold text-primary flex items-center gap-2">
-            {props.section}
-          </h3>
-          <hr className="-mt-1 mb-2 border-border-light" />
-        </>
-      )}
-      {props.children}
-    </div>
-  );
-};
 
 let pluralize = (n: number, word: string) =>
   `${n} ${word}${n === 1 ? "" : "s"}`;
