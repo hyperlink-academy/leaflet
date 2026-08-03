@@ -1,7 +1,6 @@
 "use client";
 
 import { ButtonPrimary } from "components/Buttons";
-import { SaleSticker } from "components/SaleSticker";
 import { ToggleGroup } from "components/ToggleGroup";
 import Link from "next/link";
 import { useState } from "react";
@@ -24,21 +23,7 @@ export const Pricing = () => {
           { value: "yearly", label: "Yearly" },
         ]}
       />
-      <div className="accent-container text-base py-3 px-3 mt-4 mb-14 md:mb-8 text-secondary gap-3 text-center leading-snug w-full sm:max-w-sm md:max-w-[800px] mx-auto">
-        <h3 className="text-xl! leading-tight">25% off your first year! </h3>
-        <div className="text-base font-normal!">
-          Get your{" "}
-          <a
-            target="_blank"
-            href="https://lab.leaflet.pub/3movr6hcegc2f"
-            className="underline"
-          >
-            Summer Pass
-          </a>{" "}
-          today, <br className="sm:hidden" /> only available until July 31
-        </div>
-      </div>
-      <div className="flex md:flex-row flex-col w-fit gap-8 justify-center mx-auto pt-3 items-stretch">
+      <div className="flex md:flex-row flex-col w-fit gap-8 justify-center mx-auto mt-18 md:mt-12 pt-3 items-stretch">
         <div className="relative flex flex-1 sm:w-[1000px] w-full sm:max-w-sm">
           <div className="absolute -top-22 sm:-top-24 md:-top-28 -left-14 sm:-left-16 md:-left-10 z-0">
             <img
@@ -92,25 +77,12 @@ export const Pricing = () => {
               className="w-[180px] sm:w-[240px] "
             />
           </div>
-          {cadence === "yearly" && (
-            <SaleSticker className="absolute -top-6 -left-4  z-20" width={96} />
-          )}
           <div
             className="paidTier bg-white border border-[#57822B]! rounded-lg py-4 px-5 flex-1 max-w-sm text-left h-full"
             style={{ boxShadow: "8px 12px 0 0 #D9EA72" }}
           >
             <h3 className="leading-tight text-center">
-              {cadence === "yearly" ? (
-                <div className="flex gap-2 items-baseline justify-center">
-                  <div className="relative text-tertiary text-lg">
-                    $120
-                    <div className="-rotate-16 absolute h-0.5 top-3.5 -left-1 -right-1 bg-tertiary border-1" />
-                  </div>
-                  <div>$90/year</div>
-                </div>
-              ) : (
-                "$12/month"
-              )}
+              {cadence === "yearly" ? "$120/year" : "$12/month"}
             </h3>
             <p className="text-[1rem]! text-center text-tertiary text-snug pb-3">
               Serious publishers, serious tools
@@ -118,7 +90,7 @@ export const Pricing = () => {
             <Link
               href={
                 cadence === "yearly"
-                  ? `/checkout/pro?cadence=year&coupon=AldrohMq`
+                  ? `/checkout/pro?cadence=year`
                   : `/checkout/pro?cadence=month`
               }
               className="no-underline!"
