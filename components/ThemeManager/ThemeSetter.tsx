@@ -116,7 +116,7 @@ export const ThemeSetterContent = (props: {
       )}
       <div className="themeBGLeaflet flex">
         <div className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}>
-          <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md">
+          <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#272727]">
             <LeafletBackgroundPicker
               entityID={props.entityID}
               openPicker={openPicker}
@@ -203,7 +203,7 @@ function WatermarkSetter(props: { entityID: string }) {
         disabledColor2="#DBDBDB"
       >
         <div className="flex flex-col gap-0 items-start ">
-          <div className="font-bold">Show Leaflet Watermark</div>
+          <div className="font-bold text-[#272727]">Show Leaflet Watermark</div>
           <div className="text-sm text-[#969696]">Help us spread the word!</div>
         </div>
       </Toggle>

@@ -20,7 +20,8 @@
     "start-appview-prod": "npm run build-appview && node appview/dist/index.js",
     "email:dev": "email dev",
     "generate-font-fallbacks": "node scripts/generate-font-metric-fallbacks.mjs",
-    "check-query-plans": "node scripts/check-supabase-query-plans.mjs"
+    "check-query-plans": "node scripts/check-supabase-query-plans.mjs",
+    "check-published-purity": "node scripts/check-published-purity.mjs"
   },
   "keywords": [],
   "author": "",

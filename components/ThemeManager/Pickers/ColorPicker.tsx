@@ -35,6 +35,8 @@ export const ColorPicker = (props: {
   closePicker: () => void;
   disabled?: boolean;
   children?: React.ReactNode;
+  labelClassName?: string;
+  fieldClassName?: string;
 }) => {
   let isMobile = useIsMobile();
 
@@ -61,7 +63,9 @@ export const ColorPicker = (props: {
                 backgroundSize: "cover",
               }}
             />
-            <strong className="w-max">{props.label}</strong>
+            <strong className={`w-max ${props.labelClassName}`}>
+              {props.label}
+            </strong>
           </button>
 
           <div className="flex gap-1">
@@ -72,7 +76,7 @@ export const ColorPicker = (props: {
             ) : isMobile ? (
               <HexKeyboard value={props.value} setValue={props.setValue} />
             ) : (
-              <ColorField className="w-fit gap-1">
+              <ColorField className={`w-fit gap-1 ${props.fieldClassName}`}>
                 <Input
                   onMouseDown={onMouseDown}
                   onFocus={(e) => {

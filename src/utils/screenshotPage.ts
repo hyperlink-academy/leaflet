@@ -1,14 +1,15 @@
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
-import { getCurrentDeploymentDomain } from "src/utils/getCurrentDeploymentDomain";
+import { MAIN_SITE_URL } from "src/utils/customDomain";
 
-// Resolve an app path to an absolute url on the host serving this request
-// (custom domains included). In development the app isn't publicly reachable
-// by the screenshot service, so render against production instead.
-export async function getOwnUrl(path: string) {
+// Resolve an app path to an absolute url on this deployment's canonical origin.
+// Deliberately not the request's Host header: reading it would make every
+// og-image route dynamic, and the page a custom domain serves at this path is
+// the same one the main site serves. In development the app isn't publicly
+// reachable by the screenshot service, so render against production instead.
+export function getOwnUrl(path: string) {
   if (process.env.NODE_ENV === "development")
     return `https://leaflet.pub${path}`;
-  const domain = await getCurrentDeploymentDomain();
-  return `${domain.slice(0, -1)}${path}`;
+  return `${MAIN_SITE_URL.replace(/\/$/, "")}${path}`;
 }
 
 export type PageScreenshotOptions = {
@@ -87,7 +88,7 @@ export async function ogScreenshotResponse(
   path: string,
   options?: Partial<PageScreenshotOptions>,
 ) {
-  const url = await getOwnUrl(path);
+  const url = getOwnUrl(path);
   const image = await screenshotPage(url, {
     ...serverRenderedPageWaits,
     width: 1400,

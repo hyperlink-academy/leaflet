@@ -37,8 +37,8 @@ import {
   confirmEmailAuthToken,
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
-import { getHomeDocs } from "app/(app)/(home-pages)/(writer)/home/storage";
-import { subscribeToPublication } from "app/(app)/lish/subscribeToPublication";
+import { getHomeDocs } from "src/utils/homeDocsStorage";
+import { subscribeToPublication } from "actions/publications/subscribeToPublication";
 import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { LoginModal } from "components/LoginButton";

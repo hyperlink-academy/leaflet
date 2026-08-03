@@ -30,6 +30,8 @@ import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
 import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
+import { MAIN_SITE_URL } from "src/utils/customDomain";
+import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -54,6 +56,59 @@ const profileCache: RedisProfileCache | null = redisClient
   : null;
 
 const QUOTE_PARAM = "/l-quote/";
+
+// The published pages are ISR-cached with a long revalidate window; indexing
+// a record from the firehose is the freshness signal for writes that don't go
+// through Leaflet's own actions, so tell the Next app to drop the affected
+// paths. Best-effort: a failed call only extends staleness until the page's
+// ISR timer, so it logs and never throws into the indexing path. Sent after
+// the DB writes land so the re-render reads the indexed state.
+async function notifyRevalidate(event: AppviewRevalidateEvent) {
+  try {
+    let res = await fetch(`${MAIN_SITE_URL}/api/appview_revalidate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok)
+      console.error(
+        `revalidate ${event.kind} failed: ${res.status} ${await res.text()}`,
+      );
+  } catch (e) {
+    console.error("revalidate request failed", e);
+  }
+}
+
+// Deletes remove the rows the document's paths are derived from, so snapshot
+// them first and hand them to the revalidation endpoint.
+async function deleteDocumentAndRevalidate(uri: string) {
+  let { data: doc } = await supabase
+    .from("documents")
+    .select("data, documents_in_publications(publication)")
+    .eq("uri", uri)
+    .maybeSingle();
+  await supabase.from("documents").delete().eq("uri", uri);
+  await notifyRevalidate({
+    kind: "document",
+    uri,
+    snapshot: {
+      publications:
+        doc?.documents_in_publications.map((r) => r.publication) ?? [],
+      path: (doc?.data as { path?: string } | null)?.path ?? null,
+    },
+  });
+}
+
+async function deletePublicationAndRevalidate(uri: string) {
+  let { data: prev } = await supabase
+    .from("publications")
+    .select("name")
+    .eq("uri", uri)
+    .maybeSingle();
+  await supabase.from("publications").delete().eq("uri", uri);
+  await notifyRevalidate({ kind: "publication", uri, names: [prev?.name] });
+}
 
 // The PDS copy of a members-only post is truncated at the delimiter (see
 // truncateDocumentRecordForPDS), so for posts published through Leaflet the
@@ -220,15 +275,23 @@ async function handleEvent(evt: Event) {
         if (docInPublicationResult.error)
           console.log(docInPublicationResult.error);
       }
+      await notifyRevalidate({ kind: "document", uri: evt.uri.toString() });
     }
     if (evt.event === "delete") {
-      await supabase.from("documents").delete().eq("uri", evt.uri.toString());
+      await deleteDocumentAndRevalidate(evt.uri.toString());
     }
   }
   if (evt.collection === ids.PubLeafletPublication) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletPublication.validateRecord(evt.record);
       if (!record.success) return;
+      // A rename leaves cached pages under the old name-form URLs; snapshot it
+      // so they get dropped too.
+      let { data: prev } = await supabase
+        .from("publications")
+        .select("name")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("identities")
         .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
@@ -238,12 +301,14 @@ async function handleEvent(evt: Event) {
         name: record.value.name,
         record: record.value as Json,
       });
+      await notifyRevalidate({
+        kind: "publication",
+        uri: evt.uri.toString(),
+        names: [record.value.name, prev?.name],
+      });
     }
     if (evt.event === "delete") {
-      await supabase
-        .from("publications")
-        .delete()
-        .eq("uri", evt.uri.toString());
+      await deletePublicationAndRevalidate(evt.uri.toString());
     }
   }
   if (evt.collection === ids.PubLeafletComment) {
@@ -256,12 +321,27 @@ async function handleEvent(evt: Event) {
         document: record.value.subject,
         record: record.value as Json,
       });
+      // Comment counts are server-rendered into post pages and listings.
+      await notifyRevalidate({
+        kind: "interaction",
+        document: record.value.subject,
+      });
     }
     if (evt.event === "delete") {
+      let { data: comment } = await supabase
+        .from("comments_on_documents")
+        .select("document")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("comments_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
+      if (comment?.document)
+        await notifyRevalidate({
+          kind: "interaction",
+          document: comment.document,
+        });
     }
   }
   if (evt.collection === ids.PubLeafletPollVote) {
@@ -315,12 +395,27 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log("Error upserting recommend:", error);
+      // Recommend counts are server-rendered into post pages and listings.
+      await notifyRevalidate({
+        kind: "interaction",
+        document: record.value.subject,
+      });
     }
     if (evt.event === "delete") {
+      let { data: recommend } = await supabase
+        .from("recommends_on_documents")
+        .select("document")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("recommends_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
+      if (recommend?.document)
+        await notifyRevalidate({
+          kind: "interaction",
+          document: recommend.document,
+        });
     }
   }
   if (evt.collection === ids.PubLeafletGraphSubscription) {
@@ -421,9 +516,13 @@ async function handleEvent(evt: Event) {
         if (docInPublicationResult.error)
           console.log(docInPublicationResult.error);
       }
+      // Blob-offloaded records aren't readable until sync_document_metadata
+      // inflates them; that function revalidates when it's done.
+      if (!hasBlobPages)
+        await notifyRevalidate({ kind: "document", uri: evt.uri.toString() });
     }
     if (evt.event === "delete") {
-      await supabase.from("documents").delete().eq("uri", evt.uri.toString());
+      await deleteDocumentAndRevalidate(evt.uri.toString());
     }
   }
 
@@ -434,6 +533,13 @@ async function handleEvent(evt: Event) {
         stripThemeWithoutType(evt.record),
       );
       if (!record.success) return;
+      // A rename leaves cached pages under the old name-form URLs; snapshot it
+      // so they get dropped too.
+      let { data: prev } = await supabase
+        .from("publications")
+        .select("name")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("identities")
         .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
@@ -444,12 +550,14 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log(error);
+      await notifyRevalidate({
+        kind: "publication",
+        uri: evt.uri.toString(),
+        names: [record.value.name, prev?.name],
+      });
     }
     if (evt.event === "delete") {
-      await supabase
-        .from("publications")
-        .delete()
-        .eq("uri", evt.uri.toString());
+      await deletePublicationAndRevalidate(evt.uri.toString());
     }
   }
 
@@ -468,12 +576,27 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log("Error upserting recommend:", error);
+      // Recommend counts are server-rendered into post pages and listings.
+      await notifyRevalidate({
+        kind: "interaction",
+        document: record.value.document,
+      });
     }
     if (evt.event === "delete") {
+      let { data: recommend } = await supabase
+        .from("recommends_on_documents")
+        .select("document")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("recommends_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
+      if (recommend?.document)
+        await notifyRevalidate({
+          kind: "interaction",
+          document: recommend.document,
+        });
     }
   }
 

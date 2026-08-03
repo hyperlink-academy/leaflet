@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
-import { getBasePublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getBasePublicationURL } from "src/utils/getPublicationURL";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
 import { ActionButton } from "./ActionButton";
@@ -14,7 +14,7 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LoginModal } from "components/LoginButton";
 import useSWR from "swr";
-import { getHomeDocs } from "app/(app)/(home-pages)/(writer)/home/storage";
+import { getHomeDocs } from "src/utils/homeDocsStorage";
 
 export const PublicationButtons = (props: { className?: string }) => {
   let { identity } = useIdentityData();
@@ -59,6 +59,7 @@ export const PublicationButtons = (props: { className?: string }) => {
         {hasLooseleafs && (
           <>
             <SpeedyLink
+              eager
               href={`/looseleafs`}
               className={` hover:no-underline!  `}
             >
@@ -73,8 +74,15 @@ export const PublicationButtons = (props: { className?: string }) => {
             <hr className="border-border-light border-dashed my-1" />
           </>
         )}
-        {allPubs.map((d) => {
-          return <PublicationOption {...d} key={d.uri} record={d.record} />;
+        {allPubs.map((d, index) => {
+          return (
+            <PublicationOption
+              {...d}
+              key={d.uri}
+              record={d.record}
+              eager={index < EAGER_PREFETCH_PUBS}
+            />
+          );
         })}
 
         <SpeedyLink
@@ -93,17 +101,23 @@ export const PublicationButtons = (props: { className?: string }) => {
   );
 };
 
+// Prefetching a pub dashboard is a full dynamic render, so only the first few
+// entries of the list get it up front; the rest keep prefetching on hover.
+const EAGER_PREFETCH_PUBS = 6;
+
 const PublicationOption = (props: {
   uri: string;
   name: string;
   record: Json;
   className?: string;
+  eager?: boolean;
 }) => {
   let record = normalizePublicationRecord(props.record);
   if (!record) return;
 
   return (
     <SpeedyLink
+      eager={props.eager}
       href={`${getBasePublicationURL(props)}/dashboard`}
       className={`hover:no-underline! `}
     >

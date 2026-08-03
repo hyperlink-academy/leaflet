@@ -2,7 +2,7 @@
 import { AtUri } from "@atproto/api";
 import Link from "next/link";
 import { PubIcon } from "components/ActionBar/Publications";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "src/utils/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { formatBylineNames } from "src/utils/byline";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";

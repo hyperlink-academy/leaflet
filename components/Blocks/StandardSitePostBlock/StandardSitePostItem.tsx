@@ -5,12 +5,9 @@ import {
   PublicationPostItemSmall,
   PublicationPostItemMedium,
   PublicationPostItemLarge,
-} from "app/(app)/lish/[did]/[publication]/PublicationPostItem";
-import { LocalizedDate } from "app/(app)/lish/[did]/[publication]/LocalizedDate";
-import {
-  getDocumentURL,
-  getPublicationURL,
-} from "app/(app)/lish/createPub/getPublicationURL";
+} from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
+import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
+import { getDocumentURL, getPublicationURL } from "src/utils/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";

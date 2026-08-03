@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePublicationPaths } from "src/utils/revalidatePublication";
 import { TID } from "@atproto/common";
 import { AtUri } from "@atproto/syntax";
 import { AtpBaseClient } from "lexicons/api";
@@ -10,7 +10,7 @@ import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { readNavEntries } from "src/utils/publicationNavEntries";
 import { OAuthSessionError, restoreOAuthSession } from "src/atproto-oauth";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { leafletToPublicationPageRecord } from "src/utils/leafletToPublicationPageRecord";
 import {
   extractThemeFromFacts,
@@ -49,7 +49,7 @@ export async function publishPublicationPages({
 }: {
   publication_uri: string;
 }): Promise<PublishPagesResult> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,
@@ -247,7 +247,13 @@ export async function publishPublicationPages({
 
   // Bust the cached reader routes so edits to existing pages show up — without
   // this only brand-new (uncached) page paths would reflect the latest content.
-  revalidatePath("/lish/[did]/[publication]", "layout");
+  revalidatePublicationPaths(publication_uri, normalizedPub?.name, [
+    "",
+    "/archive",
+    ...contentPages
+      .filter((p) => p.route && p.route !== "/")
+      .map((p) => p.route as string),
+  ]);
 
   return { success: true, published };
 }

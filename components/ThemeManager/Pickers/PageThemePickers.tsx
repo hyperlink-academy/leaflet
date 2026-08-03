@@ -42,7 +42,8 @@ export const PageThemePickers = (props: {
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
-  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data.value;
+  let headingFontId = useEntity(props.entityID, "theme/heading-font")?.data
+    .value;
   let bodyFontId = useEntity(props.entityID, "theme/body-font")?.data.value;
 
   return (
@@ -67,12 +68,24 @@ export const PageThemePickers = (props: {
           <FontPicker
             label="Heading"
             value={headingFontId}
-            onChange={(fontId) => rep?.mutate.assertFact({ entity: props.entityID, attribute: "theme/heading-font", data: { type: "string", value: fontId } })}
+            onChange={(fontId) =>
+              rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "theme/heading-font",
+                data: { type: "string", value: fontId },
+              })
+            }
           />
           <FontPicker
             label="Body"
             value={bodyFontId}
-            onChange={(fontId) => rep?.mutate.assertFact({ entity: props.entityID, attribute: "theme/body-font", data: { type: "string", value: fontId } })}
+            onChange={(fontId) =>
+              rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "theme/body-font",
+                data: { type: "string", value: fontId },
+              })
+            }
           />
         </>
       )}
@@ -349,6 +362,8 @@ export const LeafletBackgroundPicker = (props: {
             openPicker={props.openPicker}
             setOpenPicker={props.setOpenPicker}
             closePicker={() => props.setOpenPicker("null")}
+            labelClassName="text-[#272727]"
+            fieldClassName="text-[#969696]"
           />
           <label className="text-[#969696] hover:cursor-pointer shrink-0 absolute top-0 right-0">
             <BlockImageSmall />
@@ -378,6 +393,8 @@ export const LeafletBackgroundPicker = (props: {
           setOpenPicker={props.setOpenPicker}
           closePicker={() => props.setOpenPicker("null")}
           alpha
+          labelClassName="text-[#272727]"
+          fieldClassName="text-[#969696]"
         />
       )}
 
@@ -594,7 +611,7 @@ const PageBorderHider = (props: {
         disabledColor2="#DBDBDB"
       >
         <div className="flex gap-2">
-          <div className="font-bold">Page Background</div>
+          <div className="font-bold text-[#272727]">Page Background</div>
           <div className="italic text-[#8C8C8C]">
             {pageBorderHidden ? "none" : ""}
           </div>

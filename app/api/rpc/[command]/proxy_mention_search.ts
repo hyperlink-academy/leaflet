@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient } from "lexicons/api";
 import type * as SearchService from "lexicons/api/types/parts/page/mention/search";
@@ -30,7 +30,7 @@ export const proxy_mention_search = makeRoute({
     { supabase }: Pick<Env, "supabase">,
   ) => {
     try {
-      const identity = await getIdentityData();
+      const identity = await getAuthIdentity();
       if (!identity?.atp_did) throw new Error("Not authenticated");
 
       let record: MentionService.Record;

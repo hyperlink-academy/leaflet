@@ -10,7 +10,7 @@ import {
 import { eq } from "drizzle-orm";
 import { PermissionToken } from "src/replicache";
 import { pool } from "supabase/pool";
-import { getIdentityData } from "./getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isConfirmedContributor } from "src/contributorPermissions";
 
@@ -19,7 +19,7 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
   const db = drizzle(client);
 
   // Get the current user's identity
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
 
   // Check publication and document ownership in one query
   let { data: tokenData } = await supabaseServerClient
@@ -107,7 +107,7 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
 }
 
 export async function archivePost(token: string) {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity) throw new Error("No Identity");
 
   // Archive on homepage
@@ -124,7 +124,7 @@ export async function archivePost(token: string) {
 }
 
 export async function unarchivePost(token: string) {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity) throw new Error("No Identity");
 
   // Unarchive on homepage

@@ -29,6 +29,11 @@ export const notifications = pgTable("notifications", {
 	read: boolean("read").default(false).notNull(),
 	data: jsonb("data").notNull(),
 	id: uuid("id").primaryKey().notNull(),
+},
+(table) => {
+	return {
+		recipient_created_at_id_idx: index("notifications_recipient_created_at_id_idx").on(table.recipient, table.created_at, table.id),
+	}
 });
 
 export const publications = pgTable("publications", {

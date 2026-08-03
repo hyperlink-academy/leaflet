@@ -65,6 +65,7 @@ function MockIdentity(props: {
       value={{
         identity: props.identity,
         mutate: (async () => props.identity) as any,
+        identityPending: false,
       }}
     >
       {props.children}

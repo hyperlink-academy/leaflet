@@ -9,10 +9,7 @@ import {
 } from "../Icons/RecommendTiny";
 import { RecommendEmptySmall } from "../Icons/RecommendEmptySmall";
 import { RecommendFilledSmall } from "../Icons/RecommendFilledSmall";
-import {
-  recommendAction,
-  unrecommendAction,
-} from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
+import { recommendAction, unrecommendAction } from "actions/recommendAction";
 import { callRPC } from "app/api/rpc/client";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { useSmoker, useToaster } from "../Toast";
@@ -23,7 +20,7 @@ import { Modal } from "../Modal";
 import { MobileSheet } from "../MobileSheet";
 import { useIsMobile } from "src/hooks/isMobile";
 import { RecommendsList, getDocumentRecommendsKey } from "./RecommendsList";
-import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
+import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import {
   InteractionButton,
   LargeInteractionButton,

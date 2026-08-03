@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "./getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
 import {
@@ -11,7 +11,7 @@ import {
 export async function refreshStripeConnectAccount(): Promise<
   Result<ConnectedAccountState, string>
 > {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return Err("Not authenticated");
 
   const { data: row } = await supabaseServerClient

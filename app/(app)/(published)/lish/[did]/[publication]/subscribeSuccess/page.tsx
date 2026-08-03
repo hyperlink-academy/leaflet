@@ -1,0 +1,35 @@
+import type { Metadata } from "next";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { RSSSmall } from "components/Icons/RSSSmall";
+
+// On-demand ISR: rendered on first request, then served from the CDN and
+// re-rendered in the background. The empty generateStaticParams is what opts a
+// dynamic-params route into caching at all — `revalidate` alone leaves it
+// fully dynamic. Writes invalidate eagerly via revalidatePublicationPaths.
+export const revalidate = 3600;
+export async function generateStaticParams() {
+  return [];
+}
+
+export const metadata: Metadata = { robots: { index: false } };
+
+export default function SubscribeSuccess() {
+  return (
+    <div className="h-full w-screen bg-bg-leaflet flex place-items-center text-center ">
+      <div className="frosted-container p-4 max-w-md mx-auto justify-center place-items-center flex flex-col gap-2">
+        <h3 className="text-secondary">You've Subscribed!</h3>
+        <div className="text-tertiary">
+          Add this custom feed to your Bluesky to get the updates from this and
+          ALL leaflet publications you subscribe to!
+        </div>
+
+        <div className="flex flex-row gap-3 mt-3">
+          <ButtonPrimary>Add Custom Feed</ButtonPrimary>
+          <button className="text-accent-contrast">
+            <RSSSmall />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

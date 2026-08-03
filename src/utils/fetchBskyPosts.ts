@@ -5,7 +5,7 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { type $Typed } from "lexicons/api/util";
-import { extractBlocksByType } from "app/(app)/lish/[did]/[publication]/[rkey]/extractBlocksByType";
+import { extractBlocksByType } from "src/utils/extractBlocksByType";
 
 // getPosts accepts at most 25 URIs per call.
 export async function fetchBskyPosts(

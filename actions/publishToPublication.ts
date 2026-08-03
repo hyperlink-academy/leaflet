@@ -1,7 +1,8 @@
 "use server";
 
+import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import {
   AtpBaseClient,
   PubLeafletBlocksBskyPost,
@@ -86,7 +87,7 @@ export async function publishToPublication({
   // own record out of those feeds.
   showInDiscover?: boolean;
 }): Promise<PublishResult> {
-  let identity = await getIdentityData();
+  let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return {
       success: false,
@@ -483,6 +484,11 @@ export async function publishToPublication({
       }
     }
   }
+
+  // Runs after the documents/join-row writes above so the re-render reads the
+  // record this publish just wrote — including the title and description that
+  // the post's page metadata is built from.
+  await revalidateDocumentPaths(result.uri);
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
 }

@@ -54,7 +54,7 @@ export const PageWidthSetter = (props: {
       <div className="flex flex-col gap-2">
         <div className="flex gap-2 items-center">
           <button
-            className="font-bold text-[#000000] shrink-0 grow-0 w-full flex gap-2 items-start text-left"
+            className="font-bold text-[#272727] shrink-0 grow-0 w-full flex gap-2 items-start text-left"
             onClick={() => {
               if (props.openPicker === props.thisPicker) {
                 props.setOpenPicker("null");

@@ -2,9 +2,7 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { NextApiResponse } from "next";
-
-const VERCEL_PROJECT = "prj_9jX4tmYCISnm176frFxk07fF74kG";
-const VERCEL_TEAM = "team_42xaJiZMTw9Sr7i0DcLTae9d";
+import { VERCEL_PROJECT, VERCEL_TEAM } from "src/vercel";
 
 export const get_domain_status = makeRoute({
   route: "get_domain_status",

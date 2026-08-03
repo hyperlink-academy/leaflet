@@ -1,8 +1,8 @@
 import {
   backfillAtprotoSubscriptionsForIdentity,
   subscribeToPublication,
-} from "app/(app)/lish/subscribeToPublication";
-import { recommendAction } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
+} from "actions/publications/subscribeToPublication";
+import { recommendAction } from "actions/recommendAction";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";

@@ -1,16 +1,18 @@
 "use client";
 import { Avatar } from "components/Avatar";
 import { ActionButton } from "../ActionButton";
-import { useIdentityData } from "components/IdentityProvider";
+import {
+  useIdentityData,
+  clearIdentityData,
+} from "components/IdentityProvider";
 import { AccountSmall } from "components/Icons/AccountSmall";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { useIsMobile } from "src/hooks/isMobile";
 import { LogoutSmall } from "components/Icons/LogoutSmall";
-import { mutate } from "swr";
 import { SpeedyLink } from "components/SpeedyLink";
 import { Popover } from "components/Popover";
 import { Modal } from "components/Modal";
-import { UpgradeContent } from "app/(app)/lish/[did]/[publication]/UpgradeModal";
+import { UpgradeContent } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
 import { useIsPro, useCanSeePro } from "src/hooks/useEntitlement";
 import { useState } from "react";
 import { LeafletPro } from "components/Icons/LeafletPro";
@@ -174,7 +176,7 @@ export const ProfileButton = () => {
               await fetch("/api/auth/logout");
               if (currentIdentity) removeSavedAccountEntry(currentIdentity);
               mutateSavedAccounts();
-              mutate("identity", null);
+              clearIdentityData();
             }}
           >
             <LogoutSmall />

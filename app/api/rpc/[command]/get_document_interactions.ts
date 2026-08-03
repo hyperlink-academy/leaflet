@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getConstellationBacklinks } from "app/(app)/lish/[did]/[publication]/[rkey]/getPostPageData";
-import { getDocumentURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getConstellationBacklinks } from "src/utils/getPostPageData";
+import { getDocumentURL } from "src/utils/getPublicationURL";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,

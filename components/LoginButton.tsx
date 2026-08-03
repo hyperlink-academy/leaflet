@@ -1,5 +1,5 @@
 "use client";
-import { useIdentityData } from "./IdentityProvider";
+import { useIdentityData, refreshIdentityData } from "./IdentityProvider";
 import { Popover } from "./Popover";
 import { Modal } from "./Modal";
 
@@ -19,8 +19,7 @@ import {
   confirmEmailAuthToken,
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
-import { getHomeDocs } from "app/(app)/(home-pages)/(writer)/home/storage";
-import { mutate } from "swr";
+import { getHomeDocs } from "src/utils/homeDocsStorage";
 import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
 
 export const LoginModal = (props: {
@@ -150,7 +149,7 @@ export const LoginContent = (props: {
       window.location.href = "/home";
       return;
     }
-    mutate("identity");
+    refreshIdentityData();
     toaster({
       content: <div className="font-bold">Logged in! Welcome!</div>,
       type: "success",

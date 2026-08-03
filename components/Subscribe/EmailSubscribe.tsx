@@ -8,14 +8,17 @@ import { Input } from "components/Input";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { requestPublicationEmailSubscription } from "actions/publications/subscribeEmail";
-import { subscribeToPublication } from "app/(app)/lish/subscribeToPublication";
+import { subscribeToPublication } from "actions/publications/subscribeToPublication";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { SUBSCRIBE_ERROR_MESSAGES } from "./subscribeErrors";
 import { onMouseDown as iosOnPointerDown } from "src/utils/iosInputMouseDown";
 import { theme } from "tailwind.config";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { Avatar } from "components/Avatar";
-import { useIdentityData } from "components/IdentityProvider";
+import {
+  refreshIdentityData,
+  useIdentityData,
+} from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
@@ -175,6 +178,7 @@ export const EmailButton = (props: {
     if (!ok) return;
     toaster({ content: <div>You're Subscribed!</div>, type: "success" });
     props.onSubscribed?.();
+    refreshIdentityData();
     router.refresh();
   };
 

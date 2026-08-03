@@ -23,6 +23,8 @@ import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksImage,
+  PubLeafletBlocksImageGallery,
+  PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksStandardSitePublication,
@@ -154,6 +156,27 @@ const bskyPostBlock = (rkey: string): PubLeafletPagesLinearDocument.Block => ({
       cid: "preview",
     },
   },
+});
+
+const galleryImage = (
+  width: number,
+  height: number,
+  label: string,
+): PubLeafletBlocksImageGallery.Image => ({
+  $type: "pub.leaflet.blocks.imageGallery#image",
+  image: {
+    ref: { $link: `https://placehold.co/${width}x${height}/png?text=${label}` },
+  } as unknown as PubLeafletBlocksImageGallery.Image["image"],
+  aspectRatio: { width, height },
+  alt: `placeholder ${label}`,
+});
+
+const galleryBlock = (
+  format: "grid" | "carousel" | "strip",
+  images: PubLeafletBlocksImageGallery.Image[],
+): PubLeafletPagesLinearDocument.Block => ({
+  $type: "pub.leaflet.pages.linearDocument#block",
+  block: { $type: "pub.leaflet.blocks.imageGallery", format, images },
 });
 
 const previewBskyAuthor = {
@@ -577,6 +600,26 @@ const defaultProps: PostEmailProps = {
         uri: previewStandardSitePublication.uri,
       },
     },
+    galleryBlock("grid", [
+      galleryImage(600, 400, "1"),
+      galleryImage(400, 600, "2"),
+      galleryImage(500, 500, "3"),
+      galleryImage(600, 400, "4"),
+      galleryImage(600, 300, "5"),
+    ]),
+    galleryBlock("strip", [
+      galleryImage(1200, 800, "1"),
+      galleryImage(1200, 600, "2"),
+      galleryImage(1200, 900, "3"),
+    ]),
+    galleryBlock("carousel", [
+      galleryImage(1200, 800, "1"),
+      galleryImage(1200, 800, "2"),
+      galleryImage(1200, 800, "3"),
+      galleryImage(1200, 800, "4"),
+    ]),
+    // Single-image carousel — no "+N more" indicator.
+    galleryBlock("carousel", [galleryImage(1200, 800, "solo")]),
     {
       $type: "pub.leaflet.pages.linearDocument#block",
       block: { $type: "pub.leaflet.blocks.math" },
@@ -820,6 +863,10 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             key={i}
                             block={b.block}
                             alignment={b.alignment}
+                            // Matches the published page's block anchor id
+                            // (PostContent renders each root-page block with
+                            // id={index}), so emails can deep-link to a block.
+                            blockUrl={`${p.postUrl}#${i}`}
                             did={p.did}
                             assetsBaseUrl={p.assetsBaseUrl}
                             theme={theme}
@@ -1048,6 +1095,7 @@ const BlockRenderer = ({
   theme,
   colors,
   postUrl,
+  blockUrl,
   bskyPosts,
   standardSitePosts,
   standardSitePublications,
@@ -1060,6 +1108,7 @@ const BlockRenderer = ({
   theme: EmailTheme;
   colors: ResolvedColors;
   postUrl: string;
+  blockUrl?: string;
   bskyPosts?: Record<string, AppBskyFeedDefs.PostView>;
   standardSitePosts?: Record<string, StandardSitePostData>;
   standardSitePublications?: Record<string, StandardSitePublicationData>;
@@ -1261,7 +1310,11 @@ const BlockRenderer = ({
     const post = standardSitePosts?.[block.uri];
     if (!post) {
       return (
-        <BlockDataNotFound label="Post not found." theme={theme} colors={colors} />
+        <BlockDataNotFound
+          label="Post not found."
+          theme={theme}
+          colors={colors}
+        />
       );
     }
     // default to "medium" to match the draft (StandardSitePostBlock),
@@ -1282,6 +1335,23 @@ const BlockRenderer = ({
         assetsBaseUrl={assetsBaseUrl}
       />
     );
+  }
+  if (PubLeafletBlocksImageGallery.isMain(block)) {
+    return (
+      <ImageGalleryEmailBlock
+        block={block}
+        did={did}
+        assetsBaseUrl={assetsBaseUrl}
+        href={blockUrl ?? postUrl}
+        theme={theme}
+        colors={colors}
+      />
+    );
+  }
+  // The delimiter renders as nothing but must stay in the block array so
+  // later blocks keep their record indices (and thus their #index anchors).
+  if (PubLeafletBlocksMembersOnlyDelimiter.isMain(block)) {
+    return null;
   }
   if (PubLeafletBlocksStandardSitePublication.isMain(block)) {
     const publication = standardSitePublications?.[block.uri];
@@ -1304,9 +1374,7 @@ const BlockRenderer = ({
       />
     );
   }
-  return (
-    <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
-  );
+  return <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />;
 };
 
 // Matches the published web renderer's notice when a referenced standard-site
@@ -1669,6 +1737,227 @@ const ImageBlock = ({
   );
 };
 
+// Defaults mirror components/Blocks/ImageGalleryBlock/shared.ts. Not imported
+// from there because that module pulls the replicache client into the email
+// render.
+const GALLERY_DEFAULT_GAP = 8;
+const GALLERY_DEFAULT_MAX_WIDTH = 300;
+// Horizontal card padding (24px per side) — what's left of theme.pageWidth for
+// block content. Mobile clients tighten the padding via the media query, which
+// only makes cells slightly wider than assumed.
+const CARD_HORIZONTAL_PADDING = 48;
+
+const ImageGalleryEmailBlock = ({
+  block,
+  did,
+  assetsBaseUrl,
+  href,
+  theme,
+  colors,
+}: {
+  block: PubLeafletBlocksImageGallery.Main;
+  did: string;
+  assetsBaseUrl: string;
+  href: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+}) => {
+  const images = block.images ?? [];
+  if (images.length === 0) return null;
+  const gap = block.gap ?? GALLERY_DEFAULT_GAP;
+  const contentWidth = theme.pageWidth - CARD_HORIZONTAL_PADDING;
+  const srcFor = (image: PubLeafletBlocksImageGallery.Image, width: number) =>
+    blobRefToSrc(image.image.ref, did, assetsBaseUrl, {
+      width,
+      format: "email",
+    });
+
+  if (block.format === "carousel") {
+    // Email can't page through a carousel, so show the first slide and a
+    // "+N more" indicator; both link to the block on the post page.
+    const first = images[0];
+    const more = images.length - 1;
+    return (
+      <Section style={{ margin: BLOCK_MARGIN }}>
+        <Link href={href} style={{ display: "block" }}>
+          <Img
+            src={srcFor(first, 1200)}
+            alt={first.alt ?? ""}
+            style={{
+              display: "block",
+              height: "auto",
+              margin: "0 auto",
+              maxWidth: `${first.aspectRatio.width}px`,
+              width: "100%",
+            }}
+          />
+        </Link>
+        {more > 0 ? (
+          <table
+            role="presentation"
+            align="center"
+            cellPadding={0}
+            cellSpacing={0}
+            border={0}
+            style={{ borderCollapse: "separate", margin: "8px auto 0" }}
+          >
+            <tbody>
+              <tr>
+                <td
+                  align="center"
+                  style={{
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: 999,
+                    padding: "4px 12px",
+                  }}
+                >
+                  <Link
+                    href={href}
+                    style={{
+                      color: theme.accentBackground,
+                      display: "block",
+                      fontFamily: theme.bodyFont,
+                      fontSize: 14,
+                      fontWeight: "bold",
+                      lineHeight: "18px",
+                      textDecoration: "none",
+                    }}
+                  >
+                    +{more} more image{more === 1 ? "" : "s"}
+                  </Link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        ) : null}
+      </Section>
+    );
+  }
+
+  if (block.format === "strip") {
+    return (
+      <Section style={{ margin: BLOCK_MARGIN }}>
+        {images.map((image, i) => (
+          <Link key={i} href={href} style={{ display: "block" }}>
+            <Img
+              src={srcFor(image, 1200)}
+              alt={image.alt ?? ""}
+              style={{
+                display: "block",
+                height: "auto",
+                margin: i === 0 ? "0 auto" : `${gap}px auto 0`,
+                maxWidth: `${image.aspectRatio.width}px`,
+                width: "100%",
+              }}
+            />
+          </Link>
+        ))}
+      </Section>
+    );
+  }
+
+  // Grid (the default format). The web grid cover-crops each row's cells to
+  // the tallest image, which needs object-fit — unreliable in mail clients.
+  // Instead each email row is "justified": every cell's width share is
+  // proportional to its image's aspect ratio, so all images in a row render
+  // at the same height uncropped. Column count mirrors the web's math with
+  // the email's fixed content width standing in for the measured container.
+  const maxWidth = block.maxWidth ?? GALLERY_DEFAULT_MAX_WIDTH;
+  const columns = Math.max(
+    1,
+    Math.min(
+      Math.ceil((contentWidth - 1 + gap) / (maxWidth + gap)),
+      images.length,
+    ),
+  );
+  // When fewer images than columns would fit, cap the grid's width so each
+  // image stays near maxWidth rather than stretching — same as the web
+  // renderer. Outlook ignores max-width and renders full-width, the card's
+  // own tradeoff.
+  const gridWidth = Math.min(
+    contentWidth,
+    columns * maxWidth + (columns - 1) * gap,
+  );
+  const aspect = (image: PubLeafletBlocksImageGallery.Image) =>
+    image.aspectRatio.width / image.aspectRatio.height;
+  const avgAspect =
+    images.reduce((sum, i) => sum + aspect(i), 0) / images.length;
+  const rows: PubLeafletBlocksImageGallery.Image[][] = [];
+  for (let i = 0; i < images.length; i += columns) {
+    rows.push(images.slice(i, i + columns));
+  }
+  const gapPct = (gap / gridWidth) * 100;
+  const imageAreaPct = 100 - gapPct * (columns - 1);
+  return (
+    <Section style={{ margin: BLOCK_MARGIN }}>
+      {rows.map((row, ri) => {
+        // A short last row keeps roughly the height of a full one: the
+        // missing slots are budgeted at the gallery's average aspect ratio
+        // and left as an empty filler cell.
+        const missing = columns - row.length;
+        const totalAspect =
+          row.reduce((sum, i) => sum + aspect(i), 0) + avgAspect * missing;
+        return (
+          <table
+            key={ri}
+            role="presentation"
+            align="center"
+            width="100%"
+            cellPadding={0}
+            cellSpacing={0}
+            border={0}
+            style={{
+              borderCollapse: "collapse",
+              margin: `${ri > 0 ? gap : 0}px auto 0`,
+              maxWidth: gridWidth,
+              tableLayout: "fixed",
+              width: "100%",
+            }}
+          >
+            <tbody>
+              <tr>
+                {row.map((image, ci) => {
+                  const pct = (aspect(image) / totalAspect) * imageAreaPct;
+                  return (
+                    <React.Fragment key={ci}>
+                      {ci > 0 ? (
+                        <td style={{ width: `${gapPct.toFixed(2)}%` }} />
+                      ) : null}
+                      <td
+                        style={{
+                          width: `${pct.toFixed(2)}%`,
+                          verticalAlign: "top",
+                        }}
+                      >
+                        <Link href={href} style={{ display: "block" }}>
+                          <Img
+                            // 2x the rendered width covers retina density.
+                            src={srcFor(
+                              image,
+                              Math.round((pct / 100) * gridWidth) * 2,
+                            )}
+                            alt={image.alt ?? ""}
+                            style={{
+                              display: "block",
+                              height: "auto",
+                              width: "100%",
+                            }}
+                          />
+                        </Link>
+                      </td>
+                    </React.Fragment>
+                  );
+                })}
+                {missing > 0 ? <td /> : null}
+              </tr>
+            </tbody>
+          </table>
+        );
+      })}
+    </Section>
+  );
+};
+
 const ButtonBlock = ({
   text,
   url,
@@ -1872,8 +2161,7 @@ const MembersUpsell = ({
           textAlign: "center",
         }}
       >
-        Subscribe to see the full content — become a member of{" "}
-        {publicationName}
+        Subscribe to see the full content — become a member of {publicationName}
         {priceLabel ? ` starting at ${priceLabel}/month` : ""}.
       </ReactEmailText>
       {/* Bulletproof centered button — same table pattern as ButtonBlock. */}

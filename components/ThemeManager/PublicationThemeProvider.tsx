@@ -11,7 +11,7 @@ import { resolvePublicationTheme } from "lexicons/src/normalize";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
-} from "app/(app)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+} from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PubThemeDefaults } from "./themeDefaults";
 

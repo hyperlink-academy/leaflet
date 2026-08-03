@@ -154,7 +154,7 @@ export function LightboxSlide(props: { image: GalleryImage }) {
     <div className="flex-1 h-full w-full flex flex-col gap-3 min-h-0 justify-center items-center px-8">
       <img
         alt={image.alt}
-        src={image.src}
+        src={image.fullSrc ?? image.src}
         className=" min-h-0 max-w-full object-contain"
         onClick={(e) => e.stopPropagation()}
       />

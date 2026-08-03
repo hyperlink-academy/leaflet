@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PLATFORM_FEE_BPS } from "stripe/connect";
@@ -38,7 +38,7 @@ export type MembershipJoinViewer = {
 export async function getMembershipJoinViewer(
   publicationUri: string,
 ): Promise<MembershipJoinViewer> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity)
     return {
       loggedIn: false,
@@ -112,7 +112,7 @@ export async function createWalletCheckoutSession(args: {
   tierId?: string;
   cadence?: "month" | "year";
 }): Promise<Result<{ url: string }, CheckoutSessionError>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   try {
     const wallet = await getOrCreateWallet(identity);
@@ -142,7 +142,7 @@ export async function createWalletCheckoutSession(args: {
 export async function saveWalletCardFromSession(
   sessionId: string,
 ): Promise<Result<null, CheckoutSessionError>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   try {
     const [wallet, card] = await Promise.all([
@@ -184,7 +184,7 @@ export async function subscribeToTier(args: {
   tierId: string;
   cadence: "month" | "year";
 }): Promise<Result<SubscribeToTierResult, SubscribeError>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   if (!identity.email) return Err("email_required");
 

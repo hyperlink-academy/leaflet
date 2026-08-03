@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 
 export type GetPublicationSubscribersTimeseriesReturnType = Awaited<
   ReturnType<(typeof get_publication_subscribers_timeseries)["handler"]>
@@ -18,7 +18,7 @@ export const get_publication_subscribers_timeseries = makeRoute({
     { publication_uri, from, to },
     { supabase }: Pick<Env, "supabase">,
   ) => {
-    const identity = await getIdentityData();
+    const identity = await getAuthIdentity();
     if (!identity?.atp_did || !identity.entitlements?.publication_analytics || !identity.entitlements?.pro_plan_visible) {
       return { error: "unauthorized" as const };
     }

@@ -3,7 +3,7 @@ import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { AtUri } from "@atproto/syntax";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
-import { getIdentityData } from "actions/getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { ids } from "lexicons/api/lexicons";
 
 export type GetPublicationDataReturnType = Awaited<
@@ -34,7 +34,7 @@ export const get_publication_data = makeRoute({
       ).toString();
     }
     let [identity, { data: publication }] = await Promise.all([
-      getIdentityData(),
+      getAuthIdentity(),
       supabase
         .from("publications")
         .select(

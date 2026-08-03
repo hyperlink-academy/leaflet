@@ -1,18 +1,21 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
 import { cache } from "react";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
-import { getProfiles, type Profile } from "src/identity";
+import { getProfiles } from "src/identity";
 import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
+import {
+  bskyProfileFromCache,
+  ENTITLEMENT_EMBEDS,
+  getValidAuthToken,
+  keyEntitlements,
+  SUBSCRIPTION_STATE_EMBEDS,
+} from "src/identityPayload";
 export const getIdentityData = cache(uncachedGetIdentityData);
 async function uncachedGetIdentityData() {
-  let cookieStore = await cookies();
-  let auth_token =
-    cookieStore.get("auth_token")?.value ||
-    cookieStore.get("external_auth_token")?.value;
+  let auth_token = await getValidAuthToken();
   let auth_res = auth_token
     ? await supabaseServerClient
         .from("email_auth_tokens")
@@ -20,14 +23,8 @@ async function uncachedGetIdentityData() {
           `*,
           identities(
             *,
-            notifications(count),
-            publication_subscriptions(*),
-            publication_email_subscribers(publication, state),
-            publication_memberships(publication, tier, status, current_period_end, cancel_at_period_end),
+            ${SUBSCRIPTION_STATE_EMBEDS},
             custom_domains!custom_domains_identity_id_fkey(publication_domains(*, publications(name)), custom_domain_routes(*), *),
-            home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*,
-                              entity_sets(entities(facts(*)))
-            )),
             permission_token_on_homepage(
               archived,
               created_at,
@@ -37,21 +34,19 @@ async function uncachedGetIdentityData() {
                 title,
                 description,
                 permission_token_rights(*),
-                leaflets_to_documents(*, documents(*)),
-                leaflets_in_publications(*, publications(*), documents(*))
+                leaflets_to_documents(*, documents(uri, indexed_at, data)),
+                leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
               )
             ),
-            user_subscriptions(plan, status, current_period_end),
-            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted),
-            user_entitlements(entitlement_key, granted_at, expires_at, source, metadata),
+            ${ENTITLEMENT_EMBEDS},
             publications!publications_identity_did_fkey(*),
             leaflet_contributors!leaflet_contributors_contributor_did_fkey(
               created_at,
               permission_tokens!leaflet_contributors_leaflet_fkey!inner(
                 id, root_entity, title, description,
                 permission_token_rights(*),
-                leaflets_to_documents(*, documents(*)),
-                leaflets_in_publications(*, publications(*), documents(*))
+                leaflets_to_documents(*, documents(uri, indexed_at, data)),
+                leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
               )
             ),
             publication_contributors!publication_contributors_contributor_did_fkey(
@@ -68,41 +63,22 @@ async function uncachedGetIdentityData() {
     : null;
   if (!auth_res?.data?.identities) return null;
 
-  // Transform embedded entitlements into a keyed record, filtering expired
-  const now = new Date().toISOString();
-  const entitlements: Record<
-    string,
-    {
-      granted_at: string;
-      expires_at: string | null;
-      source: string | null;
-      metadata: unknown;
-    }
-  > = {};
-  for (const row of auth_res.data.identities.user_entitlements || []) {
-    if (row.expires_at && row.expires_at < now) continue;
-    entitlements[row.entitlement_key] = {
-      granted_at: row.granted_at,
-      expires_at: row.expires_at,
-      source: row.source,
-      metadata: row.metadata,
-    };
-  }
-
-  const subscription = auth_res.data.identities.user_subscriptions ?? null;
-  const connectedAccount =
-    auth_res.data.identities.stripe_connected_accounts ?? null;
-
   // Pull the embedded raw rows off the identity. Spreading `identity` below
   // must not leak these raw embeds as extra top-level keys (the public return
   // shape exposes them only as the processed `publications`,
-  // `contributor_publications`, and `contributor_leaflets`).
+  // `contributor_publications`, `contributor_leaflets`, `entitlements`,
+  // `subscription`, and `connectedAccount`).
   const {
     publications: rawPublications,
     leaflet_contributors: contributorLeafletRows,
     publication_contributors: contributorPubRows,
+    user_entitlements: entitlementRows,
+    user_subscriptions: subscription,
+    stripe_connected_accounts: connectedAccount,
     ...identity
   } = auth_res.data.identities;
+
+  const entitlements = keyEntitlements(entitlementRows);
 
   const atp_did = identity.atp_did;
   if (atp_did) {
@@ -131,43 +107,30 @@ async function uncachedGetIdentityData() {
       deduplicateByUri(rawContributorPubs).filter(isLeafletPublication);
     return {
       ...identity,
+      // Orders identity snapshots by when they were fetched, so the client
+      // provider can drop a stale seed (e.g. from a nav payload prefetched
+      // before a client-side revalidation) instead of overwriting newer data.
+      fetched_at: Date.now(),
       bsky_profiles: bskyProfileFromCache(profiles.get(atp_did) ?? null),
       publications,
       contributor_publications,
       contributor_leaflets,
       entitlements,
-      subscription,
-      connectedAccount,
+      subscription: subscription ?? null,
+      connectedAccount: connectedAccount ?? null,
     };
   }
 
   return {
     ...identity,
+    fetched_at: Date.now(),
     bsky_profiles: null,
     publications: [],
     contributor_publications: [],
     contributor_leaflets: [],
     entitlements,
-    subscription,
-    connectedAccount,
-  };
-}
-
-// Reshape a cached profile into the legacy `bsky_profiles` row shape that
-// consumers (SubscribeButton, PubPreview, PostPreview, …) read off the
-// identity, so swapping the table join for the cache stays transparent.
-function bskyProfileFromCache(profile: Profile | null) {
-  if (!profile) return null;
-  return {
-    did: profile.did,
-    handle: profile.handle,
-    record: {
-      did: profile.did,
-      handle: profile.handle,
-      displayName: profile.displayName ?? undefined,
-      avatar: profile.avatar ?? undefined,
-      description: profile.description ?? undefined,
-    },
+    subscription: subscription ?? null,
+    connectedAccount: connectedAccount ?? null,
   };
 }
 

@@ -15,7 +15,6 @@ import {
   resolveReplyToEmail,
 } from "src/utils/newsletterSender";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
-import { ids } from "lexicons/api/lexicons";
 import type { AppBskyFeedDefs } from "@atproto/api";
 import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
 import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
@@ -293,12 +292,10 @@ export const send_post_broadcast = inngest.createFunction(
             },
             {
               key: "full",
-              // Members get everything; the delimiter itself would render as
-              // an unsupported-block callout mid-email, so drop it.
-              blocks: blocks.filter(
-                (b) =>
-                  b.block?.$type !== ids.PubLeafletBlocksMembersOnlyDelimiter,
-              ),
+              // Members get everything. The delimiter stays in the array —
+              // the email renders it as nothing — so later blocks keep the
+              // record indices their #index anchors are built from.
+              blocks,
               upsell: false,
               recipients: subscribers.filter(subscriberIsEntitled),
             },

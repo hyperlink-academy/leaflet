@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext } from "react";
-import type { PostPageData } from "app/(app)/lish/[did]/[publication]/[rkey]/getPostPageData";
+import type { PostPageData } from "src/utils/getPostPageData";
 
 // Derive types from PostPageData
 type NonNullPostPageData = NonNullable<PostPageData>;
@@ -19,7 +19,6 @@ export type DocumentContextValue = Pick<
   | "commentsCount"
   | "commentsCountByPage"
   | "mentions"
-  | "leafletId"
   | "recommendsCount"
 > &
   // Optional so non-post DocumentProvider consumers (publication pages,

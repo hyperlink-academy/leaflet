@@ -1,6 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { isMainSiteHost } from "src/utils/customDomain";
-import { getPublicationURL } from "app/(app)/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "src/utils/getPublicationURL";
 
 function xmlEscape(s: string): string {
   return s

@@ -1,39 +1,62 @@
 ---
 name: mirror-editor-block-styles
-description: Mirror stylistic changes made to a block in the editor over to the published post renderer, which is a separate render tree that drifts easily. Use whenever you change the visual styling (margins, padding, font size/weight, line-height, color, alignment) of a text/heading/blockquote/list/image block in components/Blocks/, so the published post keeps matching the editor.
+description: Keep every render surface of a block in sync with the editor. Use whenever you create a new block type or change an existing block in components/Blocks/ — styling (margins, padding, font size/weight, line-height, color, alignment) or structure — so the published post and the email newsletter keep matching the editor, and copy/paste keeps working. Unless the user says otherwise, block work isn't done until all surfaces are checked.
 user-invocable: true
 ---
 
-# Mirror Editor Block Styles to the Published Post
+# Keep Block Surfaces in Sync with the Editor
 
-Leaflet renders every block **twice**, from two disconnected code paths:
+Leaflet renders every block from **three disconnected code paths**, plus a
+clipboard round-trip:
 
 1. **Editor** (`components/Blocks/…`) — the interactive doc you write in.
-2. **Published post** (`app/(app)/lish/[did]/[publication]/[rkey]/…`) — the
-   read-only version served at `leaflet.pub`, rendered from the AT-Protocol
+   This is the **source of truth** for how a block looks and behaves.
+2. **Published post** (`app/(app)/(published)/lish/[did]/[publication]/[rkey]/…`) —
+   the read-only version served at `leaflet.pub`, rendered from the AT-Protocol
    record (facets + block fields), not from the editor components.
+3. **Email newsletter** (`emails/post.tsx`) — the version sent to subscribers,
+   rendered with react-email and inline pixel styles.
+4. **Copy/paste** (`src/utils/getBlocksAsHTML.tsx` + `src/utils/paste/`) — the
+   editor's clipboard serializer and parser, which must round-trip the block.
 
-There is **no shared styling layer** between them beyond global CSS classes.
-So a stylistic change in the editor (a margin, a font size, a color, a
-line-height) does **not** automatically show up in the published post — it has
-to be copied by hand. This skill is the checklist for keeping them in sync.
+There is **no shared styling layer** between them beyond a few global CSS
+classes. A change in the editor does **not** automatically show up anywhere
+else — it has to be mirrored by hand. This skill is the checklist.
 
 ## When to use
 
-Any time you change how a block *looks* in the editor — spacing (margin/padding),
-font size, weight, line-height, color, alignment, or the block wrapper — mirror
-that change into the published renderer, **unless the user explicitly says not
-to**. Also run it as an audit when asked to "make the published post match the
-editor."
+Any time you **create a block type or update an existing block** — visual
+styling (margin/padding, font size, weight, line-height, color, alignment, the
+block wrapper) or structure (new fields, new variants) — check and mirror all
+of: the published renderer, the email renderer, and copy/paste. Do this **by
+default, unless the user explicitly says not to** (e.g. "editor only"). Also
+run it as an audit when asked to "make the published post match the editor."
 
 Purely *interactive/editor-only* changes do **not** get mirrored: focus/selection
 outlines, hover affordances, drag handles, remote-cursor overlays, command-bar UI,
 placeholder text, foldable-heading markers, `relative`/positioning added solely to
 anchor an editor overlay. If a change has no read-only visual effect, skip it.
 
-## The two sides
+## Check in with the user first when…
 
-### Editor (source of truth for how a block should look)
+Before mirroring, compare the editor version against the existing published and
+email implementations. **Stop and ask the user before proceeding** if:
+
+- The **published or email counterpart doesn't exist** for this block type
+  (e.g. `emails/post.tsx` falls through to `BlockNotSupported`, or
+  `PostContent.tsx` has no case for it). Building a whole new renderer for a
+  surface is a scope decision, not a mechanical mirror.
+- The existing published or email version is **significantly, deliberately
+  different** from the editor (different layout, different content shown, not
+  just drifted values). It may be intentional (email client constraints,
+  static-context simplification) — ask rather than flattening the difference.
+
+Small drifts (a margin or font-size that fell out of sync) are what this skill
+exists for — just fix those.
+
+## The surfaces
+
+### Editor (source of truth)
 
 - **`components/Blocks/TextBlock/index.tsx`** — the most important file.
   - `HeadingStyle` map (per-level classes: weight, `leading-*`, `pb-*`, color,
@@ -52,25 +75,61 @@ anchor an editor overlay. If a change has no read-only visual effect, skip it.
   h1..h4`, `.textSizeSmall/.textSizeLarge`, `h1..h4 { font-bold }`, CSS variables
   like `--list-marker-width`). Changes here are **already shared** with the
   published post *if* the published markup uses the same selector/class — verify,
-  don't assume.
+  don't assume. They are **never** shared with email.
 
-### Published (the targets to update)
+### Published post
 
-- **`app/(app)/lish/[did]/[publication]/[rkey]/PostContent.tsx`** — the primary
+- **`app/(app)/(published)/lish/[did]/[publication]/[rkey]/PostContent.tsx`** — the primary
   target: the interactive published post. The `Block` component's `switch`
   renders each block type (`text` → `<p>`, `header` → `<h1/h2/h3/h6>`,
   `blockquote` → `<blockquote>`, lists, image, …) and builds the block-wrapper
   `className` (margins) + inline `style` (font size). **Most mirroring happens
   here.**
-- **`app/(app)/lish/[did]/[publication]/[rkey]/StaticPostContent.tsx`** — the
-  static render for **feeds and email**. Minimal styling, no interactivity. Mirror
-  here only when the change matters in a plain static context (and remember email
-  strips a lot of CSS). Often out of scope; call it out rather than silently skip.
+- **`app/(app)/(published)/lish/[did]/[publication]/[rkey]/StaticPostContent.tsx`** — the
+  static render used by **RSS feeds** (`generateFeed.ts`), *not* email. Minimal
+  styling. Mirror here only when the change matters in a plain static context;
+  call it out rather than silently skip.
 - **`…/Blocks/TextBlockCore.tsx`** — inline **facet** rendering (bold, italic,
   underline, strikethrough, code, highlight, links, mentions, footnotes). Mirror
   here if you changed an inline *mark's* appearance. These mostly reuse the same
   global CSS classes as the editor (`font-bold`, `italic`, `inline-code`,
   `highlight`, …), so inline marks usually stay in sync automatically.
+
+### Email newsletter
+
+- **`emails/post.tsx`** — `BlockRenderer` is the email counterpart of
+  `PostContent.tsx`'s block switch: one `PubLeafletBlocksX.isMain(block)` branch
+  per block type, each styled with **inline pixel styles** on react-email
+  components (`fontSize: 16`, `HEADING_FONT_SIZE_PX`, `BLOCK_MARGIN`,
+  `HEADING_MARGIN`), with colors/fonts from the resolved `EmailTheme`.
+  Unhandled types fall through to `BlockNotSupported` / `BlockDataNotFound`.
+- **`emails/bskyPost.tsx`**, **`emails/standardSiteBlocks.tsx`** — embed-style
+  blocks split into their own files.
+- Sent by `app/api/inngest/functions/send_post_broadcast.ts`; previewable via
+  `actions/publications/sendPostPreview.tsx` ("send test email").
+- Email constraints: **no Tailwind, no global CSS, no `em` scaling, no CSS
+  variables** — everything is inline `style` with absolute px values, and many
+  clients strip anything fancy. Mirror the *visual intent* (relative size,
+  weight, spacing, color role), not the mechanism. E.g. editor `textSizeSmall`
+  (0.875em of a 16px-ish base) → `fontSize: 14` in email.
+
+### Copy/paste (editor clipboard)
+
+The clipboard must round-trip whatever the block renders:
+
+- **Copy**: `src/utils/copySelection.ts` → `src/utils/getBlocksAsHTML.tsx`,
+  whose `renderBlock` switch serializes each block type to HTML (plaintext falls
+  out via `htmlToMarkdown`). A new or changed block field that isn't serialized
+  here is silently dropped on copy.
+- **Paste**: `components/Blocks/TextBlock/useHandlePaste.ts` drives the pipeline
+  in `src/utils/paste/` (`normalizePastedHTML.ts` → `htmlToBlocks.ts`
+  `buildBlockFromHTML`), which turns clipboard HTML back into block facts. See
+  `src/utils/paste/README.md` for the architecture.
+- **Check**: copying the block in the editor and pasting it back should
+  reproduce it (type, content, and Leaflet-specific attributes). For a new
+  block type, that usually means a `renderBlock` case *and* a matching parse
+  case, plus a test in `src/utils/paste/htmlToBlocks.test.ts`. Run the tests
+  with `npm test` (vitest).
 
 ## Editor → published mapping (block wrapper)
 
@@ -99,7 +158,7 @@ not the class names verbatim. Current mapping for headers (keep in sync):
   those are fixed `rem` and ignore the custom base. In the published post use an
   inline **em** `fontSize` (`0.875em` / `1.125em` / `1em`), which scales in every
   context (main post, quote excerpts, page-link previews), not only inside
-  `.pageScrollWrapper`.
+  `.pageScrollWrapper`. In **email**, use absolute px against the 16px body base.
 - **Inline `style` beats `className`.** The published `<p>`/`<hN>` set
   `fontSize` inline (`blockTextSize.*`). An inline font-size **overrides** any
   Tailwind size class on the same element. If you need a size variant, change the
@@ -112,22 +171,31 @@ not the class names verbatim. Current mapping for headers (keep in sync):
   which the global `h1..h4 { font-bold }` and `.pageScrollWrapper h1..h4`
   font-family rules do **not** target. A level-4 heading needs its weight, heading
   font-family, and color spelled out (this is why `HeadingStyle[4]` is applied
-  directly in `PostContent.tsx`).
+  directly in `PostContent.tsx`). Email clamps heading levels to h1–h3
+  (`Math.min(3, …)` in `BlockRenderer`).
 - **Global CSS may already cover it.** Before duplicating a style, check whether a
   `app/globals.css` rule (e.g. `.pageScrollWrapper h2 { font-size }`) already
   applies to the published markup. If so, the change is shared — but confirm the
-  published element actually matches that selector.
+  published element actually matches that selector. Email never gets global CSS.
 
 ## Process
 
 1. Diff the editor change (e.g. `git show <commit> -- components/Blocks/`). List
-   each **stylistic** hunk; drop editor-only/interaction hunks.
-2. For each stylistic change, find the matching block case in `PostContent.tsx`
-   (and `StaticPostContent.tsx` / `TextBlockCore.tsx` if relevant) and apply the
-   equivalent, honoring the gotchas above (especially em-vs-rem and inline-vs-class).
-3. If a value lives in a `HeadingStyle`-style duplicated constant, update every
-   copy.
-4. `npx tsc --noEmit` to confirm it still type-checks.
-5. If you can, eyeball parity with the `tests-posts` harness or by running the app
-   (`/run`), then tell the user exactly which changes you mirrored and which you
-   deliberately skipped (and why).
+   each **stylistic/structural** hunk; drop editor-only/interaction hunks.
+2. Locate the block's counterpart in `PostContent.tsx` and `emails/post.tsx`
+   (and `StaticPostContent.tsx` / `TextBlockCore.tsx` if relevant). If a
+   counterpart is missing or deliberately very different, **check in with the
+   user first** (see above) before writing code.
+3. Apply the equivalent change to each surface, honoring the gotchas
+   (em-vs-rem, inline-vs-class, px-only email). If a value lives in a
+   `HeadingStyle`-style duplicated constant, update every copy.
+4. For new fields/variants or a new block type, wire up copy/paste:
+   `getBlocksAsHTML.tsx` serializer case + `src/utils/paste/htmlToBlocks.ts`
+   parse case + test coverage.
+5. Verify: `npx tsc` for types, `npm test` if paste/copy code changed, and if
+   you can, eyeball parity with the `tests-posts` harness or by running the app
+   (`/run`). Email can be eyeballed via `sendPostPreview`.
+6. **Report per surface.** End with an explicit breakdown of what changed in
+   each of: **editor**, **published post**, and **email** (plus copy/paste if
+   touched). For any surface where nothing changed, say so and why — "no
+   changes" must be stated, never implied by omission.

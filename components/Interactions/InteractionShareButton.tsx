@@ -12,7 +12,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { ShareTiny } from "../Icons/ShareTiny";
 import { DotLoader } from "../utils/DotLoader";
 import { useIdentityData } from "../IdentityProvider";
-import { publishPostToBsky } from "app/(app)/[leaflet_id]/publish/publishBskyPost";
+import { publishPostToBsky } from "actions/publishBskyPost";
 import { viewerPostLangs } from "src/utils/bskyPostLangs";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { bskyPostEmbed } from "src/utils/bskyPostEmbed";

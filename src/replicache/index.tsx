@@ -66,6 +66,35 @@ export type PermissionToken = {
     write: boolean;
   }[];
 };
+
+// The token is a fresh object on every RSC render of the layout that owns the
+// provider, so a `props.token` effect dependency rebuilds the Replicache
+// client on every router.refresh() — dropping every useEntity subscriber back
+// to initialFacts for a frame and losing the undo stack. Rebuild only when the
+// token's identity or rights actually change; everything the client closes over
+// is read live through a ref, so an unchanged signature can safely keep the
+// existing client.
+function tokenSignature(token: PermissionToken) {
+  return [
+    token.id,
+    token.root_entity,
+    // Sorted: the rights embed has no .order(), so PostgREST row order is
+    // unspecified and a permutation must not read as a different token.
+    ...token.permission_token_rights
+      .map((r) =>
+        [
+          r.token,
+          r.entity_set,
+          r.read,
+          r.write,
+          r.change_entity_set,
+          r.create_token,
+        ].join(":"),
+      )
+      .sort(),
+  ].join("|");
+}
+
 export function ReplicacheProvider(props: {
   rootEntity: string;
   initialFacts: Fact<Attribute>[];
@@ -77,6 +106,9 @@ export function ReplicacheProvider(props: {
 }) {
   let [rep, setRep] = useState<null | Replicache<ReplicacheMutators>>(null);
   let [undoManager] = useState(createUndoManager());
+  let tokenRef = useRef(props.token);
+  tokenRef.current = props.token;
+  let token_signature = tokenSignature(props.token);
   useEffect(() => {
     return addShortcut([
       {
@@ -125,12 +157,12 @@ export function ReplicacheProvider(props: {
               await mutations[m as keyof typeof mutations](
                 args,
                 clientMutationContext(tx, {
-                  permission_token_id: props.token.id,
+                  permission_token_id: tokenRef.current.id,
                   undoManager,
                   rep: newRep,
                   ignoreUndo: args.ignoreUndo || tx.reason !== "initial",
                   defaultEntitySet:
-                    props.token.permission_token_rights[0]?.entity_set,
+                    tokenRef.current.permission_token_rights[0]?.entity_set,
                 }),
               );
             },
@@ -147,7 +179,7 @@ export function ReplicacheProvider(props: {
         let response = (
           await callRPC("push", {
             pushRequest: smolpushRequest,
-            token: props.token,
+            token: tokenRef.current,
             rootEntity: props.name,
           })
         ).result;
@@ -163,7 +195,7 @@ export function ReplicacheProvider(props: {
       puller: async (pullRequest) => {
         let res = await callRPC("pull", {
           pullRequest,
-          token_id: props.token.id,
+          token_id: tokenRef.current.id,
         });
         return {
           response: res,
@@ -200,7 +232,7 @@ export function ReplicacheProvider(props: {
       setRep(null);
       channel?.unsubscribe();
     };
-  }, [props.name, props.initialFactsOnly, props.token, props.disablePull]);
+  }, [props.name, props.initialFactsOnly, token_signature, props.disablePull]);
   return (
     <ReplicacheContext.Provider
       value={{

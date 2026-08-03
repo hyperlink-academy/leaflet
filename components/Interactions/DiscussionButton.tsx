@@ -7,7 +7,7 @@ import { CommentEmptyTiny } from "../Icons/CommentEmptyTiny";
 import { CommentFilledSmall } from "../Icons/CommentFilledSmall";
 import { CommentEmptySmall } from "../Icons/CommentEmptySmall";
 import { DiscussionModal } from "./DiscussionModal";
-import { DrawerThreadContext } from "app/(app)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
+import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import {
   InteractionButton,
   LargeInteractionButton,

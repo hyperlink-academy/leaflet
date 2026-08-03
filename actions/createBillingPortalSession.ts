@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "./getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
@@ -8,7 +8,7 @@ import { Ok, Err, type Result } from "src/result";
 export async function createBillingPortalSession(
   returnUrl: string,
 ): Promise<Result<{ url: string }, string>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) {
     return Err("Not authenticated");
   }

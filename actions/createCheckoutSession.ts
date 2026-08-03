@@ -1,6 +1,6 @@
 "use server";
 
-import { getIdentityData } from "./getIdentityData";
+import { getAuthIdentity } from "src/auth";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getPriceId } from "stripe/products";
@@ -11,7 +11,7 @@ export async function createCheckoutSession(
   returnUrl?: string,
   coupon?: string,
 ): Promise<Result<{ url: string }, string>> {
-  const identity = await getIdentityData();
+  const identity = await getAuthIdentity();
   if (!identity) {
     return Err("Not authenticated");
   }

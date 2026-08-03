@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SubscribeWithHandle, AtSubscribeSuccess } from "./HandleSubscribe";
 import { EmailInput, EmailButton, EmailConfirm } from "./EmailSubscribe";
@@ -10,7 +10,10 @@ import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
 import { useToaster } from "components/Toast";
-import { useIdentityData } from "components/IdentityProvider";
+import {
+  refreshIdentityData,
+  useIdentityData,
+} from "components/IdentityProvider";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { Menu, MenuItem, RadioMenuGroup, RadioMenuItem } from "components/Menu";
@@ -82,6 +85,15 @@ export const SubscribeInput = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
   const { identity, mutate: mutateIdentity } = useIdentityData();
   let [email, setEmail] = useState(user.email ?? "");
+  // On a published page identity resolves after first paint, so the initial
+  // value above is always the logged-out one. Without this the email field
+  // stays empty while EmailInput disables itself on the identity's email being
+  // known — an input that can be neither typed into nor submitted. Only seeds
+  // an untouched field, so it can't clobber what someone is typing.
+  useEffect(() => {
+    if (user.email)
+      setEmail((current) => (current === "" ? user.email! : current));
+  }, [user.email]);
   let [requesting, setRequesting] = useState(false);
   let [confirming, setConfirming] = useState(false);
   let [confirmOpen, setConfirmOpen] = useState(false);
@@ -121,6 +133,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
     }
     if (res.value.confirmed) {
       setConfirmState("success");
+      refreshIdentityData();
       router.refresh();
     }
     setConfirmOpen(true);
@@ -136,6 +149,33 @@ export const SubscribeInput = (props: SubscribeProps) => {
   // Paid memberships replace the subscribe form with the paid join flow.
   if (joinable.hasPaidTiers && joinable.tiers)
     return <PaidSubscribeButton {...props} tiers={joinable.tiers} />;
+  const emailForm = (
+    <EmailInput
+      publicationUrl={props.publicationUrl}
+      value={email}
+      onChange={setEmail}
+      disabled={user.loggedIn && !!user.email}
+      loading={requesting}
+      leading={modeMenu}
+      onSubmit={() => {
+        if (!email || requesting) return;
+        if (needsLinkConfirmation) {
+          setLinkModalOpen(true);
+          return;
+        }
+        redirectToEmailSubscribe(email, props.publicationUri);
+      }}
+      action={
+        <ButtonPrimary
+          type="submit"
+          compact
+          className="leading-tight! outline-none! text-sm!"
+        >
+          Subscribe
+        </ButtonPrimary>
+      }
+    />
+  );
   return (
     <>
       {isSubscribed ? (
@@ -199,31 +239,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               onSubscribed={() => setLocallySubscribed(true)}
             />
           ) : subscribeMode === "email" ? (
-            <EmailInput
-              publicationUrl={props.publicationUrl}
-              value={email}
-              onChange={setEmail}
-              disabled={user.loggedIn && !!user.email}
-              loading={requesting}
-              leading={modeMenu}
-              onSubmit={() => {
-                if (!email || requesting) return;
-                if (needsLinkConfirmation) {
-                  setLinkModalOpen(true);
-                  return;
-                }
-                redirectToEmailSubscribe(email, props.publicationUri);
-              }}
-              action={
-                <ButtonPrimary
-                  type="submit"
-                  compact
-                  className="leading-tight! outline-none! text-sm!"
-                >
-                  Subscribe
-                </ButtonPrimary>
-              }
-            />
+            emailForm
           ) : (
             <SubscribeWithHandle
               user={user}
@@ -309,6 +325,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   return;
                 }
                 setConfirmState("success");
+                refreshIdentityData();
                 router.refresh();
               }}
             />
@@ -332,59 +349,50 @@ export const SubscribeButton = (props: SubscribeProps) => {
     ? user.emailSubscribed
     : user.atprotoSubscribed;
 
-  if (showManage || locallySubscribed) {
-    return (
-      <ManageSubscription
-        publicationUri={props.publicationUri}
-        publicationUrl={props.publicationUrl}
-        newsletterMode={props.newsletterMode}
-        user={user}
-      />
-    );
-  }
+  const subscribeTrigger = (
+    <ButtonPrimary compact className="pubPageSubscribe text-sm!">
+      Subscribe
+    </ButtonPrimary>
+  );
 
-  if (!props.newsletterMode && user.loggedIn && user.handle) {
-    return (
-      <SubscribeWithHandle
-        compact
-        user={user}
-        publicationUri={props.publicationUri}
-        publicationUrl={props.publicationUrl}
-        onSubscribed={() => setLocallySubscribed(true)}
-      />
-    );
-  }
-
-  if (props.newsletterMode && user.loggedIn && user.email) {
-    return (
-      <EmailButton
-        compact
-        publicationUri={props.publicationUri}
-        publicationUrl={props.publicationUrl}
-        email={user.email}
-        handle={user.handle}
-        onSubscribed={() => setLocallySubscribed(true)}
-      />
-    );
-  }
-
-  // Nothing to one-click with — either logged out, or logged in but missing the
-  // identity this pub needs (a handle for atproto pubs, an email for
-  // newsletters). Both open the full SubscribePanel (pub name/description +
-  // form) in a modal.
   return (
-    <Modal
-      asChild
-      trigger={
-        <ButtonPrimary compact className="pubPageSubscribe text-sm!">
-          Subscribe
-        </ButtonPrimary>
-      }
-    >
-      <div className="w-md max-w-full">
-        <SubscribePanel {...props} />
-      </div>
-    </Modal>
+    <>
+      {showManage || locallySubscribed ? (
+        <ManageSubscription
+          publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
+          newsletterMode={props.newsletterMode}
+          user={user}
+        />
+      ) : !props.newsletterMode && user.loggedIn && user.handle ? (
+        <SubscribeWithHandle
+          compact
+          user={user}
+          publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
+          onSubscribed={() => setLocallySubscribed(true)}
+        />
+      ) : props.newsletterMode && user.loggedIn && user.email ? (
+        <EmailButton
+          compact
+          publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
+          email={user.email}
+          handle={user.handle}
+          onSubscribed={() => setLocallySubscribed(true)}
+        />
+      ) : (
+        // Nothing to one-click with — either logged out, or logged in but
+        // missing the identity this pub needs (a handle for atproto pubs, an
+        // email for newsletters). Both open the full SubscribePanel (pub
+        // name/description + form) in a modal.
+        <Modal asChild trigger={subscribeTrigger}>
+          <div className="w-md max-w-full">
+            <SubscribePanel {...props} />
+          </div>
+        </Modal>
+      )}
+    </>
   );
 };
 

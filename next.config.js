@@ -11,6 +11,7 @@ const nextConfig = {
     "localhost",
     "127.0.0.1",
     "2bac-68-196-189-132.ngrok-free.app",
+    "jared-framework-13.cuttlefish-frog.ts.net",
   ],
   webpack: (config) => {
     config.resolve.extensionAlias = {
@@ -27,6 +28,9 @@ const nextConfig = {
       },
     ];
   },
+  // Caps the CDN stale-while-revalidate window for ISR pages (default is one
+  // year — a bad cached page could be served stale that long).
+  expireTime: 86400,
   serverExternalPackages: ["yjs", "pino", "puppeteer-core"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {

@@ -11,6 +11,9 @@ export const DEFAULT_MAX_WIDTH = 300;
 // components only ever see this shape.
 export type GalleryImage = {
   src: string;
+  // Untransformed source for the lightbox, when `src` is a downscaled display
+  // variant.
+  fullSrc?: string;
   alt: string;
   width: number;
   height: number;

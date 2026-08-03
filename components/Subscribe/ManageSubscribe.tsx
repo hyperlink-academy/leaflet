@@ -1,4 +1,5 @@
 "use client";
+import { refreshIdentityData } from "components/IdentityProvider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
@@ -54,6 +55,7 @@ export const ManageSubscription = (props: {
 
   return (
     <Modal
+      asChild
       title={
         <div className="relative mb-2">
           {membershipView?.type === "switch"
@@ -67,13 +69,19 @@ export const ManageSubscription = (props: {
       onOpenChange={(open) => {
         if (!open) setMembershipView(null);
       }}
+      // A real button rather than a div Radix wraps in one: the wrapper made the
+      // row 1.5px taller than the subscribe button it replaces, which is a
+      // layout shift when identity resolves on a published page.
       trigger={
-        <div className="manageSubPrefsTrigger flex gap-1 text-accent-contrast text-sm items-center ">
+        <button
+          type="button"
+          className="manageSubPrefsTrigger flex gap-1 text-accent-contrast text-sm items-center "
+        >
           <div className="font-bold flex gap-1 items-center">
             <CheckTiny /> Subscribed
           </div>
           <div className="underline">Manage</div>
-        </div>
+        </button>
       }
     >
       {membershipView?.type === "switch" ? (
@@ -149,6 +157,7 @@ const ManageSubscriptionContent = (props: {
         type: "success",
       });
       setLinkEmailOpen(false);
+      refreshIdentityData();
       router.refresh();
       return;
     }
@@ -181,6 +190,7 @@ const ManageSubscriptionContent = (props: {
       type: "success",
     });
     setLinkEmailOpen(false);
+    refreshIdentityData();
     router.refresh();
   };
 
@@ -207,6 +217,7 @@ const ManageSubscriptionContent = (props: {
       content: <div className="font-bold">Unsubscribed!</div>,
       type: "success",
     });
+    refreshIdentityData();
     router.refresh();
   };
 
