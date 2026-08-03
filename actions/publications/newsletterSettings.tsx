@@ -2,6 +2,7 @@
 
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
+import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublication";
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
 import {
@@ -58,6 +59,7 @@ export async function enableNewsletter(
     console.error("[newsletterSettings] enable upsert failed:", error);
     return Err("database_error");
   }
+  await revalidatePublicationSettingsPaths(publicationUri);
   return Ok(null);
 }
 
@@ -78,6 +80,7 @@ export async function disableNewsletter(
     console.error("[newsletterSettings] disable update failed:", error);
     return Err("database_error");
   }
+  await revalidatePublicationSettingsPaths(publicationUri);
   return Ok(null);
 }
 
