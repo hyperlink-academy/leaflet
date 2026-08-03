@@ -4,7 +4,7 @@ import { FooterLayout } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { Toolbar } from "components/Toolbar";
 import { FootnoteToolbar } from "components/Toolbar/FootnoteToolbarWrapper";
-import { hasBlockToolbar } from "app/(app)/(identity)/[leaflet_id]/Footer";
+import { hasBlockToolbar } from "app/(app)/(editor)/[leaflet_id]/Footer";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useEntity } from "src/replicache";
 

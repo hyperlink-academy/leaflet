@@ -5,11 +5,11 @@ import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
 import { FootnoteToolbar } from "components/Toolbar/FootnoteToolbarWrapper";
-import { ShareOptions } from "app/(app)/(identity)/[leaflet_id]/actions/ShareOptions";
+import { ShareOptions } from "app/(app)/(editor)/[leaflet_id]/actions/ShareOptions";
 import {
   AddToHomeButton,
   HomeButton,
-} from "app/(app)/(identity)/[leaflet_id]/actions/HomeButton";
+} from "app/(app)/(editor)/[leaflet_id]/actions/HomeButton";
 import { PublishButton } from "./actions/PublishButton";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { Watermark } from "components/Watermark";

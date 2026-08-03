@@ -29,7 +29,7 @@ import {
   usePublicationData,
   mutatePublicationData,
 } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
-import { ShareButton } from "app/(app)/(identity)/[leaflet_id]/actions/ShareOptions";
+import { ShareButton } from "app/(app)/(editor)/[leaflet_id]/actions/ShareOptions";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 
 // A member (owner or confirmed contributor) of the publication a leaflet

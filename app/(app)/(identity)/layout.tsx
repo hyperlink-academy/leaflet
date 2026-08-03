@@ -8,10 +8,11 @@ import { SubscriptionSuccessModal } from "components/SubscriptionSuccessModal";
 import { SubscribeConfirmationModal } from "components/Subscribe/SubscribeConfirmationModal";
 import { RecommendConfirmationToast } from "components/Interactions/RecommendConfirmationToast";
 
-// Identity-bearing surfaces (dashboard, editor, account flows): rendered
+// Identity-bearing surfaces (dashboard, publish flow, account flows): rendered
 // per-request with the viewer's identity so chrome and theme are correct on
-// the first frame. Published pages live in the (published) sibling group,
-// which must stay free of request-coupled reads.
+// the first frame. Published pages live in the (published) sibling group and
+// the leaflet editor in (editor); both keep their layouts free of
+// request-coupled reads and fetch identity client-side instead.
 //
 // The layout itself must stay synchronous, with the request-coupled work in a
 // child behind Suspense: everything below reads request data, so a boundary

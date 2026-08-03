@@ -5,7 +5,7 @@ import { Toolbar } from "./Toolbar";
 import { FootnoteToolbar } from "./Toolbar/FootnoteToolbarWrapper";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { focusBlock } from "src/utils/focusBlock";
-import { hasBlockToolbar } from "app/(app)/(identity)/[leaflet_id]/Footer";
+import { hasBlockToolbar } from "app/(app)/(editor)/[leaflet_id]/Footer";
 import { useEntity } from "src/replicache";
 
 export function DesktopPageFooter(props: { pageID: string; flow?: boolean }) {

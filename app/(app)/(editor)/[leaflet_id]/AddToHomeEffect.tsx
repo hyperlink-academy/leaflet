@@ -18,11 +18,13 @@ export function AddToHomeEffect() {
   let router = useRouter();
   let shouldAdd = searchParams.has("addToHome");
   let { permission_token } = useReplicache();
-  let { identity } = useIdentityData();
+  let { identity, identityPending } = useIdentityData();
   let ran = useRef(false);
 
   useEffect(() => {
-    if (!shouldAdd || ran.current) return;
+    // Identity arrives client-side on this route; deciding on the pending
+    // value would file a logged-in user's leaflet under localStorage.
+    if (!shouldAdd || ran.current || identityPending) return;
     ran.current = true;
 
     // Authed users are added to their homepage server-side in createNewLeaflet.
@@ -33,7 +35,15 @@ export function AddToHomeEffect() {
     }
 
     replaceWithoutParams(router, pathname, searchParams, ["addToHome"]);
-  }, [shouldAdd, identity, permission_token, router, pathname, searchParams]);
+  }, [
+    shouldAdd,
+    identity,
+    identityPending,
+    permission_token,
+    router,
+    pathname,
+    searchParams,
+  ]);
 
   return null;
 }

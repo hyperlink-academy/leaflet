@@ -154,6 +154,54 @@ export function IdentityContextProvider(props: {
   );
 }
 
+// Identity for the leaflet editor (/[leaflet_id]), whose server render is
+// identity-free so nothing above the page blocks on request-coupled reads:
+// same fetch policy as ViewerIdentityProvider below (no server seed,
+// mount-time fetch gated on the session marker) but fetching the full
+// getIdentityData payload on the dashboard "identity" key — editor chrome
+// reads embeds the slim viewer payload leaves empty (publications,
+// custom_domains, permission_token_on_homepage), and sharing the dashboard key
+// means a client-nav from /home picks up the already-cached full identity
+// instantly.
+// Deliberately not seeded from "viewer-identity": a slim entry is non-null but
+// has those embeds empty, which reads as "logged in with no publications"
+// rather than "still loading".
+export function ClientIdentityProvider(props: { children: React.ReactNode }) {
+  let {
+    data: identity,
+    mutate,
+    isValidating,
+  } = useSWR<Identity>("identity", () => getIdentityData(), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+    revalidateOnMount: false,
+  });
+  const [markerPending, setMarkerPending] = useState(false);
+  useIsomorphicLayoutEffect(() => {
+    if (hasSessionMarker()) setMarkerPending(true);
+  }, []);
+  // The marker gate is the fetch policy: sessions fetch once per hard load,
+  // anonymous editors never do. Runs even when the dashboard cache already
+  // holds an entry — it may be stale, and the cached value keeps the UI
+  // populated while the refresh is in flight.
+  useEffect(() => {
+    if (!hasSessionMarker()) return;
+    mutate().finally(() => setMarkerPending(false));
+  }, []);
+  return (
+    <IdentityContext.Provider
+      value={{
+        identity: identity ?? null,
+        mutate,
+        identityPending: !identity && (markerPending || isValidating),
+      }}
+    >
+      {props.children}
+    </IdentityContext.Provider>
+  );
+}
+
 // Identity for statically-rendered published pages: no server seed (the page
 // HTML must not depend on the request), fetched on mount instead — and only
 // when the session marker cookie says a session exists, so anonymous readers

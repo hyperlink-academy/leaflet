@@ -1,17 +1,17 @@
 "use client";
 import { Sidebar } from "components/ActionBar/Sidebar";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { HelpButton } from "app/(app)/(identity)/[leaflet_id]/actions/HelpButton";
+import { HelpButton } from "app/(app)/(editor)/[leaflet_id]/actions/HelpButton";
 import {
   AddToHomeButton,
   HomeButton,
-} from "app/(app)/(identity)/[leaflet_id]/actions/HomeButton";
+} from "app/(app)/(editor)/[leaflet_id]/actions/HomeButton";
 import { Media } from "components/Media";
 import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
 } from "components/PageSWRDataProvider";
-import { ShareOptions } from "app/(app)/(identity)/[leaflet_id]/actions/ShareOptions";
+import { ShareOptions } from "app/(app)/(editor)/[leaflet_id]/actions/ShareOptions";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { PublishButton } from "./actions/PublishButton";
 import { PostSettings } from "components/PostSettings";
