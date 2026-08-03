@@ -1,4 +1,6 @@
 import { PgTransaction } from "drizzle-orm/pg-core";
+import * as Y from "yjs";
+import * as base64 from "base64-js";
 import { Fact, PermissionToken } from ".";
 import { MutationContext } from "./mutations";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -7,6 +9,8 @@ import * as driz from "drizzle-orm";
 import { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { v7 } from "uuid";
 import { DeepReadonly } from "replicache";
+
+type TextData = Fact<keyof FilterAttributes<{ type: "text" }>>["data"];
 
 type WriteCacheEntry =
   | { type: "put"; fact: Fact<any> }
@@ -23,8 +27,20 @@ export function cachedServerMutationContext(
   let permissionsCache: { [key: string]: boolean } = {};
   let entitiesCache: { set: string; id: string }[] = [];
   let deleteEntitiesCache: string[] = [];
+  // Text facts store the full encoded yjs doc state, so a write from a client
+  // whose doc is behind (stale initial state, long-offline tab) would silently
+  // delete newer content if it simply replaced the row. Every updated text
+  // fact is instead merged with the stored value at flush. Values are tracked
+  // per (entity+attribute, clientID): consecutive writes from one client are
+  // cumulative (each carries full state, so the latest supersedes the rest),
+  // which keeps a large replayed batch at one merge per fact instead of one
+  // per mutation. `base` is the stored row's value captured before this
+  // push's first buffered write masked it in scanIndex.
   let textAttributeWriteCache = {} as {
-    [entityAttribute: string]: { [clientID: string]: string };
+    [entityAttribute: string]: {
+      base: string;
+      byClient: { [clientID: string]: string };
+    };
   };
 
   const scanIndex = {
@@ -152,6 +168,10 @@ export function cachedServerMutationContext(
             f.type !== "put" ||
             (f.fact.entity !== entity && f.fact.data.value !== entity),
         );
+        for (let key of Object.keys(textAttributeWriteCache)) {
+          if (key.startsWith(`${entity}-`))
+            delete textAttributeWriteCache[key];
+        }
       },
       async assertFact(f) {
         if (!f.entity) return;
@@ -188,6 +208,19 @@ export function cachedServerMutationContext(
           author_did = f.author_did ?? null;
         }
 
+        if (
+          attribute.type === "text" &&
+          attribute.cardinality === "one" &&
+          existing
+        ) {
+          let key = `${f.entity}-${f.attribute}`;
+          let tracked = (textAttributeWriteCache[key] ??= {
+            base: (existing.data as TextData).value,
+            byClient: {},
+          });
+          tracked.byClient[clientID] = (data as TextData).value;
+        }
+
         writeCache = writeCache.filter((f) => f.fact.id !== id);
         writeCache.push({
           type: "put",
@@ -205,6 +238,10 @@ export function cachedServerMutationContext(
         if (!existing || !(await this.checkPermission(existing.entity))) return;
         // Only the owning DID may retract an authenticated fact.
         if (existing.author_did && sessionDid !== existing.author_did) return;
+        // A genuine deletion must not be merged back by a later assert.
+        delete textAttributeWriteCache[
+          `${existing.entity}-${existing.attribute}`
+        ];
         writeCache = writeCache.filter((f) => f.fact.id !== factID);
         writeCache.push({ type: "del", fact: { id: factID } });
       },
@@ -233,6 +270,26 @@ export function cachedServerMutationContext(
     let factWrites = writeCache.flatMap((f) =>
       f.type === "del" ? [] : [f.fact],
     );
+    for (let fact of factWrites) {
+      let tracked =
+        textAttributeWriteCache[`${fact.entity}-${fact.attribute}`];
+      if (!tracked) continue;
+      let values = Object.values(tracked.byClient);
+      if (!values.includes(tracked.base)) values.push(tracked.base);
+      if (values.length < 2) continue;
+      try {
+        (fact.data as TextData).value = base64.fromByteArray(
+          Y.mergeUpdates(values.map((v) => base64.toByteArray(v))),
+        );
+      } catch (e) {
+        // A value that won't decode shouldn't fail the whole push; fall back
+        // to the buffered (latest client) value for this fact.
+        console.log(
+          `error merging text fact ${fact.id}, writing unmerged:`,
+          JSON.stringify(e),
+        );
+      }
+    }
     if (factWrites.length > 0) {
       await tx
         .insert(facts)
@@ -297,6 +354,7 @@ export function cachedServerMutationContext(
     entitiesCache = [];
     permissionsCache = {};
     deleteEntitiesCache = [];
+    textAttributeWriteCache = {};
     timeCacheCleanup = performance.now() - cacheCleanupStart;
 
     let totalFlushTime = performance.now() - flushStart;
