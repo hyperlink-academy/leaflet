@@ -73,13 +73,6 @@ export async function resumeMembership(
   return setCancelAtPeriodEnd(membershipId, false);
 }
 
-// Moving a paying member to the free tier is one transition, not two: wind the
-// Stripe subscription down at the period's end, then establish the plain
-// subscription that keeps them on the publication once it lapses. A paid
-// membership carries no publication_subscriptions row of its own, so a caller
-// that stopped between the two steps would leave the reader quietly
-// unsubscribed. `subscribed` is false when the follow-up didn't take — the
-// cancellation still stands, so callers should say so rather than retry.
 export async function downgradeMembershipToFree(args: {
   membershipId: string;
   publicationUri: string;
