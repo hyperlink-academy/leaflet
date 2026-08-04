@@ -60,7 +60,7 @@ export const ProfileButton = () => {
         onOpenChange={setOpen}
         side={isMobile ? "top" : "right"}
         align={isMobile ? "center" : "start"}
-        className="w-xs py-1! z-[60]!"
+        className="w-xs p-1! z-[60]!"
         trigger={
           <ActionButton
             labelOnMobile={false}
@@ -84,60 +84,43 @@ export const ProfileButton = () => {
         }
       >
         <div className="flex flex-col gap-0.5">
-          <AccountList
-            current={{
-              label:
-                record?.displayName ||
-                record?.handle ||
-                identity?.email ||
-                "Account",
-              handle: record?.handle ?? undefined,
-              avatar: record?.avatar ?? undefined,
-            }}
-            onAddAccount={openAddAccount}
-          />
+          <AccountList onAddAccount={openAddAccount} />
           <hr className="border-border-light border-dashed" />
 
           {record?.handle && (
             <SpeedyLink
-              className="no-underline! menuItem -mx-[8px]"
+              className="no-underline! menuItem "
               href={`/p/${record.handle}`}
               onClick={closeMenu}
             >
-              <button type="button" className="flex gap-2">
-                <AccountSmall />
-                View Profile
-              </button>
+              <AccountSmall />
+              View Profile
             </SpeedyLink>
           )}
           {identity && (
             <SpeedyLink
-              className="no-underline! menuItem -mx-[8px]"
+              className="no-underline! menuItem"
               href="/subscriptions"
               onClick={closeMenu}
             >
-              <button type="button" className="flex gap-2">
-                <SubscribersSmall />
-                Your Subscriptions
-              </button>
+              <SubscribersSmall />
+              Your Subscriptions
             </SpeedyLink>
           )}
           {identity && (
             <SpeedyLink
-              className="no-underline! menuItem -mx-[8px]"
+              className="no-underline! menuItem "
               href="/settings"
               onClick={closeMenu}
             >
-              <button type="button" className="flex gap-2">
-                <SettingsSmall />
-                Settings
-              </button>
+              <SettingsSmall />
+              Settings
             </SpeedyLink>
           )}
           {canSeePro && !isPro && (
             <button
               type="button"
-              className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
+              className="menuItem "
               onClick={() => {
                 setOpen(false);
                 setUpgradeOpen(true);
@@ -147,6 +130,8 @@ export const ProfileButton = () => {
               Get Leaflet Pro
             </button>
           )}
+          <hr className="border-border-light border-dashed" />
+
           <button
             type="button"
             className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"

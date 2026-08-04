@@ -13,6 +13,7 @@ import {
   useSavedAccounts,
   type SavedAccountEntry,
 } from "src/hooks/useSavedAccounts";
+import { AddTiny } from "components/Icons/AddTiny";
 
 export function savedAccountLabel(entry: SavedAccountEntry) {
   return entry.displayName || entry.handle || entry.email || "Account";
@@ -21,15 +22,10 @@ export function savedAccountLabel(entry: SavedAccountEntry) {
 // The signed-in accounts this browser can switch between: the current account
 // (highlighted, from live profile data) first, then the saved others, then an
 // add-account button.
-export const AccountList = (props: {
-  current: { label: string; handle?: string; avatar?: string };
-  onAddAccount: () => void;
-}) => {
+export const AccountList = (props: { onAddAccount: () => void }) => {
   let { identity } = useIdentityData();
   let { data: entries } = useSavedAccounts();
-  let otherAccounts = (entries ?? []).filter(
-    (e) => e.identity !== identity?.id,
-  );
+
   let [pendingToken, setPendingToken] = useState<string | null>(null);
   let toaster = useToaster();
 
@@ -59,30 +55,19 @@ export const AccountList = (props: {
 
   return (
     <div className="flex flex-col gap-0.5">
-      <div className="menuItem -mx-[8px] bg-[var(--accent-light)] cursor-default items-center">
-        <Avatar src={props.current.avatar} displayName={props.current.label} />
-        <div className="flex flex-col leading-tight min-w-0 grow">
-          <span className="truncate">{props.current.label}</span>
-          {props.current.handle && (
-            <span className="text-xs text-secondary truncate">
-              @{props.current.handle}
-            </span>
-          )}
-        </div>
-      </div>
-      {otherAccounts.map((entry) => (
+      {entries.map((entry) => (
         <button
           key={entry.token}
           type="button"
           disabled={!!pendingToken}
-          className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
+          className={`menuItem ${entry.identity === identity?.id && "bg-[var(--accent-light)]!"}`}
           onClick={() => onSwitch(entry)}
         >
           <Avatar src={entry.avatar} displayName={savedAccountLabel(entry)} />
           <div className="flex flex-col leading-tight min-w-0 grow">
             <span className="truncate">{savedAccountLabel(entry)}</span>
             {entry.handle && (
-              <span className="text-xs text-secondary truncate">
+              <span className="text-sm text-tertiary truncate font-normal">
                 @{entry.handle}
               </span>
             )}
@@ -92,12 +77,10 @@ export const AccountList = (props: {
           )}
         </button>
       ))}
-      <button
-        type="button"
-        className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
-        onClick={props.onAddAccount}
-      >
-        <AddSmall />
+      <button type="button" className="menuItem " onClick={props.onAddAccount}>
+        <div className="w-6 h-6 flex items-center justify-center">
+          <AddTiny />
+        </div>
         Add Account
       </button>
     </div>

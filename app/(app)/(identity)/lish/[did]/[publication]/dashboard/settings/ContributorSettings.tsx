@@ -270,7 +270,7 @@ function ContributorList(props: {
               </div>
 
               {row.confirmed ? null : (
-                <div className="contributor status text-sm text-tertiary mt-0.5 shrink-0 md:mr-0 ml-8">
+                <div className="contributorStatus text-sm text-tertiary mt-1 shrink-0 md:mr-0 ml-8">
                   Pending -{" "}
                   <button
                     className="text-accent-contrast text-sm underline"
