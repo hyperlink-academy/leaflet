@@ -95,7 +95,7 @@ export function NotificationList({
 
   if (items.length === 0 && !hasMore && !isValidating)
     return (
-      <EmptyState title="no notifications yet...">
+      <EmptyState title="no notifications yet…">
         Here, you'll find notifications about new follows, comments, mentions,
         and replies!
       </EmptyState>

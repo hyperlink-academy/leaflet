@@ -56,7 +56,9 @@ export const DeletePublication = () => {
     <Modal
       asChild
       className="text-center"
-      trigger={<ButtonPrimary>Delete Publication</ButtonPrimary>}
+      trigger={
+        <ButtonPrimary type="button">Delete Publication</ButtonPrimary>
+      }
       title="Are you sure?"
     >
       <div className="text-secondary flex flex-col max-w-prose">
@@ -90,6 +92,7 @@ export const DeletePublication = () => {
           </Checkbox>
 
           <ButtonPrimary
+            type="button"
             className="mx-auto mb-1"
             disabled={!confirmed || deleting || !pubUri}
             onClick={onDelete}

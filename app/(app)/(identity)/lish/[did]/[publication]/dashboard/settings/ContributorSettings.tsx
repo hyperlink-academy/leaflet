@@ -155,13 +155,13 @@ function OwnerContributorSettings(props: {
 
   return (
     <>
-      <SettingsSection accent title="Invite Contributors ">
+      <SettingsSection title="Invite Contributors ">
         <div className="leading-snug text-secondary">
-          Contributors can write and publish to this publication! <br />
-          Search Atmosphere accounts to add contributors. <br />
+          Contributors can write and publish to this publication!<br /> Posts they publish with have thier name in the byline but are still owned by you.
+           <br />
         </div>
         <div className="leading-snug text-secondary">
-          Posts written by others are still owned by you.
+          Search Atmosphere accounts to add contributors.
         </div>
 
         <div className="mt-2">
@@ -202,7 +202,6 @@ function OwnerContributorSettings(props: {
           loading={loading}
           onRemove={handleRemove}
           acceptLink={props.acceptLink}
-          emptyMessage="No contributors yet."
         />
       </SettingsSection>
     </>
@@ -218,7 +217,6 @@ function ContributorList(props: {
   loading: boolean;
   onRemove: (did: string) => void;
   acceptLink: string;
-  emptyMessage: string;
 }) {
   let copyInviteLink = useCopyInviteLink(props.acceptLink);
 
@@ -230,7 +228,7 @@ function ContributorList(props: {
     );
   if (props.rows.length === 0)
     return (
-      <div className="text-tertiary text-sm py-2">{props.emptyMessage}</div>
+      <div className="text-tertiary italic py-2">no contributors yet…</div>
     );
   return (
     <>

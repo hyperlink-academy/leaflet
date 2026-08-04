@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { mutate } from "swr";
-import { useDomainStatus } from "components/Domains/useDomainStatus";
+import { useDomainStatus } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/useDomainStatus";
+
 import {
   getDomainAssignment,
   describeAssignment,
-} from "components/Domains/domainAssignment";
+} from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/domainAssignment";
 import {
   useIdentityData,
   mutateIdentityData,
@@ -28,7 +29,7 @@ import { UnlinkTiny } from "components/Icons/UnlinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
-import type { CustomDomain } from "components/Domains/DomainList";
+import type { CustomDomain } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainList";
 
 export const PubDomainSettings = () => {
   let { data, mutate: mutatePubData } = usePublicationData();
@@ -126,8 +127,7 @@ export const PubDomainSettings = () => {
             </>
           ) : (
             <div className="text-sm text-tertiary">
-              <strong>No available domains!</strong>
-              <br />
+              <strong>No available domains!{" "}</strong>
               Add new domains from your{" "}
               <SpeedyLink
                 href="/settings?tab=domains"

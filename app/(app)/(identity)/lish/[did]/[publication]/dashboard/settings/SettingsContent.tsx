@@ -28,7 +28,8 @@ import {
   resolvePrevNextDirection,
   type PrevNextDirection,
 } from "src/utils/mergePreferences";
-import { DeletePublication } from "./DeletePubliation";
+import { DeletePublication } from "./DeletePublicationSection";
+import { UpgradeContent } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
 
 export type PubSettingsTab =
   | "general"
@@ -46,21 +47,18 @@ export function usePubSettingsTabs(): {
   let { identity } = useIdentityData();
   let isOwner =
     !!identity?.atp_did && identity.atp_did === data?.publication?.identity_did;
-  let isPro = useIsPro();
   let canSeePayments = useCanSeePayments();
 
   if (!isOwner) return [];
+  // Contributors and Newsletter are Pro features, but non-Pro owners still get
+  // the tabs — those panes show the upgrade pitch instead of the settings.
   return [
     { value: "general" as const, label: "General" },
     ...(canSeePayments
       ? [{ value: "monetization" as const, label: "Monetization" }]
       : []),
-    ...(isPro
-      ? [
-          { value: "contributors" as const, label: "Contributors" },
-          { value: "newsletter" as const, label: "Newsletter" },
-        ]
-      : []),
+    { value: "contributors" as const, label: "Contributors" },
+    { value: "newsletter" as const, label: "Newsletter" },
   ];
 }
 
@@ -70,6 +68,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
   let { identity } = useIdentityData();
   let isOwner =
     !!identity?.atp_did && identity.atp_did === pubData?.identity_did;
+  let isPro = useIsPro();
   let record = useNormalizedPublicationRecord();
   let [loading, setLoading] = useState(false);
   let toast = useToaster();
@@ -215,7 +214,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
   if (props.tab === "contributors") {
     return (
       <SettingsPageLayout>
-        <ContributorSettings />
+        {isPro ? <ContributorSettings /> : <UpgradeSection />}
       </SettingsPageLayout>
     );
   }
@@ -223,7 +222,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
   if (props.tab === "newsletter") {
     return (
       <SettingsPageLayout>
-        <NewsletterSettings />
+        {isPro ? <NewsletterSettings /> : <UpgradeSection />}
       </SettingsPageLayout>
     );
   }
@@ -334,6 +333,14 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
         {hasUnsavedChanges && <SettingsFooter loading={loading} />}
       </SettingsPageLayout>
     </form>
+  );
+}
+
+function UpgradeSection() {
+  return (
+    <SettingsSection>
+      <div className="mx-auto sm:py-4"><UpgradeContent /></div>
+    </SettingsSection>
   );
 }
 

@@ -105,16 +105,25 @@ export default function PaidSubscribePreviewPage() {
   let [loggedIn, setLoggedIn] = useState(false);
   let [hasCard, setHasCard] = useState(false);
   let [subscribed, setSubscribed] = useState(false);
+  let [paidMember, setPaidMember] = useState(false);
   let [modalOpen, setModalOpen] = useState(false);
   let [themeFonts, setThemeFonts] = useState(true);
 
   // Only a signed-in reader can be a known subscriber.
   const isSubscribed = loggedIn && subscribed;
+  const isPaidMember = loggedIn && paidMember;
   const identity = loggedIn ? makeIdentity(isSubscribed) : null;
   const viewer: MembershipJoinViewer = {
     loggedIn,
     isOwner: false,
-    membership: null,
+    membership: isPaidMember
+      ? {
+          id: "membership-1",
+          tierId: "tier-supporter",
+          cadence: "month",
+          currentPeriodEnd: "2026-09-01T00:00:00.000Z",
+        }
+      : null,
     walletCard: loggedIn && hasCard ? { brand: "visa", last4: "4242" } : null,
   };
 
@@ -152,6 +161,12 @@ export default function PaidSubscribePreviewPage() {
             onChange={setSubscribed}
           />
           <Checkbox
+            label="paid member"
+            checked={paidMember}
+            disabled={!loggedIn}
+            onChange={setPaidMember}
+          />
+          <Checkbox
             label="theme fonts"
             checked={themeFonts}
             onChange={setThemeFonts}
@@ -160,7 +175,7 @@ export default function PaidSubscribePreviewPage() {
         <MockIdentity identity={identity}>
           <PaidSubscribeButton
             // Remount when a toggle flips so the modal's internal state resets.
-            key={`${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}`}
+            key={`${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}-${isPaidMember}`}
             publicationUri={PUBLICATION_URI}
             publicationUrl={PUBLICATION_URL}
             publicationName="Test Publication"
@@ -175,7 +190,7 @@ export default function PaidSubscribePreviewPage() {
             Open join modal
           </ButtonSecondary>
           <JoinMembershipModal
-            key={`modal-${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}`}
+            key={`modal-${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}-${isPaidMember}`}
             open={modalOpen}
             onOpenChange={setModalOpen}
             publicationUri={PUBLICATION_URI}

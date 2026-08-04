@@ -60,9 +60,11 @@ export function subscribeErrorMessage(error: string): string {
 // buttons' copy:
 // no subscription → "Join", subscribed on the free tier → "Upgrade" (their
 // cost goes up from $0), an active paid membership → monthly-pricier tiers say
-// "Upgrade" and the rest "Switch". Whichever tier the viewer is on — free by
-// subscription, paid by membership — reads "Subscribed". Flow decisions
-// (payment vs prorated switch) stay with the caller via onSelectTier.
+// "Upgrade" and the rest "Switch", and the free tier reads "Switch to free"
+// since taking it cancels their paid plan. Whichever tier the viewer is on —
+// free by subscription, paid by membership — reads "Subscribed". Flow decisions
+// (payment vs prorated switch vs downgrade) stay with the caller via
+// onSelectTier.
 export function TierGrid(props: {
   tiers: Tier[];
   cadence: Cadence;
@@ -153,6 +155,8 @@ export function TierGrid(props: {
                   >
                     {props.busyTierId === tier.id ? (
                       <DotLoader />
+                    ) : props.currentTierId ? (
+                      "Switch to free"
                     ) : (
                       "Subscribe for free"
                     )}

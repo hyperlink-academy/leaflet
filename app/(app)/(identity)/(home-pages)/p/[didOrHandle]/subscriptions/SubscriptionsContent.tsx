@@ -83,7 +83,7 @@ export const ProfileSubscriptionsContent = (props: {
 
   return (
     <div className="relative">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {subscriptions.map((sub) => (
           <PubListing
             constrainHeight

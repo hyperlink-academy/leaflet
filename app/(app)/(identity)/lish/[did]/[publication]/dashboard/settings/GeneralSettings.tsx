@@ -1,9 +1,7 @@
-import React from "react";
 import { Input } from "components/Input";
 import { AddTiny } from "components/Icons/AddTiny";
 import { SettingsSection, InputSetting } from "components/SettingsLayout";
 import { encodeIconFile } from "src/utils/imageEncoding";
-import { Separator } from "components/Layout";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 
 export function GeneralSettings(props: {

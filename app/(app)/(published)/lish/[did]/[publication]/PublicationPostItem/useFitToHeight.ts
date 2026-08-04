@@ -72,6 +72,7 @@ export function useFitToHeight(...content: unknown[]) {
 
       if (!description) return;
       const descriptionLine = lineHeight(description);
+      if (descriptionLine <= 0) return;
       // The gap between the two is either the box's own row-gap or a margin on
       // the description — and only costs anything if there's a title above.
       const gap = !title

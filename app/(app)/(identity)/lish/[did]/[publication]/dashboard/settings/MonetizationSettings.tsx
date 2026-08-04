@@ -1,27 +1,13 @@
 "use client";
 import { useState } from "react";
-import {
-  ButtonPrimary,
-  ButtonSecondary,
-  ButtonTertiary,
-} from "components/Buttons";
+import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
-import { Modal } from "components/Modal";
-import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
 import { usePublicationData } from "../PublicationSWRProvider";
 import { SettingsSection } from "components/SettingsLayout";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
-import {
-  enableMemberships,
-  disableMemberships,
-  upsertMembershipTier,
-  deleteMembershipTier,
-  type MembershipTierInput,
-} from "actions/publications/membershipSettings";
-import { formatPrice } from "components/Memberships/TierGrid";
-import { char } from "drizzle-orm/pg-core";
+import { enableMemberships } from "actions/publications/membershipSettings";
 import { MembershipTiers } from "./MemberTierSettings";
 
 export const MonetizationSettings = () => {

@@ -19,10 +19,13 @@ export default async function ProfileSubscriptionsPage(props: {
   const { subscriptions, nextCursor } = await getSubscriptions(did);
 
   return (
-    <ProfileSubscriptionsContent
-      did={did}
-      subscriptions={subscriptions}
-      nextCursor={nextCursor}
-    />
+    <>
+      <div className="spacer h-4 w-full" />
+      <ProfileSubscriptionsContent
+        did={did}
+        subscriptions={subscriptions}
+        nextCursor={nextCursor}
+      />
+    </>
   );
 }

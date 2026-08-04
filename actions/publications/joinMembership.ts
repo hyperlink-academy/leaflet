@@ -28,6 +28,7 @@ export type MembershipJoinViewer = {
     id: string;
     tierId: string | null;
     cadence: string | null;
+    currentPeriodEnd: string | null;
   } | null;
   walletCard: { brand: string | null; last4: string | null } | null;
 };
@@ -70,6 +71,7 @@ export async function getMembershipJoinViewer(
             id: membership.id,
             tierId: membership.tier,
             cadence: membership.cadence,
+            currentPeriodEnd: membership.current_period_end,
           }
         : null,
     walletCard: wallet?.card_last4

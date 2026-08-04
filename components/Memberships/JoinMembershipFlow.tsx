@@ -2,9 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
+import { Modal } from "components/Modal";
 import { useToaster, useSmoker } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { EmailInput, EmailConfirm } from "components/Subscribe/EmailSubscribe";
 import { HandleSearchInput } from "components/HandleSearchInput";
 import { AtmosphericHandleInfo } from "components/Subscribe/HandleSubscribe";
@@ -27,7 +30,7 @@ import {
   saveWalletCardFromSession,
   type MembershipJoinViewer,
 } from "actions/publications/joinMembership";
-import { switchMembership } from "actions/memberships";
+import { cancelMembership, switchMembership } from "actions/memberships";
 import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
@@ -95,6 +98,9 @@ export function JoinMembershipFlow(props: {
   // continue to once the reader confirms linking it (mirrors SubscribeInput).
   const [linkTier, setLinkTier] = useState<Tier | null>(null);
   const [inputMissing, setInputMissing] = useState(false);
+  // An active paid member picked the free tier — confirm before we schedule
+  // the cancellation (irreversible-feeling, so it isn't one click).
+  const [confirmDowngrade, setConfirmDowngrade] = useState<Tier | null>(null);
   const resumeHandled = useRef(false);
 
   const effectiveCadence = (tier: Tier): Cadence =>
@@ -315,6 +321,40 @@ export function JoinMembershipFlow(props: {
     finishJoin("Updated your plan!");
   };
 
+  // Downgrading a paying member schedules cancellation at the period's end
+  // (same as MembershipsManager's Cancel — Stripe keeps their paid access
+  // live and won't charge again) and separately establishes the free
+  // subscription now. A paid membership has no publication_subscriptions row
+  // of its own, so without this they'd stop hearing from the pub the moment
+  // the paid period lapses.
+  const downgradeToFree = async (tier: Tier) => {
+    const m = viewer?.membership;
+    if (!m) return;
+    setBusyTierId(tier.id);
+    const res = await cancelMembership(m.id);
+    if (!res.ok) {
+      setBusyTierId(null);
+      toaster({
+        type: "error",
+        content: "We couldn't downgrade your plan. Please try again!",
+      });
+      return;
+    }
+    if (props.newsletterMode && identity?.email) {
+      await requestPublicationEmailSubscription(
+        props.publicationUri,
+        identity.email,
+      ).catch(() => {});
+    } else {
+      await subscribeToPublication(
+        props.publicationUri,
+        window.location.href,
+      ).catch(() => {});
+    }
+    setConfirmDowngrade(null);
+    finishJoin("You'll move to the free plan at the end of your billing period.");
+  };
+
   // Signed-out email joins mint a session with an auth code confirmed right
   // here — except on custom domains, where sessions are first-party on the
   // main site, so we bounce through its email login instead.
@@ -442,10 +482,16 @@ export function JoinMembershipFlow(props: {
     if (busyTierId || processing) return;
     const free = isFreeTier(tier);
 
-    // An active paid membership switches in place (prorated); everyone else —
-    // including free-tier subscribers upgrading — goes through the payment
-    // flow, since the free tier has no Stripe subscription to switch from.
-    if (viewer?.membership && !free) return runSwitch(tier);
+    // An active paid membership switches in place (prorated) between paid
+    // tiers, or downgrades to free through a confirm step (that path cancels
+    // the Stripe subscription instead of switching it).
+    if (viewer?.membership) {
+      if (free) {
+        setConfirmDowngrade(tier);
+        return;
+      }
+      return runSwitch(tier);
+    }
 
     if (identity) {
       if (hasNeededIdentity) return free ? freeJoin(tier) : payWithViewer(tier);
@@ -586,7 +632,65 @@ export function JoinMembershipFlow(props: {
           }}
         />
       )}
+      {confirmDowngrade && (
+        <DowngradeConfirmModal
+          currentTierName={
+            props.tiers.find((t) => t.id === viewer?.membership?.tierId)
+              ?.name ?? "current"
+          }
+          periodEnd={viewer?.membership?.currentPeriodEnd ?? null}
+          busy={busyTierId !== null}
+          onConfirm={() => downgradeToFree(confirmDowngrade)}
+          onClose={() => setConfirmDowngrade(null)}
+        />
+      )}
     </>
+  );
+}
+
+function DowngradeConfirmModal(props: {
+  currentTierName: string;
+  periodEnd: string | null;
+  busy: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const endDate = useLocalizedDate(props.periodEnd ?? "", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
+  return (
+    <Modal
+      open
+      onOpenChange={(o) => !o && props.onClose()}
+      title="Switch to the free plan?"
+      className="max-w-full w-sm"
+    >
+      <div className="flex flex-col gap-3">
+        <div className="text-secondary leading-snug">
+          Switch from <strong>{props.currentTierName}</strong> to the free
+          plan? You'll keep member access{" "}
+          {props.periodEnd
+            ? `until ${endDate}`
+            : "until the end of your billing period"}
+          , then move to free and won't be charged again.
+        </div>
+        <div className="flex justify-between">
+          <ButtonSecondary type="button" onClick={props.onClose}>
+            Keep membership
+          </ButtonSecondary>
+          <ButtonPrimary
+            type="button"
+            disabled={props.busy}
+            onClick={props.onConfirm}
+          >
+            {props.busy ? <DotLoader /> : "Switch to free"}
+          </ButtonPrimary>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

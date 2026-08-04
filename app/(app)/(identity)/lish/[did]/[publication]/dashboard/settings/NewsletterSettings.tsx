@@ -57,17 +57,19 @@ export const NewsletterSettings = () => {
           mutate={mutate}
         />
       )}
+      {newsletterEnabled && (
+        <>
       <SettingsSection title="Embeddable Subscribe Form">
         <EmbedFormSnippet
           publicationUri={publicationUri}
           publicationUrl={record?.url}
         />
       </SettingsSection>
-      {newsletterEnabled && (
         <DisableNewsletterSection
           publicationUri={publicationUri}
           mutate={mutate}
         />
+        </>
       )}
     </>
   );
@@ -81,14 +83,15 @@ function EnableNewsletterSection(props: {
   let [pending, setPending] = useState(false);
 
   return (
-    <div className="accent-container flex flex-col gap-2 p-3 sm:px-4">
-      <div className="leading-snug font-bold">
-        Enable Newsletters to send email updates to your subscribers!
+    <SettingsSection title="Enable Newsletter">
+      <div className="font-bold">
+       Newsletter mode allows you to send email updates to your subscribers!
       </div>
-      <div className="leading-snug text-sm">
-        Your first 1k email subscribers are included with Leaflet Pro. After
-        that, it&apos;s $5 for each additional 1k subs. Questions? Reach out!
+      <div >
+        Your first 1k email subscribers are included with Leaflet Pro.<br/> After
+        that, it&apos;s $5 for each additional 1k subs.
       </div>
+      <div>If you have questions, or you want to import an existing email list, <a href="mailto:contact@leaflet.pub">contact us</a>!</div>
       <ButtonPrimary
         className="self-start"
         disabled={pending}
@@ -108,9 +111,9 @@ function EnableNewsletterSection(props: {
           await props.mutate();
         }}
       >
-        {pending ? <DotLoader /> : "Enable Newsletters"}
+        {pending ? <DotLoader /> : "Enable!"}
       </ButtonPrimary>
-    </div>
+    </SettingsSection>
   );
 }
 
@@ -199,8 +202,8 @@ function NewsletterOptions(props: {
 
   return (
     <SettingsSection title="Newsletter Options">
-      Newsletters allows your subscribers to opt into email updates. <br />
-      Configure the email your subscribers recieve here!
+      <div>Newsletters allows your subscribers to opt into email updates.</div>
+       <div>If you have questions, or you want to import an existing email list, <a href="mailto:contact@leaflet.pub">contact us</a>!</div>
       <div className="flex flex-col gap-4">
         <InputSetting label="Sender Name">
           <div className="light-container w-full max-w-prose text-secondary h-fit bg-border-light px-2 py-1 rounded-md">

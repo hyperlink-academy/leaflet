@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { SettingsPageLayout, SettingsSection } from "components/SettingsLayout";
 import { Tabs } from "components/Tabs";
-import { ManageDomainsContent } from "components/Domains/ManageDomains";
+import { ManageDomainsContent } from "./domains/ManageDomains";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { ManageProSubscription } from "./ManageProSubscription";
 import { UpgradeToProButton } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
@@ -42,18 +42,22 @@ export function SettingsPageContent(props: {
   ];
 
   let requestedTab = searchParams.get("tab");
-  let [tab, setTab] = useState<SettingsTab>(
-    tabs.some((t) => t.value === requestedTab)
+  // The Monetization tab depends on an entitlement that resolves after the
+  // first render, so a ?tab= link can't be validated there — keep resolving it
+  // until the reader picks a tab themselves.
+  let [chosenTab, setChosenTab] = useState<SettingsTab | null>(null);
+  let tab =
+    chosenTab ??
+    (tabs.some((t) => t.value === requestedTab)
       ? (requestedTab as SettingsTab)
       : // Returning from the hosted card-update page lands on /settings with
         // only a wallet_session param; the billing tab owns processing it.
         searchParams.get("wallet_session")
         ? "billing"
-        : "domains",
-  );
+        : "domains");
 
   let onTabChange = (value: SettingsTab) => {
-    setTab(value);
+    setChosenTab(value);
     window.history.replaceState(null, "", `/settings?tab=${value}`);
   };
 
@@ -71,9 +75,7 @@ export function SettingsPageContent(props: {
       <SettingsPageLayout>
         {tab === "domains" && (
           <SettingsSection>
-            <div className="text-secondary">
-              <ManageDomainsContent />
-            </div>
+            <ManageDomainsContent />
           </SettingsSection>
         )}
         {tab === "billing" && (

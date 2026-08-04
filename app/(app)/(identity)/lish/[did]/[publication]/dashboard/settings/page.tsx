@@ -19,14 +19,18 @@ export default function SettingsPage() {
   let tabs = usePubSettingsTabs();
 
   let requestedTab = useSearchParams().get("tab");
-  let [tab, setTab] = useState<PubSettingsTab>(
-    tabs.some((t) => t.value === requestedTab)
+  // The tab list comes from identity/publication data that resolves after the
+  // first render, so a ?tab= link can't be validated there — keep resolving it
+  // until the reader picks a tab themselves.
+  let [chosenTab, setChosenTab] = useState<PubSettingsTab | null>(null);
+  let tab =
+    chosenTab ??
+    (tabs.some((t) => t.value === requestedTab)
       ? (requestedTab as PubSettingsTab)
-      : "general",
-  );
+      : "general");
 
   let onTabChange = (value: PubSettingsTab) => {
-    setTab(value);
+    setChosenTab(value);
     window.history.replaceState(
       null,
       "",
