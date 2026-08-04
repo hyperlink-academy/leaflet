@@ -4,9 +4,13 @@ import { useEffect, useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
-import { useIdentityData, refreshIdentityData } from "components/IdentityProvider";
+import {
+  useIdentityData,
+  refreshIdentityData,
+} from "components/IdentityProvider";
 import { startStripeConnectOnboarding } from "actions/startStripeConnectOnboarding";
 import { refreshStripeConnectAccount } from "actions/refreshStripeConnectAccount";
+import { GoToArrow } from "components/Icons/GoToArrow";
 
 // Status + onboarding control for collecting payments via Stripe Connect.
 export function ConnectPayments() {
@@ -49,23 +53,16 @@ export function ConnectPayments() {
   let started = !!connected && !connected.charges_enabled;
 
   return (
-    <div className="flex flex-col gap-2 text-secondary">
-      <div className="text-sm">
-        {active
-          ? "Payments are enabled — readers can pay you, and Leaflet collects a small platform fee on each payment."
-          : "Connect a Stripe account to collect payments from your readers. Leaflet takes a small platform fee on each payment."}
-      </div>
+    <>
       {active ? (
-        // Merchant accounts have their own full Stripe dashboard; the publisher
-        // logs in with their own credentials, so a static link is all we hand off.
         <a
           href="https://dashboard.stripe.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="w-max flex gap-1 items-center font-bold text-accent-contrast"
+          className="w-max flex gap-2 hover:no-underline items-center font-bold text-accent-contrast"
         >
-          Manage on Stripe
-          <ExternalLinkTiny />
+          Stripe Dashboard
+          <GoToArrow />
         </a>
       ) : (
         <ButtonPrimary
@@ -85,6 +82,6 @@ export function ConnectPayments() {
         </ButtonPrimary>
       )}
       {error && <div className="text-sm text-red-500">{error}</div>}
-    </div>
+    </>
   );
 }

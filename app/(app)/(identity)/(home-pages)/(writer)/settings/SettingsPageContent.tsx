@@ -57,7 +57,7 @@ export function SettingsPageContent(props: {
     window.history.replaceState(null, "", `/settings?tab=${value}`);
   };
 
-  let tabBar = <Tabs value={tab} onChange={onTabChange} options={tabs} />;
+  let tabBar = <Tabs value={tab} onChange={onTabChange} options={tabs} pill />;
 
   return (
     <DashboardPageLayout

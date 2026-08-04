@@ -36,7 +36,7 @@ export default function SettingsPage() {
 
   let tabBar =
     tabs.length > 1 ? (
-      <Tabs value={tab} onChange={onTabChange} options={tabs} />
+      <Tabs value={tab} onChange={onTabChange} options={tabs} pill />
     ) : null;
 
   return (

@@ -15,7 +15,7 @@ import { ThemeAndLayoutSettings } from "./ThemeAndLayoutSettings";
 import { ShareSettings } from "./ShareSettings";
 import { NewsletterSettings } from "./NewsletterSettings";
 import { ContributorSettings } from "./ContributorSettings";
-import { MonetizationSettings } from "./MembershipSettings";
+import { MonetizationSettings } from "./MonetizationSettings";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 import { Modal } from "components/Modal";
@@ -28,6 +28,7 @@ import {
   resolvePrevNextDirection,
   type PrevNextDirection,
 } from "src/utils/mergePreferences";
+import { DeletePublication } from "./DeletePubliation";
 
 export type PubSettingsTab =
   | "general"
@@ -379,103 +380,3 @@ function SettingsFooter(props: { loading: boolean }) {
     </div>
   );
 }
-
-let pluralize = (n: number, word: string) =>
-  `${n} ${word}${n === 1 ? "" : "s"}`;
-
-const DeletePublication = () => {
-  let [value, setValue] = useState("");
-  let [deleting, setDeleting] = useState(false);
-  let record = useNormalizedPublicationRecord();
-  let { data: pub } = usePublicationData();
-  let postCount = pub?.documents?.length ?? 0;
-  let draftCount = pub?.drafts?.length ?? 0;
-  let subCount = pub?.publication?.publication_subscriptions?.length ?? 0;
-  let toaster = useToaster();
-  let router = useRouter();
-  let pubUri = pub?.publication?.uri;
-
-  let onDelete = async () => {
-    if (
-      !pubUri ||
-      record?.name?.toLowerCase() !== value.toLowerCase() ||
-      deleting
-    )
-      return;
-    setDeleting(true);
-    let result = await deletePublication(pubUri);
-    if (!result.success) {
-      setDeleting(false);
-      toaster({
-        type: "error",
-        content: isOAuthSessionError(result.error) ? (
-          <OAuthErrorMessage error={result.error} />
-        ) : typeof result.error === "string" ? (
-          result.error
-        ) : (
-          "We couldn't delete the publication. Please try again!"
-        ),
-      });
-      return;
-    }
-    toaster({
-      type: "success",
-      content: `${record?.name ?? "Publication"} deleted`,
-    });
-    router.push("/home");
-  };
-
-  return (
-    <Modal
-      asChild
-      className="text-center"
-      trigger={<ButtonPrimary>Delete Publication</ButtonPrimary>}
-      title="Are you sure?"
-    >
-      <div className="text-secondary flex flex-col max-w-prose">
-        <div className="pb-3 text-left">
-          This will permanently delete:
-          <ul className="list-disc pl-5 pt-1">
-            <li>This publication and its settings</li>
-            <li>
-              {pluralize(postCount, "published post")}
-              {postCount > 0 ? " (removed from your PDS)" : ""}
-            </li>
-            <li>{pluralize(draftCount, "draft")}</li>
-            <li>All associated records on your PDS</li>
-          </ul>
-          {subCount > 0 && (
-            <div className="pt-2">
-              {pluralize(subCount, "subscriber")} will lose access.
-            </div>
-          )}
-          <div className="pt-2 font-bold text-primary">
-            This cannot be undone.
-          </div>
-        </div>
-        <div className="font-bold pb-1">
-          Enter the name of this publication to confirm
-        </div>
-
-        <Input
-          className="input-with-border w-full mb-3 text-primary max-w-prose"
-          placeholder={record?.name ? record.name : "Publication Name"}
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.currentTarget.value)}
-        />
-        <ButtonPrimary
-          className="mx-auto mb-1"
-          disabled={
-            record?.name?.toLowerCase() !== value.toLowerCase() ||
-            deleting ||
-            !pubUri
-          }
-          onClick={onDelete}
-        >
-          {deleting ? <DotLoader /> : "Delete Publication"}
-        </ButtonPrimary>
-      </div>
-    </Modal>
-  );
-};

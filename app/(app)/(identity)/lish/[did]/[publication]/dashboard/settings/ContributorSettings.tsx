@@ -140,24 +140,31 @@ function OwnerContributorSettings(props: {
   };
 
   return (
-    <SettingsSection className="pb-4">
-      <div className="leading-snug text-secondary">
-        Invite others to write and publish to this publication. <br />
-        Posts written by others are still owned by you.
-      </div>
+    <>
+      <SettingsSection accent title="Invite Contributors ">
+        <div className="leading-snug text-secondary">
+          Contributors can write and publish to this publication! <br />
+          Search Atmosphere accounts to add contributors. <br />
+        </div>
+        <div className="leading-snug text-secondary">
+          Posts written by others are still owned by you.
+        </div>
 
-      <div className="mt-2">
-        <InviteHandleInput onInvite={handleInvite} loading={adding} />
-      </div>
+        <div className="mt-2">
+          <InviteHandleInput onInvite={handleInvite} loading={adding} />
+        </div>
+      </SettingsSection>
 
-      <ContributorList
-        rows={contributors}
-        loading={loading}
-        onRemove={handleRemove}
-        acceptLink={props.acceptLink}
-        emptyMessage="No contributors yet."
-      />
-    </SettingsSection>
+      <SettingsSection title="Contributors">
+        <ContributorList
+          rows={contributors}
+          loading={loading}
+          onRemove={handleRemove}
+          acceptLink={props.acceptLink}
+          emptyMessage="No contributors yet."
+        />
+      </SettingsSection>
+    </>
   );
 }
 

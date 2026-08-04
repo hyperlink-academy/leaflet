@@ -1,13 +1,12 @@
 "use client";
 
-import { Toggle } from "components/Toggle";
-import { Radio } from "components/Checkbox";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { Separator } from "components/Layout";
-import { SettingsSection } from "components/SettingsLayout";
+import { SettingsSection, ToggleSetting } from "components/SettingsLayout";
 import { SpeedyLink } from "components/SpeedyLink";
+import { ToggleGroup } from "components/ToggleGroup";
 import { useParams } from "next/navigation";
 import type { PrevNextDirection } from "src/utils/mergePreferences";
 import { usePublicationData } from "../PublicationSWRProvider";
@@ -24,44 +23,50 @@ export function ThemeAndLayoutSettings(props: {
     <SettingsSection title="Theme and Layout">
       <div className="flex flex-col gap-2">
         <CustomizeThemeLink />
-
-        <Toggle
+        <hr />
+        <ToggleSetting
+          label="Show Prev/Next Buttons on Post"
           toggle={props.showPrevNext}
           onToggle={() => props.setShowPrevNext(!props.showPrevNext)}
-        >
-          <div className="font-bold text-secondary">
-            Show Prev/Next Buttons on Post
-          </div>
-        </Toggle>
+        />
 
-        <Toggle
+        <ToggleSetting
+          label="Show First/Last Buttons on Post"
           toggle={props.showFirstLast}
           onToggle={() => props.setShowFirstLast(!props.showFirstLast)}
-        >
-          <div className="font-bold text-secondary">
-            Show First/Last Buttons on Post
-          </div>
-        </Toggle>
+        />
 
         {(props.showPrevNext || props.showFirstLast) && (
           <div className="flex flex-col gap-2 pt-1">
-            <div className="font-bold text-secondary">Navigation Direction</div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              <DirectionRadio
-                direction="ltr"
-                label="Left to Right"
-                selected={props.prevNextDirection}
-                onSelect={props.setPrevNextDirection}
-              />
-              <DirectionRadio
-                direction="rtl"
-                label="Right to Left"
-                selected={props.prevNextDirection}
-                onSelect={props.setPrevNextDirection}
+            <div className="flex justify-between">
+              <div className="font-bold text-secondary">
+                Navigation Direction
+              </div>
+              <ToggleGroup
+                value={props.prevNextDirection}
+                onChange={props.setPrevNextDirection}
+                options={[
+                  {
+                    value: "ltr",
+                    label: (
+                      <div className="flex flex-row shrink-0 items-center">
+                        L <ArrowRightTiny className="scale-80" /> R
+                      </div>
+                    ),
+                  },
+                  {
+                    value: "rtl",
+                    label: (
+                      <div className="flex flex-row shrink-0 items-center">
+                        L <ArrowRightTiny className="scale-80 rotate-180" /> R
+                      </div>
+                    ),
+                  },
+                ]}
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <div className="text-tertiary text-sm">Preview</div>
+            <div className="flex flex-col gap-0.5">
+              <div className="text-tertiary text-xs uppercase">Preview</div>
               <PrevNextDirectionPreview
                 direction={props.prevNextDirection}
                 showPrevNext={props.showPrevNext}
@@ -87,33 +92,11 @@ function CustomizeThemeLink() {
 
   return (
     <SpeedyLink
-      className="text-left flex gap-2 items-center text-accent-contrast font-bold no-underline! w-fit"
+      className="text-left flex gap-2 items-center font-bold no-underline! justify-between w-full text-secondary"
       href={href}
     >
-      Customize Theme <GoToArrow />
+      Customize Theme <GoToArrow className="text-accent-contrast" />
     </SpeedyLink>
-  );
-}
-
-function DirectionRadio(props: {
-  direction: PrevNextDirection;
-  label: string;
-  selected: PrevNextDirection;
-  onSelect: (v: PrevNextDirection) => void;
-}) {
-  return (
-    <Radio
-      id={`prev-next-direction-${props.direction}`}
-      name="prev-next-direction"
-      value={props.direction}
-      checked={props.selected === props.direction}
-      onChange={(e) => {
-        if (!e.currentTarget.checked) return;
-        props.onSelect(props.direction);
-      }}
-    >
-      {props.label}
-    </Radio>
   );
 }
 
@@ -139,7 +122,7 @@ function PrevNextDirectionPreview(props: {
       : { left: latest, right: first };
 
   return (
-    <div className="text-sm text-tertiary italic border border-border-light rounded-md px-2 py-1">
+    <div className="opaque-container  text-tertiary italic border border-border-light rounded-md px-2 py-1">
       <div className="flex justify-between w-full gap-4">
         <div className="flex gap-2 items-center min-w-0">
           {edge.left && (

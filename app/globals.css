@@ -218,6 +218,10 @@
     font-size: inherit;
   }
 
+  hr {
+    border-color: var(--color-border-light);
+  }
+
   ::placeholder {
     @apply text-tertiary;
     @apply italic;
