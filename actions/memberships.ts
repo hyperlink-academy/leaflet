@@ -12,6 +12,8 @@ import {
   type WalletRow,
 } from "stripe/wallet";
 import { getPublicationURL } from "src/utils/getPublicationURL";
+import { subscribeToPublication } from "actions/publications/subscribeToPublication";
+import { requestPublicationEmailSubscription } from "actions/publications/subscribeEmail";
 import { Ok, Err, type Result } from "src/result";
 
 type MembershipError =
@@ -71,8 +73,44 @@ export async function resumeMembership(
   return setCancelAtPeriodEnd(membershipId, false);
 }
 
+export async function downgradeMembershipToFree(args: {
+  membershipId: string;
+  publicationUri: string;
+  newsletterMode: boolean;
+}): Promise<Result<{ subscribed: boolean }, MembershipError>> {
+  const identity = await getAuthIdentity();
+  if (!identity) return Err("not_authenticated");
+
+  const cancelled = await setCancelAtPeriodEnd(args.membershipId, true);
+  if (!cancelled.ok) return cancelled;
+
+  try {
+    if (args.newsletterMode && identity.email) {
+      const res = await requestPublicationEmailSubscription(
+        args.publicationUri,
+        identity.email,
+      );
+      return Ok({ subscribed: res.ok });
+    }
+    if (identity.atp_did) {
+      const res = await subscribeToPublication(args.publicationUri);
+      return Ok({ subscribed: res.success });
+    }
+    return Ok({ subscribed: false });
+  } catch (e) {
+    console.error("[memberships] free subscription after downgrade failed:", e);
+    return Ok({ subscribed: false });
+  }
+}
+
 // Switch tier and/or monthly↔annual on the single subscription item, letting
 // Stripe apply its default proration.
+//
+// Only works between paid tiers: a free-tier "member" is just a subscriber
+// with no membership row or Stripe subscription, so a free→paid upgrade must
+// go through the join/payment flow instead (JoinMembershipFlow routes on the
+// presence of an active paid membership). If a caller gets here anyway, the
+// missing stripe_subscription_id fails as not_found below.
 export async function switchMembership(args: {
   membershipId: string;
   tierId: string;
@@ -242,6 +280,7 @@ export async function getMyMembershipForPublication(
       .select("id, name, monthly_price_cents, annual_price_cents, sort_order")
       .eq("publication", publicationUri)
       .eq("active", true)
+      .eq("is_free", false)
       .order("sort_order", { ascending: true }),
   ]);
   if (!row) return null;
@@ -298,6 +337,7 @@ export async function getMyMemberships(): Promise<MyMembershipsData | null> {
         .select("id, publication, name, monthly_price_cents, annual_price_cents, sort_order")
         .in("publication", publicationUris)
         .eq("active", true)
+        .eq("is_free", false)
     : { data: [] };
   const tiersByPublication = new Map<string, AvailableTier[]>();
   for (const t of (allTiers ?? []).sort((a, b) => a.sort_order - b.sort_order)) {

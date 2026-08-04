@@ -30,7 +30,8 @@ export type Identity = Awaited<ReturnType<typeof getIdentityData>>;
 // published page win the first frame of a dashboard render (the swr module
 // cache beats fallbackData) and vice versa.
 export const VIEWER_IDENTITY_KEY = "viewer-identity";
-let IdentityContext = createContext({
+// Exported for test harness pages that mock the viewer (app/test/*).
+export let IdentityContext = createContext({
   identity: null as Identity,
   mutate: (() => {}) as KeyedMutator<Identity>,
   // True only on published pages while the mount-time viewer fetch is still in

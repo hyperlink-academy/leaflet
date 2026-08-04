@@ -23,33 +23,28 @@ export const InteractionPreview = (props: {
   showComments: boolean;
   showMentions: boolean;
   showRecommends: boolean;
-  shareType: "none" | "weak" | "strong";
 }) => {
   return (
     <div
-      className={` text-tertiary text-sm  items-end flex gap-4 grow min-w-0 justify-between`}
+      className={` text-tertiary text-sm items-center flex gap-4 shrink-0`}
     >
-      <div className="flex gap-2 items-center">
-        <DiscussionButton
+      {props.showRecommends === false ? null : (
+        <RecommendButton
           documentUri={props.documentUri}
-          commentsCount={props.commentsCount}
-          quotesCount={props.quotesCount}
-          showComments={props.showComments}
-          showMentions={props.showMentions}
-          postUrl={props.postUrl}
-          title={props.postRecord.title}
+          recommendsCount={props.recommendsCount}
         />
-        {props.showRecommends === false ? null : (
-          <RecommendButton
-            documentUri={props.documentUri}
-            recommendsCount={props.recommendsCount}
-          />
-        )}
-      </div>
-
+      )}
+      <DiscussionButton
+        documentUri={props.documentUri}
+        commentsCount={props.commentsCount}
+        quotesCount={props.quotesCount}
+        showComments={props.showComments}
+        showMentions={props.showMentions}
+        postUrl={props.postUrl}
+        title={props.postRecord.title}
+      />
       <InteractionShareButton
         postRecord={props.postRecord}
-        type={props.shareType}
         postUrl={props.postUrl}
         documentUri={props.documentUri}
         publication={props.publication}

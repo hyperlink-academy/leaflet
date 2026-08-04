@@ -52,6 +52,7 @@ export const Modal = ({
               : undefined
           }
           className={`
+          portalStyles
           z-50 fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           overflow-y-scroll no-scrollbar max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] flex flex-col w-full sm:w-max text-primary
           `}
@@ -68,7 +69,7 @@ export const Modal = ({
             {title ? (
               <div className="flex gap-4 justify-between items-start pb-1 ">
                 <Dialog.Title asChild>
-                  <h3 className="text-primary">{title}</h3>
+                  <h3 className="text-primary grow">{title}</h3>
                 </Dialog.Title>
                 {actionButton && actionButton}
               </div>

@@ -218,6 +218,10 @@
     font-size: inherit;
   }
 
+  hr {
+    border-color: var(--color-border-light);
+  }
+
   ::placeholder {
     @apply text-tertiary;
     @apply italic;
@@ -268,6 +272,24 @@
 
   .pageScrollWrapper pre {
     font-family: var(--theme-font, var(--font-quattro));
+  }
+
+  /* Portaled surfaces (modals, sheets, menus, popovers, tooltips) render
+     outside the theme wrapper, so the theme fonts and text color have to be
+     applied here to match the post they open over. */
+  .portalStyles {
+    font-family: var(--theme-font, var(--font-quattro));
+    color: rgb(var(--primary));
+  }
+
+  .portalStyles h1,
+  .portalStyles h2,
+  .portalStyles h3,
+  .portalStyles h4 {
+    font-family: var(
+      --theme-heading-font,
+      var(--theme-font, var(--font-quattro))
+    );
   }
 
   /* Apply custom fonts to publication homepage */

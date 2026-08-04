@@ -32,6 +32,7 @@ export const Tooltip = (props: {
           <NestedCardThemeProvider>
             <RadixTooltip.Content
               className={`
+          portalStyles
           z-20 bg-bg-page
           px-3 py-2
           max-w-(--radix-popover-content-available-width)
@@ -39,7 +40,6 @@ export const Tooltip = (props: {
           light-container
           border border-border rounded-md shadow-md
           overflow-y-scroll no-scrollbar
-          text-primary
           ${props.className}
         `}
               side={props.side}

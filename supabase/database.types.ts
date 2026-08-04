@@ -1299,6 +1299,7 @@ export type Database = {
           currency: string
           description: string | null
           id: string
+          is_free: boolean
           monthly_price_cents: number
           name: string
           publication: string
@@ -1315,6 +1316,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          is_free?: boolean
           monthly_price_cents: number
           name: string
           publication: string
@@ -1331,6 +1333,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          is_free?: boolean
           monthly_price_cents?: number
           name?: string
           publication?: string

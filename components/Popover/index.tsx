@@ -50,8 +50,8 @@ export const Popover = (props: {
           <NestedCardThemeProvider>
             <RadixPopover.Content
               className={`
+              portalStyles
               z-20 relative
-              text-primary
               flex flex-col
               px-3 py-2
               max-w-(--radix-popover-content-available-width)

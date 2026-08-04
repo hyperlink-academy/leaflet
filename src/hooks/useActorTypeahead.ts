@@ -2,7 +2,7 @@ import { Agent } from "@atproto/api";
 import { useRef, useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 
-type ActorSuggestion = {
+export type ActorSuggestion = {
   handle: string;
   did: string;
   displayName?: string;
@@ -11,12 +11,8 @@ type ActorSuggestion = {
 
 // Shared Bluesky actor typeahead state: a debounced search against the public
 // AppView with a request-id guard so stale responses are dropped. Each consumer
-// supplies its own trigger UI and submit handling. `transformQuery` lets a
-// caller normalize the input (e.g. strip a leading @) before searching.
-export function useActorTypeahead(opts?: {
-  debounceMs?: number;
-  transformQuery?: (value: string) => string;
-}) {
+// supplies its own trigger UI and submit handling.
+export function useActorTypeahead() {
   let [handleValue, setHandleValue] = useState("");
   let [suggestions, setSuggestions] = useState<ActorSuggestion[]>([]);
   let [dropdownOpen, setDropdownOpen] = useState(false);
@@ -25,9 +21,7 @@ export function useActorTypeahead(opts?: {
 
   useDebouncedEffect(
     async () => {
-      let query = opts?.transformQuery
-        ? opts.transformQuery(handleValue)
-        : handleValue;
+      let query = handleValue.trim().replace(/^@/, "");
       if (!query) {
         setSuggestions([]);
         setDropdownOpen(false);
@@ -51,7 +45,7 @@ export function useActorTypeahead(opts?: {
         setDropdownOpen(false);
       }
     },
-    opts?.debounceMs ?? 300,
+    300,
     [handleValue],
   );
 

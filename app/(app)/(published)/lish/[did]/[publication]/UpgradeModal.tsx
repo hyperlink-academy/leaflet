@@ -44,7 +44,7 @@ export const UpgradeContent = () => {
           <div className="font-bold text-primary">Group Publications</div>
 
           <hr className="my-4 border-border-light" />
-          <div className="font-bold text-primary">Coming ASAP</div>
+          <div className="font-bold text-primary">Coming VERY soon</div>
           <div className="">Paid Membership</div>
         </div>
         <div className="sm:w-64  w-full accent-container flex justify-center items-center">
@@ -61,7 +61,7 @@ export const UpgradeContent = () => {
             </div>
 
             <div className="flex gap-1 items-baseline justify-center pb-4">
-              <div className="text-2xl font-bold leading-tight">
+              <div className="text-2xl font-bold text-primary leading-tight">
                 {cadence === "year" ? "$120" : "$12"}
               </div>
               <div className="text-secondary">
@@ -97,26 +97,6 @@ const UpgradeModal = (props: {
     >
       <UpgradeContent />
     </Modal>
-  );
-};
-
-export const InlineUpgradeToPro = (props: {
-  compact?: boolean;
-  onClick?: () => void;
-}) => {
-  return (
-    <div className="text-center  text-secondary">
-      <UpgradeToProButton
-        fullWidth
-        compact={props.compact}
-        onClick={props.onClick}
-      />
-      <div
-        className={`${props.compact ? `text-sm` : "text-base"} leading-snug text-tertiary pt-2`}
-      >
-        Analytics and Emails for all your pubs! <br /> Membership coming soon.
-      </div>
-    </div>
   );
 };
 

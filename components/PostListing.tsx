@@ -8,13 +8,13 @@ import type {
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { hasLeafletContent } from "lexicons/src/normalize";
+import { postHasMembersDelimiter } from "src/membership";
 import type { Post } from "actions/reader/getReaderFeed";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PostByline } from "./PostByline";
 import { namedBylineProfiles } from "src/utils/byline";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
@@ -24,6 +24,7 @@ import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionButton } from "./Interactions/DiscussionButton";
 import { InteractionShareButton } from "./Interactions/InteractionShareButton";
 import { PublicationPostItemLarge } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
+import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 
 export const PostListing = (props: Post & { selected?: boolean }) => {
   let pubRecord = props.publication?.pubRecord as
@@ -95,8 +96,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
       })
     : undefined;
 
-  // Compute nodes conditionally so MetaRow doesn't render an orphan Separator
-  // when there's no author or no date.
+
   let author =
     namedContributors.length > 0 ? (
       <PostByline contributors={namedContributors} />
@@ -114,7 +114,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
       />
     ) : undefined;
   let interactions = (
-    <div className="text-sm flex justify-between text-tertiary w-full">
+    <div className="text-sm flex gap-4 items-center text-tertiary shrink-0">
       <Interactions
         postUrl={postUrl}
         quotesCount={quotes}
@@ -133,7 +133,6 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         documentUri={props.documents.uri}
         publication={pubRecord}
         pubUri={props.publication?.uri}
-        type="weak"
       />
     </div>
   );
@@ -168,6 +167,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         >
           <PublicationPostItemLarge
             href={postUrl}
+            membersOnly={postHasMembersDelimiter(postRecord)}
             title={postRecord.title}
             description={
               postRecord.description || getFirstParagraph(postRecord)
@@ -227,14 +227,16 @@ const PubInfo = (props: {
 };
 
 const PostDate = (props: { publishedAt: string | undefined }) => {
-  let localizedDate = useLocalizedDate(props.publishedAt || "", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-  if (props.publishedAt) {
-    return <div className="shrink-0 sm:text-sm text-sm">{localizedDate}</div>;
-  } else return null;
+  if (!props.publishedAt) return null;
+  return (
+    <div className="shrink-0 sm:text-sm text-sm">
+      <LocalizedDate
+        dateString={props.publishedAt}
+        omitYear
+        options={{ year: "2-digit", month: "short", day: "numeric" }}
+      />
+    </div>
+  );
 };
 
 const Interactions = (props: {
@@ -256,10 +258,8 @@ const Interactions = (props: {
     props.showComments && props.commentsCount > 0 ? "comments" : "quotes";
 
   return (
-    <div
-      className={`flex gap-2 text-tertiary text-sm  items-center justify-between`}
-    >
-      <div className="postListingsInteractions flex gap-3">
+    <div className={`flex gap-4 text-tertiary text-sm  items-center`}>
+      <div className="postListingsInteractions flex gap-4">
         <RecommendButton
           documentUri={props.documentUri}
           recommendsCount={props.recommendsCount}

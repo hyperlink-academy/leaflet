@@ -1,17 +1,15 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabaseServerClient } from "supabase/serverClient";
-import { getIdentityData } from "actions/getIdentityData";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { getPublicationURL } from "src/utils/getPublicationURL";
-import { isActiveMembership } from "src/membership";
-import { getReaderMembership } from "src/membership.server";
+import { filterJoinableTiers } from "src/membership";
 import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
-import { JoinTiers } from "./JoinTiers";
+import { JoinPageContent } from "./JoinPageContent";
 
 async function fetchPublicationForJoin(did: string, publicationName: string) {
   const { data } = await supabaseServerClient
@@ -19,7 +17,8 @@ async function fetchPublicationForJoin(did: string, publicationName: string) {
     .select(
       `uri, name, identity_did, record,
        publication_membership_settings(enabled),
-       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, stripe_price_monthly_id)`,
+       publication_newsletter_settings(enabled),
+       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, stripe_price_monthly_id, is_free)`,
     )
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publicationName))
@@ -52,34 +51,16 @@ export default async function JoinPage(props: {
     notFound();
 
   const record = normalizePublicationRecord(publication.record);
-  const tiers = publication.publication_membership_tiers
-    // Requiring a monthly price id guards against half-provisioned tiers a
-    // reader couldn't actually subscribe to.
-    .filter((t) => t.active && t.stripe_price_monthly_id)
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((t) => ({
-      id: t.id,
-      name: t.name,
-      description: t.description,
-      monthly_price_cents: t.monthly_price_cents,
-      annual_price_cents: t.annual_price_cents,
-    }));
-
-  const identity = await getIdentityData();
-  const [membership, wallet] = identity
-    ? await Promise.all([
-        getReaderMembership(publication.uri, identity.id),
-        supabaseServerClient
-          .from("stripe_wallets")
-          .select("card_brand, card_last4")
-          .eq("identity_id", identity.id)
-          .maybeSingle()
-          .then((r) => r.data),
-      ])
-    : [null, null];
-  const walletCard = wallet?.card_last4
-    ? { brand: wallet.card_brand, last4: wallet.card_last4 }
-    : null;
+  const tiers = filterJoinableTiers(
+    publication.publication_membership_tiers,
+  ).map((t) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    monthly_price_cents: t.monthly_price_cents,
+    annual_price_cents: t.annual_price_cents,
+    is_free: t.is_free,
+  }));
 
   return (
     <PublicationThemeProvider
@@ -91,19 +72,14 @@ export default async function JoinPage(props: {
         pub_creator={publication.identity_did}
       >
         <div className="publicationJoinPage w-full h-full min-h-screen flex flex-col items-center px-3 py-8 sm:py-12 overflow-y-auto">
-          <JoinTiers
+          <JoinPageContent
             publicationUri={publication.uri}
             publicationName={publication.name}
             publicationUrl={getPublicationURL(publication)}
-            tiers={tiers}
-            loggedIn={!!identity}
-            isOwner={
-              !!identity?.atp_did &&
-              identity.atp_did === publication.identity_did
+            newsletterMode={
+              !!publication.publication_newsletter_settings?.enabled
             }
-            isMember={isActiveMembership(membership)}
-            hasEmail={!!identity?.email}
-            walletCard={walletCard}
+            tiers={tiers}
           />
         </div>
       </PublicationBackgroundProvider>

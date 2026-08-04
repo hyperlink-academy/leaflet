@@ -29,7 +29,11 @@ export function DashboardPageLayout(props: {
     >
       {props.showHeader && (
         <PageHeader>
-          <div className={`sm:block ${props.publication && "hidden"} grow`}>
+          {/* min-w-0 lets a scrollable control (e.g. the tab bar) shrink inside
+              the header's flex row instead of overflowing it. */}
+          <div
+            className={`sm:block ${props.publication && "hidden"} grow min-w-0`}
+          >
             {props.controls}
           </div>
         </PageHeader>

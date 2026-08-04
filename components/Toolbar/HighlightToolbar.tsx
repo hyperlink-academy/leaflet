@@ -191,7 +191,7 @@ const HighlightColorSettings = (props: { pageID: string }) => {
             <Tooltip.Content
               sideOffset={6}
               alignOffset={12}
-              className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+              className="portalStyles z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
             >
               Change Highlight Colors
               <Tooltip.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
@@ -207,7 +207,7 @@ const HighlightColorSettings = (props: { pageID: string }) => {
         <Popover.Portal>
           <NestedCardThemeProvider>
             <Popover.Content
-              className="themeSetterWrapper z-20 w-80 h-fit max-h-[80vh] bg-white rounded-md border border-border flex"
+              className="themeSetterWrapper portalStyles z-20 w-80 h-fit max-h-[80vh] bg-white rounded-md border border-border flex"
               align="center"
               sideOffset={8}
               collisionPadding={16}

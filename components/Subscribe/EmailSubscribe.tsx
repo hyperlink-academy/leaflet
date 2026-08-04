@@ -22,9 +22,12 @@ import {
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
+import { INPUT_HIGHLIGHT_CLASS } from "./inputHighlight";
 
 export const EmailInput = (props: {
-  action: React.ReactNode;
+  // Omitted when the input only collects the address (e.g. the paid join
+  // modal, where the tier buttons submit).
+  action?: React.ReactNode;
   leading?: React.ReactNode;
   autoFocus?: boolean;
   large?: boolean;
@@ -34,6 +37,10 @@ export const EmailInput = (props: {
   disabled?: boolean;
   loading?: boolean;
   publicationUrl?: string;
+  // Flags the input as needing attention (e.g. the reader picked a tier before
+  // entering their email); cleared on focus via onFocus.
+  highlight?: boolean;
+  onFocus?: () => void;
   // When set, the input is wrapped in a form so Enter submits. Callers that
   // provide their own outer form (e.g. LoginButton) should omit this.
   onSubmit?: () => void;
@@ -41,7 +48,7 @@ export const EmailInput = (props: {
   let content = (
     <>
       <div
-        className={` input-with-border flex gap-2 w-full items-center mx-auto py-0! min-w-0 ${props.large && "px-2!"} `}
+        className={` input-with-border flex gap-2 w-full items-center mx-auto py-0! min-w-0 ${props.large && "px-2!"} ${props.highlight ? INPUT_HIGHLIGHT_CLASS : ""} `}
         style={
           props.loading
             ? {
@@ -68,6 +75,7 @@ export const EmailInput = (props: {
           size={0}
           value={props.value}
           onChange={(e) => props.onChange(e.target.value)}
+          onFocus={props.onFocus}
         />
         <div className={` text-accent-contrast flex items-center shrink-0 `}>
           {props.loading ? <DotLoader /> : props.action}
@@ -157,11 +165,6 @@ export const EmailButton = (props: {
         ),
       });
       return false;
-    }
-    if (res.joinUrl) {
-      // Memberships enabled — go pick a tier instead of the success toast.
-      window.location.href = res.joinUrl;
-      return null;
     }
     return true;
   };

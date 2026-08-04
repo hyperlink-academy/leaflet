@@ -365,7 +365,11 @@ export let Block = ({
       // Full-access viewers read straight through; for everyone else the
       // delimiter is the last served block and renders the paywall.
       if (!document?.membersOnly?.gated) return null;
-      return <MembersOnlyPaywall />;
+      return (
+        <div className={className}>
+          <MembersOnlyPaywall />
+        </div>
+      );
     }
     case PubLeafletBlocksSignup.isMain(b.block): {
       if (!document?.publication?.uri) return null;

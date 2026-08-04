@@ -150,7 +150,6 @@ function PublishedPostItem(props: {
 
             <InteractionPreview
               postRecord={doc.record}
-              shareType="weak"
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
               recommendsCount={doc.recommendsCount}

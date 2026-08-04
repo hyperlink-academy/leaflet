@@ -2,28 +2,28 @@
 
 import { useState } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
-import { Input } from "components/Input";
-import { Combobox, ComboboxResult } from "components/Combobox";
 import { Modal } from "components/Modal";
+import { Menu, MenuItem } from "components/Menu";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { DotLoader } from "components/utils/DotLoader";
 import { Avatar } from "components/Avatar";
-import { useToaster } from "components/Toast";
-import { useActorTypeahead } from "src/hooks/useActorTypeahead";
+import { useSmoker, useToaster } from "components/Toast";
+import { HandleSearchInput } from "components/HandleSearchInput";
+import type { ActorSuggestion } from "src/hooks/useActorTypeahead";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
-import { useIsPro } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 import {
   usePublicationData,
   mutatePublicationData,
 } from "../PublicationSWRProvider";
 import type { Profile } from "src/identity";
-import { DashboardContainer } from "./SettingsContent";
+import { SettingsSection } from "components/SettingsLayout";
 import {
   inviteContributor,
   removeContributor,
   type ContributorActionError,
 } from "actions/publications/contributors";
-import { UpgradeToProButton } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
 import { getBasePublicationURL } from "src/utils/getPublicationURL";
 
 const ERROR_MESSAGES: Record<ContributorActionError, string> = {
@@ -44,7 +44,6 @@ export function ContributorSettings() {
   let publicationUri = publication?.uri;
   let ownerDid = publication?.identity_did;
   let isOwner = !!identity?.atp_did && identity.atp_did === ownerDid;
-  let isPro = useIsPro();
 
   if (!publicationUri || !publication || !identity) return null;
 
@@ -58,7 +57,6 @@ export function ContributorSettings() {
   return isOwner ? (
     <OwnerContributorSettings
       publicationUri={publicationUri}
-      isPro={isPro}
       acceptLink={acceptLink}
     />
   ) : (
@@ -71,7 +69,6 @@ export function ContributorSettings() {
 
 function OwnerContributorSettings(props: {
   publicationUri: string;
-  isPro: boolean;
   acceptLink: string;
 }) {
   let toaster = useToaster();
@@ -96,8 +93,19 @@ function OwnerContributorSettings(props: {
   let loading = dids.length > 0 && !profiles;
 
   let [adding, setAdding] = useState(false);
+  // Set on a successful invite, which opens the success modal. `actor` is only
+  // present when the handle was picked from the typeahead; otherwise the modal
+  // falls back to the profile fetched for the new DID.
+  let [invited, setInvited] = useState<{
+    did: string;
+    handle: string;
+    actor?: ActorSuggestion;
+  } | null>(null);
 
-  let handleInvite = async (handle: string): Promise<boolean> => {
+  let handleInvite = async (
+    handle: string,
+    actor?: ActorSuggestion,
+  ): Promise<boolean> => {
     if (adding) return false;
     setAdding(true);
 
@@ -122,9 +130,10 @@ function OwnerContributorSettings(props: {
           created_at: added.created_at,
         });
     });
-    toaster({
-      type: "success",
-      content: `Invited @${handle.trim().replace(/^@/, "")}`,
+    setInvited({
+      did: added.contributor_did,
+      handle: handle.trim().replace(/^@/, ""),
+      actor,
     });
     return true;
   };
@@ -145,33 +154,57 @@ function OwnerContributorSettings(props: {
   };
 
   return (
-    <DashboardContainer section="Contributors" className="pb-4">
-      <div className="leading-snug text-secondary">
-        Invite others to write and publish to this publication. Posts are
-        published from your PDS.
-      </div>
-
-      {!props.isPro ? (
-        <div className="flex flex-col gap-2 mt-2">
-          <div className="text-tertiary text-sm leading-snug">
-            Inviting contributors requires Leaflet Pro.
-          </div>
-          <UpgradeToProButton />
+    <>
+      <SettingsSection title="Invite Contributors ">
+        <div className="leading-snug text-secondary">
+          Contributors can write and publish to this publication!<br /> Posts they publish with have thier name in the byline but are still owned by you.
+           <br />
         </div>
-      ) : (
+        <div className="leading-snug text-secondary">
+          Search Atmosphere accounts to add contributors.
+        </div>
+
         <div className="mt-2">
-          <InviteHandleInput onInvite={handleInvite} loading={adding} />
+          <HandleSearchInput
+            leading={null}
+            placeholder="handle.bsky.social"
+            triggerClassName="max-w-md w-full"
+            loading={adding}
+            onSubmit={handleInvite}
+            renderAction={(submit, value) => (
+              <ButtonSecondary
+                compact
+                className="text-sm"
+                type="button"
+                disabled={!value || adding}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  submit();
+                }}
+              >
+                {adding ? <DotLoader /> : "Invite"}
+              </ButtonSecondary>
+            )}
+          />
         </div>
-      )}
+      </SettingsSection>
 
-      <ContributorList
-        rows={contributors}
-        loading={loading}
-        onRemove={handleRemove}
+      <InviteSuccessModal
+        invited={invited}
+        profile={invited ? profiles?.[invited.did] ?? null : null}
+        onClose={() => setInvited(null)}
         acceptLink={props.acceptLink}
-        emptyMessage="No contributors yet."
       />
-    </DashboardContainer>
+
+      <SettingsSection title="Contributors">
+        <ContributorList
+          rows={contributors}
+          loading={loading}
+          onRemove={handleRemove}
+          acceptLink={props.acceptLink}
+        />
+      </SettingsSection>
+    </>
   );
 }
 
@@ -184,18 +217,8 @@ function ContributorList(props: {
   loading: boolean;
   onRemove: (did: string) => void;
   acceptLink: string;
-  emptyMessage: string;
 }) {
-  let toaster = useToaster();
-  let copyInviteLink = async () => {
-    let url = new URL(props.acceptLink, window.location.origin).toString();
-    try {
-      await navigator.clipboard.writeText(url);
-      toaster({ type: "success", content: "Link copied" });
-    } catch {
-      toaster({ type: "error", content: "Couldn't copy link" });
-    }
-  };
+  let copyInviteLink = useCopyInviteLink(props.acceptLink);
 
   if (props.loading)
     return (
@@ -205,162 +228,148 @@ function ContributorList(props: {
     );
   if (props.rows.length === 0)
     return (
-      <div className="text-tertiary text-sm py-2">{props.emptyMessage}</div>
+      <div className="text-tertiary italic py-2">no contributors yet…</div>
     );
   return (
-    <div className="flex flex-col gap-2">
-      {props.rows.map((row) => (
-        <div
-          key={row.contributor_did}
-          className="flex items-center gap-2 border border-border-light rounded-md px-2 py-1.5"
-        >
-          <Avatar
-            src={row.profile?.avatar ?? undefined}
-            displayName={
-              row.profile?.displayName ?? row.profile?.handle ?? undefined
-            }
-            size="medium"
-          />
-          <div className="flex flex-col min-w-0 grow">
-            <div className="truncate font-bold text-primary text-sm">
-              {row.profile?.displayName ||
-                row.profile?.handle ||
-                row.contributor_did}
-            </div>
-            {row.profile?.handle && (
-              <div className="truncate text-tertiary text-xs italic">
-                @{row.profile.handle}
-              </div>
-            )}
-          </div>
-          <div className="text-xs text-tertiary mr-2">
-            {row.confirmed ? "Active" : "Invited"}
-          </div>
-          {!row.confirmed && (
-            <ButtonSecondary compact type="button" onClick={copyInviteLink}>
-              Copy invite link
-            </ButtonSecondary>
-          )}
-          <ButtonSecondary
-            compact
-            onClick={() => props.onRemove(row.contributor_did)}
-          >
-            Remove
-          </ButtonSecondary>
+    <>
+      {props.rows.some((row) => !row.confirmed) && (
+        <div className="text-tertiary leading-snug">
+          Pending contributors haven't accepted their invite yet. <br />
+          Send them an invite link so they can accept and start writing!
         </div>
-      ))}
-    </div>
+      )}
+      <div className="contributors flex flex-col gap-2">
+        {props.rows.map((row) => (
+          <div
+            key={row.contributor_did}
+            className="contributor flex items-start gap-2 border border-border-light rounded-md px-2 py-1.5"
+          >
+            <div className="contributorContent flex md:flex-row md:justify-between flex-col grow">
+              <div className="contributorInfo flex gap-2 items-start">
+                <Avatar
+                  src={row.profile?.avatar ?? undefined}
+                  displayName={
+                    row.profile?.displayName ?? row.profile?.handle ?? undefined
+                  }
+                  size="medium"
+                />
+                <div className="flex flex-col min-w-0 grow">
+                  <div className="truncate font-bold text-primary leading-tight ">
+                    {row.profile?.displayName ||
+                      row.profile?.handle ||
+                      row.contributor_did}
+                  </div>
+                  {row.profile?.handle && (
+                    <div className="truncate text-tertiary text-sm italic">
+                      @{row.profile.handle}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {row.confirmed ? null : (
+                <div className="contributorStatus text-sm text-tertiary mt-1 shrink-0 md:mr-0 ml-8">
+                  Pending -{" "}
+                  <button
+                    className="text-accent-contrast text-sm underline"
+                    type="button"
+                    onClick={copyInviteLink}
+                  >
+                    Get invite link
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <Menu
+              align="end"
+              trigger={
+                <div className="text-secondary shrink-0 pt-0.5">
+                  <MoreOptionsVerticalTiny />
+                </div>
+              }
+            >
+              <MenuItem onSelect={() => props.onRemove(row.contributor_did)}>
+                <DeleteSmall />
+                Remove Contributor
+              </MenuItem>
+            </Menu>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
-function InviteHandleInput(props: {
-  onInvite: (handle: string) => Promise<boolean>;
-  loading?: boolean;
-}) {
-  let {
-    handleValue,
-    setHandleValue,
-    suggestions,
-    setSuggestions,
-    dropdownOpen,
-    setDropdownOpen,
-    highlighted,
-    setHighlighted,
-  } = useActorTypeahead({
-    debounceMs: 250,
-    transformQuery: (v) => v.trim().replace(/^@/, ""),
-  });
-
-  let trySubmit = async (handle?: string) => {
-    let value = (handle ?? handleValue).trim();
-    if (!value || props.loading) return;
-    let ok = await props.onInvite(value);
-    if (ok) {
-      setHandleValue("");
-      setSuggestions([]);
-      setDropdownOpen(false);
+// Copies the invite link and smokes the confirmation from the button that was
+// clicked, so the feedback stays next to the action.
+function useCopyInviteLink(acceptLink: string) {
+  let smoker = useSmoker();
+  return async (e: React.MouseEvent) => {
+    let rect = e.currentTarget.getBoundingClientRect();
+    let position = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height + 2,
+    };
+    let url = new URL(acceptLink, window.location.origin).toString();
+    try {
+      await navigator.clipboard.writeText(url);
+      smoker({ position, text: "Copied invite link!" });
+    } catch {
+      smoker({ position, error: true, text: "Couldn't copy link!" });
     }
   };
+}
 
-  let handles = suggestions.map((s) => s.handle);
+function InviteSuccessModal(props: {
+  invited: { did: string; handle: string; actor?: ActorSuggestion } | null;
+  profile: Profile | null;
+  onClose: () => void;
+  acceptLink: string;
+}) {
+  let copyInviteLink = useCopyInviteLink(props.acceptLink);
+  let { invited } = props;
+
+  let handle =
+    invited?.actor?.handle ?? props.profile?.handle ?? invited?.handle;
+  let displayName =
+    invited?.actor?.displayName ?? props.profile?.displayName ?? handle;
+  let avatar = invited?.actor?.avatar ?? props.profile?.avatar ?? undefined;
 
   return (
-    <Combobox
-      open={dropdownOpen && !props.loading}
+    <Modal
+      open={!!invited}
       onOpenChange={(open) => {
-        if (!open) {
-          setDropdownOpen(false);
-          setHighlighted(undefined);
-        }
+        if (!open) props.onClose();
       }}
-      results={handles}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      onSelect={() => trySubmit(highlighted)}
-      zIndex={60}
-      sideOffset={4}
-      triggerClassName="w-full"
-      className="w-(--radix-popover-trigger-width)!"
-      trigger={
-        <div className="input-with-border relative py-0! flex items-center gap-2 w-full">
-          <Input
-            className="appearance-none! grow outline-none! min-w-0 py-1!"
-            placeholder="handle.bsky.social"
-            value={handleValue}
-            onChange={(e) => setHandleValue(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            autoComplete="off"
-            disabled={props.loading}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !dropdownOpen) {
-                e.preventDefault();
-                trySubmit();
-              }
-            }}
-          />
-          <ButtonSecondary
-            compact
-            type="button"
-            disabled={!handleValue || props.loading}
-            onClick={(e) => {
-              e.stopPropagation();
-              trySubmit();
-            }}
-          >
-            {props.loading ? <DotLoader /> : "Invite"}
-          </ButtonSecondary>
-        </div>
-      }
+      title="Added a new Contributor!"
+      className="max-w-sm"
     >
-      {suggestions.map((actor) => (
-        <ComboboxResult
-          key={actor.did}
-          result={actor.handle}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-          onSelect={() => trySubmit(actor.handle)}
-          className=" flex-row! gap-2! leading-snug text-sm"
-        >
+      <div className="flex flex-col gap-3">
+        <div className="text-secondary leading-snug">
+          You invited{" "}
+          {/* align-middle sits half an x-height above the baseline, which reads
+              a touch low next to cap-height text; the 1px lift centers it. */}
           <Avatar
-            src={actor.avatar}
-            displayName={actor.displayName || actor.handle}
-            size="medium"
-            className="mr-2"
+            ariaHidden
+            src={avatar}
+            displayName={displayName}
+            size="small"
+            className="inline-flex align-middle relative -top-px"
           />
-          <div className="flex flex-col min-w-0 flex-1 text-left">
-            <div className="truncate font-bold">
-              {actor.displayName || actor.handle}
-            </div>
-            {actor.displayName && (
-              <div className="text-tertiary text-xs italic truncate">
-                @{actor.handle}
-              </div>
-            )}
-          </div>
-        </ComboboxResult>
-      ))}
-    </Combobox>
+          <strong className="text-primary">{displayName}</strong> as a
+          contributor!
+        </div>
+        <div className="text-secondary leading-snug">
+          Send them this invite link so they can start writing.
+        </div>
+        <div className="accent-container flex flex-col gap-3 p-3">
+          <ButtonPrimary fullWidth type="button" onClick={copyInviteLink}>
+            Copy Invite Link
+          </ButtonPrimary>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -388,7 +397,7 @@ function ContributorLeaveSettings(props: {
   };
 
   return (
-    <DashboardContainer section="Contributor" className="pb-4">
+    <SettingsSection title="Contributor" className="pb-4">
       <div className="text-secondary leading-snug">
         You're a contributor on this publication.
       </div>
@@ -396,7 +405,8 @@ function ContributorLeaveSettings(props: {
         open={open}
         onOpenChange={setOpen}
         asChild
-        title="Leave publication?"
+        className="max-w-sm w-full"
+        title="Leave this publication?"
         trigger={
           <ButtonPrimary className="self-start mt-1">
             Leave Publication
@@ -405,8 +415,8 @@ function ContributorLeaveSettings(props: {
       >
         <div className="text-secondary flex flex-col gap-2">
           <p>
-            You'll lose access to all drafts in this publication and will no
-            longer be able to publish on its behalf.
+            You will lose access to your drafts in this publication and will no
+            longer be able to publish posts here.
           </p>
           <div className="flex gap-2 justify-end pt-2">
             <ButtonSecondary
@@ -426,6 +436,6 @@ function ContributorLeaveSettings(props: {
           </div>
         </div>
       </Modal>
-    </DashboardContainer>
+    </SettingsSection>
   );
 }

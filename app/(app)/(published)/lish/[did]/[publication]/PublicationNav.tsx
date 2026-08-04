@@ -3,10 +3,7 @@ import { isExternalLink } from "src/utils/externalPublicationLink";
 import { sortPublicationPages } from "./sortPublicationPages";
 import { PublicationNavSubscribe } from "./PublicationNavSubscribe";
 import { PublicationNavTabLink } from "./PublicationNavTabLink";
-import {
-  SubscribeButton,
-  SubscribeInput,
-} from "components/Subscribe/SubscribeButton";
+import { SubscribeButton } from "components/Subscribe/SubscribeButton";
 import { useNavBackgroundFade } from "src/hooks/useNavBackgroundFade";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 

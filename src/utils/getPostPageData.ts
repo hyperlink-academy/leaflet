@@ -39,7 +39,7 @@ export const getPostPageData = cache(async function getPostPageData(
           documents_in_publications(documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
           publication_newsletter_settings(enabled),
           publication_membership_settings(enabled),
-          publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order))
+          publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, is_free))
         ),
         document_mentions_in_bsky(uri, link),
         recommends_on_documents(count)
@@ -83,6 +83,7 @@ export const getPostPageData = cache(async function getPostPageData(
       monthly_price_cents: t.monthly_price_cents,
       annual_price_cents: t.annual_price_cents,
       currency: t.currency,
+      is_free: t.is_free,
     }));
   let membersOnly: { gated: boolean; tiers: typeof membershipTiers } = {
     gated: false,

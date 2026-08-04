@@ -25,6 +25,18 @@ const PAGE_META = [
     id: "notifications",
     title: "Notifications",
   },
+  {
+    prefix: "/subscriptions",
+    id: "subscriptions",
+    title: "Your Subscriptions",
+    showBackButton: true,
+  },
+  {
+    prefix: "/settings",
+    id: "settings",
+    title: "Settings",
+    showBackButton: true,
+  },
 ];
 
 export function WriterShell(props: { children: React.ReactNode }) {

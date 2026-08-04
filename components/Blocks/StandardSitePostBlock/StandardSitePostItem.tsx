@@ -16,6 +16,7 @@ import { InteractionPreview } from "components/Interactions/InteractionsPreview"
 import { PubIcon } from "components/ActionBar/Publications";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { formatBylineNames } from "src/utils/byline";
+import { postHasMembersDelimiter } from "src/membership";
 
 export type StandardSitePostSize = "large" | "medium" | "small";
 
@@ -165,7 +166,8 @@ export function StandardSitePostItemView({
   const date = post.record.publishedAt ? (
     <LocalizedDate
       dateString={post.record.publishedAt}
-      options={{ year: "numeric", month: "long", day: "2-digit" }}
+      omitYear
+      options={{ year: "2-digit", month: "short", day: "numeric" }}
     />
   ) : undefined;
   const description = post.record.description || getFirstParagraph(post.record);
@@ -202,7 +204,6 @@ export function StandardSitePostItemView({
     hideInteractions || noInteractions ? undefined : (
       <InteractionPreview
         postRecord={post.record}
-        shareType="strong"
         quotesCount={post.mentionsCount}
         commentsCount={commentsCount}
         recommendsCount={post.recommendsCount}
@@ -228,6 +229,7 @@ export function StandardSitePostItemView({
 
   const commonProps = {
     href: docUrl,
+    membersOnly: postHasMembersDelimiter(post.record),
     title: post.record.title,
     author: authorLabel,
     date,

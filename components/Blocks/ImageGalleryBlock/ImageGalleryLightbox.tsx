@@ -23,7 +23,7 @@ export function ImageGalleryLightbox(props: {
         <Dialog.Overlay className="fixed z-50 inset-0 bg-primary/80 backdrop-blur-sm data-[state=open]:animate-overlayShow" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="z-50 fixed inset-0 outline-none"
+          className="portalStyles z-50 fixed inset-0 outline-none"
         >
           <Dialog.Title className="sr-only">Image</Dialog.Title>
           <Dialog.Close

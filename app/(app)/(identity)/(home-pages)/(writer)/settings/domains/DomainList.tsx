@@ -27,7 +27,7 @@ export function DomainList(props: {
   );
 
   if (domains.length === 0) {
-    <EmptyState container="none" title="no domains yet..." />;
+    <EmptyState container="none" title="no domains yet…" />;
   }
 
   return (

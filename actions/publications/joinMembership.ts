@@ -11,26 +11,31 @@ import {
   provisionCardOnAccount,
   walletCheckoutSessionCard,
 } from "stripe/wallet";
-import { isActiveMembership } from "src/membership";
-import {
-  getReaderMembership,
-  notifyNewMember,
-} from "src/membership.server";
+import { isActiveMembership, filterJoinableTiers } from "src/membership";
+import { getReaderMembership, notifyNewMember } from "src/membership.server";
 import { Ok, Err, type Result } from "src/result";
+import type { Tier } from "components/Memberships/TierGrid";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
 
 export type MembershipJoinViewer = {
   loggedIn: boolean;
   isOwner: boolean;
-  isMember: boolean;
-  hasEmail: boolean;
+  // The viewer's active membership, for the switch/upgrade flow. Always a paid
+  // tier — the free tier is a plain subscription with no membership row. Its
+  // presence is what "is a member" means, so consumers derive that from here.
+  membership: {
+    id: string;
+    tierId: string | null;
+    cadence: string | null;
+    currentPeriodEnd: string | null;
+  } | null;
   walletCard: { brand: string | null; last4: string | null } | null;
 };
 
-// Viewer-scoped state JoinTiers needs when it renders outside the /join page
-// (the paywall's join modal); the page itself loads the same data during
-// server render. Only ever returns the caller's own membership/wallet info.
+// Viewer-scoped state for the paid join flow (JoinMembershipFlow), fetched
+// client-side when the flow opens. Only ever returns the caller's own
+// membership/wallet info.
 export async function getMembershipJoinViewer(
   publicationUri: string,
 ): Promise<MembershipJoinViewer> {
@@ -39,8 +44,7 @@ export async function getMembershipJoinViewer(
     return {
       loggedIn: false,
       isOwner: false,
-      isMember: false,
-      hasEmail: false,
+      membership: null,
       walletCard: null,
     };
   const [{ data: publication }, membership, { data: wallet }] =
@@ -61,12 +65,42 @@ export async function getMembershipJoinViewer(
     loggedIn: true,
     isOwner:
       !!identity.atp_did && identity.atp_did === publication?.identity_did,
-    isMember: isActiveMembership(membership),
-    hasEmail: !!identity.email,
+    membership:
+      membership && isActiveMembership(membership)
+        ? {
+            id: membership.id,
+            tierId: membership.tier,
+            cadence: membership.cadence,
+            currentPeriodEnd: membership.current_period_end,
+          }
+        : null,
     walletCard: wallet?.card_last4
       ? { brand: wallet.card_brand, last4: wallet.card_last4 }
       : null,
   };
+}
+
+// The joinable tier list for a publication — what PaidSubscribeButton needs to
+// decide a pub takes paid memberships and to render the join modal. Empty when
+// memberships are disabled.
+export async function getJoinableTiers(publicationUri: string): Promise<Tier[]> {
+  const { data } = await supabaseServerClient
+    .from("publications")
+    .select(
+      `publication_membership_settings(enabled),
+       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order, stripe_price_monthly_id, is_free)`,
+    )
+    .eq("uri", publicationUri)
+    .maybeSingle();
+  if (!data?.publication_membership_settings?.enabled) return [];
+  return filterJoinableTiers(data.publication_membership_tiers).map((t) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    monthly_price_cents: t.monthly_price_cents,
+    annual_price_cents: t.annual_price_cents,
+    is_free: t.is_free,
+  }));
 }
 
 // First-time card collection is a Stripe-hosted setup-mode Checkout page (no
@@ -175,7 +209,8 @@ export async function subscribeToTier(args: {
     return Err("memberships_not_enabled");
   if (identity.atp_did && identity.atp_did === publication.identity_did)
     return Err("own_publication");
-  if (!tier) return Err("tier_not_found");
+  // The free tier isn't a paid membership — it's reached via the subscribe flow.
+  if (!tier || tier.is_free) return Err("tier_not_found");
 
   const priceId =
     args.cadence === "year"
@@ -361,12 +396,14 @@ export async function subscribeToTier(args: {
         if (other.id === subscription.id) continue;
         if (other.metadata?.kind !== "publication_membership") continue;
         if (other.metadata?.publication !== args.publicationUri) continue;
-        if (other.status === "canceled" || other.status === "incomplete_expired")
+        if (
+          other.status === "canceled" ||
+          other.status === "incomplete_expired"
+        )
           continue;
         if (
           other.created > subscription.created ||
-          (other.created === subscription.created &&
-            other.id > subscription.id)
+          (other.created === subscription.created && other.id > subscription.id)
         )
           continue;
         await stripe.subscriptions

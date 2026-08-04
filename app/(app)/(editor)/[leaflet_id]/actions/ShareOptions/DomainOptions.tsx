@@ -6,17 +6,14 @@ import {
   useIdentityData,
   mutateIdentityData,
 } from "components/IdentityProvider";
-import { useDomainStatus } from "components/Domains/useDomainStatus";
-import { CustomDomain } from "components/Domains/DomainList";
+import { useDomainStatus } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/useDomainStatus";
+import { CustomDomain } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainList";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { useReadOnlyShareLink } from ".";
-import {
-  assignDomainToDocument,
-  removeDomainRoute,
-} from "actions/domains";
+import { assignDomainToDocument, removeDomainRoute } from "actions/domains";
 import { useReplicache } from "src/replicache";
-import { AddDomainForm } from "components/Domains/AddDomainForm";
-import { DomainSettingsView } from "components/Domains/DomainSettingsView";
+import { AddDomainForm } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/AddDomainForm";
+import { DomainSettingsView } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainSettingsView";
 import { DotLoader } from "components/utils/DotLoader";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { LoadingTiny } from "components/Icons/LoadingTiny";

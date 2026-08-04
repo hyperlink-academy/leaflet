@@ -1,0 +1,698 @@
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { mutate } from "swr";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { DotLoader } from "components/utils/DotLoader";
+import { Modal } from "components/Modal";
+import { useToaster, useSmoker } from "components/Toast";
+import { useIdentityData } from "components/IdentityProvider";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { EmailInput, EmailConfirm } from "components/Subscribe/EmailSubscribe";
+import { HandleSearchInput } from "components/HandleSearchInput";
+import { AtmosphericHandleInfo } from "components/Subscribe/HandleSubscribe";
+import { SubscribeInputModeMenu } from "components/Subscribe/SubscribeButton";
+import { LinkIdentityModal } from "components/Subscribe/LinkIdentityModal";
+import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { SUBSCRIBE_ERROR_MESSAGES } from "components/Subscribe/subscribeErrors";
+import {
+  TierGrid,
+  isFreeTier,
+  subscribeErrorMessage,
+  type Tier,
+  type Cadence,
+} from "components/Memberships/TierGrid";
+import { type JoinResume } from "components/Memberships/joinReturn";
+import {
+  getMembershipJoinViewer,
+  createWalletCheckoutSession,
+  subscribeToTier,
+  saveWalletCardFromSession,
+  type MembershipJoinViewer,
+} from "actions/publications/joinMembership";
+import {
+  downgradeMembershipToFree,
+  switchMembership,
+} from "actions/memberships";
+import {
+  requestPublicationEmailSubscription,
+  confirmPublicationEmailSubscription,
+} from "actions/publications/subscribeEmail";
+import {
+  requestAuthEmailToken,
+  confirmEmailAuthToken,
+} from "actions/emailAuth";
+import { loginWithEmailToken } from "actions/login";
+import { getHomeDocs } from "src/utils/homeDocsStorage";
+import { subscribeToPublication } from "actions/publications/subscribeToPublication";
+import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import { LoginModal } from "components/LoginButton";
+
+// 1. collect who's subscribing (email or Atmosphere
+// handle — or the session identity when signed in)
+// 2. select a tier.
+// 3. Picking a paid tier routes to payment:
+// 3a. Straight to checkout if user is logged in w/ saved card
+// 3b. Stripe's hosted card form if user us logged in w/ no card,
+// 3c. Through sign-in/up first then to card form if user is logged out.
+// email confirms with a code inline;
+// handles round-trip through OAuth with the tier in the return URL).
+export function JoinMembershipFlow(props: {
+  // Whether the flow is live: gates the viewer fetch and resume handling so a
+  // closed modal doesn't work in the background. The /join page passes true.
+  active: boolean;
+  // Called on a completed join that stays on the page (free join, plan
+  // switch) — the modal closes itself; the /join page has nothing to close.
+  onClose?: () => void;
+  publicationUri: string;
+  publicationName: string;
+  publicationUrl?: string;
+  newsletterMode: boolean;
+  tiers: Tier[];
+  unlocksPost?: boolean;
+  resume?: JoinResume | null;
+  // Test-harness seam: supplies viewer state so the flow doesn't fetch it.
+  viewerOverride?: MembershipJoinViewer;
+}) {
+  const toaster = useToaster();
+  const smoker = useSmoker();
+  const router = useRouter();
+  const { identity } = useIdentityData();
+  const viewerSub = useViewerSubscription(props.publicationUri);
+  const [viewer, setViewer] = useState<MembershipJoinViewer | null>(
+    props.viewerOverride ?? null,
+  );
+  const [email, setEmail] = useState("");
+  const [handle, setHandle] = useState("");
+  const [mode, setMode] = useState<"email" | "atproto">(
+    props.newsletterMode ? "email" : "atproto",
+  );
+  const [cadence, setCadence] = useState<Cadence>("month");
+  const [busyTierId, setBusyTierId] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmStep, setConfirmStep] = useState<
+    | { kind: "authToken"; tokenId: string; tier: Tier }
+    | { kind: "pubCode"; tier: Tier }
+    | null
+  >(null);
+  // Signed in but missing the identity being subscribed with — the tier we
+  // continue to once the reader confirms linking it (mirrors SubscribeInput).
+  const [linkTier, setLinkTier] = useState<Tier | null>(null);
+  const [inputMissing, setInputMissing] = useState(false);
+  // An active paid member picked the free tier — confirm before we schedule
+  // the cancellation (irreversible-feeling, so it isn't one click).
+  const [confirmDowngrade, setConfirmDowngrade] = useState<Tier | null>(null);
+  const resumeHandled = useRef(false);
+
+  const effectiveCadence = (tier: Tier): Cadence =>
+    tier.annual_price_cents != null ? cadence : "month";
+  const isSubscribed = props.newsletterMode
+    ? viewerSub.emailSubscribed
+    : viewerSub.atprotoSubscribed;
+  const hasNeededIdentity = props.newsletterMode
+    ? !!identity?.email
+    : !!identity?.bsky_profiles?.handle;
+  const subscribingAs =
+    identity && hasNeededIdentity
+      ? props.newsletterMode
+        ? identity.email
+        : `@${identity.bsky_profiles?.handle}`
+      : null;
+
+  useEffect(() => {
+    if (!props.active || props.viewerOverride) return;
+    let cancelled = false;
+    getMembershipJoinViewer(props.publicationUri).then((v) => {
+      if (!cancelled) setViewer(v);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.active, props.publicationUri]);
+
+  // Reload the page the reader joined from so it re-renders with member
+  // access (e.g. the full gated post); also the return target for redirects.
+  const currentPageUrl = () =>
+    window.location.origin + window.location.pathname;
+
+  const subscribeAction = () =>
+    encodeActionToSearchParam({
+      action: "subscribe",
+      publication: props.publicationUri,
+    });
+
+  // Where sign-in should land: back here, carrying the picked tier for paid
+  // joins so payment resumes (free joins are done once the after-sign-in
+  // subscribe action runs).
+  const joinReturnUrl = (tier: Tier) => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("join_tier");
+    url.searchParams.delete("join_cadence");
+    if (!isFreeTier(tier)) {
+      url.searchParams.set("join_tier", tier.id);
+      url.searchParams.set("join_cadence", effectiveCadence(tier));
+    }
+    return url.toString();
+  };
+
+  const finishJoin = (message: string) => {
+    toaster({ type: "success", content: message });
+    props.onClose?.();
+    setBusyTierId(null);
+    mutate("identity");
+    router.refresh();
+  };
+
+  // Creates the subscription with the saved card and acts on the result.
+  // Returns "navigating" when it sends the browser elsewhere (success or
+  // hosted-invoice fallback), so callers keep their spinner.
+  const runSubscribe = async (
+    tierId: string,
+    joinCadence: Cadence,
+  ): Promise<"navigating" | "error"> => {
+    const res = await subscribeToTier({
+      publicationUri: props.publicationUri,
+      tierId,
+      cadence: joinCadence,
+    });
+    if (!res.ok) {
+      toaster({ type: "error", content: subscribeErrorMessage(res.error) });
+      return "error";
+    }
+    const { status, hostedInvoiceUrl } = res.value;
+    if (status === "active" || status === "trialing") {
+      toaster({
+        type: "success",
+        content: `Welcome to ${props.publicationName}!`,
+      });
+      window.location.href = currentPageUrl();
+      return "navigating";
+    }
+    // Authentication needed or the charge was declined: finish on Stripe's page.
+    if (hostedInvoiceUrl) {
+      window.location.href = hostedInvoiceUrl;
+      return "navigating";
+    }
+    toaster({
+      type: "error",
+      content: "We couldn't complete your payment. Please try again!",
+    });
+    return "error";
+  };
+
+  const payWithViewer = async (
+    tier: Tier,
+    v?: MembershipJoinViewer | null,
+    cadenceOverride?: Cadence | null,
+  ) => {
+    setBusyTierId(tier.id);
+    const joinCadence = cadenceOverride ?? effectiveCadence(tier);
+    const resolved =
+      v ?? viewer ?? (await getMembershipJoinViewer(props.publicationUri));
+    if (!viewer) setViewer(resolved);
+    if (!resolved.walletCard?.last4) {
+      const res = await createWalletCheckoutSession({
+        returnUrl: currentPageUrl(),
+        tierId: tier.id,
+        cadence: joinCadence,
+      });
+      if (!res.ok) {
+        setBusyTierId(null);
+        toaster({
+          type: "error",
+          content: "We couldn't open the checkout form. Please try again!",
+        });
+        return;
+      }
+      window.location.href = res.value.url;
+      return;
+    }
+    const outcome = await runSubscribe(tier.id, joinCadence);
+    if (outcome === "error") setBusyTierId(null);
+  };
+
+  // Returning from card setup or sign-in: finish what the reader started.
+  useEffect(() => {
+    const resume = props.resume;
+    if (!props.active || !resume || resumeHandled.current) return;
+    resumeHandled.current = true;
+    (async () => {
+      setProcessing(true);
+      if (resume.kind === "wallet") {
+        const res = await saveWalletCardFromSession(resume.sessionId);
+        if (!res.ok) {
+          setProcessing(false);
+          toaster({
+            type: "error",
+            content: "We couldn't save your card. Please try again!",
+          });
+          return;
+        }
+        if (resume.tierId && resume.cadence) {
+          const outcome = await runSubscribe(resume.tierId, resume.cadence);
+          if (outcome === "navigating") return; // keep the spinner while we leave
+        }
+        setViewer(await getMembershipJoinViewer(props.publicationUri));
+        setProcessing(false);
+      } else {
+        // Back from sign-in with a tier picked; the after-sign-in action
+        // already subscribed them, so pick the payment back up.
+        const v = await getMembershipJoinViewer(props.publicationUri);
+        setViewer(v);
+        const tier = props.tiers.find((t) => t.id === resume.tierId);
+        if (resume.cadence === "year") setCadence("year");
+        setProcessing(false);
+        if (!v.loggedIn || !tier) return;
+        await payWithViewer(tier, v, resume.cadence);
+      }
+    })();
+  }, [props.active, props.resume]);
+
+  // One-click free join for a signed-in reader who has the needed identity.
+  const freeJoin = async (tier: Tier) => {
+    setBusyTierId(tier.id);
+    if (props.newsletterMode && identity?.email) {
+      const res = await requestPublicationEmailSubscription(
+        props.publicationUri,
+        identity.email,
+      );
+      if (!res.ok) {
+        setBusyTierId(null);
+        toaster({
+          type: "error",
+          content: SUBSCRIBE_ERROR_MESSAGES[res.error],
+        });
+        return;
+      }
+    } else {
+      const res = await subscribeToPublication(
+        props.publicationUri,
+        window.location.href,
+      );
+      if (!res.success) {
+        setBusyTierId(null);
+        toaster({
+          type: "error",
+          content: "We couldn't subscribe you. Try again.",
+        });
+        return;
+      }
+    }
+    finishJoin("You're subscribed!");
+  };
+
+  // Prorated in-place switch for an active paid membership.
+  const runSwitch = async (tier: Tier) => {
+    const m = viewer?.membership;
+    if (!m) return;
+    setBusyTierId(tier.id);
+    const res = await switchMembership({
+      membershipId: m.id,
+      tierId: tier.id,
+      cadence: effectiveCadence(tier),
+    });
+    setBusyTierId(null);
+    if (!res.ok) {
+      toaster({
+        type: "error",
+        content: "We couldn't switch your plan. Please try again!",
+      });
+      return;
+    }
+    finishJoin("Updated your plan!");
+  };
+
+  // Paid access runs to the period's end, so the reader stays a member for now
+  // and lands on free after — the server owns both halves of that transition.
+  const downgradeToFree = async (tier: Tier) => {
+    const m = viewer?.membership;
+    if (!m) return;
+    setBusyTierId(tier.id);
+    const res = await downgradeMembershipToFree({
+      membershipId: m.id,
+      publicationUri: props.publicationUri,
+      newsletterMode: props.newsletterMode,
+    });
+    if (!res.ok) {
+      setBusyTierId(null);
+      toaster({
+        type: "error",
+        content: "We couldn't downgrade your plan. Please try again!",
+      });
+      return;
+    }
+    setConfirmDowngrade(null);
+    finishJoin(
+      res.value.subscribed
+        ? "You'll move to the free plan at the end of your billing period."
+        : "Your membership ends at the period's end — subscribe to keep getting posts.",
+    );
+  };
+
+  // Signed-out email joins mint a session with an auth code confirmed right
+  // here — except on custom domains, where sessions are first-party on the
+  // main site, so we bounce through its email login instead.
+  const startEmailAuth = async (tier: Tier) => {
+    const base = mainSiteAuthBase();
+    if (base) {
+      setBusyTierId(tier.id);
+      const url = new URL("/api/auth/email-login", base);
+      url.searchParams.set("email", email);
+      url.searchParams.set("redirect", joinReturnUrl(tier));
+      url.searchParams.set("action", subscribeAction());
+      window.location.href = url.toString();
+      return;
+    }
+    setBusyTierId(tier.id);
+    try {
+      const tokenId = await requestAuthEmailToken(email, {
+        publicationName: props.publicationName,
+        publicationUrl: props.publicationUrl,
+      });
+      setConfirmStep({ kind: "authToken", tokenId, tier });
+    } catch {
+      toaster({
+        type: "error",
+        content: "We couldn't send the email. Please try again!",
+      });
+    }
+    setBusyTierId(null);
+  };
+
+  const redirectToOauthJoin = (tier: Tier, link: boolean) => {
+    setBusyTierId(tier.id);
+    window.location.href = buildOauthLoginUrl({
+      handle: handle.trim(),
+      redirect: joinReturnUrl(tier),
+      action: subscribeAction(),
+      link,
+      autoMerge: link,
+    });
+  };
+
+  // The signed-in-but-linking email path: the publication confirmation code
+  // attaches the typed email to the current identity on confirm.
+  const sendPubCode = async (tier: Tier) => {
+    setBusyTierId(tier.id);
+    const res = await requestPublicationEmailSubscription(
+      props.publicationUri,
+      email,
+    );
+    setBusyTierId(null);
+    if (!res.ok) {
+      toaster({ type: "error", content: SUBSCRIBE_ERROR_MESSAGES[res.error] });
+      return;
+    }
+    if (res.value.confirmed) {
+      if (isFreeTier(tier)) finishJoin("You're subscribed!");
+      else await payAfterIdentityChange(tier);
+      return;
+    }
+    setConfirmStep({ kind: "pubCode", tier });
+  };
+
+  // The session identity just changed (login or link) — refetch wallet and
+  // membership before routing to payment.
+  const payAfterIdentityChange = async (tier: Tier) => {
+    mutate("identity");
+    const v = await getMembershipJoinViewer(props.publicationUri);
+    setViewer(v);
+    await payWithViewer(tier, v);
+  };
+
+  const submitCode = async (code: string) => {
+    if (!confirmStep || confirming) return;
+    setConfirming(true);
+    const tier = confirmStep.tier;
+    if (confirmStep.kind === "authToken") {
+      const token = await confirmEmailAuthToken(confirmStep.tokenId, code);
+      if (!token) {
+        setConfirming(false);
+        toaster({ type: "error", content: "Incorrect code!" });
+        return;
+      }
+      // Local pre-login drafts belong to whoever first signs in on this browser.
+      await loginWithEmailToken(getHomeDocs().filter((l) => !l.hidden));
+      mutate("identity");
+      // Subscribe the fresh session to the publication (instant — emails match).
+      const sub = await requestPublicationEmailSubscription(
+        props.publicationUri,
+        email,
+      );
+      if (!sub.ok) {
+        setConfirming(false);
+        toaster({
+          type: "error",
+          content: SUBSCRIBE_ERROR_MESSAGES[sub.error],
+        });
+        return;
+      }
+    } else {
+      const res = await confirmPublicationEmailSubscription(
+        props.publicationUri,
+        email,
+        code,
+        true,
+      );
+      if (!res.ok) {
+        setConfirming(false);
+        toaster({
+          type: "error",
+          content: SUBSCRIBE_ERROR_MESSAGES[res.error],
+        });
+        return;
+      }
+    }
+    setConfirming(false);
+    setConfirmStep(null);
+    if (isFreeTier(tier)) {
+      finishJoin("You're subscribed!");
+      return;
+    }
+    await payAfterIdentityChange(tier);
+  };
+
+  const selectTier = async (tier: Tier) => {
+    if (busyTierId || processing) return;
+    const free = isFreeTier(tier);
+
+    // An active paid membership switches in place (prorated) between paid
+    // tiers, or downgrades to free through a confirm step (that path cancels
+    // the Stripe subscription instead of switching it).
+    if (viewer?.membership)
+      return free ? setConfirmDowngrade(tier) : runSwitch(tier);
+
+    if (identity) {
+      if (hasNeededIdentity) return free ? freeJoin(tier) : payWithViewer(tier);
+      if (mode === "email" ? !validEmail(email) : !handle.trim())
+        return setInputMissing(true);
+      setLinkTier(tier);
+      return;
+    }
+
+    // Logged out: sign in/up with the typed identity first, then pay.
+    if (mode === "email") {
+      if (!validEmail(email)) return setInputMissing(true);
+      return startEmailAuth(tier);
+    }
+    if (!handle.trim()) return setInputMissing(true);
+    redirectToOauthJoin(tier, false);
+  };
+
+  const modeMenu = <SubscribeInputModeMenu mode={mode} onChange={setMode} />;
+
+  return (
+    <>
+      {processing ? (
+        <div className="px-4 py-8 flex flex-col items-center gap-2">
+          <DotLoader />
+          <div className="text-secondary text-sm">
+            Completing your membership…
+          </div>
+        </div>
+      ) : confirmStep ? (
+        <div className="flex justify-center">
+          <EmailConfirm
+            autoFocus
+            loading={confirming}
+            emailValue={email}
+            onBack={() => setConfirmStep(null)}
+            onSubmit={submitCode}
+          />
+        </div>
+      ) : viewer?.isOwner ? (
+        <div className="px-4 py-6 text-center text-secondary">
+          This is your publication — readers see your membership tiers here.
+        </div>
+      ) : (
+        <div className="memberSignUp flex flex-col max-h-[80vh] max-w-3xl">
+          <div className="text-center flex flex-col gap-1 max-w-md mx-auto">
+            <h2 className="text-primary leading-snug text-xl">
+              Become a member of <br />
+              {props.publicationName}
+            </h2>
+          </div>
+          {subscribingAs ? (
+            <p className="text-tertiary text-lg text-center pt-1 pb-4">
+              Subscribe as {subscribingAs}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-1 max-w-sm w-full mx-auto pt-3 pb-3">
+              {props.newsletterMode && mode === "email" ? (
+                <EmailInput
+                  value={email}
+                  onChange={setEmail}
+                  leading={modeMenu}
+                  highlight={inputMissing}
+                  onFocus={() => setInputMissing(false)}
+                />
+              ) : (
+                <>
+                  <HandleSearchInput
+                    onChange={setHandle}
+                    // Selecting a suggestion just stores the handle — the
+                    // tier buttons drive the actual submit.
+                    onSubmit={setHandle}
+                    leading={props.newsletterMode ? modeMenu : undefined}
+                    highlight={inputMissing}
+                    onFocus={() => setInputMissing(false)}
+                  />
+                  <div className="text-center pt-1">
+                    <AtmosphericHandleInfo />
+                  </div>
+                </>
+              )}
+              {inputMissing ? (
+                <p className="text-accent-contrast text-xs text-center font-bold">
+                  {props.newsletterMode && mode === "email"
+                    ? "Enter your email"
+                    : "Enter your Atmosphere handle."}
+                </p>
+              ) : (
+                <div className="spacer h-4.5" />
+              )}
+            </div>
+          )}
+          <TierGrid
+            tiers={props.tiers}
+            cadence={cadence}
+            onCadenceChange={setCadence}
+            busyTierId={busyTierId}
+            isSubscribed={isSubscribed}
+            currentTierId={viewer?.membership?.tierId}
+            unlocksPost={props.unlocksPost}
+            onSelectTier={selectTier}
+          />{" "}
+          <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
+            {viewer?.membership ? (
+              "Switching memberships will prorate your bill this month."
+            ) : viewer?.walletCard?.last4 ? (
+              `Bill to card ending in ${viewer.walletCard.last4}`
+            ) : (
+              <>
+                Already Subscribed?{" "}
+                <LoginModal
+                  trigger={<div className="underline">Sign in</div>}
+                />
+              </>
+            )}
+          </p>
+        </div>
+      )}
+      {linkTier && identity && (
+        <LinkIdentityModal
+          open
+          onOpenChange={(open) => {
+            if (!open) setLinkTier(null);
+          }}
+          signedInAs={
+            identity.bsky_profiles?.handle
+              ? `@${identity.bsky_profiles.handle}`
+              : identity.email || "your account"
+          }
+          linkingIdentity={mode === "email" ? email : `@${handle.trim()}`}
+          confirmButtonLabel={mode === "email" ? "Link email" : "Link Bluesky"}
+          confirming={busyTierId !== null}
+          onConfirm={async () => {
+            const tier = linkTier;
+            setLinkTier(null);
+            if (mode === "email") await sendPubCode(tier);
+            else redirectToOauthJoin(tier, true);
+          }}
+        />
+      )}
+      {confirmDowngrade && (
+        <DowngradeConfirmModal
+          currentTier={props.tiers.find(
+            (t) => t.id === viewer?.membership?.tierId,
+          )}
+          periodEnd={viewer?.membership?.currentPeriodEnd ?? null}
+          busy={busyTierId !== null}
+          onConfirm={() => downgradeToFree(confirmDowngrade)}
+          onClose={() => setConfirmDowngrade(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function DowngradeConfirmModal(props: {
+  currentTier: Tier | undefined;
+  periodEnd: string | null;
+  busy: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const endDate = useLocalizedDate(props.periodEnd ?? "", DOWNGRADE_DATE_FORMAT);
+
+  return (
+    <Modal
+      open
+      onOpenChange={(o) => !o && props.onClose()}
+      title="Switch to the free plan?"
+      className="max-w-full w-sm"
+    >
+      <div className="flex flex-col gap-3">
+        <div className="text-secondary leading-snug">
+          {props.currentTier ? (
+            <>
+              Switch from <strong>{props.currentTier.name}</strong> to the free
+              plan?
+            </>
+          ) : (
+            "Switch to the free plan?"
+          )}{" "}
+          You'll keep member access{" "}
+          {props.periodEnd
+            ? `until ${endDate}`
+            : "until the end of your billing period"}
+          , then move to free and won't be charged again.
+        </div>
+        <div className="flex justify-between">
+          <ButtonSecondary type="button" onClick={props.onClose}>
+            Keep membership
+          </ButtonSecondary>
+          <ButtonPrimary
+            type="button"
+            disabled={props.busy}
+            onClick={props.onConfirm}
+          >
+            {props.busy ? <DotLoader /> : "Switch to free"}
+          </ButtonPrimary>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+const DOWNGRADE_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+};
+
+function validEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}

@@ -220,6 +220,14 @@ export const Interactions = (props: {
     <div
       className={`flex gap-2 text-tertiary text-sm items-center ${props.className}`}
     >
+      {props.showRecommends === false ? null : (
+        <DrawerThreadContext.Provider value={recommendsDrawerNav}>
+          <RecommendButton
+            documentUri={document_uri}
+            recommendsCount={props.recommendsCount}
+          />
+        </DrawerThreadContext.Provider>
+      )}
       <DiscussionButton
         showWhenEmpty
         documentUri={document_uri}
@@ -243,14 +251,6 @@ export const Interactions = (props: {
           else setInteractionState(document_uri, { drawerOpen: false });
         }}
       />
-      {props.showRecommends === false ? null : (
-        <DrawerThreadContext.Provider value={recommendsDrawerNav}>
-          <RecommendButton
-            documentUri={document_uri}
-            recommendsCount={props.recommendsCount}
-          />
-        </DrawerThreadContext.Provider>
-      )}
       <div className="h-full  w-0 spacer" />
       <InteractionShareButton
         postRecord={normalizedDocument}
@@ -258,7 +258,6 @@ export const Interactions = (props: {
         documentUri={document_uri}
         publication={normalizedPublication || undefined}
         pubUri={publication?.uri}
-        type="weak"
       />
     </div>
   );
@@ -380,7 +379,6 @@ export const ExpandedInteractions = (props: {
                 normalizedPublication ? normalizedPublication : undefined
               }
               pubUri={publication?.uri}
-              type="strong"
               trigger={
                 <div className={interactionButtonClassName}>
                   <ShareSmall className="text-inherit" />

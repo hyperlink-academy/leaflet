@@ -67,7 +67,7 @@ export const send_post_broadcast = inngest.createFunction(
         supabaseServerClient
           .from("publications")
           .select(
-            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(monthly_price_cents, active)",
+            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(monthly_price_cents, active, is_free)",
           )
           .eq("uri", publication_uri)
           .maybeSingle(),
@@ -173,7 +173,7 @@ export const send_post_broadcast = inngest.createFunction(
     // Non-members' emails end in a "subscribe to see the full content" box
     // linking to the join page, priced from the cheapest active tier.
     const activeTierPrices = (loaded.pub.publication_membership_tiers ?? [])
-      .filter((t) => t.active)
+      .filter((t) => t.active && !t.is_free)
       .map((t) => t.monthly_price_cents);
     const membersUpsell = {
       joinUrl: `${pubProps.publicationUrl.replace(/\/$/, "")}/join`,
