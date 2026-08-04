@@ -1,3 +1,4 @@
+import { useCardBorderHidden } from "./Pages/useCardBorderHidden";
 import { Toggle } from "./Toggle";
 
 export function SettingsPageLayout(props: {
@@ -17,9 +18,10 @@ export function SettingsSection(props: {
   children: React.ReactNode;
   accent?: boolean;
 }) {
+  let cardBorderHidden = useCardBorderHidden();
   return (
     <div
-      className={`${props.accent ? "accent-container" : "light-container"} flex flex-col gap-2 p-3 pb-4 sm:px-4 ${props.className || ""}`}
+      className={`${props.accent ? "accent-container" : cardBorderHidden ? "light-container" : "opaque-container"} flex flex-col gap-2 p-3 pb-4 sm:px-4 ${props.className || ""}`}
     >
       {props.title && (
         <>
