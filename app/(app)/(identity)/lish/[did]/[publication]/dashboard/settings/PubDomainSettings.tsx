@@ -12,6 +12,7 @@ import {
   mutateIdentityData,
 } from "components/IdentityProvider";
 import { ButtonPrimary } from "components/Buttons";
+import { SpeedyLink } from "components/SpeedyLink";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
@@ -46,7 +47,10 @@ export const PubDomainSettings = () => {
     <>
       <div className="flex flex-col gap-1">
         <h4>This Publication&apos;s Domains</h4>
-        <div className="text-xs text-tertiary -mb-1">DEFAULT</div>
+        <div className="text-sm  -mb-0.5 mt-1">
+          <div className="font-bold">DEFAULT</div>
+          <div>We use this when linking to your publication and its posts</div>
+        </div>
         {pubDomains
           .filter((d) => d.domain === basePath)
           .map((d) => (
@@ -62,7 +66,13 @@ export const PubDomainSettings = () => {
           ))}
         {pubDomains.filter((d) => d.domain !== basePath).length !== 0 && (
           <>
-            <div className="text-xs text-tertiary pt-1">ALTERNATES</div>
+            <div className="text-sm  -mb-0.5 mt-1">
+              <div className="font-bold">ALTERNATES</div>
+              <div>
+                These all link to your publication and won't redirect to your
+                default.
+              </div>
+            </div>
             {pubDomains
               .filter((d) => d.domain !== basePath)
               .map((d) => (
@@ -104,14 +114,28 @@ export const PubDomainSettings = () => {
                 />
               ))}
               <div className="text-sm text-tertiary pt-0.5">
-                Add new domains from your profile settings!
+                Add new domains from your{" "}
+                <SpeedyLink
+                  href="/settings?tab=domains"
+                  className="text-accent-contrast"
+                >
+                  profile settings
+                </SpeedyLink>
+                !
               </div>
             </>
           ) : (
             <div className="text-sm text-tertiary">
               <strong>No available domains!</strong>
               <br />
-              Add new domains from your profile settings!
+              Add new domains from your{" "}
+              <SpeedyLink
+                href="/settings?tab=domains"
+                className="text-accent-contrast"
+              >
+                profile settings
+              </SpeedyLink>
+              !
             </div>
           );
         })()}

@@ -10,7 +10,7 @@ import { Modal } from "components/Modal";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { EmailConfirm } from "components/Subscribe/EmailSubscribe";
 import { Input } from "components/Input";
-import { SettingsSection } from "components/SettingsLayout";
+import { InputSetting, SettingsSection } from "components/SettingsLayout";
 import {
   useNormalizedPublicationRecord,
   usePublicationData,
@@ -41,11 +41,12 @@ export const NewsletterSettings = () => {
 
   return (
     <>
-      <EnableNewsletterSection
-        publicationUri={publicationUri}
-        enabled={newsletterEnabled}
-        mutate={mutate}
-      />
+      {!newsletterEnabled && (
+        <EnableNewsletterSection
+          publicationUri={publicationUri}
+          mutate={mutate}
+        />
+      )}
       {newsletterEnabled && (
         <NewsletterOptions
           publicationUri={publicationUri}
@@ -62,80 +63,97 @@ export const NewsletterSettings = () => {
           publicationUrl={record?.url}
         />
       </SettingsSection>
+      {newsletterEnabled && (
+        <DisableNewsletterSection
+          publicationUri={publicationUri}
+          mutate={mutate}
+        />
+      )}
     </>
   );
 };
 
 function EnableNewsletterSection(props: {
   publicationUri: string;
-  enabled: boolean;
   mutate: ReturnType<typeof usePublicationData>["mutate"];
 }) {
   let toaster = useToaster();
   let [pending, setPending] = useState(false);
 
-  if (!props.enabled) {
-    return (
-      <div className="accent-container flex flex-col gap-2 p-3 sm:px-4">
-        <div className="leading-snug font-bold">
-          Enable Newsletters to send email updates to your subscribers!
-        </div>
-        <div className="leading-snug text-sm">
-          Your first 1k email subscribers are included with Leaflet Pro. After
-          that, it&apos;s $5 for each additional 1k subs. Questions? Reach out!
-        </div>
-        <ButtonPrimary
-          className="self-start"
-          disabled={pending}
-          onClick={async () => {
-            if (pending) return;
-            setPending(true);
-            let res = await enableNewsletter(props.publicationUri);
-            setPending(false);
-            if (!res.ok) {
-              toaster({
-                type: "error",
-                content: "Failed to enable newsletter.",
-              });
-              return;
-            }
-            toaster({ type: "success", content: "Newsletter enabled!" });
-            await props.mutate();
-          }}
-        >
-          {pending ? <DotLoader /> : "Enable Newsletters"}
-        </ButtonPrimary>
+  return (
+    <div className="accent-container flex flex-col gap-2 p-3 sm:px-4">
+      <div className="leading-snug font-bold">
+        Enable Newsletters to send email updates to your subscribers!
       </div>
-    );
-  }
+      <div className="leading-snug text-sm">
+        Your first 1k email subscribers are included with Leaflet Pro. After
+        that, it&apos;s $5 for each additional 1k subs. Questions? Reach out!
+      </div>
+      <ButtonPrimary
+        className="self-start"
+        disabled={pending}
+        onClick={async () => {
+          if (pending) return;
+          setPending(true);
+          let res = await enableNewsletter(props.publicationUri);
+          setPending(false);
+          if (!res.ok) {
+            toaster({
+              type: "error",
+              content: "Failed to enable newsletter.",
+            });
+            return;
+          }
+          toaster({ type: "success", content: "Newsletter enabled!" });
+          await props.mutate();
+        }}
+      >
+        {pending ? <DotLoader /> : "Enable Newsletters"}
+      </ButtonPrimary>
+    </div>
+  );
+}
+
+function DisableNewsletterSection(props: {
+  publicationUri: string;
+  mutate: ReturnType<typeof usePublicationData>["mutate"];
+}) {
+  let toaster = useToaster();
+  let [pending, setPending] = useState(false);
 
   return (
-    <SettingsSection>
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+    <SettingsSection title="Disable Newsletter">
+      <div className="flex flex-col gap-3 flex-wrap">
         <div className="text-secondary leading-snug">
-          Newsletters are enabled! Your subscribers can opt into email updates.
+          Disabling newsletter mode will stop sending emails to subscribers. You
+          will keep the emails and can re-enable at any time.
         </div>
-        <ButtonTertiary
-          disabled={pending}
-          onClick={async () => {
-            if (pending) return;
-            setPending(true);
-            let res = await disableNewsletter(props.publicationUri);
-            setPending(false);
-            if (!res.ok) {
-              toaster({
-                type: "error",
-                content: "Failed to disable newsletter.",
-              });
-              return;
-            }
-            toaster({ type: "success", content: "Newsletter disabled." });
-            await props.mutate();
-          }}
-        >
-          {pending ? <DotLoader /> : "Disable Newsletters"}
-        </ButtonTertiary>
+        <div className="text-secondary leading-snug">
+          We will NOT send an automatic email notifying subscribers, so be sure
+          to send a notice before you disable!
+        </div>
       </div>
+
+      <ButtonSecondary
+        disabled={pending}
+        onClick={async () => {
+          if (pending) return;
+          setPending(true);
+          let res = await disableNewsletter(props.publicationUri);
+          setPending(false);
+          if (!res.ok) {
+            toaster({
+              type: "error",
+              content: "Failed to disable newsletter.",
+            });
+            return;
+          }
+          toaster({ type: "success", content: "Newsletter disabled." });
+          await props.mutate();
+        }}
+      >
+        {pending ? <DotLoader /> : "Disable"}
+      </ButtonSecondary>
     </SettingsSection>
   );
 }
@@ -166,7 +184,6 @@ function NewsletterOptions(props: {
     !!props.settings?.reply_to_email && !props.settings?.reply_to_verified_at;
 
   let [replyToValue, setReplyToValue] = useState(savedReplyTo);
-  let [savingReplyTo, setSavingReplyTo] = useState(false);
   let [confirming, setConfirming] = useState(false);
   let [verifyOpen, setVerifyOpen] = useState(false);
 
@@ -181,38 +198,38 @@ function NewsletterOptions(props: {
     replyToValue.trim().toLowerCase() !== savedReplyTo.toLowerCase();
 
   return (
-    <SettingsSection title="Options">
+    <SettingsSection title="Newsletter Options">
+      Newsletters allows your subscribers to opt into email updates. <br />
+      Configure the email your subscribers recieve here!
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <p className="text-secondary font-bold">From Name</p>
-          <div className="input-with-border w-full max-w-prose text-tertiary bg-border-light px-2 py-1 rounded-md">
+        <InputSetting label="Sender Name">
+          <div className="light-container w-full max-w-prose text-secondary h-fit bg-border-light px-2 py-1 rounded-md">
             {props.fromName || "—"}
           </div>
-          <p className="text-tertiary text-sm leading-snug">
-            The publication name is used as the sender name.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <p className="text-secondary font-bold">From Email</p>
-          <div className="input-with-border w-full max-w-prose text-tertiary bg-border-light px-2 py-1 rounded-md">
+        </InputSetting>
+        <InputSetting label="Sender Email">
+          <div className="light-container w-full max-w-prose text-secondary h-fit bg-border-light px-2 py-1 rounded-md">
             {fromAddress || "—"}
           </div>
-        </div>
+        </InputSetting>
 
-        <div className="flex flex-col gap-1">
-          <label
-            className="text-secondary font-bold"
-            htmlFor="newsletterReplyTo"
-          >
-            Reply-to Email{" "}
-            <span className="font-normal text-tertiary">(optional)</span>
-          </label>
-          <p className="text-tertiary text-sm leading-snug">
-            Where subscriber replies are sent. Leave blank to use the no-reply
-            address ({NO_REPLY_EMAIL}).
-          </p>
-          <div className="flex gap-2 items-stretch max-w-prose">
+        <InputSetting
+          htmlFor="newsletterReplyTo"
+          optional
+          label="Reply-to Email"
+          helpText={
+            pendingVerification && !replyToDirty ? (
+              <>
+                <strong>Pending verification.</strong> Until confirmed, the
+                no-reply address is used.
+              </>
+            ) : (
+              `Where subscriber replies are sent. Leave blank to use a no-reply
+          address`
+            )
+          }
+        >
+          <div className="relative">
             <Input
               id="newsletterReplyTo"
               className="input-with-border w-full text-primary"
@@ -221,79 +238,19 @@ function NewsletterOptions(props: {
               placeholder={NO_REPLY_EMAIL}
               onChange={(e) => setReplyToValue(e.currentTarget.value)}
             />
-            {replyToDirty ? (
-              <ButtonSecondary
-                disabled={savingReplyTo}
-                onClick={async () => {
-                  if (savingReplyTo) return;
-                  let trimmed = replyToValue.trim();
-                  setSavingReplyTo(true);
-                  if (trimmed === "") {
-                    let res = await clearReplyToEmail(props.publicationUri);
-                    setSavingReplyTo(false);
-                    if (!res.ok) {
-                      toaster({
-                        type: "error",
-                        content: "Failed to clear reply-to.",
-                      });
-                      return;
-                    }
-                    toaster({
-                      type: "success",
-                      content: "Reply-to cleared. Using no-reply address.",
-                    });
-                    await props.mutate();
-                    return;
-                  }
-                  let res = await setReplyToEmail(
-                    props.publicationUri,
-                    trimmed,
-                  );
-                  setSavingReplyTo(false);
-                  if (!res.ok) {
-                    toaster({
-                      type: "error",
-                      content:
-                        res.error === "invalid_email"
-                          ? "Please enter a valid email address."
-                          : res.error === "email_send_failed"
-                            ? "We couldn't send the confirmation email."
-                            : "Something went wrong. Try again.",
-                    });
-                    return;
-                  }
-                  if (res.value.verification_required) {
-                    setVerifyOpen(true);
-                    toaster({
-                      type: "success",
-                      content: "Confirmation code sent.",
-                    });
-                  } else {
-                    toaster({
-                      type: "success",
-                      content: "Reply-to saved.",
-                    });
-                  }
-                  await props.mutate();
-                }}
-              >
-                {savingReplyTo ? <DotLoader /> : "Save"}
-              </ButtonSecondary>
-            ) : pendingVerification ? (
-              <ButtonSecondary onClick={() => setVerifyOpen(true)}>
-                Verify
-              </ButtonSecondary>
-            ) : null}
+            <div className="absolute top-[4px] right-1">
+              <ReplyToButton
+                publicationUri={props.publicationUri}
+                replyToValue={replyToValue}
+                dirty={replyToDirty}
+                pendingVerification={pendingVerification}
+                openVerify={() => setVerifyOpen(true)}
+                mutate={props.mutate}
+              />
+            </div>
           </div>
-          {pendingVerification && !replyToDirty && (
-            <p className="text-tertiary text-sm leading-snug">
-              Pending verification. Until confirmed, the no-reply address is
-              used.
-            </p>
-          )}
-        </div>
+        </InputSetting>
       </div>
-
       <Modal
         open={verifyOpen}
         onOpenChange={setVerifyOpen}
@@ -335,6 +292,80 @@ function NewsletterOptions(props: {
   );
 }
 
+// Saves the reply-to address (or clears it when blank). Once saved, an
+// unverified address swaps this for the button that reopens the code modal.
+function ReplyToButton(props: {
+  publicationUri: string;
+  replyToValue: string;
+  dirty: boolean;
+  pendingVerification: boolean;
+  openVerify: () => void;
+  mutate: ReturnType<typeof usePublicationData>["mutate"];
+}) {
+  let toaster = useToaster();
+  let [saving, setSaving] = useState(false);
+
+  if (!props.dirty)
+    return props.pendingVerification ? (
+      <ButtonPrimary compact onClick={props.openVerify} className="text-sm">
+        Verify
+      </ButtonPrimary>
+    ) : null;
+
+  return (
+    <ButtonPrimary
+      className="text-sm"
+      compact
+      disabled={saving}
+      onClick={async () => {
+        if (saving) return;
+        let trimmed = props.replyToValue.trim();
+        setSaving(true);
+        if (trimmed === "") {
+          let res = await clearReplyToEmail(props.publicationUri);
+          setSaving(false);
+          if (!res.ok) {
+            toaster({
+              type: "error",
+              content: "Failed to clear reply-to.",
+            });
+            return;
+          }
+          toaster({
+            type: "success",
+            content: "Reply-to cleared. Using no-reply address.",
+          });
+          await props.mutate();
+          return;
+        }
+        let res = await setReplyToEmail(props.publicationUri, trimmed);
+        setSaving(false);
+        if (!res.ok) {
+          toaster({
+            type: "error",
+            content:
+              res.error === "invalid_email"
+                ? "Please enter a valid email address."
+                : res.error === "email_send_failed"
+                  ? "We couldn't send the confirmation email."
+                  : "Something went wrong. Try again.",
+          });
+          return;
+        }
+        if (res.value.verification_required) {
+          props.openVerify();
+          toaster({ type: "success", content: "Confirmation code sent." });
+        } else {
+          toaster({ type: "success", content: "Reply-to saved." });
+        }
+        await props.mutate();
+      }}
+    >
+      {saving ? <DotLoader /> : "Save"}
+    </ButtonPrimary>
+  );
+}
+
 const EmbedFormSnippet = (props: {
   publicationUri: string;
   publicationUrl?: string;
@@ -355,20 +386,25 @@ const EmbedFormSnippet = (props: {
 </form>`;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <p className="text-tertiary text-sm leading-snug">
-          Paste this HTML into any webpage to let readers subscribe to your
-          publication. After submitting, they&apos;re redirected here to confirm
-          with a code we email them.
-        </p>
-        <div className="relative max-w-prose">
+    <>
+      <p className="text-secondary leading-snug">
+        Paste this HTML into any webpage to let readers subscribe to your
+        publication directly from there.
+      </p>
+      <p className="text-secondary leading-snug">
+        After submitting, they&apos;re sent to Leaflet to confirm thier email,
+        then sent back to your webpage.
+      </p>
+      <InputSetting label="HTML Snippet">
+        <div className="flex flex-col">
           <pre className="input-with-border bg-border-light text-primary text-sm rounded-md p-2 pr-16 overflow-x-auto whitespace-pre">
             <code>{snippet}</code>
           </pre>
           <ButtonSecondary
+            type="button"
             compact
-            className="absolute top-1.5 right-1.5 text-xs!"
+            fullWidth
+            className="mt-2"
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(snippet);
@@ -381,14 +417,13 @@ const EmbedFormSnippet = (props: {
               }
             }}
           >
-            Copy
+            Copy HTML
           </ButtonSecondary>
         </div>
-      </div>
-      <div className="flex flex-col gap-1">
-        <p className="text-secondary font-bold text-sm">Preview</p>
+      </InputSetting>
+      <InputSetting label="Preview">
         <form
-          className="opaque-container flex gap-2 items-center p-3 max-w-prose"
+          className="light-container flex gap-2 items-center p-3 max-w-prose"
           onSubmit={(e) => e.preventDefault()}
         >
           <Input
@@ -398,7 +433,7 @@ const EmbedFormSnippet = (props: {
           />
           <ButtonPrimary type="submit">Subscribe</ButtonPrimary>
         </form>
-      </div>
-    </div>
+      </InputSetting>
+    </>
   );
 };

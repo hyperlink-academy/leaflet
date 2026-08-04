@@ -12,7 +12,7 @@ export function Tabs<T extends string>(props: {
   return (
     <div className="w-full">
       <div
-        className={`tabs flex  justify-start w-full ${props.pill ? "gap-3" : "gap-4"} ${props.className || ""}`}
+        className={`tabs flex  justify-start w-full overflow-x-auto no-scrollbar ${props.pill ? "gap-3" : "gap-4"} ${props.className || ""}`}
       >
         {props.options.map((option) => {
           const selected = props.value === option.value;
@@ -32,7 +32,7 @@ export function Tabs<T extends string>(props: {
             <button
               key={option.value}
               type="button"
-              className={`tab ${props.pill ? pillStyles : tabStyles} ${props.optionClassName || ""}`}
+              className={`tab shrink-0 whitespace-nowrap ${props.pill ? pillStyles : tabStyles} ${props.optionClassName || ""}`}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

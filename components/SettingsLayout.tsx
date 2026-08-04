@@ -26,7 +26,9 @@ export function SettingsSection(props: {
           <h3>{props.title}</h3>
         </>
       )}
-      <div className="flex flex-col gap-4">{props.children}</div>
+      <div className="flex flex-col gap-4 text-secondary leading-snug">
+        {props.children}
+      </div>
     </div>
   );
 }
@@ -35,6 +37,7 @@ export const InputSetting = (props: {
   children: React.ReactNode;
   label: string;
   optional?: boolean;
+  helpText?: React.ReactNode;
   htmlFor?: string;
 }) => {
   return (
@@ -42,11 +45,16 @@ export const InputSetting = (props: {
       htmlFor={props.htmlFor}
       className="setting flex flex-col gap-1 md:flex-row md:gap-4"
     >
-      <p className="text-secondary font-bold basis-1/4 shrink-0 ">
+      <p className="flex flex-col basis-1/4 shrink-0 mt-1 text-secondary font-bold  ">
         {props.label}
         {props.optional && <span className="font-normal"> (optional)</span>}
       </p>
-      {props.children}
+      <div className="flex flex-col grow min-w-0">
+        {props.children}
+        {props.helpText && (
+          <p className="text-sm text-tertiary pt-0">{props.helpText}</p>
+        )}
+      </div>
     </label>
   );
 };
