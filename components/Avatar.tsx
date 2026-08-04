@@ -4,6 +4,7 @@ export const Avatar = (props: {
   src: string | null | undefined;
   displayName: string | null | undefined;
   className?: string;
+  ariaHidden?: boolean;
   size?: "tiny" | "small" | "medium" | "large" | "giant";
 }) => {
   let sizeClassName =
@@ -24,6 +25,7 @@ export const Avatar = (props: {
       <img
         className={`${sizeClassName} relative rounded-full shrink-0 border border-border-light ${props.className}`}
         src={props.src}
+        aria-hidden={props.ariaHidden}
         alt={
           props.displayName
             ? `${props.displayName}'s avatar`

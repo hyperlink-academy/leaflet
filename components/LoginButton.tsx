@@ -7,7 +7,7 @@ import { ButtonPrimary } from "./Buttons";
 import { ActionButton } from "./ActionBar/ActionButton";
 import { AccountSmall } from "./Icons/AccountSmall";
 import { AtmosphericHandleInfo } from "./Subscribe/HandleSubscribe";
-import { HandleInput } from "./Subscribe/HandleInput";
+import { HandleSearchInput } from "./HandleSearchInput";
 import { EmailInput, EmailConfirm } from "./Subscribe/EmailSubscribe";
 import { useState } from "react";
 import { GoToArrow } from "./Icons/GoToArrow";
@@ -191,7 +191,7 @@ export const LoginContent = (props: {
                 }
               />
             </div>
-            <HandleInput
+            <HandleSearchInput
               large
               autoFocus={props.open !== false}
               action={<GoToArrow className="text-accent-contrast" />}
@@ -327,7 +327,7 @@ const LinkAtmosphereContent = (props: {
           }
         />
       </div>
-      <HandleInput
+      <HandleSearchInput
         large
         autoFocus={props.open !== false}
         action={<GoToArrow className="text-accent-contrast" />}

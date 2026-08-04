@@ -10,7 +10,7 @@ import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import type { OAuthSessionError } from "src/atproto-oauth";
-import { HandleInput } from "./HandleInput";
+import { HandleSearchInput } from "components/HandleSearchInput";
 import { Avatar } from "components/Avatar";
 import {
   useIdentityData,
@@ -110,7 +110,7 @@ export const SubscribeWithHandle = (props: {
   };
 
   // Without a handle there's no atproto identity to one-click subscribe with, so
-  // fall through to the logged-out HandleInput form (same as a logged-out user).
+  // fall through to the logged-out HandleSearchInput form (same as a logged-out user).
   if (props.user.loggedIn && props.user.handle) {
     let tooltipLabel = props.user.handle ? `@${props.user.handle}` : null;
     let avatar = (
@@ -242,7 +242,7 @@ export const SubscribeWithHandle = (props: {
     return (
       <div className="subscribeHandleInputWrapper max-w-sm mx-auto w-full min-w-0">
         <div className="flex gap-1 w-full">
-          <HandleInput
+          <HandleSearchInput
             autoFocus={props.autoFocus}
             compact={props.compact}
             loading={loading}
@@ -318,7 +318,7 @@ export const LinkHandle = (props: { compact?: boolean }) => {
         <AtmosphericHandleInfo />
       </div>
       <div className="text-base">
-        <HandleInput
+        <HandleSearchInput
           loading={loading}
           onSubmit={(handle) => {
             let trimmed = handle.trim();

@@ -6,7 +6,7 @@ import { DotLoader } from "components/utils/DotLoader";
 import { useToaster, useSmoker } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
 import { EmailInput, EmailConfirm } from "components/Subscribe/EmailSubscribe";
-import { HandleInput } from "components/Subscribe/HandleInput";
+import { HandleSearchInput } from "components/HandleSearchInput";
 import { AtmosphericHandleInfo } from "components/Subscribe/HandleSubscribe";
 import { SubscribeInputModeMenu } from "components/Subscribe/SubscribeButton";
 import { LinkIdentityModal } from "components/Subscribe/LinkIdentityModal";
@@ -513,7 +513,7 @@ export function JoinMembershipFlow(props: {
                 />
               ) : (
                 <>
-                  <HandleInput
+                  <HandleSearchInput
                     onChange={setHandle}
                     // Selecting a suggestion just stores the handle — the
                     // tier buttons drive the actual submit.
