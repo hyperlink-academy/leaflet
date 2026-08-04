@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, test } from "vitest";
 import {
+  blockFootnotes,
   blockStartingWith,
   build,
   fixture,
@@ -464,5 +465,65 @@ describe("structural edge cases", () => {
     );
     expect(outline(blocks)).toEqual(["text: Before", "image: "]);
     expect(blocks[1].imageURL).toBe("https://example.com/pic.png");
+  });
+});
+
+// The GFM shape (our own markdownToHtml output, and what GitHub copies emit) is
+// exercised in markdownPaste.test.ts; these are the other renderers' dialects.
+describe("footnote dialects", () => {
+  test("pandoc (sup inside the ref anchor, section.footnotes)", () => {
+    const result = build(
+      `<p>Text<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> more.</p>
+       <section class="footnotes footnotes-end-of-document" role="doc-endnotes">
+       <hr />
+       <ol>
+       <li id="fn1"><p>Pandoc note.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+       </ol>
+       </section>`,
+    );
+    expect(result.blocks.map((b) => b.parsedContent?.textContent)).toEqual([
+      "Text more.",
+    ]);
+    expect(blockFootnotes(result.blocks[0]).map((f) => f.text)).toEqual([
+      "Pandoc note.",
+    ]);
+  });
+
+  test("python-markdown (ref anchor inside a sup, div.footnotes)", () => {
+    const result = build(
+      `<p>Text<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> more.</p>
+       <div class="footnotes">
+       <hr>
+       <ol>
+       <li id="fn:1">
+       <p>Py note.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">↩</a></p>
+       </li>
+       </ol>
+       </div>`,
+    );
+    expect(result.blocks.map((b) => b.parsedContent?.textContent)).toEqual([
+      "Text more.",
+    ]);
+    expect(blockFootnotes(result.blocks[0]).map((f) => f.text)).toEqual([
+      "Py note.",
+    ]);
+  });
+
+  test("an anchor link with no matching definition stays a link", () => {
+    const result = build(
+      `<p>See <a href="#appendix">the appendix</a>.</p>
+       <section data-footnotes class="footnotes"><ol>
+       <li id="fn-x"><p>Unreferenced note.</p></li>
+       </ol></section>`,
+    );
+    expect(result.blocks).toHaveLength(1);
+    expect(blockFootnotes(result.blocks[0])).toEqual([]);
+    const links: string[] = [];
+    result.blocks[0].parsedContent?.descendants((node) => {
+      for (const m of node.marks)
+        if (m.type.name === "link") links.push(m.attrs.href);
+      return true;
+    });
+    expect(links).toEqual(["#appendix"]);
   });
 });

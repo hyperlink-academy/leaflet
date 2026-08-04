@@ -288,6 +288,12 @@ async function bulkPaste({
       .slice(1)
       .map((b) => (b.parent === droppedID ? { ...b, parent: activeID } : b));
     for (const f of firstBuilt.facts) {
+      // Only facts on the dropped block itself move to the active block; facts
+      // the builder emitted for other entities (footnote content) stay put.
+      if (f.entity !== droppedID) {
+        reuseFacts.push(f);
+        continue;
+      }
       if (f.attribute === "block/type" || f.attribute === "block/text")
         continue;
       const remapped: FactInput = { ...f, entity: activeID };

@@ -135,6 +135,22 @@ export async function revalidateDocumentPaths(
   revalidatePath(`/p/${docUri.host}/${docUri.rkey}`);
 }
 
+// For settings stored outside the publication record (newsletter, membership
+// tiers): cached publication and post pages render them (subscribe UI, the
+// members-only gate's tier list), so their mutations must drop the same
+// paths. The record isn't at hand in those actions, so resolve the name here
+// for the legacy name-form URLs.
+export async function revalidatePublicationSettingsPaths(pubUri: string) {
+  const { data } = await supabaseServerClient
+    .from("publications")
+    .select("record")
+    .eq("uri", pubUri)
+    .single();
+  await revalidateAllPublicationPaths(pubUri, [
+    normalizePublicationRecord(data?.record)?.name,
+  ]);
+}
+
 // For changes that touch every page of a publication (theme, name, base
 // path): enumerate the publication's published pages and post URLs and drop
 // them all. `names` should carry both the old and new name on a rename so

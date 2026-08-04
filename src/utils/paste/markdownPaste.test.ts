@@ -5,9 +5,10 @@
 // block builder the HTML path uses.
 import { describe, expect, test } from "vitest";
 import { markdownToHtml } from "src/htmlMarkdownParsers";
-import { outline, paste } from "./testHelpers";
+import { blockFootnotes, build, outline, paste } from "./testHelpers";
 
 const pasteText = (text: string) => paste(markdownToHtml(text));
+const buildText = (text: string) => build(markdownToHtml(text));
 
 describe("text/plain", () => {
   test.each<[string, string, string[]]>([
@@ -92,5 +93,67 @@ describe("text/plain", () => {
     expect(outline(pasteText("It cost $5 and then $10."))).toEqual([
       "text: It cost $5 and then $10.",
     ]);
+  });
+});
+
+describe("footnotes", () => {
+  test("refs become footnote entities populated from the definitions", () => {
+    const result = buildText(
+      "Hello[^1] world[^b].\n\n[^1]: First note with *emphasis*.\n[^b]: Second note.\n",
+    );
+    // The definitions section is consumed, not pasted as trailing blocks.
+    expect(result.blocks.map((b) => b.type)).toEqual(["text"]);
+    const block = result.blocks[0];
+    expect(block.parsedContent?.textContent).toBe("Hello world.");
+
+    const footnotes = blockFootnotes(block);
+    expect(footnotes.map((f) => f.text)).toEqual([
+      "First note with emphasis.",
+      "Second note.",
+    ]);
+    expect(result.extraEntities.map((e) => e.entityID)).toEqual(
+      footnotes.map((f) => f.entityID),
+    );
+
+    // The parsed content carries footnote nodes pointing at the minted
+    // entities, in the same order as the block/footnote positions.
+    const nodeIDs: string[] = [];
+    block.parsedContent?.descendants((node) => {
+      if (node.type.name === "footnote")
+        nodeIDs.push(node.attrs.footnoteEntityID);
+      return true;
+    });
+    expect(nodeIDs).toEqual(footnotes.map((f) => f.entityID));
+  });
+
+  test("each ref to a shared definition gets its own footnote", () => {
+    const result = buildText("One[^n] and two[^n].\n\n[^n]: Shared note.\n");
+    const footnotes = blockFootnotes(result.blocks[0]);
+    expect(footnotes.map((f) => f.text)).toEqual([
+      "Shared note.",
+      "Shared note.",
+    ]);
+    expect(new Set(footnotes.map((f) => f.entityID)).size).toBe(2);
+  });
+
+  test("a multi-paragraph definition becomes one footnote with hard breaks", () => {
+    const result = buildText(
+      "Ref[^m].\n\n[^m]: First paragraph.\n\n    Second paragraph.\n",
+    );
+    expect(blockFootnotes(result.blocks[0]).map((f) => f.text)).toEqual([
+      "First paragraph.\nSecond paragraph.",
+    ]);
+  });
+
+  test("footnotes inside list items land on the item's block", () => {
+    const result = buildText("- item one[^a]\n- item two\n\n[^a]: Note a.\n");
+    expect(result.blocks.map((b) => b.parsedContent?.textContent)).toEqual([
+      "item one",
+      "item two",
+    ]);
+    expect(blockFootnotes(result.blocks[0]).map((f) => f.text)).toEqual([
+      "Note a.",
+    ]);
+    expect(blockFootnotes(result.blocks[1])).toEqual([]);
   });
 });

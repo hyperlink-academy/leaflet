@@ -5,7 +5,6 @@ import { useState } from "react";
 import { createCheckoutSession } from "actions/createCheckoutSession";
 import { DotLoader } from "components/utils/DotLoader";
 import { ToggleGroup } from "components/ToggleGroup";
-import { SaleSticker } from "components/SaleSticker";
 
 export const UpgradeContent = () => {
   let [cadence, setCadence] = useState<"year" | "month">("year");
@@ -63,41 +62,12 @@ export const UpgradeContent = () => {
 
             <div className="flex gap-1 items-baseline justify-center pb-4">
               <div className="text-2xl font-bold leading-tight">
-                {cadence === "year" ? (
-                  <div className="flex gap-1 items-baseline">
-                    <div className="relative text-tertiary text-lg ">
-                      $120
-                      <div className="-rotate-16 absolute h-0.5 top-3 -left-1 -right-1 bg-tertiary border-1 " />
-                    </div>
-                    <div>$90</div>
-                  </div>
-                ) : (
-                  "$12"
-                )}
+                {cadence === "year" ? "$120" : "$12"}
               </div>
               <div className="text-secondary">
                 {cadence === "year" ? "/year" : "/month"}
               </div>
             </div>
-            {cadence === "year" && (
-              <div className="frosted-container pt-2 pb-4 px-3  text-secondary gap-2 text-center leading-snug   mb-4 w-full ">
-                <div className="font-bold flex items-center gap-1 justify-center w-full">
-                  <SaleSticker width={48} />
-                  your first year!{" "}
-                </div>
-                <div className="text-sm font-normal!">
-                  Get your{" "}
-                  <a
-                    target="_blank"
-                    href="https://lab.leaflet.pub/3movr6hcegc2f"
-                    className="underline"
-                  >
-                    Summer Pass
-                  </a>
-                  , <br /> only available until July 31
-                </div>
-              </div>
-            )}
             <ButtonPrimary
               fullWidth
               className="mx-auto"

@@ -2,6 +2,7 @@
 
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
+import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublication";
 import { getStripe } from "stripe/client";
 import { Ok, Err, type Result } from "src/result";
 
@@ -58,6 +59,7 @@ export async function enableMemberships(
     return Err("database_error");
   }
   await ensureFreeTier(publicationUri);
+  await revalidatePublicationSettingsPaths(publicationUri);
   return Ok(null);
 }
 
@@ -165,6 +167,7 @@ export async function upsertMembershipTier(
       console.error("[membershipSettings] free tier update failed:", error);
       return Err("database_error");
     }
+    await revalidatePublicationSettingsPaths(publicationUri);
     return Ok({ id: existing.id });
   }
 
@@ -315,6 +318,7 @@ export async function upsertMembershipTier(
         console.error("[membershipSettings] price archive failed:", e),
       );
   }
+  await revalidatePublicationSettingsPaths(publicationUri);
   return Ok({ id: rowId });
 }
 
@@ -371,5 +375,6 @@ export async function deleteMembershipTier(
     console.error("[membershipSettings] tier delete failed:", error);
     return Err("database_error");
   }
+  await revalidatePublicationSettingsPaths(publicationUri);
   return Ok(null);
 }

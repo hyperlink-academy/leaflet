@@ -12,7 +12,10 @@ clipboard text/plain ┘        (dialects)            (block elements)          
 - `normalizePastedHTML.ts` rewrites word-processor dialects into ordinary HTML:
   Word's `mso-list` paragraphs, Word Online's `aria-level` list runs, Google
   Docs' sibling-nested `<ul>`, class-driven marks that live in a `<style>`
-  block, tables, task-list checkboxes.
+  block, tables, task-list checkboxes. It also consumes a markdown renderer's
+  footnote section (GFM `<section data-footnotes>`, pandoc `section.footnotes`,
+  python-markdown `div.footnotes`): each ref becomes a span carrying its
+  definition's HTML, from which the block builder mints a footnote entity.
 - `htmlToBlocks.ts` flattens the normalized tree into block-level elements and
   turns each one into the facts a block needs.
 
