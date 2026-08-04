@@ -134,7 +134,7 @@ export const ProfileButton = () => {
 
           <button
             type="button"
-            className="menuItem -mx-[8px] text-left flex items-center gap-2 hover:no-underline!"
+            className="menuItem"
             onClick={async () => {
               closeMenu();
               let currentIdentity = identity?.id;
