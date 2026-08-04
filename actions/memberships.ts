@@ -12,6 +12,8 @@ import {
   type WalletRow,
 } from "stripe/wallet";
 import { getPublicationURL } from "src/utils/getPublicationURL";
+import { subscribeToPublication } from "actions/publications/subscribeToPublication";
+import { requestPublicationEmailSubscription } from "actions/publications/subscribeEmail";
 import { Ok, Err, type Result } from "src/result";
 
 type MembershipError =
@@ -69,6 +71,43 @@ export async function resumeMembership(
   membershipId: string,
 ): Promise<Result<null, MembershipError>> {
   return setCancelAtPeriodEnd(membershipId, false);
+}
+
+// Moving a paying member to the free tier is one transition, not two: wind the
+// Stripe subscription down at the period's end, then establish the plain
+// subscription that keeps them on the publication once it lapses. A paid
+// membership carries no publication_subscriptions row of its own, so a caller
+// that stopped between the two steps would leave the reader quietly
+// unsubscribed. `subscribed` is false when the follow-up didn't take — the
+// cancellation still stands, so callers should say so rather than retry.
+export async function downgradeMembershipToFree(args: {
+  membershipId: string;
+  publicationUri: string;
+  newsletterMode: boolean;
+}): Promise<Result<{ subscribed: boolean }, MembershipError>> {
+  const identity = await getAuthIdentity();
+  if (!identity) return Err("not_authenticated");
+
+  const cancelled = await setCancelAtPeriodEnd(args.membershipId, true);
+  if (!cancelled.ok) return cancelled;
+
+  try {
+    if (args.newsletterMode && identity.email) {
+      const res = await requestPublicationEmailSubscription(
+        args.publicationUri,
+        identity.email,
+      );
+      return Ok({ subscribed: res.ok });
+    }
+    if (identity.atp_did) {
+      const res = await subscribeToPublication(args.publicationUri);
+      return Ok({ subscribed: res.success });
+    }
+    return Ok({ subscribed: false });
+  } catch (e) {
+    console.error("[memberships] free subscription after downgrade failed:", e);
+    return Ok({ subscribed: false });
+  }
 }
 
 // Switch tier and/or monthly↔annual on the single subscription item, letting

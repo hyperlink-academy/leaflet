@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
-import { Tabs } from "components/Tabs";
+import { Tabs, useTabParam } from "components/Tabs";
 import {
   SettingsContent,
   usePubSettingsTabs,
@@ -18,19 +17,10 @@ export default function SettingsPage() {
   let pathname = usePathname();
   let tabs = usePubSettingsTabs();
 
-  let requestedTab = useSearchParams().get("tab");
-  // The tab list comes from identity/publication data that resolves after the
-  // first render, so a ?tab= link can't be validated there — keep resolving it
-  // until the reader picks a tab themselves.
-  let [chosenTab, setChosenTab] = useState<PubSettingsTab | null>(null);
-  let tab =
-    chosenTab ??
-    (tabs.some((t) => t.value === requestedTab)
-      ? (requestedTab as PubSettingsTab)
-      : "general");
+  let [tab, chooseTab] = useTabParam<PubSettingsTab>(tabs, "general");
 
   let onTabChange = (value: PubSettingsTab) => {
-    setChosenTab(value);
+    chooseTab(value);
     window.history.replaceState(
       null,
       "",

@@ -1,4 +1,22 @@
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
+
+// Selects the active tab from the `?tab=` param, falling back when it names a
+// tab this viewer can't see. The tab list is usually derived from identity or
+// entitlement data that resolves after the first render, so the param has to
+// be re-checked every render rather than validated once in a useState
+// initializer — until the viewer picks a tab, which wins from then on.
+export function useTabParam<T extends string>(
+  tabs: { value: T }[],
+  fallback: T,
+): [T, (tab: T) => void] {
+  let requested = useSearchParams().get("tab");
+  let [chosen, setChosen] = useState<T | null>(null);
+  let tab =
+    chosen ??
+    (tabs.some((t) => t.value === requested) ? (requested as T) : fallback);
+  return [tab, setChosen];
+}
 
 export function Tabs<T extends string>(props: {
   value: T;

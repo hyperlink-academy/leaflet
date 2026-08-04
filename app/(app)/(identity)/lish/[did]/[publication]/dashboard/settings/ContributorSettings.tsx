@@ -405,7 +405,8 @@ function ContributorLeaveSettings(props: {
         open={open}
         onOpenChange={setOpen}
         asChild
-        title="Leave publication?"
+        className="max-w-sm w-full"
+        title="Leave this publication?"
         trigger={
           <ButtonPrimary className="self-start mt-1">
             Leave Publication
@@ -414,8 +415,8 @@ function ContributorLeaveSettings(props: {
       >
         <div className="text-secondary flex flex-col gap-2">
           <p>
-            You'll lose access to all drafts in this publication and will no
-            longer be able to publish on its behalf.
+            You will lose access to your drafts in this publication and will no
+            longer be able to publish posts here.
           </p>
           <div className="flex gap-2 justify-end pt-2">
             <ButtonSecondary

@@ -18,10 +18,6 @@ import { ContributorSettings } from "./ContributorSettings";
 import { MonetizationSettings } from "./MonetizationSettings";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
-import { Modal } from "components/Modal";
-import { Input } from "components/Input";
-import { deletePublication } from "./deletePublication";
-import { useRouter } from "next/navigation";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { SettingsPageLayout, SettingsSection } from "components/SettingsLayout";
 import {

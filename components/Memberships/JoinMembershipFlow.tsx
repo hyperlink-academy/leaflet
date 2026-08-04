@@ -30,7 +30,10 @@ import {
   saveWalletCardFromSession,
   type MembershipJoinViewer,
 } from "actions/publications/joinMembership";
-import { cancelMembership, switchMembership } from "actions/memberships";
+import {
+  downgradeMembershipToFree,
+  switchMembership,
+} from "actions/memberships";
 import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
@@ -321,17 +324,17 @@ export function JoinMembershipFlow(props: {
     finishJoin("Updated your plan!");
   };
 
-  // Downgrading a paying member schedules cancellation at the period's end
-  // (same as MembershipsManager's Cancel — Stripe keeps their paid access
-  // live and won't charge again) and separately establishes the free
-  // subscription now. A paid membership has no publication_subscriptions row
-  // of its own, so without this they'd stop hearing from the pub the moment
-  // the paid period lapses.
+  // Paid access runs to the period's end, so the reader stays a member for now
+  // and lands on free after — the server owns both halves of that transition.
   const downgradeToFree = async (tier: Tier) => {
     const m = viewer?.membership;
     if (!m) return;
     setBusyTierId(tier.id);
-    const res = await cancelMembership(m.id);
+    const res = await downgradeMembershipToFree({
+      membershipId: m.id,
+      publicationUri: props.publicationUri,
+      newsletterMode: props.newsletterMode,
+    });
     if (!res.ok) {
       setBusyTierId(null);
       toaster({
@@ -340,19 +343,12 @@ export function JoinMembershipFlow(props: {
       });
       return;
     }
-    if (props.newsletterMode && identity?.email) {
-      await requestPublicationEmailSubscription(
-        props.publicationUri,
-        identity.email,
-      ).catch(() => {});
-    } else {
-      await subscribeToPublication(
-        props.publicationUri,
-        window.location.href,
-      ).catch(() => {});
-    }
     setConfirmDowngrade(null);
-    finishJoin("You'll move to the free plan at the end of your billing period.");
+    finishJoin(
+      res.value.subscribed
+        ? "You'll move to the free plan at the end of your billing period."
+        : "Your membership ends at the period's end — subscribe to keep getting posts.",
+    );
   };
 
   // Signed-out email joins mint a session with an auth code confirmed right
@@ -485,13 +481,8 @@ export function JoinMembershipFlow(props: {
     // An active paid membership switches in place (prorated) between paid
     // tiers, or downgrades to free through a confirm step (that path cancels
     // the Stripe subscription instead of switching it).
-    if (viewer?.membership) {
-      if (free) {
-        setConfirmDowngrade(tier);
-        return;
-      }
-      return runSwitch(tier);
-    }
+    if (viewer?.membership)
+      return free ? setConfirmDowngrade(tier) : runSwitch(tier);
 
     if (identity) {
       if (hasNeededIdentity) return free ? freeJoin(tier) : payWithViewer(tier);
@@ -634,10 +625,9 @@ export function JoinMembershipFlow(props: {
       )}
       {confirmDowngrade && (
         <DowngradeConfirmModal
-          currentTierName={
-            props.tiers.find((t) => t.id === viewer?.membership?.tierId)
-              ?.name ?? "current"
-          }
+          currentTier={props.tiers.find(
+            (t) => t.id === viewer?.membership?.tierId,
+          )}
           periodEnd={viewer?.membership?.currentPeriodEnd ?? null}
           busy={busyTierId !== null}
           onConfirm={() => downgradeToFree(confirmDowngrade)}
@@ -649,17 +639,13 @@ export function JoinMembershipFlow(props: {
 }
 
 function DowngradeConfirmModal(props: {
-  currentTierName: string;
+  currentTier: Tier | undefined;
   periodEnd: string | null;
   busy: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }) {
-  const endDate = useLocalizedDate(props.periodEnd ?? "", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const endDate = useLocalizedDate(props.periodEnd ?? "", DOWNGRADE_DATE_FORMAT);
 
   return (
     <Modal
@@ -670,8 +656,15 @@ function DowngradeConfirmModal(props: {
     >
       <div className="flex flex-col gap-3">
         <div className="text-secondary leading-snug">
-          Switch from <strong>{props.currentTierName}</strong> to the free
-          plan? You'll keep member access{" "}
+          {props.currentTier ? (
+            <>
+              Switch from <strong>{props.currentTier.name}</strong> to the free
+              plan?
+            </>
+          ) : (
+            "Switch to the free plan?"
+          )}{" "}
+          You'll keep member access{" "}
           {props.periodEnd
             ? `until ${endDate}`
             : "until the end of your billing period"}
@@ -693,6 +686,12 @@ function DowngradeConfirmModal(props: {
     </Modal>
   );
 }
+
+const DOWNGRADE_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+};
 
 function validEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());

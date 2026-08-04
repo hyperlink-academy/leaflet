@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { SettingsPageLayout, SettingsSection } from "components/SettingsLayout";
-import { Tabs } from "components/Tabs";
+import { Tabs, useTabParam } from "components/Tabs";
 import { ManageDomainsContent } from "./domains/ManageDomains";
 import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
 import { ManageProSubscription } from "./ManageProSubscription";
@@ -41,23 +40,15 @@ export function SettingsPageContent(props: {
     { value: "pro", label: "Leaflet Pro" },
   ];
 
-  let requestedTab = searchParams.get("tab");
-  // The Monetization tab depends on an entitlement that resolves after the
-  // first render, so a ?tab= link can't be validated there — keep resolving it
-  // until the reader picks a tab themselves.
-  let [chosenTab, setChosenTab] = useState<SettingsTab | null>(null);
-  let tab =
-    chosenTab ??
-    (tabs.some((t) => t.value === requestedTab)
-      ? (requestedTab as SettingsTab)
-      : // Returning from the hosted card-update page lands on /settings with
-        // only a wallet_session param; the billing tab owns processing it.
-        searchParams.get("wallet_session")
-        ? "billing"
-        : "domains");
+  let [tab, chooseTab] = useTabParam<SettingsTab>(
+    tabs,
+    // Returning from the hosted card-update page lands on /settings with only
+    // a wallet_session param; the billing tab owns processing it.
+    searchParams.get("wallet_session") ? "billing" : "domains",
+  );
 
   let onTabChange = (value: SettingsTab) => {
-    setChosenTab(value);
+    chooseTab(value);
     window.history.replaceState(null, "", `/settings?tab=${value}`);
   };
 
