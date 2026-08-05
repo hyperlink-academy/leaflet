@@ -28,7 +28,7 @@ export function LeafletDomain(props: { domain: CustomDomain }) {
           <hr className="my-1 -mx-2" />
 
           {routes.map((route) => (
-            <div>
+            <>
               <div
                 key={route.id}
                 className="flex gap-2 items-center justify-between"
@@ -62,7 +62,7 @@ export function LeafletDomain(props: { domain: CustomDomain }) {
                 />
               </div>
               <hr className="last:hidden border-dashed" />
-            </div>
+            </>
           ))}
         </div>
       </div>
