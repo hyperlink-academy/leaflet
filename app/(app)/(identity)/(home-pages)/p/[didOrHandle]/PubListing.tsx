@@ -19,6 +19,9 @@ type PubListingProps = Omit<
   documents_in_publications?: PublicationSubscription["documents_in_publications"];
   showSubscribeButton?: boolean;
   constrainHeight?: boolean;
+  // Icon and title on one row, description clamped to two lines, no
+  // updated-at — for tight spots like the subscribe-success modal.
+  compact?: boolean;
 };
 
 export const PubListing = (props: PubListingProps) => {
@@ -34,11 +37,15 @@ export const PubListing = (props: PubListingProps) => {
   let backgroundImageRepeat = record?.theme?.backgroundImage?.repeat;
   let backgroundImageSize = record?.theme?.backgroundImage?.width || 500;
   if (!record) return null;
+  let iconSrc = record.icon
+    ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
+    : undefined;
 
   return (
     <BaseThemeProvider {...theme} local>
       <div
         className={`no-underline! flex flex-row gap-2
+          ${props.compact ? "grow" : ""}
           bg-bg-leaflet
           border border-border-light rounded-lg
           px-3 py-3 selected-outline
@@ -52,28 +59,29 @@ export const PubListing = (props: PubListingProps) => {
       >
         <a href={record.url} className="absolute inset-0 z-[1]" />
         <div
-          className={`flex w-full flex-col justify-center text-center pt-4 pb-3 px-3 rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
+          className={`flex w-full flex-col justify-center text-center ${props.compact ? "py-3" : "pt-4 pb-3"} px-3 rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : props.compact ? "h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
         >
-          <div className="mx-auto pb-1">
-            <PubIcon
-              icon={
-                record.icon
-                  ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
-                  : undefined
-              }
-              pubName={record.name}
-              large
-            />
-          </div>
+          {props.compact ? (
+            <div className="flex flex-row gap-2 items-center justify-center pb-1 min-w-0">
+              <PubIcon icon={iconSrc} pubName={record.name} />
+              <h4 className="truncate min-w-0">{record.name}</h4>
+            </div>
+          ) : (
+            <>
+              <div className="mx-auto pb-1">
+                <PubIcon icon={iconSrc} pubName={record.name} large />
+              </div>
 
-          <h4
-            className={`${props.constrainHeight ? "truncate" : ""} shrink-0 `}
-          >
-            {record.name}
-          </h4>
+              <h4
+                className={`${props.constrainHeight ? "truncate" : ""} shrink-0 `}
+              >
+                {record.name}
+              </h4>
+            </>
+          )}
           {record.description && (
             <p
-              className={`text-secondary ${props.constrainHeight ? "line-clamp-1" : ""} min-h-[16px] text-sm overflow-hidden `}
+              className={`text-secondary ${props.compact ? "line-clamp-2" : props.constrainHeight ? "line-clamp-1" : ""} min-h-[16px] text-sm overflow-hidden `}
             >
               {record.description}
             </p>
@@ -82,17 +90,20 @@ export const PubListing = (props: PubListingProps) => {
             <div className="flex flex-row gap-2 items-center">
               {props.authorProfile?.handle}
             </div>
-            {props.documents_in_publications?.[0]?.documents?.sort_date && (
-              <p>
-                Updated{" "}
-                {timeAgo(
-                  props.documents_in_publications[0].documents.sort_date,
-                )}
-              </p>
-            )}
+            {!props.compact &&
+              props.documents_in_publications?.[0]?.documents?.sort_date && (
+                <p>
+                  Updated{" "}
+                  {timeAgo(
+                    props.documents_in_publications[0].documents.sort_date,
+                  )}
+                </p>
+              )}
           </div>
           {props.showSubscribeButton && (
-            <div className="mt-3 max-w-sm mx-auto relative z-[2] w-fit">
+            <div
+              className={`${props.compact ? "mt-2" : "mt-3"} max-w-sm mx-auto relative z-[2] w-fit`}
+            >
               <SubscribeButton
                 publicationUri={props.uri}
                 publicationUrl={record.url}

@@ -131,6 +131,7 @@ export async function updatePublication({
   iconFile,
   removeIcon,
   preferences,
+  recommendations,
 }: {
   uri: string;
   name: string;
@@ -138,7 +139,21 @@ export async function updatePublication({
   iconFile?: File | null;
   removeIcon?: boolean;
   preferences?: Omit<PubLeafletPublication.Preferences, "$type">;
+  recommendations?: string[];
 }): Promise<UpdatePublicationResult> {
+  if (recommendations !== undefined) {
+    recommendations = [...new Set(recommendations)]
+      .filter((r) => {
+        if (r === uri) return false;
+        try {
+          new AtUri(r);
+          return true;
+        } catch {
+          return false;
+        }
+      })
+      .slice(0, 3);
+  }
   return withPublicationUpdate(
     uri,
     async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
@@ -157,6 +172,7 @@ export async function updatePublication({
       return buildRecord(normalizedPub, existingBasePath, publicationType, {
         name,
         ...(description !== undefined && { description }),
+        ...(recommendations !== undefined && { recommendations }),
         icon: iconBlob,
         preferences,
       });

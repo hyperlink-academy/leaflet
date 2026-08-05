@@ -21,6 +21,8 @@ export interface Record {
   icon?: BlobRef
   theme?: Theme
   preferences?: Preferences
+  /** Publications this publication recommends */
+  recommendations?: string[]
   [k: string]: unknown
 }
 

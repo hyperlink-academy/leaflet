@@ -20,12 +20,14 @@ export function SubscribeConfirmationModal() {
   let { identity, mutate: mutateIdentity } = useIdentityData();
   let [emailSuccess, setEmailSuccess] = useState<string | null>(null);
   let [atSuccess, setAtSuccess] = useState(false);
+  let [subscribedPub, setSubscribedPub] = useState<string | null>(null);
 
   useEffect(() => {
     let incomingEmail = searchParams.get("subscribe_email");
     let emailError = searchParams.get("subscribe_email_error");
     let showAtSuccess = searchParams.get("showSubscribeSuccess") === "true";
     let atError = searchParams.get("showSubscribeError") === "true";
+    let incomingSubscribedPub = searchParams.get("subscribed_pub");
     if (!incomingEmail && !emailError && !showAtSuccess && !atError) return;
 
     replaceWithoutParams(router, pathname, searchParams, [
@@ -33,7 +35,10 @@ export function SubscribeConfirmationModal() {
       "subscribe_email_error",
       "showSubscribeSuccess",
       "showSubscribeError",
+      "subscribed_pub",
     ]);
+
+    setSubscribedPub(incomingSubscribedPub);
 
     if (emailError) {
       toaster({
@@ -67,7 +72,7 @@ export function SubscribeConfirmationModal() {
           router.refresh();
         }}
       >
-        <AtSubscribeSuccess />
+        <AtSubscribeSuccess publicationUri={subscribedPub ?? undefined} />
       </Modal>
       <Modal
         open={!!emailSuccess}
@@ -81,6 +86,7 @@ export function SubscribeConfirmationModal() {
         <EmailSubscribeSuccess
           email={emailSuccess ?? undefined}
           handle={handle}
+          publicationUri={subscribedPub ?? undefined}
         />
       </Modal>
     </>

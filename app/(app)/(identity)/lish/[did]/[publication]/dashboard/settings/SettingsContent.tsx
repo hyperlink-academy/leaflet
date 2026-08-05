@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { RecommendationSettings } from "./RecommendedPubsSetting";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
@@ -113,11 +114,16 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     resolvePrevNextDirection(record?.preferences?.prevNextDirection),
   );
 
+  // null until the record loads, in which case saving omits recommendations
+  // entirely so an early save can't wipe them.
+  let [recommendations, setRecommendations] = useState<string[] | null>(null);
+
   // Sync from server data
   useEffect(() => {
     if (!pubData || !pubData.record || !record) return;
     setNameValue(record.name);
     setDescriptionValue(record.description || "");
+    setRecommendations(record.recommendations ?? []);
     if (record.icon)
       setIconPreview(
         `/api/atproto_images?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]}`,
@@ -173,6 +179,15 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     )
       return true;
 
+    if (recommendations !== null) {
+      let savedRecommendations = record.recommendations ?? [];
+      if (
+        recommendations.length !== savedRecommendations.length ||
+        recommendations.some((r, i) => r !== savedRecommendations[i])
+      )
+        return true;
+    }
+
     return false;
   }, [
     record,
@@ -187,6 +202,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     showPrevNext,
     showFirstLast,
     prevNextDirection,
+    recommendations,
   ]);
 
   // Contributors (non-owners) only get the contributor settings — they can't
@@ -238,6 +254,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
             description: descriptionValue,
             iconFile: iconFile,
             removeIcon: iconRemoved,
+            ...(recommendations !== null && { recommendations }),
             preferences: {
               showInDiscover,
               showComments,
@@ -294,6 +311,12 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
             setIconRemoved(true);
           }}
           onIconError={(content) => toast({ type: "error", content })}
+        />
+
+        <RecommendationSettings
+          publicationUri={pubData?.uri ?? ""}
+          recommendations={recommendations}
+          setRecommendations={setRecommendations}
         />
 
         <ThemeAndLayoutSettings

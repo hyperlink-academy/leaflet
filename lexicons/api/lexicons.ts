@@ -2444,6 +2444,15 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.publication#preferences',
             },
+            recommendations: {
+              type: 'array',
+              description: 'Publications this publication recommends',
+              maxLength: 3,
+              items: {
+                type: 'string',
+                format: 'at-uri',
+              },
+            },
           },
         },
       },
@@ -3033,6 +3042,16 @@ export const schemaDict = {
             preferences: {
               ref: 'lex:site.standard.publication#preferences',
               type: 'ref',
+            },
+            leafletRecommendations: {
+              description:
+                'Publications this publication recommends. Leaflet-prefixed to avoid colliding with other apps writing this shared record type.',
+              type: 'array',
+              maxLength: 3,
+              items: {
+                format: 'at-uri',
+                type: 'string',
+              },
             },
             url: {
               format: 'uri',

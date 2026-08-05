@@ -285,7 +285,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           }
         }}
       >
-        <AtSubscribeSuccess />
+        <AtSubscribeSuccess publicationUri={props.publicationUri} />
       </Modal>
       {props.newsletterMode && (
         <Modal
@@ -300,7 +300,11 @@ export const SubscribeInput = (props: SubscribeProps) => {
           }}
         >
           {confirmState === "success" ? (
-            <EmailSubscribeSuccess email={email} handle={user.handle} />
+            <EmailSubscribeSuccess
+              email={email}
+              handle={user.handle}
+              publicationUri={props.publicationUri}
+            />
           ) : (
             <EmailConfirm
               autoFocus

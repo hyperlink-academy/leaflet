@@ -31,6 +31,15 @@
             "ref": "#preferences",
             "type": "ref"
           },
+          "leafletRecommendations": {
+            "description": "Publications this publication recommends. Leaflet-prefixed to avoid colliding with other apps writing this shared record type.",
+            "type": "array",
+            "maxLength": 3,
+            "items": {
+              "format": "at-uri",
+              "type": "string"
+            }
+          },
           "url": {
             "format": "uri",
             "type": "string"
