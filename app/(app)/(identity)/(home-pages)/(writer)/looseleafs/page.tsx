@@ -1,5 +1,6 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { getHomeLeaflet } from "src/homeLeaflet";
+import { getLeafletTitle } from "src/utils/getLeafletTitle";
 import { LooseleafsContent } from "./LooseleafsLayout";
 
 export default async function Home() {
@@ -11,11 +12,7 @@ export default async function Home() {
   let titles =
     auth_res?.permission_token_on_homepage.reduce(
       (acc, tok) => {
-        let title =
-          tok.permission_tokens.leaflets_in_publications[0]?.title ||
-          tok.permission_tokens.leaflets_to_documents[0]?.title ||
-          tok.permission_tokens.title ||
-          undefined;
+        let title = getLeafletTitle(tok.permission_tokens);
         if (title) acc[tok.permission_tokens.root_entity] = title;
         return acc;
       },

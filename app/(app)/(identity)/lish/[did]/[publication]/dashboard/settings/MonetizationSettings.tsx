@@ -23,32 +23,7 @@ export const MonetizationSettings = () => {
 
   return (
     <>
-      <SettingsSection
-        title={stripeEnabled ? "Payments Enabled" : "Enable Payments"}
-      >
-        <div className="flex flex-col gap-2 text-secondary">
-          {stripeEnabled ? (
-            <>
-              <div>
-                This publication can accept payments from readers with Stripe.
-                <br /> You can manage and withdraw funds, and find information
-                on subscriptions, customers, and disputes via the Stripe
-                Dashboard.
-              </div>
-              <div>Leaflet collects 5% of all charges.</div>
-            </>
-          ) : (
-            <>
-              <div>
-                Collect subscriptions and monetize your content!
-                <br /> Connect a Stripe account to get started!
-              </div>
-              <div>Leaflet collects 5% of all charges.</div>
-            </>
-          )}
-        </div>
-        <ConnectPayments />
-      </SettingsSection>
+      <ConnectStripeSection />
       {stripeEnabled &&
         (monetizationEnabled ? (
           <MembershipTiers publicationUri={publicationUri} />
@@ -56,6 +31,43 @@ export const MonetizationSettings = () => {
           <EnableMonetization publicationUri={publicationUri} />
         ))}
     </>
+  );
+};
+
+export const ConnectStripeSection = () => {
+  let { identity } = useIdentityData();
+
+  let stripeEnabled = !!identity?.connectedAccount?.charges_enabled;
+
+  return (
+    <SettingsSection
+      title={stripeEnabled ? "Payments Enabled" : "Enable Payments"}
+    >
+      <div className="flex flex-col gap-2 text-secondary">
+        {stripeEnabled ? (
+          <>
+            <div className="font-bold">
+              {" "}
+              You can accept payments from readers with Stripe!
+            </div>
+            <div>
+              Manage and withdraw funds, and find information on subscriptions,
+              customers, and disputes via the Stripe Dashboard.
+            </div>
+            <div>Leaflet collects 5% of all charges.</div>
+          </>
+        ) : (
+          <>
+            <div>
+              Collect subscriptions and monetize your content!
+              <br /> Connect a Stripe account to get started!
+            </div>
+            <div>Leaflet collects 5% of all charges.</div>
+          </>
+        )}
+      </div>
+      <ConnectPayments />
+    </SettingsSection>
   );
 };
 

@@ -7,13 +7,12 @@ import {
   mutateIdentityData,
 } from "components/IdentityProvider";
 import { useDomainStatus } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/useDomainStatus";
-import { CustomDomain } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainList";
+import { CustomDomain } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainTab";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { useReadOnlyShareLink } from ".";
 import { assignDomainToDocument, removeDomainRoute } from "actions/domains";
 import { useReplicache } from "src/replicache";
-import { AddDomainForm } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/AddDomainForm";
-import { DomainSettingsView } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainSettingsView";
+import { DomainVerification } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainVerification";
 import { DotLoader } from "components/utils/DotLoader";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
@@ -23,7 +22,6 @@ import Link from "next/link";
 type DomainMenuState =
   | { state: "default" }
   | { state: "domain-settings"; domain: string }
-  | { state: "add-domain" }
   | { state: "has-domain"; domain: string };
 
 export function CustomDomainMenu(props: {
@@ -46,25 +44,42 @@ export function CustomDomainMenu(props: {
       );
     case "domain-settings":
       return (
-        <div className="">
-          <DomainSettingsView
-            domain={state.domain}
-            onBack={() => setState({ state: "default" })}
-            onRemoveAssignment={() => setState({ state: "default" })}
-            onDeleteDomain={() => setState({ state: "default" })}
-          />
-        </div>
-      );
-    case "add-domain":
-      return (
-        <AddDomainForm
-          onDomainAdded={(domain) =>
-            setState({ state: "domain-settings", domain })
-          }
+        <VerifyDomainView
+          domain={state.domain}
           onBack={() => setState({ state: "default" })}
         />
       );
   }
+}
+
+function VerifyDomainView(props: { domain: string; onBack: () => void }) {
+  let { pending } = useDomainStatus(props.domain);
+
+  return (
+    <div className="px-2 pb-2 py-1 flex flex-col gap-2 max-w-full w-[600px]">
+      <div className="flex justify-between">
+        <h4 className="truncate">
+          {pending ? `Verify ${props.domain}` : props.domain}
+        </h4>
+        <button
+          className="text-accent-contrast rotate-180 shrink-0"
+          onClick={props.onBack}
+        >
+          <GoToArrow />
+        </button>
+      </div>
+      <hr className="border-border-light -mx-3" />
+      <div className="flex flex-col gap-[6px] text-sm text-primary">
+        {pending ? (
+          <DomainVerification domain={props.domain} />
+        ) : (
+          <div className="text-secondary">
+            This domain is verified! Head back to publish this leaflet to it.
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const DomainOptions = (props: {
@@ -94,9 +109,6 @@ const DomainOptions = (props: {
       (r) => r.edit_permission_token === permission_token.id,
     ),
   );
-  let pendingDomainsList: CustomDomain[] = [];
-  let availableDomainsList: CustomDomain[] = [];
-
   // We'll categorize in the render since pending requires a hook per domain
   let nonLinkedDomains = allDomains.filter(
     (d: CustomDomain) =>
@@ -137,6 +149,8 @@ const DomainOptions = (props: {
             id: crypto.randomUUID(),
             domain: selectedDomain,
             route,
+            // Filled in by the next identity fetch.
+            leaflet: null,
             view_permission_token: publishLink,
             edit_permission_token: permission_token.id,
             created_at: new Date().toISOString(),
@@ -228,9 +242,9 @@ const DomainOptions = (props: {
           />
         )}
         <div className="text-sm text-tertiary leading-snug pt-1">
-          You can add or delete domains from profile settings on{" "}
-          <Link href="/home" className="text-accent-contrast">
-            home
+          You can add or delete domains from{" "}
+          <Link href="/settings?tab=domains" className="text-accent-contrast">
+            domain settings
           </Link>
         </div>
       </div>

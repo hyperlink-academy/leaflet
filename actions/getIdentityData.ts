@@ -24,7 +24,7 @@ async function uncachedGetIdentityData() {
           identities(
             *,
             ${SUBSCRIPTION_STATE_EMBEDS},
-            custom_domains!custom_domains_identity_id_fkey(publication_domains(*, publications(name)), custom_domain_routes(*), *),
+            custom_domains!custom_domains_identity_id_fkey(publication_domains(*, publications(name)), custom_domain_routes(*, leaflet:permission_tokens!custom_domain_routes_edit_permission_token_fkey(title, leaflets_in_publications(title), leaflets_to_documents(title))), *),
             permission_token_on_homepage(
               archived,
               created_at,

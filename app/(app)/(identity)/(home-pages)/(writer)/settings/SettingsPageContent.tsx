@@ -4,16 +4,15 @@ import { useSearchParams } from "next/navigation";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { SettingsPageLayout, SettingsSection } from "components/SettingsLayout";
 import { Tabs, useTabParam } from "components/Tabs";
-import { ManageDomainsContent } from "./domains/ManageDomains";
-import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
-import { ManageProSubscription } from "./ManageProSubscription";
-import { UpgradeToProButton } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
+import { ProTab } from "./ProTab";
 import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { useIdentityData } from "components/IdentityProvider";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
-import { MembershipsManager } from "./MembershipsManager";
+import { MembershipsTab } from "./MembershipsTab";
 import type { MyMembershipsData } from "actions/memberships";
+import { DomainTab } from "./domains/DomainTab";
+import { MonetizationTab } from "./MonetizationTab";
 
 export type MonetizationPub = {
   uri: string;
@@ -64,13 +63,9 @@ export function SettingsPageContent(props: {
       {/* The header (and the tab bar in it) only renders on desktop. */}
       <div className="sm:hidden pb-2">{tabBar}</div>
       <SettingsPageLayout>
-        {tab === "domains" && (
-          <SettingsSection>
-            <ManageDomainsContent />
-          </SettingsSection>
-        )}
+        {tab === "domains" && <DomainTab />}
         {tab === "billing" && (
-          <MembershipsManager
+          <MembershipsTab
             initial={props.memberships ?? { memberships: [], wallet: null }}
           />
         )}
@@ -80,61 +75,5 @@ export function SettingsPageContent(props: {
         {tab === "pro" && <ProTab />}
       </SettingsPageLayout>
     </DashboardPageLayout>
-  );
-}
-
-function MonetizationTab(props: { pubs: MonetizationPub[] }) {
-  let { identity } = useIdentityData();
-  let chargesEnabled = !!identity?.connectedAccount?.charges_enabled;
-
-  return (
-    <>
-      <SettingsSection title="Payments">
-        <ConnectPayments />
-      </SettingsSection>
-      {chargesEnabled && (
-        <SettingsSection title="Your Publications">
-          {props.pubs.length === 0 ? (
-            <div className="text-tertiary text-sm">No publications yet.</div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {props.pubs.map((pub) => (
-                <SpeedyLink
-                  key={pub.uri}
-                  href={pub.settingsHref}
-                  className="no-underline! flex items-center justify-between gap-3 border border-border-light rounded-md px-3 py-2 hover:border-accent-contrast"
-                >
-                  <div className="flex flex-col">
-                    <div className="font-bold text-primary">
-                      {pub.name || "Untitled Publication"}
-                    </div>
-                    <div className="text-tertiary text-sm">
-                      {pub.monetizationEnabled
-                        ? "Monetization enabled"
-                        : "Monetization off"}
-                    </div>
-                  </div>
-                  <GoToArrow className="text-accent-contrast shrink-0" />
-                </SpeedyLink>
-              ))}
-            </div>
-          )}
-        </SettingsSection>
-      )}
-    </>
-  );
-}
-
-function ProTab() {
-  let isPro = useIsPro();
-
-  return isPro ? (
-    <SettingsSection title="Leaflet Pro">
-      <ManageProSubscription />
-    </SettingsSection>
-  ) : (
-    <SettingsSection>
-      <UpgradeToProButton />
-    </SettingsSection>
   );
 }

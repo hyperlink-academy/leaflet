@@ -8,10 +8,7 @@ import { addDomain } from "actions/domains";
 import { DotLoader } from "components/utils/DotLoader";
 import { GoToArrow } from "components/Icons/GoToArrow";
 
-export function AddDomainForm(props: {
-  onDomainAdded: (domain: string) => void;
-  onBack: () => void;
-}) {
+export function AddDomainForm(props: {}) {
   let [value, setValue] = useState("");
   let [loading, setLoading] = useState(false);
   let { mutate } = useIdentityData();
@@ -45,18 +42,10 @@ export function AddDomainForm(props: {
           return;
         }
         mutate();
-        props.onDomainAdded(value);
       }}
     >
       <div className="flex justify-between">
         <h3>Add a Domain</h3>
-        <button
-          className="text-accent-contrast"
-          onMouseDown={() => props.onBack()}
-          type="button"
-        >
-          <GoToArrow className="rotate-180" />
-        </button>
       </div>
       <div className="text-sm text-secondary">
         <div className="font-bold">Just include the base domain</div>
