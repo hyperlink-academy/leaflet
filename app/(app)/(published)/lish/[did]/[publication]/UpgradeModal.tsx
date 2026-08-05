@@ -99,25 +99,3 @@ const UpgradeModal = (props: {
     </Modal>
   );
 };
-
-export const UpgradeToProButton = (props: {
-  fullWidth?: boolean;
-  compact?: boolean;
-  // When provided, the button defers opening the modal to the caller (used
-  // when the modal must live outside a closing container like a popover).
-  onClick?: () => void;
-}) => {
-  let button = (
-    <ButtonPrimary
-      type="button"
-      compact={props.compact}
-      fullWidth={props.fullWidth}
-      className={props.compact ? `text-sm` : "text-base"}
-      onClick={props.onClick}
-    >
-      Upgrade to Leaflet Pro!
-    </ButtonPrimary>
-  );
-  if (props.onClick) return button;
-  return <UpgradeModal asChild trigger={button} />;
-};

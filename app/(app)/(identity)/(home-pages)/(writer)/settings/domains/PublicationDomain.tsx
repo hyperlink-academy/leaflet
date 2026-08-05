@@ -7,9 +7,7 @@ import {
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import type { CustomDomain } from "./DomainTab";
 import { UnassignButton } from "./UnassignButton";
-import { DomainVerification } from "./DomainVerification";
 import { DeleteDomainButton } from "./DeleteDomainButton";
-import { domainRowButton, domainRowBody } from "./domainRowStyles";
 import { SpeedyLink } from "components/SpeedyLink";
 
 export function PublicationDomain(props: { domain: CustomDomain }) {

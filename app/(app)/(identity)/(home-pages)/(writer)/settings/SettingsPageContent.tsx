@@ -4,15 +4,12 @@ import { useSearchParams } from "next/navigation";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { SettingsPageLayout, SettingsSection } from "components/SettingsLayout";
 import { Tabs, useTabParam } from "components/Tabs";
-import { ManageDomainsContent } from "./domains/ManageDomains";
-import { ConnectPayments } from "components/StripeConnect/ConnectPayments";
-import { ManageProSubscription } from "./ManageProSubscription";
-import { UpgradeToProButton } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
+import { ProTab } from "./ProTab";
 import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { useIdentityData } from "components/IdentityProvider";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
-import { MembershipsManager } from "./MembershipsManager";
+import { MembershipsTab } from "./MembershipsTab";
 import type { MyMembershipsData } from "actions/memberships";
 import { DomainTab } from "./domains/DomainTab";
 import { MonetizationTab } from "./MonetizationTab";
@@ -68,7 +65,7 @@ export function SettingsPageContent(props: {
       <SettingsPageLayout>
         {tab === "domains" && <DomainTab />}
         {tab === "billing" && (
-          <MembershipsManager
+          <MembershipsTab
             initial={props.memberships ?? { memberships: [], wallet: null }}
           />
         )}
@@ -78,19 +75,5 @@ export function SettingsPageContent(props: {
         {tab === "pro" && <ProTab />}
       </SettingsPageLayout>
     </DashboardPageLayout>
-  );
-}
-
-function ProTab() {
-  let isPro = useIsPro();
-
-  return isPro ? (
-    <SettingsSection title="Leaflet Pro">
-      <ManageProSubscription />
-    </SettingsSection>
-  ) : (
-    <SettingsSection>
-      <UpgradeToProButton />
-    </SettingsSection>
   );
 }

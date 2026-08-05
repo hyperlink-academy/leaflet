@@ -21,7 +21,7 @@ import {
 import { createWalletCheckoutSession } from "actions/publications/joinMembership";
 import { SettingsSection } from "components/SettingsLayout";
 
-export function MembershipsManager(props: { initial: MyMembershipsData }) {
+export function MembershipsTab(props: { initial: MyMembershipsData }) {
   const { memberships, wallet } = props.initial;
   const toaster = useToaster();
   const router = useRouter();
@@ -64,8 +64,8 @@ export function MembershipsManager(props: { initial: MyMembershipsData }) {
 
       <SettingsSection title="Your Memberships">
         {memberships.length === 0 ? (
-          <div className="px-4 py-6 text-center text-secondary">
-            You're not a paying member of any publication yet.
+          <div className="px-4 py-6 text-center italic text-tertiary">
+            You're not a paying member of any publication yet…
           </div>
         ) : (
           memberships.map((m) => <MembershipRow key={m.id} membership={m} />)
@@ -101,40 +101,33 @@ function WalletCardSection(props: {
   };
 
   return (
-    <SettingsSection title="Payment Card">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex flex-col">
-          {props.processing ? (
-            <div className="text-tertiary text-sm">Updating…</div>
-          ) : card?.card_last4 ? (
-            <div className="text-secondary text-sm">
-              {(card.card_brand ?? "Card").replace(/^\w/, (c) =>
-                c.toUpperCase(),
-              )}{" "}
-              ···{card.card_last4}
-              {card.card_exp_month && card.card_exp_year
-                ? ` · expires ${String(card.card_exp_month).padStart(2, "0")}/${String(
-                    card.card_exp_year,
-                  ).slice(-2)}`
-                : ""}
-            </div>
-          ) : (
-            <div className="text-tertiary text-sm">No card on file yet.</div>
-          )}
-        </div>
-        <ButtonSecondary
-          type="button"
-          disabled={redirecting || props.processing}
-          onClick={openCardForm}
-        >
-          {redirecting ? (
-            <DotLoader />
-          ) : card?.card_last4 ? (
-            "Update card"
-          ) : (
-            "Add card"
-          )}
-        </ButtonSecondary>
+    <SettingsSection title="Connected Card">
+      <div className="flex flex-col">
+        {props.processing ? (
+          <div className="text-tertiary text-sm">Updating…</div>
+        ) : card?.card_last4 ? (
+          <div>
+            {(card.card_brand ?? "Card").replace(/^\w/, (c) => c.toUpperCase())}{" "}
+            ···{card.card_last4}
+            {card.card_exp_month && card.card_exp_year
+              ? ` · expires ${String(card.card_exp_month).padStart(2, "0")}/${String(
+                  card.card_exp_year,
+                ).slice(-2)}`
+              : ""}
+          </div>
+        ) : (
+          <div className="flex flex-col justify-center gap-1 text-tertiary italic text-center mx-auto">
+            <div>No card on file yet…</div>
+            <button
+              type="button"
+              disabled={redirecting || props.processing}
+              onClick={openCardForm}
+              className="text-accent-contrast font-bold"
+            >
+              {redirecting ? <DotLoader /> : "Add card"}
+            </button>
+          </div>
+        )}
       </div>
     </SettingsSection>
   );
