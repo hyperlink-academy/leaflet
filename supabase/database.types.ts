@@ -1563,6 +1563,38 @@ export type Database = {
           },
         ]
       }
+      publication_recommendations: {
+        Row: {
+          indexed_at: string
+          publication: string
+          recommendation: string
+          sort_order: number
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          publication: string
+          recommendation: string
+          sort_order: number
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          publication?: string
+          recommendation?: string
+          sort_order?: number
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_recommendations_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       publication_subscriptions: {
         Row: {
           created_at: string

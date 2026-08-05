@@ -23,12 +23,6 @@ export const PubLeafletPublication: LexiconDoc = {
           icon: { type: "blob", accept: ["image/*"], maxSize: 1000000 },
           theme: { type: "ref", ref: "#theme" },
           preferences: { type: "ref", ref: "#preferences" },
-          recommendations: {
-            type: "array",
-            description: "Publications this publication recommends",
-            maxLength: 3,
-            items: { type: "string", format: "at-uri" },
-          },
         },
       },
     },
@@ -74,6 +68,39 @@ export const PubLeafletPublication: LexiconDoc = {
         accentText: ColorUnion,
         headingFont: { type: "string", maxLength: 100 },
         bodyFont: { type: "string", maxLength: 100 },
+      },
+    },
+  },
+};
+
+export const PubLeafletGraphRecommendations: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.graph.recommendations",
+  defs: {
+    main: {
+      type: "record",
+      // One record per publication, keyed by the publication's rkey so
+      // updates are a simple putRecord overwrite.
+      key: "any",
+      description:
+        "Record declaring the publications a publication recommends",
+      record: {
+        type: "object",
+        required: ["publication", "recommendations"],
+        properties: {
+          publication: {
+            type: "string",
+            format: "at-uri",
+            description:
+              "The publication making the recommendations; must live in the same repo as this record",
+          },
+          recommendations: {
+            type: "array",
+            description: "Publications this publication recommends",
+            maxLength: 3,
+            items: { type: "string", format: "at-uri" },
+          },
+        },
       },
     },
   },

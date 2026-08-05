@@ -20,8 +20,6 @@ export interface Record {
   icon?: BlobRef
   name: string
   preferences?: Preferences
-  /** Publications this publication recommends. Leaflet-prefixed to avoid colliding with other apps writing this shared record type. */
-  leafletRecommendations?: string[]
   url: string
   [k: string]: unknown
 }

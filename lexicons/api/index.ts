@@ -52,6 +52,7 @@ import * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 import * as PubLeafletComment from './types/pub/leaflet/comment'
 import * as PubLeafletContent from './types/pub/leaflet/content'
 import * as PubLeafletDocument from './types/pub/leaflet/document'
+import * as PubLeafletGraphRecommendations from './types/pub/leaflet/graph/recommendations'
 import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 import * as PubLeafletInteractionsRecommend from './types/pub/leaflet/interactions/recommend'
 import * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
@@ -114,6 +115,7 @@ export * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 export * as PubLeafletComment from './types/pub/leaflet/comment'
 export * as PubLeafletContent from './types/pub/leaflet/content'
 export * as PubLeafletDocument from './types/pub/leaflet/document'
+export * as PubLeafletGraphRecommendations from './types/pub/leaflet/graph/recommendations'
 export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 export * as PubLeafletInteractionsRecommend from './types/pub/leaflet/interactions/recommend'
 export * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
@@ -690,11 +692,96 @@ export class PubLeafletBlocksNS {
 
 export class PubLeafletGraphNS {
   _client: XrpcClient
+  recommendations: PubLeafletGraphRecommendationsRecord
   subscription: PubLeafletGraphSubscriptionRecord
 
   constructor(client: XrpcClient) {
     this._client = client
+    this.recommendations = new PubLeafletGraphRecommendationsRecord(client)
     this.subscription = new PubLeafletGraphSubscriptionRecord(client)
+  }
+}
+
+export class PubLeafletGraphRecommendationsRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletGraphRecommendations.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.graph.recommendations',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PubLeafletGraphRecommendations.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.graph.recommendations',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletGraphRecommendations.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.graph.recommendations'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletGraphRecommendations.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.graph.recommendations'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.graph.recommendations', ...params },
+      { headers },
+    )
   }
 }
 

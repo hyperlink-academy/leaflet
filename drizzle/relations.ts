@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, notifications, publications, documents, comments_on_documents, entity_sets, entities, facts, email_auth_tokens, recommends_on_documents, bsky_profiles, poll_votes_on_entity, permission_tokens, user_subscriptions, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, publication_newsletter_settings, publication_email_subscribers, publication_email_subscriber_events, bsky_follows, site_standard_documents_in_publications, documents_in_publications, leaflet_contributors, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_contributors, publication_subscriptions, site_standard_subscriptions, user_entitlements, permission_token_rights, publication_post_sends, leaflets_to_documents, leaflets_in_publications, publication_pages } from "./schema";
+import { identities, notifications, publications, documents, comments_on_documents, entity_sets, entities, facts, email_auth_tokens, recommends_on_documents, bsky_profiles, poll_votes_on_entity, permission_tokens, user_subscriptions, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, publication_newsletter_settings, publication_email_subscribers, publication_email_subscriber_events, bsky_follows, site_standard_documents_in_publications, documents_in_publications, leaflet_contributors, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_contributors, publication_subscriptions, publication_recommendations, site_standard_subscriptions, user_entitlements, permission_token_rights, publication_post_sends, leaflets_to_documents, leaflets_in_publications, publication_pages } from "./schema";
 
 export const notificationsRelations = relations(notifications, ({one}) => ({
 	identity: one(identities, {
@@ -59,9 +59,17 @@ export const publicationsRelations = relations(publications, ({one, many}) => ({
 	publication_domains: many(publication_domains),
 	publication_contributors: many(publication_contributors),
 	publication_subscriptions: many(publication_subscriptions),
+	publication_recommendations: many(publication_recommendations),
 	publication_post_sends: many(publication_post_sends),
 	leaflets_in_publications: many(leaflets_in_publications),
 	publication_pages: many(publication_pages),
+}));
+
+export const publication_recommendationsRelations = relations(publication_recommendations, ({one}) => ({
+	publication: one(publications, {
+		fields: [publication_recommendations.publication],
+		references: [publications.uri]
+	}),
 }));
 
 export const comments_on_documentsRelations = relations(comments_on_documents, ({one}) => ({

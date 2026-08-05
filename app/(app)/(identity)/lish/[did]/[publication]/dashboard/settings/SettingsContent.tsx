@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import useSWR from "swr";
+import { callRPC } from "app/api/rpc/client";
 import { RecommendationSettings } from "./RecommendedPubsSetting";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
@@ -114,16 +116,33 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     resolvePrevNextDirection(record?.preferences?.prevNextDirection),
   );
 
-  // null until the record loads, in which case saving omits recommendations
-  // entirely so an early save can't wipe them.
+  // null until the saved recommendations load, in which case saving omits
+  // recommendations entirely so an early save can't wipe them.
   let [recommendations, setRecommendations] = useState<string[] | null>(null);
+
+  // Saved recommendations live in their own pub.leaflet.graph.recommendations
+  // record, not on the publication record, so they load separately.
+  let { data: savedRecommendations, mutate: mutateRecommendations } = useSWR(
+    pubData?.uri ? ["publication_recommendations", pubData.uri] : null,
+    async () => {
+      let res = await callRPC("get_publication_recommendations", {
+        publication: pubData!.uri,
+      });
+      return res.result.recommendations;
+    },
+    { revalidateOnFocus: false },
+  );
+
+  useEffect(() => {
+    if (savedRecommendations !== undefined)
+      setRecommendations(savedRecommendations);
+  }, [savedRecommendations]);
 
   // Sync from server data
   useEffect(() => {
     if (!pubData || !pubData.record || !record) return;
     setNameValue(record.name);
     setDescriptionValue(record.description || "");
-    setRecommendations(record.recommendations ?? []);
     if (record.icon)
       setIconPreview(
         `/api/atproto_images?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]}`,
@@ -180,10 +199,10 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
       return true;
 
     if (recommendations !== null) {
-      let savedRecommendations = record.recommendations ?? [];
+      let saved = savedRecommendations ?? [];
       if (
-        recommendations.length !== savedRecommendations.length ||
-        recommendations.some((r, i) => r !== savedRecommendations[i])
+        recommendations.length !== saved.length ||
+        recommendations.some((r, i) => r !== saved[i])
       )
         return true;
     }
@@ -191,6 +210,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     return false;
   }, [
     record,
+    savedRecommendations,
     nameValue,
     descriptionValue,
     iconFile,
@@ -291,6 +311,8 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
         if (iconRemoved) setIconPreview(null);
         setIconFile(null);
         setIconRemoved(false);
+        if (recommendations !== null)
+          mutateRecommendations(recommendations, { revalidate: false });
         mutate();
       }}
     >

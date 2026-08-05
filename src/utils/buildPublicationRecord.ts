@@ -17,7 +17,6 @@ export interface RecordOverrides {
   basicTheme?: NormalizedPublication["basicTheme"];
   preferences?: NormalizedPublication["preferences"];
   basePath?: string;
-  recommendations?: string[];
 }
 
 /** Merges override with existing value, respecting explicit undefined */
@@ -59,11 +58,6 @@ function buildLeafletRecord(
       "theme" in overrides,
     ),
     base_path: overrides.basePath ?? existingBasePath,
-    recommendations: resolveField(
-      overrides.recommendations,
-      normalizedPub?.recommendations,
-      "recommendations" in overrides,
-    ),
     preferences: preferences
       ? {
           $type: "pub.leaflet.publication#preferences",
@@ -115,11 +109,6 @@ function buildStandardRecord(
       "basicTheme" in overrides,
     ),
     url: basePath ? `https://${basePath}` : normalizedPub?.url || "",
-    leafletRecommendations: resolveField(
-      overrides.recommendations,
-      normalizedPub?.recommendations,
-      "recommendations" in overrides,
-    ),
     preferences: preferences
       ? {
           showInDiscover: preferences.showInDiscover,

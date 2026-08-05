@@ -556,6 +556,21 @@ export const publication_contributors = pgTable("publication_contributors", {
 	}
 });
 
+export const publication_recommendations = pgTable("publication_recommendations", {
+	uri: text("uri").notNull(),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	recommendation: text("recommendation").notNull(),
+	sort_order: integer("sort_order").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		uri_idx: index("publication_recommendations_uri_idx").on(table.uri),
+		recommendation_idx: index("publication_recommendations_recommendation_idx").on(table.recommendation),
+		publication_recommendations_pkey: primaryKey({ columns: [table.publication, table.recommendation], name: "publication_recommendations_pkey"}),
+	}
+});
+
 export const publication_subscriptions = pgTable("publication_subscriptions", {
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),

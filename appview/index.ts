@@ -8,6 +8,7 @@ import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletContent,
   PubLeafletDocument,
+  PubLeafletGraphRecommendations,
   PubLeafletGraphSubscription,
   PubLeafletPublication,
   PubLeafletComment,
@@ -168,6 +169,7 @@ async function main() {
       ids.PubLeafletDocument,
       ids.PubLeafletPublication,
       ids.PubLeafletGraphSubscription,
+      ids.PubLeafletGraphRecommendations,
       ids.PubLeafletComment,
       ids.PubLeafletPollVote,
       ids.PubLeafletPollDefinition,
@@ -416,6 +418,48 @@ async function handleEvent(evt: Event) {
           kind: "interaction",
           document: recommend.document,
         });
+    }
+  }
+  if (evt.collection === ids.PubLeafletGraphRecommendations) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletGraphRecommendations.validateRecord(evt.record);
+      if (!record.success) return;
+      let pubUri;
+      try {
+        pubUri = new AtUri(record.value.publication);
+      } catch {
+        return;
+      }
+      // A repo may only publish recommendations on behalf of its own
+      // publications.
+      if (pubUri.host !== evt.uri.host) return;
+      let recommendations = [...new Set(record.value.recommendations)]
+        .filter((r) => r !== record.value.publication)
+        .slice(0, 3);
+      // One row per edge; replace this record's rows wholesale so removed
+      // recommendations don't linger.
+      await supabase
+        .from("publication_recommendations")
+        .delete()
+        .eq("uri", evt.uri.toString());
+      if (recommendations.length > 0) {
+        let { error } = await supabase.from("publication_recommendations").insert(
+          recommendations.map((recommendation, sort_order) => ({
+            uri: evt.uri.toString(),
+            publication: record.value.publication,
+            recommendation,
+            sort_order,
+          })),
+        );
+        if (error)
+          console.log("Error inserting publication recommendations:", error);
+      }
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("publication_recommendations")
+        .delete()
+        .eq("uri", evt.uri.toString());
     }
   }
   if (evt.collection === ids.PubLeafletGraphSubscription) {

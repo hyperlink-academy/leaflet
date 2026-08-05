@@ -2078,6 +2078,39 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletGraphRecommendations: {
+    lexicon: 1,
+    id: 'pub.leaflet.graph.recommendations',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'any',
+        description:
+          'Record declaring the publications a publication recommends',
+        record: {
+          type: 'object',
+          required: ['publication', 'recommendations'],
+          properties: {
+            publication: {
+              type: 'string',
+              format: 'at-uri',
+              description:
+                'The publication making the recommendations; must live in the same repo as this record',
+            },
+            recommendations: {
+              type: 'array',
+              description: 'Publications this publication recommends',
+              maxLength: 3,
+              items: {
+                type: 'string',
+                format: 'at-uri',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletGraphSubscription: {
     lexicon: 1,
     id: 'pub.leaflet.graph.subscription',
@@ -2443,15 +2476,6 @@ export const schemaDict = {
             preferences: {
               type: 'ref',
               ref: 'lex:pub.leaflet.publication#preferences',
-            },
-            recommendations: {
-              type: 'array',
-              description: 'Publications this publication recommends',
-              maxLength: 3,
-              items: {
-                type: 'string',
-                format: 'at-uri',
-              },
             },
           },
         },
@@ -3043,16 +3067,6 @@ export const schemaDict = {
               ref: 'lex:site.standard.publication#preferences',
               type: 'ref',
             },
-            leafletRecommendations: {
-              description:
-                'Publications this publication recommends. Leaflet-prefixed to avoid colliding with other apps writing this shared record type.',
-              type: 'array',
-              maxLength: 3,
-              items: {
-                format: 'at-uri',
-                type: 'string',
-              },
-            },
             url: {
               format: 'uri',
               type: 'string',
@@ -3260,6 +3274,7 @@ export const ids = {
   PubLeafletComment: 'pub.leaflet.comment',
   PubLeafletContent: 'pub.leaflet.content',
   PubLeafletDocument: 'pub.leaflet.document',
+  PubLeafletGraphRecommendations: 'pub.leaflet.graph.recommendations',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletInteractionsRecommend: 'pub.leaflet.interactions.recommend',
   PubLeafletPagesCanvas: 'pub.leaflet.pages.canvas',

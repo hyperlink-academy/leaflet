@@ -46,7 +46,6 @@ export type NormalizedPublication = {
   basicTheme?: SiteStandardThemeBasic.Main;
   theme?: $Typed<PubLeafletPublication.Theme>;
   preferences?: SiteStandardPublication.Preferences;
-  recommendations?: string[];
 };
 
 /**
@@ -343,7 +342,6 @@ export function normalizePublication(
     return {
       ...record,
       theme,
-      recommendations: record.leafletRecommendations,
     };
   }
 
@@ -395,7 +393,6 @@ export function normalizePublication(
       basicTheme,
       theme,
       preferences,
-      recommendations: record.recommendations,
     };
   }
 

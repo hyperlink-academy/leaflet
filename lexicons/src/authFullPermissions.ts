@@ -3,6 +3,7 @@ import { PubLeafletDocument } from "./document";
 import {
   PubLeafletPublication,
   PubLeafletPublicationSubscription,
+  PubLeafletGraphRecommendations,
 } from "./publication";
 import { PubLeafletComment } from "./comment";
 import { PubLeafletPollDefinition, PubLeafletPollVote } from "./polls";
@@ -30,6 +31,7 @@ export const PubLeafletAuthFullPermissions: LexiconDoc = {
             PubLeafletPollDefinition.id,
             PubLeafletPollVote.id,
             PubLeafletPublicationSubscription.id,
+            PubLeafletGraphRecommendations.id,
             PubLeafletInteractionsRecommend.id,
             PubLeafletPublicationPage.id,
           ],

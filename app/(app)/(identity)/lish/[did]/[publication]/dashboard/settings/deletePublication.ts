@@ -108,6 +108,10 @@ export async function deletePublication(
     agent.site.standard.publication
       .delete({ repo: credentialSession.did, rkey: pubUri.rkey })
       .catch(() => {}),
+    // The recommendations record shares the publication's rkey.
+    agent.pub.leaflet.graph.recommendations
+      .delete({ repo: credentialSession.did, rkey: pubUri.rkey })
+      .catch(() => {}),
   ]);
 
   let draftDeletes = async () => {
