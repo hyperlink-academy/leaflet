@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
+import useSWR from "swr";
 import { ButtonPrimary } from "components/Buttons";
 import { createBillingPortalSession } from "actions/createBillingPortalSession";
+import { getUpcomingInvoice } from "actions/getUpcomingInvoice";
 import { useIdentityData } from "components/IdentityProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -28,7 +30,20 @@ export const ProTab = () => {
       }),
   );
 
-  const price = subscription?.plan;
+  const willRenew =
+    isPro &&
+    subscription?.status !== "canceled" &&
+    subscription?.status !== "canceling";
+  const { data: upcomingInvoice } = useSWR(
+    willRenew ? "pro-upcoming-invoice" : null,
+    () => getUpcomingInvoice(),
+  );
+  const price = upcomingInvoice?.ok
+    ? new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: upcomingInvoice.value.currency,
+      }).format(upcomingInvoice.value.amount_due / 100)
+    : null;
 
   async function handleManageBilling() {
     setLoading(true);
@@ -61,9 +76,17 @@ export const ProTab = () => {
             <div>
               Your subscription renews on <strong>{renewalDate}</strong>.
             </div>
-            <div>
-              You will be billed <strong>{price}</strong>.
-            </div>
+            {upcomingInvoice && !upcomingInvoice.ok ? null : (
+              <div>
+                You will be billed{" "}
+                {price ? (
+                  <strong>{price}</strong>
+                ) : (
+                  <DotLoader className="inline-block align-bottom" />
+                )}
+                .
+              </div>
+            )}
           </div>
         )}
         <button
