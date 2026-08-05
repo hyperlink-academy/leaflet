@@ -66,7 +66,6 @@ export function ConnectPayments() {
         </a>
       ) : (
         <ButtonPrimary
-          compact
           className="w-max"
           type="button"
           onClick={startOnboarding}
@@ -77,7 +76,7 @@ export function ConnectPayments() {
           ) : started ? (
             "Finish setting up payments"
           ) : (
-            "Set up payments"
+            "Set up payments with Stripe"
           )}
         </ButtonPrimary>
       )}

@@ -13,21 +13,20 @@ export function SettingsPageLayout(props: {
 }
 
 export function SettingsSection(props: {
-  title?: React.ReactNode;
   className?: string;
+  title?: React.ReactNode;
   children: React.ReactNode;
-  accent?: boolean;
+  action?: React.ReactNode;
 }) {
   let cardBorderHidden = useCardBorderHidden();
   return (
     <div
-      className={`${props.accent ? "accent-container" : cardBorderHidden ? "light-container" : "opaque-container"} flex flex-col gap-2 p-3 pb-4 sm:px-4 ${props.className || ""}`}
+      className={`${cardBorderHidden ? "light-container" : "opaque-container"} flex flex-col gap-2 p-3 pb-4 sm:px-4 ${props.className || ""}`}
     >
-      {props.title && (
-        <>
-          <h3>{props.title}</h3>
-        </>
-      )}
+      <div className="flex justify-between items-center">
+        {props.title && <h3>{props.title}</h3>}
+        {props.action && props.action}
+      </div>
       <div className="flex flex-col gap-4 text-secondary leading-snug">
         {props.children}
       </div>

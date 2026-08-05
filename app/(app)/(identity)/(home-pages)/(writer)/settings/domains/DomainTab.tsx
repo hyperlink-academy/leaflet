@@ -10,10 +10,11 @@ import { SettingsSection } from "components/SettingsLayout";
 import { ButtonPrimary } from "components/Buttons";
 import { AddDomainForm } from "./AddDomainForm";
 import { Modal } from "components/Modal";
+import { AddTiny } from "components/Icons/AddTiny";
 
 export type CustomDomain = NonNullable<Identity>["custom_domains"][number];
 
-export function DomainList(props: {
+export function DomainTab(props: {
   filter?: (domain: CustomDomain) => boolean;
 }) {
   let { identity } = useIdentityData();
@@ -56,23 +57,27 @@ export function DomainList(props: {
         </SettingsSection>
       )}
       {unassignedDomains.length > 0 && (
-        <SettingsSection title="Unassigned Domains">
+        <SettingsSection
+          title="Unassigned Domains"
+          action={
+            <Modal
+              asChild
+              trigger={
+                <ButtonPrimary compact className="">
+                  <AddTiny /> Add Domain
+                </ButtonPrimary>
+              }
+            >
+              <AddDomainForm />
+            </Modal>
+          }
+        >
           <p>Assign domains in the leaflet settings or publication settings.</p>
           <div className="flex flex-col gap-2">
             {unassignedDomains.map((domain) => (
-              <>
-                {" "}
-                <UnassignedDomain key={domain.domain} domain={domain} />
-                <hr className="last:hidden" />
-              </>
+              <UnassignedDomain key={domain.domain} domain={domain} />
             ))}
           </div>
-          <Modal
-            asChild
-            trigger={<ButtonPrimary fullWidth>Add New Domain</ButtonPrimary>}
-          >
-            <AddDomainForm />
-          </Modal>
         </SettingsSection>
       )}
     </>

@@ -1,4 +1,4 @@
-import type { CustomDomain } from "./DomainList";
+import type { CustomDomain } from "./DomainTab";
 
 type DomainAssignment =
   | { type: "unassigned" }

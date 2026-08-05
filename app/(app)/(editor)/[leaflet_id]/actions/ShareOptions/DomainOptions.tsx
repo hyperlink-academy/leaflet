@@ -7,7 +7,7 @@ import {
   mutateIdentityData,
 } from "components/IdentityProvider";
 import { useDomainStatus } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/useDomainStatus";
-import { CustomDomain } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainList";
+import { CustomDomain } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainTab";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { useReadOnlyShareLink } from ".";
 import { assignDomainToDocument, removeDomainRoute } from "actions/domains";
