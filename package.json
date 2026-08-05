@@ -20,6 +20,9 @@
     "start-appview-prod": "npm run build-appview && node appview/dist/index.js",
     "email:dev": "email dev",
     "generate-font-fallbacks": "node scripts/generate-font-metric-fallbacks.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "format:changed": "{ git diff --name-only --diff-filter=d HEAD; git ls-files -o --exclude-standard; } | xargs prettier --ignore-unknown --write",
     "check-query-plans": "node scripts/check-supabase-query-plans.mjs",
     "check-published-purity": "node scripts/check-published-purity.mjs"
   },

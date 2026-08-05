@@ -28,7 +28,8 @@ export function PublicationDomain(props: { domain: CustomDomain }) {
         </div>
       </SpeedyLink>
       <UnassignButton
-        linked={pubName}
+        domain={domain}
+        linkedItem={pubName}
         onUnassign={async () => {
           mutateIdentityData(mutateIdentity, (draft) => {
             let domainData = draft.custom_domains.find(

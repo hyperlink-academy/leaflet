@@ -139,10 +139,7 @@ export async function PublicationPageRenderer({
         firstBatch,
         await getProfiles(bylineDidsForPosts(firstBatch)),
       );
-      return [
-        key,
-        { uris: ordered.map((p) => p.uri), initialPosts },
-      ] as const;
+      return [key, { uris: ordered.map((p) => p.uri), initialPosts }] as const;
     }),
   );
 
@@ -222,7 +219,9 @@ export async function PublicationPageRenderer({
                   !!publication.publication_newsletter_settings?.enabled,
               }}
             >
-              <div className="pubPageContent pt-6">
+              <div
+                className={`pubPageContent ${showPageBackground ? "pt-2" : "pt-6"}`}
+              >
                 <PostContent
                   blocks={allBlocks}
                   did={did}

@@ -219,7 +219,7 @@
   }
 
   hr {
-    border-color: var(--color-border-light);
+    @apply border-border-light;
   }
 
   ::placeholder {

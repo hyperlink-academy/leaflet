@@ -1,4 +1,5 @@
 "use client";
+import { Fragment } from "react";
 import { removeDomainRoute } from "actions/domains";
 import {
   useIdentityData,
@@ -24,46 +25,49 @@ export function LeafletDomain(props: { domain: CustomDomain }) {
           <DeleteDomainButton domain={domain} />
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           <hr className="my-1 -mx-2" />
 
-          {routes.map((route) => (
-            <>
-              <div
-                key={route.id}
-                className="flex gap-2 items-center justify-between"
-              >
-                <SpeedyLink
-                  href={`/${route.edit_permission_token}`}
-                  className="truncate min-w-0 text-tertiary no-underline! flex gap-2 hover:text-accent-contrast"
-                >
-                  <div className=" truncate min-w-0 ">{route.route}</div>
+          {routes.map((route) => {
+            let leafletTitle = route.leaflet
+              ? getLeafletTitle(route.leaflet)
+              : "Untitled";
 
-                  <div className="grow truncate min-w-0 italic">
-                    -{" "}
-                    {route.leaflet ? getLeafletTitle(route.leaflet) : undefined}
-                  </div>
-                </SpeedyLink>
-                <UnassignButton
-                  linked={route.route}
-                  onUnassign={async () => {
-                    mutateIdentityData(mutateIdentity, (draft) => {
-                      let domainData = draft.custom_domains.find(
-                        (d) => d.domain === domain,
-                      );
-                      if (domainData)
-                        domainData.custom_domain_routes =
-                          domainData.custom_domain_routes.filter(
-                            (r) => r.id !== route.id,
-                          );
-                    });
-                    await removeDomainRoute({ routeId: route.id });
-                  }}
-                />
-              </div>
-              <hr className="last:hidden border-dashed" />
-            </>
-          ))}
+            return (
+              <Fragment key={route.id}>
+                <div className="flex gap-2 items-center justify-between">
+                  <SpeedyLink
+                    href={`/${route.edit_permission_token}`}
+                    className="truncate min-w-0 text-tertiary no-underline! flex gap-2 hover:text-accent-contrast"
+                  >
+                    <div className=" truncate min-w-0 ">{route.route}</div>
+
+                    <div className="grow truncate min-w-0 italic">
+                      - {leafletTitle}
+                    </div>
+                  </SpeedyLink>
+                  <UnassignButton
+                    domain={domain + route.route}
+                    linkedItem={leafletTitle}
+                    onUnassign={async () => {
+                      mutateIdentityData(mutateIdentity, (draft) => {
+                        let domainData = draft.custom_domains.find(
+                          (d) => d.domain === domain,
+                        );
+                        if (domainData)
+                          domainData.custom_domain_routes =
+                            domainData.custom_domain_routes.filter(
+                              (r) => r.id !== route.id,
+                            );
+                      });
+                      await removeDomainRoute({ routeId: route.id });
+                    }}
+                  />
+                </div>
+                <hr className="last:hidden border-dashed" />
+              </Fragment>
+            );
+          })}
         </div>
       </div>
     </>

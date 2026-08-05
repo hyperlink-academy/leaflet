@@ -6,7 +6,8 @@ import { Modal } from "components/Modal";
 
 export function UnassignButton(props: {
   onUnassign: () => void;
-  linked: string;
+  domain: string;
+  linkedItem: string | undefined;
 }) {
   let [open, setOpen] = useState(false);
 
@@ -23,9 +24,15 @@ export function UnassignButton(props: {
       }
     >
       <div className="flex flex-col gap-2">
-        <p>
-          This domain will no longer link to <strong>{props.linked}</strong>.
-        </p>
+        <div className="flex flex-col ">
+          <p className="text-accent-contrast min-w-0 truncate">
+            {props.domain}
+          </p>{" "}
+          will no longer link to{" "}
+          <p className="font-bold line-clamp-2 light-container py-1 mt-0.5">
+            {props.linkedItem}
+          </p>
+        </div>
         <p> You can always re-assign this domain to something else later.</p>
         <div className="flex gap-2 items-center justify-center pt-2">
           <ButtonTertiary type="button" onClick={() => setOpen(false)}>
