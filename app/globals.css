@@ -310,6 +310,33 @@
 
   /* START GLOBAL STYLING */
 
+  /* The manual's pages are authored as MDX, so its markup carries no classes
+     to hang styles on — block spacing comes from the content column's flex
+     gap, and these fill in what preflight strips. */
+  .manualContent ul,
+  .manualContent ol {
+    @apply pl-6 flex flex-col gap-1;
+    list-style: revert;
+  }
+
+  .manualContent li::marker {
+    @apply text-tertiary;
+  }
+
+  .manualContent h2,
+  .manualContent h3,
+  .manualContent h4 {
+    @apply mt-3;
+  }
+
+  .manualContent code {
+    @apply bg-border-light rounded-md px-1 text-sm;
+  }
+
+  .manualContent blockquote {
+    @apply border-l-2 border-border-light pl-3 text-secondary;
+  }
+
   /* END GLOBAL STYLING */
 }
 
