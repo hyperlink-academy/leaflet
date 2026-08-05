@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { callRPC } from "app/api/rpc/client";
 import { Input } from "components/Input";
 import { Combobox, ComboboxResult } from "components/Combobox";
-import { SettingsSection } from "components/SettingsLayout";
+import { InputSetting, SettingsSection } from "components/SettingsLayout";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { StandardSitePublicationItem } from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
 
@@ -71,14 +71,68 @@ export function RecommendationSettings(props: {
   return (
     <SettingsSection title="Recommendations">
       <p>
-        Recommend up to {MAX_RECOMMENDATIONS} publications. They'll be recommended after readers subscribe.
+        Recommend up to {MAX_RECOMMENDATIONS} Standard Site publications. <br />
+        They'll be shown to readers after they subscribe.
       </p>
-      {recommendations.length > 0 && (
+      <InputSetting label="Publications">
         <div className="flex flex-col gap-2">
+          {!atLimit && (
+            <Combobox
+              open={dropdownOpen && visibleResults.length > 0}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setDropdownOpen(false);
+                  setHighlighted(undefined);
+                }
+              }}
+              results={visibleResults.map((r) => r.uri)}
+              highlighted={highlighted}
+              setHighlighted={setHighlighted}
+              onSelect={() => select(highlighted)}
+              zIndex={60}
+              sideOffset={4}
+              className="w-(--radix-popover-trigger-width)!"
+              trigger={
+                <Input
+                  className="input-with-border w-full text-primary"
+                  type="text"
+                  placeholder="search publications…"
+                  value={query}
+                  disabled={loading}
+                  onChange={(e) => setQuery(e.currentTarget.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      // Adding a recommendation shouldn't submit the whole
+                      // settings form.
+                      e.preventDefault();
+                      e.stopPropagation();
+                      select(highlighted);
+                    }
+                  }}
+                  autoComplete="off"
+                />
+              }
+            >
+              {visibleResults.map((pub) => (
+                <ComboboxResult
+                  key={pub.uri}
+                  result={pub.uri}
+                  highlighted={highlighted}
+                  setHighlighted={setHighlighted}
+                  onSelect={() => select(pub.uri)}
+                  className="text-sm leading-snug"
+                >
+                  {pub.name}
+                </ComboboxResult>
+              ))}
+            </Combobox>
+          )}
           {recommendations.map((uri) => (
             <div
               key={uri}
-              className="relative border border-border-light rounded-md bg-bg-page overflow-hidden"
+              className="relative border border-border-light rounded-md bg-bg-page overflow-hidden light-container"
             >
               <StandardSitePublicationItem uri={uri} />
               <button
@@ -96,60 +150,7 @@ export function RecommendationSettings(props: {
             </div>
           ))}
         </div>
-      )}
-      {!atLimit && (
-        <Combobox
-          open={dropdownOpen && visibleResults.length > 0}
-          onOpenChange={(open) => {
-            if (!open) {
-              setDropdownOpen(false);
-              setHighlighted(undefined);
-            }
-          }}
-          results={visibleResults.map((r) => r.uri)}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-          onSelect={() => select(highlighted)}
-          zIndex={60}
-          sideOffset={4}
-          className="w-(--radix-popover-trigger-width)!"
-          trigger={
-            <Input
-              className="input-with-border w-full text-primary"
-              type="text"
-              placeholder="search publications…"
-              value={query}
-              disabled={loading}
-              onChange={(e) => setQuery(e.currentTarget.value)}
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  // Adding a recommendation shouldn't submit the whole
-                  // settings form.
-                  e.preventDefault();
-                  e.stopPropagation();
-                  select(highlighted);
-                }
-              }}
-              autoComplete="off"
-            />
-          }
-        >
-          {visibleResults.map((pub) => (
-            <ComboboxResult
-              key={pub.uri}
-              result={pub.uri}
-              highlighted={highlighted}
-              setHighlighted={setHighlighted}
-              onSelect={() => select(pub.uri)}
-              className="text-sm leading-snug"
-            >
-              {pub.name}
-            </ComboboxResult>
-          ))}
-        </Combobox>
-      )}
+      </InputSetting>
     </SettingsSection>
   );
 }

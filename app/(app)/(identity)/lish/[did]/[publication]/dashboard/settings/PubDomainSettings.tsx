@@ -47,10 +47,12 @@ export const PubDomainSettings = () => {
   return (
     <>
       <div className="flex flex-col gap-1">
-        <h4>This Publication&apos;s Domains</h4>
-        <div className="text-sm  -mb-0.5 mt-1">
+        <h4>Current Domains</h4>
+        <div className="text-sm   mt-1">
           <div className="font-bold">DEFAULT</div>
-          <div>We use this when linking to your publication and its posts</div>
+          <div>
+            We use this domain when linking to your publication and its posts
+          </div>
         </div>
         {pubDomains
           .filter((d) => d.domain === basePath)
@@ -67,11 +69,11 @@ export const PubDomainSettings = () => {
           ))}
         {pubDomains.filter((d) => d.domain !== basePath).length !== 0 && (
           <>
-            <div className="text-sm  -mb-0.5 mt-1">
+            <div className="text-sm  mt-2">
               <div className="font-bold">ALTERNATES</div>
               <div>
-                These all link to your publication and won't redirect to your
-                default.
+                These all links to your publication and won't redirect to your
+                default domain.
               </div>
             </div>
             {pubDomains
