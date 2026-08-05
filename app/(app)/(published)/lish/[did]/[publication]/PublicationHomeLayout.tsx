@@ -8,6 +8,7 @@ import {
   type SubscribeData,
 } from "./PublicationHeader";
 import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
+import { SubscribeSuccessPrefetch } from "components/Subscribe/useSubscribeSuccessData";
 import type { WordmarkData } from "src/utils/wordmark";
 
 export function PublicationHomeLayout(props: {
@@ -73,6 +74,9 @@ export function PublicationHomeLayout(props: {
 
   let inner = (
     <>
+      <SubscribeSuccessPrefetch
+        publicationUri={props.subscribe.publicationUri}
+      />
       {header}
       <div className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
         {props.children}

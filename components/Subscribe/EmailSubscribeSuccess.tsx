@@ -3,10 +3,8 @@
 import { SpeedyLink } from "components/SpeedyLink";
 import { DotLoader } from "components/utils/DotLoader";
 import { LinkHandle } from "./HandleSubscribe";
-import {
-  RecommendedPublications,
-  useSubscribeSuccessData,
-} from "./RecommendedPublications";
+import { RecommendedPublications } from "./RecommendedPublications";
+import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 
 export const EmailSubscribeSuccess = (props: {
   email: string | undefined;

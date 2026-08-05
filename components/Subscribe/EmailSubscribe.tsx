@@ -119,6 +119,10 @@ export const EmailButton = (props: {
   handle?: string;
   compact?: boolean;
   onSubscribed?: () => void;
+  // The dropdown can also subscribe via the linked atproto handle, so the
+  // caller needs the mode to open the matching success modal. Falls back to a
+  // toast when omitted.
+  onSuccess?: (mode: "email" | "atproto") => void;
 }) => {
   let toaster = useToaster();
   let router = useRouter();
@@ -176,7 +180,8 @@ export const EmailButton = (props: {
       mode === "email" ? await subscribeEmail() : await subscribeAtproto();
     setLoading(false);
     if (!ok) return;
-    toaster({ content: <div>You're Subscribed!</div>, type: "success" });
+    if (props.onSuccess) props.onSuccess(mode);
+    else toaster({ content: <div>You're Subscribed!</div>, type: "success" });
     props.onSubscribed?.();
     refreshIdentityData();
     router.refresh();

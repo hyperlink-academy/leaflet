@@ -26,6 +26,7 @@ import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActi
 import { mainSiteAuthBase } from "src/utils/customDomain";
 
 import { useViewerSubscription } from "./viewerSubscription";
+import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { PaidSubscribeButton } from "./PaidSubscribeButton";
@@ -110,6 +111,9 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let [linkModalOpen, setLinkModalOpen] = useState(false);
   let [subscribeMode, setSubscribeMode] = useState<SubscribeMode>("email");
   const joinable = useJoinableTiers(props.publicationUri);
+  // Warm the success-modal data (pub name + recommended listings) while the
+  // form is idle, so subscribing opens the modal without a loading spinner.
+  useSubscribeSuccessData(props.publicationUri);
 
   const viewerHandle = identity?.bsky_profiles?.handle;
   const viewerAtpDid = identity?.atp_did;
@@ -237,6 +241,12 @@ export const SubscribeInput = (props: SubscribeProps) => {
               email={user.email}
               handle={user.handle}
               onSubscribed={() => setLocallySubscribed(true)}
+              onSuccess={(mode) => {
+                if (mode === "email") {
+                  setConfirmState("success");
+                  setConfirmOpen(true);
+                } else setAtSuccessOpen(true);
+              }}
             />
           ) : subscribeMode === "email" ? (
             emailForm
@@ -256,6 +266,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           onSubscribed={() => setLocallySubscribed(true)}
+          onAtSuccess={() => setAtSuccessOpen(true)}
         />
       )}
       {props.newsletterMode && needsLinkConfirmation && (
@@ -343,6 +354,8 @@ export const SubscribeInput = (props: SubscribeProps) => {
 export const SubscribeButton = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
   let [locallySubscribed, setLocallySubscribed] = useState(false);
+  let [atSuccessOpen, setAtSuccessOpen] = useState(false);
+  let [emailSuccessOpen, setEmailSuccessOpen] = useState(false);
   const joinable = useJoinableTiers(props.publicationUri);
 
   // Paid memberships replace the one-click subscribe with the paid join flow.
@@ -375,6 +388,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           onSubscribed={() => setLocallySubscribed(true)}
+          onAtSuccess={() => setAtSuccessOpen(true)}
         />
       ) : props.newsletterMode && user.loggedIn && user.email ? (
         <EmailButton
@@ -384,6 +398,10 @@ export const SubscribeButton = (props: SubscribeProps) => {
           email={user.email}
           handle={user.handle}
           onSubscribed={() => setLocallySubscribed(true)}
+          onSuccess={(mode) => {
+            if (mode === "email") setEmailSuccessOpen(true);
+            else setAtSuccessOpen(true);
+          }}
         />
       ) : (
         // Nothing to one-click with — either logged out, or logged in but
@@ -396,6 +414,26 @@ export const SubscribeButton = (props: SubscribeProps) => {
           </div>
         </Modal>
       )}
+      <Modal
+        open={atSuccessOpen}
+        onOpenChange={(open) => {
+          if (!open) setAtSuccessOpen(false);
+        }}
+      >
+        <AtSubscribeSuccess publicationUri={props.publicationUri} />
+      </Modal>
+      <Modal
+        open={emailSuccessOpen}
+        onOpenChange={(open) => {
+          if (!open) setEmailSuccessOpen(false);
+        }}
+      >
+        <EmailSubscribeSuccess
+          email={user.email}
+          handle={user.handle}
+          publicationUri={props.publicationUri}
+        />
+      </Modal>
     </>
   );
 };

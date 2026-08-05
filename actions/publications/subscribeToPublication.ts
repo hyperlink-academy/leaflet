@@ -16,11 +16,8 @@ import {
 } from "src/notifications";
 import { v7 } from "uuid";
 
-let leafletFeedURI =
-  "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
-
 type SubscribeResult =
-  | { success: true; hasFeed: boolean }
+  | { success: true }
   | { success: false; error: OAuthSessionError };
 
 export async function subscribeToPublication(
@@ -56,7 +53,7 @@ export async function subscribeToPublication(
     .eq("publication", publication)
     .maybeSingle();
   if (existingSubscription) {
-    return { success: true, hasFeed: true };
+    return { success: true };
   }
 
   let record = await agent.site.standard.graph.subscription.create(
@@ -91,7 +88,6 @@ export async function subscribeToPublication(
 
   return {
     success: true,
-    hasFeed: true,
   };
 }
 

@@ -354,7 +354,7 @@ const handleAction = async (
       // Retry exhausted or a normal post-PDS failure — surface the error rather
       // than redirecting as though the subscribe had succeeded.
       url.searchParams.set("showSubscribeError", "true");
-    } else if (result.hasFeed === false) {
+    } else {
       url.searchParams.set("showSubscribeSuccess", "true");
       url.searchParams.set("subscribed_pub", action.publication);
     }

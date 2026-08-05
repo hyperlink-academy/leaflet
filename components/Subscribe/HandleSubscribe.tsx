@@ -21,10 +21,8 @@ import { LinkIdentityModal } from "./LinkIdentityModal";
 import { RSSTiny } from "components/Icons/RSSTiny";
 import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
-import {
-  RecommendedPublications,
-  useSubscribeSuccessData,
-} from "./RecommendedPublications";
+import { RecommendedPublications } from "./RecommendedPublications";
+import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 const apps = [
   { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
   { name: "Bluesky", logo: "https://leaflet.pub/logos/bluesky.svg" },
