@@ -146,6 +146,7 @@ export async function applyAfterSignInAction(
       // Paid-membership joins carry ?join_tier in the redirect itself, so the
       // reader resumes payment where they left off rather than detouring here.
       target.searchParams.set("subscribe_email", email);
+      target.searchParams.set("subscribed_pub", parsed.publication);
       return target.toString();
     }
     default:

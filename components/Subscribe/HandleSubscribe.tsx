@@ -21,6 +21,10 @@ import { LinkIdentityModal } from "./LinkIdentityModal";
 import { RSSTiny } from "components/Icons/RSSTiny";
 import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
+import {
+  RecommendedPublications,
+  useSubscribeSuccessData,
+} from "./RecommendedPublications";
 const apps = [
   { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
   { name: "Bluesky", logo: "https://leaflet.pub/logos/bluesky.svg" },
@@ -91,7 +95,10 @@ export const SubscribeWithHandle = (props: {
     });
     let inIframe = isInIframe();
     let url = new URL(window.location.href);
-    if (inIframe) url.searchParams.set("showSubscribeSuccess", "true");
+    if (inIframe) {
+      url.searchParams.set("showSubscribeSuccess", "true");
+      url.searchParams.set("subscribed_pub", props.publicationUri);
+    }
     let loginUrl = buildOauthLoginUrl({
       handle,
       redirect: url.toString(),
@@ -340,10 +347,23 @@ export const LinkHandle = (props: { compact?: boolean }) => {
   );
 };
 
-export const AtSubscribeSuccess = (props: {}) => {
+export const AtSubscribeSuccess = (props: { publicationUri?: string }) => {
+  let { loading, publicationName, listings } = useSubscribeSuccessData(
+    props.publicationUri,
+  );
+  if (loading)
+    return (
+      <div className="flex justify-center items-center py-8 text-secondary w-full max-w-full sm:min-w-md">
+        <DotLoader />
+      </div>
+    );
   return (
-    <div className="flex flex-col text-center justify-center p-4 text-secondary max-w-md">
-      <h2 className="text-primary pb-1">You've Subscribed!</h2>
+    <div className="flex flex-col text-center justify-center p-4 text-secondary w-full max-w-full sm:w-auto sm:min-w-md sm:max-w-2xl">
+      <h2 className="text-primary pb-1">
+        {publicationName
+          ? `You've subscribed to ${publicationName}!`
+          : "You've Subscribed!"}
+      </h2>
       You'll receive new posts in the <br />
       <Link href={"https://leaflet.pub/reader"}>Leaflet Reader</Link>
       <br />
@@ -356,6 +376,10 @@ export const AtSubscribeSuccess = (props: {}) => {
         <Link href="">Get the RSS Feed</Link>
         <Link href="">Pin Custom Feed in Bluesky</Link>
       </div>
+      <RecommendedPublications
+        publicationName={publicationName}
+        listings={listings}
+      />
     </div>
   );
 };

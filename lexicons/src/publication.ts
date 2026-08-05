@@ -23,6 +23,12 @@ export const PubLeafletPublication: LexiconDoc = {
           icon: { type: "blob", accept: ["image/*"], maxSize: 1000000 },
           theme: { type: "ref", ref: "#theme" },
           preferences: { type: "ref", ref: "#preferences" },
+          recommendations: {
+            type: "array",
+            description: "Publications this publication recommends",
+            maxLength: 3,
+            items: { type: "string", format: "at-uri" },
+          },
         },
       },
     },

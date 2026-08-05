@@ -356,6 +356,7 @@ const handleAction = async (
       url.searchParams.set("showSubscribeError", "true");
     } else if (result.hasFeed === false) {
       url.searchParams.set("showSubscribeSuccess", "true");
+      url.searchParams.set("subscribed_pub", action.publication);
     }
   }
 
