@@ -76,7 +76,9 @@ export const ProTab = () => {
             <div>
               Your subscription renews on <strong>{renewalDate}</strong>.
             </div>
-            {upcomingInvoice && !upcomingInvoice.ok ? null : (
+            {upcomingInvoice && !upcomingInvoice.ok ? (
+              <div>No upcoming invoice.</div>
+            ) : (
               <div>
                 You will be billed{" "}
                 {price ? (
