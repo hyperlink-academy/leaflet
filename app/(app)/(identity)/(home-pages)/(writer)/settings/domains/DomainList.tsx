@@ -1,15 +1,19 @@
 "use client";
 import { useIdentityData } from "components/IdentityProvider";
-import { useDomainStatus } from "./useDomainStatus";
 import { getDomainAssignment } from "./domainAssignment";
 import { Identity } from "components/IdentityProvider";
-import { GoToArrow } from "components/Icons/GoToArrow";
 import { EmptyState } from "components/EmptyState";
+import { PublicationDomain } from "./PublicationDomain";
+import { LeafletDomain } from "./LeafletDomain";
+import { UnassignedDomain } from "./UnassignedDomain";
+import { SettingsSection } from "components/SettingsLayout";
+import { ButtonPrimary } from "components/Buttons";
+import { AddDomainForm } from "./AddDomainForm";
+import { Modal } from "components/Modal";
 
 export type CustomDomain = NonNullable<Identity>["custom_domains"][number];
 
 export function DomainList(props: {
-  onSelectDomain: (domain: string) => void;
   filter?: (domain: CustomDomain) => boolean;
 }) {
   let { identity } = useIdentityData();
@@ -27,131 +31,50 @@ export function DomainList(props: {
   );
 
   if (domains.length === 0) {
-    <EmptyState container="none" title="no domains yet…" />;
+    return <EmptyState container="none" title="no domains yet…" />;
   }
 
   return (
-    <div className="flex flex-col gap-2 text-secondary">
+    <>
       {pubDomains.length > 0 && (
-        <div className="flex flex-col gap-0.5">
-          <div className="font-bold text-secondary">Publications</div>
-          {pubDomains.map((domain) => (
-            <DomainGroup
-              key={domain.domain}
-              domain={domain}
-              onSelect={() => props.onSelectDomain(domain.domain)}
-              showBase={false}
-            />
-          ))}
-        </div>
-      )}
-      {pubDomains.length > 0 && leafletDomains.length > 0 && (
-        <hr className="border-border-light" />
-      )}
-      {leafletDomains.length > 0 && (
-        <div className="flex flex-col gap-0.5">
-          <div className="font-bold  text-secondary">Leaflets</div>
-          {leafletDomains.map((domain) => (
-            <DomainGroup
-              key={domain.domain}
-              domain={domain}
-              onSelect={() => props.onSelectDomain(domain.domain)}
-              showBase
-            />
-          ))}
-        </div>
-      )}
-      {unassignedDomains.length > 0 && (
-        <>
-          {(pubDomains.length > 0 || leafletDomains.length > 0) && (
-            <hr className="border-border-light my-1" />
-          )}
-          <div className="flex flex-col gap-0.5">
-            <div className="font-bold text-secondary">Unassigned</div>
-            {unassignedDomains.map((domain) => (
-              <UnassignedDomainRow
-                key={domain.domain}
-                domain={domain}
-                onSelect={() => props.onSelectDomain(domain.domain)}
-              />
+        <SettingsSection title="Publications">
+          <div className="flex flex-col gap-2">
+            {pubDomains.map((domain) => (
+              <PublicationDomain key={domain.domain} domain={domain} />
             ))}
           </div>
-        </>
+        </SettingsSection>
       )}
-    </div>
-  );
-}
 
-function DomainGroup(props: {
-  domain: CustomDomain;
-  onSelect: () => void;
-  showBase: boolean;
-}) {
-  let assignment = getDomainAssignment(props.domain);
-
-  return (
-    <div className="flex flex-col gap-0.5">
-      {props.showBase && (
-        <button
-          type="button"
-          className="text-secondary font-normal! text-left flex gap-2 menuItem -mx-[8px] items-center py-0.5!"
-          onClick={props.onSelect}
-        >
-          <div className="grow truncate min-w-0">{props.domain.domain}</div>
-          <div className="text-sm text-tertiary font-normal shrink-0">
-            {props.domain.custom_domain_routes.length} leaflet
-            {props.domain.custom_domain_routes.length === 1 ? "" : "s"}
+      {leafletDomains.length > 0 && (
+        <SettingsSection title="Leaflets">
+          <div className="flex flex-col gap-2">
+            {leafletDomains.map((domain) => (
+              <LeafletDomain key={domain.domain} domain={domain} />
+            ))}
           </div>
-          <GoToArrow className="shrink-0" />
-        </button>
+        </SettingsSection>
       )}
-      {assignment.type === "publication" && (
-        <SubDomainRow
-          path="/"
-          label={props.domain.domain}
-          onSelect={props.onSelect}
-        />
+      {unassignedDomains.length > 0 && (
+        <SettingsSection title="Unassigned Domains">
+          <p>Assign domains in the leaflet settings or publication settings.</p>
+          <div className="flex flex-col gap-2">
+            {unassignedDomains.map((domain) => (
+              <>
+                {" "}
+                <UnassignedDomain key={domain.domain} domain={domain} />
+                <hr className="last:hidden" />
+              </>
+            ))}
+          </div>
+          <Modal
+            asChild
+            trigger={<ButtonPrimary fullWidth>Add New Domain</ButtonPrimary>}
+          >
+            <AddDomainForm />
+          </Modal>
+        </SettingsSection>
       )}
-    </div>
-  );
-}
-
-function SubDomainRow(props: {
-  path: string;
-  label: string;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className="text-secondary font-normal! text-left flex gap-2 menuItem -mx-[8px] items-center py-0.5!"
-      onClick={props.onSelect}
-    >
-      <div className="grow flex gap-2 items-center justify-between w-full truncate">
-        <div className="grow truncate">{props.label}</div>
-        <GoToArrow />
-      </div>
-    </button>
-  );
-}
-
-function UnassignedDomainRow(props: {
-  domain: CustomDomain;
-  onSelect: () => void;
-}) {
-  let { pending } = useDomainStatus(props.domain.domain);
-
-  return (
-    <button
-      type="button"
-      className="py-0! flex  gap-2 font-normal! items-center text-left menuItem -mx-[8px]"
-      onClick={props.onSelect}
-    >
-      <div className="grow truncate min-w-0">{props.domain.domain}</div>
-      {pending && (
-        <div className="text-sm text-tertiary animate-pulse">unverified</div>
-      )}
-      <GoToArrow />
-    </button>
+    </>
   );
 }

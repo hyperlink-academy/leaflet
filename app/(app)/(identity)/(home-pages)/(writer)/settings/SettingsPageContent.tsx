@@ -14,6 +14,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
 import { MembershipsManager } from "./MembershipsManager";
 import type { MyMembershipsData } from "actions/memberships";
+import { DomainList } from "./domains/DomainList";
 
 export type MonetizationPub = {
   uri: string;
@@ -64,11 +65,7 @@ export function SettingsPageContent(props: {
       {/* The header (and the tab bar in it) only renders on desktop. */}
       <div className="sm:hidden pb-2">{tabBar}</div>
       <SettingsPageLayout>
-        {tab === "domains" && (
-          <SettingsSection>
-            <ManageDomainsContent />
-          </SettingsSection>
-        )}
+        {tab === "domains" && <DomainList />}
         {tab === "billing" && (
           <MembershipsManager
             initial={props.memberships ?? { memberships: [], wallet: null }}
