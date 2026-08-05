@@ -102,11 +102,11 @@ export function Page(props: {
             <PageContent entityID={props.entityID} first={props.first} />
           </PageWrapper>
           <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
-          <FootnotePopover />
+          <FootnotePopover pageID={props.entityID} />
           <EditorCommentPopover />
           <EditorCommentMobileSheet />
           <EditorCommentAnchorHover />
-          <LinkPopover />
+          <LinkPopover pageID={props.entityID} />
         </EditorCommentContext.Provider>
       </FootnoteContext.Provider>
     </CardThemeProvider>

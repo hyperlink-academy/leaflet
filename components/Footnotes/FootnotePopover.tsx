@@ -12,20 +12,28 @@ import { deleteFootnoteFromBlock } from "./deleteFootnoteFromBlock";
 type FootnotePopoverState = {
   activeFootnoteID: string | null;
   anchorElement: HTMLElement | null;
-  open: (footnoteID: string, anchor: HTMLElement) => void;
+  pageID: string | null;
+  open: (footnoteID: string, anchor: HTMLElement, pageID?: string) => void;
   close: () => void;
 };
 
 export const useFootnotePopoverStore = create<FootnotePopoverState>((set) => ({
   activeFootnoteID: null,
   anchorElement: null,
-  open: (footnoteID, anchor) =>
-    set({ activeFootnoteID: footnoteID, anchorElement: anchor }),
-  close: () => set({ activeFootnoteID: null, anchorElement: null }),
+  pageID: null,
+  open: (footnoteID, anchor, pageID) =>
+    set({
+      activeFootnoteID: footnoteID,
+      anchorElement: anchor,
+      pageID: pageID ?? null,
+    }),
+  close: () =>
+    set({ activeFootnoteID: null, anchorElement: null, pageID: null }),
 }));
 
-export function FootnotePopover() {
-  let { activeFootnoteID, anchorElement, close } = useFootnotePopoverStore();
+export function FootnotePopover(props: { pageID: string }) {
+  let { activeFootnoteID, anchorElement, pageID, close } =
+    useFootnotePopoverStore();
   let { footnotes } = useFootnoteContext();
   let { permissions } = useEntitySetContext();
   let rep = useReplicache();
@@ -50,7 +58,7 @@ export function FootnotePopover() {
 
   return (
     <AnchoredPopover
-      open={!!activeFootnoteID && !!footnote}
+      open={!!activeFootnoteID && !!footnote && pageID === props.pageID}
       anchorElement={anchorElement}
       onClose={close}
       className="footnote-popover px-3 py-2"

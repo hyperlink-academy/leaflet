@@ -71,6 +71,7 @@ export function TextBlock(
           first={first}
           pageType={props.pageType}
           previousBlock={props.previousBlock}
+          pageID={props.parent}
         />
       )}
       {permission && !props.preview && !stale && (
@@ -138,6 +139,7 @@ export function RenderedTextBlock(props: {
   pageType?: "canvas" | "doc";
   type: BlockProps["type"];
   previousBlock?: BlockProps["previousBlock"];
+  pageID?: string;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -205,7 +207,7 @@ export function RenderedTextBlock(props: {
         if (store.activeFootnoteID === footnoteID) {
           store.close();
         } else {
-          store.open(footnoteID, footnoteRef);
+          store.open(footnoteID, footnoteRef, props.pageID);
         }
       }}
       className={`
