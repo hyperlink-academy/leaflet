@@ -17,11 +17,12 @@ export function SettingsSection(props: {
   title?: React.ReactNode;
   children: React.ReactNode;
   action?: React.ReactNode;
+  accent?: boolean;
 }) {
   let cardBorderHidden = useCardBorderHidden();
   return (
     <div
-      className={`${cardBorderHidden ? "light-container" : "opaque-container"} flex flex-col gap-2 p-3 pb-4 sm:px-4 ${props.className || ""}`}
+      className={`${props.accent ? "accent-container" : cardBorderHidden ? "light-container" : "opaque-container"} flex flex-col gap-2 p-3 pb-4 sm:px-4 ${props.className || ""}`}
     >
       <div className="flex justify-between items-center">
         {props.title && <h3>{props.title}</h3>}
