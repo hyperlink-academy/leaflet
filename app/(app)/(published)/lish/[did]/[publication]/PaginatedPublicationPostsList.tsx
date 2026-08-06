@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import useSWRInfinite from "swr/infinite";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationPostsList } from "./PublicationPostsList";
+import { PublicationPostsChapterList } from "./PublicationPostsChapterList";
+import { groupPostsIntoChapters } from "src/utils/chapterGrouping";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
 import {
   POSTS_LIST_PAGE_SIZE,
   type LoadPostsBatch,
+  type PostsListView,
 } from "src/utils/postsListPagination";
 
 export function PaginatedPublicationPostsList({
@@ -35,18 +38,24 @@ export function PaginatedPublicationPostsList({
   // renders without a round trip.
   initialPosts: PublicationPostsListPost[];
   loadBatch: LoadPostsBatch;
-  view?: "small" | "medium";
+  view?: PostsListView;
+  // Chapter view reads this as the latest post, which is the same post: the
+  // list is newest-first.
   highlightFirstPost?: boolean;
   // Cap the number of posts shown; pagination stops once the list reaches it.
+  // Not offered in chapter view, where a cap on posts would cut a chapter in
+  // half — so a limit left over from another view is ignored there.
   limit?: number;
   emptyState?: React.ReactNode;
   className?: string;
 }) {
   // A limit caps the list at its source so windowing and load-on-scroll both
   // respect it without any special-casing downstream.
-  const cappedUris = limit && limit > 0 ? uris.slice(0, limit) : uris;
-  const cappedInitialPosts =
-    limit && limit > 0 ? initialPosts.slice(0, limit) : initialPosts;
+  const capPosts = !!limit && limit > 0 && view !== "chapter";
+  const cappedUris = capPosts ? uris.slice(0, limit) : uris;
+  const cappedInitialPosts = capPosts
+    ? initialPosts.slice(0, limit)
+    : initialPosts;
 
   const getKey = (pageIndex: number) => {
     const start = pageIndex * POSTS_LIST_PAGE_SIZE;
@@ -62,6 +71,15 @@ export function PaginatedPublicationPostsList({
       fallbackData: [cappedInitialPosts],
       revalidateFirstPage: false,
     },
+  );
+
+  const allPosts = useMemo(
+    () => (data ? data.flatMap((page) => page) : []),
+    [data],
+  );
+  const chapters = useMemo(
+    () => (view === "chapter" ? groupPostsIntoChapters(allPosts) : []),
+    [view, allPosts],
   );
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -81,18 +99,42 @@ export function PaginatedPublicationPostsList({
 
   if (uris.length === 0) return <>{emptyState}</>;
 
-  const allPosts = data ? data.flatMap((page) => page) : [];
-
   return (
     <div className={`relative w-full ${className ?? ""}`}>
-      <PublicationPostsList
-        publication={publication}
-        publicationRecord={publicationRecord}
-        posts={allPosts}
-        view={view}
-        highlightFirstPost={highlightFirstPost}
-        preSorted
-      />
+      {view === "chapter" ? (
+        <>
+          {/* Posts arrive newest-first, so the head of the list is the latest
+              one. It keeps its place inside its chapter too — the chapter is
+              the whole run of pages, not just the ones nothing else points
+              at. */}
+          {highlightFirstPost && allPosts[0] && (
+            <>
+              <PublicationPostsList
+                publication={publication}
+                publicationRecord={publicationRecord}
+                posts={[allPosts[0]]}
+                view="medium"
+                preSorted
+                className="pb-2"
+              />
+              <hr className="border-border-light mb-4" />
+            </>
+          )}
+          <PublicationPostsChapterList
+            publication={publication}
+            chapters={chapters}
+          />
+        </>
+      ) : (
+        <PublicationPostsList
+          publication={publication}
+          publicationRecord={publicationRecord}
+          posts={allPosts}
+          view={view}
+          highlightFirstPost={highlightFirstPost}
+          preSorted
+        />
+      )}
       {/* Fires the next batch while still ~1200px from the list's end. */}
       <div
         ref={loadMoreRef}

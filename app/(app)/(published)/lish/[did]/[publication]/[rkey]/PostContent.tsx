@@ -27,7 +27,10 @@ import {
 } from "lexicons/api";
 import { type PublicationPostsListPost } from "../PublicationPostsList";
 import { PaginatedPublicationPostsList } from "../PaginatedPublicationPostsList";
-import { postsListFilterKey } from "src/utils/postsListPagination";
+import {
+  postsListFilterKey,
+  type PostsListView,
+} from "src/utils/postsListPagination";
 import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
@@ -389,8 +392,12 @@ export let Block = ({
     }
     case PubLeafletBlocksPostsList.isMain(b.block): {
       if (!postsListData) return null;
-      const view: "small" | "medium" =
-        b.block.view === "small" ? "small" : "medium";
+      const view: PostsListView =
+        b.block.view === "chapter"
+          ? "chapter"
+          : b.block.view === "small"
+            ? "small"
+            : "medium";
       const key = postsListFilterKey(b.block.filterByTags);
       const seed = postsListData.initialByFilter[key];
       if (!seed) return null;

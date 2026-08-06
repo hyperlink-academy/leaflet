@@ -13,6 +13,7 @@ import {
   sortPostsForList,
   filterPostsByTags,
   type LoadPostsBatch,
+  type PostsListView,
 } from "src/utils/postsListPagination";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
 import { Popover } from "components/Popover";
@@ -21,8 +22,6 @@ import { SettingsTriggerButton } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { EmptyState } from "components/EmptyState";
-
-type PostsListView = "small" | "medium";
 
 export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -211,14 +210,13 @@ function PostsListSettingsButton(props: { entityID: string }) {
               [
                 { value: "small", Icon: SmallIcon },
                 { value: "medium", Icon: MedIcon },
+                { value: "chapter", Icon: ChapterIcon },
               ] as {
                 value: PostsListView;
                 Icon: (props: { selected: boolean }) => React.ReactNode;
               }[]
             ).map((option) => {
-              let selected =
-                view === option.value ||
-                (option.value === "medium" && view !== "small");
+              let selected = view === option.value;
               return (
                 <button
                   className={`PostBlockSizeSettingOption text-left flex flex-col flex-1 pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
@@ -260,41 +258,44 @@ function PostsListSettingsButton(props: { entityID: string }) {
             });
           }}
         >
-          <strong>Highlight First Post</strong>
+          <strong>Highlight Latest Post</strong>
         </Toggle>
-        <div className="flex flex-col gap-1">
-          <Toggle
-            toggle={limitEnabled}
-            onToggle={() => {
-              if (limitEnabled) {
-                clearLimit();
-                setLimitEnabled(false);
-              } else {
-                setLimitEnabled(true);
-                if (!limit || limit < 1) setLimit(5);
-              }
-            }}
-          >
-            <strong>Limit Posts</strong>
-          </Toggle>
-          {limitEnabled && (
-            <div className="flex items-center gap-2 ml-8 text-secondary text-sm">
-              <span>Show only</span>
-              <input
-                type="number"
-                min={1}
-                value={limit ?? 5}
-                onMouseDown={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  let next = Math.max(1, Math.floor(Number(e.target.value)));
-                  if (Number.isFinite(next)) setLimit(next);
-                }}
-                className="input-tag w-16 border border-border rounded px-1 py-0.5 bg-bg-page"
-              />
-              <span>posts</span>
-            </div>
-          )}
-        </div>
+
+        {view !== "chapter" && (
+          <div className="flex flex-col gap-1">
+            <Toggle
+              toggle={limitEnabled}
+              onToggle={() => {
+                if (limitEnabled) {
+                  clearLimit();
+                  setLimitEnabled(false);
+                } else {
+                  setLimitEnabled(true);
+                  if (!limit || limit < 1) setLimit(5);
+                }
+              }}
+            >
+              <strong>Limit Posts</strong>
+            </Toggle>
+            {limitEnabled && (
+              <div className="flex items-center gap-2 ml-8 text-secondary text-sm">
+                <span>Show only</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={limit ?? 5}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    let next = Math.max(1, Math.floor(Number(e.target.value)));
+                    if (Number.isFinite(next)) setLimit(next);
+                  }}
+                  className="input-tag w-16 border border-border rounded px-1 py-0.5 bg-bg-page"
+                />
+                <span>posts</span>
+              </div>
+            )}
+          </div>
+        )}
         <hr className="border-border-light my-1" />
 
         <div className="flex flex-col gap-2">
@@ -404,6 +405,27 @@ const SmallIcon = ({ selected }: { selected: boolean }) => {
           <div className="flex justify-between mt-1 w-full">
             {PlaceholderText("sm", "60%")}
           </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ChapterIcon = ({ selected }: { selected: boolean }) => {
+  return (
+    <div
+      className={`grid grid-cols-2 gap-1.5 w-full overflow-hidden opaque-container border-tertiary! p-2 ${selected && "border-accent-contrast!"}`}
+    >
+      {[0, 1].map((i) => (
+        <div key={i} className="flex flex-col gap-1">
+          <div
+            className="w-full aspect-2/3 bg-border border border-border bg-cover bg-center rounded-[2px]"
+            style={{
+              backgroundImage: "url(/imagePlaceholder.png)",
+              backgroundBlendMode: "hard-light",
+            }}
+          />
+          {PlaceholderText("sm", "80%")}
         </div>
       ))}
     </div>

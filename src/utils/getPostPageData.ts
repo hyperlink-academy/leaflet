@@ -140,6 +140,11 @@ export const getPostPageData = cache(async function getPostPageData(
         next?: { uri: string; title: string };
         first?: { uri: string; title: string };
         last?: { uri: string; title: string };
+        // One hop further out in each direction. Never linked to — they exist
+        // so the prev/next buttons can warm two posts ahead, which is what
+        // makes a run of page turns stay instant.
+        prevPreload?: string;
+        nextPreload?: string;
       }
     | undefined;
 
@@ -196,6 +201,12 @@ export const getPostPageData = cache(async function getPostPageData(
                 uri: sortedDocs[lastIndex].uri || "",
                 title: sortedDocs[lastIndex].title || "",
               }
+            : undefined,
+        prevPreload:
+          currentIndex > 1 ? sortedDocs[currentIndex - 2].uri || "" : undefined,
+        nextPreload:
+          currentIndex < lastIndex - 1
+            ? sortedDocs[currentIndex + 2].uri || ""
             : undefined,
       };
     }

@@ -1,7 +1,9 @@
 "use client";
+import { useEffect } from "react";
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { AtUri } from "@atproto/api";
 import { useDocument } from "contexts/DocumentContext";
+import { useWarmRoutes } from "src/hooks/useWarmRoutes";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
@@ -10,8 +12,31 @@ import {
   resolvePrevNextDirection,
   type PrevNextDirection,
 } from "src/utils/mergePreferences";
+import { forgetScrollPosition } from "src/hooks/usePreserveScroll";
 
 type PostRef = { uri: string; title: string };
+
+// Paging to another post is starting it, not returning to it, so it opens at
+// the top even if the reader has been there before. The key matches the
+// PageWrapper id in LinearDocumentPage / CanvasPage.
+function PostNavLink(props: {
+  post: PostRef;
+  href: string;
+  className?: string;
+  eager?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <SpeedyLink
+      href={props.href}
+      eager={props.eager}
+      className={props.className}
+      onClick={() => forgetScrollPosition(`post-page-${props.post.uri}`)}
+    >
+      {props.children}
+    </SpeedyLink>
+  );
+}
 
 export const PostPrevNextButtons = (props: {
   showPrevNext: boolean;
@@ -19,6 +44,23 @@ export const PostPrevNextButtons = (props: {
   direction?: string;
 }) => {
   const { prevNext, publication, uri } = useDocument();
+  const warmRoutes = useWarmRoutes();
+
+  // Each button covers two posts: the neighbour it links to and the one that
+  // neighbour in turn leads to, so a run of page turns never stops to fetch.
+  // The links warm their own target (`eager` below); only the second hop has no
+  // link of its own to do it.
+  const { prevPreload, nextPreload } = prevNext ?? {};
+  const showPrevNext = props.showPrevNext;
+  useEffect(() => {
+    if (!showPrevNext || !publication) return;
+    const base = getPublicationURL(publication);
+    warmRoutes(
+      [prevPreload, nextPreload].map((u) =>
+        u ? `${base}/${new AtUri(u).rkey}` : undefined,
+      ),
+    );
+  }, [prevPreload, nextPreload, publication, showPrevNext, warmRoutes]);
 
   if ((!props.showPrevNext && !props.showFirstLast) || !publication)
     return null;
@@ -52,7 +94,8 @@ export const PostPrevNextButtons = (props: {
         <div className="flex gap-2 items-center grow basis-1/2 min-w-0">
           {edge.left && (
             <>
-              <SpeedyLink
+              <PostNavLink
+                post={edge.left}
                 href={getPostLink(edge.left.uri)}
                 className="flex flex-row gap-1 items-center min-w-4 "
               >
@@ -60,18 +103,23 @@ export const PostPrevNextButtons = (props: {
                 {!adjacent.left && (
                   <div className="min-w-0 truncate">{edge.left.title}</div>
                 )}
-              </SpeedyLink>
+              </PostNavLink>
               {adjacent.left && <Separator />}
             </>
           )}
           {adjacent.left ? (
-            <SpeedyLink
+            <PostNavLink
+              post={adjacent.left}
               href={getPostLink(adjacent.left.uri)}
+              // The two posts either side are the only ones a reader is likely
+              // to open next, so they're worth warming up front — it's what
+              // makes paging through a chapter feel like turning pages.
+              eager
               className="flex flex-row gap-1 items-center min-w-0 grow"
             >
               <ArrowRightTiny className="rotate-180 shrink-0" />
               <div className="min-w-0 truncate">{adjacent.left.title}</div>
-            </SpeedyLink>
+            </PostNavLink>
           ) : (
             <div />
           )}
@@ -79,13 +127,15 @@ export const PostPrevNextButtons = (props: {
         <div className="flex gap-2 items-center grow justify-end basis-1/2 min-w-0">
           {adjacent.right ? (
             <>
-              <SpeedyLink
+              <PostNavLink
+                post={adjacent.right}
                 href={getPostLink(adjacent.right.uri)}
+                eager
                 className="flex flex-row gap-1 items-center truncate min-w-0 grow w-fit max-w-full text-right justify-end"
               >
                 <div className="min-w-0 truncate ">{adjacent.right.title}</div>
                 <ArrowRightTiny className="shrink-0" />
-              </SpeedyLink>
+              </PostNavLink>
             </>
           ) : (
             <div />
@@ -93,7 +143,8 @@ export const PostPrevNextButtons = (props: {
           {edge.right && (
             <>
               {adjacent.right && <Separator />}
-              <SpeedyLink
+              <PostNavLink
+                post={edge.right}
                 href={getPostLink(edge.right.uri)}
                 className="flex flex-row gap-1 items-center min-w-4"
               >
@@ -101,7 +152,7 @@ export const PostPrevNextButtons = (props: {
                   <div className="min-w-0 truncate">{edge.right.title}</div>
                 )}
                 <DoubleArrowRightTiny className={`shrink-0 `} />
-              </SpeedyLink>
+              </PostNavLink>
             </>
           )}
         </div>

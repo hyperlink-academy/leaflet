@@ -9,6 +9,8 @@ import type { PublicationPostsListPost } from "./buildPublicationPosts";
 
 export const POSTS_LIST_PAGE_SIZE = 20;
 
+export type PostsListView = "small" | "medium" | "chapter";
+
 // Stable key for a tag filter, independent of selection order. Used to match a
 // posts-list block to its SSR-seeded first batch.
 export function postsListFilterKey(tags?: string[] | null): string {
@@ -21,8 +23,12 @@ type SortablePost = { uri: string; record: { publishedAt?: string } };
 // tiebreak. Returns a new array.
 export function sortPostsForList<T extends SortablePost>(posts: T[]): T[] {
   return [...posts].sort((a, b) => {
-    const ad = a.record.publishedAt ? new Date(a.record.publishedAt).getTime() : 0;
-    const bd = b.record.publishedAt ? new Date(b.record.publishedAt).getTime() : 0;
+    const ad = a.record.publishedAt
+      ? new Date(a.record.publishedAt).getTime()
+      : 0;
+    const bd = b.record.publishedAt
+      ? new Date(b.record.publishedAt).getTime()
+      : 0;
     if (ad !== bd) return bd - ad;
     return a.uri < b.uri ? 1 : -1;
   });
