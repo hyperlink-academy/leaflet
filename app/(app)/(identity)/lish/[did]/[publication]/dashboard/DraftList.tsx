@@ -11,6 +11,8 @@ import { MenuSmall } from "components/Icons/MenuSmall";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { AddTiny } from "components/Icons/AddTiny";
+import { EmptyState } from "components/EmptyState";
+import { NewDraftActionButton } from "./NewDraftButton";
 
 export function DraftList(props: {
   searchValue: string;
@@ -18,7 +20,6 @@ export function DraftList(props: {
 }) {
   let { data: pub_data } = usePublicationData();
   let { identity } = useIdentityData();
-  // Normalize the publication record - skip rendering if unrecognized format
   const normalizedPubRecord = useNormalizedPublicationRecord();
   if (!pub_data?.publication) return null;
   const { drafts } = pub_data;
@@ -39,10 +40,13 @@ export function DraftList(props: {
         ),
       );
 
+  if (visibleDrafts.length === 0 && pub_data.documents.length === 0)
+    return <NewPubOnboarding isOwner={isOwner} />;
+
   return (
     <div className="flex flex-col">
       <LeafletList
-        emptyMessage=<Empty />
+        emptyMessage=<Empty publication={publication.uri} />
         searchValue={props.searchValue}
         showPreview={false}
         defaultDisplay="list"
@@ -78,7 +82,16 @@ export function DraftList(props: {
   );
 }
 
-const Empty = () => {
+const Empty = (props: { publication: string }) => {
+  return (
+    <EmptyState title="No drafts!">
+      <div className="flex justify-center pt-1">
+        <NewDraftActionButton publication={props.publication} compact />
+      </div>
+    </EmptyState>
+  );
+};
+const NewPubOnboarding = (props: { isOwner: boolean }) => {
   return (
     <div className="accent-container px-4 pt-6 pb-8 text-center flex flex-col gap-2">
       <img
@@ -86,7 +99,7 @@ const Empty = () => {
         alt=""
         className="w-40 max-w-full mx-auto"
       />
-      <h2> Welcome to your new Publication!</h2>
+      <h2> Welcome to {props.isOwner ? "your new" : "this"} Publication!</h2>
       <p className="font-bold pb-1 -mt-1 text-lg">
         Use the<span className="sm:inline hidden">Sidebar</span>{" "}
         <span className="sm:hidden inline-flex gap-1 items-center align-middle mx-2 border border-border rounded-md">
@@ -107,12 +120,14 @@ const Empty = () => {
           <ShareSmall className="scale-85" /> Share
         </span>
       </p>
-      <p>
-        Theme with
-        <span className="inline-flex gap-1 items-center align-middle text-accent-contrast font-bold pr-1 pl-0.5  text-sm rounded-md ml-1.5 -mt-0.5 border-2 border-accent-contrast bg-page">
-          <PaintSmall className="scale-80" /> Customize
-        </span>
-      </p>
+      {props.isOwner && (
+        <p>
+          Theme with
+          <span className="inline-flex gap-1 items-center align-middle text-accent-contrast font-bold pr-1 pl-0.5  text-sm rounded-md ml-1.5 -mt-0.5 border-2 border-accent-contrast bg-page">
+            <PaintSmall className="scale-80" /> Customize
+          </span>
+        </p>
+      )}
     </div>
   );
 };
