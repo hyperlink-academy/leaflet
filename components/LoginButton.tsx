@@ -21,6 +21,7 @@ import {
 import { loginWithEmailToken } from "actions/login";
 import { getHomeDocs } from "src/utils/homeDocsStorage";
 import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
+import { broadcastIdentityChange } from "src/identityBroadcast";
 
 export const LoginModal = (props: {
   noEmailLogin?: boolean;
@@ -146,6 +147,7 @@ export const LoginContent = (props: {
     if (props.addAccount) {
       // The session cookie now points at the added account; navigate rather
       // than mutate in place since page state is keyed to the old identity.
+      broadcastIdentityChange(null);
       window.location.href = "/home";
       return;
     }

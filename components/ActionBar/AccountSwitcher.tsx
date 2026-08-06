@@ -14,6 +14,7 @@ import {
   type SavedAccountEntry,
 } from "src/hooks/useSavedAccounts";
 import { AddTiny } from "components/Icons/AddTiny";
+import { broadcastIdentityChange } from "src/identityBroadcast";
 
 export function savedAccountLabel(entry: SavedAccountEntry) {
   return entry.displayName || entry.handle || entry.email || "Account";
@@ -35,6 +36,7 @@ export const AccountList = (props: { onAddAccount: () => void }) => {
     let ok = await switchToSavedAccount(entry);
     if (ok) {
       upsertSavedAccountEntry(entry);
+      broadcastIdentityChange(entry.identity);
       // Full navigation instead of mutating in place: Replicache, SWR caches,
       // and realtime channels are all keyed to the previous identity.
       window.location.href = "/home";
