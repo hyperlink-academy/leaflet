@@ -21,6 +21,7 @@ import {
   EAGERLY_VISIBLE_CARDS,
   LeafletCardReplicache,
 } from "./LeafletList/LeafletCardReplicache";
+import { EmptyState } from "components/EmptyState";
 
 export type Leaflet = {
   added_at: string;
@@ -176,6 +177,7 @@ export function LeafletList(props: {
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
   searchValue: string;
   showPreview?: boolean;
+  emptyMessage?: React.ReactNode;
 }) {
   let { identity } = useIdentityData();
   let { display } = useDashboardState();
@@ -187,6 +189,9 @@ export function LeafletList(props: {
     props.titles,
     props.searchValue,
   );
+
+  if (props.leaflets.length === 0 && props.emptyMessage)
+    return props.emptyMessage;
 
   return (
     <div

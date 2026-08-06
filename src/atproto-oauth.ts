@@ -4,6 +4,7 @@ import {
   NodeSavedState,
   RuntimeLock,
   OAuthSession,
+  DidCache,
 } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
 import {
@@ -30,6 +31,17 @@ export function createOauthClient(): Promise<NodeOAuthClient> {
   }
   return globalForOauth.__oauthClient;
 }
+
+// The client's DID→document cache maps a DID to its PDS, and its only reader
+// is authorize() — token refresh re-resolves with noCache — so caching here
+// buys nothing but the risk of building a login redirect against a PDS the
+// user has migrated away from (the library default caches for 1h in memory).
+// Logins are rare; resolve fresh every time.
+const noDidCache: DidCache = {
+  get: () => undefined,
+  set: () => {},
+  del: () => {},
+};
 
 async function buildOauthClient(): Promise<NodeOAuthClient> {
   let keyset =
@@ -67,6 +79,8 @@ async function buildOauthClient(): Promise<NodeOAuthClient> {
     // Interface to store authenticated session data
     sessionStore,
     requestLock,
+
+    didCache: noDidCache,
   });
 }
 
