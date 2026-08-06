@@ -122,7 +122,6 @@ export function RecommendationSettings(props: {
                   highlighted={highlighted}
                   setHighlighted={setHighlighted}
                   onSelect={() => select(pub.uri)}
-                  className="text-sm leading-snug"
                 >
                   {pub.name}
                 </ComboboxResult>
