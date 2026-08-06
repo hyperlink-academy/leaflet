@@ -5,7 +5,12 @@ import { BlockProps, BlockLayout } from "./Block";
 import { useIsBlockSelected } from "src/useUIState";
 import Image from "next/image";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { addImage, localImages } from "src/utils/addImage";
+import { addImage, localImages, retryImageUpload } from "src/utils/addImage";
+import { useImageUploadState } from "src/hooks/useImageUploadState";
+import {
+  ImageLoadingState,
+  useImageLoadStatus,
+} from "components/ImageLoadingState";
 import { addBlockBelow } from "src/utils/addBlockBelow";
 import { elementId } from "src/utils/elementId";
 import { useEffect, useState } from "react";
@@ -32,6 +37,27 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let isLast = props.nextBlock === null;
 
   let altText = useEntity(props.entityID, "image/alt")?.data.value;
+
+  let imageSrc = image?.data.src;
+  let localSrc = imageSrc ? localImages.get(imageSrc) : undefined;
+  // An upload that broke leaves a preview only this tab can see, so it counts
+  // as the image not being there — same frame, same offer to try again.
+  let uploadState = useImageUploadState(imageSrc);
+  // Bumped by a retry that has no upload left to redo, to get past whatever the
+  // browser cached for the failed request.
+  let [reloads, setReloads] = useState(0);
+  let {
+    status: loadStatus,
+    imgProps,
+    reset: resetLoadStatus,
+  } = useImageLoadStatus(localSrc ?? imageSrc);
+  let imageStatus = uploadState === "failed" ? "error" : loadStatus;
+
+  let retryImage = () => {
+    if (imageSrc && retryImageUpload(imageSrc)) return;
+    resetLoadStatus();
+    setReloads((r) => r + 1);
+  };
 
   // Snapshot of every image in the post, taken the first time the lightbox
   // opens, so it can page through them all (gallery images included) starting on
@@ -154,8 +180,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     );
   }
 
-  let localSrc = localImages.get(image.data.src);
-
   let blockClassName = `
     relative group/image border-transparent! p-0!
     ${
@@ -166,7 +190,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-[5px]" : "") : ""}
     ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-[9px]" : "") : ""}
     `;
-  
+
   let displayWidth = previewWidth ?? maxWidth;
   let imageStyle =
     displayWidth && !isFullBleed
@@ -188,38 +212,61 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         ) : undefined
       }
     >
-      <button
-        type="button"
-        className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
-        onClick={() => {
-          if (canOpenLightbox) openLightbox();
-        }}
+      <div
+        // A loading image still reserves its box from its width/height, but a
+        // broken one collapses to the size of its alt text — so the frame holds
+        // a floor of its own for the render that needs it.
+        className={`relative ${isFullBleed ? "w-full" : "w-fit"} ${imageStatus === "error" ? "min-w-40 min-h-24" : ""}`}
       >
-        {localSrc || image.data.local ? (
-          <img
-            loading="lazy"
-            decoding="async"
-            alt={altText}
-            src={localSrc ?? image.data.fallback}
-            height={image?.data.height}
-            width={image?.data.width}
-            className={isFullBleed ? "w-full" : undefined}
-            style={imageStyle}
-          />
-        ) : (
-          <Image
-            alt={altText || ""}
-            src={
-              "/" +
-              new URL(image.data.src).pathname.split("/").slice(5).join("/")
-            }
-            height={image?.data.height}
-            width={image?.data.width}
-            className={isFullBleed ? "w-full" : undefined}
-            style={imageStyle}
+        <button
+          type="button"
+          className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
+          onClick={() => {
+            if (canOpenLightbox) openLightbox();
+          }}
+        >
+          {/* The key is the reload: the image loader folds the whole src into
+              a storage path, so there's no cache-busting parameter to add — a
+              fresh element re-requesting is what there is. */}
+          {localSrc || image.data.local ? (
+            <img
+              {...imgProps}
+              key={reloads}
+              loading="lazy"
+              decoding="async"
+              alt={altText}
+              src={localSrc ?? image.data.fallback}
+              height={image?.data.height}
+              width={image?.data.width}
+              className={isFullBleed ? "w-full" : undefined}
+              style={imageStyle}
+            />
+          ) : (
+            <Image
+              {...imgProps}
+              key={reloads}
+              alt={altText || ""}
+              src={
+                "/" +
+                new URL(image.data.src).pathname.split("/").slice(5).join("/")
+              }
+              height={image?.data.height}
+              width={image?.data.width}
+              className={isFullBleed ? "w-full" : undefined}
+              style={imageStyle}
+            />
+          )}
+        </button>
+        {imageStatus !== "loaded" && (
+          <ImageLoadingState
+            status={imageStatus}
+            message="Something went wrong,"
+            actionLabel="try again?"
+            onAction={retryImage}
+            className={isFullBleed ? "rounded-none!" : "rounded-lg!"}
           />
         )}
-      </button>
+      </div>
       {!props.preview && (
         <ImageGalleryLightbox
           count={lightbox?.ids.length ?? 0}
