@@ -40,7 +40,10 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   return (
     <BlockLayout
       isSelected={isSelected}
-      className="border-none! p-0! rounded-none!"
+      // The block draws no border of its own to clip against, and chapter
+      // covers hover an outline that sits outside their border box — clipping
+      // here would shave it off the grid's outer cards.
+      className="border-none! p-0! rounded-none! overflow-visible!"
       extraOptions={<PostsListSettingsButton entityID={props.entityID} />}
     >
       <PostsListBlockContent entityID={props.entityID} />

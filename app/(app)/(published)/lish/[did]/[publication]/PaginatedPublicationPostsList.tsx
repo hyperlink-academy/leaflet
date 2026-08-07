@@ -12,7 +12,6 @@ import {
   type LoadPostsBatch,
   type PostsListView,
 } from "src/utils/postsListPagination";
-import { BlockLayout } from "components/Blocks/Block";
 
 export function PaginatedPublicationPostsList({
   publication,

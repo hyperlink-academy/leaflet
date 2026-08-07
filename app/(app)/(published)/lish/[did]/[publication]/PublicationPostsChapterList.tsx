@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AtUri } from "@atproto/api";
 import { SpeedyLink } from "components/SpeedyLink";
 import { LockTiny } from "components/Icons/LockTiny";
@@ -9,11 +9,14 @@ import { getDocumentURL } from "src/utils/getPublicationURL";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import type { ChapterListItem } from "src/utils/chapterGrouping";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
+import { NormalizedPublication } from "lexicons/src/normalize";
 
 // Pages warmed when a chapter is pointed at. The first is the one the card
 // opens; the rest are what the post page's next/prev buttons reach for, so a
 // page turn straight after opening a chapter doesn't wait on a fetch.
 const CHAPTER_PRELOAD = 3;
+const MAX_CARD_WIDTH = 240;
+const GRID_GAP = 24;
 
 type PublicationForURL = { uri: string; record: unknown };
 
@@ -71,9 +74,36 @@ export function PublicationPostsChapterList({
     });
   }, [chapters, publication]);
 
+  let pubRecord = publication.record as NormalizedPublication;
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+  useEffect(() => {
+    let el = gridRef.current;
+    if (!el) return;
+    let observer = new ResizeObserver((entries) => {
+      setMeasuredWidth(entries[0].contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const width = measuredWidth ?? pubRecord?.theme?.pageWidth ?? 624;
+  // Fewest columns that keep every card within MAX_CARD_WIDTH, counting the
+  // gaps between them. The 1px slack absorbs sub-pixel measurements so a shelf
+  // sized exactly to its container doesn't tip into an extra column.
+  const gridCols = Math.max(
+    1,
+    Math.ceil((width - 1 + GRID_GAP) / (MAX_CARD_WIDTH + GRID_GAP)),
+  );
+
   return (
     <div
-      className={`publicationPostChapterList grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-5 w-full ${className ?? ""}`}
+      ref={gridRef}
+      className={`publicationPostChapterList   gap-3 sm:gap-6 w-full ${className ?? ""}`}
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+      }}
     >
       {cards.map((card) => (
         <ChapterItem key={card.key} card={card} />
@@ -92,9 +122,9 @@ function ChapterItem({ card }: { card: ChapterCard }) {
     <div onPointerEnter={warm} onFocus={warm} className="min-w-0">
       <SpeedyLink
         href={card.href}
-        className="chapterItem group flex flex-col gap-2 no-underline! text-primary min-w-0"
+        className="chapterItem group flex flex-col gap-2 no-underline! text-primary min-w-0 w-full"
       >
-        <div className="chapterCover relative w-full aspect-2/3 overflow-hidden block-border hover:outline-border!">
+        <div className="chapterCover relative w-full aspect-2/3 overflow-hidden block-border  hover:outline-border!">
           {card.coverImageSrc ? (
             <img
               src={card.coverImageSrc}
@@ -108,7 +138,7 @@ function ChapterItem({ card }: { card: ChapterCard }) {
             // leaving a blank card. The link's own text already reads it out.
             <div
               aria-hidden
-              className="absolute inset-0 flex items-center justify-center text-center p-3 text-secondary"
+              className="absolute inset-0 flex items-center justify-center text-center p-3 bg-[var(--color-bg-light)] text-tertiary max-w-full w-[1000px]"
             >
               {card.label}
             </div>
