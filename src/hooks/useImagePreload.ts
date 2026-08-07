@@ -1,0 +1,54 @@
+"use client";
+import { useEffect } from "react";
+
+export type PreloadTarget = {
+  src: string;
+  // Decode as well as fetch, so the bitmap is ready rather than merely
+  // downloaded — a large image can otherwise still flash on first paint. Worth
+  // it for what lands above the fold, not for what's waiting further down: a
+  // decoded bitmap stays resident for as long as its Image does, and cached
+  // bytes are all a scroll needs.
+  decode?: boolean;
+};
+
+/**
+ * Warm images the reader is about to need.
+ *
+ * Uses detached `Image` objects rather than hidden `<img>` elements: the bytes
+ * land in the same HTTP cache the real `<img>` will hit, but nothing joins the
+ * DOM, so there's no layout, no paint, and nothing for a screen reader to walk
+ * through.
+ *
+ * Failures are ignored — this is an optimisation, and an image that fails here
+ * loads normally, error frame and all, when the reader reaches it.
+ */
+export function useImagePreload(targets: PreloadTarget[]) {
+  // The URLs are the real dependency: a re-render that produces an equal list
+  // must not restart fetches that are already in flight.
+  const key = targets
+    .map((target) => `${target.decode ? "d" : "f"}${target.src}`)
+    .join("\n");
+
+  useEffect(() => {
+    if (!key) return;
+    if (typeof Image === "undefined") return;
+
+    const images = key.split("\n").map((entry) => {
+      const image = new Image();
+      image.decoding = "async";
+      // Speculative, so never at the expense of the page the reader is on.
+      image.fetchPriority = "low";
+      image.src = entry.slice(1);
+      // decode() rejects when the element is discarded mid-flight, which is
+      // exactly what paging away does — not an error.
+      if (entry[0] === "d") void image.decode?.().catch(() => {});
+      return image;
+    });
+
+    return () => {
+      // Dropping src lets the browser abandon a fetch the reader has moved past;
+      // anything already in the HTTP cache stays there.
+      for (const image of images) if (!image.complete) image.src = "";
+    };
+  }, [key]);
+}

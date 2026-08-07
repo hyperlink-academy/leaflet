@@ -1,9 +1,10 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { AtUri } from "@atproto/api";
 import { useDocument } from "contexts/DocumentContext";
 import { useWarmRoutes } from "src/hooks/useWarmRoutes";
+import { useImagePreload } from "src/hooks/useImagePreload";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
@@ -61,6 +62,32 @@ export const PostPrevNextButtons = (props: {
       ),
     );
   }, [prevPreload, nextPreload, publication, showPrevNext, warmRoutes]);
+
+  // Art, though, is warmed one hop only. Prefetching a route buys the second
+  // hop cheaply, but a few hundred KB of image can't land in the moment a page
+  // turn takes — and once the reader is on the next post it warms its own
+  // neighbours anyway, so the second hop's art would mostly be paid for twice.
+  // The URLs come down with this page (getPostPageData), so there's nothing to
+  // fetch first: warming starts as soon as this mounts.
+  useImagePreload(
+    useMemo(
+      () =>
+        !showPrevNext
+          ? []
+          : // Forward first — a reader paging through a run of posts is far more
+            // likely to keep going that way than to turn back.
+            [prevNext?.next, prevNext?.prev].flatMap(
+              (post) =>
+                post?.images?.map((src, index) => ({
+                  src,
+                  // Only each post's opening image is decoded — that's the one
+                  // that has to be ready the instant the page turn lands.
+                  decode: index === 0,
+                })) ?? [],
+            ),
+      [showPrevNext, prevNext?.next, prevNext?.prev],
+    ),
+  );
 
   if ((!props.showPrevNext && !props.showFirstLast) || !publication)
     return null;

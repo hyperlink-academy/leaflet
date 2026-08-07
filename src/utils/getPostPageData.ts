@@ -19,6 +19,7 @@ import {
   projectPublicationForClient,
 } from "./postPageProjection";
 import { resolveDocumentFilter } from "./resolveDocumentFilter";
+import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
 
 export const getPostPageData = cache(async function getPostPageData(
   did: string,
@@ -134,10 +135,13 @@ export const getPostPageData = cache(async function getPostPageData(
     resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
 
   // Calculate prev/next documents from the fetched publication documents
+  // `images` is the first few image URLs of that neighbour, for the prev/next
+  // buttons to warm — see the fetch below.
+  type Neighbour = { uri: string; title: string; images?: string[] };
   let prevNext:
     | {
-        prev?: { uri: string; title: string };
-        next?: { uri: string; title: string };
+        prev?: Neighbour;
+        next?: Neighbour;
         first?: { uri: string; title: string };
         last?: { uri: string; title: string };
         // One hop further out in each direction. Never linked to — they exist
@@ -210,6 +214,23 @@ export const getPostPageData = cache(async function getPostPageData(
             : undefined,
       };
     }
+  }
+
+  // Router prefetching covers the neighbours' markup but never their images, so
+  // a page turn otherwise lands on empty frames and starts downloading. Their
+  // art rides along in this page's own payload instead of being fetched once the
+  // reader gets here: the payload is prefetched and CDN-cached well before the
+  // reader can click, so warming starts on first paint rather than a round trip
+  // later. Reading two neighbours' records costs a query per ISR render, not per
+  // view — and only for publications that page at all.
+  if (prevNext && (normalizedPublication?.preferences?.showPrevNext ?? true)) {
+    const neighbours = [prevNext.next, prevNext.prev].filter(
+      (n): n is Neighbour => !!n,
+    );
+    const images = await getPostImagePreloads(neighbours.map((n) => n.uri));
+    neighbours.forEach((neighbour, index) => {
+      neighbour.images = images[index];
+    });
   }
 
   // Build explicit publication context for consumers
