@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AtUri } from "@atproto/api";
 import { SpeedyLink } from "components/SpeedyLink";
 import { LockTiny } from "components/Icons/LockTiny";
-import { useWarmRoutes } from "src/hooks/useWarmRoutes";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import type { ChapterListItem } from "src/utils/chapterGrouping";
@@ -116,14 +115,6 @@ function ChapterItem({
   card: ChapterCard;
   disableLinks?: boolean;
 }) {
-  const warmRoutes = useWarmRoutes();
-  // Prefetch is deduped by the router, so pointing at a card repeatedly costs
-  // one request per page.
-  const warm = () => {
-    if (disableLinks) return;
-    warmRoutes(card.preloadHrefs);
-  };
-
   const cardClassName =
     "chapterItem group flex flex-col gap-2 no-underline! text-primary min-w-0 w-full";
   const content = (
@@ -168,7 +159,7 @@ function ChapterItem({
   );
 
   return (
-    <div onPointerEnter={warm} onFocus={warm} className="min-w-0">
+    <>
       {disableLinks ? (
         <div className={cardClassName}>{content}</div>
       ) : (
@@ -176,6 +167,6 @@ function ChapterItem({
           {content}
         </SpeedyLink>
       )}
-    </div>
+    </>
   );
 }

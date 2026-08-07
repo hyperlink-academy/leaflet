@@ -7,6 +7,7 @@ import { useCallback } from "react";
  * instant.
  *
  * Publication URLs are absolute and a publication on its own domain is a
+
  * different origin — nothing the router can warm — so those are skipped rather
  * than turned into a request against the wrong host.
  */

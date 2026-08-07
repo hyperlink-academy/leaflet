@@ -22,6 +22,8 @@ import { SettingsTriggerButton } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { EmptyState } from "components/EmptyState";
+import { ShortcutKey } from "components/Layout";
+import { HelpSmall } from "components/Icons/HelpSmall";
 
 export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -176,6 +178,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
     () => selectedTags.length > 0,
   );
   let [limitEnabled, setLimitEnabled] = useState(() => !!limit && limit > 0);
+  let [chapterHelpOpen, setChapterHelpOpen] = useState(false);
 
   let setLimit = (value: number) => {
     if (!rep) return;
@@ -206,7 +209,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
       side="top"
       align="end"
       sideOffset={6}
-      className="w-md"
+      className="w-md overflow-scroll"
       trigger={<SettingsTriggerButton aria-label="Posts List Settings" />}
     >
       <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
@@ -214,7 +217,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
           <div>
             <h3>List Layout</h3>
           </div>
-          <div className="flex sm:flex-row flex-col sm:gap-1 gap-2 w-full items-stretch">
+          <div className="relative flex flex-row sm:gap-1 gap-2 w-full items-stretch">
             {(
               [
                 { value: "small", Icon: SmallIcon },
@@ -254,8 +257,43 @@ function PostsListSettingsButton(props: { entityID: string }) {
                 </button>
               );
             })}
+            {/* A sibling of the layout options rather than a child: the chapter
+                option is itself a button, and the row's last column is the
+                chapter icon, so its bottom right corner is this row's. */}
+            {view === "chapter" && (
+              <button
+                type="button"
+                className="absolute -bottom-3 right-1 bg-accent-1 text-accent-2 rounded-full  "
+                aria-expanded={chapterHelpOpen}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setChapterHelpOpen(!chapterHelpOpen)}
+              >
+                <HelpSmall className="scale-75" />
+              </button>
+            )}
           </div>
         </div>
+        {view === "chapter" && chapterHelpOpen && (
+          <div className="light-container p-2 text-tertiary text-sm leading-snug flex flex-col gap-1.5">
+            <p>Group posts into chapters based on titles</p>{" "}
+            <hr className="border-dashed" />
+            <p>
+              Posts titled <br />
+              "Ch1 - Pg1"
+              <br />
+              "Ch1 - Pg2"
+              <br />
+              "Ch1 - Pg3" <br />
+              will group into a chapter named "Ch1".
+            </p>
+            <p className="font-bold">
+              Separate chapter names and page titles with <br />
+              <ShortcutKey>/</ShortcutKey> <ShortcutKey>,</ShortcutKey>{" "}
+              <ShortcutKey>:</ShortcutKey> or <ShortcutKey>-</ShortcutKey>.
+              <br /> Do not use these characters in chapter names!
+            </p>
+          </div>
+        )}
         <Toggle
           toggle={highlightFirst}
           onToggle={() => {
