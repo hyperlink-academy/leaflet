@@ -1056,7 +1056,12 @@ const deleteFootnote: Mutation<{
 }> = async (args, ctx) => {
   let footnotes = await ctx.scanIndex.eav(args.blockID, "block/footnote");
   let fact = footnotes.find((f) => f.data.value === args.footnoteEntityID);
-  if (fact) await ctx.retractFact(fact.id);
+  // Only the block that owns the footnote may delete the entity. A footnote
+  // node can reference an entity another block owns (clipboard HTML pasted
+  // before paste minted fresh entities); deleting on its removal would
+  // destroy the original footnote's content.
+  if (!fact) return;
+  await ctx.retractFact(fact.id);
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 

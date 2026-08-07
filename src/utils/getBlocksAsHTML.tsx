@@ -6,6 +6,21 @@ import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment
 import { Block } from "components/Blocks/Block";
 import { List, parseBlocksToList } from "./parseBlocksToList";
 import Katex from "katex";
+import { renderFootnoteDefHTML } from "./renderFootnoteDefHTML";
+
+// Definition HTML for each footnote the block owns, keyed by entity id, so the
+// copied refs carry their content instead of a bare entity reference — see
+// renderFootnoteDefHTML for why an id alone is a data-loss hazard.
+async function getFootnoteDefs(tx: ReadTransaction, entity: string) {
+  let footnotes = await scanIndex(tx).eav(entity, "block/footnote");
+  if (footnotes.length === 0) return undefined;
+  let defs: { [id: string]: string } = {};
+  for (let f of footnotes) {
+    let [text] = await scanIndex(tx).eav(f.data.value, "block/text");
+    if (text) defs[f.data.value] = renderFootnoteDefHTML(text.data.value);
+  }
+  return defs;
+}
 
 // Only used to fill the clipboard on copy, so comment anchors are omitted
 // (renderComments={false}) — see stripCommentMarks in components/Blocks/TextBlock
@@ -200,6 +215,7 @@ const BlockTypeToHTML: {
         }}
         wrapper={"blockquote"}
         renderComments={false}
+        footnoteDefs={await getFootnoteDefs(tx, b.entityID)}
       />
     );
   },
@@ -218,6 +234,7 @@ const BlockTypeToHTML: {
         }}
         wrapper={wrapper}
         renderComments={false}
+        footnoteDefs={await getFootnoteDefs(tx, b.entityID)}
       />
     );
   },
@@ -255,6 +272,7 @@ const BlockTypeToHTML: {
         }}
         wrapper="p"
         renderComments={false}
+        footnoteDefs={await getFootnoteDefs(tx, b.entityID)}
       />
     );
   },

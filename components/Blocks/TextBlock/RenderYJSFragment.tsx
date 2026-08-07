@@ -16,11 +16,17 @@ export function RenderYJSFragment({
   // Read-only viewers don't see comments, so the anchor highlight markup is
   // omitted entirely rather than just hidden with CSS
   renderComments = true,
+  footnoteDefs,
 }: {
   value: string;
   wrapper: BlockElements;
   attrs?: { [k: string]: any };
   renderComments?: boolean;
+  // footnoteEntityID → definition HTML. Copy paths pass this so each ref
+  // carries its definition (data-footnote-def) and paste can mint an
+  // independent footnote instead of aliasing this block's entity — see
+  // renderFootnoteDefHTML.
+  footnoteDefs?: { [id: string]: string };
 }) {
   if (!value)
     return <BlockWrapper wrapper={wrapper} attrs={attrs}></BlockWrapper>;
@@ -106,6 +112,7 @@ export function RenderYJSFragment({
                       key={index}
                       className="footnote-ref"
                       data-footnote-id={id}
+                      data-footnote-def={footnoteDefs?.[id]}
                     />
                   );
                 }
