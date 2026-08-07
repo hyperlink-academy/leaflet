@@ -19,7 +19,6 @@ import {
   projectPublicationForClient,
 } from "./postPageProjection";
 import { resolveDocumentFilter } from "./resolveDocumentFilter";
-import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
 
 export const getPostPageData = cache(async function getPostPageData(
   did: string,
@@ -135,20 +134,12 @@ export const getPostPageData = cache(async function getPostPageData(
     resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
 
   // Calculate prev/next documents from the fetched publication documents
-  // `images` is the first few image URLs of that neighbour, for the prev/next
-  // buttons to warm — see the fetch below.
-  type Neighbour = { uri: string; title: string; images?: string[] };
   let prevNext:
     | {
-        prev?: Neighbour;
-        next?: Neighbour;
+        prev?: { uri: string; title: string };
+        next?: { uri: string; title: string };
         first?: { uri: string; title: string };
         last?: { uri: string; title: string };
-        // One hop further out in each direction. Never linked to, and no art —
-        // they exist so the prev/next buttons can warm two posts ahead, which
-        // costs a prefetched route rather than a download.
-        prevPreload?: string;
-        nextPreload?: string;
       }
     | undefined;
 
@@ -206,39 +197,8 @@ export const getPostPageData = cache(async function getPostPageData(
                 title: sortedDocs[lastIndex].title || "",
               }
             : undefined,
-        prevPreload:
-          currentIndex > 1 ? sortedDocs[currentIndex - 2].uri || "" : undefined,
-        nextPreload:
-          currentIndex < lastIndex - 1
-            ? sortedDocs[currentIndex + 2].uri || ""
-            : undefined,
       };
     }
-  }
-
-  // Router prefetching covers the neighbours' markup but never their images, so
-  // a page turn otherwise lands on empty frames and starts downloading. Their
-  // art rides along in this page's own payload instead of being fetched once the
-  // reader gets here: the payload is prefetched and CDN-cached well before the
-  // reader can click, so warming starts on first paint rather than a round trip
-  // later. Reading the neighbours' records costs a query per ISR render, not per
-  // view — and only for publications that page at all.
-  //
-  // One hop each way only. The second hop's route is prefetched, which is
-  // cheap, but its art is not: speculative bytes compete with the page the
-  // reader is on, and by the time they're two turns out that post has warmed
-  // its own neighbours anyway.
-  if (prevNext && (normalizedPublication?.preferences?.showPrevNext ?? true)) {
-    const warm = [prevNext.next, prevNext.prev].filter(
-      (n): n is Neighbour => !!n,
-    );
-    const images = await getPostImagePreloads(
-      warm.map((n) => n.uri),
-      document.documents_in_publications[0]?.publications?.uri,
-    );
-    warm.forEach((neighbour, index) => {
-      neighbour.images = images[index];
-    });
   }
 
   // Build explicit publication context for consumers

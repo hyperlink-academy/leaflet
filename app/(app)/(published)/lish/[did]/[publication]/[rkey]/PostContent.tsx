@@ -41,6 +41,7 @@ import {
 } from "src/utils/blobRefToSrc";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
+import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
@@ -55,7 +56,6 @@ import {
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
-import { PublishedImageBlock } from "./Blocks/PublishedImageBlock";
 import { useOpenImageLightbox } from "./GlobalImageLightbox";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
@@ -572,18 +572,29 @@ export let Block = ({
           className={`imageBlock flex ${isFullBleed ? "" : alignment} ${fullBleedClassName}`}
           {...blockProps}
         >
-          <PublishedImageBlock
-            src={src}
-            alt={b.block.alt}
-            height={b.block.aspectRatio?.height}
-            width={b.block.aspectRatio?.width}
-            displayWidth={b.block.width}
-            isFullBleed={isFullBleed}
-            className={className}
-            onOpenLightbox={
-              canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
-            }
-          />
+          <div className={`relative ${isFullBleed ? "w-full" : "w-fit"} h-fit`}>
+            <button
+              type="button"
+              className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-pointer" : ""}`}
+              onClick={
+                canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
+              }
+            >
+              <img
+                alt={b.block.alt}
+                height={b.block.aspectRatio?.height}
+                width={b.block.aspectRatio?.width}
+                className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
+                src={src}
+                style={
+                  !isFullBleed && b.block.width
+                    ? { width: b.block.width, maxWidth: "100%", height: "auto" }
+                    : undefined
+                }
+              />
+            </button>
+            {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
+          </div>
         </div>
       );
     }
