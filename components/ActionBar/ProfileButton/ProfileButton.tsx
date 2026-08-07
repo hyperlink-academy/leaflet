@@ -27,6 +27,7 @@ import {
   removeSavedAccountEntry,
   switchToSavedAccount,
 } from "src/hooks/useSavedAccounts";
+import { broadcastIdentityChange } from "src/identityBroadcast";
 
 export const ProfileButton = () => {
   let setSidebarOpen = useSidebarStore((s) => s.setOpen);
@@ -151,6 +152,7 @@ export const ProfileButton = () => {
                 });
                 if (ok) {
                   if (currentIdentity) removeSavedAccountEntry(currentIdentity);
+                  broadcastIdentityChange(next.identity);
                   window.location.href = "/home";
                   return;
                 }
@@ -162,6 +164,7 @@ export const ProfileButton = () => {
               if (currentIdentity) removeSavedAccountEntry(currentIdentity);
               mutateSavedAccounts();
               clearIdentityData();
+              broadcastIdentityChange(null);
             }}
           >
             <LogoutSmall />
