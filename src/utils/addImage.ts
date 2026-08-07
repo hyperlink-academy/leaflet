@@ -11,6 +11,45 @@ import { encodeBitmapToWebP } from "./imageEncoding";
 // before the upload completes.
 export const localImages = new Map<string, string>();
 
+// Where each in-flight upload has got to, keyed by the public src the block's
+// fact already points at. A failed upload leaves the block rendering a preview
+// that exists nowhere but this tab, so the block needs to be able to say so and
+// offer to send it again.
+export type ImageUploadState = "uploading" | "failed";
+const uploadStates = new Map<string, ImageUploadState>();
+const uploadRetries = new Map<string, () => void>();
+const uploadListeners = new Set<() => void>();
+
+function setUploadState(src: string, state: ImageUploadState | null) {
+  if (state) uploadStates.set(src, state);
+  else {
+    uploadStates.delete(src);
+    uploadRetries.delete(src);
+  }
+  for (const listener of uploadListeners) listener();
+}
+
+export function subscribeToImageUploads(listener: () => void) {
+  uploadListeners.add(listener);
+  return () => {
+    uploadListeners.delete(listener);
+  };
+}
+
+export function getImageUploadState(src: string) {
+  return uploadStates.get(src);
+}
+
+// Send a failed upload again. False means there's nothing left to send: the
+// file only ever lived in the tab that picked it, so a reload since then leaves
+// the block with no way back other than re-adding the image.
+export function retryImageUpload(src: string): boolean {
+  const retry = uploadRetries.get(src);
+  if (!retry) return false;
+  retry();
+  return true;
+}
+
 // Caps concurrent addImage pipelines so a 30-image paste does not pin the main
 // thread on decode/encode/thumbhash work or saturate uplink bandwidth.
 const MAX_CONCURRENT_IMAGE_UPLOADS = 4;
@@ -97,34 +136,74 @@ export async function prepareImage(
       },
     };
 
-    const finishUpload = async () => {
-      try {
-        const uploadBlob = isAnimated
+    // Encoded once and kept, so a retry re-sends the same bytes rather than
+    // re-encoding from a bitmap that's already been closed.
+    let uploadBlob: Blob | null = null;
+    const attemptUpload = async () => {
+      if (!uploadBlob) {
+        uploadBlob = isAnimated
           ? file
           : await encodeBitmapToWebP(bitmap, {
               quality: 0.92,
               preferLossless: file.type === "image/png",
             });
         bitmap.close();
-        await client.storage
-          .from("minilink-user-assets")
-          .upload(fileID, uploadBlob, {
-            // storage-js expects seconds here, not a header value — anything
-            // else is stored as a malformed Cache-Control and defeats the CDN.
-            cacheControl: "31536000",
-          });
-        await rep.mutate.assertFact({
-          entity: args.entityID,
-          attribute: args.attribute,
-          ignoreUndo: args.ignoreUndo || undefined,
-          data: {
-            fallback: thumbhash,
-            type: "image",
-            src: url,
-            height,
-            width,
-          },
+      }
+      const { error } = await client.storage
+        .from("minilink-user-assets")
+        .upload(fileID, uploadBlob, {
+          // storage-js expects seconds here, not a header value — anything
+          // else is stored as a malformed Cache-Control and defeats the CDN.
+          cacheControl: "31536000",
+          // A retry after an upload that got far enough to create the object
+          // would otherwise come back 409.
+          upsert: true,
         });
+      if (error) throw error;
+      await rep.mutate.assertFact({
+        entity: args.entityID,
+        attribute: args.attribute,
+        ignoreUndo: args.ignoreUndo || undefined,
+        data: {
+          fallback: thumbhash,
+          type: "image",
+          src: url,
+          height,
+          width,
+        },
+      });
+    };
+
+    const runUpload = async () => {
+      setUploadState(url, "uploading");
+      try {
+        await attemptUpload();
+        setUploadState(url, null);
+      } catch (e) {
+        // Deliberately not rethrown: the block surfaces this and offers to send
+        // it again, and one failure in a 30-image paste shouldn't take the rest
+        // of the paste down with it.
+        console.error("[addImage] upload failed", e);
+        // The original slot is released the moment this pipeline finishes, so a
+        // retry takes one of its own — otherwise retrying a failed 30-image
+        // paste would put every one of them back on the wire at once.
+        uploadRetries.set(url, () => {
+          void (async () => {
+            await acquireSlot();
+            try {
+              await runUpload();
+            } finally {
+              releaseSlot();
+            }
+          })();
+        });
+        setUploadState(url, "failed");
+      }
+    };
+
+    const finishUpload = async () => {
+      try {
+        await runUpload();
       } finally {
         release();
       }

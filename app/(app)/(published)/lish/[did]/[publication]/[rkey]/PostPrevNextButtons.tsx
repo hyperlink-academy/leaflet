@@ -1,7 +1,11 @@
 "use client";
+import { useEffect, useMemo } from "react";
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { AtUri } from "@atproto/api";
 import { useDocument } from "contexts/DocumentContext";
+import { useWarmRoutes } from "src/hooks/useWarmRoutes";
+import { useImagePreload } from "src/hooks/useImagePreload";
+import { useImagesSettled } from "src/hooks/useImagesSettled";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
@@ -42,6 +46,59 @@ export const PostPrevNextButtons = (props: {
   direction?: string;
 }) => {
   const { prevNext, publication, uri } = useDocument();
+  const warmRoutes = useWarmRoutes();
+
+  // Nothing is warmed until this post has its own art: a speculative fetch is
+  // low priority, but so is an image below the fold, and the two then share the
+  // connection evenly. Being right about where the reader is going next isn't
+  // worth the page they're reading arriving later.
+  const settled = useImagesSettled(uri);
+
+  // Each button covers two posts: the neighbour it links to and the one that
+  // neighbour in turn leads to, so a run of page turns never stops to fetch.
+  // The links warm their own target (`eager` below); only the second hop has no
+  // link of its own to do it.
+  const { prevPreload, nextPreload } = prevNext ?? {};
+  const showPrevNext = props.showPrevNext;
+  useEffect(() => {
+    if (!settled || !showPrevNext || !publication) return;
+    const base = getPublicationURL(publication);
+    warmRoutes(
+      [prevPreload, nextPreload].map((u) =>
+        u ? `${base}/${new AtUri(u).rkey}` : undefined,
+      ),
+    );
+  }, [
+    prevPreload,
+    nextPreload,
+    publication,
+    settled,
+    showPrevNext,
+    warmRoutes,
+  ]);
+
+  // Art is warmed one post each way — the only two a reader is about to open.
+  // The URLs come down with this page (getPostPageData), so there's nothing to
+  // fetch first: warming starts the moment this post has settled.
+  useImagePreload(
+    useMemo(
+      () =>
+        !settled || !showPrevNext
+          ? []
+          : // Forward first — a reader paging through a run of posts is far more
+            // likely to keep going that way than to turn back.
+            [prevNext?.next, prevNext?.prev].flatMap(
+              (post) =>
+                post?.images?.map((src, index) => ({
+                  src,
+                  // Only each post's opening image is decoded — that's the one
+                  // that has to be ready the instant the page turn lands.
+                  decode: index === 0,
+                })) ?? [],
+            ),
+      [settled, showPrevNext, prevNext?.next, prevNext?.prev],
+    ),
+  );
 
   if ((!props.showPrevNext && !props.showFirstLast) || !publication)
     return null;
@@ -93,9 +150,11 @@ export const PostPrevNextButtons = (props: {
               post={adjacent.left}
               href={getPostLink(adjacent.left.uri)}
               // The two posts either side are the only ones a reader is likely
-              // to open next, so they're worth prefetching up front — it's what
-              // makes paging through a chapter feel like turning pages.
-              eager
+              // to open next, so they're worth warming as soon as this post can
+              // spare the bandwidth — it's what makes paging through a chapter
+              // feel like turning pages. Pointing at the link still warms it
+              // either way.
+              eager={settled}
               className="flex flex-row gap-1 items-center min-w-0 grow"
             >
               <ArrowRightTiny className="rotate-180 shrink-0" />
@@ -111,7 +170,7 @@ export const PostPrevNextButtons = (props: {
               <PostNavLink
                 post={adjacent.right}
                 href={getPostLink(adjacent.right.uri)}
-                eager
+                eager={settled}
                 className="flex flex-row gap-1 items-center truncate min-w-0 grow w-fit max-w-full text-right justify-end"
               >
                 <div className="min-w-0 truncate ">{adjacent.right.title}</div>
