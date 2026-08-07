@@ -33,9 +33,8 @@ export function PublishedImageBlock(props: {
 
   return (
     <div
-      // A loading image still reserves its box from its width/height, but a
-      // broken one collapses to the size of its alt text — so the frame holds a
-      // floor of its own for the render that needs it.
+      // A broken image collapses to the size of its alt text, so the frame
+      // holds a floor of its own for that render.
       className={`relative ${props.isFullBleed ? "w-full" : "w-fit"} h-fit ${status === "error" ? "min-w-40 min-h-24" : ""}`}
     >
       <button
@@ -53,11 +52,10 @@ export function PublishedImageBlock(props: {
           style={imageStyle}
         />
       </button>
-      {status !== "loaded" && (
-        <ImageLoadingState
-          status={status}
-          message="Something went wrong."
-          actionLabel="Reload?"
+      {status === "error" && (
+        <ImageErrorState
+          message="Something went wrong,"
+          actionLabel="reload?"
           onAction={() => {
             reset();
             setReloads((r) => r + 1);

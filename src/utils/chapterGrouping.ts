@@ -77,7 +77,6 @@ export type ChapterListItem<T> = {
   label: string;
   /** In reading order — index 0 is the page opening the item lands on. */
   posts: T[];
-  isChapter: boolean;
 };
 
 type ChapterablePost = {
@@ -123,7 +122,6 @@ export function groupPostsIntoChapters<T extends ChapterablePost>(
         key: inOrder[i].uri,
         label: titleOf(inOrder[i]),
         posts: [inOrder[i]],
-        isChapter: false,
       });
       i++;
       continue;
@@ -147,7 +145,6 @@ export function groupPostsIntoChapters<T extends ChapterablePost>(
       key: `${prefix.toLowerCase()}|${inOrder[i].uri}`,
       label: prefix.charAt(0).toUpperCase() + prefix.slice(1),
       posts: chapterPosts,
-      isChapter: true,
     });
     i = last + 1;
   }

@@ -9,8 +9,8 @@ import {
 import { PaginatedPublicationPostsList } from "app/(app)/(published)/lish/[did]/[publication]/PaginatedPublicationPostsList";
 import {
   POSTS_LIST_PAGE_SIZE,
-  postsListFilterKey,
-  sortPostsForList,
+  postsListSeedKey,
+  orderPostsForView,
   filterPostsByTags,
   type LoadPostsBatch,
   type PostsListView,
@@ -78,27 +78,29 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
   // locally — no extra round trips, just windowed rendering.
   let listData = useMemo(() => {
     if (!data?.documents) return null;
-    let posts: PublicationPostsListPost[] = sortPostsForList(
-      filterPostsByTags(data.documents, filterTags),
-    ).map((d) => ({
-      uri: d.uri,
-      record: d.record,
-      commentsCount: d.commentsCount,
-      mentionsCount: d.mentionsCount,
-      recommendsCount: d.recommendsCount,
-      membersOnly: d.membersOnly,
-    }));
-    let byUri = new Map(posts.map((p) => [p.uri, p]));
+    let { ordered, latest } = orderPostsForView(
+      filterPostsByTags(data.documents, filterTags).map((d) => ({
+        uri: d.uri,
+        record: d.record,
+        commentsCount: d.commentsCount,
+        mentionsCount: d.mentionsCount,
+        recommendsCount: d.recommendsCount,
+        membersOnly: d.membersOnly,
+      })),
+      view,
+    );
+    let byUri = new Map(ordered.map((p) => [p.uri, p]));
     let loadBatch: LoadPostsBatch = async (batch) =>
       batch
         .map((u) => byUri.get(u))
         .filter((p): p is PublicationPostsListPost => p !== undefined);
     return {
-      uris: posts.map((p) => p.uri),
-      initialPosts: posts.slice(0, POSTS_LIST_PAGE_SIZE),
+      uris: ordered.map((p) => p.uri),
+      initialPosts: ordered.slice(0, POSTS_LIST_PAGE_SIZE),
+      latestPost: latest,
       loadBatch,
     };
-  }, [data?.documents, filterTags]);
+  }, [data?.documents, filterTags, view]);
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
@@ -114,13 +116,17 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
     <PaginatedPublicationPostsList
       publication={data.publication}
       publicationRecord={publicationRecord}
-      listId={`${data.publication.uri}:${postsListFilterKey(filterTags)}`}
+      listId={`${data.publication.uri}:${postsListSeedKey(view, filterTags)}`}
       uris={listData.uris}
       initialPosts={listData.initialPosts}
+      latestPost={listData.latestPost}
       loadBatch={listData.loadBatch}
       view={view}
       highlightFirstPost={highlightFirst}
       limit={limit}
+      // This block only renders inside the editor; the published page builds
+      // its list from the pages record instead.
+      disableLinks
     />
   );
 }

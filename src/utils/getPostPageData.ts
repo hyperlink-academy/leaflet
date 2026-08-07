@@ -144,9 +144,9 @@ export const getPostPageData = cache(async function getPostPageData(
         next?: Neighbour;
         first?: { uri: string; title: string };
         last?: { uri: string; title: string };
-        // One hop further out in each direction. Never linked to — they exist
-        // so the prev/next buttons can warm two posts ahead, which is what
-        // makes a run of page turns stay instant.
+        // One hop further out in each direction. Never linked to, and no art —
+        // they exist so the prev/next buttons can warm two posts ahead, which
+        // costs a prefetched route rather than a download.
         prevPreload?: string;
         nextPreload?: string;
       }
@@ -221,14 +221,22 @@ export const getPostPageData = cache(async function getPostPageData(
   // art rides along in this page's own payload instead of being fetched once the
   // reader gets here: the payload is prefetched and CDN-cached well before the
   // reader can click, so warming starts on first paint rather than a round trip
-  // later. Reading two neighbours' records costs a query per ISR render, not per
+  // later. Reading the neighbours' records costs a query per ISR render, not per
   // view — and only for publications that page at all.
+  //
+  // One hop each way only. The second hop's route is prefetched, which is
+  // cheap, but its art is not: speculative bytes compete with the page the
+  // reader is on, and by the time they're two turns out that post has warmed
+  // its own neighbours anyway.
   if (prevNext && (normalizedPublication?.preferences?.showPrevNext ?? true)) {
-    const neighbours = [prevNext.next, prevNext.prev].filter(
+    const warm = [prevNext.next, prevNext.prev].filter(
       (n): n is Neighbour => !!n,
     );
-    const images = await getPostImagePreloads(neighbours.map((n) => n.uri));
-    neighbours.forEach((neighbour, index) => {
+    const images = await getPostImagePreloads(
+      warm.map((n) => n.uri),
+      document.documents_in_publications[0]?.publications?.uri,
+    );
+    warm.forEach((neighbour, index) => {
       neighbour.images = images[index];
     });
   }

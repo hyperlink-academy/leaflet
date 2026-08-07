@@ -7,10 +7,7 @@ import Image from "next/image";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { addImage, localImages, retryImageUpload } from "src/utils/addImage";
 import { useImageUploadState } from "src/hooks/useImageUploadState";
-import {
-  ImageLoadingState,
-  useImageLoadStatus,
-} from "components/ImageLoadingState";
+import { ImageErrorState, useImageLoadStatus } from "components/ImageLoadState";
 import { addBlockBelow } from "src/utils/addBlockBelow";
 import { elementId } from "src/utils/elementId";
 import { useEffect, useState } from "react";
@@ -213,9 +210,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       }
     >
       <div
-        // A loading image still reserves its box from its width/height, but a
-        // broken one collapses to the size of its alt text — so the frame holds
-        // a floor of its own for the render that needs it.
+        // A broken image collapses to the size of its alt text, so the frame
+        // holds a floor of its own for that render.
         className={`relative ${isFullBleed ? "w-full" : "w-fit"} ${imageStatus === "error" ? "min-w-40 min-h-24" : ""}`}
       >
         <button
@@ -257,11 +253,14 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             />
           )}
         </button>
-        {imageStatus !== "loaded" && (
-          <ImageLoadingState
-            status={imageStatus}
-            message="Something went wrong,"
-            actionLabel="try again?"
+        {imageStatus === "error" && (
+          <ImageErrorState
+            message={
+              uploadState === "failed"
+                ? "Upload didn't finish,"
+                : "Something went wrong,"
+            }
+            actionLabel={uploadState === "failed" ? "try again?" : "reload?"}
             onAction={retryImage}
             className={isFullBleed ? "rounded-none!" : "rounded-lg!"}
           />

@@ -184,7 +184,19 @@ export async function prepareImage(
         // it again, and one failure in a 30-image paste shouldn't take the rest
         // of the paste down with it.
         console.error("[addImage] upload failed", e);
-        uploadRetries.set(url, () => void runUpload());
+        // The original slot is released the moment this pipeline finishes, so a
+        // retry takes one of its own — otherwise retrying a failed 30-image
+        // paste would put every one of them back on the wire at once.
+        uploadRetries.set(url, () => {
+          void (async () => {
+            await acquireSlot();
+            try {
+              await runUpload();
+            } finally {
+              releaseSlot();
+            }
+          })();
+        });
         setUploadState(url, "failed");
       }
     };

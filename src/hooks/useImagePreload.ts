@@ -23,25 +23,24 @@ export type PreloadTarget = {
  * loads normally, error frame and all, when the reader reaches it.
  */
 export function useImagePreload(targets: PreloadTarget[]) {
-  // The URLs are the real dependency: a re-render that produces an equal list
-  // must not restart fetches that are already in flight.
-  const key = targets
-    .map((target) => `${target.decode ? "d" : "f"}${target.src}`)
-    .join("\n");
+  // The targets themselves are the real dependency: a re-render that produces
+  // an equal list must not restart fetches that are already in flight.
+  const key = JSON.stringify(targets);
 
   useEffect(() => {
-    if (!key) return;
     if (typeof Image === "undefined") return;
+    const parsed: PreloadTarget[] = JSON.parse(key);
+    if (parsed.length === 0) return;
 
-    const images = key.split("\n").map((entry) => {
+    const images = parsed.map((target) => {
       const image = new Image();
       image.decoding = "async";
       // Speculative, so never at the expense of the page the reader is on.
       image.fetchPriority = "low";
-      image.src = entry.slice(1);
+      image.src = target.src;
       // decode() rejects when the element is discarded mid-flight, which is
       // exactly what paging away does — not an error.
-      if (entry[0] === "d") void image.decode?.().catch(() => {});
+      if (target.decode) void image.decode?.().catch(() => {});
       return image;
     });
 

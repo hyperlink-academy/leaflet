@@ -28,8 +28,8 @@ import {
 import { type PublicationPostsListPost } from "../PublicationPostsList";
 import { PaginatedPublicationPostsList } from "../PaginatedPublicationPostsList";
 import {
-  postsListFilterKey,
-  type PostsListView,
+  postsListSeedKey,
+  resolvePostsListView,
 } from "src/utils/postsListPagination";
 import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
@@ -85,11 +85,15 @@ const HeadingStyle: { [level: number]: string } = {
 type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
-  // Per tag-filter signature (postsListFilterKey): the full ordered URI list
-  // plus an SSR-seeded, byline-resolved first batch.
+  // Per view-and-tag-filter signature (postsListSeedKey): the full ordered URI
+  // list plus an SSR-seeded, byline-resolved first batch.
   initialByFilter: Record<
     string,
-    { uris: string[]; initialPosts: PublicationPostsListPost[] }
+    {
+      uris: string[];
+      initialPosts: PublicationPostsListPost[];
+      latestPost?: PublicationPostsListPost;
+    }
   >;
 };
 
@@ -392,13 +396,8 @@ export let Block = ({
     }
     case PubLeafletBlocksPostsList.isMain(b.block): {
       if (!postsListData) return null;
-      const view: PostsListView =
-        b.block.view === "chapter"
-          ? "chapter"
-          : b.block.view === "small"
-            ? "small"
-            : "medium";
-      const key = postsListFilterKey(b.block.filterByTags);
+      const view = resolvePostsListView(b.block.view);
+      const key = postsListSeedKey(view, b.block.filterByTags);
       const seed = postsListData.initialByFilter[key];
       if (!seed) return null;
       return (
@@ -409,6 +408,7 @@ export let Block = ({
             listId={`${postsListData.publication.uri}:${key}`}
             uris={seed.uris}
             initialPosts={seed.initialPosts}
+            latestPost={seed.latestPost}
             loadBatch={getPostsByUris}
             view={view}
             highlightFirstPost={!!b.block.highlightFirstPost}

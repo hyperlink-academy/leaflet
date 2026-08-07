@@ -62,6 +62,7 @@ export function PublicationPostsList({
   preSorted = false,
   className,
   inList,
+  disableLinks = false,
 }: {
   publication: PublicationForURL;
   publicationRecord: NormalizedPublication | null;
@@ -74,6 +75,9 @@ export function PublicationPostsList({
   preSorted?: boolean;
   className?: string;
   inList?: boolean;
+  // In the editor the list is something you're laying out, not reading, so its
+  // posts render as plain cards that don't navigate away from the page.
+  disableLinks?: boolean;
 }) {
   // Resolve a byline name per post: the post's explicit contributors when
   // present, otherwise the document author (publication owner). Server render
@@ -197,7 +201,7 @@ export function PublicationPostsList({
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemLarge
                     inList={inList ?? true}
-                    href={docUrl}
+                    href={disableLinks ? undefined : docUrl}
                     membersOnly={post.membersOnly}
                     title={doc_record.title}
                     description={
@@ -220,7 +224,7 @@ export function PublicationPostsList({
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemSmall
                     inList={inList ?? true}
-                    href={docUrl}
+                    href={disableLinks ? undefined : docUrl}
                     membersOnly={post.membersOnly}
                     title={doc_record.title}
                     author={authorByUri.get(post.uri)}
@@ -236,7 +240,7 @@ export function PublicationPostsList({
               <React.Fragment key={post.uri}>
                 <PublicationPostItemMedium
                   inList={inList ?? true}
-                  href={docUrl}
+                  href={disableLinks ? undefined : docUrl}
                   membersOnly={post.membersOnly}
                   title={doc_record.title}
                   description={

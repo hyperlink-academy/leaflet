@@ -19,30 +19,40 @@ export function PaginatedPublicationPostsList({
   listId,
   uris,
   initialPosts,
+  latestPost,
   loadBatch,
   view = "medium",
   highlightFirstPost = false,
   limit,
   emptyState,
   className,
+  disableLinks = false,
 }: {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
   // Distinguishes this list's SWR cache from other posts-list blocks on the
   // page (e.g. publication uri + tag-filter signature).
   listId: string;
-  // The full, pre-ordered list of post URIs. Pagination just walks it in
-  // POSTS_LIST_PAGE_SIZE windows.
+  // The full list of post URIs, already in the order this view reads them (see
+  // orderPostsForView). Pagination just walks it in POSTS_LIST_PAGE_SIZE
+  // windows.
   uris: string[];
   // First window, already hydrated (SSR HTML / editor's in-memory data) so it
-  // renders without a round trip.
+  // renders without a round trip. Must be the head of `uris`.
   initialPosts: PublicationPostsListPost[];
+  // The most recent post, for the "Latest" highlight above a chapter shelf —
+  // chapter view pages from the oldest end, so it can't be read off the loaded
+  // window.
+  latestPost?: PublicationPostsListPost;
   loadBatch: LoadPostsBatch;
   view?: PostsListView;
   highlightFirstPost?: boolean;
   limit?: number;
   emptyState?: React.ReactNode;
   className?: string;
+  // Set by the editor, where the list is being laid out rather than read, so
+  // clicking a post doesn't navigate away from the page you're customizing.
+  disableLinks?: boolean;
 }) {
   // A limit caps the list at its source so windowing and load-on-scroll both
   // respect it without any special-casing downstream.
@@ -98,7 +108,7 @@ export function PaginatedPublicationPostsList({
     <div className={`relative w-full ${className ?? ""}`}>
       {view === "chapter" ? (
         <>
-          {highlightFirstPost && allPosts[0] && (
+          {highlightFirstPost && latestPost && (
             <>
               <div className="text-sm uppercase font-bold text-tertiary pb-1">
                 Latest
@@ -108,9 +118,10 @@ export function PaginatedPublicationPostsList({
                   inList={false}
                   publication={publication}
                   publicationRecord={publicationRecord}
-                  posts={[allPosts[0]]}
+                  posts={[latestPost]}
                   view="medium"
                   preSorted
+                  disableLinks={disableLinks}
                 />
               </div>
               <hr className="border-border-light my-4" />
@@ -120,6 +131,7 @@ export function PaginatedPublicationPostsList({
           <PublicationPostsChapterList
             publication={publication}
             chapters={chapters}
+            disableLinks={disableLinks}
           />
         </>
       ) : (
@@ -130,6 +142,7 @@ export function PaginatedPublicationPostsList({
           view={view}
           highlightFirstPost={highlightFirstPost}
           preSorted
+          disableLinks={disableLinks}
         />
       )}
       {/* Fires the next batch while still ~1200px from the list's end. */}
