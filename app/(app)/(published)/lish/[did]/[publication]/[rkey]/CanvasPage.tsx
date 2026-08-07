@@ -115,7 +115,10 @@ function CanvasContent({
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
-  let sortedBlocks = useMemo(() => [...blocks].sort(canvasBlockOrder), [blocks]);
+  let sortedBlocks = useMemo(
+    () => [...blocks].sort(canvasBlockOrder),
+    [blocks],
+  );
   let height =
     sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
 

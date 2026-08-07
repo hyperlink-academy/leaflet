@@ -132,7 +132,11 @@ export function ThreadView(props: {
   }
   if (!thread) return null;
   return (
-    <ThreadContent post={thread} parentUri={parentUri} initialTab={initialTab} />
+    <ThreadContent
+      post={thread}
+      parentUri={parentUri}
+      initialTab={initialTab}
+    />
   );
 }
 

@@ -378,7 +378,9 @@ const BlockMultiselectIndicator = (props: BlockProps) => {
       !s.selectedBlocks.some((b) => b.entityID === props.entityID)
     )
       return null;
-    let next = s.selectedBlocks.some((b) => b.entityID === props.nextBlock?.entityID);
+    let next = s.selectedBlocks.some(
+      (b) => b.entityID === props.nextBlock?.entityID,
+    );
     let prev = s.selectedBlocks.some(
       (b) => b.entityID === props.previousBlock?.entityID,
     );
@@ -582,7 +584,8 @@ export const ListMarker = (
 ) => {
   let checklist = useEntity(props.entityID, "block/check-list");
   let listStyle = useEntity(props.entityID, "block/list-style");
-  let headingLevel = useEntity(props.entityID, "block/heading-level")?.data.value;
+  let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
+    .value;
   let children = useEntity(props.entityID, "card/block");
   let folded =
     useUIState((s) => s.foldedBlocks.includes(props.entityID)) &&

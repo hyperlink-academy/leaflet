@@ -61,6 +61,8 @@ export function PublicationPostsList({
   highlightFirstPost = false,
   preSorted = false,
   className,
+  inList,
+  disableLinks = false,
 }: {
   publication: PublicationForURL;
   publicationRecord: NormalizedPublication | null;
@@ -72,6 +74,10 @@ export function PublicationPostsList({
   // publishedAt sort so paginated pages keep the order their cursor assumes.
   preSorted?: boolean;
   className?: string;
+  inList?: boolean;
+  // In the editor the list is something you're laying out, not reading, so its
+  // posts render as plain cards that don't navigate away from the page.
+  disableLinks?: boolean;
 }) {
   // Resolve a byline name per post: the post's explicit contributors when
   // present, otherwise the document author (publication owner). Server render
@@ -194,8 +200,8 @@ export function PublicationPostsList({
               return (
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemLarge
-                    inList
-                    href={docUrl}
+                    inList={inList ?? true}
+                    href={disableLinks ? undefined : docUrl}
                     membersOnly={post.membersOnly}
                     title={doc_record.title}
                     description={
@@ -217,8 +223,8 @@ export function PublicationPostsList({
               return (
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemSmall
-                    inList
-                    href={docUrl}
+                    inList={inList ?? true}
+                    href={disableLinks ? undefined : docUrl}
                     membersOnly={post.membersOnly}
                     title={doc_record.title}
                     author={authorByUri.get(post.uri)}
@@ -233,8 +239,8 @@ export function PublicationPostsList({
             return (
               <React.Fragment key={post.uri}>
                 <PublicationPostItemMedium
-                  inList
-                  href={docUrl}
+                  inList={inList ?? true}
+                  href={disableLinks ? undefined : docUrl}
                   membersOnly={post.membersOnly}
                   title={doc_record.title}
                   description={

@@ -27,7 +27,10 @@ import {
 } from "lexicons/api";
 import { type PublicationPostsListPost } from "../PublicationPostsList";
 import { PaginatedPublicationPostsList } from "../PaginatedPublicationPostsList";
-import { postsListFilterKey } from "src/utils/postsListPagination";
+import {
+  postsListSeedKey,
+  resolvePostsListView,
+} from "src/utils/postsListPagination";
 import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
@@ -38,7 +41,6 @@ import {
 } from "src/utils/blobRefToSrc";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
-import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
@@ -53,6 +55,7 @@ import {
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
+import { PublishedImageBlock } from "./Blocks/PublishedImageBlock";
 import { useOpenImageLightbox } from "./GlobalImageLightbox";
 import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
@@ -82,11 +85,15 @@ const HeadingStyle: { [level: number]: string } = {
 type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
-  // Per tag-filter signature (postsListFilterKey): the full ordered URI list
-  // plus an SSR-seeded, byline-resolved first batch.
+  // Per view-and-tag-filter signature (postsListSeedKey): the full ordered URI
+  // list plus an SSR-seeded, byline-resolved first batch.
   initialByFilter: Record<
     string,
-    { uris: string[]; initialPosts: PublicationPostsListPost[] }
+    {
+      uris: string[];
+      initialPosts: PublicationPostsListPost[];
+      latestPost?: PublicationPostsListPost;
+    }
   >;
 };
 
@@ -389,9 +396,8 @@ export let Block = ({
     }
     case PubLeafletBlocksPostsList.isMain(b.block): {
       if (!postsListData) return null;
-      const view: "small" | "medium" =
-        b.block.view === "small" ? "small" : "medium";
-      const key = postsListFilterKey(b.block.filterByTags);
+      const view = resolvePostsListView(b.block.view);
+      const key = postsListSeedKey(view, b.block.filterByTags);
       const seed = postsListData.initialByFilter[key];
       if (!seed) return null;
       return (
@@ -402,6 +408,7 @@ export let Block = ({
             listId={`${postsListData.publication.uri}:${key}`}
             uris={seed.uris}
             initialPosts={seed.initialPosts}
+            latestPost={seed.latestPost}
             loadBatch={getPostsByUris}
             view={view}
             highlightFirstPost={!!b.block.highlightFirstPost}
@@ -565,29 +572,18 @@ export let Block = ({
           className={`imageBlock flex ${isFullBleed ? "" : alignment} ${fullBleedClassName}`}
           {...blockProps}
         >
-          <div className={`relative ${isFullBleed ? "w-full" : "w-fit"} h-fit`}>
-            <button
-              type="button"
-              className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-pointer" : ""}`}
-              onClick={
-                canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
-              }
-            >
-              <img
-                alt={b.block.alt}
-                height={b.block.aspectRatio?.height}
-                width={b.block.aspectRatio?.width}
-                className={`${isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${className}`}
-                src={src}
-                style={
-                  !isFullBleed && b.block.width
-                    ? { width: b.block.width, maxWidth: "100%", height: "auto" }
-                    : undefined
-                }
-              />
-            </button>
-            {b.block.alt && <ReadOnlyAltText alt={b.block.alt} />}
-          </div>
+          <PublishedImageBlock
+            src={src}
+            alt={b.block.alt}
+            height={b.block.aspectRatio?.height}
+            width={b.block.aspectRatio?.width}
+            displayWidth={b.block.width}
+            isFullBleed={isFullBleed}
+            className={className}
+            onOpenLightbox={
+              canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
+            }
+          />
         </div>
       );
     }

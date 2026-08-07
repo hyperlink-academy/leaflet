@@ -23,9 +23,11 @@ import { buildPublicationPosts } from "src/utils/buildPublicationPosts";
 import { fetchPublicationPostRows } from "../getPublicationForPage";
 import {
   POSTS_LIST_PAGE_SIZE,
-  postsListFilterKey,
-  sortPostsForList,
+  postsListSeedKey,
+  resolvePostsListView,
+  orderPostsForView,
   filterPostsByTags,
+  type PostsListView,
 } from "src/utils/postsListPagination";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "src/utils/getPublicationURL";
@@ -121,25 +123,44 @@ export async function PublicationPageRenderer({
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
 
-  // Per distinct tag-filter signature, ship the full ordered URI list plus a
-  // byline-resolved first batch (in the SSR HTML); the client hydrates later
-  // batches by URI on scroll via getPostsByUris.
+  // Per distinct view-and-tag-filter signature, ship the full ordered URI list
+  // plus a byline-resolved first batch (in the SSR HTML); the client hydrates
+  // later batches by URI on scroll via getPostsByUris.
   const allPosts = buildPublicationPosts(await postRowsPromise);
-  const distinctFilters = new Map<string, string[] | undefined>();
+  const distinctSeeds = new Map<
+    string,
+    { view: PostsListView; tags: string[] | undefined }
+  >();
   for (const b of postsListBlocks) {
-    const filterByTags = (b.block as PubLeafletBlocksPostsList.Main)
-      .filterByTags;
-    distinctFilters.set(postsListFilterKey(filterByTags), filterByTags);
+    const block = b.block as PubLeafletBlocksPostsList.Main;
+    const view = resolvePostsListView(block.view);
+    distinctSeeds.set(postsListSeedKey(view, block.filterByTags), {
+      view,
+      tags: block.filterByTags,
+    });
   }
   const initialByFilterEntries = await Promise.all(
-    Array.from(distinctFilters.entries()).map(async ([key, tags]) => {
-      const ordered = sortPostsForList(filterPostsByTags(allPosts, tags));
-      const firstBatch = ordered.slice(0, POSTS_LIST_PAGE_SIZE);
-      const initialPosts = attachBylineProfiles(
-        firstBatch,
-        await getProfiles(bylineDidsForPosts(firstBatch)),
+    Array.from(distinctSeeds.entries()).map(async ([key, { view, tags }]) => {
+      const { ordered, latest } = orderPostsForView(
+        filterPostsByTags(allPosts, tags),
+        view,
       );
-      return [key, { uris: ordered.map((p) => p.uri), initialPosts }] as const;
+      const firstBatch = ordered.slice(0, POSTS_LIST_PAGE_SIZE);
+      // The latest post is its own card above a chapter shelf, and pagination
+      // starts at the far end there, so its byline has to be resolved too.
+      const needBylines = latest ? [...firstBatch, latest] : firstBatch;
+      const profiles = await getProfiles(bylineDidsForPosts(needBylines));
+      const [latestPost] = latest
+        ? attachBylineProfiles([latest], profiles)
+        : [];
+      return [
+        key,
+        {
+          uris: ordered.map((p) => p.uri),
+          initialPosts: attachBylineProfiles(firstBatch, profiles),
+          latestPost,
+        },
+      ] as const;
     }),
   );
 
