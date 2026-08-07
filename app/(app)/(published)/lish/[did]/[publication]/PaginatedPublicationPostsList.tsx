@@ -12,6 +12,7 @@ import {
   type LoadPostsBatch,
   type PostsListView,
 } from "src/utils/postsListPagination";
+import { BlockLayout } from "components/Blocks/Block";
 
 export function PaginatedPublicationPostsList({
   publication,
@@ -39,12 +40,7 @@ export function PaginatedPublicationPostsList({
   initialPosts: PublicationPostsListPost[];
   loadBatch: LoadPostsBatch;
   view?: PostsListView;
-  // Chapter view reads this as the latest post, which is the same post: the
-  // list is newest-first.
   highlightFirstPost?: boolean;
-  // Cap the number of posts shown; pagination stops once the list reaches it.
-  // Not offered in chapter view, where a cap on posts would cut a chapter in
-  // half — so a limit left over from another view is ignored there.
   limit?: number;
   emptyState?: React.ReactNode;
   className?: string;
@@ -103,23 +99,25 @@ export function PaginatedPublicationPostsList({
     <div className={`relative w-full ${className ?? ""}`}>
       {view === "chapter" ? (
         <>
-          {/* Posts arrive newest-first, so the head of the list is the latest
-              one. It keeps its place inside its chapter too — the chapter is
-              the whole run of pages, not just the ones nothing else points
-              at. */}
           {highlightFirstPost && allPosts[0] && (
             <>
-              <PublicationPostsList
-                publication={publication}
-                publicationRecord={publicationRecord}
-                posts={[allPosts[0]]}
-                view="medium"
-                preSorted
-                className="pb-2"
-              />
-              <hr className="border-border-light mb-4" />
+              <div className="text-sm uppercase font-bold text-tertiary pb-1">
+                Latest
+              </div>
+              <div className="block-border hover:outline-border!">
+                <PublicationPostsList
+                  inList={false}
+                  publication={publication}
+                  publicationRecord={publicationRecord}
+                  posts={[allPosts[0]]}
+                  view="medium"
+                  preSorted
+                />
+              </div>
+              <hr className="border-border-light my-4" />
             </>
           )}
+
           <PublicationPostsChapterList
             publication={publication}
             chapters={chapters}

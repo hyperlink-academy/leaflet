@@ -61,6 +61,7 @@ export function PublicationPostsList({
   highlightFirstPost = false,
   preSorted = false,
   className,
+  inList,
 }: {
   publication: PublicationForURL;
   publicationRecord: NormalizedPublication | null;
@@ -72,6 +73,7 @@ export function PublicationPostsList({
   // publishedAt sort so paginated pages keep the order their cursor assumes.
   preSorted?: boolean;
   className?: string;
+  inList?: boolean;
 }) {
   // Resolve a byline name per post: the post's explicit contributors when
   // present, otherwise the document author (publication owner). Server render
@@ -194,7 +196,7 @@ export function PublicationPostsList({
               return (
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemLarge
-                    inList
+                    inList={inList ?? true}
                     href={docUrl}
                     membersOnly={post.membersOnly}
                     title={doc_record.title}
@@ -217,7 +219,7 @@ export function PublicationPostsList({
               return (
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemSmall
-                    inList
+                    inList={inList ?? true}
                     href={docUrl}
                     membersOnly={post.membersOnly}
                     title={doc_record.title}
@@ -233,7 +235,7 @@ export function PublicationPostsList({
             return (
               <React.Fragment key={post.uri}>
                 <PublicationPostItemMedium
-                  inList
+                  inList={inList ?? true}
                   href={docUrl}
                   membersOnly={post.membersOnly}
                   title={doc_record.title}

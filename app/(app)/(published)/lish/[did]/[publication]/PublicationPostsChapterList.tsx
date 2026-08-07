@@ -94,7 +94,7 @@ function ChapterItem({ card }: { card: ChapterCard }) {
         href={card.href}
         className="chapterItem group flex flex-col gap-2 no-underline! text-primary min-w-0"
       >
-        <div className="chapterCover relative w-full aspect-2/3 overflow-hidden rounded-md border border-border-light group-hover:border-accent-contrast bg-bg-page">
+        <div className="chapterCover relative w-full aspect-2/3 overflow-hidden block-border hover:outline-border!">
           {card.coverImageSrc ? (
             <img
               src={card.coverImageSrc}
@@ -126,11 +126,6 @@ function ChapterItem({ card }: { card: ChapterCard }) {
           <div className="chapterTitle text-primary font-bold leading-snug line-clamp-2">
             {card.label}
           </div>
-          {card.isChapter && (
-            <div className="chapterPageCount text-tertiary text-sm">
-              {card.pageCount} {card.pageCount === 1 ? "page" : "pages"}
-            </div>
-          )}
         </div>
       </SpeedyLink>
     </div>

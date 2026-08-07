@@ -89,9 +89,9 @@ type ChapterablePost = {
  * Collapse the posts whose titles follow the archive's own chapter convention
  * into one item per chapter, leaving every other post an item of its own.
  *
- * Items come back newest-first, the order every other view shows. Pages within
- * a chapter stay in reading order, which is what makes `posts[0]` the page a
- * card opens on.
+ * Items come back oldest-first — a serialised archive is browsed from its
+ * start, not from its most recent page. Pages within a chapter stay in reading
+ * order too, which is what makes `posts[0]` the page a card opens on.
  */
 export function groupPostsIntoChapters<T extends ChapterablePost>(
   posts: T[],
@@ -152,5 +152,5 @@ export function groupPostsIntoChapters<T extends ChapterablePost>(
     i = last + 1;
   }
 
-  return items.reverse();
+  return items;
 }
