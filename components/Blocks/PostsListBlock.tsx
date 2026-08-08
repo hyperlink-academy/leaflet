@@ -7,10 +7,12 @@ import {
   useNormalizedPublicationRecord,
 } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { PaginatedPublicationPostsList } from "app/(app)/(published)/lish/[did]/[publication]/PaginatedPublicationPostsList";
+import { ChapterShelf } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostsChapterList";
+import { buildChapterCards } from "src/utils/chapterGrouping";
 import {
   POSTS_LIST_PAGE_SIZE,
-  postsListSeedKey,
-  orderPostsForView,
+  postsListFilterKey,
+  sortPostsForList,
   filterPostsByTags,
   type LoadPostsBatch,
   type PostsListView,
@@ -77,10 +79,12 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
 
   // The dashboard already loads every document, so order/filter that in-memory
   // set, hand the paginated list the full URI ordering, and resolve each batch
-  // locally — no extra round trips, just windowed rendering.
+  // locally — no extra round trips, just windowed rendering. Chapter view
+  // groups the same set into prebuilt cards instead, mirroring what the SSR
+  // page ships.
   let listData = useMemo(() => {
     if (!data?.documents) return null;
-    let { ordered, latest } = orderPostsForView(
+    let ordered = sortPostsForList(
       filterPostsByTags(data.documents, filterTags).map((d) => ({
         uri: d.uri,
         record: d.record,
@@ -89,7 +93,6 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         recommendsCount: d.recommendsCount,
         membersOnly: d.membersOnly,
       })),
-      view,
     );
     let byUri = new Map(ordered.map((p) => [p.uri, p]));
     let loadBatch: LoadPostsBatch = async (batch) =>
@@ -99,10 +102,14 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
     return {
       uris: ordered.map((p) => p.uri),
       initialPosts: ordered.slice(0, POSTS_LIST_PAGE_SIZE),
-      latestPost: latest,
+      latestPost: ordered[0],
+      chapterCards:
+        view === "chapter" && data.publication
+          ? buildChapterCards(ordered, data.publication)
+          : undefined,
       loadBatch,
     };
-  }, [data?.documents, filterTags, view]);
+  }, [data?.documents, data?.publication, filterTags, view]);
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
@@ -114,20 +121,33 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
       </EmptyState>
     );
 
+  // The editor lays the list out rather than reading it, so both branches
+  // disable links — clicking a post shouldn't navigate away from the page
+  // being customized.
+  if (view === "chapter") {
+    return (
+      <ChapterShelf
+        publication={data.publication}
+        publicationRecord={publicationRecord}
+        cards={listData.chapterCards ?? []}
+        latestPost={listData.latestPost}
+        highlightLatest={highlightFirst}
+        disableLinks
+      />
+    );
+  }
+
   return (
     <PaginatedPublicationPostsList
       publication={data.publication}
       publicationRecord={publicationRecord}
-      listId={`${data.publication.uri}:${postsListSeedKey(view, filterTags)}`}
+      listId={`${data.publication.uri}:${postsListFilterKey(filterTags)}`}
       uris={listData.uris}
       initialPosts={listData.initialPosts}
-      latestPost={listData.latestPost}
       loadBatch={listData.loadBatch}
       view={view}
       highlightFirstPost={highlightFirst}
       limit={limit}
-      // This block only renders inside the editor; the published page builds
-      // its list from the pages record instead.
       disableLinks
     />
   );

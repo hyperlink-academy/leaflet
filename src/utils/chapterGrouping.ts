@@ -13,6 +13,11 @@
 // in reading order, so a chapter is always a *run* of consecutive posts and
 // only neighbours need comparing.
 
+import { AtUri } from "@atproto/api";
+import { getDocumentURL } from "./getPublicationURL";
+import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "./blobRefToSrc";
+import type { NormalizedDocument } from "./normalizeRecords";
+
 // The characters a title uses to divide its chapter from its page. Dash
 // variants count as the dash people meant to type.
 const CHAPTER_SEPARATOR = /[:,\-–—/|]/;
@@ -100,4 +105,49 @@ export function groupPostsIntoChapters<T extends ChapterablePost>(
   }
 
   return items;
+}
+
+// Everything a chapter's card on the shelf renders — plain strings, so a
+// server render can group the whole archive and ship one small card per
+// chapter instead of the posts behind it.
+export type ChapterCard = {
+  key: string;
+  label: string;
+  href: string;
+  coverImageSrc?: string;
+  membersOnly: boolean;
+};
+
+type CardablePost = {
+  uri: string;
+  membersOnly?: boolean;
+  record: NormalizedDocument;
+};
+
+/**
+ * Group posts into chapters and reduce each to its card: label, the URL of its
+ * first page in reading order, that page's cover, and whether any page is
+ * members-only. Runs wherever the full archive already lives (the SSR page
+ * query, the editor's in-memory documents) so the shelf never needs the posts
+ * themselves shipped to it.
+ */
+export function buildChapterCards(
+  posts: CardablePost[],
+  publication: { uri: string; record: unknown },
+): ChapterCard[] {
+  return groupPostsIntoChapters(posts).map((item) => {
+    const first = item.posts[0];
+    const coverImage = first.record.coverImage;
+    return {
+      key: item.key,
+      label: item.label,
+      href: getDocumentURL(first.record, first.uri, publication),
+      coverImageSrc: coverImage
+        ? blobRefToSrc(coverImage.ref, new AtUri(first.uri).host, undefined, {
+            width: COVER_THUMBNAIL_WIDTH.medium,
+          })
+        : undefined,
+      membersOnly: item.posts.some((post) => !!post.membersOnly),
+    };
+  });
 }
