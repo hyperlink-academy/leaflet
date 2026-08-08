@@ -2,12 +2,6 @@ import { useRef, useEffect } from "react";
 
 let scrollPositions: { [key: string]: number } = {};
 
-// Drop a remembered offset, so the next render under `key` starts at the top
-// instead of where the reader last left that page.
-export function forgetScrollPosition(key: string) {
-  delete scrollPositions[key];
-}
-
 export function usePreserveScroll<T extends HTMLElement>(key: string | null) {
   let ref = useRef<T | null>(null);
   let lastKey = useRef<string | null>(null);
