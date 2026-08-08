@@ -537,7 +537,7 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "posts-list-view-union": {
     type: "posts-list-view-union";
-    value: "small" | "medium";
+    value: "small" | "medium" | "chapter";
   };
   "standard-site-post-size-union": {
     type: "standard-site-post-size-union";

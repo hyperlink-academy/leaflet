@@ -206,7 +206,9 @@ function ListItem(props: {
         className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
       />
       {isChecklist && (
-        <div className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}>
+        <div
+          className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
+        >
           {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
         </div>
       )}
