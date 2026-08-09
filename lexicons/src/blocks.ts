@@ -483,7 +483,7 @@ export const PubLeafletBlocksPostsList: LexiconDoc = {
       type: "object",
       required: [],
       properties: {
-        view: { type: "string", knownValues: ["small", "medium"] },
+        view: { type: "string", knownValues: ["small", "medium", "chapter"] },
         highlightFirstPost: { type: "boolean" },
         filterByTags: { type: "array", items: { type: "string" } },
         limit: {

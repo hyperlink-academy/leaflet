@@ -51,7 +51,9 @@ export const DefaultPublicationHomepage = ({
   const newsletterMode = !!publication.publication_newsletter_settings?.enabled;
   // publication_pages rows are published state, so the nav reads them directly.
   const navPages = publishedNavPages(publication.publication_pages);
-  const posts: PublicationPostsListPost[] = fakePosts ? [] : resolvedPosts ?? [];
+  const posts: PublicationPostsListPost[] = fakePosts
+    ? []
+    : resolvedPosts ?? [];
   return (
     <>
       <FontLoader

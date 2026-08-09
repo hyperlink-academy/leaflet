@@ -26,9 +26,12 @@ export const MembersOnlyPaywall = () => {
   if (unlockStatus === "loading")
     return (
       <div className="membersOnlyPaywall my-4 flex flex-col items-center gap-2 text-center block-border bg-bg-page px-4 py-6">
-        <div className="flex items-center gap-1 font-bold text-secondary">
+        <div
+          role="status"
+          aria-label="Checking access"
+          className="flex items-center gap-1 font-bold text-secondary"
+        >
           <LoadingTiny className="animate-spin shrink-0" />
-          Checking access
         </div>
       </div>
     );

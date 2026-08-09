@@ -22,6 +22,7 @@ export function PaginatedPublicationPostsList({
   limit,
   emptyState,
   className,
+  disableLinks = false,
 }: {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
@@ -32,7 +33,7 @@ export function PaginatedPublicationPostsList({
   // POSTS_LIST_PAGE_SIZE windows.
   uris: string[];
   // First window, already hydrated (SSR HTML / editor's in-memory data) so it
-  // renders without a round trip.
+  // renders without a round trip. Must be the head of `uris`.
   initialPosts: PublicationPostsListPost[];
   loadBatch: LoadPostsBatch;
   view?: "small" | "medium";
@@ -41,6 +42,9 @@ export function PaginatedPublicationPostsList({
   limit?: number;
   emptyState?: React.ReactNode;
   className?: string;
+  // Set by the editor, where the list is being laid out rather than read, so
+  // clicking a post doesn't navigate away from the page you're customizing.
+  disableLinks?: boolean;
 }) {
   // A limit caps the list at its source so windowing and load-on-scroll both
   // respect it without any special-casing downstream.
@@ -92,6 +96,7 @@ export function PaginatedPublicationPostsList({
         view={view}
         highlightFirstPost={highlightFirstPost}
         preSorted
+        disableLinks={disableLinks}
       />
       {/* Fires the next batch while still ~1200px from the list's end. */}
       <div

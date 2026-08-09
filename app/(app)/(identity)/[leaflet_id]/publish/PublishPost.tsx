@@ -459,7 +459,7 @@ const CoverImageControls = (props: {
         className="hover:underline hover:cursor-pointer text-accent-contrast"
         onMouseDown={(e) => e.preventDefault()}
       >
-        Change Cover
+        {props.coverImageEntity ? "Change" : "Add"} Cover
         <input
           className="hidden"
           type="file"

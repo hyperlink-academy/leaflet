@@ -13,6 +13,10 @@ import {
 
 type PostRef = { uri: string; title: string };
 
+// Paging to another post is starting it, not returning to it, so it opens at
+// the top even if the reader has been there before. The key matches the
+// PageWrapper id in LinearDocumentPage / CanvasPage.
+
 export const PostPrevNextButtons = (props: {
   showPrevNext: boolean;
   showFirstLast: boolean;
@@ -67,6 +71,7 @@ export const PostPrevNextButtons = (props: {
           {adjacent.left ? (
             <SpeedyLink
               href={getPostLink(adjacent.left.uri)}
+              eager
               className="flex flex-row gap-1 items-center min-w-0 grow"
             >
               <ArrowRightTiny className="rotate-180 shrink-0" />
@@ -81,6 +86,7 @@ export const PostPrevNextButtons = (props: {
             <>
               <SpeedyLink
                 href={getPostLink(adjacent.right.uri)}
+                eager
                 className="flex flex-row gap-1 items-center truncate min-w-0 grow w-fit max-w-full text-right justify-end"
               >
                 <div className="min-w-0 truncate ">{adjacent.right.title}</div>
