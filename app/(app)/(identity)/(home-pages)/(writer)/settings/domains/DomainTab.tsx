@@ -56,30 +56,29 @@ export function DomainTab(props: {
           </div>
         </SettingsSection>
       )}
-      {unassignedDomains.length > 0 && (
-        <SettingsSection
-          title="Unassigned Domains"
-          action={
-            <Modal
-              asChild
-              trigger={
-                <ButtonPrimary compact className="">
-                  <AddTiny /> Add Domain
-                </ButtonPrimary>
-              }
-            >
-              <AddDomainForm />
-            </Modal>
-          }
-        >
-          <p>Assign domains in the leaflet settings or publication settings.</p>
-          <div className="flex flex-col gap-2">
-            {unassignedDomains.map((domain) => (
-              <UnassignedDomain key={domain.domain} domain={domain} />
-            ))}
-          </div>
-        </SettingsSection>
-      )}
+
+      <SettingsSection
+        title="Unassigned Domains"
+        action={
+          <Modal
+            asChild
+            trigger={
+              <ButtonPrimary compact className="">
+                <AddTiny /> Add Domain
+              </ButtonPrimary>
+            }
+          >
+            <AddDomainForm />
+          </Modal>
+        }
+      >
+        <p>Assign domains in the leaflet settings or publication settings.</p>
+        <div className="flex flex-col gap-2">
+          {unassignedDomains.map((domain) => (
+            <UnassignedDomain key={domain.domain} domain={domain} />
+          ))}
+        </div>
+      </SettingsSection>
     </>
   );
 }
