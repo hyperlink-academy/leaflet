@@ -11,7 +11,6 @@ import { UndoManager } from "src/undoManager";
 import { focusBlock } from "src/utils/focusBlock";
 import { usePollBlockUIState } from "./PollBlock/pollBlockState";
 import { focusElement } from "src/utils/focusElement";
-import { BlockBlueskySmall } from "components/Icons/BlockBlueskySmall";
 import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
@@ -274,9 +273,10 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Horizontal Rule",
+    name: "Divider",
     icon: "—",
     type: "block",
+    alternateNames: ["Horizontal Rule", "hr"],
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "horizontal-rule");
@@ -347,14 +347,6 @@ export const blockCommands: Command[] = [
     type: "block",
     onSelect: async (rep, props) => {
       await createBlockWithType(rep, props, "html");
-    },
-  },
-  {
-    name: "Bluesky Post",
-    icon: <BlockBlueskySmall />,
-    type: "block",
-    onSelect: async (rep, props) => {
-      await createBlockWithType(rep, props, "bluesky-post");
     },
   },
   {

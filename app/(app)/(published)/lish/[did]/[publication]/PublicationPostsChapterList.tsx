@@ -1,34 +1,70 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AtUri } from "@atproto/api";
+import React, { useEffect, useRef, useState } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { LockTiny } from "components/Icons/LockTiny";
-import { useWarmRoutes } from "src/hooks/useWarmRoutes";
-import { getDocumentURL } from "src/utils/getPublicationURL";
-import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
-import type { ChapterListItem } from "src/utils/chapterGrouping";
+import type { ChapterCard } from "src/utils/chapterGrouping";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
-import { NormalizedPublication } from "lexicons/src/normalize";
+import type { NormalizedPublication } from "src/utils/normalizeRecords";
+import { PublicationPostsList } from "./PublicationPostsList";
 
-// Pages warmed when a chapter is pointed at. The first is the one the card
-// opens; the rest are what the post page's next/prev buttons reach for, so a
-// page turn straight after opening a chapter doesn't wait on a fetch.
-const CHAPTER_PRELOAD = 3;
 const MAX_CARD_WIDTH = 240;
 const GRID_GAP = 24;
 
-type PublicationForURL = { uri: string; record: unknown };
-
-type ChapterCard = {
-  key: string;
-  label: string;
-  href: string;
-  /** The routes to warm on hover, first page first. */
-  preloadHrefs: string[];
-  coverImageSrc?: string;
-  membersOnly: boolean;
-};
+/**
+ * The chapter view of a posts-list block: an optional "Latest" post card above
+ * a shelf of chapter covers. Cards arrive prebuilt (see `buildChapterCards`) —
+ * grouping happens where the full archive lives, so the shelf itself never
+ * fetches or pages posts.
+ */
+export function ChapterShelf({
+  publication,
+  publicationRecord,
+  cards,
+  latestPost,
+  highlightLatest = false,
+  disableLinks = false,
+  className,
+}: {
+  publication: { uri: string; record: unknown };
+  publicationRecord: NormalizedPublication | null;
+  cards: ChapterCard[];
+  // The newest post in the archive, resolved separately since the cards don't
+  // carry their posts.
+  latestPost?: PublicationPostsListPost;
+  highlightLatest?: boolean;
+  disableLinks?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={`relative w-full ${className ?? ""}`}>
+      {highlightLatest && latestPost && (
+        <>
+          <div className="text-sm uppercase font-bold text-tertiary pb-1">
+            Latest
+          </div>
+          <div className="block-border hover:outline-border!">
+            <PublicationPostsList
+              inList={false}
+              publication={publication}
+              publicationRecord={publicationRecord}
+              posts={[latestPost]}
+              view="medium"
+              preSorted
+              disableLinks={disableLinks}
+            />
+          </div>
+          <hr className="border-border-light my-4" />
+        </>
+      )}
+      <PublicationPostsChapterList
+        cards={cards}
+        pageWidth={publicationRecord?.theme?.pageWidth}
+        disableLinks={disableLinks}
+      />
+    </div>
+  );
+}
 
 /**
  * A publication's posts as covers on a shelf, one cover per chapter.
@@ -39,39 +75,18 @@ type ChapterCard = {
  * from its first page in reading order.
  */
 export function PublicationPostsChapterList({
-  publication,
-  chapters,
+  cards,
+  pageWidth,
   disableLinks = false,
 }: {
-  publication: PublicationForURL;
-  chapters: ChapterListItem<PublicationPostsListPost>[];
+  cards: ChapterCard[];
+  // The publication theme's page width, used to size the grid until the
+  // container has been measured.
+  pageWidth?: number;
   // In the editor the shelf is something you're laying out, not reading, so
   // covers render as plain cards that don't navigate away from the page.
   disableLinks?: boolean;
 }) {
-  const cards = useMemo<ChapterCard[]>(() => {
-    return chapters.map((item) => {
-      const hrefs = item.posts.map((post) =>
-        getDocumentURL(post.record, post.uri, publication),
-      );
-      const first = item.posts[0];
-      const coverImage = first.record.coverImage;
-      return {
-        key: item.key,
-        label: item.label,
-        href: hrefs[0],
-        preloadHrefs: hrefs.slice(0, CHAPTER_PRELOAD),
-        coverImageSrc: coverImage
-          ? blobRefToSrc(coverImage.ref, new AtUri(first.uri).host, undefined, {
-              width: COVER_THUMBNAIL_WIDTH.medium,
-            })
-          : undefined,
-        membersOnly: item.posts.some((post) => post.membersOnly),
-      };
-    });
-  }, [chapters, publication]);
-
-  let pubRecord = publication.record as NormalizedPublication;
   const gridRef = useRef<HTMLDivElement>(null);
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
   useEffect(() => {
@@ -84,7 +99,7 @@ export function PublicationPostsChapterList({
     return () => observer.disconnect();
   }, []);
 
-  const width = measuredWidth ?? pubRecord?.theme?.pageWidth ?? 624;
+  const width = measuredWidth ?? pageWidth ?? 624;
   // Fewest columns that keep every card within MAX_CARD_WIDTH, counting the
   // gaps between them. The 1px slack absorbs sub-pixel measurements so a shelf
   // sized exactly to its container doesn't tip into an extra column.
@@ -116,14 +131,6 @@ function ChapterItem({
   card: ChapterCard;
   disableLinks?: boolean;
 }) {
-  const warmRoutes = useWarmRoutes();
-  // Prefetch is deduped by the router, so pointing at a card repeatedly costs
-  // one request per page.
-  const warm = () => {
-    if (disableLinks) return;
-    warmRoutes(card.preloadHrefs);
-  };
-
   const cardClassName =
     "chapterItem group flex flex-col gap-2 no-underline! text-primary min-w-0 w-full";
   const content = (
@@ -168,7 +175,7 @@ function ChapterItem({
   );
 
   return (
-    <div onPointerEnter={warm} onFocus={warm} className="min-w-0">
+    <>
       {disableLinks ? (
         <div className={cardClassName}>{content}</div>
       ) : (
@@ -176,6 +183,6 @@ function ChapterItem({
           {content}
         </SpeedyLink>
       )}
-    </div>
+    </>
   );
 }

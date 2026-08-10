@@ -14,31 +14,12 @@ import {
   resolvePrevNextDirection,
   type PrevNextDirection,
 } from "src/utils/mergePreferences";
-import { forgetScrollPosition } from "src/hooks/usePreserveScroll";
 
 type PostRef = { uri: string; title: string };
 
 // Paging to another post is starting it, not returning to it, so it opens at
 // the top even if the reader has been there before. The key matches the
 // PageWrapper id in LinearDocumentPage / CanvasPage.
-function PostNavLink(props: {
-  post: PostRef;
-  href: string;
-  className?: string;
-  eager?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <SpeedyLink
-      href={props.href}
-      eager={props.eager}
-      className={props.className}
-      onClick={() => forgetScrollPosition(`post-page-${props.post.uri}`)}
-    >
-      {props.children}
-    </SpeedyLink>
-  );
-}
 
 export const PostPrevNextButtons = (props: {
   showPrevNext: boolean;
@@ -132,8 +113,7 @@ export const PostPrevNextButtons = (props: {
         <div className="flex gap-2 items-center grow basis-1/2 min-w-0">
           {edge.left && (
             <>
-              <PostNavLink
-                post={edge.left}
+              <SpeedyLink
                 href={getPostLink(edge.left.uri)}
                 className="flex flex-row gap-1 items-center min-w-4 "
               >
@@ -141,13 +121,12 @@ export const PostPrevNextButtons = (props: {
                 {!adjacent.left && (
                   <div className="min-w-0 truncate">{edge.left.title}</div>
                 )}
-              </PostNavLink>
+              </SpeedyLink>
               {adjacent.left && <Separator />}
             </>
           )}
           {adjacent.left ? (
-            <PostNavLink
-              post={adjacent.left}
+            <SpeedyLink
               href={getPostLink(adjacent.left.uri)}
               // The two posts either side are the only ones a reader is likely
               // to open next, so they're worth warming as soon as this post can
@@ -159,7 +138,7 @@ export const PostPrevNextButtons = (props: {
             >
               <ArrowRightTiny className="rotate-180 shrink-0" />
               <div className="min-w-0 truncate">{adjacent.left.title}</div>
-            </PostNavLink>
+            </SpeedyLink>
           ) : (
             <div />
           )}
@@ -167,15 +146,14 @@ export const PostPrevNextButtons = (props: {
         <div className="flex gap-2 items-center grow justify-end basis-1/2 min-w-0">
           {adjacent.right ? (
             <>
-              <PostNavLink
-                post={adjacent.right}
+              <SpeedyLink
                 href={getPostLink(adjacent.right.uri)}
                 eager={settled}
                 className="flex flex-row gap-1 items-center truncate min-w-0 grow w-fit max-w-full text-right justify-end"
               >
                 <div className="min-w-0 truncate ">{adjacent.right.title}</div>
                 <ArrowRightTiny className="shrink-0" />
-              </PostNavLink>
+              </SpeedyLink>
             </>
           ) : (
             <div />
@@ -183,8 +161,7 @@ export const PostPrevNextButtons = (props: {
           {edge.right && (
             <>
               {adjacent.right && <Separator />}
-              <PostNavLink
-                post={edge.right}
+              <SpeedyLink
                 href={getPostLink(edge.right.uri)}
                 className="flex flex-row gap-1 items-center min-w-4"
               >
@@ -192,7 +169,7 @@ export const PostPrevNextButtons = (props: {
                   <div className="min-w-0 truncate">{edge.right.title}</div>
                 )}
                 <DoubleArrowRightTiny className={`shrink-0 `} />
-              </PostNavLink>
+              </SpeedyLink>
             </>
           )}
         </div>

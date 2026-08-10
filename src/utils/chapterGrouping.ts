@@ -1,81 +1,44 @@
 // Reading chapters out of post titles.
 //
 // A publication that posts one page per document — a comic, a serialised story
-// — names its pages in a run: `chapter 1 - 001`, `chapter 1 - 002`, `FITV #2,
+// — names its pages in a run: `chapter 1 - 001`, `chapter 1 - 002`, `FITV #2 |
 // Pg. 7`. Its archive then reads as dozens of near-identical rows when what a
 // reader wants to browse is chapters. Chapter view collapses those pages back
 // into the chapters they came from and shows the art instead.
 //
 // Two things make that readable without a vocabulary of chapter words, which
 // there is no writing — `#`, `chapter`, `Ch.`, `Episode`, `Capítulo` are all
-// the same idea. Posts go up in reading order, so a chapter is always a *run*
-// of consecutive posts and only neighbours need comparing. And whatever a
-// publication calls its chapters, the pages of one share a prefix that ends at
-// a space or a punctuation mark — the next chapter is where that shared prefix
-// gets shorter.
+// the same idea. Titles in a run name the chapter first and the page second,
+// divided by one of a handful of characters people reach for. And posts go up
+// in reading order, so a chapter is always a *run* of consecutive posts and
+// only neighbours need comparing.
 
-// A space or special character: whitespace and the punctuation people separate
-// title parts with. Everything else — letters in any script, digits, CJK —
-// reads as part of a word.
-const SEPARATOR = /[\s_\-–—#.,:;!?()[\]{}<>'"“”‘’/\\|~*+=&%$@^`]/;
+import { AtUri } from "@atproto/api";
+import { getDocumentURL } from "./getPublicationURL";
+import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "./blobRefToSrc";
+import type { NormalizedDocument } from "./normalizeRecords";
 
-// End of string counts: a title that stops exactly where its neighbour carries
-// on has still finished a whole word.
-function isSeparatorAt(title: string, index: number) {
-  return index >= title.length || SEPARATOR.test(title[index]);
-}
-
-function trimSeparators(text: string) {
-  let end = text.length;
-  while (end > 0 && SEPARATOR.test(text[end - 1])) end--;
-  return text.slice(0, end);
-}
+// The characters a title uses to divide its chapter from its page. Dash
+// variants count as the dash people meant to type.
+const CHAPTER_SEPARATOR = /[:,\-–—/|]/;
 
 /**
- * The chapter two neighbouring titles share, or null when they aren't in one.
- *
- * Their common prefix is cut back to the last point where *both* carry on with
- * a separator: `chapter 1 - 001` and `chapter 1 - 002` agree as far as
- * `chapter 1 - 00`, but stopping there would cut the page number in half, so
- * this gives `chapter 1`. Case is ignored, since a publication that wrote
- * `Chapter 1` once and `chapter 2` the next time still means one convention.
+ * The chapter a title names, or null when it names none.
  */
-function sharedChapter(a: string, b: string): string | null {
-  let length = 0;
-  while (
-    length < a.length &&
-    length < b.length &&
-    a[length].toLowerCase() === b[length].toLowerCase()
-  )
-    length++;
-
-  for (; length > 0; length--) {
-    if (!isSeparatorAt(a, length) || !isSeparatorAt(b, length)) continue;
-    return trimSeparators(a.slice(0, length)) || null;
-  }
-  return null;
+function chapterOf(title: string): string | null {
+  const match = title.match(CHAPTER_SEPARATOR);
+  if (!match || match.index === undefined) return null;
+  return title.slice(0, match.index).trim() || null;
 }
 
-/**
- * Whether a shared prefix is still the same chapter as `prefix`.
- *
- * Agreeing *further* is not a new chapter — two pages of one chapter agree past
- * it (`…, Pg. 1` / `…, Pg. 2`) where the chapter's own cover did not. The
- * separator check is what keeps `Chapter 10` from reading as more of
- * `Chapter 1`.
- */
-function extendsChapter(shared: string, prefix: string) {
-  const s = shared.toLowerCase();
-  const p = prefix.toLowerCase();
-  if (s === p) return true;
-  return s.startsWith(p) && SEPARATOR.test(shared[prefix.length]);
+// ignore casing
+function sameChapter(a: string | null, b: string | null) {
+  return a !== null && b !== null && a.toLowerCase() === b.toLowerCase();
 }
 
 export type ChapterListItem<T> = {
   key: string;
-  /** The chapter's name, or the post's own title when it stands alone. */
   label: string;
-  /** In reading order — index 0 is the page opening the item lands on. */
   posts: T[];
 };
 
@@ -88,9 +51,7 @@ type ChapterablePost = {
  * Collapse the posts whose titles follow the archive's own chapter convention
  * into one item per chapter, leaving every other post an item of its own.
  *
- * Items come back oldest-first — a serialised archive is browsed from its
- * start, not from its most recent page. Pages within a chapter stay in reading
- * order too, which is what makes `posts[0]` the page a card opens on.
+ * Items come back oldest-first
  */
 export function groupPostsIntoChapters<T extends ChapterablePost>(
   posts: T[],
@@ -108,16 +69,14 @@ export function groupPostsIntoChapters<T extends ChapterablePost>(
     return a.uri < b.uri ? -1 : 1;
   });
   const titleOf = (post: T) => (post.record.title || "").trim();
+  const chapters = inOrder.map((post) => chapterOf(titleOf(post)));
 
   const items: ChapterListItem<T>[] = [];
   let i = 0;
   while (i < inOrder.length) {
-    const prefix =
-      i + 1 < inOrder.length
-        ? sharedChapter(titleOf(inOrder[i]), titleOf(inOrder[i + 1]))
-        : null;
-
-    if (!prefix) {
+    // A chapter needs a second page to be one: a lone title that happens to
+    // carry a separator is still just a post.
+    if (!sameChapter(chapters[i], chapters[i + 1] ?? null)) {
       items.push({
         key: inOrder[i].uri,
         label: titleOf(inOrder[i]),
@@ -127,27 +86,68 @@ export function groupPostsIntoChapters<T extends ChapterablePost>(
       continue;
     }
 
-    const chapterPosts = [inOrder[i], inOrder[i + 1]];
     let last = i + 1;
-    while (last + 1 < inOrder.length) {
-      const shared = sharedChapter(
-        titleOf(inOrder[last]),
-        titleOf(inOrder[last + 1]),
-      );
-      if (!shared || !extendsChapter(shared, prefix)) break;
-      chapterPosts.push(inOrder[last + 1]);
+    while (
+      last + 1 < inOrder.length &&
+      sameChapter(chapters[i], chapters[last + 1])
+    )
       last++;
-    }
 
+    const label = chapters[i] as string;
     items.push({
       // Two runs could carry the same name (a chapter posted in two sittings),
       // so where the run started is part of its identity.
-      key: `${prefix.toLowerCase()}|${inOrder[i].uri}`,
-      label: prefix.charAt(0).toUpperCase() + prefix.slice(1),
-      posts: chapterPosts,
+      key: `${label.toLowerCase()}|${inOrder[i].uri}`,
+      label,
+      posts: inOrder.slice(i, last + 1),
     });
     i = last + 1;
   }
 
   return items;
+}
+
+// Everything a chapter's card on the shelf renders — plain strings, so a
+// server render can group the whole archive and ship one small card per
+// chapter instead of the posts behind it.
+export type ChapterCard = {
+  key: string;
+  label: string;
+  href: string;
+  coverImageSrc?: string;
+  membersOnly: boolean;
+};
+
+type CardablePost = {
+  uri: string;
+  membersOnly?: boolean;
+  record: NormalizedDocument;
+};
+
+/**
+ * Group posts into chapters and reduce each to its card: label, the URL of its
+ * first page in reading order, that page's cover, and whether any page is
+ * members-only. Runs wherever the full archive already lives (the SSR page
+ * query, the editor's in-memory documents) so the shelf never needs the posts
+ * themselves shipped to it.
+ */
+export function buildChapterCards(
+  posts: CardablePost[],
+  publication: { uri: string; record: unknown },
+): ChapterCard[] {
+  return groupPostsIntoChapters(posts).map((item) => {
+    const first = item.posts[0];
+    const coverImage = first.record.coverImage;
+    return {
+      key: item.key,
+      label: item.label,
+      href: getDocumentURL(first.record, first.uri, publication),
+      coverImageSrc: coverImage
+        ? blobRefToSrc(coverImage.ref, new AtUri(first.uri).host, undefined, {
+            width: COVER_THUMBNAIL_WIDTH.medium,
+          })
+        : undefined,
+      membersOnly: item.posts.some((post) => !!post.membersOnly),
+    };
+  });
 }

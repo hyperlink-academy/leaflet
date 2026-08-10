@@ -27,8 +27,10 @@ import {
 } from "lexicons/api";
 import { type PublicationPostsListPost } from "../PublicationPostsList";
 import { PaginatedPublicationPostsList } from "../PaginatedPublicationPostsList";
+import { ChapterShelf } from "../PublicationPostsChapterList";
+import type { ChapterCard } from "src/utils/chapterGrouping";
 import {
-  postsListSeedKey,
+  postsListFilterKey,
   resolvePostsListView,
 } from "src/utils/postsListPagination";
 import { getPostsByUris } from "../getPostsByUris";
@@ -85,14 +87,17 @@ const HeadingStyle: { [level: number]: string } = {
 type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
-  // Per view-and-tag-filter signature (postsListSeedKey): the full ordered URI
-  // list plus an SSR-seeded, byline-resolved first batch.
+  // Per tag-filter signature (postsListFilterKey), what the blocks using that
+  // filter need: list views the full ordered URI list plus an SSR-seeded,
+  // byline-resolved first batch; chapter views the server-grouped cards and
+  // the newest post for the "Latest" highlight.
   initialByFilter: Record<
     string,
     {
       uris: string[];
       initialPosts: PublicationPostsListPost[];
       latestPost?: PublicationPostsListPost;
+      chapters?: ChapterCard[];
     }
   >;
 };
@@ -397,9 +402,22 @@ export let Block = ({
     case PubLeafletBlocksPostsList.isMain(b.block): {
       if (!postsListData) return null;
       const view = resolvePostsListView(b.block.view);
-      const key = postsListSeedKey(view, b.block.filterByTags);
+      const key = postsListFilterKey(b.block.filterByTags);
       const seed = postsListData.initialByFilter[key];
       if (!seed) return null;
+      if (view === "chapter") {
+        return (
+          <div className={className} {...blockProps}>
+            <ChapterShelf
+              publication={postsListData.publication}
+              publicationRecord={postsListData.publicationRecord}
+              cards={seed.chapters ?? []}
+              latestPost={seed.latestPost}
+              highlightLatest={!!b.block.highlightFirstPost}
+            />
+          </div>
+        );
+      }
       return (
         <div className={className} {...blockProps}>
           <PaginatedPublicationPostsList
@@ -408,7 +426,6 @@ export let Block = ({
             listId={`${postsListData.publication.uri}:${key}`}
             uris={seed.uris}
             initialPosts={seed.initialPosts}
-            latestPost={seed.latestPost}
             loadBatch={getPostsByUris}
             view={view}
             highlightFirstPost={!!b.block.highlightFirstPost}
