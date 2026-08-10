@@ -22,11 +22,16 @@ import type { NormalizedDocument } from "./normalizeRecords";
 // variants count as the dash people meant to type.
 const CHAPTER_SEPARATOR = /[:,\-–—/|]/;
 
+// `#` divides too — `Chapter 1 #003` — but it also numbers the chapter itself
+// (`FITV #2 | Pg. 7`), so it only counts in a title that reaches for nothing
+// else.
+const HASH_SEPARATOR = /#/;
+
 /**
  * The chapter a title names, or null when it names none.
  */
 function chapterOf(title: string): string | null {
-  const match = title.match(CHAPTER_SEPARATOR);
+  const match = title.match(CHAPTER_SEPARATOR) ?? title.match(HASH_SEPARATOR);
   if (!match || match.index === undefined) return null;
   return title.slice(0, match.index).trim() || null;
 }
