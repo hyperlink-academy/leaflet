@@ -32,7 +32,20 @@ export function DomainTab(props: {
   );
 
   if (domains.length === 0) {
-    return <EmptyState container="none" title="no domains yet…" />;
+    return (
+      <EmptyState container="opaque" title="no domains yet…">
+        <Modal
+          asChild
+          trigger={
+            <ButtonPrimary compact className=" mx-auto">
+              <AddTiny /> Add Domain
+            </ButtonPrimary>
+          }
+        >
+          <AddDomainForm />
+        </Modal>
+      </EmptyState>
+    );
   }
 
   return (
