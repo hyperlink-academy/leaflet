@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
 import {
@@ -49,12 +49,11 @@ export function ConnectPayments() {
     }
   }
 
-  let active = !!connected?.charges_enabled;
-  let started = !!connected && !connected.charges_enabled;
+  let status = connected?.status ?? null;
 
   return (
     <>
-      {active ? (
+      {status === "active" ? (
         <a
           href="https://dashboard.stripe.com"
           target="_blank"
@@ -64,6 +63,40 @@ export function ConnectPayments() {
           Stripe Dashboard
           <GoToArrow />
         </a>
+      ) : status === "under_review" ? (
+        <div className="flex flex-col gap-1">
+          <div className="font-bold text-primary">
+            Your account is being reviewed
+          </div>
+          <div className="text-sm text-tertiary">
+            You&apos;re all set — Stripe is verifying your details, which
+            usually takes a few minutes to a couple of days.
+          </div>
+          <ButtonTertiary
+            type="button"
+            onClick={startOnboarding}
+            disabled={loading}
+          >
+            {loading ? <DotLoader /> : "Check status on Stripe"}
+          </ButtonTertiary>
+        </div>
+      ) : status === "rejected" ? (
+        <div className="flex flex-col gap-1">
+          <div className="font-bold text-primary">
+            Stripe couldn&apos;t approve your account
+          </div>
+          <div className="text-sm text-tertiary">
+            Payments can&apos;t be enabled for this account. Check your{" "}
+            <a
+              href="https://dashboard.stripe.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Stripe dashboard
+            </a>{" "}
+            for details.
+          </div>
+        </div>
       ) : (
         <ButtonPrimary
           className="w-max"
@@ -73,7 +106,7 @@ export function ConnectPayments() {
         >
           {loading ? (
             <DotLoader />
-          ) : started ? (
+          ) : status === "onboarding_incomplete" ? (
             "Finish setting up payments"
           ) : (
             "Set up payments with Stripe"
