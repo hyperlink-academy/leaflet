@@ -1,8 +1,7 @@
 import { AtUri } from "@atproto/syntax";
 import { Feed } from "feed";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
-import { createElement } from "react";
-import { StaticPostContent } from "./[rkey]/StaticPostContent";
+import { blocksToFeedHtml, blocksToPlainText } from "./feedHtml";
 import { supabaseServerClient } from "supabase/serverClient";
 import { NextResponse } from "next/server";
 import {
@@ -18,24 +17,9 @@ import {
 } from "src/utils/getPublicationURL";
 import { truncateBlocksAtMembersDelimiter } from "src/membership";
 
-// Readers poll feeds constantly and every item is a full React SSR render
-// (including shiki highlighting for code blocks), so cap the feed at the
-// most recent posts instead of rendering a publication's entire history
-// on each request.
+// Readers poll feeds constantly, so cap the feed at the most recent posts
+// instead of rendering a publication's entire history on each request.
 const FEED_ITEM_LIMIT = 50;
-
-// The feed library pretty-prints, leaving `<link>url</link>` followed by a
-// newline and indentation. `<link>` is a void element in HTML, so consumers
-// that parse RSS with an HTML parser drop the closing tag and read the URL
-// merged with the trailing indentation — then request paths like
-// "/{rkey}%0A%20%20...". Collapsing inter-tag whitespace (outside CDATA,
-// which holds post content) leaves those parsers a clean URL.
-export function collapseInterTagWhitespace(xml: string): string {
-  return xml
-    .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
-    .map((part, i) => (i % 2 === 1 ? part : part.replace(/>\s+</g, "><")))
-    .join("");
-}
 
 // XML 1.0 forbids most C0 control characters even inside CDATA, and records
 // can carry them (lexicon string validation doesn't reject control chars).
@@ -57,10 +41,6 @@ export async function generateFeed(
   did: string,
   publication_name: string,
 ): Promise<Feed | NextResponse<unknown>> {
-  // Started before the queries so the module load (cold starts) overlaps them.
-  let renderToReadableStreamPromise = import("react-dom/server").then(
-    (module) => module.renderToReadableStream,
-  );
   let { data: publications, error } = await supabaseServerClient
     .from("publications")
     .select(`uri, record, publication_membership_settings(enabled)`)
@@ -129,7 +109,6 @@ export async function generateFeed(
     },
   });
 
-  const renderToReadableStream = await renderToReadableStreamPromise;
   for (const doc of docs) {
     const record = normalizeDocumentRecord(doc.data, doc.uri);
     const uri = new AtUri(doc.uri);
@@ -156,19 +135,19 @@ export async function generateFeed(
       // to render; link out instead of shipping an empty body.
       content = `<p><a href="${docUrl}">View this post on the web</a></p>`;
     } else {
-      const stream = await renderToReadableStream(
-        createElement(StaticPostContent, {
-          blocks,
-          did: uri.host,
-          baseUrl: pubUrl,
-        }),
-      );
-      content = await new Response(stream).text();
-      // Strip <link> preload tags injected by React SSR — they trigger
-      // security warnings in RSS validators and aren't useful in feeds.
-      content = content.replace(/<link\b[^>]*>/gi, "");
-      // Convert relative URLs to absolute so RSS readers can resolve them.
-      content = content.replace(/(src|href)="\/(?!\/)/g, `$1="${pubUrl}/`);
+      content = blocksToFeedHtml(blocks, uri.host, pubUrl);
+    }
+
+    // RSS 2.0 requires every item to carry a <title> or a <description>, so
+    // untitled, description-less posts (microblog-style) ship their text as
+    // the description.
+    let description = record.description
+      ? stripInvalidXmlChars(record.description)
+      : undefined;
+    if (!description && !record.title) {
+      description =
+        stripInvalidXmlChars(blocksToPlainText(blocks)) ||
+        "View this post on the web";
     }
 
     const date =
@@ -176,9 +155,7 @@ export async function generateFeed(
 
     feed.addItem({
       title: stripInvalidXmlChars(record.title || ""),
-      description: record.description
-        ? stripInvalidXmlChars(record.description)
-        : undefined,
+      description,
       date,
       // `date` alone only maps to date_modified/<updated>; readers want the
       // publish date too (Atom <published>, JSON Feed date_published).

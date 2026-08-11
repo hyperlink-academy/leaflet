@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { collapseInterTagWhitespace, generateFeed } from "../generateFeed";
+import { generateFeed } from "../generateFeed";
+import {
+  collapseInterTagWhitespace,
+  markGuidsAsPermalinks,
+} from "../feedXml";
 import { feedResponse } from "../feedResponse";
 
 export async function GET(
@@ -19,8 +23,10 @@ export async function GET(
 
   return feedResponse(
     req,
-    collapseInterTagWhitespace(feed.rss2()),
-    "application/rss+xml",
+    markGuidsAsPermalinks(collapseInterTagWhitespace(feed.rss2())),
+    // The explicit charset guards against consumers that decode HTTP bodies
+    // as Latin-1 when the Content-Type doesn't say otherwise.
+    "application/rss+xml; charset=utf-8",
     feed.options.updated,
   );
 }

@@ -20,7 +20,7 @@ export async function GET(
   return feedResponse(
     req,
     feed.json1(),
-    "application/feed+json",
+    "application/feed+json; charset=utf-8",
     feed.options.updated,
   );
 }
