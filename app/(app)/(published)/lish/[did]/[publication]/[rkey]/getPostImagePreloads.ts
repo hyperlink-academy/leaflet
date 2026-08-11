@@ -13,39 +13,33 @@ import { collectPostImages } from "./collectPostImages";
 
 const PRELOADED_IMAGES_PER_POST = 2;
 
-/**
- * The first few image URLs of each of the given posts, keyed by post uri and
- * in document order, built exactly as PostContent builds them — a different
- * transform width would warm bytes the neighbour's `<img>` never requests.
- */
 export async function getPostImagePreloads(
-  uris: string[],
-  publicationUri: string,
+  posts: { uri: string; membersOnly: boolean }[],
 ): Promise<Map<string, string[]>> {
   const preloads = new Map<string, string[]>();
-  if (uris.length === 0) return preloads;
+  if (posts.length === 0) return preloads;
 
-  // A post can be gated differently per publication, so the embed is filtered
-  // to this publication's membership row.
   const { data, error } = await supabaseServerClient
     .from("documents")
-    .select("uri, data, documents_in_publications(members_only)")
-    .in("uri", uris)
-    .eq("documents_in_publications.publication", publicationUri);
+    .select("uri, data")
+    .in(
+      "uri",
+      posts.map((p) => p.uri),
+    );
 
   if (error) {
     console.error("[getPostImagePreloads] query error:", error);
     return preloads;
   }
 
+  const membersOnly = new Map(posts.map((p) => [p.uri, p.membersOnly]));
   for (const row of data ?? []) {
     const normalized = normalizeDocumentRecord(row.data, row.uri);
     if (!normalized) continue;
     const pages = getDocumentPages(normalized);
     if (!pages) continue;
 
-    if (row.documents_in_publications.some((dip) => dip.members_only))
-      truncatePagesAtMembersDelimiter(pages);
+    if (membersOnly.get(row.uri)) truncatePagesAtMembersDelimiter(pages);
 
     const did = new AtUri(row.uri).host;
     const images = pages.flatMap((page) =>

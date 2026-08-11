@@ -37,7 +37,7 @@ export const getPostPageData = cache(async function getPostPageData(
         uri,
         comments_on_documents(record),
         documents_in_publications(publications(uri, name, identity_did, record,
-          documents_in_publications(documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
+          documents_in_publications(members_only, documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
           publication_newsletter_settings(enabled),
           publication_membership_settings(enabled),
           publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, is_free))
@@ -102,47 +102,18 @@ export const getPostPageData = cache(async function getPostPageData(
     membersOnly = { gated: true, tiers: membershipTiers };
   }
 
-  // Fetch constellation backlinks for mentions
-  const postUrl = getDocumentURL(
-    normalizedDocument,
-    document.uri,
-    normalizedPublication,
-  );
-  // Constellation needs an absolute URL
-  const absolutePostUrl = postUrl.startsWith("/")
-    ? `https://leaflet.pub${postUrl}`
-    : postUrl;
-  const constellationBacklinks =
-    await getConstellationBacklinks(absolutePostUrl);
-
-  // Deduplicate constellation backlinks (same post could appear in both links and embeds)
-  const uniqueBacklinks = Array.from(
-    new Map(constellationBacklinks.map((b) => [b.uri, b])).values(),
-  );
-
-  // Combine database mentions (already deduplicated by DB constraint) and constellation backlinks
-  const quotesAndMentions: { uri: string; link?: string }[] = [
-    // Database mentions (quotes with link to quoted content)
-    ...document.document_mentions_in_bsky.map((m) => ({
-      uri: m.uri,
-      link: m.link,
-    })),
-    // Constellation backlinks (direct post mentions without quote context)
-    ...uniqueBacklinks,
-  ];
-
-  let theme =
-    resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
-
-  // Calculate prev/next documents from the fetched publication documents
-  type Neighbour = { uri: string; title: string; images?: string[] };
+  type Neighbour = {
+    uri: string;
+    title: string;
+    membersOnly: boolean;
+    images?: string[];
+  };
   let prevNext:
     | {
         prev?: Neighbour;
         next?: Neighbour;
         first?: { uri: string; title: string };
         last?: { uri: string; title: string };
-        // One hop further out each way, for route prefetch only
         prevPreload?: string;
         nextPreload?: string;
       }
@@ -154,11 +125,12 @@ export const getPostPageData = cache(async function getPostPageData(
       ?.documents_in_publications;
 
   if (currentPublishedAt && allDocs) {
-    // The publishedAt filter mirrors normalizeDocumentRecord's gating of
-    // unpublished pub.leaflet records without paying for the full data jsonb
-    // of every sibling post.
     const sortedDocs = allDocs
-      .flatMap((dip) => (dip.documents ? [dip.documents] : []))
+      .flatMap((dip) =>
+        dip.documents
+          ? [{ ...dip.documents, membersOnly: dip.members_only }]
+          : [],
+      )
       .filter((doc) => doc.publishedAt && doc.title)
       .sort(
         (a, b) =>
@@ -166,27 +138,25 @@ export const getPostPageData = cache(async function getPostPageData(
           new Date(b.sort_date || 0).getTime(),
       );
 
-    // Find current document index
     const currentIndex = sortedDocs.findIndex(
       (doc) => doc.uri === document.uri,
     );
 
     if (currentIndex !== -1) {
       const lastIndex = sortedDocs.length - 1;
+      const neighbour = (doc: (typeof sortedDocs)[number]): Neighbour => ({
+        uri: doc.uri || "",
+        title: doc.title || "",
+        membersOnly: doc.membersOnly,
+      });
       prevNext = {
         prev:
           currentIndex > 0
-            ? {
-                uri: sortedDocs[currentIndex - 1].uri || "",
-                title: sortedDocs[currentIndex - 1].title || "",
-              }
+            ? neighbour(sortedDocs[currentIndex - 1])
             : undefined,
         next:
           currentIndex < lastIndex
-            ? {
-                uri: sortedDocs[currentIndex + 1].uri || "",
-                title: sortedDocs[currentIndex + 1].title || "",
-              }
+            ? neighbour(sortedDocs[currentIndex + 1])
             : undefined,
         first:
           currentIndex > 0
@@ -212,22 +182,46 @@ export const getPostPageData = cache(async function getPostPageData(
     }
   }
 
-  // Router prefetching covers the neighbours' markup but not their images, so
-  // their art rides along in this page's own payload.
-  if (
-    prevNext &&
-    gatePub &&
-    (normalizedPublication?.preferences?.showPrevNext ?? true)
-  ) {
-    const warm = [prevNext.next, prevNext.prev].filter(
-      (n): n is Neighbour => !!n,
-    );
-    const images = await getPostImagePreloads(
-      warm.map((n) => n.uri),
-      gatePub.uri,
-    );
-    for (const neighbour of warm) neighbour.images = images.get(neighbour.uri);
-  }
+  // Fetch constellation backlinks for mentions
+  const postUrl = getDocumentURL(
+    normalizedDocument,
+    document.uri,
+    normalizedPublication,
+  );
+  // Constellation needs an absolute URL
+  const absolutePostUrl = postUrl.startsWith("/")
+    ? `https://leaflet.pub${postUrl}`
+    : postUrl;
+
+  const warm =
+    prevNext && (normalizedPublication?.preferences?.showPrevNext ?? true)
+      ? [prevNext.next, prevNext.prev].filter((n): n is Neighbour => !!n)
+      : [];
+  const [constellationBacklinks, neighbourImages] = await Promise.all([
+    getConstellationBacklinks(absolutePostUrl),
+    getPostImagePreloads(warm),
+  ]);
+  for (const neighbour of warm)
+    neighbour.images = neighbourImages.get(neighbour.uri);
+
+  // Deduplicate constellation backlinks (same post could appear in both links and embeds)
+  const uniqueBacklinks = Array.from(
+    new Map(constellationBacklinks.map((b) => [b.uri, b])).values(),
+  );
+
+  // Combine database mentions (already deduplicated by DB constraint) and constellation backlinks
+  const quotesAndMentions: { uri: string; link?: string }[] = [
+    // Database mentions (quotes with link to quoted content)
+    ...document.document_mentions_in_bsky.map((m) => ({
+      uri: m.uri,
+      link: m.link,
+    })),
+    // Constellation backlinks (direct post mentions without quote context)
+    ...uniqueBacklinks,
+  ];
+
+  let theme =
+    resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
 
   // Build explicit publication context for consumers
   const publication = projectPublicationForClient(
