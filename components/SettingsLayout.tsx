@@ -47,7 +47,7 @@ export const InputSetting = (props: {
       htmlFor={props.htmlFor}
       className="setting flex flex-col gap-1 md:flex-row md:gap-4"
     >
-      <p className="sm:basis-1/4 shrink-0 mt-1 text-secondary font-bold  ">
+      <p className="md:basis-1/4 shrink-0 mt-1 text-secondary font-bold  ">
         {props.label}{" "}
         {props.optional && <span className="font-normal">(optional)</span>}
       </p>

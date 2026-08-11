@@ -6,6 +6,7 @@ import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 import { localImages } from "src/utils/addImage";
+import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
 
 export type MutationContext = {
   permission_token_id: string;
@@ -514,7 +515,7 @@ const removeBlock: Mutation<
           .remove([paths[paths.length - 1]]);
       }
     });
-    await ctx.runOnClient(async ({ tx }) => {
+    await ctx.runOnClient(async () => {
       if (image) {
         // Release the local preview's object URL.
         let localSrc = localImages.get(image.data.src);
@@ -522,6 +523,7 @@ const removeBlock: Mutation<
           URL.revokeObjectURL(localSrc);
           localImages.delete(image.data.src);
         }
+        clearImageUploadStatus(image.data.src);
       }
     });
     await ctx.deleteEntity(block.blockEntity);
@@ -874,13 +876,14 @@ const removeGalleryImage: Mutation<{
         .remove([paths[paths.length - 1]]);
     }
   });
-  await ctx.runOnClient(async ({ tx }) => {
+  await ctx.runOnClient(async () => {
     if (image) {
       let localSrc = localImages.get(image.data.src);
       if (localSrc) {
         URL.revokeObjectURL(localSrc);
         localImages.delete(image.data.src);
       }
+      clearImageUploadStatus(image.data.src);
     }
   });
   await ctx.deleteEntity(args.imageEntity);
@@ -1056,7 +1059,12 @@ const deleteFootnote: Mutation<{
 }> = async (args, ctx) => {
   let footnotes = await ctx.scanIndex.eav(args.blockID, "block/footnote");
   let fact = footnotes.find((f) => f.data.value === args.footnoteEntityID);
-  if (fact) await ctx.retractFact(fact.id);
+  // Only the block that owns the footnote may delete the entity. A footnote
+  // node can reference an entity another block owns (clipboard HTML pasted
+  // before paste minted fresh entities); deleting on its removal would
+  // destroy the original footnote's content.
+  if (!fact) return;
+  await ctx.retractFact(fact.id);
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 

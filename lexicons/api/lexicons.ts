@@ -1702,7 +1702,7 @@ export const schemaDict = {
         properties: {
           view: {
             type: 'string',
-            knownValues: ['small', 'medium'],
+            knownValues: ['small', 'medium', 'chapter'],
           },
           highlightFirstPost: {
             type: 'boolean',

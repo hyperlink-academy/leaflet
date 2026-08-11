@@ -3,7 +3,11 @@ import { cache } from "react";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isProductionDomain } from "./utils/isProductionDeployment";
 import { isUuid } from "./utils/isUuid";
-import { getValidAuthToken, keyEntitlements } from "./identityPayload";
+import {
+  getValidAuthToken,
+  keyEntitlements,
+  processConnectedAccount,
+} from "./identityPayload";
 import { SESSION_MARKER_COOKIE } from "./sessionMarker";
 
 export const AUTH_TOKEN_COOKIE = "auth_token";
@@ -82,7 +86,7 @@ async function uncachedGetAuthIdentity() {
           identities(
             *,
             user_entitlements(entitlement_key, granted_at, expires_at, source, metadata),
-            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted)
+            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted, requirements)
           )`,
         )
         .eq("id", auth_token)
@@ -102,6 +106,6 @@ async function uncachedGetAuthIdentity() {
   return {
     ...identity,
     entitlements: keyEntitlements(entitlementRows),
-    connectedAccount: connectedAccount ?? null,
+    connectedAccount: processConnectedAccount(connectedAccount),
   };
 }

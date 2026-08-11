@@ -17,7 +17,8 @@ type EditorCommentPopoverState = {
   // popover shows the first one that still exists
   commentIDs: string[] | null;
   anchorElement: HTMLElement | null;
-  open: (commentIDs: string[], anchor: HTMLElement) => void;
+  pageID: string | null;
+  open: (commentIDs: string[], anchor: HTMLElement, pageID: string) => void;
   close: () => void;
 };
 
@@ -25,8 +26,10 @@ export const useEditorCommentPopoverStore = create<EditorCommentPopoverState>(
   (set) => ({
     commentIDs: null,
     anchorElement: null,
-    open: (commentIDs, anchor) => set({ commentIDs, anchorElement: anchor }),
-    close: () => set({ commentIDs: null, anchorElement: null }),
+    pageID: null,
+    open: (commentIDs, anchor, pageID) =>
+      set({ commentIDs, anchorElement: anchor, pageID }),
+    close: () => set({ commentIDs: null, anchorElement: null, pageID: null }),
   }),
 );
 
@@ -34,13 +37,18 @@ export const useEditorCommentPopoverStore = create<EditorCommentPopoverState>(
 // popover) with an excerpt of the comment and a button that opens the full
 // thread in the slide-in sheet.
 export function EditorCommentPopover() {
-  let { commentIDs, anchorElement, close } = useEditorCommentPopoverStore();
+  let {
+    commentIDs,
+    anchorElement,
+    pageID: openedFromPage,
+    close,
+  } = useEditorCommentPopoverStore();
   let { pageID, comments } = useEditorCommentContext();
 
   let comment = commentIDs
     ? comments.find((c) => commentIDs.includes(c.commentEntityID))
     : undefined;
-  let isOpen = !!comment && !!anchorElement;
+  let isOpen = !!comment && !!anchorElement && openedFromPage === pageID;
 
   let content = useEntity(comment?.commentEntityID ?? null, "block/text");
   let replies = useEntity(comment?.commentEntityID ?? null, "comment/reply");

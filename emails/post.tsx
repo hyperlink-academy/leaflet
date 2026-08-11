@@ -35,6 +35,7 @@ import {
   PubLeafletRichtextFacet,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { matchBlock, type BlockHandlers } from "src/utils/blockDispatch";
 import { atUriToUrl, didToBlueskyUrl } from "src/utils/mentionUtils";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { emailPropsFromPublication } from "./fromPublication";
@@ -1114,8 +1115,11 @@ const BlockRenderer = ({
   standardSitePublications?: Record<string, StandardSitePublicationData>;
   currentPublicationUri?: string;
 }) => {
-  if (PubLeafletBlocksText.isMain(block)) {
-    return (
+  const notSupported = () => (
+    <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
+  );
+  const handlers: BlockHandlers<React.ReactNode> = {
+    "pub.leaflet.blocks.text": (block) => (
       <ReactEmailText
         style={{
           color: theme.primary,
@@ -1137,37 +1141,35 @@ const BlockRenderer = ({
           " "
         )}
       </ReactEmailText>
-    );
-  }
-  if (PubLeafletBlocksHeader.isMain(block)) {
-    const level = Math.min(3, Math.max(1, Math.floor(block.level ?? 1))) as
-      | 1
-      | 2
-      | 3;
-    return (
-      <ReactEmailHeading
-        as={`h${level}`}
-        style={{
-          color: level === 3 ? colors.secondary : theme.primary,
-          fontFamily: theme.headingFont,
-          fontWeight: "bold",
-          fontSize: HEADING_FONT_SIZE_PX[level],
-          lineHeight: 1.25,
-          margin: HEADING_MARGIN,
-          textAlign: resolveTextAlignment(alignment),
-        }}
-      >
-        <RichTextSpans
-          plaintext={block.plaintext}
-          facets={block.facets}
-          theme={theme}
-          assetsBaseUrl={assetsBaseUrl}
-        />
-      </ReactEmailHeading>
-    );
-  }
-  if (PubLeafletBlocksBlockquote.isMain(block)) {
-    return (
+    ),
+    "pub.leaflet.blocks.header": (block) => {
+      const level = Math.min(3, Math.max(1, Math.floor(block.level ?? 1))) as
+        | 1
+        | 2
+        | 3;
+      return (
+        <ReactEmailHeading
+          as={`h${level}`}
+          style={{
+            color: level === 3 ? colors.secondary : theme.primary,
+            fontFamily: theme.headingFont,
+            fontWeight: "bold",
+            fontSize: HEADING_FONT_SIZE_PX[level],
+            lineHeight: 1.25,
+            margin: HEADING_MARGIN,
+            textAlign: resolveTextAlignment(alignment),
+          }}
+        >
+          <RichTextSpans
+            plaintext={block.plaintext}
+            facets={block.facets}
+            theme={theme}
+            assetsBaseUrl={assetsBaseUrl}
+          />
+        </ReactEmailHeading>
+      );
+    },
+    "pub.leaflet.blocks.blockquote": (block) => (
       <Section style={{ margin: BLOCK_MARGIN }}>
         <Row>
           <Column style={{ width: 2, backgroundColor: colors.border }} />
@@ -1193,68 +1195,62 @@ const BlockRenderer = ({
           </Column>
         </Row>
       </Section>
-    );
-  }
-  if (PubLeafletBlocksCode.isMain(block)) {
-    return (
+    ),
+    "pub.leaflet.blocks.code": (block) => (
       <CodeBlock
         code={block.plaintext}
         language={block.language}
         borderColor={colors.borderLight}
       />
-    );
-  }
-  if (PubLeafletBlocksImage.isMain(block)) {
-    const src = blobRefToSrc(block.image.ref, did, assetsBaseUrl, {
-      // The email body is ~600px wide, so the 1200 rung covers it at retina
-      // density; the full-resolution blob would be pure wasted bytes.
-      width: 1200,
-      format: "email",
-    });
-    // Deliberately no numeric `width`/`height` HTML attributes: Outlook
-    // honors those over CSS `max-width`, so a 1200px natural-size photo
-    // would blow out our 28rem container. `max-width: <natural>px` keeps
-    // smaller images from being upscaled.
-    const naturalWidth = block.aspectRatio?.width;
-    return (
-      <ImageBlock
-        src={src}
-        alt={block.alt ?? ""}
-        naturalWidth={naturalWidth}
-        align={resolveBlockAlignment(alignment)}
-      />
-    );
-  }
-  if (PubLeafletBlocksWebsite.isMain(block)) {
-    const previewSrc = block.previewImage
-      ? blobRefToSrc(block.previewImage.ref, did, assetsBaseUrl, {
-          width: 360,
-          format: "email",
-        })
-      : undefined;
-    return (
-      <LinkBlock
-        url={block.src}
-        title={block.title}
-        description={block.description}
-        previewSrc={previewSrc}
-        theme={theme}
-        colors={colors}
-      />
-    );
-  }
-  if (PubLeafletBlocksButton.isMain(block)) {
-    return (
+    ),
+    "pub.leaflet.blocks.image": (block) => {
+      const src = blobRefToSrc(block.image.ref, did, assetsBaseUrl, {
+        // The email body is ~600px wide, so the 1200 rung covers it at retina
+        // density; the full-resolution blob would be pure wasted bytes.
+        width: 1200,
+        format: "email",
+      });
+      // Deliberately no numeric `width`/`height` HTML attributes: Outlook
+      // honors those over CSS `max-width`, so a 1200px natural-size photo
+      // would blow out our 28rem container. `max-width: <natural>px` keeps
+      // smaller images from being upscaled.
+      const naturalWidth = block.aspectRatio?.width;
+      return (
+        <ImageBlock
+          src={src}
+          alt={block.alt ?? ""}
+          naturalWidth={naturalWidth}
+          align={resolveBlockAlignment(alignment)}
+        />
+      );
+    },
+    "pub.leaflet.blocks.website": (block) => {
+      const previewSrc = block.previewImage
+        ? blobRefToSrc(block.previewImage.ref, did, assetsBaseUrl, {
+            width: 360,
+            format: "email",
+          })
+        : undefined;
+      return (
+        <LinkBlock
+          url={block.src}
+          title={block.title}
+          description={block.description}
+          previewSrc={previewSrc}
+          theme={theme}
+          colors={colors}
+        />
+      );
+    },
+    "pub.leaflet.blocks.button": (block) => (
       <ButtonBlock
         text={block.text}
         url={block.url}
         align={resolveBlockAlignment(alignment)}
         theme={theme}
       />
-    );
-  }
-  if (PubLeafletBlocksHorizontalRule.isMain(block)) {
-    return (
+    ),
+    "pub.leaflet.blocks.horizontalRule": () => (
       <Hr
         style={{
           border: "none",
@@ -1263,10 +1259,8 @@ const BlockRenderer = ({
           width: "100%",
         }}
       />
-    );
-  }
-  if (PubLeafletBlocksUnorderedList.isMain(block)) {
-    return (
+    ),
+    "pub.leaflet.blocks.unorderedList": (block) => (
       <List
         items={block.children}
         style="unordered"
@@ -1275,10 +1269,8 @@ const BlockRenderer = ({
         theme={theme}
         textAlign={resolveTextAlignment(alignment)}
       />
-    );
-  }
-  if (PubLeafletBlocksOrderedList.isMain(block)) {
-    return (
+    ),
+    "pub.leaflet.blocks.orderedList": (block) => (
       <List
         items={block.children}
         style="ordered"
@@ -1287,57 +1279,55 @@ const BlockRenderer = ({
         theme={theme}
         textAlign={resolveTextAlignment(alignment)}
       />
-    );
-  }
-  if (PubLeafletBlocksBskyPost.isMain(block)) {
-    const post = bskyPosts?.[block.postRef.uri];
-    if (!post) {
+    ),
+    "pub.leaflet.blocks.bskyPost": (block) => {
+      const post = bskyPosts?.[block.postRef.uri];
+      if (!post) {
+        return (
+          <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
+        );
+      }
       return (
-        <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
-      );
-    }
-    return (
-      <BskyPostEmailBlock
-        post={post}
-        clientHost={block.clientHost}
-        theme={theme}
-        colors={colors}
-        assetsBaseUrl={assetsBaseUrl}
-      />
-    );
-  }
-  if (PubLeafletBlocksStandardSitePost.isMain(block)) {
-    const post = standardSitePosts?.[block.uri];
-    if (!post) {
-      return (
-        <BlockDataNotFound
-          label="Post not found."
+        <BskyPostEmailBlock
+          post={post}
+          clientHost={block.clientHost}
           theme={theme}
           colors={colors}
+          assetsBaseUrl={assetsBaseUrl}
         />
       );
-    }
-    // default to "medium" to match the draft (StandardSitePostBlock),
-    // since the publish step omits size when it hasn't been explicitly set
-    const size =
-      block.size === "large"
-        ? "large"
-        : block.size === "small"
-          ? "small"
-          : "medium";
-    return (
-      <StandardSitePostEmailBlock
-        post={post}
-        size={size}
-        showPublicationTheme={block.showPublicationTheme !== false}
-        currentPublicationUri={currentPublicationUri}
-        theme={theme}
-        assetsBaseUrl={assetsBaseUrl}
-      />
-    );
-  }
-  if (PubLeafletBlocksImageGallery.isMain(block)) {
-    return (
+    },
+    "pub.leaflet.blocks.standardSitePost": (block) => {
+      const post = standardSitePosts?.[block.uri];
+      if (!post) {
+        return (
+          <BlockDataNotFound
+            label="Post not found."
+            theme={theme}
+            colors={colors}
+          />
+        );
+      }
+      // default to "medium" to match the draft (StandardSitePostBlock),
+      // since the publish step omits size when it hasn't been explicitly set
+      const size =
+        block.size === "large"
+          ? "large"
+          : block.size === "small"
+            ? "small"
+            : "medium";
+      return (
+        <StandardSitePostEmailBlock
+          post={post}
+          size={size}
+          showPublicationTheme={block.showPublicationTheme !== false}
+          currentPublicationUri={currentPublicationUri}
+          theme={theme}
+          assetsBaseUrl={assetsBaseUrl}
+        />
+      );
+    },
+    "pub.leaflet.blocks.imageGallery": (block) => (
       <ImageGalleryEmailBlock
         block={block}
         did={did}
@@ -1346,35 +1336,40 @@ const BlockRenderer = ({
         theme={theme}
         colors={colors}
       />
-    );
-  }
-  // The delimiter renders as nothing but must stay in the block array so
-  // later blocks keep their record indices (and thus their #index anchors).
-  if (PubLeafletBlocksMembersOnlyDelimiter.isMain(block)) {
-    return null;
-  }
-  if (PubLeafletBlocksStandardSitePublication.isMain(block)) {
-    const publication = standardSitePublications?.[block.uri];
-    if (!publication) {
+    ),
+    // The delimiter renders as nothing but must stay in the block array so
+    // later blocks keep their record indices (and thus their #index anchors).
+    "pub.leaflet.blocks.membersOnlyDelimiter": () => null,
+    "pub.leaflet.blocks.standardSitePublication": (block) => {
+      const publication = standardSitePublications?.[block.uri];
+      if (!publication) {
+        return (
+          <BlockDataNotFound
+            label="Publication not found."
+            theme={theme}
+            colors={colors}
+            bordered
+          />
+        );
+      }
       return (
-        <BlockDataNotFound
-          label="Publication not found."
+        <StandardSitePublicationEmailBlock
+          publication={publication}
+          showPublicationTheme={block.showPublicationTheme !== false}
           theme={theme}
-          colors={colors}
-          bordered
+          assetsBaseUrl={assetsBaseUrl}
         />
       );
-    }
-    return (
-      <StandardSitePublicationEmailBlock
-        publication={publication}
-        showPublicationTheme={block.showPublicationTheme !== false}
-        theme={theme}
-        assetsBaseUrl={assetsBaseUrl}
-      />
-    );
-  }
-  return <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />;
+    },
+    "pub.leaflet.blocks.iframe": notSupported,
+    "pub.leaflet.blocks.html": notSupported,
+    "pub.leaflet.blocks.math": notSupported,
+    "pub.leaflet.blocks.page": notSupported,
+    "pub.leaflet.blocks.poll": notSupported,
+    "pub.leaflet.blocks.postsList": notSupported,
+    "pub.leaflet.blocks.signup": notSupported,
+  };
+  return matchBlock(block, handlers, notSupported);
 };
 
 // Matches the published web renderer's notice when a referenced standard-site

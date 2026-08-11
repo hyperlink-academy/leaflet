@@ -71,6 +71,7 @@ export function TextBlock(
           first={first}
           pageType={props.pageType}
           previousBlock={props.previousBlock}
+          pageID={props.parent}
         />
       )}
       {permission && !props.preview && !stale && (
@@ -138,6 +139,7 @@ export function RenderedTextBlock(props: {
   pageType?: "canvas" | "doc";
   type: BlockProps["type"];
   previousBlock?: BlockProps["previousBlock"];
+  pageID?: string;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -205,7 +207,7 @@ export function RenderedTextBlock(props: {
         if (store.activeFootnoteID === footnoteID) {
           store.close();
         } else {
-          store.open(footnoteID, footnoteRef);
+          store.open(footnoteID, footnoteRef, props.pageID);
         }
       }}
       className={`
@@ -224,8 +226,6 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
   let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
-
-  let rep = useReplicache();
 
   let selected = useIsBlockSelected(props.entityID);
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
@@ -273,21 +273,6 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
         {overlay}
         <pre
           data-entityid={props.entityID}
-          onBlur={async () => {
-            let editorState =
-              useEditorStates.getState().editorStates[props.entityID]?.editor;
-            if (
-              ["***", "---", "___"].includes(
-                editorState?.doc.textContent.trim() || "",
-              )
-            ) {
-              await rep.rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "horizontal-rule" },
-              });
-            }
-          }}
           onFocus={() => {
             handleMentionOpenChange(false);
             setTimeout(() => {

@@ -9,6 +9,7 @@ import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
+import { addBlockBelow } from "src/utils/addBlockBelow";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { flushSync } from "react-dom";
@@ -220,6 +221,24 @@ export const inputrules = (
           });
         }
         return tr;
+      }),
+
+      // Divider — insert the rule above this block rather than converting it,
+      // so the cursor stays put and any text after the cursor is preserved.
+      // Runs after the mark rules, but neither bold nor italic can match "***"
+      // (both need non-asterisk content between the delimiters).
+      new InputRule(/^(---|\*\*\*|___)$/, (state, match) => {
+        if (propsRef.current.listData) return null;
+        let rep = repRef.current;
+        if (!rep) return null;
+        addBlockBelow(rep, {
+          parent: propsRef.current.parent,
+          position: propsRef.current.previousBlock?.position || null,
+          nextPosition: propsRef.current.position,
+          permission_set: propsRef.current.entity_set.set,
+          type: "horizontal-rule",
+        });
+        return state.tr.delete(0, match[0].length);
       }),
 
       //Blockquote

@@ -17,7 +17,6 @@ import { AtUri } from "@atproto/syntax";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
-import { localImages } from "src/utils/addImage";
 import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { editorStateToFacetedText } from "components/BlueskyPostComposer/ProsemirrorEditor";
@@ -459,7 +458,7 @@ const CoverImageControls = (props: {
         className="hover:underline hover:cursor-pointer text-accent-contrast"
         onMouseDown={(e) => e.preventDefault()}
       >
-        Change Cover
+        {props.coverImageEntity ? "Change" : "Add"} Cover
         <input
           className="hidden"
           type="file"

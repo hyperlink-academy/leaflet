@@ -6,6 +6,10 @@ import type { FactInput } from "src/replicache/mutations";
 import { rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 import { v7 } from "uuid";
 import { encodeBitmapToWebP } from "./imageEncoding";
+import {
+  setImageUploadStatus,
+  clearImageUploadStatus,
+} from "./imageUploadStatus";
 
 // Maps a public image src to an in-memory object URL, for optimistic display
 // before the upload completes.
@@ -82,6 +86,7 @@ export async function prepareImage(
     const height = bitmap.height;
     const thumbhash = computeThumbHashFromBitmap(bitmap);
     localImages.set(url, URL.createObjectURL(file));
+    setImageUploadStatus(url, { state: "uploading" });
 
     const imageFact: FactInput & { ignoreUndo?: true } = {
       entity: args.entityID,
@@ -99,31 +104,31 @@ export async function prepareImage(
 
     const finishUpload = async () => {
       try {
-        const uploadBlob = isAnimated
-          ? file
-          : await encodeBitmapToWebP(bitmap, {
+        let uploadBlob: Blob = file;
+        if (!isAnimated) {
+          try {
+            uploadBlob = await encodeBitmapToWebP(bitmap, {
               quality: 0.92,
               preferLossless: file.type === "image/png",
             });
+          } catch {
+            // Encoding is an optimization; upload the original bytes if it
+            // fails.
+          }
+        }
         bitmap.close();
-        await client.storage
-          .from("minilink-user-assets")
-          .upload(fileID, uploadBlob, {
-            // storage-js expects seconds here, not a header value — anything
-            // else is stored as a malformed Cache-Control and defeats the CDN.
-            cacheControl: "31536000",
-          });
-        await rep.mutate.assertFact({
-          entity: args.entityID,
+        await uploadImageAndFinalize({
+          rep,
+          fileID,
+          url,
+          blob: uploadBlob,
+          file,
+          entityID: args.entityID,
           attribute: args.attribute,
-          ignoreUndo: args.ignoreUndo || undefined,
-          data: {
-            fallback: thumbhash,
-            type: "image",
-            src: url,
-            height,
-            width,
-          },
+          thumbhash,
+          width,
+          height,
+          ignoreUndo: args.ignoreUndo,
         });
       } finally {
         release();
@@ -135,6 +140,115 @@ export async function prepareImage(
     release();
     throw e;
   }
+}
+
+type StorageError = { message?: string; statusCode?: string | number };
+
+// A 409 means an earlier attempt (whose response we lost) already stored the
+// object, so the upload has effectively succeeded.
+const isAlreadyUploaded = (error: StorageError) =>
+  String(error.statusCode) === "409" ||
+  !!error.message?.toLowerCase().includes("already exists");
+
+// Uploads an image to storage and swaps the optimistic `local` fact for the
+// final one. storage-js reports failures as a returned `{ error }` rather than
+// throwing, so every failure funnels through here: one automatic retry, then
+// the failure is logged and parked in useImageUploadStatus with a manual
+// retry. The `local` fact stays put on failure so the preview (object URL
+// here, thumbhash for other clients) keeps rendering instead of a broken
+// image.
+export async function uploadImageAndFinalize(opts: {
+  rep: Replicache<ReplicacheMutators>;
+  fileID: string;
+  url: string;
+  blob: Blob;
+  file: File;
+  entityID: string;
+  attribute: keyof FilterAttributes<{ type: "image" }>;
+  thumbhash: string;
+  width: number;
+  height: number;
+  ignoreUndo?: boolean;
+}) {
+  const client = supabaseBrowserClient();
+  const attempt = async (): Promise<StorageError | null> => {
+    try {
+      const { error } = await client.storage
+        .from("minilink-user-assets")
+        .upload(opts.fileID, opts.blob, {
+          // storage-js expects seconds here, not a header value — anything
+          // else is stored as a malformed Cache-Control and defeats the CDN.
+          cacheControl: "31536000",
+        });
+      if (error && !isAlreadyUploaded(error)) return error;
+      return null;
+    } catch (e) {
+      return { message: e instanceof Error ? e.message : String(e) };
+    }
+  };
+  const finalize = async (ignoreUndo?: boolean) => {
+    await opts.rep.mutate.assertFact({
+      entity: opts.entityID,
+      attribute: opts.attribute,
+      ignoreUndo: ignoreUndo || undefined,
+      data: {
+        fallback: opts.thumbhash,
+        type: "image",
+        src: opts.url,
+        height: opts.height,
+        width: opts.width,
+      },
+    });
+    clearImageUploadStatus(opts.url);
+  };
+  const fail = (error: StorageError, attempts: string) => {
+    logUploadFailure({
+      src: opts.url,
+      fileName: opts.file.name,
+      fileType: opts.file.type,
+      fileSize: opts.file.size,
+      uploadSize: opts.blob.size,
+      attempts,
+      error: { message: error.message, statusCode: error.statusCode },
+    });
+    setImageUploadStatus(opts.url, { state: "failed", retry });
+  };
+  const retry = async () => {
+    setImageUploadStatus(opts.url, { state: "uploading" });
+    const error = await attempt();
+    if (error) return fail(error, "manual-retry");
+    // Manual retries land long after the user action that created the block,
+    // so they should never be their own undo step.
+    await finalize(true);
+  };
+
+  setImageUploadStatus(opts.url, { state: "uploading" });
+  let error = await attempt();
+  if (error) error = await attempt();
+  if (error) return fail(error, "initial+auto-retry");
+  await finalize(opts.ignoreUndo);
+}
+
+// Browser consoles are invisible to us, so mirror upload failures to the
+// server where they land in function logs.
+function logUploadFailure(details: {
+  src: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadSize: number;
+  attempts: string;
+  error: StorageError;
+}) {
+  console.error("Image upload failed", details);
+  try {
+    fetch("/api/log_upload_failure", {
+      method: "POST",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(details),
+    }).catch(() => {});
+  } catch {}
 }
 
 // For callers whose block already renders (image upload UI, canvas drop):

@@ -19,6 +19,10 @@ import {
   upsertSavedAccountEntry,
 } from "src/hooks/useSavedAccounts";
 import { hasSessionMarker } from "src/sessionMarker";
+import {
+  useIdentityChangeListener,
+  useReloadOnIdentityChange,
+} from "src/identityBroadcast";
 
 export type InterfaceState = {
   dashboards: { [id: string]: DashboardState | undefined };
@@ -134,6 +138,7 @@ export function IdentityContextProvider(props: {
       // surface; the entry is written on a later load instead.
       .catch(() => {});
   }, [identity?.id]);
+  useReloadOnIdentityChange(identity?.id ?? null);
   useEffect(() => {
     if (!identity?.atp_did) return;
     let supabase = supabaseBrowserClient();
@@ -190,6 +195,7 @@ export function ClientIdentityProvider(props: { children: React.ReactNode }) {
     if (!hasSessionMarker()) return;
     mutate().finally(() => setMarkerPending(false));
   }, []);
+  useReloadOnIdentityChange(identity?.id ?? null);
   return (
     <IdentityContext.Provider
       value={{
@@ -245,6 +251,13 @@ export function ViewerIdentityProvider(props: { children: React.ReactNode }) {
     if (!hasSessionMarker()) return;
     mutate().finally(() => setMarkerPending(false));
   }, []);
+  // A soft revalidate is enough here (vs the reload identity-keyed surfaces
+  // need): published pages hold no Replicache or realtime state, and the
+  // identity-gated islands key their fetches by viewer so they refetch once
+  // the new identity lands.
+  useIdentityChangeListener(() => {
+    mutate();
+  });
   return (
     <IdentityContext.Provider
       value={{

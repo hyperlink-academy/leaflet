@@ -124,7 +124,7 @@ export function useMountProsemirror({
                   if (store.commentIDs?.join(" ") === commentIDs.join(" ")) {
                     store.close();
                   } else {
-                    store.open(commentIDs, anchor);
+                    store.open(commentIDs, anchor, propsRef.current.parent);
                   }
                   event.preventDefault();
                   return true;
@@ -169,7 +169,7 @@ export function useMountProsemirror({
               if (store.activeFootnoteID === footnoteID) {
                 store.close();
               } else {
-                store.open(footnoteID, sup);
+                store.open(footnoteID, sup, propsRef.current.parent);
               }
               return;
             }
@@ -235,7 +235,12 @@ export function useMountProsemirror({
             if (anchor) {
               useLinkPopoverStore
                 .getState()
-                .open(linkMark.attrs.href, anchor, entityID);
+                .open(
+                  linkMark.attrs.href,
+                  anchor,
+                  entityID,
+                  propsRef.current.parent,
+                );
             }
             return;
           }

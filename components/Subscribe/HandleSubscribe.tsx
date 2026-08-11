@@ -281,7 +281,7 @@ export const SubscribeWithHandle = (props: {
             </a>
           )}
         </div>
-        <div className=" pt-1 ">
+        <div className="pt-1 w-fit mx-auto">
           <AtmosphericHandleInfo />
         </div>
         {needsLinkConfirmation && (
@@ -390,7 +390,7 @@ export const AtmosphericHandleInfo = (props: { trigger?: React.ReactNode }) => {
         props.trigger ? (
           props.trigger
         ) : (
-          <div className="text-accent-contrast text-sm">
+          <div className="text-accent-contrast text-sm mx-auto">
             What's the Atmosphere?
           </div>
         )

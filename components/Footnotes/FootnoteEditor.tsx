@@ -8,7 +8,10 @@ import { schema } from "components/Blocks/TextBlock/schema";
 import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
 import { footnoteInputRules } from "components/Blocks/TextBlock/inputRules";
 import { highlightSelectionPlugin } from "components/Blocks/TextBlock/plugins";
-import { stripCommentMarks } from "components/Blocks/TextBlock/stripCommentMarks";
+import {
+  stripCommentMarks,
+  stripFootnoteRefs,
+} from "components/Blocks/TextBlock/stripCommentMarks";
 import { useReplicache, useEntity } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
@@ -148,7 +151,7 @@ function EditableFootnote(props: {
       {
         state,
         editable: () => props.editable,
-        transformPasted: stripCommentMarks,
+        transformPasted: (slice) => stripFootnoteRefs(stripCommentMarks(slice)),
         handlePaste: (view, e) => {
           let text = e.clipboardData?.getData("text");
           if (text && betterIsUrl(text)) {

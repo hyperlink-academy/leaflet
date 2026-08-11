@@ -129,6 +129,381 @@ export async function processBlocksToPages(opts: {
 
   const highlightColors = resolveHighlightColors(scan, root_entity);
 
+  const footnoteContentResolver = (footnoteEntityID: string) => {
+    const [content] = scan.eav(footnoteEntityID, "block/text");
+    if (!content)
+      return {
+        plaintext: "",
+        facets: [] as PubLeafletRichtextFacet.Main[],
+      };
+    const doc = new Y.Doc();
+    const update = base64.toByteArray(content.data.value);
+    Y.applyUpdate(doc, update);
+    const nodes = doc.getXmlElement("prosemirror").toArray();
+    const plaintext = YJSFragmentToString(nodes[0]);
+    const { facets } = YJSFragmentToFacets(
+      nodes[0],
+      0,
+      undefined,
+      highlightColors,
+    );
+    return { plaintext, facets };
+  };
+
+  const getBlockContent = (b: string) => {
+    const [content] = scan.eav(b, "block/text");
+    if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
+    const doc = new Y.Doc();
+    const update = base64.toByteArray(content.data.value);
+    Y.applyUpdate(doc, update);
+    const nodes = doc.getXmlElement("prosemirror").toArray();
+    const stringValue = YJSFragmentToString(nodes[0]);
+    const { facets } = YJSFragmentToFacets(
+      nodes[0],
+      0,
+      footnoteContentResolver,
+      highlightColors,
+    );
+    return [stringValue, facets] as const;
+  };
+
+  const embedOrHtmlToRecord = async (b: Block) => {
+    const [url] = scan.eav(b.entityID, "embed/url");
+    // embed-typed blocks may carry an embed/html fact from before html
+    // embeds were split into their own block type
+    const [html] = scan.eav(b.entityID, "embed/html");
+    const [height] = scan.eav(b.entityID, "embed/height");
+    const [aspectRatio] = scan.eav(b.entityID, "embed/aspect-ratio");
+    if (!url && !html) return;
+    const blockHeight = Math.floor(height?.data.value || 600);
+    const block: $Typed<
+      PubLeafletBlocksHtml.Main | PubLeafletBlocksIframe.Main
+    > = html
+      ? {
+          $type: "pub.leaflet.blocks.html",
+          html: html.data.value,
+          height: blockHeight,
+        }
+      : {
+          $type: "pub.leaflet.blocks.iframe",
+          url: url!.data.value,
+          height: blockHeight,
+        };
+    if (aspectRatio) {
+      const [w, h] = aspectRatio.data.value.split("/").map(Number);
+      if (w && h) {
+        block.aspectRatio = { width: w, height: h };
+      }
+    }
+    return block;
+  };
+
+  const blockTypeToRecord: {
+    [K in Fact<"block/type">["data"]["value"]]: (
+      b: Block,
+      membersOnly: boolean,
+    ) => Promise<PubLeafletPagesLinearDocument.Block["block"] | undefined>;
+  } = {
+    datetime: async () => undefined,
+    rsvp: async () => undefined,
+    mailbox: async () => undefined,
+    card: async (b, membersOnly) => {
+      const [page] = scan.eav(b.entityID, "block/card");
+      if (!page) return;
+      const [pageType] = scan.eav(page.data.value, "page/type");
+
+      if (pageType?.data.value === "canvas") {
+        const canvasBlocks = await canvasBlocksToRecord(
+          page.data.value,
+          membersOnly,
+        );
+        pages.push({
+          id: page.data.value,
+          blocks: canvasBlocks,
+          type: "canvas",
+        });
+      } else {
+        const blocks = getBlocksWithTypeLocal(facts, page.data.value);
+        pages.push({
+          id: page.data.value,
+          blocks: await blocksToRecord(blocks, membersOnly),
+          type: "doc",
+        });
+      }
+
+      const block: $Typed<PubLeafletBlocksPage.Main> = {
+        $type: "pub.leaflet.blocks.page",
+        id: page.data.value,
+      };
+      return block;
+    },
+    "bluesky-post": async (b) => {
+      const [post] = scan.eav(b.entityID, "block/bluesky-post");
+      if (!post || !post.data.value.post) return;
+      const [hostFact] = scan.eav(b.entityID, "bluesky-post/host");
+      const block: $Typed<PubLeafletBlocksBskyPost.Main> = {
+        $type: ids.PubLeafletBlocksBskyPost,
+        postRef: {
+          uri: post.data.value.post.uri,
+          cid: post.data.value.post.cid,
+        },
+        clientHost: hostFact?.data.value,
+      };
+      return block;
+    },
+    "standard-site-post": async (b) => {
+      const [uri] = scan.eav(b.entityID, "block/standard-site-post");
+      if (!uri) return;
+      const [sizeFact] = scan.eav(b.entityID, "standard-site-post/size");
+      const [showPubThemeFact] = scan.eav(
+        b.entityID,
+        "standard-site-post/show-publication-theme",
+      );
+      const block: $Typed<PubLeafletBlocksStandardSitePost.Main> = {
+        $type: ids.PubLeafletBlocksStandardSitePost,
+        uri: uri.data.value,
+        ...(sizeFact && { size: sizeFact.data.value }),
+        ...(showPubThemeFact?.data.value === false && {
+          showPublicationTheme: false,
+        }),
+      };
+      return block;
+    },
+    "standard-site-publication": async (b) => {
+      const [uri] = scan.eav(b.entityID, "block/standard-site-publication");
+      if (!uri) return;
+      const [showPubThemeFact] = scan.eav(
+        b.entityID,
+        "standard-site-publication/show-publication-theme",
+      );
+      const block: $Typed<PubLeafletBlocksStandardSitePublication.Main> = {
+        $type: ids.PubLeafletBlocksStandardSitePublication,
+        uri: uri.data.value,
+        ...(showPubThemeFact?.data.value === false && {
+          showPublicationTheme: false,
+        }),
+      };
+      return block;
+    },
+    "horizontal-rule": async () => {
+      const block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
+        $type: ids.PubLeafletBlocksHorizontalRule,
+      };
+      return block;
+    },
+    "members-only-delimiter": async () => {
+      const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
+        $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
+      };
+      return block;
+    },
+    heading: async (b) => {
+      const [headingLevel] = scan.eav(b.entityID, "block/heading-level");
+
+      const [stringValue, facets] = getBlockContent(b.entityID);
+      const block: $Typed<PubLeafletBlocksHeader.Main> = {
+        $type: "pub.leaflet.blocks.header",
+        level: Math.floor(headingLevel?.data.value || 1),
+        plaintext: stringValue,
+        ...(facets.length > 0 && { facets }),
+      };
+      return block;
+    },
+    blockquote: async (b) => {
+      const [stringValue, facets] = getBlockContent(b.entityID);
+      const block: $Typed<PubLeafletBlocksBlockquote.Main> = {
+        $type: ids.PubLeafletBlocksBlockquote,
+        plaintext: stringValue,
+        ...(facets.length > 0 && { facets }),
+      };
+      return block;
+    },
+    text: async (b) => {
+      const [stringValue, facets] = getBlockContent(b.entityID);
+      const [textSize] = scan.eav(b.entityID, "block/text-size");
+      const block: $Typed<PubLeafletBlocksText.Main> = {
+        $type: ids.PubLeafletBlocksText,
+        plaintext: stringValue,
+        ...(facets.length > 0 && { facets }),
+        ...(textSize && { textSize: textSize.data.value }),
+      };
+      return block;
+    },
+    embed: embedOrHtmlToRecord,
+    html: embedOrHtmlToRecord,
+    image: async (b, membersOnly) => {
+      const [image] = scan.eav(b.entityID, "block/image");
+      if (!image) return;
+      const [altText] = scan.eav(b.entityID, "image/alt");
+      const [fullBleed] = scan.eav(b.entityID, "image/full-bleed");
+      const [maxWidth] = scan.eav(b.entityID, "image/max-width");
+      const blobref = await hooks.uploadImage(image.data.src, { membersOnly });
+      if (!blobref) return;
+      const block: $Typed<PubLeafletBlocksImage.Main> = {
+        $type: "pub.leaflet.blocks.image",
+        image: blobref,
+        aspectRatio: {
+          height: Math.floor(image.data.height),
+          width: Math.floor(image.data.width),
+        },
+        alt: altText ? altText.data.value : undefined,
+        fullBleed: fullBleed?.data.value || undefined,
+        ...(maxWidth !== undefined && { width: Math.floor(maxWidth.data.value) }),
+      };
+      return block;
+    },
+    "image-gallery": async (b, membersOnly) => {
+      const imageFacts = scan
+        .eav(b.entityID, "gallery/image")
+        .toSorted((a, c) => (a.data.position > c.data.position ? 1 : -1));
+      const images = (
+        await Promise.all(
+          imageFacts.map(async (f) => {
+            const imageEntity = f.data.value;
+            const [image] = scan.eav(imageEntity, "block/image");
+            if (!image) return null;
+            const [alt] = scan.eav(imageEntity, "image/alt");
+            const blobref = await hooks.uploadImage(image.data.src, {
+              membersOnly,
+            });
+            if (!blobref) return null;
+            const galleryImage: PubLeafletBlocksImageGallery.Image = {
+              $type: "pub.leaflet.blocks.imageGallery#image",
+              image: blobref,
+              aspectRatio: {
+                width: Math.floor(image.data.width),
+                height: Math.floor(image.data.height),
+              },
+              ...(alt ? { alt: alt.data.value } : {}),
+            };
+            return galleryImage;
+          }),
+        )
+      ).filter((i): i is PubLeafletBlocksImageGallery.Image => i !== null);
+      if (images.length === 0) return;
+
+      const [format] = scan.eav(b.entityID, "gallery/format");
+      const [gap] = scan.eav(b.entityID, "gallery/gap");
+      const [maxWidth] = scan.eav(b.entityID, "gallery/max-width");
+      const block: $Typed<PubLeafletBlocksImageGallery.Main> = {
+        $type: "pub.leaflet.blocks.imageGallery",
+        images,
+        ...(format && { format: format.data.value }),
+        ...(gap !== undefined && { gap: Math.floor(gap.data.value) }),
+        ...(maxWidth !== undefined && {
+          maxWidth: Math.floor(maxWidth.data.value),
+        }),
+      };
+      return block;
+    },
+    link: async (b, membersOnly) => {
+      const [previewImage] = scan.eav(b.entityID, "link/preview");
+      const [description] = scan.eav(b.entityID, "link/description");
+      const [src] = scan.eav(b.entityID, "link/url");
+      if (!src) return;
+      const blobref = previewImage
+        ? await hooks.uploadImage(previewImage.data.src, { membersOnly })
+        : undefined;
+      const [title] = scan.eav(b.entityID, "link/title");
+      const block: $Typed<PubLeafletBlocksWebsite.Main> = {
+        $type: "pub.leaflet.blocks.website",
+        previewImage: blobref,
+        src: src.data.value,
+        description: description?.data.value,
+        title: title?.data.value,
+      };
+      return block;
+    },
+    code: async (b) => {
+      const [language] = scan.eav(b.entityID, "block/code-language");
+      const [code] = scan.eav(b.entityID, "block/code");
+      const [theme] = scan.eav(root_entity, "theme/code-theme");
+      const block: $Typed<PubLeafletBlocksCode.Main> = {
+        $type: "pub.leaflet.blocks.code",
+        language: language?.data.value,
+        plaintext: code?.data.value || "",
+        syntaxHighlightingTheme: theme?.data.value,
+      };
+      return block;
+    },
+    math: async (b) => {
+      const [math] = scan.eav(b.entityID, "block/math");
+      const block: $Typed<PubLeafletBlocksMath.Main> = {
+        $type: "pub.leaflet.blocks.math",
+        tex: math?.data.value || "",
+      };
+      return block;
+    },
+    poll: async (b) => {
+      if (!hooks.uploadPoll) return;
+
+      const pollOptions = scan.eav(b.entityID, "poll/options");
+      const options: PubLeafletPollDefinition.Option[] = pollOptions.map(
+        (opt) => {
+          const optionName = scan.eav(opt.data.value, "poll-option/name")?.[0];
+          return {
+            $type: "pub.leaflet.poll.definition#option",
+            text: optionName?.data.value || "",
+          };
+        },
+      );
+
+      const pollRecord: PubLeafletPollDefinition.Record = {
+        $type: "pub.leaflet.poll.definition",
+        name: "Poll",
+        options,
+      };
+
+      const result = await hooks.uploadPoll(b.entityID, pollRecord);
+      if (!result) return;
+
+      const block: $Typed<PubLeafletBlocksPoll.Main> = {
+        $type: "pub.leaflet.blocks.poll",
+        pollRef: {
+          uri: result.uri,
+          cid: result.cid,
+        },
+      };
+      return block;
+    },
+    button: async (b) => {
+      const [text] = scan.eav(b.entityID, "button/text");
+      const [url] = scan.eav(b.entityID, "button/url");
+      if (!text || !url) return;
+      const block: $Typed<PubLeafletBlocksButton.Main> = {
+        $type: "pub.leaflet.blocks.button",
+        text: text.data.value,
+        url: url.data.value,
+      };
+      return block;
+    },
+    "posts-list": async (b) => {
+      const [viewFact] = scan.eav(b.entityID, "posts-list/view");
+      const [highlightFact] = scan.eav(
+        b.entityID,
+        "posts-list/highlight-first-post",
+      );
+      const filterTagFacts = scan.eav(b.entityID, "posts-list/filter-tag");
+      const filterByTags = filterTagFacts.map((f) => f.data.value);
+      const [limitFact] = scan.eav(b.entityID, "posts-list/limit");
+      const limit = limitFact?.data.value;
+      const block: $Typed<PubLeafletBlocksPostsList.Main> = {
+        $type: "pub.leaflet.blocks.postsList",
+        ...(viewFact && { view: viewFact.data.value }),
+        ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
+        ...(filterByTags.length > 0 && { filterByTags }),
+        ...(limit && limit > 0 && { limit }),
+      };
+      return block;
+    },
+    signup: async () => {
+      const block: $Typed<PubLeafletBlocksSignup.Main> = {
+        $type: ids.PubLeafletBlocksSignup,
+      };
+      return block;
+    },
+  };
+
   const startPage =
     opts.start_page ?? scan.eav(root_entity, "root/page")?.[0]?.data.value;
   if (!startPage) throw new Error("No root page");
@@ -332,370 +707,14 @@ export async function processBlocksToPages(opts: {
   }
 
   async function blockToRecord(b: Block, membersOnly: boolean) {
-    const footnoteContentResolver = (footnoteEntityID: string) => {
-      const [content] = scan.eav(footnoteEntityID, "block/text");
-      if (!content)
-        return {
-          plaintext: "",
-          facets: [] as PubLeafletRichtextFacet.Main[],
-        };
-      const doc = new Y.Doc();
-      const update = base64.toByteArray(content.data.value);
-      Y.applyUpdate(doc, update);
-      const nodes = doc.getXmlElement("prosemirror").toArray();
-      const plaintext = YJSFragmentToString(nodes[0]);
-      const { facets } = YJSFragmentToFacets(
-        nodes[0],
-        0,
-        undefined,
-        highlightColors,
-      );
-      return { plaintext, facets };
-    };
-    const getBlockContent = (b: string) => {
-      const [content] = scan.eav(b, "block/text");
-      if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
-      const doc = new Y.Doc();
-      const update = base64.toByteArray(content.data.value);
-      Y.applyUpdate(doc, update);
-      const nodes = doc.getXmlElement("prosemirror").toArray();
-      const stringValue = YJSFragmentToString(nodes[0]);
-      const { facets } = YJSFragmentToFacets(
-        nodes[0],
-        0,
-        footnoteContentResolver,
-        highlightColors,
-      );
-      return [stringValue, facets] as const;
-    };
-    if (b.type === "card") {
-      const [page] = scan.eav(b.entityID, "block/card");
-      if (!page) return;
-      const [pageType] = scan.eav(page.data.value, "page/type");
-
-      if (pageType?.data.value === "canvas") {
-        const canvasBlocks = await canvasBlocksToRecord(
-          page.data.value,
-          membersOnly,
-        );
-        pages.push({
-          id: page.data.value,
-          blocks: canvasBlocks,
-          type: "canvas",
-        });
-      } else {
-        const blocks = getBlocksWithTypeLocal(facts, page.data.value);
-        pages.push({
-          id: page.data.value,
-          blocks: await blocksToRecord(blocks, membersOnly),
-          type: "doc",
-        });
-      }
-
-      const block: $Typed<PubLeafletBlocksPage.Main> = {
-        $type: "pub.leaflet.blocks.page",
-        id: page.data.value,
-      };
-      return block;
+    // Own-property check: block/type values outside the union (legacy rows,
+    // or a newer client mid-deploy) must drop the block like before — an
+    // inherited key ("toString") or a missing one would otherwise crash the
+    // whole publish.
+    if (!Object.prototype.hasOwnProperty.call(blockTypeToRecord, b.type)) {
+      return undefined;
     }
-
-    if (b.type === "bluesky-post") {
-      const [post] = scan.eav(b.entityID, "block/bluesky-post");
-      if (!post || !post.data.value.post) return;
-      const [hostFact] = scan.eav(b.entityID, "bluesky-post/host");
-      const block: $Typed<PubLeafletBlocksBskyPost.Main> = {
-        $type: ids.PubLeafletBlocksBskyPost,
-        postRef: {
-          uri: post.data.value.post.uri,
-          cid: post.data.value.post.cid,
-        },
-        clientHost: hostFact?.data.value,
-      };
-      return block;
-    }
-    if (b.type === "standard-site-post") {
-      const [uri] = scan.eav(b.entityID, "block/standard-site-post");
-      if (!uri) return;
-      const [sizeFact] = scan.eav(b.entityID, "standard-site-post/size");
-      const [showPubThemeFact] = scan.eav(
-        b.entityID,
-        "standard-site-post/show-publication-theme",
-      );
-      const block: $Typed<PubLeafletBlocksStandardSitePost.Main> = {
-        $type: ids.PubLeafletBlocksStandardSitePost,
-        uri: uri.data.value,
-        ...(sizeFact && { size: sizeFact.data.value }),
-        ...(showPubThemeFact?.data.value === false && {
-          showPublicationTheme: false,
-        }),
-      };
-      return block;
-    }
-    if (b.type === "standard-site-publication") {
-      const [uri] = scan.eav(b.entityID, "block/standard-site-publication");
-      if (!uri) return;
-      const [showPubThemeFact] = scan.eav(
-        b.entityID,
-        "standard-site-publication/show-publication-theme",
-      );
-      const block: $Typed<PubLeafletBlocksStandardSitePublication.Main> = {
-        $type: ids.PubLeafletBlocksStandardSitePublication,
-        uri: uri.data.value,
-        ...(showPubThemeFact?.data.value === false && {
-          showPublicationTheme: false,
-        }),
-      };
-      return block;
-    }
-    if (b.type === "horizontal-rule") {
-      const block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
-        $type: ids.PubLeafletBlocksHorizontalRule,
-      };
-      return block;
-    }
-    if (b.type === "members-only-delimiter") {
-      const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
-        $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
-      };
-      return block;
-    }
-
-    if (b.type === "heading") {
-      const [headingLevel] = scan.eav(b.entityID, "block/heading-level");
-
-      const [stringValue, facets] = getBlockContent(b.entityID);
-      const block: $Typed<PubLeafletBlocksHeader.Main> = {
-        $type: "pub.leaflet.blocks.header",
-        level: Math.floor(headingLevel?.data.value || 1),
-        plaintext: stringValue,
-        ...(facets.length > 0 && { facets }),
-      };
-      return block;
-    }
-
-    if (b.type === "blockquote") {
-      const [stringValue, facets] = getBlockContent(b.entityID);
-      const block: $Typed<PubLeafletBlocksBlockquote.Main> = {
-        $type: ids.PubLeafletBlocksBlockquote,
-        plaintext: stringValue,
-        ...(facets.length > 0 && { facets }),
-      };
-      return block;
-    }
-
-    if (b.type == "text") {
-      const [stringValue, facets] = getBlockContent(b.entityID);
-      const [textSize] = scan.eav(b.entityID, "block/text-size");
-      const block: $Typed<PubLeafletBlocksText.Main> = {
-        $type: ids.PubLeafletBlocksText,
-        plaintext: stringValue,
-        ...(facets.length > 0 && { facets }),
-        ...(textSize && { textSize: textSize.data.value }),
-      };
-      return block;
-    }
-    if (b.type === "embed" || b.type === "html") {
-      const [url] = scan.eav(b.entityID, "embed/url");
-      // embed-typed blocks may carry an embed/html fact from before html
-      // embeds were split into their own block type
-      const [html] = scan.eav(b.entityID, "embed/html");
-      const [height] = scan.eav(b.entityID, "embed/height");
-      const [aspectRatio] = scan.eav(b.entityID, "embed/aspect-ratio");
-      if (!url && !html) return;
-      const blockHeight = Math.floor(height?.data.value || 600);
-      const block: $Typed<
-        PubLeafletBlocksHtml.Main | PubLeafletBlocksIframe.Main
-      > = html
-        ? {
-            $type: "pub.leaflet.blocks.html",
-            html: html.data.value,
-            height: blockHeight,
-          }
-        : {
-            $type: "pub.leaflet.blocks.iframe",
-            url: url!.data.value,
-            height: blockHeight,
-          };
-      if (aspectRatio) {
-        const [w, h] = aspectRatio.data.value.split("/").map(Number);
-        if (w && h) {
-          block.aspectRatio = { width: w, height: h };
-        }
-      }
-      return block;
-    }
-    if (b.type == "image") {
-      const [image] = scan.eav(b.entityID, "block/image");
-      if (!image) return;
-      const [altText] = scan.eav(b.entityID, "image/alt");
-      const [fullBleed] = scan.eav(b.entityID, "image/full-bleed");
-      const [maxWidth] = scan.eav(b.entityID, "image/max-width");
-      const blobref = await hooks.uploadImage(image.data.src, { membersOnly });
-      if (!blobref) return;
-      const block: $Typed<PubLeafletBlocksImage.Main> = {
-        $type: "pub.leaflet.blocks.image",
-        image: blobref,
-        aspectRatio: {
-          height: Math.floor(image.data.height),
-          width: Math.floor(image.data.width),
-        },
-        alt: altText ? altText.data.value : undefined,
-        fullBleed: fullBleed?.data.value || undefined,
-        ...(maxWidth !== undefined && { width: Math.floor(maxWidth.data.value) }),
-      };
-      return block;
-    }
-    if (b.type === "image-gallery") {
-      const imageFacts = scan
-        .eav(b.entityID, "gallery/image")
-        .toSorted((a, c) => (a.data.position > c.data.position ? 1 : -1));
-      const images = (
-        await Promise.all(
-          imageFacts.map(async (f) => {
-            const imageEntity = f.data.value;
-            const [image] = scan.eav(imageEntity, "block/image");
-            if (!image) return null;
-            const [alt] = scan.eav(imageEntity, "image/alt");
-            const blobref = await hooks.uploadImage(image.data.src, {
-              membersOnly,
-            });
-            if (!blobref) return null;
-            const galleryImage: PubLeafletBlocksImageGallery.Image = {
-              $type: "pub.leaflet.blocks.imageGallery#image",
-              image: blobref,
-              aspectRatio: {
-                width: Math.floor(image.data.width),
-                height: Math.floor(image.data.height),
-              },
-              ...(alt ? { alt: alt.data.value } : {}),
-            };
-            return galleryImage;
-          }),
-        )
-      ).filter((i): i is PubLeafletBlocksImageGallery.Image => i !== null);
-      if (images.length === 0) return;
-
-      const [format] = scan.eav(b.entityID, "gallery/format");
-      const [gap] = scan.eav(b.entityID, "gallery/gap");
-      const [maxWidth] = scan.eav(b.entityID, "gallery/max-width");
-      const block: $Typed<PubLeafletBlocksImageGallery.Main> = {
-        $type: "pub.leaflet.blocks.imageGallery",
-        images,
-        ...(format && { format: format.data.value }),
-        ...(gap !== undefined && { gap: Math.floor(gap.data.value) }),
-        ...(maxWidth !== undefined && {
-          maxWidth: Math.floor(maxWidth.data.value),
-        }),
-      };
-      return block;
-    }
-    if (b.type === "link") {
-      const [previewImage] = scan.eav(b.entityID, "link/preview");
-      const [description] = scan.eav(b.entityID, "link/description");
-      const [src] = scan.eav(b.entityID, "link/url");
-      if (!src) return;
-      const blobref = previewImage
-        ? await hooks.uploadImage(previewImage.data.src, { membersOnly })
-        : undefined;
-      const [title] = scan.eav(b.entityID, "link/title");
-      const block: $Typed<PubLeafletBlocksWebsite.Main> = {
-        $type: "pub.leaflet.blocks.website",
-        previewImage: blobref,
-        src: src.data.value,
-        description: description?.data.value,
-        title: title?.data.value,
-      };
-      return block;
-    }
-    if (b.type === "code") {
-      const [language] = scan.eav(b.entityID, "block/code-language");
-      const [code] = scan.eav(b.entityID, "block/code");
-      const [theme] = scan.eav(root_entity, "theme/code-theme");
-      const block: $Typed<PubLeafletBlocksCode.Main> = {
-        $type: "pub.leaflet.blocks.code",
-        language: language?.data.value,
-        plaintext: code?.data.value || "",
-        syntaxHighlightingTheme: theme?.data.value,
-      };
-      return block;
-    }
-    if (b.type === "math") {
-      const [math] = scan.eav(b.entityID, "block/math");
-      const block: $Typed<PubLeafletBlocksMath.Main> = {
-        $type: "pub.leaflet.blocks.math",
-        tex: math?.data.value || "",
-      };
-      return block;
-    }
-    if (b.type === "poll") {
-      if (!hooks.uploadPoll) return;
-
-      const pollOptions = scan.eav(b.entityID, "poll/options");
-      const options: PubLeafletPollDefinition.Option[] = pollOptions.map(
-        (opt) => {
-          const optionName = scan.eav(opt.data.value, "poll-option/name")?.[0];
-          return {
-            $type: "pub.leaflet.poll.definition#option",
-            text: optionName?.data.value || "",
-          };
-        },
-      );
-
-      const pollRecord: PubLeafletPollDefinition.Record = {
-        $type: "pub.leaflet.poll.definition",
-        name: "Poll",
-        options,
-      };
-
-      const result = await hooks.uploadPoll(b.entityID, pollRecord);
-      if (!result) return;
-
-      const block: $Typed<PubLeafletBlocksPoll.Main> = {
-        $type: "pub.leaflet.blocks.poll",
-        pollRef: {
-          uri: result.uri,
-          cid: result.cid,
-        },
-      };
-      return block;
-    }
-    if (b.type === "button") {
-      const [text] = scan.eav(b.entityID, "button/text");
-      const [url] = scan.eav(b.entityID, "button/url");
-      if (!text || !url) return;
-      const block: $Typed<PubLeafletBlocksButton.Main> = {
-        $type: "pub.leaflet.blocks.button",
-        text: text.data.value,
-        url: url.data.value,
-      };
-      return block;
-    }
-    if (b.type === "posts-list") {
-      const [viewFact] = scan.eav(b.entityID, "posts-list/view");
-      const [highlightFact] = scan.eav(
-        b.entityID,
-        "posts-list/highlight-first-post",
-      );
-      const filterTagFacts = scan.eav(b.entityID, "posts-list/filter-tag");
-      const filterByTags = filterTagFacts.map((f) => f.data.value);
-      const [limitFact] = scan.eav(b.entityID, "posts-list/limit");
-      const limit = limitFact?.data.value;
-      const block: $Typed<PubLeafletBlocksPostsList.Main> = {
-        $type: "pub.leaflet.blocks.postsList",
-        ...(viewFact && { view: viewFact.data.value }),
-        ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
-        ...(filterByTags.length > 0 && { filterByTags }),
-        ...(limit && limit > 0 && { limit }),
-      };
-      return block;
-    }
-    if (b.type === "signup") {
-      const block: $Typed<PubLeafletBlocksSignup.Main> = {
-        $type: ids.PubLeafletBlocksSignup,
-      };
-      return block;
-    }
-    return;
+    return blockTypeToRecord[b.type](b, membersOnly);
   }
 
   async function canvasBlocksToRecord(

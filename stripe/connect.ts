@@ -1,5 +1,9 @@
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
+import {
+  deriveConnectedAccountStatus,
+  type ConnectedAccountStatus,
+} from "stripe/accountStatus";
 
 // Platform fee taken from each membership payment, applied as
 // application_fee_percent on the publisher's direct-charge subscription.
@@ -9,6 +13,7 @@ export type ConnectedAccountState = {
   charges_enabled: boolean;
   payouts_enabled: boolean;
   details_submitted: boolean;
+  status: ConnectedAccountStatus;
 };
 
 // Stripe Connect (Accounts v1) merchant account so the publisher can collect
@@ -73,18 +78,22 @@ export async function syncConnectedAccountState(
   stripeAccountId: string,
 ): Promise<ConnectedAccountState> {
   const account = await getStripe().accounts.retrieve(stripeAccountId);
-  const state: ConnectedAccountState = {
+  const flags = {
     charges_enabled: account.charges_enabled ?? false,
     payouts_enabled: account.payouts_enabled ?? false,
     details_submitted: account.details_submitted ?? false,
   };
+  const requirements = (account.requirements ?? null) as any;
   await supabaseServerClient
     .from("stripe_connected_accounts")
     .update({
-      ...state,
-      requirements: (account.requirements ?? null) as any,
+      ...flags,
+      requirements,
       updated_at: new Date().toISOString(),
     })
     .eq("stripe_account_id", stripeAccountId);
-  return state;
+  return {
+    ...flags,
+    status: deriveConnectedAccountStatus({ ...flags, requirements }),
+  };
 }

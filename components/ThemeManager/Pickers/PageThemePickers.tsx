@@ -276,11 +276,7 @@ const SubpageBackgroundImagePicker = (props: {
       </div>
       {open && (
         <div className="pageImagePicker flex flex-col gap-2">
-          <ImageSettings
-            entityID={props.entityID}
-            card
-            setValue={props.setValue}
-          />
+          <ImageSettings entityID={props.entityID} card />
           <div className="flex flex-col gap-2 pr-2 pl-8 -mt-2 mb-2">
             <hr className="border-[#DBDBDB]" />
             <SpectrumColorPicker
@@ -470,7 +466,7 @@ const LeafletBackgroundImagePicker = (props: {
       </div>
       {open && (
         <div className="pageImagePicker flex flex-col gap-2">
-          <ImageSettings entityID={props.entityID} setValue={() => {}} />
+          <ImageSettings entityID={props.entityID} />
         </div>
       )}
     </>

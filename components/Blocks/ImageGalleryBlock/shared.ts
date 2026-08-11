@@ -14,6 +14,9 @@ export type GalleryImage = {
   // Untransformed source for the lightbox, when `src` is a downscaled display
   // variant.
   fullSrc?: string;
+  // Canonical storage URL from the fact (editor only) — the key upload status
+  // is tracked under, even while `src` is the local object URL.
+  factSrc?: string;
   alt: string;
   width: number;
   height: number;
@@ -37,6 +40,7 @@ export function useGalleryImage(entityID: string) {
   let localSrc = localImages.get(image.data.src);
   return {
     src: localSrc ?? image.data.src,
+    factSrc: image.data.src,
     alt: alt || "",
     width: image.data.width,
     height: image.data.height,

@@ -181,8 +181,10 @@ let baseSchema = {
         {
           tag: "span.atMention",
           getAttrs(dom: HTMLElement) {
+            let atURI = dom.getAttribute("data-at-uri");
+            if (!atURI) return false;
             return {
-              atURI: dom.getAttribute("data-at-uri"),
+              atURI,
               text: dom.textContent || "",
               href: dom.getAttribute("data-href") || undefined,
               icon: dom.getAttribute("data-icon") || undefined,
@@ -287,8 +289,10 @@ let baseSchema = {
         {
           tag: "span.didMention",
           getAttrs(dom: HTMLElement) {
+            let did = dom.getAttribute("data-did");
+            if (!did) return false;
             return {
-              did: dom.getAttribute("data-did"),
+              did,
               text: dom.textContent || "",
             };
           },

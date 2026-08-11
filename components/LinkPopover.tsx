@@ -17,7 +17,13 @@ type LinkPopoverState = {
   href: string | null;
   anchorElement: HTMLElement | null;
   blockEntityID: string | null;
-  open: (href: string, anchor: HTMLElement, blockEntityID: string) => void;
+  pageID: string | null;
+  open: (
+    href: string,
+    anchor: HTMLElement,
+    blockEntityID: string,
+    pageID: string,
+  ) => void;
   close: () => void;
 };
 
@@ -25,17 +31,21 @@ export const useLinkPopoverStore = create<LinkPopoverState>((set) => ({
   href: null,
   anchorElement: null,
   blockEntityID: null,
-  open: (href, anchor, blockEntityID) =>
-    set({ href, anchorElement: anchor, blockEntityID }),
-  close: () => set({ href: null, anchorElement: null, blockEntityID: null }),
+  pageID: null,
+  open: (href, anchor, blockEntityID, pageID) =>
+    set({ href, anchorElement: anchor, blockEntityID, pageID }),
+  close: () =>
+    set({ href: null, anchorElement: null, blockEntityID: null, pageID: null }),
 }));
 
-export function LinkPopover() {
-  let { href, anchorElement, blockEntityID, close } = useLinkPopoverStore();
+export function LinkPopover(props: { pageID: string }) {
+  let { href, anchorElement, blockEntityID, pageID, close } =
+    useLinkPopoverStore();
   let { undoManager } = useReplicache();
   let [linkValue, setLinkValue] = useState("");
 
-  let isOpen = href !== null && anchorElement !== null;
+  let isOpen =
+    href !== null && anchorElement !== null && pageID === props.pageID;
   let isDirty = href !== null && linkValue !== href;
 
   useEffect(() => {

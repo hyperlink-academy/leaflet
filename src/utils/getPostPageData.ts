@@ -19,6 +19,7 @@ import {
   projectPublicationForClient,
 } from "./postPageProjection";
 import { resolveDocumentFilter } from "./resolveDocumentFilter";
+import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
 
 export const getPostPageData = cache(async function getPostPageData(
   did: string,
@@ -36,7 +37,7 @@ export const getPostPageData = cache(async function getPostPageData(
         uri,
         comments_on_documents(record),
         documents_in_publications(publications(uri, name, identity_did, record,
-          documents_in_publications(documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
+          documents_in_publications(members_only, documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
           publication_newsletter_settings(enabled),
           publication_membership_settings(enabled),
           publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, is_free))
@@ -101,6 +102,86 @@ export const getPostPageData = cache(async function getPostPageData(
     membersOnly = { gated: true, tiers: membershipTiers };
   }
 
+  type Neighbour = {
+    uri: string;
+    title: string;
+    membersOnly: boolean;
+    images?: string[];
+  };
+  let prevNext:
+    | {
+        prev?: Neighbour;
+        next?: Neighbour;
+        first?: { uri: string; title: string };
+        last?: { uri: string; title: string };
+        prevPreload?: string;
+        nextPreload?: string;
+      }
+    | undefined;
+
+  const currentPublishedAt = normalizedDocument.publishedAt;
+  const allDocs =
+    document.documents_in_publications[0]?.publications
+      ?.documents_in_publications;
+
+  if (currentPublishedAt && allDocs) {
+    const sortedDocs = allDocs
+      .flatMap((dip) =>
+        dip.documents
+          ? [{ ...dip.documents, membersOnly: dip.members_only }]
+          : [],
+      )
+      .filter((doc) => doc.publishedAt && doc.title)
+      .sort(
+        (a, b) =>
+          new Date(a.sort_date || 0).getTime() -
+          new Date(b.sort_date || 0).getTime(),
+      );
+
+    const currentIndex = sortedDocs.findIndex(
+      (doc) => doc.uri === document.uri,
+    );
+
+    if (currentIndex !== -1) {
+      const lastIndex = sortedDocs.length - 1;
+      const neighbour = (doc: (typeof sortedDocs)[number]): Neighbour => ({
+        uri: doc.uri || "",
+        title: doc.title || "",
+        membersOnly: doc.membersOnly,
+      });
+      prevNext = {
+        prev:
+          currentIndex > 0
+            ? neighbour(sortedDocs[currentIndex - 1])
+            : undefined,
+        next:
+          currentIndex < lastIndex
+            ? neighbour(sortedDocs[currentIndex + 1])
+            : undefined,
+        first:
+          currentIndex > 0
+            ? {
+                uri: sortedDocs[0].uri || "",
+                title: sortedDocs[0].title || "",
+              }
+            : undefined,
+        last:
+          currentIndex < lastIndex
+            ? {
+                uri: sortedDocs[lastIndex].uri || "",
+                title: sortedDocs[lastIndex].title || "",
+              }
+            : undefined,
+        prevPreload:
+          currentIndex > 1 ? sortedDocs[currentIndex - 2].uri || "" : undefined,
+        nextPreload:
+          currentIndex < lastIndex - 1
+            ? sortedDocs[currentIndex + 2].uri || ""
+            : undefined,
+      };
+    }
+  }
+
   // Fetch constellation backlinks for mentions
   const postUrl = getDocumentURL(
     normalizedDocument,
@@ -111,8 +192,17 @@ export const getPostPageData = cache(async function getPostPageData(
   const absolutePostUrl = postUrl.startsWith("/")
     ? `https://leaflet.pub${postUrl}`
     : postUrl;
-  const constellationBacklinks =
-    await getConstellationBacklinks(absolutePostUrl);
+
+  const warm =
+    prevNext && (normalizedPublication?.preferences?.showPrevNext ?? true)
+      ? [prevNext.next, prevNext.prev].filter((n): n is Neighbour => !!n)
+      : [];
+  const [constellationBacklinks, neighbourImages] = await Promise.all([
+    getConstellationBacklinks(absolutePostUrl),
+    getPostImagePreloads(warm),
+  ]);
+  for (const neighbour of warm)
+    neighbour.images = neighbourImages.get(neighbour.uri);
 
   // Deduplicate constellation backlinks (same post could appear in both links and embeds)
   const uniqueBacklinks = Array.from(
@@ -132,74 +222,6 @@ export const getPostPageData = cache(async function getPostPageData(
 
   let theme =
     resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
-
-  // Calculate prev/next documents from the fetched publication documents
-  let prevNext:
-    | {
-        prev?: { uri: string; title: string };
-        next?: { uri: string; title: string };
-        first?: { uri: string; title: string };
-        last?: { uri: string; title: string };
-      }
-    | undefined;
-
-  const currentPublishedAt = normalizedDocument.publishedAt;
-  const allDocs =
-    document.documents_in_publications[0]?.publications
-      ?.documents_in_publications;
-
-  if (currentPublishedAt && allDocs) {
-    // The publishedAt filter mirrors normalizeDocumentRecord's gating of
-    // unpublished pub.leaflet records without paying for the full data jsonb
-    // of every sibling post.
-    const sortedDocs = allDocs
-      .flatMap((dip) => (dip.documents ? [dip.documents] : []))
-      .filter((doc) => doc.publishedAt && doc.title)
-      .sort(
-        (a, b) =>
-          new Date(a.sort_date || 0).getTime() -
-          new Date(b.sort_date || 0).getTime(),
-      );
-
-    // Find current document index
-    const currentIndex = sortedDocs.findIndex(
-      (doc) => doc.uri === document.uri,
-    );
-
-    if (currentIndex !== -1) {
-      const lastIndex = sortedDocs.length - 1;
-      prevNext = {
-        prev:
-          currentIndex > 0
-            ? {
-                uri: sortedDocs[currentIndex - 1].uri || "",
-                title: sortedDocs[currentIndex - 1].title || "",
-              }
-            : undefined,
-        next:
-          currentIndex < lastIndex
-            ? {
-                uri: sortedDocs[currentIndex + 1].uri || "",
-                title: sortedDocs[currentIndex + 1].title || "",
-              }
-            : undefined,
-        first:
-          currentIndex > 0
-            ? {
-                uri: sortedDocs[0].uri || "",
-                title: sortedDocs[0].title || "",
-              }
-            : undefined,
-        last:
-          currentIndex < lastIndex
-            ? {
-                uri: sortedDocs[lastIndex].uri || "",
-                title: sortedDocs[lastIndex].title || "",
-              }
-            : undefined,
-      };
-    }
-  }
 
   // Build explicit publication context for consumers
   const publication = projectPublicationForClient(
