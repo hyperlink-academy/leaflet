@@ -1,30 +1,16 @@
 "use client";
 import {
-  PubLeafletBlocksMath,
-  PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
-  PubLeafletBlocksImageGallery,
-  PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksOrderedList,
-  PubLeafletBlocksWebsite,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletBlocksHorizontalRule,
-  PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksBlockquote,
-  PubLeafletBlocksBskyPost,
-  PubLeafletBlocksStandardSitePost,
-  PubLeafletBlocksStandardSitePublication,
-  PubLeafletBlocksHtml,
-  PubLeafletBlocksIframe,
-  PubLeafletBlocksPage,
-  PubLeafletBlocksPoll,
-  PubLeafletBlocksPostsList,
   PubLeafletBlocksButton,
-  PubLeafletBlocksSignup,
 } from "lexicons/api";
+import { matchBlock, type BlockHandlers } from "src/utils/blockDispatch";
 import { type PublicationPostsListPost } from "../PublicationPostsList";
 import { PaginatedPublicationPostsList } from "../PaginatedPublicationPostsList";
 import { ChapterShelf } from "../PublicationPostsChapterList";
@@ -266,9 +252,9 @@ export let Block = ({
     ${alignment}
     `;
 
-  switch (true) {
-    case PubLeafletBlocksPage.isMain(b.block): {
-      let id = b.block.id;
+  const handlers: BlockHandlers<React.ReactNode> = {
+    "pub.leaflet.blocks.page": (block) => {
+      let id = block.id;
       let page = pages.find((p) => p.id === id);
       if (!page) return;
 
@@ -287,9 +273,9 @@ export let Block = ({
           className={className}
         />
       );
-    }
-    case PubLeafletBlocksBskyPost.isMain(b.block): {
-      let uri = b.block.postRef.uri;
+    },
+    "pub.leaflet.blocks.bskyPost": (block) => {
+      let uri = block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
       if (!post) return <PostNotAvailable />;
       return (
@@ -297,12 +283,12 @@ export let Block = ({
           post={post}
           className={className}
           pageId={pageId}
-          clientHost={b.block.clientHost}
+          clientHost={block.clientHost}
         />
       );
-    }
-    case PubLeafletBlocksStandardSitePost.isMain(b.block): {
-      let uri = b.block.uri;
+    },
+    "pub.leaflet.blocks.standardSitePost": (block) => {
+      let uri = block.uri;
       let post = standardSitePostData.find((p) => p.uri === uri);
       if (!post) {
         return (
@@ -314,9 +300,9 @@ export let Block = ({
       // default to "medium" to match the draft (StandardSitePostBlock),
       // since the publish step omits size when it hasn't been explicitly set
       let size: "large" | "medium" | "small" =
-        b.block.size === "large"
+        block.size === "large"
           ? "large"
-          : b.block.size === "small"
+          : block.size === "small"
             ? "small"
             : "medium";
       return (
@@ -325,7 +311,7 @@ export let Block = ({
             <PublicationThemeWrapper
               postRecord={post.record}
               pubRecord={post.publication?.record ?? undefined}
-              enabled={b.block.showPublicationTheme !== false}
+              enabled={block.showPublicationTheme !== false}
             >
               <div className="bg-bg-page">
                 <StandardSitePostItemView
@@ -338,42 +324,42 @@ export let Block = ({
           </div>
         </div>
       );
-    }
-    case PubLeafletBlocksStandardSitePublication.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.standardSitePublication": (block) => {
       return (
         <div className={className} {...blockProps}>
           <PublishedStandardSitePublicationBlock
-            uri={b.block.uri}
-            showPublicationTheme={b.block.showPublicationTheme !== false}
+            uri={block.uri}
+            showPublicationTheme={block.showPublicationTheme !== false}
           />
         </div>
       );
-    }
-    case PubLeafletBlocksIframe.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.iframe": (block) => {
       return (
         <PublishedIframeBlock
-          url={b.block.url}
-          html={b.block.html}
-          height={b.block.height}
-          aspectRatio={b.block.aspectRatio}
+          url={block.url}
+          html={block.html}
+          height={block.height}
+          aspectRatio={block.aspectRatio}
           pageId={pageId}
         />
       );
-    }
-    case PubLeafletBlocksHtml.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.html": (block) => {
       return (
         <PublishedIframeBlock
-          html={b.block.html}
-          height={b.block.height}
-          aspectRatio={b.block.aspectRatio}
+          html={block.html}
+          height={block.height}
+          aspectRatio={block.aspectRatio}
           pageId={pageId}
         />
       );
-    }
-    case PubLeafletBlocksHorizontalRule.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.horizontalRule": () => {
       return <hr className="my-2 w-full border-border-light" />;
-    }
-    case PubLeafletBlocksMembersOnlyDelimiter.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.membersOnlyDelimiter": () => {
       // Full-access viewers read straight through; for everyone else the
       // delimiter is the last served block and renders the paywall.
       if (!document?.membersOnly?.gated) return null;
@@ -382,8 +368,8 @@ export let Block = ({
           <MembersOnlyPaywall />
         </div>
       );
-    }
-    case PubLeafletBlocksSignup.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.signup": () => {
       if (!document?.publication?.uri) return null;
       return (
         <div className={className} {...blockProps}>
@@ -398,11 +384,11 @@ export let Block = ({
           />
         </div>
       );
-    }
-    case PubLeafletBlocksPostsList.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.postsList": (block) => {
       if (!postsListData) return null;
-      const view = resolvePostsListView(b.block.view);
-      const key = postsListFilterKey(b.block.filterByTags);
+      const view = resolvePostsListView(block.view);
+      const key = postsListFilterKey(block.filterByTags);
       const seed = postsListData.initialByFilter[key];
       if (!seed) return null;
       if (view === "chapter") {
@@ -413,7 +399,7 @@ export let Block = ({
               publicationRecord={postsListData.publicationRecord}
               cards={seed.chapters ?? []}
               latestPost={seed.latestPost}
-              highlightLatest={!!b.block.highlightFirstPost}
+              highlightLatest={!!block.highlightFirstPost}
             />
           </div>
         );
@@ -428,39 +414,39 @@ export let Block = ({
             initialPosts={seed.initialPosts}
             loadBatch={getPostsByUris}
             view={view}
-            highlightFirstPost={!!b.block.highlightFirstPost}
-            limit={b.block.limit}
+            highlightFirstPost={!!block.highlightFirstPost}
+            limit={block.limit}
           />
         </div>
       );
-    }
-    case PubLeafletBlocksPoll.isMain(b.block): {
-      let { cid, uri } = b.block.pollRef;
+    },
+    "pub.leaflet.blocks.poll": (block) => {
+      let { cid, uri } = block.pollRef;
       const pollVoteData = pollData.find((p) => p.uri === uri && p.cid === cid);
       if (!pollVoteData) return null;
       return (
         <PublishedPollBlock
-          block={b.block}
+          block={block}
           className={className}
           pollData={pollVoteData}
         />
       );
-    }
-    case PubLeafletBlocksButton.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.button": (block) => {
       return (
         <div className={`flex ${alignment} ${className}`} {...blockProps}>
-          <a href={b.block.url} target="_blank" rel="noopener noreferrer">
+          <a href={block.url} target="_blank" rel="noopener noreferrer">
             <ButtonPrimary role="link" type="submit">
-              {b.block.text}
+              {block.text}
             </ButtonPrimary>
           </a>
         </div>
       );
-    }
-    case PubLeafletBlocksUnorderedList.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.unorderedList": (block) => {
       return (
         <ul className="-ml-px sm:ml-[9px] pb-2">
-          {b.block.children.map((child, i) => (
+          {block.children.map((child, i) => (
             <ListItem
               pollData={pollData}
               pages={pages}
@@ -477,9 +463,8 @@ export let Block = ({
           ))}
         </ul>
       );
-    }
-    case PubLeafletBlocksOrderedList.isMain(b.block): {
-      let block = b.block;
+    },
+    "pub.leaflet.blocks.orderedList": (block) => {
       return (
         <ol className="-ml-px sm:ml-[9px] pb-2" start={block.startIndex || 1}>
           {block.children.map((child, i) => (
@@ -500,20 +485,20 @@ export let Block = ({
           ))}
         </ol>
       );
-    }
-    case PubLeafletBlocksMath.isMain(b.block): {
-      return <StaticMathBlock block={b.block} />;
-    }
-    case PubLeafletBlocksCode.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.math": (block) => {
+      return <StaticMathBlock block={block} />;
+    },
+    "pub.leaflet.blocks.code": (block) => {
       let pageKey = pageId && pageId !== pages[0]?.id ? pageId : "";
       let html = prerenderedCodeBlocks?.get(`${pageKey}:${index.join(".")}`);
-      return <PubCodeBlock block={b.block} prerenderedCode={html} />;
-    }
-    case PubLeafletBlocksWebsite.isMain(b.block): {
+      return <PubCodeBlock block={block} prerenderedCode={html} />;
+    },
+    "pub.leaflet.blocks.website": (block) => {
       return (
         <a
           {...blockProps}
-          href={b.block.src}
+          href={block.src}
           target="_blank"
           className={`
           ${className}
@@ -533,40 +518,40 @@ export let Block = ({
                   wordBreak: "break-all",
                 }}
               >
-                {b.block.title}
+                {block.title}
               </div>
 
               <div
                 className={`linkBlockDescription text-sm bg-transparent border-none outline-hidden resize-none align-top  grow line-clamp-2`}
               >
-                {b.block.description}
+                {block.description}
               </div>
               <div
                 style={{ wordBreak: "break-word" }} // better than tailwind break-all!
                 className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast text-tertiary`}
               >
-                {b.block.src}
+                {block.src}
               </div>
             </div>
           </div>
-          {b.block.previewImage && (
+          {block.previewImage && (
             <div
               className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
-                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did, undefined, { width: 360 })})`,
+                backgroundImage: `url(${blobRefToSrc(block.previewImage?.ref, did, undefined, { width: 360 })})`,
                 backgroundPosition: "center",
               }}
             />
           )}
         </a>
       );
-    }
-    case PubLeafletBlocksImage.isMain(b.block): {
-      let src = blobRefToSrc(b.block.image.ref, did, undefined, {
+    },
+    "pub.leaflet.blocks.image": (block) => {
+      let src = blobRefToSrc(block.image.ref, did, undefined, {
         width: POST_BODY_IMAGE_WIDTH,
       });
-      let cid = blobRefCid(b.block.image.ref);
-      let isFullBleed = b.block.fullBleed;
+      let cid = blobRefCid(block.image.ref);
+      let isFullBleed = block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
         PubLeafletBlocksImage.isMain(previousBlock.block) &&
@@ -591,10 +576,10 @@ export let Block = ({
         >
           <PublishedImageBlock
             src={src}
-            alt={b.block.alt}
-            height={b.block.aspectRatio?.height}
-            width={b.block.aspectRatio?.width}
-            displayWidth={b.block.width}
+            alt={block.alt}
+            height={block.aspectRatio?.height}
+            width={block.aspectRatio?.width}
+            displayWidth={block.width}
             isFullBleed={isFullBleed}
             className={className}
             onOpenLightbox={
@@ -603,15 +588,15 @@ export let Block = ({
           />
         </div>
       );
-    }
-    case PubLeafletBlocksImageGallery.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.imageGallery": (block) => {
       return (
         <div className={className} {...blockProps}>
-          <PublishedImageGallery block={b.block} did={did} />
+          <PublishedImageGallery block={block} did={did} />
         </div>
       );
-    }
-    case PubLeafletBlocksBlockquote.isMain(b.block): {
+    },
+    "pub.leaflet.blocks.blockquote": (block) => {
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
@@ -619,8 +604,8 @@ export let Block = ({
           {...blockProps}
         >
           <TextBlock
-            facets={b.block.facets}
-            plaintext={b.block.plaintext}
+            facets={block.facets}
+            plaintext={block.plaintext}
             index={index}
             preview={preview}
             pageId={pageId}
@@ -628,11 +613,11 @@ export let Block = ({
           />
         </blockquote>
       );
-    }
-    case PubLeafletBlocksText.isMain(b.block):
+    },
+    "pub.leaflet.blocks.text": (block) => {
       return (
         <p
-          className={`textBlock ${className} ${b.block.textSize === "small" ? "text-secondary" : "text-primary"}`}
+          className={`textBlock ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"}`}
           {...blockProps}
           // em-based so small/large scale with the theme's custom base font
           // size, matching the editor's .textSizeSmall/.textSizeLarge classes.
@@ -641,16 +626,16 @@ export let Block = ({
           style={{
             ...blockProps.style,
             fontSize:
-              b.block.textSize === "small"
+              block.textSize === "small"
                 ? "0.875em"
-                : b.block.textSize === "large"
+                : block.textSize === "large"
                   ? "1.125em"
                   : blockTextSize.p,
           }}
         >
           <TextBlock
-            facets={b.block.facets}
-            plaintext={b.block.plaintext}
+            facets={block.facets}
+            plaintext={block.plaintext}
             index={index}
             preview={preview}
             pageId={pageId}
@@ -658,15 +643,15 @@ export let Block = ({
           />
         </p>
       );
-
-    case PubLeafletBlocksHeader.isMain(b.block): {
-      let slug = slugify(b.block.plaintext);
+    },
+    "pub.leaflet.blocks.header": (block) => {
+      let slug = slugify(block.plaintext);
       let headingProps = {
         ...blockProps,
         id: preview ? undefined : slug || blockProps.id,
       };
       let textBlockProps = {
-        ...b.block,
+        ...block,
         index,
         preview,
         pageId,
@@ -681,7 +666,7 @@ export let Block = ({
             {children}
           </a>
         );
-      if (b.block.level === 1)
+      if (block.level === 1)
         return (
           <h1
             className={`h1Block ${className} ${HeadingStyle[1]}`}
@@ -691,7 +676,7 @@ export let Block = ({
             {link(<TextBlock {...textBlockProps} />)}
           </h1>
         );
-      if (b.block.level === 2)
+      if (block.level === 2)
         return (
           <h2
             className={`h2Block ${className} ${HeadingStyle[2]}`}
@@ -701,7 +686,7 @@ export let Block = ({
             {link(<TextBlock {...textBlockProps} />)}
           </h2>
         );
-      if (b.block.level === 3)
+      if (block.level === 3)
         return (
           <h3
             className={`h3Block ${className} ${HeadingStyle[3]}`}
@@ -720,10 +705,10 @@ export let Block = ({
           {link(<TextBlock {...textBlockProps} />)}
         </h6>
       );
-    }
-    default:
-      return null;
-  }
+    },
+  };
+
+  return matchBlock(b.block, handlers, () => null);
 };
 
 function PublishedStandardSitePublicationBlock(props: {
