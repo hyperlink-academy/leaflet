@@ -5,8 +5,7 @@ import { BlockProps, BlockLayout } from "./Block";
 import { useIsBlockSelected } from "src/useUIState";
 import Image from "next/image";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { addImage, localImages, retryImageUpload } from "src/utils/addImage";
-import { useImageUploadState } from "src/hooks/useImageUploadState";
+import { addImage, localImages } from "src/utils/addImage";
 import { ImageErrorState, useImageLoadStatus } from "components/ImageLoadState";
 import { addBlockBelow } from "src/utils/addBlockBelow";
 import { elementId } from "src/utils/elementId";
@@ -14,6 +13,7 @@ import { useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { ImageAltButton } from "./ImageAltButton";
 import { ImageOptions } from "./ImageOptions";
+import { ImageUploadIndicator } from "./ImageUploadIndicator";
 import {
   ImageGalleryLightbox,
   EditorLightboxSlide,
@@ -37,17 +37,14 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 
   let imageSrc = image?.data.src;
   let localSrc = imageSrc ? localImages.get(imageSrc) : undefined;
-  let uploadState = useImageUploadState(imageSrc);
   let [reloads, setReloads] = useState(0);
   let {
     status: loadStatus,
     imgProps,
     reset: resetLoadStatus,
   } = useImageLoadStatus(localSrc ?? imageSrc);
-  let imageStatus = uploadState === "failed" ? "error" : loadStatus;
 
   let retryImage = () => {
-    if (imageSrc && retryImageUpload(imageSrc)) return;
     resetLoadStatus();
     setReloads((r) => r + 1);
   };
@@ -206,7 +203,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       }
     >
       <div
-        className={`relative ${isFullBleed ? "w-full" : "w-fit"} ${imageStatus === "error" ? "min-w-40 min-h-24" : ""}`}
+        className={`relative ${isFullBleed ? "w-full" : "w-fit"} ${loadStatus === "error" ? "min-w-40 min-h-24" : ""}`}
       >
         <button
           type="button"
@@ -244,18 +241,15 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             />
           )}
         </button>
-        {imageStatus === "error" && (
+        {loadStatus === "error" && (
           <ImageErrorState
-            message={
-              uploadState === "failed"
-                ? "Upload didn't finish,"
-                : "Something went wrong,"
-            }
-            actionLabel={uploadState === "failed" ? "try again?" : "reload?"}
+            message="Something went wrong,"
+            actionLabel="reload?"
             onAction={retryImage}
             className={isFullBleed ? "rounded-none!" : "rounded-lg!"}
           />
         )}
+        {!props.preview && <ImageUploadIndicator src={image.data.src} />}
       </div>
       {!props.preview && (
         <ImageGalleryLightbox

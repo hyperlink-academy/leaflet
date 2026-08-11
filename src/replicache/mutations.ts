@@ -6,6 +6,7 @@ import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 import { localImages } from "src/utils/addImage";
+import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
 
 export type MutationContext = {
   permission_token_id: string;
@@ -522,6 +523,7 @@ const removeBlock: Mutation<
           URL.revokeObjectURL(localSrc);
           localImages.delete(image.data.src);
         }
+        clearImageUploadStatus(image.data.src);
       }
     });
     await ctx.deleteEntity(block.blockEntity);
@@ -881,6 +883,7 @@ const removeGalleryImage: Mutation<{
         URL.revokeObjectURL(localSrc);
         localImages.delete(image.data.src);
       }
+      clearImageUploadStatus(image.data.src);
     }
   });
   await ctx.deleteEntity(args.imageEntity);

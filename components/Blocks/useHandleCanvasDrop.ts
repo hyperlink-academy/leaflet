@@ -3,7 +3,8 @@ import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { supabaseBrowserClient } from "supabase/browserClient";
-import { localImages } from "src/utils/addImage";
+import { localImages, uploadImageAndFinalize } from "src/utils/addImage";
+import { setImageUploadStatus } from "src/utils/imageUploadStatus";
 import { rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 
 // Helper function to load image dimensions and thumbhash
@@ -148,6 +149,7 @@ export const useHandleCanvasDrop = (entityID: string) => {
         // Create all blocks with image facts
         for (const block of imageBlocks) {
           localImages.set(block.url, URL.createObjectURL(block.file));
+          setImageUploadStatus(block.url, { state: "uploading" });
 
           await rep.mutate.addCanvasBlock({
             newEntityID: block.entity,
@@ -174,27 +176,20 @@ export const useHandleCanvasDrop = (entityID: string) => {
 
         // Upload all files to storage in parallel
         await Promise.all(
-          imageBlocks.map(async (block) => {
-            await client.storage
-              .from("minilink-user-assets")
-              .upload(block.fileID, block.file, {
-                // storage-js expects seconds, not a header value.
-                cacheControl: "31536000",
-              });
-
-            // Update fact with final version
-            await rep.mutate.assertFact({
-              entity: block.entity,
+          imageBlocks.map((block) =>
+            uploadImageAndFinalize({
+              rep,
+              fileID: block.fileID,
+              url: block.url,
+              blob: block.file,
+              file: block.file,
+              entityID: block.entity,
               attribute: "block/image",
-              data: {
-                fallback: block.dimensions.thumbhash,
-                type: "image",
-                src: block.url,
-                height: block.dimensions.height,
-                width: block.dimensions.width,
-              },
-            });
-          }),
+              thumbhash: block.dimensions.thumbhash,
+              width: block.dimensions.width,
+              height: block.dimensions.height,
+            }),
+          ),
         );
       });
 
