@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useReplicache, useEntity } from "src/replicache";
+import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { supabaseBrowserClient } from "supabase/browserClient";
@@ -14,21 +14,8 @@ const processImage = async (
   height: number;
   thumbhash: string;
 }> => {
-  // Load image to get dimensions
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-
-  const dimensions = await new Promise<{ width: number; height: number }>(
-    (resolve, reject) => {
-      img.onload = () => {
-        resolve({ width: img.width, height: img.height });
-      };
-      img.onerror = reject;
-      img.src = url;
-    },
-  );
-
-  // Generate thumbhash
+  // Generate thumbhash (createImageBitmap also gives us the natural dimensions,
+  // so there's no need to decode the file a second time via an HTMLImageElement).
   const arrayBuffer = await file.arrayBuffer();
   const blob = new Blob([arrayBuffer], { type: file.type });
   const imageBitmap = await createImageBitmap(blob);
@@ -60,11 +47,9 @@ const processImage = async (
     rgbaToThumbHash(imageData.width, imageData.height, imageData.data),
   );
 
-  URL.revokeObjectURL(url);
-
   return {
-    width: dimensions.width,
-    height: dimensions.height,
+    width: imageBitmap.width,
+    height: imageBitmap.height,
     thumbhash,
   };
 };
@@ -72,7 +57,6 @@ const processImage = async (
 export const useHandleCanvasDrop = (entityID: string) => {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let blocks = useEntity(entityID, "canvas/block");
 
   return useCallback(
     async (e: React.DragEvent) => {
@@ -216,6 +200,6 @@ export const useHandleCanvasDrop = (entityID: string) => {
 
       return true;
     },
-    [rep, entityID, entity_set.set, blocks, undoManager],
+    [rep, entityID, entity_set.set, undoManager],
   );
 };

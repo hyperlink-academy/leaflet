@@ -100,8 +100,7 @@ export const useHandlePaste = (
           const pasteParent = propsRef.current.listData
             ? propsRef.current.listData.parent
             : propsRef.current.parent;
-          const useBulkPath =
-            propsRef.current.pageType === "doc" && !isLegacyPasteEnabled();
+          const useBulkPath = propsRef.current.pageType === "doc";
           resolveCopiedFootnoteRefs(children, (footnoteEntityID) =>
             rep.query(async (tx) => {
               let [text] = await scanIndex(tx).eav(
@@ -234,17 +233,6 @@ export const useHandlePaste = (
     [rep, entity_set, entityID, propsRef, undoManager],
   );
 };
-
-function isLegacyPasteEnabled(): boolean {
-  try {
-    return (
-      typeof window !== "undefined" &&
-      window.localStorage?.getItem("legacyPaste") === "1"
-    );
-  } catch {
-    return false;
-  }
-}
 
 async function bulkPaste({
   children,
@@ -475,9 +463,8 @@ async function bulkPaste({
   }
 }
 
-// Legacy per-block paste path. Kept for canvas paste (parentType === "canvas")
-// and as a localStorage("legacyPaste") = "1" kill-switch escape hatch for doc
-// paste. Delete in a follow-up release.
+// Legacy per-block paste path. Kept for canvas paste (parentType === "canvas").
+// Delete in a follow-up release.
 const createBlockFromHTMLLegacy = (
   child: Element,
   {
@@ -783,9 +770,6 @@ const createBlockFromHTMLLegacy = (
           data.type === "reference"
         ) {
           data.value = oldEntityIDToNewID[data.value];
-        }
-        if (data.type === "image") {
-          //idk get it from the clipboard maybe?
         }
         newFacts.push({ entity, attribute: fact.attribute, data });
       }

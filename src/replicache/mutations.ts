@@ -514,7 +514,7 @@ const removeBlock: Mutation<
           .remove([paths[paths.length - 1]]);
       }
     });
-    await ctx.runOnClient(async ({ tx }) => {
+    await ctx.runOnClient(async () => {
       if (image) {
         // Release the local preview's object URL.
         let localSrc = localImages.get(image.data.src);
@@ -874,7 +874,7 @@ const removeGalleryImage: Mutation<{
         .remove([paths[paths.length - 1]]);
     }
   });
-  await ctx.runOnClient(async ({ tx }) => {
+  await ctx.runOnClient(async () => {
     if (image) {
       let localSrc = localImages.get(image.data.src);
       if (localSrc) {
