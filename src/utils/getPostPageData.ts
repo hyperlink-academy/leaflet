@@ -214,17 +214,19 @@ export const getPostPageData = cache(async function getPostPageData(
 
   // Router prefetching covers the neighbours' markup but not their images, so
   // their art rides along in this page's own payload.
-  if (prevNext && (normalizedPublication?.preferences?.showPrevNext ?? true)) {
+  if (
+    prevNext &&
+    gatePub &&
+    (normalizedPublication?.preferences?.showPrevNext ?? true)
+  ) {
     const warm = [prevNext.next, prevNext.prev].filter(
       (n): n is Neighbour => !!n,
     );
     const images = await getPostImagePreloads(
       warm.map((n) => n.uri),
-      document.documents_in_publications[0]?.publications?.uri,
+      gatePub.uri,
     );
-    warm.forEach((neighbour, index) => {
-      neighbour.images = images[index];
-    });
+    for (const neighbour of warm) neighbour.images = images.get(neighbour.uri);
   }
 
   // Build explicit publication context for consumers
