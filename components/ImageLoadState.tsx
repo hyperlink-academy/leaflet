@@ -31,18 +31,20 @@ export function useImageLoadStatus(src: string | undefined) {
   };
 }
 
+// `compact` drops the message for small surfaces like gallery thumbnails.
 export function ImageErrorState(props: {
   message: string;
   actionLabel: string;
   onAction: () => void;
+  compact?: boolean;
   className?: string;
 }) {
   return (
     <div
-      className={`imageErrorState absolute inset-0 light-container flex items-center justify-center text-tertiary text-sm ${props.className ?? ""}`}
+      className={`imageErrorState absolute inset-0 z-10 light-container flex items-center justify-center text-tertiary text-sm ${props.className ?? ""}`}
     >
       <div className="flex flex-wrap gap-1 items-baseline justify-center text-center px-3">
-        <span>{props.message}</span>
+        {!props.compact && <span>{props.message}</span>}
         <button
           type="button"
           className="text-accent-contrast font-bold hover:underline"
