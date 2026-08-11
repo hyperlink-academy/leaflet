@@ -14,8 +14,6 @@ export function PublishedImageBlock(props: {
   className?: string;
   onOpenLightbox?: () => void;
 }) {
-  // Reloading has to change the URL: re-rendering the same src would be handed
-  // the failed response straight back out of the browser's cache.
   let [reloads, setReloads] = useState(0);
   let src =
     reloads === 0
@@ -30,8 +28,6 @@ export function PublishedImageBlock(props: {
 
   return (
     <div
-      // A broken image collapses to the size of its alt text, so the frame
-      // holds a floor of its own for that render.
       className={`relative ${props.isFullBleed ? "w-full" : "w-fit"} h-fit ${status === "error" ? "min-w-40 min-h-24" : ""}`}
     >
       <button

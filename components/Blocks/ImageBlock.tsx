@@ -37,11 +37,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 
   let imageSrc = image?.data.src;
   let localSrc = imageSrc ? localImages.get(imageSrc) : undefined;
-  // An upload that broke leaves a preview only this tab can see, so it counts
-  // as the image not being there — same frame, same offer to try again.
   let uploadState = useImageUploadState(imageSrc);
-  // Bumped by a retry that has no upload left to redo, to get past whatever the
-  // browser cached for the failed request.
   let [reloads, setReloads] = useState(0);
   let {
     status: loadStatus,
@@ -210,8 +206,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       }
     >
       <div
-        // A broken image collapses to the size of its alt text, so the frame
-        // holds a floor of its own for that render.
         className={`relative ${isFullBleed ? "w-full" : "w-fit"} ${imageStatus === "error" ? "min-w-40 min-h-24" : ""}`}
       >
         <button
@@ -221,9 +215,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             if (canOpenLightbox) openLightbox();
           }}
         >
-          {/* The key is the reload: the image loader folds the whole src into
-              a storage path, so there's no cache-busting parameter to add — a
-              fresh element re-requesting is what there is. */}
           {localSrc || image.data.local ? (
             <img
               {...imgProps}

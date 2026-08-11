@@ -11,10 +11,7 @@ import { encodeBitmapToWebP } from "./imageEncoding";
 // before the upload completes.
 export const localImages = new Map<string, string>();
 
-// Where each in-flight upload has got to, keyed by the public src the block's
-// fact already points at. A failed upload leaves the block rendering a preview
-// that exists nowhere but this tab, so the block needs to be able to say so and
-// offer to send it again.
+// In-flight upload state, keyed by the public src the block's fact points at.
 export type ImageUploadState = "uploading" | "failed";
 const uploadStates = new Map<string, ImageUploadState>();
 const uploadRetries = new Map<string, () => void>();
@@ -40,9 +37,8 @@ export function getImageUploadState(src: string) {
   return uploadStates.get(src);
 }
 
-// Send a failed upload again. False means there's nothing left to send: the
-// file only ever lived in the tab that picked it, so a reload since then leaves
-// the block with no way back other than re-adding the image.
+// False means there's nothing left to send: the file only ever lived in the
+// tab that picked it.
 export function retryImageUpload(src: string): boolean {
   const retry = uploadRetries.get(src);
   if (!retry) return false;
@@ -136,8 +132,8 @@ export async function prepareImage(
       },
     };
 
-    // Encoded once and kept, so a retry re-sends the same bytes rather than
-    // re-encoding from a bitmap that's already been closed.
+    // Kept so a retry re-sends the same bytes rather than re-encoding from a
+    // closed bitmap.
     let uploadBlob: Blob | null = null;
     const attemptUpload = async () => {
       if (!uploadBlob) {
@@ -155,8 +151,7 @@ export async function prepareImage(
           // storage-js expects seconds here, not a header value — anything
           // else is stored as a malformed Cache-Control and defeats the CDN.
           cacheControl: "31536000",
-          // A retry after an upload that got far enough to create the object
-          // would otherwise come back 409.
+          // A retry after a partly-landed upload would otherwise 409.
           upsert: true,
         });
       if (error) throw error;
@@ -180,13 +175,11 @@ export async function prepareImage(
         await attemptUpload();
         setUploadState(url, null);
       } catch (e) {
-        // Deliberately not rethrown: the block surfaces this and offers to send
-        // it again, and one failure in a 30-image paste shouldn't take the rest
-        // of the paste down with it.
+        // Not rethrown — the block surfaces it, and one bad image shouldn't
+        // take the rest of a paste down with it.
         console.error("[addImage] upload failed", e);
-        // The original slot is released the moment this pipeline finishes, so a
-        // retry takes one of its own — otherwise retrying a failed 30-image
-        // paste would put every one of them back on the wire at once.
+        // A retry takes its own concurrency slot; the original is released
+        // when this pipeline finishes.
         uploadRetries.set(url, () => {
           void (async () => {
             await acquireSlot();

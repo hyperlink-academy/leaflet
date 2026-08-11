@@ -6,9 +6,8 @@ import {
   type ImageUploadState,
 } from "src/utils/addImage";
 
-// Whether the image at `src` is still on its way to storage, or gave up trying.
-// Undefined covers both "already uploaded" and "uploaded in some earlier
-// session" — the store only knows about uploads this tab started.
+// The store only knows about uploads this tab started, so undefined also
+// means "already uploaded".
 export function useImageUploadState(
   src: string | undefined,
 ): ImageUploadState | undefined {

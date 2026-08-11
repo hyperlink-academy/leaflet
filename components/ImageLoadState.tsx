@@ -4,21 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export type ImageLoadStatus = "loading" | "loaded" | "error";
 
-/**
- * Tracks whether an `<img>` has arrived, so a broken one can offer a way out.
- */
 export function useImageLoadStatus(src: string | undefined) {
   let [status, setStatus] = useState<ImageLoadStatus>("loading");
-  // Bumped by `reset`, so a retry re-reads the element rather than keeping the
-  // verdict from the attempt before it.
   let [attempt, setAttempt] = useState(0);
   let ref = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     if (!src) return;
     let img = ref.current;
-    // `complete` with no intrinsic width is how a failure that happened before
-    // this ran reads — there is no error event left to catch.
+    // A cached image can settle before the handlers attach
     if (img?.complete) setStatus(img.naturalWidth > 0 ? "loaded" : "error");
     else setStatus("loading");
   }, [src, attempt]);
@@ -30,7 +24,6 @@ export function useImageLoadStatus(src: string | undefined) {
       onLoad: useCallback(() => setStatus("loaded"), []),
       onError: useCallback(() => setStatus("error"), []),
     },
-    // For a retry that's about to re-request the image.
     reset: useCallback(() => {
       setStatus("loading");
       setAttempt((a) => a + 1);
@@ -38,13 +31,6 @@ export function useImageLoadStatus(src: string | undefined) {
   };
 }
 
-/**
- * The frame an image that isn't coming leaves behind, with a way to ask for it
- * again.
- *
- * Absolutely positioned, so it needs a `relative` parent sized by the image
- * itself (its width/height attributes reserve the box before it loads).
- */
 export function ImageErrorState(props: {
   message: string;
   actionLabel: string;
