@@ -68,6 +68,12 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  // On a members-only delimiter: id of the lowest membership tier whose
+  // members can read past it. Absent = any paid membership.
+  "block/members-only-tier": {
+    type: "string",
+    cardinality: "one",
+  },
   "block/is-locked": {
     type: "boolean",
     cardinality: "one",

@@ -3,6 +3,7 @@ import { useDocumentOptional } from "contexts/DocumentContext";
 import { PaidSubscribeButton } from "components/Subscribe/PaidSubscribeButton";
 import { PubIcon } from "components/ActionBar/Publications";
 import { formatPrice } from "components/Memberships/TierGrid";
+import { tierUnlocksGatedPost } from "src/membership";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
@@ -37,9 +38,12 @@ export const MembersOnlyPaywall = () => {
     );
 
   let tiers = document?.membersOnly?.tiers ?? [];
-  let paidTiers = tiers.filter((t) => !t.is_free);
-  let startingPriceCents = paidTiers.length
-    ? Math.min(...paidTiers.map((t) => t.monthly_price_cents))
+  let requiredTier = document?.membersOnly?.requiredTier ?? null;
+  let unlockingTiers = tiers.filter((t) =>
+    tierUnlocksGatedPost(t, requiredTier),
+  );
+  let startingPriceCents = unlockingTiers.length
+    ? Math.min(...unlockingTiers.map((t) => t.monthly_price_cents))
     : null;
 
   return (
@@ -58,7 +62,11 @@ export const MembersOnlyPaywall = () => {
           Become a member to continue reading
         </h3>
         {startingPriceCents !== null && (
-          <p>Memberships start at {formatPrice(startingPriceCents)}/month</p>
+          <p>
+            {requiredTier
+              ? `Available on the ${requiredTier.name} tier and up, from ${formatPrice(startingPriceCents)}/month`
+              : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
+          </p>
         )}
       </div>
       <PaidSubscribeButton
@@ -67,6 +75,7 @@ export const MembersOnlyPaywall = () => {
         newsletterMode={pub.newsletterMode}
         tiers={tiers}
         unlocksPost
+        unlocksPostTier={requiredTier}
       />
     </div>
   );

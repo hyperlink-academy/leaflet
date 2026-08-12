@@ -34,6 +34,13 @@ export type PublicationMetadata = {
     }[];
     publication_newsletter_settings?: { enabled: boolean } | null;
     publication_membership_settings?: { enabled: boolean } | null;
+    publication_membership_tiers?: {
+      id: string;
+      name: string;
+      monthly_price_cents: number;
+      active: boolean;
+      is_free: boolean;
+    }[];
   } | null;
   documents: {
     /** Raw data - use normalizeDocumentRecord() to get typed data */

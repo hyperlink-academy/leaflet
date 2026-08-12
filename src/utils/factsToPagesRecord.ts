@@ -291,9 +291,11 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     },
-    "members-only-delimiter": async () => {
+    "members-only-delimiter": async (b) => {
+      const [tier] = scan.eav(b.entityID, "block/members-only-tier");
       const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
         $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
+        ...(tier && { tier: tier.data.value }),
       };
       return block;
     },
@@ -348,7 +350,9 @@ export async function processBlocksToPages(opts: {
         },
         alt: altText ? altText.data.value : undefined,
         fullBleed: fullBleed?.data.value || undefined,
-        ...(maxWidth !== undefined && { width: Math.floor(maxWidth.data.value) }),
+        ...(maxWidth !== undefined && {
+          width: Math.floor(maxWidth.data.value),
+        }),
       };
       return block;
     },
