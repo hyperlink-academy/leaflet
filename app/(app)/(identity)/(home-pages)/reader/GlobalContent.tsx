@@ -5,6 +5,7 @@ import { EmptyState } from "components/EmptyState";
 import { PostListing } from "components/PostListing";
 import type { Post } from "actions/reader/getReaderFeed";
 import { useSelectedPostListing } from "src/useSelectedPostState";
+import { useReaderPostViewer } from "src/useReaderPostViewer";
 
 export const GlobalContent = (props: {
   promise: Promise<{ posts: Post[] }>;
@@ -29,6 +30,7 @@ export const GlobalContent = (props: {
   const posts = data?.posts ?? [];
 
   let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
+  let openPostViewer = useReaderPostViewer((s) => s.openViewer);
 
   if (posts.length === 0) {
     return (
@@ -46,6 +48,10 @@ export const GlobalContent = (props: {
           {...p}
           key={p.documents.uri}
           selected={selectedPost?.document_uri === p.documents.uri}
+          onOpenInViewer={() => openPostViewer(posts, p.documents.uri)}
+          onOpenDiscussionsInViewer={() =>
+            openPostViewer(posts, p.documents.uri, { discussion: true })
+          }
         />
       ))}
     </>

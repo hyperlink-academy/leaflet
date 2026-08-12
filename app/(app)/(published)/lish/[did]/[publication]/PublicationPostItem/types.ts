@@ -2,6 +2,9 @@ import React from "react";
 
 export type CommonProps = {
   href?: string;
+  // Intercept the post link's click (e.g. the reader feed opening the post in
+  // its viewer instead of navigating). The href stays for modified clicks.
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
   title?: string;
   description?: string;
   author?: React.ReactNode;

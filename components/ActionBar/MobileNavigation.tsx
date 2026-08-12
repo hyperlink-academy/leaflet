@@ -9,6 +9,7 @@ import { useSidebarStore } from "./Sidebar";
 import { SearchTiny } from "components/Icons/SearchTiny";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { useIdentityData } from "components/IdentityProvider";
+import { useReaderPostViewer } from "src/useReaderPostViewer";
 
 export const MobileNavigation = (props: {
   controls?: React.ReactNode;
@@ -68,6 +69,11 @@ export const MobileNavigation = (props: {
 
   let headerBGColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
   let atBottom = distFromBottom < 20;
+
+  // The reader's post viewer brings its own bottom toolbar; this footer sits
+  // at a higher z than the viewer's overlay, so it hides itself instead.
+  let postViewerOpen = useReaderPostViewer((s) => s.index !== null);
+  if (postViewerOpen) return null;
 
   return (
     <MediaContents
