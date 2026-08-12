@@ -9,6 +9,7 @@ import {
 } from "src/utils/normalizeRecords";
 import { truncatePagesAtMembersDelimiter } from "src/membership";
 import { idResolver } from "src/identity";
+import { supabaseServerClient } from "supabase/serverClient";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 import type { Post } from "actions/reader/getReaderFeed";
 
@@ -97,8 +98,23 @@ async function getAccurateMentionsCount(
   const absoluteUrl = postUrl.startsWith("/")
     ? `https://leaflet.pub${postUrl}`
     : postUrl;
-  const constellationBacklinks = await getConstellationBacklinks(absoluteUrl);
-  const uniqueBacklinkCount = new Set(constellationBacklinks.map((b) => b.uri))
-    .size;
-  return dbMentionsCount + uniqueBacklinkCount;
+  const constellationBacklinks = await getConstellationBacklinks(
+    absoluteUrl,
+    docUri,
+  );
+  if (constellationBacklinks.length === 0) return dbMentionsCount;
+
+  // Quote posts published through our share flow are both a DB mention and an
+  // associatedRefs backlink, so a plain count sum double-counts them. Count the
+  // union of uris instead; the feed query only carries the mention count, so
+  // fetch the uris here (only for the posts that actually have backlinks).
+  const { data: dbMentions } = await supabaseServerClient
+    .from("document_mentions_in_bsky")
+    .select("uri")
+    .eq("document", docUri);
+  const uris = new Set([
+    ...(dbMentions ?? []).map((m) => m.uri),
+    ...constellationBacklinks.map((b) => b.uri),
+  ]);
+  return uris.size;
 }

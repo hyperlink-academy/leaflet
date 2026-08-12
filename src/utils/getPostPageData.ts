@@ -198,7 +198,7 @@ export const getPostPageData = cache(async function getPostPageData(
       ? [prevNext.next, prevNext.prev].filter((n): n is Neighbour => !!n)
       : [];
   const [constellationBacklinks, neighbourImages] = await Promise.all([
-    getConstellationBacklinks(absolutePostUrl),
+    getConstellationBacklinks(absolutePostUrl, document.uri),
     getPostImagePreloads(warm),
   ]);
   for (const neighbour of warm)
@@ -209,7 +209,12 @@ export const getPostPageData = cache(async function getPostPageData(
     new Map(constellationBacklinks.map((b) => [b.uri, b])).values(),
   );
 
-  // Combine database mentions (already deduplicated by DB constraint) and constellation backlinks
+  // Combine database mentions (already deduplicated by DB constraint) and
+  // constellation backlinks. Quote posts published through our share flow are
+  // both a DB mention and an associatedRefs backlink, so filter those out.
+  const dbMentionUris = new Set(
+    document.document_mentions_in_bsky.map((m) => m.uri),
+  );
   const quotesAndMentions: { uri: string; link?: string }[] = [
     // Database mentions (quotes with link to quoted content)
     ...document.document_mentions_in_bsky.map((m) => ({
@@ -217,7 +222,7 @@ export const getPostPageData = cache(async function getPostPageData(
       link: m.link,
     })),
     // Constellation backlinks (direct post mentions without quote context)
-    ...uniqueBacklinks,
+    ...uniqueBacklinks.filter((b) => !dbMentionUris.has(b.uri)),
   ];
 
   let theme =
@@ -270,31 +275,51 @@ const headers = {
   "user-agent": "leaflet.pub",
 };
 
-// Fetch constellation backlinks without hydrating with Bluesky post data
+// Fetch constellation backlinks without hydrating with Bluesky post data.
+// Posts that share via the standard.site external embed (like our own publish
+// flow) carry the document's at-uri in the embed's associatedRefs, while their
+// visible url is often utm-tagged and misses the plain-url subject — so when we
+// know the document uri we query those paths too.
 export async function getConstellationBacklinks(
   url: string,
+  documentUri?: string,
 ): Promise<{ uri: string }[]> {
   try {
-    let baseURL = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${encodeURIComponent(url)}`;
-    let externalEmbeds = new URL(
-      `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:embed.external.uri")}`,
-    );
-    let linkFacets = new URL(
-      `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri")}`,
-    );
+    let queries = [
+      { subject: url, source: "app.bsky.feed.post:embed.external.uri" },
+      {
+        subject: url,
+        source:
+          "app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri",
+      },
+      ...(documentUri
+        ? [
+            {
+              subject: documentUri,
+              source:
+                "app.bsky.feed.post:embed.external.associatedRefs[com.atproto.repo.strongRef].uri",
+            },
+            {
+              subject: documentUri,
+              source:
+                "app.bsky.feed.post:embed.media.external.associatedRefs[com.atproto.repo.strongRef].uri",
+            },
+          ]
+        : []),
+    ];
 
-    let [links, embeds] = (await Promise.all([
-      fetch(linkFacets, { headers, next: { revalidate: 3600 } }).then((req) =>
-        req.json(),
+    let responses = (await Promise.all(
+      queries.map(({ subject, source }) =>
+        fetch(
+          `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${encodeURIComponent(subject)}&source=${encodeURIComponent(source)}`,
+          { headers, next: { revalidate: 3600 } },
+        ).then((req) => req.json()),
       ),
-      fetch(externalEmbeds, { headers, next: { revalidate: 3600 } }).then(
-        (req) => req.json(),
-      ),
-    ])) as ConstellationResponse[];
+    )) as ConstellationResponse[];
 
-    let uris = [...links.records, ...embeds.records].map((i) =>
-      AtUri.make(i.did, i.collection, i.rkey).toString(),
-    );
+    let uris = responses
+      .flatMap((r) => r.records)
+      .map((i) => AtUri.make(i.did, i.collection, i.rkey).toString());
 
     return uris.map((uri) => ({ uri }));
   } catch (e) {
