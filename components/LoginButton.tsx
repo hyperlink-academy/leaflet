@@ -198,6 +198,7 @@ export const LoginContent = (props: {
               autoFocus={props.open !== false}
               action={<GoToArrow className="text-accent-contrast" />}
               loading={loading}
+              validateHandle
               onSubmit={(handle) => {
                 setLoading(true);
                 window.location.href = buildOauthLoginUrl({
@@ -334,6 +335,7 @@ const LinkAtmosphereContent = (props: {
         autoFocus={props.open !== false}
         action={<GoToArrow className="text-accent-contrast" />}
         loading={loading}
+        validateHandle
         onSubmit={(handle) => {
           setLoading(true);
           window.location.href = buildOauthLoginUrl({
