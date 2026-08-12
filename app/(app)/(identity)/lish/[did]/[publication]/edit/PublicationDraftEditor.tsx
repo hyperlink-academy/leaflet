@@ -21,6 +21,7 @@ import {
 } from "components/ThemeManager/ThemeProvider";
 import { usePublicationNavEntries } from "./usePublicationNavEntries";
 import { PublicationEditMobileFooter } from "./PublicationEditMobileFooter";
+import { FindReplace } from "components/FindReplace";
 
 export function PublicationDraftEditor(props: {
   token: PermissionToken;
@@ -51,6 +52,7 @@ export function PublicationDraftEditor(props: {
       >
         <SelectionManager />
         <LeafletThemeProvider entityID={props.leaflet_id} local>
+          <FindReplace />
           <div className="flex flex-col h-full w-full bg-accent-1">
             <PublicationEditHeader
               did={props.did}
@@ -135,9 +137,9 @@ function PublicationDraftEditorContent(props: {
   let wordmarkWidth = useEntity(props.leaflet_id, "theme/wordmark-width");
   let wordmark = wordmarkImage
     ? {
-        src: wordmarkImage.data.src,
-        width: wordmarkWidth?.data.value ?? undefined,
-      }
+      src: wordmarkImage.data.src,
+      width: wordmarkWidth?.data.value ?? undefined,
+    }
     : null;
   // Read from the live theme context so the layout responds to page-background
   // toggles in the theme editor.
@@ -148,9 +150,8 @@ function PublicationDraftEditorContent(props: {
 
   return (
     <div
-      className={`pubPageContent  h-full ${
-        showPageBackground ? "mx-auto py-6" : "pt-2"
-      }`}
+      className={`pubPageContent  h-full ${showPageBackground ? "mx-auto py-6" : "pt-2"
+        }`}
     >
       <Page
         key={currentPage}

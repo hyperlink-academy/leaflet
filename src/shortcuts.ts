@@ -13,6 +13,7 @@ export type Shortcut = {
 };
 export function addShortcut(shortcuts: Shortcut | Shortcut[]) {
   let listener = (e: KeyboardEvent) => {
+    if (e.defaultPrevented) return;
     for (let shortcut of [shortcuts].flat()) {
       if (e.shiftKey !== !!shortcut.shift) continue;
       if (e.altKey !== !!shortcut.altKey) continue;

@@ -14,6 +14,7 @@ import { LeafletLayout } from "components/LeafletLayout";
 import { WelcomeModal } from "./WelcomeModal";
 import { AddToHomeEffect } from "./AddToHomeEffect";
 import { EditorCommentSelectionPopover } from "components/EditorComments/EditorCommentSelectionPopover";
+import { FindReplace } from "components/FindReplace";
 
 export function Leaflet(props: {
   token: PermissionToken;
@@ -42,6 +43,7 @@ export function Leaflet(props: {
             <WelcomeModal />
             <AddToHomeEffect />
             <SelectionManager />
+            <FindReplace />
             {/* we need the padding bottom here because if we don't have it the mobile footer will cut off...
             the dropshadow on the page... the padding is compensated by a negative top margin in mobile footer  */}
             <LeafletLayout className="!pb-[64px] sm:!pb-6">

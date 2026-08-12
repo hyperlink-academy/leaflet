@@ -17,31 +17,21 @@
   --color-transparent: transparent;
   --color-current: currentColor;
   --color-primary: rgb(var(--primary));
-  --color-secondary: color-mix(
-    in oklab,
-    rgb(var(--primary)),
-    rgb(var(--bg-page)) 25%
-  );
-  --color-tertiary: color-mix(
-    in oklab,
-    rgb(var(--primary)),
-    rgb(var(--bg-page)) 55%
-  );
-  --color-border: color-mix(
-    in oklab,
-    rgb(var(--primary)),
-    rgb(var(--bg-page)) 75%
-  );
-  --color-border-light: color-mix(
-    in oklab,
-    rgb(var(--primary)),
-    rgb(var(--bg-page)) 85%
-  );
-  --color-bg-light: color-mix(
-    in oklab,
-    rgb(var(--primary)),
-    rgb(var(--bg-page)) 95%
-  );
+  --color-secondary: color-mix(in oklab,
+      rgb(var(--primary)),
+      rgb(var(--bg-page)) 25%);
+  --color-tertiary: color-mix(in oklab,
+      rgb(var(--primary)),
+      rgb(var(--bg-page)) 55%);
+  --color-border: color-mix(in oklab,
+      rgb(var(--primary)),
+      rgb(var(--bg-page)) 75%);
+  --color-border-light: color-mix(in oklab,
+      rgb(var(--primary)),
+      rgb(var(--bg-page)) 85%);
+  --color-bg-light: color-mix(in oklab,
+      rgb(var(--primary)),
+      rgb(var(--bg-page)) 95%);
   --color-white: #ffffff;
   --color-accent-1: rgb(var(--accent-1));
   --color-accent-2: rgb(var(--accent-2));
@@ -87,6 +77,7 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+
   *,
   ::after,
   ::before,
@@ -110,31 +101,23 @@
     --accent-1-is-contrast: "true";
     --accent-contrast-similar-to-text: 0;
     --link-underline: none;
-    --accent-light: color-mix(
-      in oklab,
-      rgb(var(--accent-contrast)),
-      rgb(var(--bg-page)) 85%
-    );
+    --accent-light: color-mix(in oklab,
+        rgb(var(--accent-contrast)),
+        rgb(var(--bg-page)) 85%);
 
     /* highlight-1's default is a calculated tint of the accent, matching
        BaseThemeProvider's fallback when no explicit highlight-1 is set. */
-    --highlight-1: color-mix(
-      in oklab,
-      rgb(var(--accent-contrast)),
-      rgb(var(--bg-page)) 75%
-    );
+    --highlight-1: color-mix(in oklab,
+        rgb(var(--accent-contrast)),
+        rgb(var(--bg-page)) 75%);
     --highlight-2: 237, 210, 128;
     --highlight-3: 255, 205, 195;
 
     --list-marker-width: 38px;
-    --page-width-unitless: min(
-      var(--page-width-setting),
-      calc(var(--leaflet-width-unitless) - 12)
-    );
-    --page-width-units: min(
-      calc(var(--page-width-unitless) * 1px),
-      calc(100vw - 12px)
-    );
+    --page-width-unitless: min(var(--page-width-setting),
+        calc(var(--leaflet-width-unitless) - 12));
+    --page-width-units: min(calc(var(--page-width-unitless) * 1px),
+        calc(100vw - 12px));
 
     --gripperSVG: url("/gripperPattern.svg");
     --gripperSVGVertical: url("/gripperPatternVertical.svg");
@@ -148,14 +131,10 @@
   @media (min-width: 640px) {
     :root {
       /*picks between max width and screen width with 64px of padding*/
-      --page-width-unitless: min(
-        var(--page-width-setting),
-        calc(var(--leaflet-width-unitless) - 128)
-      );
-      --page-width-units: min(
-        calc(var(--page-width-unitless) * 1px),
-        calc(100vw - 128px)
-      );
+      --page-width-unitless: min(var(--page-width-setting),
+          calc(var(--leaflet-width-unitless) - 128));
+      --page-width-units: min(calc(var(--page-width-unitless) * 1px),
+          calc(100vw - 128px));
     }
   }
 
@@ -240,22 +219,23 @@
   .pageScrollWrapper h2,
   .pageScrollWrapper h3,
   .pageScrollWrapper h4 {
-    font-family: var(
-      --theme-heading-font,
-      var(--theme-font, var(--font-quattro))
-    );
+    font-family: var(--theme-heading-font,
+        var(--theme-font, var(--font-quattro)));
   }
 
   /* Scale heading sizes relative to the custom base font size */
   .pageScrollWrapper h1 {
     font-size: 2em;
   }
+
   .pageScrollWrapper h2 {
     font-size: 1.625em;
   }
+
   .pageScrollWrapper h3 {
     font-size: 1.125em;
   }
+
   .pageScrollWrapper h4 {
     font-size: 1em;
   }
@@ -266,6 +246,7 @@
   .pageScrollWrapper .textSizeSmall {
     font-size: 0.875em;
   }
+
   .pageScrollWrapper .textSizeLarge {
     font-size: 1.125em;
   }
@@ -286,10 +267,8 @@
   .portalStyles h2,
   .portalStyles h3,
   .portalStyles h4 {
-    font-family: var(
-      --theme-heading-font,
-      var(--theme-font, var(--font-quattro))
-    );
+    font-family: var(--theme-heading-font,
+        var(--theme-font, var(--font-quattro)));
   }
 
   /* Apply custom fonts to publication homepage */
@@ -301,11 +280,10 @@
   .pubWrapper h2,
   .pubWrapper h3,
   .pubWrapper h4 {
-    font-family: var(
-      --theme-heading-font,
-      var(--theme-font, var(--font-quattro))
-    );
+    font-family: var(--theme-heading-font,
+        var(--theme-font, var(--font-quattro)));
   }
+
   /*END FONT STYLING*/
 
   /* START GLOBAL STYLING */
@@ -356,6 +334,7 @@ blockquote {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   scrollbar-width: none;
 }
@@ -365,6 +344,7 @@ input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 input[type="number"] {
   -moz-appearance: textfield;
 }
@@ -373,11 +353,9 @@ input[type="number"] {
   mask-image: url(/timeInputIcon.svg);
   mask-size: 100% 100%;
   background-image: url(/gripperPattern1.svg);
-  background-color: color-mix(
-    in oklab,
-    rgb(var(--primary)),
-    rgb(var(--bg-page)) 55%
-  );
+  background-color: color-mix(in oklab,
+      rgb(var(--primary)),
+      rgb(var(--bg-page)) 55%);
 }
 
 select {
@@ -420,7 +398,8 @@ pre.shiki {
 .highlight:has(+ .highlight) {
   @apply rounded-r-none;
 }
-.highlight + .highlight {
+
+.highlight+.highlight {
   @apply rounded-l-none;
 }
 
@@ -444,6 +423,17 @@ pre.shiki {
 
 .block-focused:focus-within .selection-highlight {
   background-color: transparent;
+}
+
+.search-match {
+  background-color: color-mix(in oklab, rgb(var(--accent-1)), transparent 55%);
+  @apply rounded-[2px] py-[1.5px];
+  @apply box-decoration-clone;
+}
+
+.search-match-current {
+  background-color: rgb(var(--accent-1));
+  @apply text-accent-2;
 }
 
 .ProseMirror .atMention.ProseMirror-selectednode,
@@ -596,11 +586,9 @@ img.ProseMirror-separator {
 }
 
 .accent-container {
-  background: color-mix(
-    in oklab,
-    rgb(var(--accent-contrast)),
-    rgb(var(--bg-page)) 85%
-  );
+  background: color-mix(in oklab,
+      rgb(var(--accent-contrast)),
+      rgb(var(--bg-page)) 85%);
   @apply rounded-md;
 }
 
@@ -631,6 +619,7 @@ img.ProseMirror-separator {
 .pwa-padding {
   padding-top: calc(env(safe-area-inset-top) - 8px) !important;
 }
+
 .pwa-padding-bottom {
   padding-bottom: var(--safe-padding-bottom) !important;
 }
@@ -647,6 +636,7 @@ img.ProseMirror-separator {
   0% {
     transform: translateX(0);
   }
+
   100% {
     transform: translateX(-50%);
   }
@@ -663,14 +653,17 @@ img.ProseMirror-separator {
     transform: scale(0);
     opacity: 0;
   }
+
   50% {
     transform: scale(0.1);
     opacity: 0;
   }
+
   80% {
     transform: scale(1.2);
     opacity: 1;
   }
+
   100% {
     transform: scale(1);
   }
@@ -686,18 +679,21 @@ img.ProseMirror-separator {
 .footnote-scope {
   counter-reset: footnote;
 }
+
 /* A page link renders the linked page's own text (its first lines and the
    thumbnail), footnote refs included. Those belong to the other page, so give
    them a counter of their own rather than letting them advance this page's. */
 .pageLinkBlockWrapper {
   counter-reset: footnote;
 }
+
 .footnote-ref {
   counter-increment: footnote;
   cursor: pointer;
   color: rgb(var(--color-tertiary));
   opacity: 0.7;
 }
+
 .footnote-ref::after {
   content: counter(footnote);
   vertical-align: super;
@@ -706,23 +702,27 @@ img.ProseMirror-separator {
   font-size: 75%;
   line-height: 0rem;
 }
+
 /* -ml-0.5 -mr-1 -my-1 p-1 */
-.footnote-ref ~ br.ProseMirror-trailingBreak {
+.footnote-ref~br.ProseMirror-trailingBreak {
   display: inline;
   width: 4px;
 }
-.footnote-ref ~ img.ProseMirror-separator {
+
+.footnote-ref~img.ProseMirror-separator {
   display: none !important;
 }
 
 .footnote-side-enter {
   animation: footnote-fade-in 200ms ease-out;
 }
+
 @keyframes footnote-fade-in {
   from {
     opacity: 0;
     transform: translateX(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -733,26 +733,32 @@ img.ProseMirror-separator {
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(0);
   }
 }
+
 @keyframes mobile-sidebar-slide-out {
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-100%);
   }
 }
+
 .mobile-sidebar-content[data-state="open"] {
   animation: mobile-sidebar-slide-in 80ms ease-out;
 }
+
 /* Set while the dialog is remounting already-open across a route change —
    only a real closed→open transition should slide in. */
 .mobile-sidebar-content.mobile-sidebar-skip-open-anim[data-state="open"] {
   animation: none;
 }
+
 .mobile-sidebar-content[data-state="closed"] {
   animation: mobile-sidebar-slide-out 80ms ease-in;
 }
@@ -771,15 +777,15 @@ img.ProseMirror-separator {
   max-height: calc(4.5em + 8px);
   opacity: calc(var(--bg-page-alpha) * 0.7);
 }
-.footnote-side-item:not(:hover):not(:focus-within):not(.footnote-side-focused)
-  .footnote-item
-  > div:last-of-type {
+
+.footnote-side-item:not(:hover):not(:focus-within):not(.footnote-side-focused) .footnote-item>div:last-of-type {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .footnote-side-item:hover,
 .footnote-side-item:focus-within,
 .footnote-side-item.footnote-side-focused {
@@ -794,9 +800,9 @@ img.ProseMirror-separator {
 .comment-anchor {
   cursor: pointer;
   background: color-mix(in oklab, rgb(var(--accent-contrast)), transparent 88%);
-  border-bottom: 2px solid
-    color-mix(in oklab, rgb(var(--accent-contrast)), transparent 60%);
+  border-bottom: 2px solid color-mix(in oklab, rgb(var(--accent-contrast)), transparent 60%);
 }
+
 .comment-draft-anchor {
   background: color-mix(in oklab, rgb(var(--accent-contrast)), transparent 75%);
 }
@@ -822,30 +828,21 @@ img.ProseMirror-separator {
   padding: 6px 8px;
 }
 
-.editor-comment-side-item:not(:hover):not(:focus-within):not(
-    .editor-comment-side-focused
-  ) {
+.editor-comment-side-item:not(:hover):not(:focus-within):not(.editor-comment-side-focused) {
   max-height: calc(6em + 16px);
   opacity: calc(var(--bg-page-alpha) * 0.85);
 }
-.editor-comment-side-item:not(:hover):not(:focus-within):not(
-    .editor-comment-side-focused
-  )
-  .editor-comment-message-content {
+
+.editor-comment-side-item:not(:hover):not(:focus-within):not(.editor-comment-side-focused) .editor-comment-message-content {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.editor-comment-side-item:not(:hover):not(:focus-within):not(
-    .editor-comment-side-focused
-  )
-  .editor-comment-thread-replies,
-.editor-comment-side-item:not(:hover):not(:focus-within):not(
-    .editor-comment-side-focused
-  )
-  .editor-comment-thread-actions {
+
+.editor-comment-side-item:not(:hover):not(:focus-within):not(.editor-comment-side-focused) .editor-comment-thread-replies,
+.editor-comment-side-item:not(:hover):not(:focus-within):not(.editor-comment-side-focused) .editor-comment-thread-actions {
   display: none;
 }
 
@@ -857,16 +854,17 @@ img.ProseMirror-separator {
   z-index: 2;
   opacity: 1;
 }
+
 .editor-comment-side-item:hover .editor-comment-thread,
 .editor-comment-side-item:focus-within .editor-comment-thread,
 .editor-comment-side-item.editor-comment-side-focused .editor-comment-thread {
   max-height: calc(100dvh - 7rem);
   overflow-y: auto;
 }
+
 .editor-comment-side-item:hover .editor-comment-thread-reply-count,
 .editor-comment-side-item:focus-within .editor-comment-thread-reply-count,
-.editor-comment-side-item.editor-comment-side-focused
-  .editor-comment-thread-reply-count {
+.editor-comment-side-item.editor-comment-side-focused .editor-comment-thread-reply-count {
   display: none;
 }
 
@@ -891,6 +889,7 @@ img.ProseMirror-separator {
   overflow: visible;
   pointer-events: none;
 }
+
 .ProseMirror-yjs-cursor {
   --caret-w: 2.3px;
   /* how much the caret stretches upward when open, lifting the pill clear
@@ -909,6 +908,7 @@ img.ProseMirror-separator {
   width: 0;
   pointer-events: none;
 }
+
 .yjs-cursor-goo,
 .yjs-cursor-overlay {
   position: absolute;
@@ -918,9 +918,11 @@ img.ProseMirror-separator {
   height: calc(100% + var(--goo-pad-top));
   pointer-events: none;
 }
+
 .yjs-cursor-goo {
   filter: url(#yjs-cursor-goo);
 }
+
 .yjs-cursor-line,
 .yjs-cursor-stub {
   position: absolute;
@@ -934,6 +936,7 @@ img.ProseMirror-separator {
     top 154ms ease,
     height 154ms ease;
 }
+
 .yjs-cursor-line {
   left: 0;
   top: 0;
@@ -941,11 +944,13 @@ img.ProseMirror-separator {
   transform-origin: 50% 100%;
   pointer-events: auto;
 }
+
 .yjs-cursor-stub {
   left: var(--goo-pad-x);
   top: var(--goo-pad-top);
   height: 12px;
 }
+
 .yjs-cursor-pill {
   position: absolute;
   left: var(--goo-pad-x);
@@ -966,6 +971,7 @@ img.ProseMirror-separator {
     height 154ms ease,
     top 154ms ease;
 }
+
 /* edge-adjacent cursors (class set by RemoteCursor at reveal time): a
    centered pill would cross the block's clip edge, so pin the end cap
    nearest the edge on the caret and grow toward the room instead. At dot
@@ -974,16 +980,19 @@ img.ProseMirror-separator {
   transform: translate(calc(-1 * var(--cursor-dot-r)), -50%);
   transform-origin: var(--cursor-dot-r) 50%;
 }
+
 .yjs-cursor-expand-left .yjs-cursor-pill {
   transform: translate(calc(-100% + var(--cursor-dot-r)), -50%);
   transform-origin: calc(100% - var(--cursor-dot-r)) 50%;
 }
+
 /* the crisp, full-width name pill — the visible pill body (the goo layer
    renders only the junction blob) */
 .yjs-cursor-label {
   background-color: var(--cursor-color, orange);
   pointer-events: auto;
 }
+
 /* invisible enlarged hover target around the 7px dot */
 .yjs-cursor-hit {
   position: absolute;
@@ -996,6 +1005,7 @@ img.ProseMirror-separator {
   outline: none;
   pointer-events: auto;
 }
+
 .yjs-cursor-text {
   padding: 1px 10px 0;
   font-family: inherit;
@@ -1007,9 +1017,11 @@ img.ProseMirror-separator {
   color: var(--cursor-text-color, white);
   user-select: none;
 }
+
 .yjs-cursor-sizer {
   color: transparent;
 }
+
 .yjs-cursor-label .yjs-cursor-text {
   opacity: 0;
   transition: opacity 154ms ease;
@@ -1022,22 +1034,23 @@ img.ProseMirror-separator {
   transform: translateX(-50%) scaleY(0.78);
   transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
 }
+
 .yjs-cursor-contract .yjs-cursor-stub {
   transform: translateX(-50%) translateY(var(--cursor-contract-shift, 0.3em));
   transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
 }
+
 .yjs-cursor-contract .yjs-cursor-pill {
-  transform: translate(-50%, -50%)
-    translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
+  transform: translate(-50%, -50%) translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
   transition: transform 112ms cubic-bezier(0.4, 0, 0.6, 1);
 }
+
 .yjs-cursor-expand-right.yjs-cursor-contract .yjs-cursor-pill {
-  transform: translate(calc(-1 * var(--cursor-dot-r)), -50%)
-    translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
+  transform: translate(calc(-1 * var(--cursor-dot-r)), -50%) translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
 }
+
 .yjs-cursor-expand-left.yjs-cursor-contract .yjs-cursor-pill {
-  transform: translate(calc(-100% + var(--cursor-dot-r)), -50%)
-    translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
+  transform: translate(calc(-100% + var(--cursor-dot-r)), -50%) translateY(var(--cursor-contract-shift, 0.3em)) scale(0.7);
 }
 
 /* open: transforms spring back to identity while the caret thickens and
@@ -1050,51 +1063,48 @@ img.ProseMirror-separator {
 .yjs-cursor-open .yjs-cursor-goo .yjs-cursor-pill {
   max-width: 26px;
 }
+
 .yjs-cursor-open .yjs-cursor-line,
 .yjs-cursor-open .yjs-cursor-stub {
   width: 3.45px;
 }
+
 .yjs-cursor-open .yjs-cursor-line {
   top: calc(-1 * var(--cursor-lift));
   height: calc(100% + var(--cursor-lift));
   transition:
-    transform var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    width var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    top var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    height var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
+    transform var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    width var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    height var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
+
 .yjs-cursor-open .yjs-cursor-stub {
   top: calc(var(--goo-pad-top) - var(--cursor-lift));
   transition:
-    transform var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    width var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    top var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
+    transform var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    width var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
+
 .yjs-cursor-open .yjs-cursor-pill {
   top: calc(var(--goo-pad-top) - var(--cursor-lift));
   max-width: 240px;
   height: 20px;
   transition:
-    transform var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    top var(--yjs-spring-dur, 400ms)
-      var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    transform var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    top var(--yjs-spring-dur, 400ms) var(--yjs-spring-ease, cubic-bezier(0.34, 1.56, 0.64, 1)),
     max-width 210ms cubic-bezier(0.25, 0.8, 0.35, 1),
     height 210ms cubic-bezier(0.25, 0.8, 0.35, 1);
 }
+
 .yjs-cursor-open .yjs-cursor-label .yjs-cursor-text {
   opacity: 1;
   transition: opacity 182ms ease 84ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .ProseMirror-yjs-cursor,
   .ProseMirror-yjs-cursor * {
     transition: none !important;
