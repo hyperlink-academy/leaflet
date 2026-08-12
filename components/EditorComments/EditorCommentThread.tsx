@@ -134,7 +134,7 @@ export function EditorCommentThread(props: {
           ) : (
             <div className="opaque-container p-1 w-full">
               <EditorCommentComposer
-                placeholder="Reply..."
+                placeholder="Reply…"
                 submitLabel="Reply"
                 autoFocus
                 onSubmit={submitReply}

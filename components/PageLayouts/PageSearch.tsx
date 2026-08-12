@@ -263,7 +263,7 @@ const SearchInput = (props: {
         type="text"
         id="pubName"
         size={1}
-        placeholder="search..."
+        placeholder="search…"
         value={props.searchValue}
         onChange={(e) => {
           props.setSearchValue(e.currentTarget.value);

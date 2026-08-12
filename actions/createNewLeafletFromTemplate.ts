@@ -1,143 +1,38 @@
 "use server";
 
-import { createServerClient } from "@supabase/ssr";
-import { drizzle } from "drizzle-orm/node-postgres";
-import type { Fact } from "src/replicache";
-import type { Attribute } from "src/replicache/attributes";
-import { Database } from "supabase/database.types";
-import { v7 } from "uuid";
-
-import {
-  entities,
-  permission_tokens,
-  permission_token_rights,
-  entity_sets,
-  facts,
-} from "drizzle/schema";
 import { sql } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { pool } from "supabase/pool";
+import { redirect } from "next/navigation";
 
-let supabase = createServerClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  { cookies: {} },
-);
+import { copyLeafletContents } from "src/utils/copyLeafletContents";
+import { supabaseServerClient } from "supabase/serverClient";
 
 export async function createNewLeafletFromTemplate(
   template_id: string,
   redirectUser?: boolean,
 ) {
   let auth_token = (await cookies()).get("auth_token")?.value;
-  let res = await supabase
+  let { data: template } = await supabaseServerClient
     .from("permission_tokens")
-    .select("*, permission_token_rights(*)")
+    .select("root_entity")
     .eq("id", template_id)
     .single();
-  let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data) return { error: "Leaflet not found" } as const;
-  let { data } = await supabase.rpc("get_facts", {
-    root: rootEntity,
-  });
-  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
+  if (!template?.root_entity) return { error: "Leaflet not found" } as const;
 
-  let oldEntityIDToNewID = {} as { [k: string]: string };
-  let oldEntities = initialFacts.reduce((acc, f) => {
-    if (!acc.includes(f.entity)) acc.push(f.entity);
-    return acc;
-  }, [] as string[]);
-  let newEntities = [] as string[];
-
-  for (let oldEntity of oldEntities) {
-    let newEntity = v7();
-    oldEntityIDToNewID[oldEntity] = newEntity;
-    newEntities.push(newEntity);
-  }
-
-  let newFacts = await Promise.all(
-    initialFacts.map(async (fact) => {
-      let entity = oldEntityIDToNewID[fact.entity];
-      let data = fact.data;
-      if (
-        data.type === "ordered-reference" ||
-        data.type == "spatial-reference" ||
-        data.type === "reference"
-      ) {
-        data.value = oldEntityIDToNewID[data.value];
-      }
-      if (data.type === "image") {
-        let url = data.src.split("?");
-        let paths = url[0].split("/");
-        let newID = v7();
-        await supabase.storage
-          .from("minilink-user-assets")
-          .copy(paths[paths.length - 1], newID);
-        let newPath = [...paths];
-        newPath[newPath.length - 1] = newID;
-        let newURL = newPath.join("/");
-        if (url[1]) newURL += `?${url[1]}`;
-        data.src = newURL;
-      }
-      return { entity, attribute: fact.attribute, data };
-    }),
-  );
-
-  const client = await pool.connect();
-  const db = drizzle(client);
-
-  let { permissionToken } = await db.transaction(async (tx) => {
-    // Create a new entity set
-    let [entity_set] = await tx.insert(entity_sets).values({}).returning();
-    await tx
-      .insert(entities)
-      .values(newEntities.map((e) => ({ id: e, set: entity_set.id })));
-    await tx.insert(facts).values(
-      newFacts.map((f) => ({
-        id: v7(),
-        entity: f.entity,
-        attribute: f.attribute,
-        data: sql`${f.data}`,
-      })),
-    );
-
-    let [permissionToken] = await tx
-      .insert(permission_tokens)
-      .values({ root_entity: oldEntityIDToNewID[rootEntity] })
-      .returning();
-
-    //and give it all the permission on that entity set
-    let [rights] = await tx
-      .insert(permission_token_rights)
-      .values({
-        token: permissionToken.id,
-        entity_set: entity_set.id,
-        read: true,
-        write: true,
-        create_token: true,
-        change_entity_set: true,
-      })
-      .returning();
-
-    if (auth_token) {
-      await tx.execute(sql`
-            WITH auth_token AS (
-              SELECT identities.id as identity_id
-              FROM email_auth_tokens
-              LEFT JOIN identities ON email_auth_tokens.identity = identities.id
-              WHERE email_auth_tokens.id = ${auth_token}
-              AND email_auth_tokens.confirmed = true
-              AND identities.id IS NOT NULL
-            )
-            INSERT INTO permission_token_on_homepage (token, identity)
-            SELECT ${permissionToken.id}, identity_id
-            FROM auth_token
-          `);
-    }
-    return { permissionToken, rights, entity_set };
+  let { permTokenId } = await copyLeafletContents({
+    rootEntity: template.root_entity,
+    tailCte: auth_token
+      ? ({ permTokenId }) => sql`, homepage_insert AS (
+          INSERT INTO permission_token_on_homepage (token, identity)
+          SELECT ${permTokenId}, identities.id
+          FROM email_auth_tokens
+          JOIN identities ON email_auth_tokens.identity = identities.id
+          WHERE email_auth_tokens.id = ${auth_token}
+            AND email_auth_tokens.confirmed = true
+        )`
+      : undefined,
   });
 
-  client.release();
-  if (redirectUser) redirect(`/${permissionToken.id}`);
-  return { id: permissionToken.id, error: null } as const;
+  if (redirectUser) redirect(`/${permTokenId}`);
+  return { id: permTokenId, error: null } as const;
 }
