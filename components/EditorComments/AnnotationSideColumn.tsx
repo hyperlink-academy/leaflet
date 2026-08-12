@@ -153,7 +153,7 @@ export function EditorCommentDraftComposer(props: { autoFocus?: boolean }) {
   return (
     <EditorCommentComposer
       autoFocus={props.autoFocus ?? true}
-      placeholder="Add a comment..."
+      placeholder="Add a comment…"
       submitLabel="Submit"
       onSubmit={async (ydoc: Y.Doc) => {
         if (!rep.rep) return;

@@ -559,7 +559,11 @@ const DidResult = (props: {
           nameContent
         )
       }
-      subtext={props.displayName && <span className="truncate italic">{`@${props.handle}`}</span>}
+      subtext={
+        props.displayName && (
+          <span className="truncate italic">{`@${props.handle}`}</span>
+        )
+      }
       onClick={props.onClick}
       onMouseDown={props.onMouseDown}
       selected={props.selected}
@@ -628,7 +632,11 @@ const ServiceEntry = (props: {
           <ScopeButton onClick={props.onClick}>Search</ScopeButton>
         </>
       }
-      subtext={props.description && <span className="truncate italic">{props.description}</span>}
+      subtext={
+        props.description && (
+          <span className="truncate italic">{props.description}</span>
+        )
+      }
       onClick={props.onClick}
       onMouseDown={props.onMouseDown}
       selected={props.selected}
@@ -669,7 +677,11 @@ const ServiceSearchResult = (props: {
       result={
         hasActions ? (
           <>
-            <div className={`grow min-w-0 ${hasSubtext ? "line-clamp-2 whitespace-normal" : "truncate w-full"}`}>{props.name}</div>
+            <div
+              className={`grow min-w-0 ${hasSubtext ? "line-clamp-2 whitespace-normal" : "truncate w-full"}`}
+            >
+              {props.name}
+            </div>
             {props.subscope && props.onSubscopeClick && (
               <ScopeButton onClick={props.onSubscopeClick}>
                 {props.subscope.label}
@@ -680,7 +692,11 @@ const ServiceSearchResult = (props: {
             )}
           </>
         ) : (
-          <div className={`min-w-0 ${hasSubtext ? "line-clamp-2 whitespace-normal" : "truncate w-full"}`}>{props.name}</div>
+          <div
+            className={`min-w-0 ${hasSubtext ? "line-clamp-2 whitespace-normal" : "truncate w-full"}`}
+          >
+            {props.name}
+          </div>
         )
       }
       subtext={
@@ -688,16 +704,22 @@ const ServiceSearchResult = (props: {
           <div className="flex flex-col gap-0.5">
             {hasLabels && (
               <div className="flex flex-wrap gap-1 items-center text-tertiary text-xs leading-normal">
-                {props.labels!.flatMap(
-                  (label, i) =>
-                    label.text
-                      ? [
-                          ...(i > 0
-                            ? [<span key={`sep-${i}`} className="text-border-light">|</span>]
-                            : []),
-                          <span key={i}>{label.text}</span>,
-                        ]
-                      : [],
+                {props.labels!.flatMap((label, i) =>
+                  label.text
+                    ? [
+                        ...(i > 0
+                          ? [
+                              <span
+                                key={`sep-${i}`}
+                                className="text-border-light"
+                              >
+                                |
+                              </span>,
+                            ]
+                          : []),
+                        <span key={i}>{label.text}</span>,
+                      ]
+                    : [],
                 )}
               </div>
             )}
@@ -793,17 +815,17 @@ type MentionScope =
 function scopePlaceholder(scope: MentionScope, fallback?: string): string {
   switch (scope.type) {
     case "identities":
-      return "Search people...";
+      return "Search people…";
     case "publications":
-      return "Search publications...";
+      return "Search publications…";
     case "publication":
-      return "Search posts...";
+      return "Search posts…";
     case "service":
       return `Search ${scope.name}...`;
     case "did_services":
       return `Search ${scope.name} with...`;
     default:
-      return fallback ?? "Search people & publications...";
+      return fallback ?? "Search people & publications…";
   }
 }
 

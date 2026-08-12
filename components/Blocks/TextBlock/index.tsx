@@ -174,7 +174,7 @@ export function RenderedTextBlock(props: {
               ? "Header"
               : headingLevel?.data.value === 3
                 ? "Subheader"
-                : "write something..."}
+                : "write something…"}
           <div className=" text-xs font-normal">
             or type &quot;/&quot; for commands
           </div>
@@ -368,7 +368,7 @@ const TextBlockOverlays = (
               `}
         >
           {props.type === "text"
-            ? "write something..."
+            ? "write something…"
             : props.headingLevel === 3
               ? "Subheader"
               : props.headingLevel === 2

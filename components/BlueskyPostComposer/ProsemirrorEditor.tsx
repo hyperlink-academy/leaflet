@@ -303,7 +303,7 @@ export function ProsemirrorEditor(props: {
         view={viewRef}
         onSelect={handleMentionSelect}
         coords={mentionCoords}
-        placeholder="Search people..."
+        placeholder="Search people…"
       />
       {editorState?.doc.textContent.length === 0 && (
         <div className="italic text-tertiary absolute top-0 left-0 pointer-events-none">
@@ -415,4 +415,3 @@ function marksToFeatures(marks: readonly Mark[]) {
 
   return features;
 }
-

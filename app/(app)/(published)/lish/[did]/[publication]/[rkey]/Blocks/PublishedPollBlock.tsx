@@ -119,7 +119,7 @@ export const PublishedPollBlock = (props: {
               onClick={handleVote}
               disabled={!selectedOption || isVoting}
             >
-              {isVoting ? "Voting..." : "Vote!"}
+              {isVoting ? "Voting…" : "Vote!"}
             </ButtonPrimary>
           ) : (
             <LoginModal

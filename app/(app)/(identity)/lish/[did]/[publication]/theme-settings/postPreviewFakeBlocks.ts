@@ -140,7 +140,7 @@ export const fakeBlocks: PubLeafletPagesLinearDocument.Block[] = [
         },
       ],
       plaintext:
-        "We use this in your inline links, and in certain block types like...",
+        "We use this in your inline links, and in certain block types like…",
     },
   },
   {
@@ -221,7 +221,7 @@ export const fakeBlocks: PubLeafletPagesLinearDocument.Block[] = [
     $type: "pub.leaflet.pages.linearDocument#block",
     block: {
       $type: "pub.leaflet.blocks.text",
-      plaintext: "If you decide to go for a solid background color...",
+      plaintext: "If you decide to go for a solid background color…",
     },
   },
   {
