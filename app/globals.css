@@ -461,6 +461,14 @@ body.cmd-held .ProseMirror a {
   cursor: pointer !important;
 }
 
+/* When a textblock ends in an atom node (a mention, a footnote ref), ProseMirror
+   appends a zero-width separator img so the cursor has somewhere to land. */
+img.ProseMirror-separator {
+  display: inline !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
 .mention {
   @apply cursor-pointer;
   @apply text-accent-contrast;
@@ -704,7 +712,7 @@ body.cmd-held .ProseMirror a {
   width: 4px;
 }
 .footnote-ref ~ img.ProseMirror-separator {
-  display: none;
+  display: none !important;
 }
 
 .footnote-side-enter {
