@@ -27,8 +27,11 @@ import {
 } from "src/utils/byline";
 import type { Json } from "supabase/database.types";
 import {
-  isActiveMembership,
+  getMembersDelimiterTierId,
+  isEntitledToGatedPost,
   pageHasMembersDelimiter,
+  resolveGateRequiredTier,
+  tierUnlocksGatedPost,
   truncateBlocksAtMembersDelimiter,
 } from "src/membership";
 
@@ -67,7 +70,7 @@ export const send_post_broadcast = inngest.createFunction(
         supabaseServerClient
           .from("publications")
           .select(
-            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(monthly_price_cents, active, is_free)",
+            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(id, monthly_price_cents, active, is_free)",
           )
           .eq("uri", publication_uri)
           .maybeSingle(),
@@ -170,10 +173,15 @@ export const send_post_broadcast = inngest.createFunction(
     const previewBlocks = gated
       ? truncateBlocksAtMembersDelimiter(blocks)
       : blocks;
+    const pubTiers = loaded.pub.publication_membership_tiers ?? [];
+    const requiredTier = gated
+      ? resolveGateRequiredTier(getMembersDelimiterTierId(blocks), pubTiers)
+      : null;
     // Non-members' emails end in a "subscribe to see the full content" box
-    // linking to the join page, priced from the cheapest active tier.
-    const activeTierPrices = (loaded.pub.publication_membership_tiers ?? [])
-      .filter((t) => t.active && !t.is_free)
+    // linking to the join page, priced from the cheapest active tier that
+    // actually unlocks this post.
+    const activeTierPrices = pubTiers
+      .filter((t) => t.active && tierUnlocksGatedPost(t, requiredTier))
       .map((t) => t.monthly_price_cents);
     const membersUpsell = {
       joinUrl: `${pubProps.publicationUrl.replace(/\/$/, "")}/join`,
@@ -241,7 +249,7 @@ export const send_post_broadcast = inngest.createFunction(
               supabaseServerClient
                 .from("publication_memberships")
                 .select(
-                  "identity_id, status, current_period_end, identities(email)",
+                  "identity_id, status, current_period_end, tier, identities(email)",
                 )
                 .eq("publication", publication_uri),
               supabaseServerClient
@@ -252,7 +260,15 @@ export const send_post_broadcast = inngest.createFunction(
             ],
           );
           for (const m of members ?? []) {
-            if (!isActiveMembership(m)) continue;
+            const entitledMember = isEntitledToGatedPost({
+              viewerDid: null,
+              ownerDid: null,
+              contributors: [],
+              membership: m,
+              requiredTier,
+              tiers: pubTiers,
+            });
+            if (!entitledMember) continue;
             identityIds.add(m.identity_id);
             if (m.identities?.email) {
               emails.add(m.identities.email.toLowerCase());

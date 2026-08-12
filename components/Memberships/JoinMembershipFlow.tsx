@@ -71,6 +71,7 @@ export function JoinMembershipFlow(props: {
   newsletterMode: boolean;
   tiers: Tier[];
   unlocksPost?: boolean;
+  unlocksPostTier?: { monthly_price_cents: number } | null;
   resume?: JoinResume | null;
   // Test-harness seam: supplies viewer state so the flow doesn't fetch it.
   viewerOverride?: MembershipJoinViewer;
@@ -583,6 +584,7 @@ export function JoinMembershipFlow(props: {
             isSubscribed={isSubscribed}
             currentTierId={viewer?.membership?.tierId}
             unlocksPost={props.unlocksPost}
+            unlocksPostTier={props.unlocksPostTier}
             onSelectTier={selectTier}
           />{" "}
           <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
@@ -645,7 +647,10 @@ function DowngradeConfirmModal(props: {
   onConfirm: () => void;
   onClose: () => void;
 }) {
-  const endDate = useLocalizedDate(props.periodEnd ?? "", DOWNGRADE_DATE_FORMAT);
+  const endDate = useLocalizedDate(
+    props.periodEnd ?? "",
+    DOWNGRADE_DATE_FORMAT,
+  );
 
   return (
     <Modal

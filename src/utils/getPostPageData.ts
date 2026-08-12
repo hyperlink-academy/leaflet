@@ -11,7 +11,9 @@ import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { getDocumentPages } from "src/utils/normalizeRecords";
 import {
+  getGatedPostRequiredTierId,
   postHasMembersDelimiter,
+  resolveGateRequiredTier,
   truncatePagesAtMembersDelimiter,
 } from "src/membership";
 import {
@@ -86,20 +88,45 @@ export const getPostPageData = cache(async function getPostPageData(
       currency: t.currency,
       is_free: t.is_free,
     }));
-  let membersOnly: { gated: boolean; tiers: typeof membershipTiers } = {
+  let membersOnly: {
+    gated: boolean;
+    tiers: typeof membershipTiers;
+    // The delimiter's tier requirement, resolved against every tier row
+    // (archived tiers still rank); null when any paid membership unlocks.
+    requiredTier: {
+      id: string;
+      name: string;
+      monthly_price_cents: number;
+    } | null;
+  } = {
     gated: false,
     tiers: [],
+    requiredTier: null,
   };
   if (
     gatePub?.publication_membership_settings?.enabled &&
     postHasMembersDelimiter(normalizedDocument)
   ) {
+    const requiredTier = resolveGateRequiredTier(
+      getGatedPostRequiredTierId(normalizedDocument),
+      gatePub.publication_membership_tiers ?? [],
+    );
     // normalizeDocumentRecord shares the pages array with `document.data`, so
     // this one splice gates both the normalized view and the raw record we
     // return. See the by-reference test in src/membership.test.ts.
     const pages = getDocumentPages(normalizedDocument);
     if (pages) truncatePagesAtMembersDelimiter(pages);
-    membersOnly = { gated: true, tiers: membershipTiers };
+    membersOnly = {
+      gated: true,
+      tiers: membershipTiers,
+      requiredTier: requiredTier
+        ? {
+            id: requiredTier.id,
+            name: requiredTier.name,
+            monthly_price_cents: requiredTier.monthly_price_cents,
+          }
+        : null,
+    };
   }
 
   type Neighbour = {
