@@ -27,7 +27,18 @@
 // rows, so the limit short-circuits"), not "seems fast". `plan-checked:
 // KNOWN DEBT — ...` marks pre-existing offenders awaiting a fenced rewrite;
 // don't add new debt.
-import ts from "typescript";
+// TypeScript 7's npm package no longer ships the JS compiler API; parsing goes
+// through the native compiler via the unstable sync API, which returns AST
+// nodes shaped like the old ones (parent pointers, getText, forEachChild).
+import { API } from "typescript/unstable/sync";
+import {
+  SyntaxKind,
+  isBinaryExpression,
+  isCallExpression,
+  isIdentifier,
+  isPropertyAccessExpression,
+  isVariableDeclaration,
+} from "typescript/unstable/ast";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
@@ -59,8 +70,8 @@ function unrollChain(call) {
   const links = [];
   let node = call;
   while (
-    ts.isCallExpression(node) &&
-    ts.isPropertyAccessExpression(node.expression)
+    isCallExpression(node) &&
+    isPropertyAccessExpression(node.expression)
   ) {
     links.unshift({ name: node.expression.name.text, args: node.arguments });
     node = node.expression.expression;
@@ -106,16 +117,7 @@ function mergeFacts(target, source) {
   target.fromLine ??= source.fromLine;
 }
 
-function checkFile(path) {
-  const text = readFileSync(path, "utf8");
-  if (!text.includes(".from(")) return [];
-  const sourceFile = ts.createSourceFile(
-    path,
-    text,
-    ts.ScriptTarget.Latest,
-    true,
-    path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-  );
+function checkFile(sourceFile, text) {
   const lines = text.split("\n");
 
   // Origin entries for every query the file builds, keyed by the variable
@@ -131,7 +133,7 @@ function checkFile(path) {
     const { links, root } = unrollChain(call);
     if (!links.length) return;
     const facts = chainFacts(links, sourceFile);
-    const rootName = ts.isIdentifier(root) ? root.text : null;
+    const rootName = isIdentifier(root) ? root.text : null;
     const rootOrigins = rootName ? queries.get(rootName) : null;
 
     let origins;
@@ -156,27 +158,27 @@ function checkFile(path) {
     // Only process maximal chains: a call whose result is immediately
     // .method()'d again is handled when the outer call is visited.
     if (
-      ts.isCallExpression(node) &&
+      isCallExpression(node) &&
       !(
-        ts.isPropertyAccessExpression(node.parent) &&
-        ts.isCallExpression(node.parent.parent) &&
+        isPropertyAccessExpression(node.parent) &&
+        isCallExpression(node.parent.parent) &&
         node.parent.parent.expression === node.parent
       )
     ) {
       let assignedTo = null;
       const parent = node.parent;
-      if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
+      if (isVariableDeclaration(parent) && isIdentifier(parent.name)) {
         assignedTo = parent.name.text;
       } else if (
-        ts.isBinaryExpression(parent) &&
-        parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-        ts.isIdentifier(parent.left)
+        isBinaryExpression(parent) &&
+        parent.operatorToken.kind === SyntaxKind.EqualsToken &&
+        isIdentifier(parent.left)
       ) {
         assignedTo = parent.left.text;
       }
       handleChain(node, assignedTo);
     }
-    ts.forEachChild(node, visit);
+    node.forEachChild(visit);
   }
   visit(sourceFile);
 
@@ -191,18 +193,40 @@ function checkFile(path) {
   return findings.sort((a, b) => a - b);
 }
 
-let failed = false;
+const candidates = [];
 for (const path of sourceFiles(ROOT)) {
-  for (const line of checkFile(path)) {
-    failed = true;
-    console.error(
-      `${relative(ROOT, path)}:${line} — .from() query combines an !inner embed ` +
-        `with a top-level .order() + .limit(); PostgREST's LATERAL join makes ` +
-        `this walk the order column's index across the whole table when the ` +
-        `embed filter is selective. Start the query from the join table, use a ` +
-        `fenced SQL function (see get_publication_feed_docs), or add a ` +
-        `\`// plan-checked: <why this shape is safe>\` comment above .from().`,
-    );
+  const text = readFileSync(path, "utf8");
+  if (text.includes(".from(")) candidates.push({ path, text });
+}
+
+let failed = false;
+if (candidates.length) {
+  const api = new API();
+  try {
+    // Files outside tsconfig.json's include (e.g. scripts/) land in the
+    // server's inferred project, so every candidate gets a source file.
+    const snapshot = api.updateSnapshot({
+      openFiles: candidates.map((c) => c.path),
+    });
+    for (const { path, text } of candidates) {
+      const sourceFile = snapshot
+        .getDefaultProjectForFile(path)
+        ?.program.getSourceFile(path);
+      if (!sourceFile) throw new Error(`no source file for ${path}`);
+      for (const line of checkFile(sourceFile, text)) {
+        failed = true;
+        console.error(
+          `${relative(ROOT, path)}:${line} — .from() query combines an !inner embed ` +
+            `with a top-level .order() + .limit(); PostgREST's LATERAL join makes ` +
+            `this walk the order column's index across the whole table when the ` +
+            `embed filter is selective. Start the query from the join table, use a ` +
+            `fenced SQL function (see get_publication_feed_docs), or add a ` +
+            `\`// plan-checked: <why this shape is safe>\` comment above .from().`,
+        );
+      }
+    }
+  } finally {
+    api.close();
   }
 }
 if (failed) process.exit(1);
