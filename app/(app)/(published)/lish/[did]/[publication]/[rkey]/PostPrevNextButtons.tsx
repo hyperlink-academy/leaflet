@@ -2,6 +2,7 @@
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { AtUri } from "@atproto/api";
 import { useDocument } from "contexts/DocumentContext";
+import { useWarmAdjacentPosts } from "./useWarmAdjacentPosts";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
@@ -19,6 +20,8 @@ export const PostPrevNextButtons = (props: {
   direction?: string;
 }) => {
   const { prevNext, publication, uri } = useDocument();
+
+  useWarmAdjacentPosts(props.showPrevNext);
 
   if ((!props.showPrevNext && !props.showFirstLast) || !publication)
     return null;

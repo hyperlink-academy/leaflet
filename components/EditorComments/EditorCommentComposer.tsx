@@ -150,7 +150,7 @@ export function EditorCommentComposer(props: {
       <EditorCommentMessageLayout did={identity?.atp_did}>
         {empty && (
           <div className="absolute top-0 left-5 text-tertiary italic pointer-events-none">
-            {props.placeholder || "Add a comment..."}
+            {props.placeholder || "Add a comment…"}
           </div>
         )}
         <div

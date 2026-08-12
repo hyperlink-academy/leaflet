@@ -28,7 +28,7 @@ export function PublishedPostsList(props: {
   const pubRecord = useNormalizedPublicationRecord();
   if (!publication) return null;
   if (!documents || documents.length === 0)
-    return <EmptyState title="Nothing's been published yet..." />;
+    return <EmptyState title="Nothing's been published yet…" />;
 
   // Sort by publishedAt (most recent first)
   const sortedDocuments = [...documents].sort((a, b) => {

@@ -1,7 +1,6 @@
 import * as Slider from "@radix-ui/react-slider";
 import { theme } from "../../../tailwind.config";
 
-import { Color } from "react-aria-components";
 import { Input } from "components/Input";
 import { Radio } from "components/Checkbox";
 
@@ -13,7 +12,6 @@ import { CloseContrastSmall } from "components/Icons/CloseContrastSmall";
 export const ImageSettings = (props: {
   entityID: string;
   card?: boolean;
-  setValue: (c: Color) => void;
 }) => {
   let image = useEntity(
     props.entityID,
@@ -25,7 +23,6 @@ export const ImageSettings = (props: {
       ? "theme/card-background-image-repeat"
       : "theme/background-image-repeat",
   );
-  let pageType = useEntity(props.entityID, "page/type")?.data.value;
   let { rep } = useReplicache();
   return (
     <>

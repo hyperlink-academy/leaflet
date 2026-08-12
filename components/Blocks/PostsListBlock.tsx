@@ -7,12 +7,15 @@ import {
   useNormalizedPublicationRecord,
 } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { PaginatedPublicationPostsList } from "app/(app)/(published)/lish/[did]/[publication]/PaginatedPublicationPostsList";
+import { ChapterShelf } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostsChapterList";
+import { buildChapterCards } from "src/utils/chapterGrouping";
 import {
   POSTS_LIST_PAGE_SIZE,
   postsListFilterKey,
   sortPostsForList,
   filterPostsByTags,
   type LoadPostsBatch,
+  type PostsListView,
 } from "src/utils/postsListPagination";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
 import { Popover } from "components/Popover";
@@ -21,8 +24,8 @@ import { SettingsTriggerButton } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { EmptyState } from "components/EmptyState";
-
-type PostsListView = "small" | "medium";
+import { ShortcutKey } from "components/Layout";
+import { HelpSmall } from "components/Icons/HelpSmall";
 
 export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -41,7 +44,10 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   return (
     <BlockLayout
       isSelected={isSelected}
-      className="border-none! p-0! rounded-none!"
+      // The block draws no border of its own to clip against, and chapter
+      // covers hover an outline that sits outside their border box — clipping
+      // here would shave it off the grid's outer cards.
+      className="border-none! p-0! rounded-none! overflow-visible!"
       extraOptions={<PostsListSettingsButton entityID={props.entityID} />}
     >
       <PostsListBlockContent entityID={props.entityID} />
@@ -73,30 +79,37 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
 
   // The dashboard already loads every document, so order/filter that in-memory
   // set, hand the paginated list the full URI ordering, and resolve each batch
-  // locally — no extra round trips, just windowed rendering.
+  // locally — no extra round trips, just windowed rendering. Chapter view
+  // groups the same set into prebuilt cards instead, mirroring what the SSR
+  // page ships.
   let listData = useMemo(() => {
     if (!data?.documents) return null;
-    let posts: PublicationPostsListPost[] = sortPostsForList(
-      filterPostsByTags(data.documents, filterTags),
-    ).map((d) => ({
-      uri: d.uri,
-      record: d.record,
-      commentsCount: d.commentsCount,
-      mentionsCount: d.mentionsCount,
-      recommendsCount: d.recommendsCount,
-      membersOnly: d.membersOnly,
-    }));
-    let byUri = new Map(posts.map((p) => [p.uri, p]));
+    let ordered = sortPostsForList(
+      filterPostsByTags(data.documents, filterTags).map((d) => ({
+        uri: d.uri,
+        record: d.record,
+        commentsCount: d.commentsCount,
+        mentionsCount: d.mentionsCount,
+        recommendsCount: d.recommendsCount,
+        membersOnly: d.membersOnly,
+      })),
+    );
+    let byUri = new Map(ordered.map((p) => [p.uri, p]));
     let loadBatch: LoadPostsBatch = async (batch) =>
       batch
         .map((u) => byUri.get(u))
         .filter((p): p is PublicationPostsListPost => p !== undefined);
     return {
-      uris: posts.map((p) => p.uri),
-      initialPosts: posts.slice(0, POSTS_LIST_PAGE_SIZE),
+      uris: ordered.map((p) => p.uri),
+      initialPosts: ordered.slice(0, POSTS_LIST_PAGE_SIZE),
+      latestPost: ordered[0],
+      chapterCards:
+        view === "chapter" && data.publication
+          ? buildChapterCards(ordered, data.publication)
+          : undefined,
       loadBatch,
     };
-  }, [data?.documents, filterTags]);
+  }, [data?.documents, data?.publication, filterTags, view]);
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
@@ -107,6 +120,22 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         You haven't published any posts yet! When you do, they'll show here.
       </EmptyState>
     );
+
+  // The editor lays the list out rather than reading it, so both branches
+  // disable links — clicking a post shouldn't navigate away from the page
+  // being customized.
+  if (view === "chapter") {
+    return (
+      <ChapterShelf
+        publication={data.publication}
+        publicationRecord={publicationRecord}
+        cards={listData.chapterCards ?? []}
+        latestPost={listData.latestPost}
+        highlightLatest={highlightFirst}
+        disableLinks
+      />
+    );
+  }
 
   return (
     <PaginatedPublicationPostsList
@@ -119,6 +148,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
       view={view}
       highlightFirstPost={highlightFirst}
       limit={limit}
+      disableLinks
     />
   );
 }
@@ -168,6 +198,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
     () => selectedTags.length > 0,
   );
   let [limitEnabled, setLimitEnabled] = useState(() => !!limit && limit > 0);
+  let [chapterHelpOpen, setChapterHelpOpen] = useState(false);
 
   let setLimit = (value: number) => {
     if (!rep) return;
@@ -198,7 +229,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
       side="top"
       align="end"
       sideOffset={6}
-      className="w-md"
+      className="w-md overflow-scroll"
       trigger={<SettingsTriggerButton aria-label="Posts List Settings" />}
     >
       <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
@@ -206,19 +237,18 @@ function PostsListSettingsButton(props: { entityID: string }) {
           <div>
             <h3>List Layout</h3>
           </div>
-          <div className="flex sm:flex-row flex-col sm:gap-1 gap-2 w-full items-stretch">
+          <div className="relative flex flex-row sm:gap-1 gap-2 w-full items-stretch">
             {(
               [
                 { value: "small", Icon: SmallIcon },
                 { value: "medium", Icon: MedIcon },
+                { value: "chapter", Icon: ChapterIcon },
               ] as {
                 value: PostsListView;
                 Icon: (props: { selected: boolean }) => React.ReactNode;
               }[]
             ).map((option) => {
-              let selected =
-                view === option.value ||
-                (option.value === "medium" && view !== "small");
+              let selected = view === option.value;
               return (
                 <button
                   className={`PostBlockSizeSettingOption text-left flex flex-col flex-1 pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
@@ -247,8 +277,43 @@ function PostsListSettingsButton(props: { entityID: string }) {
                 </button>
               );
             })}
+            {/* A sibling of the layout options rather than a child: the chapter
+                option is itself a button, and the row's last column is the
+                chapter icon, so its bottom right corner is this row's. */}
+            {view === "chapter" && (
+              <button
+                type="button"
+                className="absolute -bottom-3 right-1 bg-accent-1 text-accent-2 rounded-full  "
+                aria-expanded={chapterHelpOpen}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setChapterHelpOpen(!chapterHelpOpen)}
+              >
+                <HelpSmall className="scale-75" />
+              </button>
+            )}
           </div>
         </div>
+        {view === "chapter" && chapterHelpOpen && (
+          <div className="light-container p-2 text-tertiary text-sm leading-snug flex flex-col gap-1.5">
+            <p>Group posts into chapters based on titles</p>{" "}
+            <hr className="border-dashed" />
+            <p>
+              Posts titled <br />
+              "Ch1 - Pg1"
+              <br />
+              "Ch1 - Pg2"
+              <br />
+              "Ch1 - Pg3" <br />
+              will group into a chapter named "Ch1".
+            </p>
+            <p className="font-bold">
+              Separate chapter names and page titles with <br />
+              <ShortcutKey>/</ShortcutKey> <ShortcutKey>,</ShortcutKey>{" "}
+              <ShortcutKey>:</ShortcutKey> or <ShortcutKey>-</ShortcutKey>.
+              <br /> Do not use these characters in chapter names!
+            </p>
+          </div>
+        )}
         <Toggle
           toggle={highlightFirst}
           onToggle={() => {
@@ -260,41 +325,44 @@ function PostsListSettingsButton(props: { entityID: string }) {
             });
           }}
         >
-          <strong>Highlight First Post</strong>
+          <strong>Highlight Latest Post</strong>
         </Toggle>
-        <div className="flex flex-col gap-1">
-          <Toggle
-            toggle={limitEnabled}
-            onToggle={() => {
-              if (limitEnabled) {
-                clearLimit();
-                setLimitEnabled(false);
-              } else {
-                setLimitEnabled(true);
-                if (!limit || limit < 1) setLimit(5);
-              }
-            }}
-          >
-            <strong>Limit Posts</strong>
-          </Toggle>
-          {limitEnabled && (
-            <div className="flex items-center gap-2 ml-8 text-secondary text-sm">
-              <span>Show only</span>
-              <input
-                type="number"
-                min={1}
-                value={limit ?? 5}
-                onMouseDown={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  let next = Math.max(1, Math.floor(Number(e.target.value)));
-                  if (Number.isFinite(next)) setLimit(next);
-                }}
-                className="input-tag w-16 border border-border rounded px-1 py-0.5 bg-bg-page"
-              />
-              <span>posts</span>
-            </div>
-          )}
-        </div>
+
+        {view !== "chapter" && (
+          <div className="flex flex-col gap-1">
+            <Toggle
+              toggle={limitEnabled}
+              onToggle={() => {
+                if (limitEnabled) {
+                  clearLimit();
+                  setLimitEnabled(false);
+                } else {
+                  setLimitEnabled(true);
+                  if (!limit || limit < 1) setLimit(5);
+                }
+              }}
+            >
+              <strong>Limit Posts</strong>
+            </Toggle>
+            {limitEnabled && (
+              <div className="flex items-center gap-2 ml-8 text-secondary text-sm">
+                <span>Show only</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={limit ?? 5}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    let next = Math.max(1, Math.floor(Number(e.target.value)));
+                    if (Number.isFinite(next)) setLimit(next);
+                  }}
+                  className="input-tag w-16 border border-border rounded px-1 py-0.5 bg-bg-page"
+                />
+                <span>posts</span>
+              </div>
+            )}
+          </div>
+        )}
         <hr className="border-border-light my-1" />
 
         <div className="flex flex-col gap-2">
@@ -404,6 +472,27 @@ const SmallIcon = ({ selected }: { selected: boolean }) => {
           <div className="flex justify-between mt-1 w-full">
             {PlaceholderText("sm", "60%")}
           </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ChapterIcon = ({ selected }: { selected: boolean }) => {
+  return (
+    <div
+      className={`grid grid-cols-2 gap-1.5 w-full overflow-hidden opaque-container border-tertiary! p-2 ${selected && "border-accent-contrast!"}`}
+    >
+      {[0, 1].map((i) => (
+        <div key={i} className="flex flex-col gap-1">
+          <div
+            className="w-full aspect-2/3 bg-border border border-border bg-cover bg-center rounded-[2px]"
+            style={{
+              backgroundImage: "url(/imagePlaceholder.png)",
+              backgroundBlendMode: "hard-light",
+            }}
+          />
+          {PlaceholderText("sm", "80%")}
         </div>
       ))}
     </div>

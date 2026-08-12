@@ -26,3 +26,28 @@ function stripFragment(fragment: Fragment): Fragment {
   });
   return Fragment.fromArray(children);
 }
+
+// A footnote's definition can't itself hold footnote refs, and a pasted ref
+// node would alias another block's footnote entity (the same hazard
+// resolveCopiedFootnoteRefs guards the block paste path against). Passed as
+// the footnote editor's transformPasted.
+export function stripFootnoteRefs(slice: Slice): Slice {
+  return new Slice(
+    stripFootnoteFragment(slice.content),
+    slice.openStart,
+    slice.openEnd,
+  );
+}
+
+function stripFootnoteFragment(fragment: Fragment): Fragment {
+  let children: Node[] = [];
+  fragment.forEach((node) => {
+    if (node.type.name === "footnote") return;
+    children.push(
+      node.content.childCount
+        ? node.copy(stripFootnoteFragment(node.content))
+        : node,
+    );
+  });
+  return Fragment.fromArray(children);
+}

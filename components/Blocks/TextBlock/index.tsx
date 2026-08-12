@@ -174,7 +174,7 @@ export function RenderedTextBlock(props: {
               ? "Header"
               : headingLevel?.data.value === 3
                 ? "Subheader"
-                : "write something..."}
+                : "write something…"}
           <div className=" text-xs font-normal">
             or type &quot;/&quot; for commands
           </div>
@@ -227,8 +227,6 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
 
-  let rep = useReplicache();
-
   let selected = useIsBlockSelected(props.entityID);
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
   let alignmentClass = {
@@ -275,21 +273,6 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
         {overlay}
         <pre
           data-entityid={props.entityID}
-          onBlur={async () => {
-            let editorState =
-              useEditorStates.getState().editorStates[props.entityID]?.editor;
-            if (
-              ["***", "---", "___"].includes(
-                editorState?.doc.textContent.trim() || "",
-              )
-            ) {
-              await rep.rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "horizontal-rule" },
-              });
-            }
-          }}
           onFocus={() => {
             handleMentionOpenChange(false);
             setTimeout(() => {
@@ -385,7 +368,7 @@ const TextBlockOverlays = (
               `}
         >
           {props.type === "text"
-            ? "write something..."
+            ? "write something…"
             : props.headingLevel === 3
               ? "Subheader"
               : props.headingLevel === 2

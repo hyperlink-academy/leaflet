@@ -153,7 +153,7 @@ function BaseDateTimeBlock(props: BlockProps & { initalLoad?: boolean }) {
               <div
                 className={`italic text-tertiary  text-left group-hover/date:underline`}
               >
-                {permissions.write ? "add a date and time..." : "TBD..."}
+                {permissions.write ? "add a date and time…" : "TBD…"}
               </div>
             )}
           </FadeIn>

@@ -18,8 +18,9 @@ export function ImageAltButton(props: {
   className?: string;
 }) {
   let canEdit = props.canEdit ?? true;
-  let hasAlt = !!useEntity(props.entityID, "image/alt")?.data.value;
   let alt = useEntity(props.entityID, "image/alt")?.data.value;
+  let hasAlt = !!alt;
+  let imageSize = useEntity(props.entityID, "image/max-width")?.data.value;
   let [showAlt, setShowAlt] = useState(false);
   let [altRef, { height: altHeight }] = useMeasure();
   let altStyle = useSpring({
@@ -33,7 +34,6 @@ export function ImageAltButton(props: {
   // Readers get the plain ALT pill + preview, shared with published posts.
   if (!canEdit)
     return <ReadOnlyAltText alt={alt ?? ""} className={props.className} />;
-  let imageSize = useEntity(props.entityID, "image/max-width")?.data.value;
   return (
     <div
       // Hide the alt preview only when focus leaves the whole group — moving

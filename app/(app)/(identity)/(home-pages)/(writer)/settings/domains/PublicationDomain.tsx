@@ -4,29 +4,32 @@ import {
   useIdentityData,
   mutateIdentityData,
 } from "components/IdentityProvider";
-import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import type { CustomDomain } from "./DomainTab";
 import { UnassignButton } from "./UnassignButton";
 import { DeleteDomainButton } from "./DeleteDomainButton";
-import { SpeedyLink } from "components/SpeedyLink";
+import { preconnect } from "react-dom";
 
 export function PublicationDomain(props: { domain: CustomDomain }) {
   let { mutate: mutateIdentity } = useIdentityData();
   let domain = props.domain.domain;
+  let url = `https://${domain}`;
   let pubName =
     props.domain.publication_domains[0]?.publications?.name ??
     "Unnamed Publication";
   return (
     <div className="flex flex-row gap-2 w-full opaque-container px-2 py-1">
-      <SpeedyLink
-        href={domain}
+      <a
+        href={url}
+        target="_blank"
+        onMouseEnter={() => preconnect(url)}
+        onPointerDown={() => preconnect(url)}
         className="group hover:text-accent-contrast! hover:no-underline grow flex items-start gap-2 min-1-0 text-secondary"
       >
         <div className="truncate font-bold">{domain}</div>
         <div className="truncate italic text-tertiary group-hover:text-accent-contrast min-w-0">
           - {pubName}
         </div>
-      </SpeedyLink>
+      </a>
       <UnassignButton
         domain={domain}
         linkedItem={pubName}

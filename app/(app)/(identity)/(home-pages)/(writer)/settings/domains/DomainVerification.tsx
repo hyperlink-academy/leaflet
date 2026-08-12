@@ -43,7 +43,7 @@ export function DomainVerification(props: { domain: string }) {
 
   return (
     <>
-      <div>
+      <div className="pb-2">
         To verify this domain, add the following record to your DNS provider for{" "}
         <strong>{props.domain}</strong>.
       </div>

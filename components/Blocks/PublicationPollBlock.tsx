@@ -147,7 +147,7 @@ const EditPollOptionForPublication = (props: {
         id={elementId.block(props.pollEntity).pollInput(props.entityID)}
         type="text"
         className="pollOptionInput w-full input-with-border"
-        placeholder="Option here..."
+        placeholder="Option here…"
         disabled={props.disabled || !permissions.write}
         value={optionName || ""}
         onChange={async (e) => {

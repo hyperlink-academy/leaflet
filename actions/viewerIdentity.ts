@@ -8,6 +8,7 @@ import {
   ENTITLEMENT_EMBEDS,
   getValidAuthToken,
   keyEntitlements,
+  processConnectedAccount,
   SUBSCRIPTION_STATE_EMBEDS,
 } from "src/identityPayload";
 import type { getIdentityData } from "./getIdentityData";
@@ -70,6 +71,6 @@ async function uncachedGetViewerIdentity(): Promise<Identity> {
     contributor_leaflets: [],
     entitlements,
     subscription: subscription ?? null,
-    connectedAccount: connectedAccount ?? null,
+    connectedAccount: processConnectedAccount(connectedAccount),
   };
 }

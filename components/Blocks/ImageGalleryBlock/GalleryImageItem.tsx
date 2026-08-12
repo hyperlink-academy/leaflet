@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { GalleryImage, GalleryItemClasses, useGalleryImage } from "./shared";
 import { ImageAltButton } from "../ImageAltButton";
+import { ImageStatusOverlay } from "../ImageStatusOverlay";
 
 // The image-plus-overlay unit shared by every gallery format, editor and
 // published alike. Each format supplies its own wrapper/button/img classes; the
@@ -62,11 +63,14 @@ export function EditorGalleryImageItem(
       imgClassName={props.imgClassName}
       useAspectRatio={props.useAspectRatio}
       overlay={
-        <ImageAltButton
-          entityID={props.entityID}
-          selected={props.selected}
-          canEdit={props.editable}
-        />
+        <>
+          <ImageStatusOverlay uploadSrc={image.factSrc} compact />
+          <ImageAltButton
+            entityID={props.entityID}
+            selected={props.selected}
+            canEdit={props.editable}
+          />
+        </>
       }
     />
   );

@@ -17,10 +17,11 @@ const idResolver = new IdResolver();
 
 export const runtime = "nodejs";
 
+const PLACEHOLDER_BG = "#57822B";
+const PLACEHOLDER_FG = "#FFFFFF";
+
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const bgColor = searchParams.get("bg") || "#57822B";
-  const fgColor = searchParams.get("fg") || "#FFFFFF";
 
   try {
     const at_uri = searchParams.get("at_uri");
@@ -81,12 +82,15 @@ export async function GET(req: NextRequest) {
       // Generate a placeholder with the first letter of the publication name
       const firstLetter = (normalizedPub?.name || "?")
         .slice(0, 1)
-        .toUpperCase();
+        .toUpperCase()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 
       // Create a simple SVG placeholder with theme colors
       const svg = `<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
-  <rect width="96" height="96" rx="48" ry="48" fill="${bgColor}"/>
-  <text x="50%" y="50%" font-size="64" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${fgColor}" text-anchor="middle" dominant-baseline="central">${firstLetter}</text>
+  <rect width="96" height="96" rx="48" ry="48" fill="${PLACEHOLDER_BG}"/>
+  <text x="50%" y="50%" font-size="64" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${PLACEHOLDER_FG}" text-anchor="middle" dominant-baseline="central">${firstLetter}</text>
 </svg>`;
 
       return new NextResponse(svg, {

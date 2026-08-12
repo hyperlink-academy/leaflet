@@ -100,7 +100,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
       }
       postDescription={
         <TextField
-          placeholder="add an optional description..."
+          placeholder="add an optional description…"
           className=""
           value={description}
           onChange={async (newDescription) => {

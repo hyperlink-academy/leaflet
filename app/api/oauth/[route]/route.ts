@@ -82,9 +82,19 @@ export async function GET(
         let sessionDid = existing?.identity.atp_did;
         if (existing && sessionDid) {
           if (!handle)
-            return handleAction(action, redirect || "/", existing.tokenId, true);
+            return handleAction(
+              action,
+              redirect || "/",
+              existing.tokenId,
+              sessionDid,
+            );
           if ((await resolveToDid(handle)) === sessionDid)
-            return handleAction(action, redirect || "/", existing.tokenId, true);
+            return handleAction(
+              action,
+              redirect || "/",
+              existing.tokenId,
+              sessionDid,
+            );
         }
       }
 
@@ -324,9 +334,11 @@ const handleAction = async (
   redirectPath: string,
   authTokenId: string | null,
   // The session-reuse fast-path skips the PDS round-trip, so a stale atproto
-  // session surfaces here as a failed action. Force a fresh PDS login and
-  // retry rather than dropping the user back with no error.
-  reauthOnActionFailure = false,
+  // session surfaces here as a failed action. When set, force a fresh PDS
+  // login for this DID and retry rather than dropping the user back with no
+  // error — passing the DID (not just a flag) so the retry resolves their
+  // actual PDS instead of defaulting to the bsky.social entryway.
+  reauthDid: string | null = null,
 ) => {
   // Treat redirectPath as cross-domain only when it parses as an absolute
   // http(s) URL — the same notion of "absolute" postAuthRedirect uses. A bare
@@ -343,10 +355,11 @@ const handleAction = async (
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
     if (!result.success) {
-      if (reauthOnActionFailure)
+      if (reauthDid)
         return redirect(
           buildOauthLoginUrl({
             reauth: true,
+            handle: reauthDid,
             action: encodeActionToSearchParam(action),
             redirect: redirectPath,
           }),
@@ -363,10 +376,11 @@ const handleAction = async (
   if (action?.action === "recommend") {
     let result = await recommendAction({ document: action.document });
     if (!result.success) {
-      if (reauthOnActionFailure)
+      if (reauthDid)
         return redirect(
           buildOauthLoginUrl({
             reauth: true,
+            handle: reauthDid,
             action: encodeActionToSearchParam(action),
             redirect: redirectPath,
           }),

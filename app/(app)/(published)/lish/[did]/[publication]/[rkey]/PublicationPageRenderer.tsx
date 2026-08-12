@@ -24,9 +24,11 @@ import { fetchPublicationPostRows } from "../getPublicationForPage";
 import {
   POSTS_LIST_PAGE_SIZE,
   postsListFilterKey,
+  resolvePostsListView,
   sortPostsForList,
   filterPostsByTags,
 } from "src/utils/postsListPagination";
+import { buildChapterCards } from "src/utils/chapterGrouping";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -121,26 +123,64 @@ export async function PublicationPageRenderer({
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
 
-  // Per distinct tag-filter signature, ship the full ordered URI list plus a
-  // byline-resolved first batch (in the SSR HTML); the client hydrates later
-  // batches by URI on scroll via getPostsByUris.
+  // Per distinct tag-filter signature, ship what the blocks using it need.
+  // List views get the full ordered URI list plus a byline-resolved first
+  // batch (in the SSR HTML), and the client hydrates later batches by URI on
+  // scroll via getPostsByUris. Chapter views get the archive grouped here,
+  // where every post is already loaded, reduced to one small card per chapter
+  // — no post list ships and nothing paginates.
   const allPosts = buildPublicationPosts(await postRowsPromise);
-  const distinctFilters = new Map<string, string[] | undefined>();
+  const distinctFilters = new Map<
+    string,
+    { tags: string[] | undefined; needsList: boolean; needsChapters: boolean }
+  >();
   for (const b of postsListBlocks) {
-    const filterByTags = (b.block as PubLeafletBlocksPostsList.Main)
-      .filterByTags;
-    distinctFilters.set(postsListFilterKey(filterByTags), filterByTags);
+    const block = b.block as PubLeafletBlocksPostsList.Main;
+    const key = postsListFilterKey(block.filterByTags);
+    const entry = distinctFilters.get(key) ?? {
+      tags: block.filterByTags,
+      needsList: false,
+      needsChapters: false,
+    };
+    if (resolvePostsListView(block.view) === "chapter")
+      entry.needsChapters = true;
+    else entry.needsList = true;
+    distinctFilters.set(key, entry);
   }
   const initialByFilterEntries = await Promise.all(
-    Array.from(distinctFilters.entries()).map(async ([key, tags]) => {
-      const ordered = sortPostsForList(filterPostsByTags(allPosts, tags));
-      const firstBatch = ordered.slice(0, POSTS_LIST_PAGE_SIZE);
-      const initialPosts = attachBylineProfiles(
-        firstBatch,
-        await getProfiles(bylineDidsForPosts(firstBatch)),
-      );
-      return [key, { uris: ordered.map((p) => p.uri), initialPosts }] as const;
-    }),
+    Array.from(distinctFilters.entries()).map(
+      async ([key, { tags, needsList, needsChapters }]) => {
+        const ordered = sortPostsForList(filterPostsByTags(allPosts, tags));
+        const firstBatch = needsList
+          ? ordered.slice(0, POSTS_LIST_PAGE_SIZE)
+          : [];
+        // The newest post is its own card above a chapter shelf, so it needs a
+        // byline even when no list view is shipping a first batch.
+        const latest = needsChapters ? ordered[0] : undefined;
+        const needBylines =
+          latest && !firstBatch.some((p) => p.uri === latest.uri)
+            ? [...firstBatch, latest]
+            : firstBatch;
+        const profiles = await getProfiles(bylineDidsForPosts(needBylines));
+        const [latestPost] = latest
+          ? attachBylineProfiles([latest], profiles)
+          : [];
+        return [
+          key,
+          {
+            uris: needsList ? ordered.map((p) => p.uri) : [],
+            initialPosts: attachBylineProfiles(firstBatch, profiles),
+            latestPost,
+            chapters: needsChapters
+              ? buildChapterCards(ordered, {
+                  uri: publication.uri,
+                  record: publication.record,
+                })
+              : undefined,
+          },
+        ] as const;
+      },
+    ),
   );
 
   const postsListData = postsListBlocks.length

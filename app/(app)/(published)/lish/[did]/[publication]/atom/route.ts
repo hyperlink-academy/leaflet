@@ -20,7 +20,7 @@ export async function GET(
   return feedResponse(
     req,
     feed.atom1(),
-    "application/atom+xml",
+    "application/atom+xml; charset=utf-8",
     feed.options.updated,
   );
 }

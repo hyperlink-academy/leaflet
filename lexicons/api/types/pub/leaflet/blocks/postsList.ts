@@ -16,7 +16,7 @@ const id = 'pub.leaflet.blocks.postsList'
 
 export interface Main {
   $type?: 'pub.leaflet.blocks.postsList'
-  view?: 'small' | 'medium' | (string & {})
+  view?: 'small' | 'medium' | 'chapter' | (string & {})
   highlightFirstPost?: boolean
   filterByTags?: string[]
   /** Show at most this many posts. */

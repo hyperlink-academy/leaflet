@@ -21,6 +21,14 @@ export async function GET(req: NextRequest) {
   let image = await screenshotBskyCardImage(parsed.toString());
   if (!image) return new Response("Screenshot failed", { status: 502 });
   return new Response(new Uint8Array(image), {
-    headers: { "Content-Type": "image/webp" },
+    headers: {
+      "Content-Type": "image/webp",
+      // Edge-cache per url so repeat share-modal opens (and anything else
+      // hitting this route) don't each pay a multi-second browser render.
+      // An hour bounds how stale the card can be when resharing a
+      // just-edited post; the prefetch-while-composing flow hides the
+      // render latency of a cache miss.
+      "Cache-Control": "public, max-age=0, s-maxage=3600",
+    },
   });
 }

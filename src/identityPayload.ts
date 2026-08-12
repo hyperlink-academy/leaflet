@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { isUuid } from "./utils/isUuid";
 import type { Profile } from "./identity";
+import { deriveConnectedAccountStatus } from "stripe/accountStatus";
 
 // Shared plumbing for the three identity fetchers (getIdentityData,
 // getViewerIdentity, getAuthIdentity). Deliberately not a "use server" module:
@@ -27,7 +28,7 @@ export const SUBSCRIPTION_STATE_EMBEDS = `notifications(count),
             publication_memberships(publication, tier, status, current_period_end, cancel_at_period_end)`;
 
 export const ENTITLEMENT_EMBEDS = `user_subscriptions(plan, status, current_period_end),
-            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted),
+            stripe_connected_accounts(stripe_account_id, charges_enabled, payouts_enabled, details_submitted, requirements),
             user_entitlements(entitlement_key, granted_at, expires_at, source, metadata)`;
 
 export type EntitlementRow = {
@@ -64,6 +65,16 @@ export function keyEntitlements(
     };
   }
   return entitlements;
+}
+
+// Derives the user-facing account status server-side and drops the raw Stripe
+// requirements JSON so it never ships in the identity payload.
+export function processConnectedAccount<
+  T extends { charges_enabled: boolean; requirements: unknown },
+>(row: T | null | undefined) {
+  if (!row) return null;
+  const { requirements, ...rest } = row;
+  return { ...rest, status: deriveConnectedAccountStatus(row) };
 }
 
 // Reshape a cached profile into the legacy `bsky_profiles` row shape that

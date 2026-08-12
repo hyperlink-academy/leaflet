@@ -60,9 +60,9 @@ const bskyPostSchema = new Schema({
         {
           tag: "span.mention",
           getAttrs(dom: HTMLElement) {
-            return {
-              did: dom.getAttribute("data-did"),
-            };
+            let did = dom.getAttribute("data-did");
+            if (!did) return false;
+            return { did };
           },
         },
       ],
@@ -303,7 +303,7 @@ export function ProsemirrorEditor(props: {
         view={viewRef}
         onSelect={handleMentionSelect}
         coords={mentionCoords}
-        placeholder="Search people..."
+        placeholder="Search people…"
       />
       {editorState?.doc.textContent.length === 0 && (
         <div className="italic text-tertiary absolute top-0 left-0 pointer-events-none">
@@ -396,10 +396,12 @@ function marksToFeatures(marks: readonly Mark[]) {
   for (const mark of marks) {
     switch (mark.type.name) {
       case "mention": {
-        features.push({
-          $type: "app.bsky.richtext.facet#mention",
-          did: mark.attrs.did,
-        });
+        if (mark.attrs.did) {
+          features.push({
+            $type: "app.bsky.richtext.facet#mention",
+            did: mark.attrs.did,
+          });
+        }
         break;
       }
       case "link":
@@ -413,4 +415,3 @@ function marksToFeatures(marks: readonly Mark[]) {
 
   return features;
 }
-

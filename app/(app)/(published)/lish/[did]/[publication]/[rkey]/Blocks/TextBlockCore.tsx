@@ -1,6 +1,7 @@
 import { UnicodeString } from "@atproto/api";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { AtMentionLink } from "components/AtMentionLink";
+import { extractFacetFeatures } from "src/utils/facetFeatures";
 import { CSSProperties, ReactNode } from "react";
 
 function highlightFacetToStyle(
@@ -46,23 +47,19 @@ export function TextBlockCore(props: TextBlockCoreProps) {
   });
   let counter = 0;
   for (const segment of richText.segments()) {
-    let id = segment.facet?.find(PubLeafletRichtextFacet.isId);
-    let link = segment.facet?.find(PubLeafletRichtextFacet.isLink);
-    let isBold = segment.facet?.find(PubLeafletRichtextFacet.isBold);
-    let isCode = segment.facet?.find(PubLeafletRichtextFacet.isCode);
-    let isStrikethrough = segment.facet?.find(
-      PubLeafletRichtextFacet.isStrikethrough,
-    );
-    let isDidMention = segment.facet?.find(
-      PubLeafletRichtextFacet.isDidMention,
-    );
-    let isAtMention = segment.facet?.find(PubLeafletRichtextFacet.isAtMention);
-    let isUnderline = segment.facet?.find(PubLeafletRichtextFacet.isUnderline);
-    let isItalic = segment.facet?.find(PubLeafletRichtextFacet.isItalic);
-    let isFootnote = segment.facet?.find(PubLeafletRichtextFacet.isFootnote);
-    let isHighlighted = segment.facet?.find(
-      PubLeafletRichtextFacet.isHighlight,
-    );
+    let {
+      id,
+      link,
+      bold: isBold,
+      code: isCode,
+      strikethrough: isStrikethrough,
+      didMention: isDidMention,
+      atMention: isAtMention,
+      underline: isUnderline,
+      italic: isItalic,
+      footnote: isFootnote,
+      highlight: isHighlighted,
+    } = extractFacetFeatures(segment.facet);
     let highlightStyle = highlightFacetToStyle(isHighlighted);
 
     if (isFootnote) {

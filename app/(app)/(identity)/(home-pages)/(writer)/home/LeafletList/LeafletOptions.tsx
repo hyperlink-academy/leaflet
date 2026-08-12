@@ -2,6 +2,7 @@
 
 import { Menu, MenuItem } from "components/Menu";
 import { useState } from "react";
+import { mutate } from "swr";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { useToaster } from "components/Toast";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
@@ -12,14 +13,16 @@ import {
   unarchivePost,
 } from "actions/deleteLeaflet";
 import { ArchiveSmall } from "components/Icons/ArchiveSmall";
+import { CopySmall } from "components/Icons/CopySmall";
 import { UnpublishSmall } from "components/Icons/UnpublishSmall";
+import { duplicateLeaflet } from "actions/duplicateLeaflet";
 import {
   deletePost,
   unpublishPost,
 } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/deletePost";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { HideSmall } from "components/Icons/HideSmall";
-import { hideDoc } from "src/utils/homeDocsStorage";
+import { addDocToHome, hideDoc } from "src/utils/homeDocsStorage";
 
 import {
   useIdentityData,
@@ -114,6 +117,8 @@ const DefaultOptions = (props: {
   return (
     <>
       <EditLinkShareButton link={pubStatus?.shareLink ?? ""} />
+      <DuplicateMenuItem loggedIn />
+
       <hr className="border-border-light" />
       <MenuItem
         onSelect={async () => {
@@ -174,6 +179,8 @@ const LoggedOutOptions = (props: { setState: (s: "areYouSure") => void }) => {
   return (
     <>
       <EditLinkShareButton link={`/${pubStatus?.shareLink ?? ""}`} />
+      <DuplicateMenuItem />
+
       <hr className="border-border-light" />
       <MenuItem
         onSelect={() => {
@@ -220,6 +227,8 @@ const PublishedPostOptions = (props: {
         link={postLink}
         fullLink={isFullUrl ? postLink : undefined}
       />
+      <DuplicateMenuItem loggedIn />
+
       <hr className="border-border-light" />
       <MenuItem
         onSelect={async () => {
@@ -331,6 +340,65 @@ const DeleteAreYouSureForm = (props: { backToMenu: () => void }) => {
 };
 
 // Shared menu items
+const DuplicateMenuItem = (props: { loggedIn?: boolean }) => {
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
+  const { mutate: mutateIdentity } = useIdentityData();
+  const { data: pubData, mutate: mutatePub } = usePublicationData();
+  const tokenId = pubStatus?.token.id;
+  const itemType = pubStatus?.documentUri
+    ? "Post"
+    : pubStatus?.draftInPublication
+      ? "Draft"
+      : "Leaflet";
+
+  return (
+    <MenuItem
+      onSelect={async () => {
+        if (!tokenId) return;
+        let result = await duplicateLeaflet(tokenId);
+        if (!result.token) {
+          toaster({
+            content: (
+              <div className="font-bold">
+                Couldn&apos;t duplicate: {result.error}
+              </div>
+            ),
+            type: "error",
+          });
+          return;
+        }
+        if (props.loggedIn) {
+          // The copy's list row, title and preview facts are all
+          // server-derived, so revalidate rather than synthesizing them here.
+          mutateIdentity();
+          if (pubData?.publication) mutatePub();
+        } else {
+          // Logged out the list is localStorage, not a homepage row.
+          addDocToHome(result.token);
+          mutate("leaflets");
+        }
+        toaster({
+          content: <div className="font-bold">Duplicated {itemType}!</div>,
+          type: "success",
+        });
+      }}
+    >
+      <CopySmall />
+      {pubStatus?.documentUri ? (
+        <div className="flex flex-col">
+          Duplicate Post
+          <div className="text-tertiary text-sm font-normal!">
+            Make an unpublished copy
+          </div>
+        </div>
+      ) : (
+        `Duplicate ${itemType}`
+      )}
+    </MenuItem>
+  );
+};
+
 const EditLinkShareButton = (props: { link: string }) => (
   <ShareButton
     text={

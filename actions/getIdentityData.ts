@@ -11,6 +11,7 @@ import {
   ENTITLEMENT_EMBEDS,
   getValidAuthToken,
   keyEntitlements,
+  processConnectedAccount,
   SUBSCRIPTION_STATE_EMBEDS,
 } from "src/identityPayload";
 export const getIdentityData = cache(uncachedGetIdentityData);
@@ -117,7 +118,7 @@ async function uncachedGetIdentityData() {
       contributor_leaflets,
       entitlements,
       subscription: subscription ?? null,
-      connectedAccount: connectedAccount ?? null,
+      connectedAccount: processConnectedAccount(connectedAccount),
     };
   }
 
@@ -130,7 +131,7 @@ async function uncachedGetIdentityData() {
     contributor_leaflets: [],
     entitlements,
     subscription: subscription ?? null,
-    connectedAccount: connectedAccount ?? null,
+    connectedAccount: processConnectedAccount(connectedAccount),
   };
 }
 

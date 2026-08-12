@@ -17,15 +17,13 @@ export const PageShareMenu = (props: { entityID: string }) => {
     <div>
       <ShareButton
         text="Share Edit Link"
-        subtext="Recipients can edit the full Leaflet"
-        smokerText="Collab link copied!"
+        smokerText="Edit link copied!"
         id="get-page-collab-link"
         link={`${collabLink}?page=${props.entityID}`}
       />
       <ShareButton
         text="Share View Link"
-        subtext="Recipients can view the full Leaflet"
-        smokerText="Publish link copied!"
+        smokerText="View link copied!"
         id="get-page-publish-link"
         fullLink={
           domains?.[0]
@@ -34,6 +32,10 @@ export const PageShareMenu = (props: { entityID: string }) => {
         }
         link={`${publishLink}?page=${props.entityID}`}
       />
+      <hr className="my-1" />
+      <div className="max-w-xs px-2  pt-1 pb-2 leading-snug text-tertiary text-sm">
+        Link recipients can view this subpage and any pages it links to.
+      </div>
     </div>
   );
 };

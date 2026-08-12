@@ -84,7 +84,7 @@ function ImageAltModalContent(props: {
       <textarea
         autoFocus
         className="input-with-border w-full resize-none min-h-[64px]  p-2"
-        placeholder="Describe this image..."
+        placeholder="Describe this image…"
         value={value}
         onChange={(e) => setDraft(e.currentTarget.value)}
         onKeyDown={(e) => {

@@ -19,6 +19,7 @@ import {
   projectPublicationForClient,
 } from "./postPageProjection";
 import { resolveDocumentFilter } from "./resolveDocumentFilter";
+import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
 
 export const getPostPageData = cache(async function getPostPageData(
   did: string,
@@ -36,7 +37,7 @@ export const getPostPageData = cache(async function getPostPageData(
         uri,
         comments_on_documents(record),
         documents_in_publications(publications(uri, name, identity_did, record,
-          documents_in_publications(documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
+          documents_in_publications(members_only, documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
           publication_newsletter_settings(enabled),
           publication_membership_settings(enabled),
           publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, is_free))
@@ -101,45 +102,20 @@ export const getPostPageData = cache(async function getPostPageData(
     membersOnly = { gated: true, tiers: membershipTiers };
   }
 
-  // Fetch constellation backlinks for mentions
-  const postUrl = getDocumentURL(
-    normalizedDocument,
-    document.uri,
-    normalizedPublication,
-  );
-  // Constellation needs an absolute URL
-  const absolutePostUrl = postUrl.startsWith("/")
-    ? `https://leaflet.pub${postUrl}`
-    : postUrl;
-  const constellationBacklinks =
-    await getConstellationBacklinks(absolutePostUrl);
-
-  // Deduplicate constellation backlinks (same post could appear in both links and embeds)
-  const uniqueBacklinks = Array.from(
-    new Map(constellationBacklinks.map((b) => [b.uri, b])).values(),
-  );
-
-  // Combine database mentions (already deduplicated by DB constraint) and constellation backlinks
-  const quotesAndMentions: { uri: string; link?: string }[] = [
-    // Database mentions (quotes with link to quoted content)
-    ...document.document_mentions_in_bsky.map((m) => ({
-      uri: m.uri,
-      link: m.link,
-    })),
-    // Constellation backlinks (direct post mentions without quote context)
-    ...uniqueBacklinks,
-  ];
-
-  let theme =
-    resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
-
-  // Calculate prev/next documents from the fetched publication documents
+  type Neighbour = {
+    uri: string;
+    title: string;
+    membersOnly: boolean;
+    images?: string[];
+  };
   let prevNext:
     | {
-        prev?: { uri: string; title: string };
-        next?: { uri: string; title: string };
+        prev?: Neighbour;
+        next?: Neighbour;
         first?: { uri: string; title: string };
         last?: { uri: string; title: string };
+        prevPreload?: string;
+        nextPreload?: string;
       }
     | undefined;
 
@@ -149,11 +125,12 @@ export const getPostPageData = cache(async function getPostPageData(
       ?.documents_in_publications;
 
   if (currentPublishedAt && allDocs) {
-    // The publishedAt filter mirrors normalizeDocumentRecord's gating of
-    // unpublished pub.leaflet records without paying for the full data jsonb
-    // of every sibling post.
     const sortedDocs = allDocs
-      .flatMap((dip) => (dip.documents ? [dip.documents] : []))
+      .flatMap((dip) =>
+        dip.documents
+          ? [{ ...dip.documents, membersOnly: dip.members_only }]
+          : [],
+      )
       .filter((doc) => doc.publishedAt && doc.title)
       .sort(
         (a, b) =>
@@ -161,27 +138,25 @@ export const getPostPageData = cache(async function getPostPageData(
           new Date(b.sort_date || 0).getTime(),
       );
 
-    // Find current document index
     const currentIndex = sortedDocs.findIndex(
       (doc) => doc.uri === document.uri,
     );
 
     if (currentIndex !== -1) {
       const lastIndex = sortedDocs.length - 1;
+      const neighbour = (doc: (typeof sortedDocs)[number]): Neighbour => ({
+        uri: doc.uri || "",
+        title: doc.title || "",
+        membersOnly: doc.membersOnly,
+      });
       prevNext = {
         prev:
           currentIndex > 0
-            ? {
-                uri: sortedDocs[currentIndex - 1].uri || "",
-                title: sortedDocs[currentIndex - 1].title || "",
-              }
+            ? neighbour(sortedDocs[currentIndex - 1])
             : undefined,
         next:
           currentIndex < lastIndex
-            ? {
-                uri: sortedDocs[currentIndex + 1].uri || "",
-                title: sortedDocs[currentIndex + 1].title || "",
-              }
+            ? neighbour(sortedDocs[currentIndex + 1])
             : undefined,
         first:
           currentIndex > 0
@@ -197,9 +172,61 @@ export const getPostPageData = cache(async function getPostPageData(
                 title: sortedDocs[lastIndex].title || "",
               }
             : undefined,
+        prevPreload:
+          currentIndex > 1 ? sortedDocs[currentIndex - 2].uri || "" : undefined,
+        nextPreload:
+          currentIndex < lastIndex - 1
+            ? sortedDocs[currentIndex + 2].uri || ""
+            : undefined,
       };
     }
   }
+
+  // Fetch constellation backlinks for mentions
+  const postUrl = getDocumentURL(
+    normalizedDocument,
+    document.uri,
+    normalizedPublication,
+  );
+  // Constellation needs an absolute URL
+  const absolutePostUrl = postUrl.startsWith("/")
+    ? `https://leaflet.pub${postUrl}`
+    : postUrl;
+
+  const warm =
+    prevNext && (normalizedPublication?.preferences?.showPrevNext ?? true)
+      ? [prevNext.next, prevNext.prev].filter((n): n is Neighbour => !!n)
+      : [];
+  const [constellationBacklinks, neighbourImages] = await Promise.all([
+    getConstellationBacklinks(absolutePostUrl, document.uri),
+    getPostImagePreloads(warm),
+  ]);
+  for (const neighbour of warm)
+    neighbour.images = neighbourImages.get(neighbour.uri);
+
+  // Deduplicate constellation backlinks (same post could appear in both links and embeds)
+  const uniqueBacklinks = Array.from(
+    new Map(constellationBacklinks.map((b) => [b.uri, b])).values(),
+  );
+
+  // Combine database mentions (already deduplicated by DB constraint) and
+  // constellation backlinks. Quote posts published through our share flow are
+  // both a DB mention and an associatedRefs backlink, so filter those out.
+  const dbMentionUris = new Set(
+    document.document_mentions_in_bsky.map((m) => m.uri),
+  );
+  const quotesAndMentions: { uri: string; link?: string }[] = [
+    // Database mentions (quotes with link to quoted content)
+    ...document.document_mentions_in_bsky.map((m) => ({
+      uri: m.uri,
+      link: m.link,
+    })),
+    // Constellation backlinks (direct post mentions without quote context)
+    ...uniqueBacklinks.filter((b) => !dbMentionUris.has(b.uri)),
+  ];
+
+  let theme =
+    resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
 
   // Build explicit publication context for consumers
   const publication = projectPublicationForClient(
@@ -248,31 +275,51 @@ const headers = {
   "user-agent": "leaflet.pub",
 };
 
-// Fetch constellation backlinks without hydrating with Bluesky post data
+// Fetch constellation backlinks without hydrating with Bluesky post data.
+// Posts that share via the standard.site external embed (like our own publish
+// flow) carry the document's at-uri in the embed's associatedRefs, while their
+// visible url is often utm-tagged and misses the plain-url subject — so when we
+// know the document uri we query those paths too.
 export async function getConstellationBacklinks(
   url: string,
+  documentUri?: string,
 ): Promise<{ uri: string }[]> {
   try {
-    let baseURL = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${encodeURIComponent(url)}`;
-    let externalEmbeds = new URL(
-      `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:embed.external.uri")}`,
-    );
-    let linkFacets = new URL(
-      `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri")}`,
-    );
+    let queries = [
+      { subject: url, source: "app.bsky.feed.post:embed.external.uri" },
+      {
+        subject: url,
+        source:
+          "app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri",
+      },
+      ...(documentUri
+        ? [
+            {
+              subject: documentUri,
+              source:
+                "app.bsky.feed.post:embed.external.associatedRefs[com.atproto.repo.strongRef].uri",
+            },
+            {
+              subject: documentUri,
+              source:
+                "app.bsky.feed.post:embed.media.external.associatedRefs[com.atproto.repo.strongRef].uri",
+            },
+          ]
+        : []),
+    ];
 
-    let [links, embeds] = (await Promise.all([
-      fetch(linkFacets, { headers, next: { revalidate: 3600 } }).then((req) =>
-        req.json(),
+    let responses = (await Promise.all(
+      queries.map(({ subject, source }) =>
+        fetch(
+          `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${encodeURIComponent(subject)}&source=${encodeURIComponent(source)}`,
+          { headers, next: { revalidate: 3600 } },
+        ).then((req) => req.json()),
       ),
-      fetch(externalEmbeds, { headers, next: { revalidate: 3600 } }).then(
-        (req) => req.json(),
-      ),
-    ])) as ConstellationResponse[];
+    )) as ConstellationResponse[];
 
-    let uris = [...links.records, ...embeds.records].map((i) =>
-      AtUri.make(i.did, i.collection, i.rkey).toString(),
-    );
+    let uris = responses
+      .flatMap((r) => r.records)
+      .map((i) => AtUri.make(i.did, i.collection, i.rkey).toString());
 
     return uris.map((uri) => ({ uri }));
   } catch (e) {

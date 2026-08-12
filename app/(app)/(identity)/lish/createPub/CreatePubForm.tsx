@@ -291,7 +291,7 @@ function DomainInput(props: {
             : props.domainState.status === "invalid"
               ? "Already Taken ):"
               : props.domainState.status === "pending"
-                ? "Checking Availability..."
+                ? "Checking Availability…"
                 : "a-z, 0-9, and - only!"}
       </div>
     </div>

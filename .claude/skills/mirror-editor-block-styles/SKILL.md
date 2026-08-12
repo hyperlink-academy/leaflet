@@ -23,6 +23,23 @@ There is **no shared styling layer** between them beyond a few global CSS
 classes. A change in the editor does **not** automatically show up anywhere
 else — it has to be mirrored by hand. This skill is the checklist.
 
+**Structural completeness is compiler-enforced** (since 2026-08-11):
+`src/utils/blockDispatch.ts` **derives** `BlockTypeMap`/`KnownBlockType` from
+the generated block union (`PubLeafletPagesLinearDocument.Block["block"]`) —
+nothing to maintain there — and `PostContent.tsx`, `feedHtml.ts`, and
+`emails/post.tsx` each define an exhaustive `BlockHandlers` map dispatched
+via `matchBlock`. So: lexicon addition → `npm run lexgen` → tsc errors in
+every surface until each handles the type or explicitly opts out
+(`() => null` / `BlockNotSupported`). Likewise `factsToPagesRecord.ts`
+(publish serialization) and `getBlocksAsHTML.tsx` (copy) are exhaustive over
+the editor union, and inline facet marks flow through
+`src/utils/facetFeatures.ts`'s `extractFacetFeatures` (derived keys; shared
+by `TextBlockCore` and `feedHtml`). `src/utils/blockDispatch.test.ts`
+compares the generated schemas back to `lexicons/src`, so editing a lexicon
+without running lexgen fails vitest. *Forgetting a surface entirely* is a
+build failure; this skill is about the part the compiler can't see —
+**visual parity** — plus the paste pipeline.
+
 ## When to use
 
 Any time you **create a block type or update an existing block** — visual
@@ -85,15 +102,22 @@ exists for — just fix those.
   `blockquote` → `<blockquote>`, lists, image, …) and builds the block-wrapper
   `className` (margins) + inline `style` (font size). **Most mirroring happens
   here.**
-- **`app/(app)/(published)/lish/[did]/[publication]/[rkey]/StaticPostContent.tsx`** — the
-  static render used by **RSS feeds** (`generateFeed.ts`), *not* email. Minimal
-  styling. Mirror here only when the change matters in a plain static context;
-  call it out rather than silently skip.
+- **`app/(app)/(published)/lish/[did]/[publication]/feedHtml.ts`** — the
+  **RSS/Atom/JSON feed** serializer (`generateFeed.ts`), *not* email. It emits
+  deliberately unstyled, portable semantic HTML (no classes, no inline styles),
+  so **styling changes never get mirrored here**. Structural changes are
+  tsc-enforced via its two exhaustive `BlockHandlers` maps (render +
+  plain-text); write the handler thoughtfully rather than defaulting to
+  `() => ""`. It has its own vitest suite (`feedHtml.test.ts`), including a
+  no-classes/no-styles regression test.
 - **`…/Blocks/TextBlockCore.tsx`** — inline **facet** rendering (bold, italic,
   underline, strikethrough, code, highlight, links, mentions, footnotes). Mirror
   here if you changed an inline *mark's* appearance. These mostly reuse the same
   global CSS classes as the editor (`font-bold`, `italic`, `inline-code`,
-  `highlight`, …), so inline marks usually stay in sync automatically.
+  `highlight`, …), so inline marks usually stay in sync automatically. Facet
+  *extraction* comes from `src/utils/facetFeatures.ts` — a new facet feature
+  type is added there once, then each consumer (this file, `feedHtml.ts`)
+  decides how to render the new field.
 
 ### Email newsletter
 
@@ -183,9 +207,9 @@ not the class names verbatim. Current mapping for headers (keep in sync):
 1. Diff the editor change (e.g. `git show <commit> -- components/Blocks/`). List
    each **stylistic/structural** hunk; drop editor-only/interaction hunks.
 2. Locate the block's counterpart in `PostContent.tsx` and `emails/post.tsx`
-   (and `StaticPostContent.tsx` / `TextBlockCore.tsx` if relevant). If a
-   counterpart is missing or deliberately very different, **check in with the
-   user first** (see above) before writing code.
+   (and `TextBlockCore.tsx` for inline marks; `feedHtml.ts` for structural
+   changes only — see above). If a counterpart is missing or deliberately very
+   different, **check in with the user first** (see above) before writing code.
 3. Apply the equivalent change to each surface, honoring the gotchas
    (em-vs-rem, inline-vs-class, px-only email). If a value lives in a
    `HeadingStyle`-style duplicated constant, update every copy.
