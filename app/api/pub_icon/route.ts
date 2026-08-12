@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
       .toBuffer();
 
     // Return with caching headers
-    return new NextResponse(resizedImage, {
+    return new NextResponse(new Uint8Array(resizedImage), {
       headers: {
         "Content-Type": "image/webp",
         // Cache for 1 hour, but serve stale for much longer while revalidating
