@@ -27,79 +27,60 @@ export function postHasMembersDelimiter(
   return !!pages?.[0] && pageHasMembersDelimiter(pages[0]);
 }
 
-// What a delimiter says about who reads past it. `tiers` is the current shape
-// (the exact set of tiers the author checked); `tier` is the pre-multi-select
-// shape, a single id meaning "that tier and up by price". null means the
-// delimiter names nothing: every paid tier reads through.
-export type MembersDelimiterGate =
-  | { type: "tiers"; tierIds: string[] }
-  | { type: "minimum-tier"; tierId: string }
-  | null;
-
-export function getMembersDelimiterGate(
-  blocks:
-    | { block?: { $type?: string; tiers?: unknown; tier?: unknown } }[]
-    | undefined,
-): MembersDelimiterGate {
+// The tier ids the delimiter names, or null when it names none: every paid tier
+// reads through.
+export function getMembersDelimiterTierIds(
+  blocks: { block?: { $type?: string; tiers?: unknown } }[] | undefined,
+): string[] | null {
   const block = blocks?.find(
     (b) => b?.block?.$type === ids.PubLeafletBlocksMembersOnlyDelimiter,
   )?.block;
-  if (Array.isArray(block?.tiers)) {
-    const tierIds = block.tiers.filter(
-      (t): t is string => typeof t === "string",
-    );
-    if (tierIds.length > 0) return { type: "tiers", tierIds };
-  }
-  if (typeof block?.tier === "string")
-    return { type: "minimum-tier", tierId: block.tier };
-  return null;
+  if (!Array.isArray(block?.tiers)) return null;
+  const tierIds = block.tiers.filter((t): t is string => typeof t === "string");
+  return tierIds.length > 0 ? tierIds : null;
 }
 
-export function getGatedPostGate(
+export function getGatedPostTierIds(
   doc: NormalizedDocument | null,
-): MembersDelimiterGate {
+): string[] | null {
   const pages = doc ? getDocumentPages(doc) : undefined;
   const first = pages?.[0] as
-    | {
-        blocks?: {
-          block?: { $type?: string; tiers?: unknown; tier?: unknown };
-        }[];
-      }
+    | { blocks?: { block?: { $type?: string; tiers?: unknown } }[] }
     | undefined;
-  return getMembersDelimiterGate(first?.blocks);
+  return getMembersDelimiterTierIds(first?.blocks);
 }
 
-// Resolves a delimiter's gate against the publication's tier rows into the ids
-// that read past it. null means unrestricted — every paid tier — which is also
-// where a gate whose tiers have all been deleted lands: an unrankable,
-// unmatchable gate would otherwise lock out every member.
-export function resolveUnlockingTierIds<
-  T extends { id: string; monthly_price_cents: number; is_free: boolean },
->(gate: MembersDelimiterGate, tiers: T[]): string[] | null {
-  if (!gate) return null;
-  if (gate.type === "tiers") {
-    const live = tiers.filter((t) => !t.is_free && gate.tierIds.includes(t.id));
-    return live.length > 0 ? live.map((t) => t.id) : null;
-  }
-  const minimum = tiers.find((t) => t.id === gate.tierId);
-  if (!minimum) return null;
-  return tiers
-    .filter(
-      (t) => !t.is_free && t.monthly_price_cents >= minimum.monthly_price_cents,
-    )
-    .map((t) => t.id);
+// Resolves the ids a delimiter names against the publication's tier rows. null
+// means unrestricted — every paid tier — which is also where a gate whose tiers
+// have all been deleted lands: an unmatchable gate would otherwise lock out
+// every member.
+export function resolveUnlockingTierIds<T extends { id: string }>(
+  namedTierIds: string[] | null,
+  tiers: T[],
+): string[] | null {
+  if (!namedTierIds) return null;
+  const live = tiers.filter((t) => namedTierIds.includes(t.id));
+  return live.length > 0 ? live.map((t) => t.id) : null;
 }
 
-// Whether joining `tier` grants access past a delimiter unlocked by
+// Whether the gate names the free tier, which has no membership row behind it:
+// subscribing to the publication is what reads past the delimiter. Callers pass
+// the result to isEntitledToGatedPost as `subscriptionUnlocks`.
+export function gateUnlocksWithSubscription<
+  T extends { id: string; is_free: boolean },
+>(unlockingTierIds: string[] | null | undefined, tiers: T[]): boolean {
+  if (!unlockingTierIds) return false;
+  return tiers.some((t) => t.is_free && unlockingTierIds.includes(t.id));
+}
+
+// Whether taking `tier` grants access past a delimiter unlocked by
 // `unlockingTierIds` (resolve it with resolveUnlockingTierIds; null means every
-// paid tier). The free tier never unlocks gated content — free subscribers have
-// no membership row at all.
+// paid tier).
 export function tierUnlocksGatedPost(
   tier: { id: string; is_free: boolean },
   unlockingTierIds: string[] | null | undefined,
 ): boolean {
-  if (tier.is_free) return false;
-  if (!unlockingTierIds) return true;
+  if (!unlockingTierIds) return !tier.is_free;
   return unlockingTierIds.includes(tier.id);
 }
 
@@ -245,6 +226,12 @@ export function isActiveMembership(
 // delimiter. `unlockingTierIds` (resolve it with resolveUnlockingTierIds) only
 // matters when the delimiter names tiers; omitted or null, any active
 // membership qualifies.
+//
+// `subscriptionUnlocks` (from gateUnlocksWithSubscription) is the free-tier
+// gate: a subscriber reads through with no membership at all. Paying members
+// clear it too — free is the lowest bar the author can set, so a member who
+// never got a subscription row shouldn't be locked out of a post their free
+// subscribers can read.
 export function isEntitledToGatedPost(input: {
   viewerDid: string | null | undefined;
   ownerDid: string | null | undefined;
@@ -254,6 +241,8 @@ export function isEntitledToGatedPost(input: {
     | null
     | undefined;
   unlockingTierIds?: string[] | null;
+  subscriptionUnlocks?: boolean;
+  isSubscriber?: boolean;
 }): boolean {
   const { viewerDid } = input;
   if (viewerDid) {
@@ -265,7 +254,9 @@ export function isEntitledToGatedPost(input: {
     )
       return true;
   }
+  if (input.subscriptionUnlocks && input.isSubscriber) return true;
   if (!isActiveMembership(input.membership)) return false;
+  if (input.subscriptionUnlocks) return true;
   if (!input.unlockingTierIds) return true;
   const memberTier = input.membership?.tier;
   return !!memberTier && input.unlockingTierIds.includes(memberTier);

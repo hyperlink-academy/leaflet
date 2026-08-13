@@ -6,12 +6,16 @@ import { getViewerIdentity } from "actions/viewerIdentity";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { getDocumentPages } from "lexicons/src/normalize";
 import {
-  getGatedPostGate,
+  gateUnlocksWithSubscription,
+  getGatedPostTierIds,
   isEntitledToGatedPost,
   postHasMembersDelimiter,
   resolveUnlockingTierIds,
 } from "src/membership";
-import { getReaderMembership } from "src/membership.server";
+import {
+  getReaderMembership,
+  isPublicationSubscriber,
+} from "src/membership.server";
 import { collectAndFetchBlockResources } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/collectAndFetchBlockResources";
 import type { PollData } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/fetchPollData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
@@ -59,9 +63,14 @@ export async function getUnlockedPost(
     ownerDid: pub.identity_did,
     contributors: pub.publication_contributors,
   };
+  const tiers = pub.publication_membership_tiers ?? [];
   const unlockingTierIds = resolveUnlockingTierIds(
-    getGatedPostGate(record),
-    pub.publication_membership_tiers ?? [],
+    getGatedPostTierIds(record),
+    tiers,
+  );
+  const subscriptionUnlocks = gateUnlocksWithSubscription(
+    unlockingTierIds,
+    tiers,
   );
   const entitled =
     isEntitledToGatedPost({ ...rows, membership: null }) ||
@@ -69,6 +78,10 @@ export async function getUnlockedPost(
       ...rows,
       membership: await getReaderMembership(pub.uri, identity.id),
       unlockingTierIds,
+      subscriptionUnlocks,
+      isSubscriber:
+        subscriptionUnlocks &&
+        (await isPublicationSubscriber(pub.uri, identity)),
     });
   if (!entitled) return { entitled: false };
 

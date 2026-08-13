@@ -17,17 +17,15 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
 
   let tierFacts = useEntity(props.entityID, "block/members-only-tier");
 
-  // Only paid tiers can gate content (free subscribers never read past the
-  // delimiter), cheapest first.
   let tiers = (pub?.publications?.publication_membership_tiers ?? [])
-    .filter((t) => t.active && !t.is_free)
+    .filter((t) => t.active)
     .sort((a, b) => a.monthly_price_cents - b.monthly_price_cents);
-  // No facts means every paid tier, and so does a set whose tiers have all
-  // been deleted — that's the server's fallback for an unmatchable gate.
+
   let checkedIds = tierFacts
     .map((f) => f.data.value)
     .filter((id) => tiers.some((t) => t.id === id));
-  if (checkedIds.length === 0) checkedIds = tiers.map((t) => t.id);
+  if (checkedIds.length === 0)
+    checkedIds = tiers.filter((t) => !t.is_free).map((t) => t.id);
 
   return (
     <div
@@ -56,14 +54,20 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   );
 };
 
-type PaidTier = {
+type Tier = {
   id: string;
   name: string;
   monthly_price_cents: number;
+  is_free: boolean;
 };
 
-function tierSummary(checkedIds: string[], tiers: PaidTier[]) {
-  if (checkedIds.length === tiers.length) return "all tiers";
+function tierSummary(checkedIds: string[], tiers: Tier[]) {
+  let paid = tiers.filter((t) => !t.is_free);
+  if (
+    paid.length === checkedIds.length &&
+    paid.every((t) => checkedIds.includes(t.id))
+  )
+    return "all members";
   return tiers
     .filter((t) => checkedIds.includes(t.id))
     .map((t) => t.name)
@@ -72,25 +76,29 @@ function tierSummary(checkedIds: string[], tiers: PaidTier[]) {
 
 function TierSelector(props: {
   entityID: string;
-  tiers: PaidTier[];
+  tiers: Tier[];
   tierFacts: { id: string; data: { value: string } }[];
   checkedIds: string[];
 }) {
   let { rep, undoManager } = useReplicache();
   let [open, setOpen] = useState(false);
 
-  // The checked set is only implicit while it's every tier, so unchecking one
-  // writes a fact for each tier that stays. Everything the toggle touches lands
-  // in a single undo entry.
-  let toggleTier = (tier: PaidTier) => {
+  let toggleTier = (tier: Tier) => {
     if (!rep) return;
     let checked = props.checkedIds.includes(tier.id);
-    // Never leave the delimiter gating nothing — the last checked tier can't
-    // be unchecked.
-    if (checked && props.checkedIds.length === 1) return;
     let next = checked
       ? props.checkedIds.filter((id) => id !== tier.id)
       : [...props.checkedIds, tier.id];
+    // Unchecking the last paid tier would gate the content from everyone, so
+    // the free tier takes over and it opens to any subscriber instead.
+    if (
+      !next.some((id) => props.tiers.some((t) => t.id === id && !t.is_free))
+    ) {
+      let freeTier = props.tiers.find((t) => t.is_free);
+      // Nothing left to gate on: keep the last tier checked.
+      if (!freeTier) return;
+      if (!next.includes(freeTier.id)) next = [...next, freeTier.id];
+    }
     undoManager.withUndoGroup(async () => {
       if (!rep) return;
       for (let fact of props.tierFacts) {
@@ -143,7 +151,9 @@ function TierSelector(props: {
               <span className="flex flex-col leading-tight">
                 {tier.name}
                 <span className="text-tertiary text-xs font-normal">
-                  {formatPrice(tier.monthly_price_cents)}/month
+                  {tier.is_free
+                    ? "anyone subscribed"
+                    : `${formatPrice(tier.monthly_price_cents)}/month`}
                 </span>
               </span>
             </Checkbox>

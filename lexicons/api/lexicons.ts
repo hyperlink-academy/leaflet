@@ -1608,11 +1608,6 @@ export const schemaDict = {
             description:
               'Ids of the membership tiers whose members can read past the delimiter. Absent means every paid tier.',
           },
-          tier: {
-            type: 'string',
-            description:
-              'DEPRECATED, read-only for records written before `tiers`: id of the lowest membership tier whose members can read past the delimiter, with pricier tiers reading through too.',
-          },
         },
       },
     },

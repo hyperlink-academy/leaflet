@@ -1,8 +1,3 @@
-// Tier descriptions (publication_membership_tiers.description) hold either
-// legacy plain text or a serialized ProseMirror doc (JSON produced by
-// TierDescriptionEditor). Everything that reads the column goes through these
-// helpers so both formats keep working.
-
 export type TierDescriptionMark = {
   type: string;
   attrs?: { href?: string };
@@ -36,8 +31,6 @@ export function parseTierDescriptionDoc(
   return null;
 }
 
-// Plain-text projection of a description, e.g. for the Stripe product
-// description. Legacy plain-text values pass through unchanged.
 export function tierDescriptionPlainText(
   description: string | null | undefined,
 ): string {
@@ -46,7 +39,7 @@ export function tierDescriptionPlainText(
   return doc.content
     .map((p) =>
       (p.content ?? [])
-        .map((n) => (n.type === "hard_break" ? "\n" : (n.text ?? "")))
+        .map((n) => (n.type === "hard_break" ? "\n" : n.text ?? ""))
         .join(""),
     )
     .join("\n")

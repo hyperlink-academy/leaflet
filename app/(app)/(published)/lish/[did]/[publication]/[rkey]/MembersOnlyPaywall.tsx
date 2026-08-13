@@ -3,7 +3,10 @@ import { useDocumentOptional } from "contexts/DocumentContext";
 import { PaidSubscribeButton } from "components/Subscribe/PaidSubscribeButton";
 import { PubIcon } from "components/ActionBar/Publications";
 import { formatPrice } from "components/Memberships/TierGrid";
-import { tierUnlocksGatedPost } from "src/membership";
+import {
+  gateUnlocksWithSubscription,
+  tierUnlocksGatedPost,
+} from "src/membership";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
@@ -44,17 +47,21 @@ export const MembersOnlyPaywall = () => {
 
   let tiers = document?.membersOnly?.tiers ?? [];
   let unlockingTierIds = document?.membersOnly?.unlockingTierIds ?? null;
-  let unlockingTiers = tiers.filter((t) =>
-    tierUnlocksGatedPost(t, unlockingTierIds),
+
+  let subscriptionUnlocks = gateUnlocksWithSubscription(
+    unlockingTierIds,
+    tiers,
   );
-  let startingPriceCents = unlockingTiers.length
-    ? Math.min(...unlockingTiers.map((t) => t.monthly_price_cents))
+  let paidUnlockingTiers = tiers.filter(
+    (t) => !t.is_free && tierUnlocksGatedPost(t, unlockingTierIds),
+  );
+  let startingPriceCents = paidUnlockingTiers.length
+    ? Math.min(...paidUnlockingTiers.map((t) => t.monthly_price_cents))
     : null;
-  // Naming the tiers only tells the reader something when some paid tier
-  // doesn't unlock the post.
+
   let namedTiers =
-    unlockingTiers.length < tiers.filter((t) => !t.is_free).length
-      ? unlockingTiers.map((t) => t.name)
+    paidUnlockingTiers.length < tiers.filter((t) => !t.is_free).length
+      ? paidUnlockingTiers.map((t) => t.name)
       : [];
 
   return (
@@ -70,14 +77,20 @@ export const MembersOnlyPaywall = () => {
       />
       <div className="">
         <h3 className="leading-tight pb-1">
-          Become a member to continue reading
+          {subscriptionUnlocks
+            ? "Subscribe to continue reading"
+            : "Become a member to continue reading"}
         </h3>
-        {startingPriceCents !== null && (
-          <p>
-            {namedTiers.length > 0
-              ? `Available on the ${formatList(namedTiers)} ${namedTiers.length > 1 ? "tiers" : "tier"}, from ${formatPrice(startingPriceCents)}/month`
-              : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
-          </p>
+        {subscriptionUnlocks ? (
+          <p>Free for subscribers</p>
+        ) : (
+          startingPriceCents !== null && (
+            <p>
+              {namedTiers.length > 0
+                ? `Available on the ${formatList(namedTiers)} ${namedTiers.length > 1 ? "tiers" : "tier"}, from ${formatPrice(startingPriceCents)}/month`
+                : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
+            </p>
+          )
         )}
       </div>
       <PaidSubscribeButton

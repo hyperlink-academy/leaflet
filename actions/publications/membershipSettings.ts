@@ -135,9 +135,7 @@ export async function upsertMembershipTier(
   if (!owner) return Err("unauthorized");
 
   const name = tier.name.trim();
-  // Either legacy plain text or a serialized ProseMirror doc — see
-  // src/utils/tierDescriptionDoc. Stored verbatim; Stripe gets the plain-text
-  // projection below.
+
   const description = tier.description?.trim() || null;
   if (description && description.length > 20_000) return Err("invalid_tier");
   const stripeDescription = tierDescriptionPlainText(description);

@@ -47,10 +47,8 @@ export async function deletePublication(
   // Deleting the publications row cascades the membership rows away, so cancel
   // members' Stripe subscriptions first — and abort the whole delete if any
   // can't be canceled, rather than leave live billing with no record.
-  const membershipsCanceled = await cancelPublicationMemberSubscriptions(
-    publication_uri,
-    identity.connectedAccount?.stripe_account_id,
-  );
+  const membershipsCanceled =
+    await cancelPublicationMemberSubscriptions(publication_uri);
   if (!membershipsCanceled) {
     return {
       success: false,

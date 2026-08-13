@@ -5,8 +5,8 @@ import {
   TierDescriptionInline,
 } from "src/utils/tierDescriptionDoc";
 
-// Static renderer for a tier description: rich (ProseMirror doc JSON) or
-// legacy plain text. Rendered from JSON node-by-node rather than as HTML so
+// Static renderer for a tier description: rich (ProseMirror doc JSON) or plain
+// text. Rendered from JSON node-by-node rather than as HTML so
 // only the node/mark types listed here can ever reach readers.
 export function TierDescription(props: { description: string }) {
   let doc = parseTierDescriptionDoc(props.description);

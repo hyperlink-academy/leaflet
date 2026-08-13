@@ -11,7 +11,7 @@ import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { getDocumentPages } from "src/utils/normalizeRecords";
 import {
-  getGatedPostGate,
+  getGatedPostTierIds,
   postHasMembersDelimiter,
   resolveUnlockingTierIds,
   truncatePagesAtMembersDelimiter,
@@ -104,7 +104,7 @@ export const getPostPageData = cache(async function getPostPageData(
     postHasMembersDelimiter(normalizedDocument)
   ) {
     const unlockingTierIds = resolveUnlockingTierIds(
-      getGatedPostGate(normalizedDocument),
+      getGatedPostTierIds(normalizedDocument),
       gatePub.publication_membership_tiers ?? [],
     );
     // normalizeDocumentRecord shares the pages array with `document.data`, so

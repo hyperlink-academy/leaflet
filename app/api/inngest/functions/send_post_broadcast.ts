@@ -27,7 +27,8 @@ import {
 } from "src/utils/byline";
 import type { Json } from "supabase/database.types";
 import {
-  getMembersDelimiterGate,
+  gateUnlocksWithSubscription,
+  getMembersDelimiterTierIds,
   isEntitledToGatedPost,
   pageHasMembersDelimiter,
   resolveUnlockingTierIds,
@@ -164,22 +165,20 @@ export const send_post_broadcast = inngest.createFunction(
       firstPage?.$type === "pub.leaflet.pages.linearDocument"
         ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
         : [];
-    // When the post is gated, subscribers with an active membership (plus the
-    // owner and confirmed contributors) get the full body by email; everyone
-    // else gets only the preview above the delimiter (the post link paywalls).
-    const gated =
+
+    const pubTiers = loaded.pub.publication_membership_tiers ?? [];
+    const hasDelimiter =
       !!loaded.pub.publication_membership_settings?.enabled &&
       pageHasMembersDelimiter({ blocks });
+    const unlockingTierIds = hasDelimiter
+      ? resolveUnlockingTierIds(getMembersDelimiterTierIds(blocks), pubTiers)
+      : null;
+    const gated =
+      hasDelimiter && !gateUnlocksWithSubscription(unlockingTierIds, pubTiers);
     const previewBlocks = gated
       ? truncateBlocksAtMembersDelimiter(blocks)
       : blocks;
-    const pubTiers = loaded.pub.publication_membership_tiers ?? [];
-    const unlockingTierIds = gated
-      ? resolveUnlockingTierIds(getMembersDelimiterGate(blocks), pubTiers)
-      : null;
-    // Non-members' emails end in a "subscribe to see the full content" box
-    // linking to the join page, priced from the cheapest active tier that
-    // actually unlocks this post.
+
     const activeTierPrices = pubTiers
       .filter((t) => t.active && tierUnlocksGatedPost(t, unlockingTierIds))
       .map((t) => t.monthly_price_cents);
