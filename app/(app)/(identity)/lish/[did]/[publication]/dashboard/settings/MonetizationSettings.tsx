@@ -77,11 +77,7 @@ const EnableMonetization = (props: { publicationUri: string }) => {
   let [enabling, setEnabling] = useState(false);
 
   return (
-    <SettingsSection
-      accent
-      title="Enable Paid Memberships"
-      className="text-center"
-    >
+    <SettingsSection accent title="Set Up Paid Memberships">
       <div className="leading-snug text-secondary">
         You've connected a Stripe account! <br />
         Turn on paid memberships for this publication to <br /> create
@@ -89,7 +85,7 @@ const EnableMonetization = (props: { publicationUri: string }) => {
       </div>
       <ButtonPrimary
         type="button"
-        className="mx-auto"
+        className=""
         disabled={enabling}
         onClick={async () => {
           if (enabling) return;
@@ -110,7 +106,7 @@ const EnableMonetization = (props: { publicationUri: string }) => {
           await mutate();
         }}
       >
-        {enabling ? <DotLoader /> : "Enable!"}
+        {enabling ? <DotLoader /> : "Turn on Memberships!"}
       </ButtonPrimary>
     </SettingsSection>
   );

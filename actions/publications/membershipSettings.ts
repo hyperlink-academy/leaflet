@@ -80,7 +80,7 @@ async function ensureFreeTier(publicationUri: string) {
     .insert({
       publication: publicationUri,
       name: "Free",
-      description: "Subscribe for free to get new posts.",
+      description: "Subscribe for free to get notified about new posts.",
       monthly_price_cents: 0,
       annual_price_cents: null,
       is_free: true,
