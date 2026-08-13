@@ -4,6 +4,7 @@ import { DotLoader } from "components/utils/DotLoader";
 import { ToggleGroup } from "components/ToggleGroup";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { tierUnlocksGatedPost } from "src/membership";
+import { TierDescription } from "components/Memberships/TierDescription";
 
 export type Tier = {
   id: string;
@@ -138,9 +139,9 @@ export function TierGrid(props: {
               <div className="flex flex-col gap-1 grow min-h-0 overflow-y-scroll">
                 <h3 className="text-primary text-[20px]">{tier.name}</h3>
                 {tier.description && (
-                  <p className="text-secondary text-sm leading-snug pb-3">
-                    {tier.description}
-                  </p>
+                  <div className="text-secondary text-sm leading-snug pb-3">
+                    <TierDescription description={tier.description} />
+                  </div>
                 )}
               </div>
               <div className="tierJoinButton shrink-0 flex flex-col gap-2">

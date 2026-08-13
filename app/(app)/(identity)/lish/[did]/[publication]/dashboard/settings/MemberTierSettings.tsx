@@ -16,6 +16,8 @@ import { DotLoader } from "components/utils/DotLoader";
 import { useState } from "react";
 import { Modal } from "components/Modal";
 import { Input, InputWithLabel } from "components/Input";
+import { TierDescription } from "components/Memberships/TierDescription";
+import { TierDescriptionEditor } from "components/Memberships/TierDescriptionEditor";
 import { usePublicationData } from "../PublicationSWRProvider";
 import { AddTiny } from "components/Icons/AddTiny";
 import { EditTiny } from "components/Icons/EditTiny";
@@ -102,7 +104,7 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
 
             {tier.description && (
               <div className="text-tertiary text-sm leading-snug">
-                {tier.description}
+                <TierDescription description={tier.description} />
               </div>
             )}
           </div>
@@ -169,7 +171,9 @@ const TierEditorModal = (props: {
   let toaster = useToaster();
   let isFree = !!props.tier?.is_free;
   let [name, setName] = useState(props.tier?.name ?? "");
-  let [description, setDescription] = useState(props.tier?.description ?? "");
+  let [description, setDescription] = useState<string | null>(
+    props.tier?.description ?? null,
+  );
   let [monthly, setMonthly] = useState(
     props.tier ? (props.tier.monthly_price_cents / 100).toString() : "",
   );
@@ -216,7 +220,7 @@ const TierEditorModal = (props: {
     let input: MembershipTierInput = {
       id: props.tier?.id,
       name: name.trim(),
-      description: description.trim() || null,
+      description,
       monthly_price_cents: monthlyCents ?? 0,
       annual_price_cents: annualCents,
       sort_order: props.tier?.sort_order,
@@ -273,13 +277,11 @@ const TierEditorModal = (props: {
           onChange={(e) => setName(e.currentTarget.value)}
         />
 
-        <InputWithLabel
-          id="tierDescription"
+        <TierDescriptionEditor
           label="Description"
-          type="textarea"
-          value={description}
+          initialValue={description}
           placeholder="Access to members-only posts"
-          onChange={(e) => setDescription(e.currentTarget.value)}
+          onChange={setDescription}
         />
         {isFree ? null : (
           <div className="flex gap-4">

@@ -5,6 +5,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublication";
 import { getStripe } from "stripe/client";
 import { Ok, Err, type Result } from "src/result";
+import { tierDescriptionPlainText } from "src/utils/tierDescriptionDoc";
 
 type ToggleError =
   | "unauthorized"
@@ -134,7 +135,12 @@ export async function upsertMembershipTier(
   if (!owner) return Err("unauthorized");
 
   const name = tier.name.trim();
+  // Either legacy plain text or a serialized ProseMirror doc — see
+  // src/utils/tierDescriptionDoc. Stored verbatim; Stripe gets the plain-text
+  // projection below.
   const description = tier.description?.trim() || null;
+  if (description && description.length > 20_000) return Err("invalid_tier");
+  const stripeDescription = tierDescriptionPlainText(description);
 
   let existing = null;
   if (tier.id) {
@@ -215,7 +221,7 @@ export async function upsertMembershipTier(
       if (name !== existing?.name || description !== existing?.description) {
         await stripe.products.update(
           productId,
-          { name, description: description ?? "" },
+          { name, description: stripeDescription },
           { stripeAccount },
         );
       }
@@ -223,7 +229,7 @@ export async function upsertMembershipTier(
       const product = await stripe.products.create(
         {
           name,
-          ...(description ? { description } : {}),
+          ...(stripeDescription ? { description: stripeDescription } : {}),
           metadata: {
             kind: "publication_membership_tier",
             publication: publicationUri,
