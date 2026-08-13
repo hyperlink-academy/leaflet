@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useIsMobile } from "src/hooks/isMobile";
 import useSWR from "swr";
@@ -23,12 +23,12 @@ import { GoBackTiny } from "components/Icons/GoBackTiny";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 
-// Full-page iframe over the reader feed, so opening a post doesn't lose the
-// reader's place in the feed. On mobile it covers the whole screen and its
-// floating toolbar replaces the feed's footer (MobileNavigation hides itself,
-// and the toolbar's hamburger stands in for the footer's). On desktop the nav
-// sidebar stays visible and usable: the overlay only covers the content
-// column, so there's no hamburger.
+// The reader's frame state: a post in an iframe filling the content area in
+// place of the feed (see ReaderContentArea), so opening one doesn't lose the
+// reader's place. The floating toolbar carries what the feed would otherwise
+// have offered — on mobile it stands in for the feed's footer, hamburger
+// included, since that footer unmounts with the feed. On desktop the nav
+// sidebar is outside the content area and stays put, so no hamburger there.
 export const PostViewer = () => {
   let {
     queue,
@@ -47,32 +47,10 @@ export const PostViewer = () => {
   let post = index === null ? null : queue[index];
   let open = !!post;
 
-  // Where the content column starts — the overlay's left edge, so the desktop
-  // sidebar stays uncovered. The dashboard is a centered max-width flex row,
-  // so this can't be a static inset; measure the content element instead.
-  // 0 (mobile, or the element missing) means full-width.
-  // Also measured while only preloading, so the hidden frame already has its
-  // final geometry and the reveal doesn't resize (and reflow) the loaded page.
-  let active = open || !!preloadUrl;
-  let [contentLeft, setContentLeft] = useState(0);
-  useLayoutEffect(() => {
-    if (!active) return;
-    let measure = () => {
-      let content = document.getElementById("home-content");
-      setContentLeft(
-        content
-          ? Math.max(0, Math.round(content.getBoundingClientRect().left))
-          : 0,
-      );
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [active]);
-
-  // The overlay survives client-side navigation (it's a module-level store), so
-  // a browser back/forward while it's up would swap the page underneath.
-  // Treat any route change as a close.
+  // The frame state survives client-side navigation (it's a module-level
+  // store), so a browser back/forward while it's up would leave the reader
+  // framed on a route whose feed they never saw. Treat any route change as a
+  // close, back to the feed state.
   let pathname = usePathname();
   let mountPathname = useRef(pathname);
   useEffect(() => {
@@ -130,9 +108,10 @@ export const PostViewer = () => {
 
   // While a listing is hovered/touched the frame loads its url invisibly;
   // opening the same url keeps framedUrl (and the iframe's key) identical, so
-  // React keeps the DOM node and the reveal shows the already-loading page.
-  // An iframe can't be re-parented without reloading, which is why the whole
-  // viewer stays mounted (hidden) rather than rendering a separate warmer.
+  // React keeps the DOM node and entering the frame state shows the
+  // already-loading page. An iframe can't be re-parented without reloading,
+  // which is why this component stays mounted in the feed state too, rather
+  // than the feed rendering a separate warmer.
   let framedUrl = open ? postUrl : preloadUrl;
   if (!framedUrl) return null;
 
@@ -191,30 +170,31 @@ export const PostViewer = () => {
       <>
         <button
           aria-label="Close post"
-          className="absolute right-3 rounded-full border border-border-light bg-bg-page p-1.5 text-secondary shadow-md hover:text-accent-contrast"
+          className="readerCloseFrameButton absolute right-3 rounded-full border border-border-light bg-bg-page p-1.5 text-secondary shadow-md hover:text-accent-contrast"
           style={{ top: "max(env(safe-area-inset-top), 12px)" }}
           onClick={closeViewer}
         >
           <CloseTiny />
         </button>
         <div
-          className="pwa-padding-x absolute left-0 right-0 flex justify-center pointer-events-none"
+          className="readerFramerNav px-4 mx-auto pwa-padding-x absolute left-0 right-0 flex justify-center pointer-events-none sm:w-fit w-full"
           style={{ bottom: "max(var(--safe-padding-bottom), 16px)" }}
         >
-          <div className="pointer-events-auto flex items-center gap-3 max-w-full rounded-lg border border-border-light bg-bg-page px-3 py-1 text-secondary shadow-md">
-            {isMobile && (
-              <>
-                <button
-                  aria-label="Open sidebar"
-                  className="hover:text-accent-contrast"
-                  onClick={() => setSidebarOpen(true)}
-                >
-                  <MenuSmall />
-                </button>
-                <Separator classname="h-5!" />
-              </>
-            )}
-            <a
+          <div className="pointer-events-auto flex justify-between items-center gap-6 max-w-full rounded-lg border border-border-light bg-bg-page px-3 py-1 text-secondary shadow-md w-full">
+            <div className="flex gap-3 items-center">
+              {isMobile && (
+                <>
+                  <button
+                    aria-label="Open sidebar"
+                    className="hover:text-accent-contrast"
+                    onClick={() => setSidebarOpen(true)}
+                  >
+                    <MenuSmall />
+                  </button>
+                  <Separator classname="h-5!" />
+                </>
+              )}
+              {/*<a
               href={postUrl}
               target="_blank"
               rel="noreferrer"
@@ -222,29 +202,30 @@ export const PostViewer = () => {
               className="text-secondary hover:text-accent-contrast"
             >
               <ExternalLinkTiny />
-            </a>
-            <InteractionShareButton
-              postRecord={postRecord}
-              postUrl={postUrl}
-              documentUri={post.documents.uri}
-              publication={pubRecord}
-              pubUri={post.publication?.uri}
-            />
-            <RecommendButton
-              documentUri={post.documents.uri}
-              recommendsCount={recommendsCount}
-            />
-            <DiscussionButton
-              documentUri={post.documents.uri}
-              commentsCount={commentsCount}
-              quotesCount={quotesCount}
-              showComments={mergedPrefs.showComments !== false}
-              showMentions={mergedPrefs.showMentions !== false}
-              postUrl={postUrl}
-              title={postRecord.title}
-              onClick={() => setDiscussionOpen(!discussionOpen)}
-            />
-            {post.publication && pubRecord && (
+            </a>*/}
+              <RecommendButton
+                documentUri={post.documents.uri}
+                recommendsCount={recommendsCount}
+              />
+              <DiscussionButton
+                documentUri={post.documents.uri}
+                commentsCount={commentsCount}
+                quotesCount={quotesCount}
+                showComments={mergedPrefs.showComments !== false}
+                showMentions={mergedPrefs.showMentions !== false}
+                postUrl={postUrl}
+                title={postRecord.title}
+                onClick={() => setDiscussionOpen(!discussionOpen)}
+              />
+              <InteractionShareButton
+                postRecord={postRecord}
+                postUrl={postUrl}
+                documentUri={post.documents.uri}
+                publication={pubRecord}
+                pubUri={post.publication?.uri}
+              />
+            </div>
+            {/*{post.publication && pubRecord && (
               <>
                 <Separator classname="h-5!" />
                 <SubscribeButton
@@ -255,15 +236,14 @@ export const PostViewer = () => {
                   newsletterMode={newsletterMode ?? false}
                 />
               </>
-            )}
-            <Separator classname="h-5!" />
+            )}*/}
             <button
               aria-label="Next post"
               disabled={!hasNext}
               onClick={nextPost}
-              className="flex items-center gap-0.5 font-bold hover:text-accent-contrast disabled:text-border disabled:hover:text-border"
+              className="flex items-center gap-0.5  hover:text-accent-contrast disabled:text-border disabled:hover:text-border text-tertiary"
             >
-              Next <ArrowRightTiny />
+              Next <ArrowRightTiny className="text-secondary" />
             </button>
           </div>
         </div>
@@ -272,22 +252,16 @@ export const PostViewer = () => {
   }
 
   return (
-    // Desktop padding mirrors the dashboard's spacing: pl-8 like the content
-    // column's gap from the sidebar, py/pr-6 like the sidebar's own margins.
-    // While only preloading, the whole overlay is present but invisible —
-    // visibility keeps the iframe loading without paint or hit-testing.
     <div
-      className={`readerPostViewer fixed inset-y-0 right-0 z-20 sm:py-6 sm:pl-8 sm:pr-6 ${open ? "" : "invisible pointer-events-none"}`}
-      style={{ left: contentLeft }}
+      className={`readerPostViewer w-full h-full sm:py-6 sm:pl-6 ${open ? "" : "absolute inset-0 invisible pointer-events-none"}`}
       aria-hidden={!open}
     >
-      <div className="relative w-full h-full overflow-hidden bg-bg-page sm:rounded-lg sm:border sm:border-border-light sm:shadow-md">
+      <div className="relative w-full h-full overflow-hidden bg-bg-page sm:rounded-lg sm:border sm:border-border-light">
         {blocked ? (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1 px-4 text-center">
-            <h3 className="text-secondary">
-              This site doesn&apos;t allow embedding
-            </h3>
-            <p className="text-tertiary">Read it in a new tab instead:</p>
+            <p className="text-tertiary">
+              We can't show this post here! Read it in a new tab instead.
+            </p>
             <a
               href={framedUrl}
               target="_blank"

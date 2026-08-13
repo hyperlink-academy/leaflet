@@ -7,7 +7,7 @@ import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
 import { NewSmall } from "components/Icons/NewSmall";
 import { TrendingSmall } from "components/Icons/TrendingSmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
-import { PostViewer } from "./PostViewer";
+import { ReaderContentArea } from "./ReaderContentArea";
 
 // Synchronous shell + suspended inner, same as the (identity) and
 // (home-pages) layouts above: a fresh mount of this segment (e.g. home →
@@ -31,15 +31,12 @@ async function ReaderLayoutInner(props: { children: React.ReactNode }) {
   tabs.New = { href: "/reader/new", icon: <NewSmall /> };
 
   return (
-    <>
-      <DashboardShell
-        id="reader"
-        pageTitle={<PageTitle pageTitle="Reader" />}
-        tabs={tabs}
-      >
-        {props.children}
-      </DashboardShell>
-      <PostViewer />
-    </>
+    <DashboardShell
+      id="reader"
+      pageTitle={<PageTitle pageTitle="Reader" />}
+      tabs={tabs}
+    >
+      <ReaderContentArea>{props.children}</ReaderContentArea>
+    </DashboardShell>
   );
 }
