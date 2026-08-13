@@ -28,9 +28,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { Popover } from "components/Popover";
 import { Modal } from "components/Modal";
-import { MobileSheet } from "components/MobileSheet";
 import { Input } from "components/Input";
-import { useIsMobile } from "src/hooks/isMobile";
 
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import { AddSmall } from "components/Icons/AddSmall";
@@ -284,31 +282,18 @@ export function EditGalleryImages(props: {
   onOpenChange: (open: boolean) => void;
   onAddFiles: (files: File[]) => void;
 }) {
-  let isMobile = useIsMobile();
-  let content = (
-    <EditGalleryImagesContent
-      entityID={props.entityID}
-      imageFacts={props.imageFacts}
-      onAddFiles={props.onAddFiles}
-    />
-  );
-  if (isMobile)
-    return (
-      <MobileSheet
-        open={props.open}
-        onOpenChange={props.onOpenChange}
-        title="Edit Images"
-      >
-        {content}
-      </MobileSheet>
-    );
   return (
     <Modal
+      sheetOnMobile
       open={props.open}
       onOpenChange={props.onOpenChange}
       title="Edit Images"
     >
-      {content}
+      <EditGalleryImagesContent
+        entityID={props.entityID}
+        imageFacts={props.imageFacts}
+        onAddFiles={props.onAddFiles}
+      />
     </Modal>
   );
 }
