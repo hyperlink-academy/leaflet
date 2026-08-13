@@ -57,16 +57,6 @@ export function subscribeErrorMessage(error: string): string {
   }
 }
 
-// The membership tier cards plus the monthly/annual toggle, rendered by the
-// paid join flow (JoinMembershipFlow). The viewer's standing drives the paid
-// buttons' copy:
-// no subscription → "Join", subscribed on the free tier → "Upgrade" (their
-// cost goes up from $0), an active paid membership → monthly-pricier tiers say
-// "Upgrade" and the rest "Switch", and the free tier reads "Switch to free"
-// since taking it cancels their paid plan. Whichever tier the viewer is on —
-// free by subscription, paid by membership — reads "Subscribed". Flow decisions
-// (payment vs prorated switch vs downgrade) stay with the caller via
-// onSelectTier.
 export function TierGrid(props: {
   tiers: Tier[];
   cadence: Cadence;
@@ -108,6 +98,8 @@ export function TierGrid(props: {
     return `Switch for ${price}`;
   };
 
+  let cols = Math.min(renderTiers.length, renderTiers.length % 3 === 1 ? 2 : 3);
+
   return (
     <>
       <div className="flex justify-center pb-4">
@@ -122,7 +114,12 @@ export function TierGrid(props: {
         />
       </div>
 
-      <div className="tierGroup flex sm:flex-row gap-2 flex-col w-full items-stretch min-h-0 grow">
+      <div
+        className="tierGroup sm:grid sm:gap-x-3 sm:gap-y-6 gap-6 flex flex-col w-full items-stretch min-h-0 grow"
+        style={{
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+        }}
+      >
         {renderTiers.map((tier) => {
           const free = isFreeTier(tier);
           // A free-tier subscriber has no membership row to name a tier, so

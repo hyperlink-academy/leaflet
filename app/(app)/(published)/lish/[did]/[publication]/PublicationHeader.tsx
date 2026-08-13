@@ -96,11 +96,11 @@ export function PublicationHeader(props: {
         {props.author}
         {props.subscribe && (
           <div className="pt-4 pb-1 px-3">
-            <div className="max-w-sm mx-auto sm:w-fit w-full">
+            <div className="max-w-sm mx-auto w-fit">
               <SubscribeInput
-            {...props.subscribe}
-            source={{ placement: "pub_header" }}
-          />
+                {...props.subscribe}
+                source={{ placement: "pub_header" }}
+              />
             </div>
           </div>
         )}

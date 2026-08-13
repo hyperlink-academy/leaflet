@@ -54,7 +54,9 @@ export const ConnectStripeSection = () => {
               Manage and withdraw funds, and find information on subscriptions,
               customers, and disputes via the Stripe Dashboard.
             </div>
-            <div>Leaflet collects 5% of all charges.</div>
+            <div>
+              Leaflet collects 5% of all charges, after processing fees.
+            </div>
           </>
         ) : (
           <>
@@ -62,7 +64,9 @@ export const ConnectStripeSection = () => {
               Collect subscriptions and monetize your content!
               <br /> Connect a Stripe account to get started!
             </div>
-            <div>Leaflet collects 5% of all charges.</div>
+            <div>
+              Leaflet collects 5% of all charges, after processing fees.
+            </div>
           </>
         )}
       </div>

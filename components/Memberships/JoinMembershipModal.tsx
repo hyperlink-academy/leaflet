@@ -28,7 +28,7 @@ export function JoinMembershipModal(props: {
       sheetOnMobile
       open={props.open}
       onOpenChange={props.onOpenChange}
-      className="max-w-full w-fit p-4 pt-3 sm:p-6 sm:pt-5 bg-[var(--color-bg-light)]!"
+      className="max-w-full w-fit p-4 pt-3  sm:p-6 sm:pb-8 sm:pt-5 bg-[var(--color-bg-light)]!"
     >
       <JoinMembershipFlow
         active={props.open}
@@ -44,6 +44,7 @@ export function JoinMembershipModal(props: {
         source={props.source}
         viewerOverride={props.viewerOverride}
       />
+      <div className="spacer h-6 sm:hidden" />
     </Modal>
   );
 }

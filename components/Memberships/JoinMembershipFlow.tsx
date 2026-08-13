@@ -568,7 +568,7 @@ export function JoinMembershipFlow(props: {
           This is your publication — readers see your membership tiers here.
         </div>
       ) : (
-        <div className="memberSignUp flex flex-col max-h-[80vh] max-w-3xl">
+        <div className="memberSignUp flex flex-col max-w-3xl">
           <div className="text-center flex flex-col gap-1 max-w-md mx-auto">
             <h2 className="text-primary leading-snug text-xl">
               Become a member of <br />
