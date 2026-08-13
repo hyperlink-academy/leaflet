@@ -1600,10 +1600,18 @@ export const schemaDict = {
           'Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership.',
         required: [],
         properties: {
+          tiers: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description:
+              'Ids of the membership tiers whose members can read past the delimiter. Absent means every paid tier.',
+          },
           tier: {
             type: 'string',
             description:
-              'Id of the lowest membership tier whose members can read past the delimiter; tiers rank by price, so pricier tiers read through too. Absent means any paid membership.',
+              'DEPRECATED, read-only for records written before `tiers`: id of the lowest membership tier whose members can read past the delimiter, with pricier tiers reading through too.',
           },
         },
       },

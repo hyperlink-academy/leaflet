@@ -292,10 +292,14 @@ export async function processBlocksToPages(opts: {
       return block;
     },
     "members-only-delimiter": async (b) => {
-      const [tier] = scan.eav(b.entityID, "block/members-only-tier");
+      // Sorted so an unchanged selection always serializes identically.
+      const tiers = scan
+        .eav(b.entityID, "block/members-only-tier")
+        .map((f) => f.data.value)
+        .sort();
       const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
         $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
-        ...(tier && { tier: tier.data.value }),
+        ...(tiers.length > 0 && { tiers }),
       };
       return block;
     },

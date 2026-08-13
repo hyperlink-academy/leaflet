@@ -27,51 +27,80 @@ export function postHasMembersDelimiter(
   return !!pages?.[0] && pageHasMembersDelimiter(pages[0]);
 }
 
-// The delimiter's tier requirement, when the author picked one. null means the
-// delimiter (or its tier field) is absent: any paid membership reads through.
-export function getMembersDelimiterTierId(
-  blocks: { block?: { $type?: string; tier?: unknown } }[] | undefined,
-): string | null {
-  const delimiter = blocks?.find(
+// What a delimiter says about who reads past it. `tiers` is the current shape
+// (the exact set of tiers the author checked); `tier` is the pre-multi-select
+// shape, a single id meaning "that tier and up by price". null means the
+// delimiter names nothing: every paid tier reads through.
+export type MembersDelimiterGate =
+  | { type: "tiers"; tierIds: string[] }
+  | { type: "minimum-tier"; tierId: string }
+  | null;
+
+export function getMembersDelimiterGate(
+  blocks:
+    | { block?: { $type?: string; tiers?: unknown; tier?: unknown } }[]
+    | undefined,
+): MembersDelimiterGate {
+  const block = blocks?.find(
     (b) => b?.block?.$type === ids.PubLeafletBlocksMembersOnlyDelimiter,
-  );
-  return typeof delimiter?.block?.tier === "string"
-    ? delimiter.block.tier
-    : null;
+  )?.block;
+  if (Array.isArray(block?.tiers)) {
+    const tierIds = block.tiers.filter(
+      (t): t is string => typeof t === "string",
+    );
+    if (tierIds.length > 0) return { type: "tiers", tierIds };
+  }
+  if (typeof block?.tier === "string")
+    return { type: "minimum-tier", tierId: block.tier };
+  return null;
 }
 
-export function getGatedPostRequiredTierId(
+export function getGatedPostGate(
   doc: NormalizedDocument | null,
-): string | null {
+): MembersDelimiterGate {
   const pages = doc ? getDocumentPages(doc) : undefined;
   const first = pages?.[0] as
-    | { blocks?: { block?: { $type?: string; tier?: unknown } }[] }
+    | {
+        blocks?: {
+          block?: { $type?: string; tiers?: unknown; tier?: unknown };
+        }[];
+      }
     | undefined;
-  return getMembersDelimiterTierId(first?.blocks);
+  return getMembersDelimiterGate(first?.blocks);
 }
 
-// Resolves a delimiter's tier id against the publication's tier rows. A tier
-// that no longer exists can't be ranked, so the gate falls back to
-// any-paid-membership rather than locking every member out.
-export function resolveGateRequiredTier<
-  T extends { id: string; monthly_price_cents: number },
->(requiredTierId: string | null | undefined, tiers: T[]): T | null {
-  if (!requiredTierId) return null;
-  return tiers.find((t) => t.id === requiredTierId) ?? null;
+// Resolves a delimiter's gate against the publication's tier rows into the ids
+// that read past it. null means unrestricted — every paid tier — which is also
+// where a gate whose tiers have all been deleted lands: an unrankable,
+// unmatchable gate would otherwise lock out every member.
+export function resolveUnlockingTierIds<
+  T extends { id: string; monthly_price_cents: number; is_free: boolean },
+>(gate: MembersDelimiterGate, tiers: T[]): string[] | null {
+  if (!gate) return null;
+  if (gate.type === "tiers") {
+    const live = tiers.filter((t) => !t.is_free && gate.tierIds.includes(t.id));
+    return live.length > 0 ? live.map((t) => t.id) : null;
+  }
+  const minimum = tiers.find((t) => t.id === gate.tierId);
+  if (!minimum) return null;
+  return tiers
+    .filter(
+      (t) => !t.is_free && t.monthly_price_cents >= minimum.monthly_price_cents,
+    )
+    .map((t) => t.id);
 }
 
-// Whether joining `tier` grants access past a delimiter requiring
-// `requiredTier`. Tiers rank by monthly price — equal or pricier tiers read
-// through — so "higher" tiers always include what lower tiers can see. The
-// free tier never unlocks gated content (free subscribers have no membership
-// row at all).
+// Whether joining `tier` grants access past a delimiter unlocked by
+// `unlockingTierIds` (resolve it with resolveUnlockingTierIds; null means every
+// paid tier). The free tier never unlocks gated content — free subscribers have
+// no membership row at all.
 export function tierUnlocksGatedPost(
-  tier: { is_free: boolean; monthly_price_cents: number },
-  requiredTier: { monthly_price_cents: number } | null | undefined,
+  tier: { id: string; is_free: boolean },
+  unlockingTierIds: string[] | null | undefined,
 ): boolean {
   if (tier.is_free) return false;
-  if (!requiredTier) return true;
-  return tier.monthly_price_cents >= requiredTier.monthly_price_cents;
+  if (!unlockingTierIds) return true;
+  return unlockingTierIds.includes(tier.id);
 }
 
 // For render paths that work on a flat block list (RSS feed, newsletter
@@ -212,9 +241,9 @@ export function isActiveMembership(
 
 // The full-access rule for a gated post, over already-fetched rows so the
 // decision is testable without a database: the publication owner, a confirmed
-// contributor, or an active member on a high-enough tier reads past the
-// delimiter. `requiredTier` (resolve it with resolveGateRequiredTier) and
-// `tiers` only matter when the delimiter names a tier; omitted, any active
+// contributor, or an active member on an unlocking tier reads past the
+// delimiter. `unlockingTierIds` (resolve it with resolveUnlockingTierIds) only
+// matters when the delimiter names tiers; omitted or null, any active
 // membership qualifies.
 export function isEntitledToGatedPost(input: {
   viewerDid: string | null | undefined;
@@ -224,8 +253,7 @@ export function isEntitledToGatedPost(input: {
     | (MembershipStatusFields & { tier?: string | null })
     | null
     | undefined;
-  requiredTier?: { monthly_price_cents: number } | null;
-  tiers?: { id: string; monthly_price_cents: number }[];
+  unlockingTierIds?: string[] | null;
 }): boolean {
   const { viewerDid } = input;
   if (viewerDid) {
@@ -238,14 +266,7 @@ export function isEntitledToGatedPost(input: {
       return true;
   }
   if (!isActiveMembership(input.membership)) return false;
-  if (!input.requiredTier) return true;
-  // A membership whose tier row is gone can't be ranked; treat it as below
-  // every named requirement.
-  const memberTier = input.membership?.tier
-    ? input.tiers?.find((t) => t.id === input.membership?.tier)
-    : undefined;
-  return (
-    !!memberTier &&
-    memberTier.monthly_price_cents >= input.requiredTier.monthly_price_cents
-  );
+  if (!input.unlockingTierIds) return true;
+  const memberTier = input.membership?.tier;
+  return !!memberTier && input.unlockingTierIds.includes(memberTier);
 }

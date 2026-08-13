@@ -16,7 +16,7 @@ export function JoinMembershipModal(props: {
   newsletterMode: boolean;
   tiers: Tier[];
   unlocksPost?: boolean;
-  unlocksPostTier?: { monthly_price_cents: number } | null;
+  unlocksPostTierIds?: string[] | null;
   resume?: JoinResume | null;
   // Test-harness seam, threaded to the flow.
   viewerOverride?: MembershipJoinViewer;
@@ -36,7 +36,7 @@ export function JoinMembershipModal(props: {
         newsletterMode={props.newsletterMode}
         tiers={props.tiers}
         unlocksPost={props.unlocksPost}
-        unlocksPostTier={props.unlocksPostTier}
+        unlocksPostTierIds={props.unlocksPostTierIds}
         resume={props.resume}
         viewerOverride={props.viewerOverride}
       />

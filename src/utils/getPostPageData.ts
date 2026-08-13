@@ -11,9 +11,9 @@ import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { getDocumentPages } from "src/utils/normalizeRecords";
 import {
-  getGatedPostRequiredTierId,
+  getGatedPostGate,
   postHasMembersDelimiter,
-  resolveGateRequiredTier,
+  resolveUnlockingTierIds,
   truncatePagesAtMembersDelimiter,
 } from "src/membership";
 import {
@@ -91,24 +91,20 @@ export const getPostPageData = cache(async function getPostPageData(
   let membersOnly: {
     gated: boolean;
     tiers: typeof membershipTiers;
-    // The delimiter's tier requirement, resolved against every tier row
-    // (archived tiers still rank); null when any paid membership unlocks.
-    requiredTier: {
-      id: string;
-      name: string;
-      monthly_price_cents: number;
-    } | null;
+    // The tiers the delimiter unlocks, resolved against every tier row
+    // (archived tiers still resolve); null when any paid membership unlocks.
+    unlockingTierIds: string[] | null;
   } = {
     gated: false,
     tiers: [],
-    requiredTier: null,
+    unlockingTierIds: null,
   };
   if (
     gatePub?.publication_membership_settings?.enabled &&
     postHasMembersDelimiter(normalizedDocument)
   ) {
-    const requiredTier = resolveGateRequiredTier(
-      getGatedPostRequiredTierId(normalizedDocument),
+    const unlockingTierIds = resolveUnlockingTierIds(
+      getGatedPostGate(normalizedDocument),
       gatePub.publication_membership_tiers ?? [],
     );
     // normalizeDocumentRecord shares the pages array with `document.data`, so
@@ -119,13 +115,7 @@ export const getPostPageData = cache(async function getPostPageData(
     membersOnly = {
       gated: true,
       tiers: membershipTiers,
-      requiredTier: requiredTier
-        ? {
-            id: requiredTier.id,
-            name: requiredTier.name,
-            monthly_price_cents: requiredTier.monthly_price_cents,
-          }
-        : null,
+      unlockingTierIds,
     };
   }
 

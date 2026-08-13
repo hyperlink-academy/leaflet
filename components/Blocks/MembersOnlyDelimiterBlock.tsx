@@ -1,12 +1,12 @@
 import { useIsBlockSelected } from "src/useUIState";
 import { LockTiny } from "components/Icons/LockTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
-import { CheckTiny } from "components/Icons/CheckTiny";
 import { BlockProps } from "./Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { Popover } from "components/Popover";
+import { Checkbox } from "components/Checkbox";
 import { formatPrice } from "components/Memberships/TierGrid";
 import { useState } from "react";
 
@@ -15,19 +15,19 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   let { permissions } = useEntitySetContext();
   let { data: pub } = useLeafletPublicationData();
 
-  let tierFact = useEntity(props.entityID, "block/members-only-tier");
-  let selectedTierId = tierFact?.data.value;
+  let tierFacts = useEntity(props.entityID, "block/members-only-tier");
 
   // Only paid tiers can gate content (free subscribers never read past the
-  // delimiter), ranked cheapest-first: picking a tier includes every pricier
-  // one.
+  // delimiter), cheapest first.
   let tiers = (pub?.publications?.publication_membership_tiers ?? [])
     .filter((t) => t.active && !t.is_free)
     .sort((a, b) => a.monthly_price_cents - b.monthly_price_cents);
-  // No fact (or a stale one — the tier was deleted) gates as any paid
-  // membership server-side, which is exactly the cheapest tier and up, so
-  // display it as the cheapest tier.
-  let selectedTier = tiers.find((t) => t.id === selectedTierId) ?? tiers[0];
+  // No facts means every paid tier, and so does a set whose tiers have all
+  // been deleted — that's the server's fallback for an unmatchable gate.
+  let checkedIds = tierFacts
+    .map((f) => f.data.value)
+    .filter((id) => tiers.some((t) => t.id === id));
+  if (checkedIds.length === 0) checkedIds = tiers.map((t) => t.id);
 
   return (
     <div
@@ -36,18 +36,20 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   `}
     >
       <hr className="grow border-border-light" />
-      <div className="flex items-center gap-1 shrink-0 font-bold">
+      <div className="flex items-center gap-2 shrink-0 font-bold">
         <LockTiny />
         Members-only content below
-        {permissions.write && tiers.length > 0 ? (
-          <TierSelector
-            entityID={props.entityID}
-            tiers={tiers}
-            selectedTier={selectedTier}
-          />
-        ) : (
-          selectedTier && <span>· {tierOptionLabel(selectedTier, tiers)}</span>
-        )}
+        {tiers.length > 0 &&
+          (permissions.write ? (
+            <TierSelector
+              entityID={props.entityID}
+              tiers={tiers}
+              tierFacts={tierFacts}
+              checkedIds={checkedIds}
+            />
+          ) : (
+            <span>· {tierSummary(checkedIds, tiers)}</span>
+          ))}
       </div>
       <hr className="grow border-border-light" />
     </div>
@@ -60,29 +62,50 @@ type PaidTier = {
   monthly_price_cents: number;
 };
 
-// The priciest tier has nothing above it, so drop the "and up".
-function tierOptionLabel(tier: PaidTier, tiers: PaidTier[]) {
-  return tier.id === tiers[tiers.length - 1]?.id
-    ? tier.name
-    : `${tier.name} and up`;
+function tierSummary(checkedIds: string[], tiers: PaidTier[]) {
+  if (checkedIds.length === tiers.length) return "all tiers";
+  return tiers
+    .filter((t) => checkedIds.includes(t.id))
+    .map((t) => t.name)
+    .join(", ");
 }
 
 function TierSelector(props: {
   entityID: string;
   tiers: PaidTier[];
-  selectedTier: PaidTier;
+  tierFacts: { id: string; data: { value: string } }[];
+  checkedIds: string[];
 }) {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let [open, setOpen] = useState(false);
 
-  let setTier = (tier: PaidTier) => {
+  // The checked set is only implicit while it's every tier, so unchecking one
+  // writes a fact for each tier that stays. Everything the toggle touches lands
+  // in a single undo entry.
+  let toggleTier = (tier: PaidTier) => {
     if (!rep) return;
-    rep.mutate.assertFact({
-      entity: props.entityID,
-      attribute: "block/members-only-tier",
-      data: { type: "string", value: tier.id },
+    let checked = props.checkedIds.includes(tier.id);
+    // Never leave the delimiter gating nothing — the last checked tier can't
+    // be unchecked.
+    if (checked && props.checkedIds.length === 1) return;
+    let next = checked
+      ? props.checkedIds.filter((id) => id !== tier.id)
+      : [...props.checkedIds, tier.id];
+    undoManager.withUndoGroup(async () => {
+      if (!rep) return;
+      for (let fact of props.tierFacts) {
+        if (!next.includes(fact.data.value))
+          await rep.mutate.retractFact({ factID: fact.id });
+      }
+      for (let id of next) {
+        if (props.tierFacts.some((f) => f.data.value === id)) continue;
+        await rep.mutate.assertFact({
+          entity: props.entityID,
+          attribute: "block/members-only-tier",
+          data: { type: "string", value: id },
+        });
+      }
     });
-    setOpen(false);
   };
 
   return (
@@ -100,35 +123,32 @@ function TierSelector(props: {
           onMouseDown={(e) => e.preventDefault()}
           className="flex items-center gap-0.5 underline decoration-dotted hover:text-accent-contrast"
         >
-          · {tierOptionLabel(props.selectedTier, props.tiers)}
+          · {tierSummary(props.checkedIds, props.tiers)}
           <ArrowDownTiny className="shrink-0" />
         </button>
       }
     >
-      <div className="flex flex-col gap-0.5 py-1 min-w-[180px] text-primary">
+      <div className="flex flex-col gap-1 py-1 min-w-[180px] text-primary">
         <div className="text-tertiary text-xs font-bold pb-1">
           Who can read past this point?
         </div>
-        {props.tiers.map((tier) => {
-          let selected = props.selectedTier.id === tier.id;
-          return (
-            <button
-              key={tier.id}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setTier(tier)}
-              className={`flex items-center justify-between gap-3 text-left px-1 py-0.5 rounded-md hover:bg-border-light ${selected ? "font-bold" : ""}`}
+        {props.tiers.map((tier) => (
+          <div key={tier.id} onMouseDown={(e) => e.preventDefault()}>
+            <Checkbox
+              small
+              checked={props.checkedIds.includes(tier.id)}
+              onChange={() => toggleTier(tier)}
+              className="px-1"
             >
-              <span className="flex flex-col">
-                {tierOptionLabel(tier, props.tiers)}
+              <span className="flex flex-col leading-tight">
+                {tier.name}
                 <span className="text-tertiary text-xs font-normal">
-                  from {formatPrice(tier.monthly_price_cents)}/month
+                  {formatPrice(tier.monthly_price_cents)}/month
                 </span>
               </span>
-              {selected && <CheckTiny className="shrink-0" />}
-            </button>
-          );
-        })}
+            </Checkbox>
+          </div>
+        ))}
       </div>
     </Popover>
   );

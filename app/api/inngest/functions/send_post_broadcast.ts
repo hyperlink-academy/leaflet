@@ -27,10 +27,10 @@ import {
 } from "src/utils/byline";
 import type { Json } from "supabase/database.types";
 import {
-  getMembersDelimiterTierId,
+  getMembersDelimiterGate,
   isEntitledToGatedPost,
   pageHasMembersDelimiter,
-  resolveGateRequiredTier,
+  resolveUnlockingTierIds,
   tierUnlocksGatedPost,
   truncateBlocksAtMembersDelimiter,
 } from "src/membership";
@@ -174,14 +174,14 @@ export const send_post_broadcast = inngest.createFunction(
       ? truncateBlocksAtMembersDelimiter(blocks)
       : blocks;
     const pubTiers = loaded.pub.publication_membership_tiers ?? [];
-    const requiredTier = gated
-      ? resolveGateRequiredTier(getMembersDelimiterTierId(blocks), pubTiers)
+    const unlockingTierIds = gated
+      ? resolveUnlockingTierIds(getMembersDelimiterGate(blocks), pubTiers)
       : null;
     // Non-members' emails end in a "subscribe to see the full content" box
     // linking to the join page, priced from the cheapest active tier that
     // actually unlocks this post.
     const activeTierPrices = pubTiers
-      .filter((t) => t.active && tierUnlocksGatedPost(t, requiredTier))
+      .filter((t) => t.active && tierUnlocksGatedPost(t, unlockingTierIds))
       .map((t) => t.monthly_price_cents);
     const membersUpsell = {
       joinUrl: `${pubProps.publicationUrl.replace(/\/$/, "")}/join`,
@@ -265,8 +265,7 @@ export const send_post_broadcast = inngest.createFunction(
               ownerDid: null,
               contributors: [],
               membership: m,
-              requiredTier,
-              tiers: pubTiers,
+              unlockingTierIds,
             });
             if (!entitledMember) continue;
             identityIds.add(m.identity_id);

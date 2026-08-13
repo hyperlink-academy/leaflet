@@ -76,10 +76,9 @@ export function TierGrid(props: {
   // The viewer's active paid membership tier, if any.
   currentTierId?: string | null;
   unlocksPost?: boolean;
-  // The gated post's tier requirement; with unlocksPost, only tiers that meet
-  // it (rank by monthly price) get the "Unlocks post" badge. null/absent means
-  // every paid tier unlocks.
-  unlocksPostTier?: { monthly_price_cents: number } | null;
+  // The tiers the gated post's delimiter names; with unlocksPost, only those
+  // get the "Unlocks post" badge. null/absent means every paid tier unlocks.
+  unlocksPostTierIds?: string[] | null;
   onSelectTier: (tier: Tier) => void;
 }) {
   const hasAnnual = props.tiers.some((t) => t.annual_price_cents != null);
@@ -183,7 +182,7 @@ export function TierGrid(props: {
                 )}
               </div>
               {props.unlocksPost &&
-                tierUnlocksGatedPost(tier, props.unlocksPostTier) && (
+                tierUnlocksGatedPost(tier, props.unlocksPostTierIds) && (
                   <div className="tierPostUnlockIndicator absolute -bottom-3.5 left-0 right-0 flex justify-center">
                     <div className="opaque-container rounded-full! flex items-center gap-1 mx-auto  px-2 py-0.5 text-xs font-bold text-accent-contrast ">
                       <CheckTiny className="w-3 h-3 shrink-0" />

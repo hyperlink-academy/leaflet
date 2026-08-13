@@ -9,6 +9,11 @@ import { AtUri } from "@atproto/syntax";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { useUnlockStatus } from "./PostDataProvider";
 
+const formatList = (items: string[]) =>
+  new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(
+    items,
+  );
+
 // Rendered in place of the members-only delimiter for readers without an
 // active membership; the gated blocks were already dropped server-side. Shows
 // the PaidSubscribeButton, which opens the join flow (JoinMembershipModal).
@@ -38,13 +43,19 @@ export const MembersOnlyPaywall = () => {
     );
 
   let tiers = document?.membersOnly?.tiers ?? [];
-  let requiredTier = document?.membersOnly?.requiredTier ?? null;
+  let unlockingTierIds = document?.membersOnly?.unlockingTierIds ?? null;
   let unlockingTiers = tiers.filter((t) =>
-    tierUnlocksGatedPost(t, requiredTier),
+    tierUnlocksGatedPost(t, unlockingTierIds),
   );
   let startingPriceCents = unlockingTiers.length
     ? Math.min(...unlockingTiers.map((t) => t.monthly_price_cents))
     : null;
+  // Naming the tiers only tells the reader something when some paid tier
+  // doesn't unlock the post.
+  let namedTiers =
+    unlockingTiers.length < tiers.filter((t) => !t.is_free).length
+      ? unlockingTiers.map((t) => t.name)
+      : [];
 
   return (
     <div className="membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6">
@@ -63,8 +74,8 @@ export const MembersOnlyPaywall = () => {
         </h3>
         {startingPriceCents !== null && (
           <p>
-            {requiredTier
-              ? `Available on the ${requiredTier.name} tier and up, from ${formatPrice(startingPriceCents)}/month`
+            {namedTiers.length > 0
+              ? `Available on the ${formatList(namedTiers)} ${namedTiers.length > 1 ? "tiers" : "tier"}, from ${formatPrice(startingPriceCents)}/month`
               : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
           </p>
         )}
@@ -75,7 +86,7 @@ export const MembersOnlyPaywall = () => {
         newsletterMode={pub.newsletterMode}
         tiers={tiers}
         unlocksPost
-        unlocksPostTier={requiredTier}
+        unlocksPostTierIds={unlockingTierIds}
       />
     </div>
   );

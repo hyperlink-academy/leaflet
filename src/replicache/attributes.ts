@@ -68,11 +68,11 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
-  // On a members-only delimiter: id of the lowest membership tier whose
-  // members can read past it. Absent = any paid membership.
+  // On a members-only delimiter: one fact per membership tier whose members
+  // can read past it. No facts = every paid tier.
   "block/members-only-tier": {
     type: "string",
-    cardinality: "one",
+    cardinality: "many",
   },
   "block/is-locked": {
     type: "boolean",
