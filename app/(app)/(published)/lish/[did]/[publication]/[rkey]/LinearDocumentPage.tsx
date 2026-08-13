@@ -117,6 +117,7 @@ export function LinearDocumentPage({
             <SubscribePanel
               publicationUri={document.publication.uri}
               publicationUrl={props.pubRecord?.url}
+              source={{ placement: "post_footer" }}
               publicationName={
                 props.pubRecord?.name ?? document.publication.name
               }

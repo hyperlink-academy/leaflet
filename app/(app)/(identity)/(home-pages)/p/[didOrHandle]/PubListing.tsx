@@ -7,6 +7,7 @@ import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { timeAgo } from "src/utils/timeAgo";
+import type { SubscriptionSource } from "src/subscriptionSource";
 
 type PubListingProps = Omit<
   PublicationSubscription,
@@ -18,6 +19,8 @@ type PubListingProps = Omit<
   publication_newsletter_settings?: PublicationSubscription["publication_newsletter_settings"];
   documents_in_publications?: PublicationSubscription["documents_in_publications"];
   showSubscribeButton?: boolean;
+  // Analytics source for the subscribe button, set per surface by the caller.
+  subscribeSource?: SubscriptionSource;
   constrainHeight?: boolean;
   // Icon and title on one row, description clamped to two lines, no
   // updated-at — for tight spots like the subscribe-success modal.
@@ -112,6 +115,7 @@ export const PubListing = (props: PubListingProps) => {
                 newsletterMode={
                   props.publication_newsletter_settings?.enabled ?? false
                 }
+                source={props.subscribeSource}
               />
             </div>
           )}

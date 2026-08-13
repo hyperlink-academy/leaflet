@@ -15,6 +15,10 @@ import { Checkbox } from "components/Checkbox";
 
 export type SubscriberStatus = "subscribed" | "unconfirmed" | "unsubscribed";
 
+// id is null when the member's tier row was deleted (memberships keep the
+// tier FK ON DELETE SET NULL); they still count as a member, just untierable.
+export type MemberTier = { id: string | null; name: string };
+
 export type MergedSubscriber = {
   key: string;
   did: string | undefined;
@@ -22,7 +26,7 @@ export type MergedSubscriber = {
   email: string | undefined;
   created_at: string;
   status: SubscriberStatus;
-  memberTier?: string;
+  memberTier?: MemberTier;
 };
 
 export function PublicationSubscribers(props: {
@@ -30,18 +34,28 @@ export function PublicationSubscribers(props: {
   publicationShareUrl: string;
   publicationUri: string;
   showPageBackground: boolean;
+  membershipsEnabled: boolean;
+  tiers: { id: string; name: string }[];
 }) {
   let smoker = useSmoker();
   let { subscriberStatus, membersOnly } = useDashboardState();
+  let selectedTiers = useSelectedTiers(props.tiers);
   let filtered = props.subscribers.filter(
-    (s) => subscriberStatus[s.status] && (!membersOnly || !!s.memberTier),
+    (s) =>
+      subscriberStatus[s.status] &&
+      (!membersOnly || !!s.memberTier) &&
+      (selectedTiers.length === 0 ||
+        (!!s.memberTier?.id && selectedTiers.includes(s.memberTier.id))),
   );
 
   let activeStatuses = (
     Object.keys(subscriberStatus) as SubscriberStatus[]
   ).filter((k) => subscriberStatus[k]);
   let isDefaultStatusFilter =
-    activeStatuses.length === 1 && activeStatuses[0] === "subscribed";
+    activeStatuses.length === 1 &&
+    activeStatuses[0] === "subscribed" &&
+    !membersOnly &&
+    selectedTiers.length === 0;
 
   let bgStyle = props.showPageBackground
     ? { backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha)) " }
@@ -54,7 +68,12 @@ export function PublicationSubscribers(props: {
     <DashboardPageLayout
       scrollKey={`dashboard-${props.publicationUri}-Subs`}
       pageTitle="Subscribers"
-      mobileActions={<SubscriberStatusFilter />}
+      mobileActions={
+        <SubscriberStatusFilter
+          membershipsEnabled={props.membershipsEnabled}
+          tiers={props.tiers}
+        />
+      }
       publication={props.publicationUri}
       showHeader={true}
       controls={
@@ -62,7 +81,10 @@ export function PublicationSubscribers(props: {
           <div className="font-bold text-secondary px-1">
             {filtered.length} Subscriber{filtered.length !== 1 && "s"}
           </div>
-          <SubscriberStatusFilter />
+          <SubscriberStatusFilter
+            membershipsEnabled={props.membershipsEnabled}
+            tiers={props.tiers}
+          />
         </div>
       }
     >
@@ -130,7 +152,7 @@ const SubscriberListItem = (props: {
   email: string | undefined;
   createdAt: string;
   status: SubscriberStatus;
-  memberTier?: string;
+  memberTier?: MemberTier;
 }) => {
   let contactClassName =
     "flex flex-row gap-2 items-center border rounded-md px-1 text-sm w-full max-w-fit no-underline! hover:bg-[var(--accent-light)] hover:border-accent-contrast ";
@@ -168,7 +190,7 @@ const SubscriberListItem = (props: {
       <div className="flex flex-row gap-2 shrink-0 items-center">
         {props.memberTier && (
           <span className="text-sm font-bold bg-accent-1 text-accent-2 rounded-md px-1 py-0.5 leading-none">
-            {props.memberTier}
+            {props.memberTier.name}
           </span>
         )}
         {props.status !== "subscribed" && (
@@ -195,12 +217,24 @@ function SubscriberDate(props: { createdAt: string }) {
   );
 }
 
-const SubscriberStatusFilter = () => {
-  let { subscriberStatus, membersOnly } = useDashboardState();
+// Persisted tier selections can reference tiers that were since deleted or
+// deactivated; only the ones still offered should filter (and count as active).
+const useSelectedTiers = (tiers: { id: string }[]) => {
+  let { memberTiers } = useDashboardState();
+  return memberTiers.filter((id) => tiers.some((t) => t.id === id));
+};
+
+const SubscriberStatusFilter = (props: {
+  membershipsEnabled: boolean;
+  tiers: { id: string; name: string }[];
+}) => {
+  let { subscriberStatus, membersOnly, memberTiers } = useDashboardState();
   let setState = useSetDashboardState();
+  let selectedTiers = useSelectedTiers(props.tiers);
   let count =
     Object.values(subscriberStatus).filter(Boolean).length +
-    (membersOnly ? 1 : 0);
+    (membersOnly ? 1 : 0) +
+    selectedTiers.length;
 
   return (
     <Popover
@@ -261,6 +295,24 @@ const SubscriberStatusFilter = () => {
       >
         Members
       </Checkbox>
+      {props.membershipsEnabled &&
+        props.tiers.map((tier) => (
+          <Checkbox
+            key={tier.id}
+            small
+            className="pl-4"
+            checked={selectedTiers.includes(tier.id)}
+            onChange={(e) =>
+              setState({
+                memberTiers: e.target.checked
+                  ? [...memberTiers.filter((id) => id !== tier.id), tier.id]
+                  : memberTiers.filter((id) => id !== tier.id),
+              })
+            }
+          >
+            <span className="truncate min-w-0">{tier.name}</span>
+          </Checkbox>
+        ))}
     </Popover>
   );
 };

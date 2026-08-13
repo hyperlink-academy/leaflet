@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";
+import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
 
 // Looks up a subscriber by unsubscribe_token and flips their state to
 // `unsubscribed`. Idempotent — already-unsubscribed rows return ok without
@@ -55,6 +57,15 @@ async function unsubscribeByToken(
     );
     return { ok: false };
   }
+  after(() =>
+    trackSubscriptionEvent({
+      event: "unsubscribe",
+      method: "email",
+      origin: "app",
+      publicationUri: sub.publication,
+      subscriberEmail: sub.email,
+    }),
+  );
   return { ok: true, email: sub.email, publicationName };
 }
 

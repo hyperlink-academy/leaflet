@@ -31,6 +31,7 @@ import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
 import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
+import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
@@ -469,18 +470,50 @@ async function handleEvent(evt: Event) {
       await supabase
         .from("identities")
         .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      // App-created subscriptions insert their row (and track their own
+      // analytics event) before the firehose echoes the record back, so only
+      // a previously unseen row counts as a firehose-originated subscribe.
+      // Same logic in the site.standard.graph.subscription handler below.
+      let { data: existing } = await supabase
+        .from("publication_subscriptions")
+        .select("uri")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase.from("publication_subscriptions").upsert({
         uri: evt.uri.toString(),
         identity: evt.did,
         publication: record.value.publication,
         record: record.value as Json,
       });
+      if (!existing)
+        await trackSubscriptionEvent({
+          event: "subscribe",
+          method: "atproto",
+          origin: "firehose",
+          publicationUri: record.value.publication,
+          subscriberDid: evt.did,
+          recordUri: evt.uri.toString(),
+        });
     }
     if (evt.event === "delete") {
+      let { data: existing } = await supabase
+        .from("publication_subscriptions")
+        .select("publication")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("publication_subscriptions")
         .delete()
         .eq("uri", evt.uri.toString());
+      if (existing)
+        await trackSubscriptionEvent({
+          event: "unsubscribe",
+          method: "atproto",
+          origin: "firehose",
+          publicationUri: existing.publication,
+          subscriberDid: evt.did,
+          recordUri: evt.uri.toString(),
+        });
     }
   }
   // site.standard.document records go into the main "documents" table
@@ -652,18 +685,46 @@ async function handleEvent(evt: Event) {
       await supabase
         .from("identities")
         .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      let { data: existing } = await supabase
+        .from("publication_subscriptions")
+        .select("uri")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase.from("publication_subscriptions").upsert({
         uri: evt.uri.toString(),
         identity: evt.did,
         publication: record.value.publication,
         record: record.value as Json,
       });
+      if (!existing)
+        await trackSubscriptionEvent({
+          event: "subscribe",
+          method: "atproto",
+          origin: "firehose",
+          publicationUri: record.value.publication,
+          subscriberDid: evt.did,
+          recordUri: evt.uri.toString(),
+        });
     }
     if (evt.event === "delete") {
+      let { data: existing } = await supabase
+        .from("publication_subscriptions")
+        .select("publication")
+        .eq("uri", evt.uri.toString())
+        .maybeSingle();
       await supabase
         .from("publication_subscriptions")
         .delete()
         .eq("uri", evt.uri.toString());
+      if (existing)
+        await trackSubscriptionEvent({
+          event: "unsubscribe",
+          method: "atproto",
+          origin: "firehose",
+          publicationUri: existing.publication,
+          subscriberDid: evt.did,
+          recordUri: evt.uri.toString(),
+        });
     }
   }
   if (evt.collection === ids.AppBskyActorProfile) {

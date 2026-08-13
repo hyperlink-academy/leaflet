@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ButtonSecondary } from "components/Buttons";
-import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -15,10 +14,13 @@ import {
 } from "components/Memberships/SwitchPlanModal";
 import {
   updateWalletCard,
+  updateWalletCardFromSetupIntent,
   type MyMembership,
   type MyMembershipsData,
 } from "actions/memberships";
-import { createWalletCheckoutSession } from "actions/publications/joinMembership";
+import { Modal } from "components/Modal";
+import { useIdentityData } from "components/IdentityProvider";
+import { WalletPaymentForm } from "components/Payments/WalletPaymentForm";
 import { SettingsSection } from "components/SettingsLayout";
 
 export function MembershipsTab(props: { initial: MyMembershipsData }) {
@@ -80,55 +82,92 @@ function WalletCardSection(props: {
   processing: boolean;
 }) {
   const toaster = useToaster();
-  const [redirecting, setRedirecting] = useState(false);
+  const router = useRouter();
+  const { identity } = useIdentityData();
+  const [formOpen, setFormOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const card = props.wallet;
 
-  const openCardForm = async () => {
-    if (redirecting) return;
-    setRedirecting(true);
-    const res = await createWalletCheckoutSession({
-      returnUrl: window.location.origin + "/settings",
-    });
+  // Save the confirmed method as the wallet default and re-clone it onto
+  // every membership so renewals bill the new card.
+  const onSaved = async (setupIntentId: string) => {
+    setSaving(true);
+    const res = await updateWalletCardFromSetupIntent(setupIntentId);
+    setFormOpen(false);
+    setSaving(false);
     if (!res.ok) {
-      setRedirecting(false);
       toaster({
         type: "error",
-        content: "We couldn't open the card form. Please try again!",
+        content: "We couldn't update your card. Please try again!",
       });
       return;
     }
-    window.location.href = res.value.url;
+    if (res.value.failedPublications.length > 0) {
+      toaster({
+        type: "error",
+        content:
+          "Card saved, but it couldn't be applied to some memberships. Please retry.",
+      });
+    } else {
+      toaster({ type: "success", content: "Card updated." });
+    }
+    router.refresh();
   };
 
   return (
     <SettingsSection title="Connected Card">
       <div className="flex flex-col">
-        {props.processing ? (
+        {props.processing || saving ? (
           <div className="text-tertiary text-sm">Updating…</div>
         ) : card?.card_last4 ? (
-          <div>
-            {(card.card_brand ?? "Card").replace(/^\w/, (c) => c.toUpperCase())}{" "}
-            ···{card.card_last4}
-            {card.card_exp_month && card.card_exp_year
-              ? ` · expires ${String(card.card_exp_month).padStart(2, "0")}/${String(
-                  card.card_exp_year,
-                ).slice(-2)}`
-              : ""}
+          <div className="flex items-baseline justify-between gap-2">
+            <div>
+              {(card.card_brand ?? "Card").replace(/^\w/, (c) =>
+                c.toUpperCase(),
+              )}{" "}
+              ···{card.card_last4}
+              {card.card_exp_month && card.card_exp_year
+                ? ` · expires ${String(card.card_exp_month).padStart(2, "0")}/${String(
+                    card.card_exp_year,
+                  ).slice(-2)}`
+                : ""}
+            </div>
+            <button
+              type="button"
+              onClick={() => setFormOpen(true)}
+              className="text-accent-contrast font-bold text-sm shrink-0"
+            >
+              Update card
+            </button>
           </div>
         ) : (
           <div className="flex flex-col justify-center gap-1 text-tertiary italic text-center mx-auto">
             <div>No card on file yet…</div>
             <button
               type="button"
-              disabled={redirecting || props.processing}
-              onClick={openCardForm}
+              disabled={props.processing}
+              onClick={() => setFormOpen(true)}
               className="text-accent-contrast font-bold"
             >
-              {redirecting ? <DotLoader /> : "Add card"}
+              Add card
             </button>
           </div>
         )}
       </div>
+      {formOpen && (
+        <Modal
+          open
+          onOpenChange={(o) => !o && setFormOpen(false)}
+          title="Connected Card"
+          className="max-w-full w-sm"
+        >
+          <WalletPaymentForm
+            submitLabel="Save card"
+            email={identity?.email}
+            onSuccess={onSaved}
+          />
+        </Modal>
+      )}
     </SettingsSection>
   );
 }

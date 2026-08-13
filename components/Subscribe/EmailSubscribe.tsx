@@ -23,6 +23,7 @@ import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
 import { INPUT_HIGHLIGHT_CLASS } from "./inputHighlight";
+import type { SubscriptionSource } from "src/subscriptionSource";
 
 export const EmailInput = (props: {
   // Omitted when the input only collects the address (e.g. the paid join
@@ -115,6 +116,7 @@ export const EmailInput = (props: {
 export const EmailButton = (props: {
   publicationUri: string;
   publicationUrl?: string;
+  source?: SubscriptionSource;
   email: string;
   handle?: string;
   compact?: boolean;
@@ -146,6 +148,7 @@ export const EmailButton = (props: {
     let res = await requestPublicationEmailSubscription(
       props.publicationUri,
       props.email,
+      props.source,
     );
     if (!res.ok) {
       toaster({ type: "error", content: SUBSCRIBE_ERROR_MESSAGES[res.error] });
@@ -158,6 +161,7 @@ export const EmailButton = (props: {
     let res = await subscribeToPublication(
       props.publicationUri,
       window.location.href,
+      props.source,
     );
     if (!res.success) {
       toaster({

@@ -8,6 +8,12 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { after } from "next/server";
+import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
+import {
+  sanitizeSubscriptionSource,
+  type SubscriptionSource,
+} from "src/subscriptionSource";
 import { buildOauthLoginUrl } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import {
@@ -23,16 +29,27 @@ type SubscribeResult =
 export async function subscribeToPublication(
   publication: string,
   redirectRoute?: string,
+  source?: SubscriptionSource,
 ): Promise<SubscribeResult | never> {
+  let requestHeaders = await headers();
+  let subscribeSource = sanitizeSubscriptionSource(source);
+  if (subscribeSource && !subscribeSource.url) {
+    let referer = requestHeaders.get("referer");
+    if (referer) subscribeSource = { ...subscribeSource, url: referer };
+  }
   let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return redirect(
       buildOauthLoginUrl(
         {
           redirect: redirectRoute || "/",
-          action: encodeActionToSearchParam({ action: "subscribe", publication }),
+          action: encodeActionToSearchParam({
+            action: "subscribe",
+            publication,
+            ...(subscribeSource ? { source: subscribeSource } : {}),
+          }),
         },
-        (await headers()).get("host") ?? undefined,
+        requestHeaders.get("host") ?? undefined,
       ),
     );
   }
@@ -70,6 +87,18 @@ export async function subscribeToPublication(
       publication,
       identity: credentialSession.did!,
     });
+
+  after(() =>
+    trackSubscriptionEvent({
+      event: "subscribe",
+      method: "atproto",
+      origin: "app",
+      publicationUri: publication,
+      subscriberDid: credentialSession.did,
+      recordUri: record.uri,
+      source: subscribeSource,
+    }),
+  );
 
   // Create notification for the publication owner
   let publicationOwner = new AtUri(publication).host;
@@ -223,5 +252,16 @@ export async function unsubscribeToPublication(
     .delete()
     .eq("identity", identity.atp_did)
     .eq("publication", publication);
+
+  after(() =>
+    trackSubscriptionEvent({
+      event: "unsubscribe",
+      method: "atproto",
+      origin: "app",
+      publicationUri: publication,
+      subscriberDid: identity.atp_did,
+      recordUri: existingSubscription.uri,
+    }),
+  );
   return { success: true };
 }

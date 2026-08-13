@@ -30,6 +30,7 @@ export const SubscribeCard = (props: {
       <SubscribeInput
         publicationUri={props.uri}
         publicationUrl={record.url}
+        source={{ placement: "subscribe_page" }}
         publicationName={record.name}
         publicationDescription={record.description}
         newsletterMode={props.newsletterMode}

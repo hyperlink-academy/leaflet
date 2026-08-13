@@ -88,6 +88,7 @@ export const ProfileSubscriptionsContent = (props: {
           <PubListing
             constrainHeight
             showSubscribeButton
+            subscribeSource={{ placement: "profile" }}
             key={sub.uri}
             {...sub}
           />

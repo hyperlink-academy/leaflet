@@ -6,11 +6,18 @@ import {
   deleteSuppression,
 } from "src/utils/postmarkSuppressions";
 import { Ok, Err, type Result } from "src/result";
+import { after } from "next/server";
+import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
+import {
+  sanitizeSubscriptionSource,
+  type SubscriptionSource,
+} from "src/subscriptionSource";
 
 export async function recordEmailSubscription(
   publicationUri: string,
   email: string,
   identityId: string,
+  source?: SubscriptionSource | null,
 ): Promise<Result<null, "database_error">> {
   const { data: existing } = await supabaseServerClient
     .from("publication_email_subscribers")
@@ -65,6 +72,20 @@ export async function recordEmailSubscription(
     .select("atp_did")
     .eq("id", identityId)
     .maybeSingle();
+  // The atproto mirror below is the same subscription, not a second one — only
+  // the email event is tracked.
+  after(() =>
+    trackSubscriptionEvent({
+      event: "subscribe",
+      method: "email",
+      origin: "app",
+      publicationUri,
+      subscriberDid: confirmedIdentity?.atp_did,
+      subscriberEmail: email,
+      source,
+    }),
+  );
+
   if (confirmedIdentity?.atp_did) {
     await publishAtprotoSubscriptionForDid(
       confirmedIdentity.atp_did,
@@ -138,6 +159,7 @@ export async function applyAfterSignInAction(
         parsed.publication,
         email,
         identityId,
+        sanitizeSubscriptionSource(parsed.source),
       );
       if (!recorded.ok) {
         target.searchParams.set("subscribe_email_error", recorded.error);

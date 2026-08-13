@@ -189,6 +189,24 @@ export async function walletCheckoutSessionCard(
   return { pmId, customerId };
 }
 
+// Pull the saved card and owning customer out of a confirmed SetupIntent (the
+// embedded Payment Element flow). Caller must verify the customer matches the
+// reader's wallet before trusting it (the id arrives from the client).
+export async function walletSetupIntentCard(
+  setupIntentId: string,
+): Promise<{ pmId: string; customerId: string } | null> {
+  const si = await getStripe().setupIntents.retrieve(setupIntentId);
+  if (si.status !== "succeeded") return null;
+  const pmId =
+    typeof si.payment_method === "string"
+      ? si.payment_method
+      : (si.payment_method?.id ?? null);
+  const customerId =
+    typeof si.customer === "string" ? si.customer : (si.customer?.id ?? null);
+  if (!pmId || !customerId) return null;
+  return { pmId, customerId };
+}
+
 // Clone the wallet card onto the connected account and attach it to the reader's
 // connected-account customer, returning the connected-account PM id ready to be a
 // subscription's default_payment_method.

@@ -81,6 +81,7 @@ export const PaidSubscribeButton = (
         unlocksPost={props.unlocksPost}
         unlocksPostTierIds={props.unlocksPostTierIds}
         resume={resume}
+        source={props.source}
         viewerOverride={props.viewerOverride}
       />
     </>

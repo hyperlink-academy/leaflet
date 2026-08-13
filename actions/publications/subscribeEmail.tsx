@@ -26,6 +26,12 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 import { blobRefToSrc, EMAIL_ICON_TRANSFORM } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/api";
+import { after } from "next/server";
+import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
+import {
+  sanitizeSubscriptionSource,
+  type SubscriptionSource,
+} from "src/subscriptionSource";
 
 type RequestError =
   | "invalid_email"
@@ -48,6 +54,7 @@ type UnsubscribeError =
 export async function requestPublicationEmailSubscription(
   publicationUri: string,
   emailRaw: string,
+  source?: SubscriptionSource,
 ): Promise<Result<RequestSuccess, RequestError>> {
   const email = emailRaw.trim().toLowerCase();
   if (!EMAIL_REGEX.test(email)) return Err("invalid_email");
@@ -82,6 +89,7 @@ export async function requestPublicationEmailSubscription(
       publicationUri,
       email,
       identity.id,
+      sanitizeSubscriptionSource(source),
     );
     if (!res.ok) return Err(res.error);
     return Ok({ confirmed: true });
@@ -162,6 +170,7 @@ export async function confirmPublicationEmailSubscription(
   emailRaw: string,
   code: string,
   linkToCurrent: boolean = false,
+  source?: SubscriptionSource,
 ): Promise<Result<null, ConfirmError>> {
   const email = emailRaw.trim().toLowerCase();
 
@@ -217,6 +226,21 @@ export async function confirmPublicationEmailSubscription(
     .select("atp_did")
     .eq("id", identityId)
     .maybeSingle();
+
+  // The atproto mirror below is the same subscription, not a second one — only
+  // the email event is tracked.
+  after(() =>
+    trackSubscriptionEvent({
+      event: "subscribe",
+      method: "email",
+      origin: "app",
+      publicationUri,
+      subscriberDid: confirmedIdentity?.atp_did,
+      subscriberEmail: email,
+      source: sanitizeSubscriptionSource(source),
+    }),
+  );
+
   if (confirmedIdentity?.atp_did) {
     await publishAtprotoSubscriptionForDid(
       confirmedIdentity.atp_did,
@@ -291,6 +315,17 @@ export async function unsubscribeFromPublication(
       );
       return Err("database_error");
     }
+    // The atproto half (if any) is tracked inside unsubscribeToPublication.
+    after(() =>
+      trackSubscriptionEvent({
+        event: "unsubscribe",
+        method: "email",
+        origin: "app",
+        publicationUri,
+        subscriberDid: identity.atp_did,
+        subscriberEmail: identity.email,
+      }),
+    );
   }
 
   if (atprotoSub) {

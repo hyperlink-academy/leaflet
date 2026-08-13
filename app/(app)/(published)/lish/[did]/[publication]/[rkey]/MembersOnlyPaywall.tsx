@@ -96,6 +96,7 @@ export const MembersOnlyPaywall = () => {
       <PaidSubscribeButton
         publicationUri={pub.uri}
         publicationName={pub.name}
+        source={{ placement: "paywall" }}
         newsletterMode={pub.newsletterMode}
         tiers={tiers}
         unlocksPost

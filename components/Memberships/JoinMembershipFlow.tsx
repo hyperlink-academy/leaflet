@@ -19,17 +19,19 @@ import {
   TierGrid,
   isFreeTier,
   subscribeErrorMessage,
+  tierPriceLabel,
   type Tier,
   type Cadence,
 } from "components/Memberships/TierGrid";
 import { type JoinResume } from "components/Memberships/joinReturn";
 import {
   getMembershipJoinViewer,
-  createWalletCheckoutSession,
   subscribeToTier,
   saveWalletCardFromSession,
   type MembershipJoinViewer,
 } from "actions/publications/joinMembership";
+import { saveWalletCardFromSetupIntent } from "actions/walletPayment";
+import { WalletPaymentForm } from "components/Payments/WalletPaymentForm";
 import {
   downgradeMembershipToFree,
   switchMembership,
@@ -47,6 +49,7 @@ import { getHomeDocs } from "src/utils/homeDocsStorage";
 import { subscribeToPublication } from "actions/publications/subscribeToPublication";
 import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import type { SubscriptionSource } from "src/subscriptionSource";
 import { LoginModal } from "components/LoginButton";
 
 // 1. collect who's subscribing (email or Atmosphere
@@ -73,6 +76,8 @@ export function JoinMembershipFlow(props: {
   unlocksPost?: boolean;
   unlocksPostTierIds?: string[] | null;
   resume?: JoinResume | null;
+  // Analytics: where the join flow was opened from.
+  source?: SubscriptionSource;
   // Test-harness seam: supplies viewer state so the flow doesn't fetch it.
   viewerOverride?: MembershipJoinViewer;
 }) {
@@ -105,6 +110,12 @@ export function JoinMembershipFlow(props: {
   // An active paid member picked the free tier — confirm before we schedule
   // the cancellation (irreversible-feeling, so it isn't one click).
   const [confirmDowngrade, setConfirmDowngrade] = useState<Tier | null>(null);
+  // The embedded payment step for a picked paid tier: the reader confirms a
+  // payment method in the Payment Element, then the subscription is created.
+  const [cardStep, setCardStep] = useState<{
+    tier: Tier;
+    cadence: Cadence;
+  } | null>(null);
   const resumeHandled = useRef(false);
 
   const effectiveCadence = (tier: Tier): Cadence =>
@@ -142,6 +153,11 @@ export function JoinMembershipFlow(props: {
     encodeActionToSearchParam({
       action: "subscribe",
       publication: props.publicationUri,
+      // The subscribe completes after a redirect, so stamp the originating
+      // page into the source now.
+      ...(props.source
+        ? { source: { url: window.location.href, ...props.source } }
+        : {}),
     });
 
   // Where sign-in should land: back here, carrying the picked tier for paid
@@ -203,35 +219,36 @@ export function JoinMembershipFlow(props: {
     return "error";
   };
 
+  // Paid tiers go through the embedded card step: the Payment Element shows
+  // the wallet's saved payment methods (and Link) so the reader picks how to
+  // pay before the subscription is created.
   const payWithViewer = async (
     tier: Tier,
     v?: MembershipJoinViewer | null,
     cadenceOverride?: Cadence | null,
   ) => {
-    setBusyTierId(tier.id);
     const joinCadence = cadenceOverride ?? effectiveCadence(tier);
-    const resolved =
-      v ?? viewer ?? (await getMembershipJoinViewer(props.publicationUri));
-    if (!viewer) setViewer(resolved);
-    if (!resolved.walletCard?.last4) {
-      const res = await createWalletCheckoutSession({
-        returnUrl: currentPageUrl(),
-        tierId: tier.id,
-        cadence: joinCadence,
+    if (v && !viewer) setViewer(v);
+    setCardStep({ tier, cadence: joinCadence });
+  };
+
+  // The Payment Element confirmed a setup: make that method the wallet
+  // default, then charge the join. On a charge failure the step closes (the
+  // SetupIntent is spent, so the form can't just be resubmitted) — the card
+  // is saved, and retrying from the tier grid mints a fresh intent.
+  const completeCardStep = async (setupIntentId: string) => {
+    if (!cardStep) return;
+    const saved = await saveWalletCardFromSetupIntent(setupIntentId);
+    if (!saved.ok) {
+      toaster({
+        type: "error",
+        content: "We couldn't save your payment method. Please try again!",
       });
-      if (!res.ok) {
-        setBusyTierId(null);
-        toaster({
-          type: "error",
-          content: "We couldn't open the checkout form. Please try again!",
-        });
-        return;
-      }
-      window.location.href = res.value.url;
+      setCardStep(null);
       return;
     }
-    const outcome = await runSubscribe(tier.id, joinCadence);
-    if (outcome === "error") setBusyTierId(null);
+    const outcome = await runSubscribe(cardStep.tier.id, cardStep.cadence);
+    if (outcome === "error") setCardStep(null);
   };
 
   // Returning from card setup or sign-in: finish what the reader started.
@@ -278,6 +295,7 @@ export function JoinMembershipFlow(props: {
       const res = await requestPublicationEmailSubscription(
         props.publicationUri,
         identity.email,
+        props.source,
       );
       if (!res.ok) {
         setBusyTierId(null);
@@ -291,6 +309,7 @@ export function JoinMembershipFlow(props: {
       const res = await subscribeToPublication(
         props.publicationUri,
         window.location.href,
+        props.source,
       );
       if (!res.success) {
         setBusyTierId(null);
@@ -400,6 +419,7 @@ export function JoinMembershipFlow(props: {
     const res = await requestPublicationEmailSubscription(
       props.publicationUri,
       email,
+      props.source,
     );
     setBusyTierId(null);
     if (!res.ok) {
@@ -441,6 +461,7 @@ export function JoinMembershipFlow(props: {
       const sub = await requestPublicationEmailSubscription(
         props.publicationUri,
         email,
+        props.source,
       );
       if (!sub.ok) {
         setConfirming(false);
@@ -456,6 +477,7 @@ export function JoinMembershipFlow(props: {
         email,
         code,
         true,
+        props.source,
       );
       if (!res.ok) {
         setConfirming(false);
@@ -521,6 +543,24 @@ export function JoinMembershipFlow(props: {
             emailValue={email}
             onBack={() => setConfirmStep(null)}
             onSubmit={submitCode}
+          />
+        </div>
+      ) : cardStep ? (
+        <div className="flex flex-col gap-3 max-w-sm w-full mx-auto">
+          <div className="text-center flex flex-col gap-1">
+            <h2 className="text-primary leading-snug text-xl">
+              Join {props.publicationName}
+            </h2>
+            <p className="text-secondary">
+              {cardStep.tier.name} ·{" "}
+              {tierPriceLabel(cardStep.tier, cardStep.cadence)}
+            </p>
+          </div>
+          <WalletPaymentForm
+            submitLabel={`Join for ${tierPriceLabel(cardStep.tier, cardStep.cadence)}`}
+            email={identity?.email}
+            onSuccess={completeCardStep}
+            onCancel={() => setCardStep(null)}
           />
         </div>
       ) : viewer?.isOwner ? (

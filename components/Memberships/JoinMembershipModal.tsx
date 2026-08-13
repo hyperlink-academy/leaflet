@@ -4,6 +4,7 @@ import { JoinMembershipFlow } from "./JoinMembershipFlow";
 import { type JoinResume } from "./joinReturn";
 import { type Tier } from "./TierGrid";
 import { type MembershipJoinViewer } from "actions/publications/joinMembership";
+import type { SubscriptionSource } from "src/subscriptionSource";
 
 // The paid join flow (JoinMembershipFlow) hosted in a modal, opened by
 // PaidSubscribeButton. The /join page renders the same flow inline.
@@ -18,6 +19,7 @@ export function JoinMembershipModal(props: {
   unlocksPost?: boolean;
   unlocksPostTierIds?: string[] | null;
   resume?: JoinResume | null;
+  source?: SubscriptionSource;
   // Test-harness seam, threaded to the flow.
   viewerOverride?: MembershipJoinViewer;
 }) {
@@ -38,6 +40,7 @@ export function JoinMembershipModal(props: {
         unlocksPost={props.unlocksPost}
         unlocksPostTierIds={props.unlocksPostTierIds}
         resume={props.resume}
+        source={props.source}
         viewerOverride={props.viewerOverride}
       />
     </Modal>

@@ -7,6 +7,9 @@ import { PubListing } from "app/(app)/(identity)/(home-pages)/p/[didOrHandle]/Pu
 // the publication doesn't recommend anyone.
 export const RecommendedPublications = (props: {
   publicationName: string | undefined;
+  // The publication whose recommendations these are — attributes any subscribe
+  // made here back to it in analytics.
+  recommendingPublicationUri?: string;
   listings: PublicationSubscription[];
 }) => {
   if (props.listings.length === 0) return null;
@@ -24,6 +27,10 @@ export const RecommendedPublications = (props: {
             key={listing.uri}
             compact
             showSubscribeButton
+            subscribeSource={{
+              placement: "recommendation",
+              publication: props.recommendingPublicationUri,
+            }}
             {...listing}
           />
         ))}

@@ -9,6 +9,7 @@ import { isActiveMembership } from "src/membership";
 import {
   PublicationSubscribers,
   type MergedSubscriber,
+  type MemberTier,
   type SubscriberStatus,
 } from "../PublicationSubscribers";
 
@@ -31,6 +32,8 @@ export default async function SubsPage(props: {
         publicationShareUrl=""
         publicationUri=""
         showPageBackground={false}
+        membershipsEnabled={false}
+        tiers={[]}
       />
     );
   }
@@ -62,22 +65,28 @@ export default async function SubsPage(props: {
     supabaseServerClient
       .from("publication_memberships")
       .select(
-        "status, current_period_end, publication_membership_tiers(name), identities(atp_did, email)",
+        "status, current_period_end, publication_membership_tiers(id, name), identities(atp_did, email)",
       )
       .eq("publication", pub.uri),
   ]);
 
   // Active paying members, keyed by both DID and email so we can tag whichever
   // subscriber-list identity they surface as.
-  const memberTierByDid = new Map<string, string>();
-  const memberTierByEmail = new Map<string, string>();
+  const memberTierByDid = new Map<string, MemberTier>();
+  const memberTierByEmail = new Map<string, MemberTier>();
   for (const m of memberRows ?? []) {
     if (!isActiveMembership(m)) continue;
-    const tierName = m.publication_membership_tiers?.name ?? "Member";
+    // tier is ON DELETE SET NULL, so an active member can outlive their tier row
+    const tier: MemberTier = m.publication_membership_tiers
+      ? {
+          id: m.publication_membership_tiers.id,
+          name: m.publication_membership_tiers.name,
+        }
+      : { id: null, name: "Member" };
     const did = m.identities?.atp_did;
     const email = m.identities?.email;
-    if (did) memberTierByDid.set(did, tierName);
-    if (email) memberTierByEmail.set(email, tierName);
+    if (did) memberTierByDid.set(did, tier);
+    if (email) memberTierByEmail.set(email, tier);
   }
 
   const byDid = new Map<string, MergedSubscriber>();
@@ -123,12 +132,24 @@ export default async function SubsPage(props: {
     });
   }
 
+  const membershipsEnabled = !!pub.publication_membership_settings?.enabled;
+  const tiers = (pub.publication_membership_tiers ?? [])
+    .filter((t) => t.active)
+    .sort(
+      (a, b) =>
+        a.monthly_price_cents - b.monthly_price_cents ||
+        a.sort_order - b.sort_order,
+    )
+    .map((t) => ({ id: t.id, name: t.name }));
+
   return (
     <PublicationSubscribers
       subscribers={[...byDid.values(), ...emailOnly]}
       publicationShareUrl={getPublicationURL(pub)}
       publicationUri={pub.uri}
       showPageBackground={showPageBackground}
+      membershipsEnabled={membershipsEnabled}
+      tiers={tiers}
     />
   );
 }

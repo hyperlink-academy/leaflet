@@ -9,6 +9,7 @@ import {
   getOrCreateConnectedCustomer,
   provisionCardOnAccount,
   walletCheckoutSessionCard,
+  walletSetupIntentCard,
   type WalletRow,
 } from "stripe/wallet";
 import { getPublicationURL } from "src/utils/getPublicationURL";
@@ -171,13 +172,30 @@ export async function switchMembership(args: {
 export async function updateWalletCard(sessionId: string): Promise<
   Result<{ failedPublications: string[] }, MembershipError>
 > {
+  return applyNewWalletCard(() => walletCheckoutSessionCard(sessionId));
+}
+
+// The embedded Payment Element flow's variant of updateWalletCard: same save +
+// re-clone, sourced from a confirmed SetupIntent instead of a hosted checkout
+// session.
+export async function updateWalletCardFromSetupIntent(
+  setupIntentId: string,
+): Promise<Result<{ failedPublications: string[] }, MembershipError>> {
+  return applyNewWalletCard(() => walletSetupIntentCard(setupIntentId));
+}
+
+// Save a newly collected card as the wallet default, then re-clone it onto
+// every membership's connected account so renewals bill the new card.
+async function applyNewWalletCard(
+  getCard: () => Promise<{ pmId: string; customerId: string } | null>,
+): Promise<Result<{ failedPublications: string[] }, MembershipError>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   const stripe = getStripe();
   try {
     const [wallet, card] = await Promise.all([
       getOrCreateWallet(identity),
-      walletCheckoutSessionCard(sessionId),
+      getCard(),
     ]);
     if (!card || card.customerId !== wallet.stripe_customer_id)
       return Err("not_found");
