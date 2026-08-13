@@ -35,7 +35,11 @@ import {
   type Match,
 } from "./findMatches";
 import { applyReplacements } from "./replace";
-import { searchHighlightKey } from "./searchHighlightPlugin";
+import {
+  hasSearchHighlights,
+  retireSearchHighlightSession,
+  searchHighlightKey,
+} from "./searchHighlightPlugin";
 import {
   closeFindReplace,
   openFindReplace,
@@ -96,8 +100,14 @@ function FindReplacePanel(props: {
   );
   let { matches, currentIndex } = matchState;
   let panel = useRef<HTMLDivElement | null>(null);
-  let anchor = usePageAnchor(panel);
-  let highlighted = useRef<Set<string>>(new Set());
+  let placement = usePanelPlacement(panel);
+  let focusInput = useCallback((attribute: string) => {
+    let input = panel.current?.querySelector<HTMLInputElement>(
+      `input[${attribute}]`,
+    );
+    input?.focus();
+    input?.select();
+  }, []);
 
   let recompute = useCallback(
     (resetIndex: boolean) => {
@@ -144,17 +154,13 @@ function FindReplacePanel(props: {
   }, [recompute]);
 
   useEffect(() => {
-    let input = panel.current?.querySelector<HTMLInputElement>(
-      "input[data-find-query]",
-    );
-    input?.focus();
-    input?.select();
-  }, [focusSeq]);
+    focusInput("data-find-query");
+  }, [focusSeq, focusInput]);
 
   useEffect(() => addShortcut({ key: "Escape", handler: closeFindReplace }), []);
 
-  useDebouncedEffect(
-    async (isCancelled) => {
+  let runSearch = useCallback(
+    async (isCancelled: () => boolean) => {
       let found = recompute(true);
       if (found.length > 0) scrollToMatch(found[0]);
       if (!rep) return;
@@ -173,22 +179,26 @@ function FindReplacePanel(props: {
         }),
       );
     },
-    RECOMPUTE_DEBOUNCE_MS,
-    [query, caseSensitive, wholeWord, rep, recompute],
+    [rep, recompute],
   );
 
+  useDebouncedEffect(runSearch, RECOMPUTE_DEBOUNCE_MS, [query, runSearch]);
   useEffect(() => {
-    highlighted.current = pushHighlights(
-      matches,
-      currentIndex,
-      highlighted.current,
-    );
+    let cancelled = false;
+    runSearch(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [caseSensitive, wholeWord, runSearch]);
+
+  useEffect(() => {
+    pushHighlights(matches, currentIndex);
   }, [matches, currentIndex]);
 
   useEffect(() => {
     return () => {
-      pushHighlights([], null, highlighted.current);
-      highlighted.current = new Set();
+      retireSearchHighlightSession();
+      pushHighlights([], null);
     };
   }, []);
 
@@ -258,9 +268,23 @@ function FindReplacePanel(props: {
   }, [rep, recompute, replacement, undoManager, toaster]);
 
   let onQueryKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      return focusInput("data-find-replacement");
+    }
     if (e.key !== "Enter") return;
     e.preventDefault();
     go(e.shiftKey ? -1 : 1);
+  };
+
+  let onReplacementKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      return focusInput("data-find-query");
+    }
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    replaceCurrent();
   };
 
   let counter =
@@ -275,9 +299,13 @@ function FindReplacePanel(props: {
       ref={panel}
       className="findReplace fixed z-40 w-[340px] max-w-[calc(100vw_-_24px)] flex flex-col gap-2 p-2 bg-bg-page border border-border rounded-lg shadow-md"
       style={
-        anchor
-          ? { top: anchor.top, left: anchor.left }
-          : { top: 8, right: 8 }
+        placement.beside
+          ? { top: placement.top, left: placement.left }
+          : {
+              bottom: placement.bottom,
+              left: "50%",
+              transform: "translateX(-50%)",
+            }
       }
       onMouseDown={(e) => {
         if (e.currentTarget === e.target) e.preventDefault();
@@ -328,13 +356,10 @@ function FindReplacePanel(props: {
 
       <div className="flex gap-1 items-center">
         <Input
+          data-find-replacement
           value={replacement}
           placeholder="Replace with"
-          onKeyDown={(e) => {
-            if (e.key !== "Enter") return;
-            e.preventDefault();
-            replaceCurrent();
-          }}
+          onKeyDown={onReplacementKeyDown}
           onChange={(e) =>
             useFindReplaceStore.setState({
               replacement: e.currentTarget.value,
@@ -393,18 +418,38 @@ function FindReplacePanel(props: {
 }
 
 const FALLBACK_GUTTER = 12;
+const VIEWPORT_GUTTER = 8;
 
-function usePageAnchor(panelRef: RefObject<HTMLDivElement | null>) {
+type PanelPlacement =
+  | { beside: true; top: number; left: number }
+  | { beside: false; bottom: number };
+
+function usePanelPlacement(panelRef: RefObject<HTMLDivElement | null>) {
   let openPages = useUIState((s) => s.openPages);
-  let [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+  let focusedEntity = useUIState((s) => s.focusedEntity?.entityID);
+  let [placement, setPlacement] = useState<PanelPlacement>({
+    beside: false,
+    bottom: FALLBACK_GUTTER,
+  });
   useLayoutEffect(() => {
     let frame = 0;
+    let dockToBottom = () => {
+      let footer = document.querySelector(".leafletFooter");
+      setPlacement({
+        beside: false,
+        bottom: footer
+          ? window.innerHeight -
+            footer.getBoundingClientRect().top +
+            VIEWPORT_GUTTER
+          : FALLBACK_GUTTER,
+      });
+    };
     let measure = () => {
       frame = 0;
       let pages = document.querySelectorAll(pageContainerId.selector);
       let first = pages[0];
       let last = pages[pages.length - 1];
-      if (!first || !last) return setAnchor(null);
+      if (!first || !last) return dockToBottom();
       let firstRect = first.getBoundingClientRect();
       let lastRect = last.getBoundingClientRect();
       let sidebar = document.querySelector(".sidebarContainer .actionSidebar");
@@ -412,13 +457,12 @@ function usePageAnchor(panelRef: RefObject<HTMLDivElement | null>) {
         ? Math.max(0, firstRect.left - sidebar.getBoundingClientRect().right)
         : FALLBACK_GUTTER;
       let width = panelRef.current?.offsetWidth ?? 0;
-      setAnchor({
-        top: lastRect.top,
-        left: Math.max(
-          8,
-          Math.min(lastRect.right + gutter, window.innerWidth - width - 8),
-        ),
-      });
+      let left = Math.min(
+        lastRect.right + gutter,
+        window.innerWidth - width - VIEWPORT_GUTTER,
+      );
+      if (left < lastRect.right) return dockToBottom();
+      setPlacement({ beside: true, top: lastRect.top, left });
     };
     let schedule = () => {
       if (!frame) frame = requestAnimationFrame(measure);
@@ -431,17 +475,13 @@ function usePageAnchor(panelRef: RefObject<HTMLDivElement | null>) {
       window.removeEventListener("resize", schedule);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [openPages, panelRef]);
-  return anchor;
+  }, [openPages, focusedEntity, panelRef]);
+  return placement;
 }
 
 let pushingHighlights = false;
 
-function pushHighlights(
-  matches: Match[],
-  currentIndex: number | null,
-  previous: Set<string>,
-) {
+function pushHighlights(matches: Match[], currentIndex: number | null) {
   let editorStates = useEditorStates.getState().editorStates;
   let grouped = new Map<
     string,
@@ -457,24 +497,20 @@ function pushHighlights(
     group.ranges.push({ from: match.from, to: match.to });
   });
 
-  let next = new Set<string>();
   pushingHighlights = true;
   try {
-    for (let [blockID, highlight] of grouped) {
+    for (let blockID in editorStates) {
       let view = editorStates[blockID]?.view;
       if (!view) continue;
-      view.dispatch(view.state.tr.setMeta(searchHighlightKey, highlight));
-      next.add(blockID);
-    }
-    for (let blockID of previous) {
-      if (next.has(blockID)) continue;
-      let view = editorStates[blockID]?.view;
-      view?.dispatch(view.state.tr.setMeta(searchHighlightKey, null));
+      let highlight = grouped.get(blockID);
+      if (!highlight && !hasSearchHighlights(view.state)) continue;
+      view.dispatch(
+        view.state.tr.setMeta(searchHighlightKey, highlight ?? null),
+      );
     }
   } finally {
     pushingHighlights = false;
   }
-  return next;
 }
 
 function scrollToMatch(match: Match) {

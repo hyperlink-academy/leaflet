@@ -55,12 +55,14 @@ export function useBlockKeyboardHandlers(
       }[e.key];
 
       let el = e.target as HTMLElement;
+      let inFormField =
+        el.tagName === "LABEL" ||
+        el.tagName === "INPUT" ||
+        el.tagName === "TEXTAREA" ||
+        el.tagName === "SELECT";
+      if (inFormField && isTextBlock[props.type]) return;
       if (
-        (el.tagName === "LABEL" ||
-          el.tagName === "INPUT" ||
-          el.tagName === "TEXTAREA" ||
-          el.tagName === "SELECT" ||
-          el.contentEditable === "true") &&
+        (inFormField || el.contentEditable === "true") &&
         !isTextBlock[props.type]
       ) {
         if ((el as HTMLInputElement).value !== "" || e.key === "Tab") return;

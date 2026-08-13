@@ -13,8 +13,10 @@ export type Shortcut = {
 };
 export function addShortcut(shortcuts: Shortcut | Shortcut[]) {
   let listener = (e: KeyboardEvent) => {
-    if (e.defaultPrevented) return;
     for (let shortcut of [shortcuts].flat()) {
+      let hasModifier =
+        shortcut.metaKey || shortcut.metaAndCtrl || shortcut.altKey;
+      if (e.defaultPrevented && !hasModifier) continue;
       if (e.shiftKey !== !!shortcut.shift) continue;
       if (e.altKey !== !!shortcut.altKey) continue;
       if (shortcut.metaAndCtrl) {

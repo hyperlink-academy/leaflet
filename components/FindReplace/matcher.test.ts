@@ -57,6 +57,10 @@ describe("findMatchesInDoc", () => {
       expect(findMatchesInDoc(doc, "the", opts())).toHaveLength(4);
     });
 
+    test("off, an uppercase query still matches lowercase", () => {
+      expect(findMatchesInDoc(doc, "The", opts())).toHaveLength(4);
+    });
+
     test("on, matches only exact case", () => {
       let matches = findMatchesInDoc(doc, "The", opts({ caseSensitive: true }));
       expect(matches).toHaveLength(1);
