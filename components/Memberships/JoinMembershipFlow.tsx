@@ -627,20 +627,16 @@ export function JoinMembershipFlow(props: {
             unlocksPostTierIds={props.unlocksPostTierIds}
             onSelectTier={selectTier}
           />{" "}
-          <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
-            {viewer?.membership ? (
-              "Switching memberships will prorate your bill this month."
-            ) : viewer?.walletCard?.last4 ? (
-              `Bill to card ending in ${viewer.walletCard.last4}`
-            ) : (
-              <>
-                Already Subscribed?{" "}
-                <LoginModal
-                  trigger={<div className="underline">Sign in</div>}
-                />
-              </>
-            )}
-          </p>
+          {viewer?.membership ? (
+            <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
+              Switching memberships will prorate your bill this month.
+            </p>
+          ) : !identity ? (
+            <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
+              Already Subscribed?{" "}
+              <LoginModal trigger={<div className="underline">Sign in</div>} />
+            </p>
+          ) : null}
         </div>
       )}
       {linkTier && identity && (

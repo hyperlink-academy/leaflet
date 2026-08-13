@@ -30,7 +30,6 @@ export type MembershipJoinViewer = {
     cadence: string | null;
     currentPeriodEnd: string | null;
   } | null;
-  walletCard: { brand: string | null; last4: string | null } | null;
 };
 
 // Viewer-scoped state for the paid join flow (JoinMembershipFlow), fetched
@@ -45,22 +44,15 @@ export async function getMembershipJoinViewer(
       loggedIn: false,
       isOwner: false,
       membership: null,
-      walletCard: null,
     };
-  const [{ data: publication }, membership, { data: wallet }] =
-    await Promise.all([
-      supabaseServerClient
-        .from("publications")
-        .select("identity_did")
-        .eq("uri", publicationUri)
-        .maybeSingle(),
-      getReaderMembership(publicationUri, identity.id),
-      supabaseServerClient
-        .from("stripe_wallets")
-        .select("card_brand, card_last4")
-        .eq("identity_id", identity.id)
-        .maybeSingle(),
-    ]);
+  const [{ data: publication }, membership] = await Promise.all([
+    supabaseServerClient
+      .from("publications")
+      .select("identity_did")
+      .eq("uri", publicationUri)
+      .maybeSingle(),
+    getReaderMembership(publicationUri, identity.id),
+  ]);
   return {
     loggedIn: true,
     isOwner:
@@ -74,9 +66,6 @@ export async function getMembershipJoinViewer(
             currentPeriodEnd: membership.current_period_end,
           }
         : null,
-    walletCard: wallet?.card_last4
-      ? { brand: wallet.card_brand, last4: wallet.card_last4 }
-      : null,
   };
 }
 

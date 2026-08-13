@@ -103,7 +103,6 @@ const THEME_FONTS = {
 export default function PaidSubscribePreviewPage() {
   let [subscribeVia, setSubscribeVia] = useState<"email" | "handle">("email");
   let [loggedIn, setLoggedIn] = useState(false);
-  let [hasCard, setHasCard] = useState(false);
   let [subscribed, setSubscribed] = useState(false);
   let [paidMember, setPaidMember] = useState(false);
   let [modalOpen, setModalOpen] = useState(false);
@@ -124,7 +123,6 @@ export default function PaidSubscribePreviewPage() {
           currentPeriodEnd: "2026-09-01T00:00:00.000Z",
         }
       : null,
-    walletCard: loggedIn && hasCard ? { brand: "visa", last4: "4242" } : null,
   };
 
   return (
@@ -149,12 +147,6 @@ export default function PaidSubscribePreviewPage() {
             onChange={setLoggedIn}
           />
           <Checkbox
-            label="card saved"
-            checked={hasCard}
-            disabled={!loggedIn}
-            onChange={setHasCard}
-          />
-          <Checkbox
             label="already subscribed"
             checked={subscribed}
             disabled={!loggedIn}
@@ -175,7 +167,7 @@ export default function PaidSubscribePreviewPage() {
         <MockIdentity identity={identity}>
           <PaidSubscribeButton
             // Remount when a toggle flips so the modal's internal state resets.
-            key={`${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}-${isPaidMember}`}
+            key={`${subscribeVia}-${loggedIn}-${isSubscribed}-${isPaidMember}`}
             publicationUri={PUBLICATION_URI}
             publicationUrl={PUBLICATION_URL}
             publicationName="Test Publication"
@@ -190,7 +182,7 @@ export default function PaidSubscribePreviewPage() {
             Open join modal
           </ButtonSecondary>
           <JoinMembershipModal
-            key={`modal-${subscribeVia}-${loggedIn}-${hasCard}-${isSubscribed}-${isPaidMember}`}
+            key={`modal-${subscribeVia}-${loggedIn}-${isSubscribed}-${isPaidMember}`}
             open={modalOpen}
             onOpenChange={setModalOpen}
             publicationUri={PUBLICATION_URI}
