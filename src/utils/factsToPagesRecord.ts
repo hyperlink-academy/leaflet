@@ -291,9 +291,15 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     },
-    "members-only-delimiter": async () => {
+    "members-only-delimiter": async (b) => {
+      // Sorted so an unchanged selection always serializes identically.
+      const tiers = scan
+        .eav(b.entityID, "block/members-only-tier")
+        .map((f) => f.data.value)
+        .sort();
       const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
         $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
+        ...(tiers.length > 0 && { tiers }),
       };
       return block;
     },
@@ -348,7 +354,9 @@ export async function processBlocksToPages(opts: {
         },
         alt: altText ? altText.data.value : undefined,
         fullBleed: fullBleed?.data.value || undefined,
-        ...(maxWidth !== undefined && { width: Math.floor(maxWidth.data.value) }),
+        ...(maxWidth !== undefined && {
+          width: Math.floor(maxWidth.data.value),
+        }),
       };
       return block;
     },

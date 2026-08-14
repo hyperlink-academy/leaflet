@@ -59,6 +59,7 @@ export const SubscribeBlock = (
             <SubscribeInput
               publicationUri={publicationUri}
               publicationUrl={normalizedPublication?.url}
+              source={{ placement: "editor" }}
               publicationName={publicationName}
               publicationDescription={publicationDescription}
               newsletterMode={newsletterMode}

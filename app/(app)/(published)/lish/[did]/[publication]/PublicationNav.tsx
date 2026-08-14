@@ -98,7 +98,10 @@ export function PublicationNav(props: {
           "Subscribed / Manage" row), so identity landing can't take width off
           the tab strip when the tabs are crowded enough to scroll. */
           <div className="sm:flex hidden justify-end min-w-40 shrink-0">
-            <SubscribeButton {...props.subscribe} />
+            <SubscribeButton
+              {...props.subscribe}
+              source={{ placement: "pub_nav" }}
+            />
           </div>
         )}
       </div>

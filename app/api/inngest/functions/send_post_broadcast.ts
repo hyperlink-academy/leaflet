@@ -27,8 +27,12 @@ import {
 } from "src/utils/byline";
 import type { Json } from "supabase/database.types";
 import {
-  isActiveMembership,
+  gateUnlocksWithSubscription,
+  getMembersDelimiterTierIds,
+  isEntitledToGatedPost,
   pageHasMembersDelimiter,
+  resolveUnlockingTierIds,
+  tierUnlocksGatedPost,
   truncateBlocksAtMembersDelimiter,
 } from "src/membership";
 
@@ -67,7 +71,7 @@ export const send_post_broadcast = inngest.createFunction(
         supabaseServerClient
           .from("publications")
           .select(
-            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(monthly_price_cents, active, is_free)",
+            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(id, monthly_price_cents, active, is_free)",
           )
           .eq("uri", publication_uri)
           .maybeSingle(),
@@ -161,19 +165,22 @@ export const send_post_broadcast = inngest.createFunction(
       firstPage?.$type === "pub.leaflet.pages.linearDocument"
         ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
         : [];
-    // When the post is gated, subscribers with an active membership (plus the
-    // owner and confirmed contributors) get the full body by email; everyone
-    // else gets only the preview above the delimiter (the post link paywalls).
-    const gated =
+
+    const pubTiers = loaded.pub.publication_membership_tiers ?? [];
+    const hasDelimiter =
       !!loaded.pub.publication_membership_settings?.enabled &&
       pageHasMembersDelimiter({ blocks });
+    const unlockingTierIds = hasDelimiter
+      ? resolveUnlockingTierIds(getMembersDelimiterTierIds(blocks), pubTiers)
+      : null;
+    const gated =
+      hasDelimiter && !gateUnlocksWithSubscription(unlockingTierIds, pubTiers);
     const previewBlocks = gated
       ? truncateBlocksAtMembersDelimiter(blocks)
       : blocks;
-    // Non-members' emails end in a "subscribe to see the full content" box
-    // linking to the join page, priced from the cheapest active tier.
-    const activeTierPrices = (loaded.pub.publication_membership_tiers ?? [])
-      .filter((t) => t.active && !t.is_free)
+
+    const activeTierPrices = pubTiers
+      .filter((t) => t.active && tierUnlocksGatedPost(t, unlockingTierIds))
       .map((t) => t.monthly_price_cents);
     const membersUpsell = {
       joinUrl: `${pubProps.publicationUrl.replace(/\/$/, "")}/join`,
@@ -241,7 +248,7 @@ export const send_post_broadcast = inngest.createFunction(
               supabaseServerClient
                 .from("publication_memberships")
                 .select(
-                  "identity_id, status, current_period_end, identities(email)",
+                  "identity_id, status, current_period_end, tier, identities(email)",
                 )
                 .eq("publication", publication_uri),
               supabaseServerClient
@@ -252,7 +259,14 @@ export const send_post_broadcast = inngest.createFunction(
             ],
           );
           for (const m of members ?? []) {
-            if (!isActiveMembership(m)) continue;
+            const entitledMember = isEntitledToGatedPost({
+              viewerDid: null,
+              ownerDid: null,
+              contributors: [],
+              membership: m,
+              unlockingTierIds,
+            });
+            if (!entitledMember) continue;
             identityIds.add(m.identity_id);
             if (m.identities?.email) {
               emails.add(m.identities.email.toLowerCase());

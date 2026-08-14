@@ -21,8 +21,10 @@ export const PaidSubscribeButton = (
   props: SubscribeProps & {
     tiers: Tier[];
     // Badges the tiers with "Unlocks post" — set by the members-only paywall,
-    // where joining reveals the post the reader is on.
+    // where joining reveals the post the reader is on. unlocksPostTierIds
+    // narrows the badge to the tiers the post's delimiter names.
     unlocksPost?: boolean;
+    unlocksPostTierIds?: string[] | null;
     // Test-harness seam, threaded to the modal.
     viewerOverride?: MembershipJoinViewer;
     compact?: boolean;
@@ -77,7 +79,9 @@ export const PaidSubscribeButton = (
         newsletterMode={props.newsletterMode}
         tiers={props.tiers}
         unlocksPost={props.unlocksPost}
+        unlocksPostTierIds={props.unlocksPostTierIds}
         resume={resume}
+        source={props.source}
         viewerOverride={props.viewerOverride}
       />
     </>

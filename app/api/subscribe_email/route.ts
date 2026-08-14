@@ -8,6 +8,7 @@ import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { mainSiteAuthBase } from "src/utils/customDomain";
 import { requestOrigin } from "src/utils/requestOrigin";
+import { sanitizeSubscriptionSource } from "src/subscriptionSource";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
   let email: string | null = null;
   let publicationUri: string | null = null;
   let returnTo: string | null = null;
+  let placement: string | null = null;
 
   if (contentType.includes("application/json")) {
     const body = (await req.json().catch(() => null)) as
@@ -34,15 +36,18 @@ export async function POST(req: NextRequest) {
       publicationUri =
         typeof body.publication === "string" ? body.publication : null;
       returnTo = typeof body.return_to === "string" ? body.return_to : null;
+      placement = typeof body.placement === "string" ? body.placement : null;
     }
   } else {
     const form = await req.formData();
     const e = form.get("email");
     const p = form.get("publication");
     const r = form.get("return_to");
+    const pl = form.get("placement");
     email = typeof e === "string" ? e : null;
     publicationUri = typeof p === "string" ? p : null;
     returnTo = typeof r === "string" ? r : null;
+    placement = typeof pl === "string" ? pl : null;
   }
 
   if (!publicationUri) {
@@ -67,9 +72,17 @@ export async function POST(req: NextRequest) {
   const loginUrl = new URL("/api/auth/email-login", authBase);
   loginUrl.searchParams.set("email", email);
   loginUrl.searchParams.set("redirect", returnUrl.toString());
+  const source = sanitizeSubscriptionSource({
+    placement: placement ?? "embed",
+    url: req.headers.get("referer") ?? returnUrl.toString(),
+  });
   loginUrl.searchParams.set(
     "action",
-    encodeActionToSearchParam({ action: "subscribe", publication: publicationUri }),
+    encodeActionToSearchParam({
+      action: "subscribe",
+      publication: publicationUri,
+      ...(source ? { source } : {}),
+    }),
   );
   return NextResponse.redirect(loginUrl.toString(), 303);
 }

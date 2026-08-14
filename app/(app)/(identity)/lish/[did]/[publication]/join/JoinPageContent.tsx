@@ -34,6 +34,7 @@ export function JoinPageContent(props: {
       newsletterMode={props.newsletterMode}
       tiers={props.tiers}
       resume={resume}
+      source={{ placement: "join_page" }}
     />
   );
 }

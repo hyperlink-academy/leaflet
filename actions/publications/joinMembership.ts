@@ -30,7 +30,6 @@ export type MembershipJoinViewer = {
     cadence: string | null;
     currentPeriodEnd: string | null;
   } | null;
-  walletCard: { brand: string | null; last4: string | null } | null;
 };
 
 // Viewer-scoped state for the paid join flow (JoinMembershipFlow), fetched
@@ -45,22 +44,15 @@ export async function getMembershipJoinViewer(
       loggedIn: false,
       isOwner: false,
       membership: null,
-      walletCard: null,
     };
-  const [{ data: publication }, membership, { data: wallet }] =
-    await Promise.all([
-      supabaseServerClient
-        .from("publications")
-        .select("identity_did")
-        .eq("uri", publicationUri)
-        .maybeSingle(),
-      getReaderMembership(publicationUri, identity.id),
-      supabaseServerClient
-        .from("stripe_wallets")
-        .select("card_brand, card_last4")
-        .eq("identity_id", identity.id)
-        .maybeSingle(),
-    ]);
+  const [{ data: publication }, membership] = await Promise.all([
+    supabaseServerClient
+      .from("publications")
+      .select("identity_did")
+      .eq("uri", publicationUri)
+      .maybeSingle(),
+    getReaderMembership(publicationUri, identity.id),
+  ]);
   return {
     loggedIn: true,
     isOwner:
@@ -74,9 +66,6 @@ export async function getMembershipJoinViewer(
             currentPeriodEnd: membership.current_period_end,
           }
         : null,
-    walletCard: wallet?.card_last4
-      ? { brand: wallet.card_brand, last4: wallet.card_last4 }
-      : null,
   };
 }
 
@@ -103,42 +92,9 @@ export async function getJoinableTiers(publicationUri: string): Promise<Tier[]> 
   }));
 }
 
-// First-time card collection is a Stripe-hosted setup-mode Checkout page (no
-// Stripe.js on our side). The card is saved off-session on the platform wallet
-// customer so it can be cloned to publishers' accounts and charged for renewals.
-// The reader returns to `returnUrl` with `?wallet_session=<id>`.
-export async function createWalletCheckoutSession(args: {
-  returnUrl: string;
-  // When set, the return URL carries the intended tier/cadence so the reader's
-  // join auto-completes on return instead of making them click Join again.
-  tierId?: string;
-  cadence?: "month" | "year";
-}): Promise<Result<{ url: string }, CheckoutSessionError>> {
-  const identity = await getAuthIdentity();
-  if (!identity) return Err("not_authenticated");
-  try {
-    const wallet = await getOrCreateWallet(identity);
-    const base = args.returnUrl.split("?")[0];
-    const joinParams =
-      args.tierId && args.cadence
-        ? `&join_tier=${encodeURIComponent(args.tierId)}&join_cadence=${args.cadence}`
-        : "";
-    const session = await getStripe().checkout.sessions.create({
-      mode: "setup",
-      customer: wallet.stripe_customer_id,
-      payment_method_types: ["card"],
-      success_url: `${base}?wallet_session={CHECKOUT_SESSION_ID}${joinParams}`,
-      cancel_url: base,
-    });
-    if (!session.url) return Err("stripe_error");
-    return Ok({ url: session.url });
-  } catch (e) {
-    console.error("[joinMembership] checkout session failed:", e);
-    return Err("stripe_error");
-  }
-}
-
-// Called on return from the hosted setup page: attach the collected card to the
+// Called on return from the hosted setup page (the pre-embedded-form flow;
+// kept so sessions that were in flight when it shipped still complete): attach
+// the collected card to the
 // wallet and make it the default. Verifies the session's customer is the caller's
 // own wallet customer (the session id comes from a client-controlled URL).
 export async function saveWalletCardFromSession(

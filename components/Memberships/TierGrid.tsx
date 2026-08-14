@@ -3,6 +3,8 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { ToggleGroup } from "components/ToggleGroup";
 import { CheckTiny } from "components/Icons/CheckTiny";
+import { tierUnlocksGatedPost } from "src/membership";
+import { TierDescription } from "components/Memberships/TierDescription";
 
 export type Tier = {
   id: string;
@@ -55,16 +57,6 @@ export function subscribeErrorMessage(error: string): string {
   }
 }
 
-// The membership tier cards plus the monthly/annual toggle, rendered by the
-// paid join flow (JoinMembershipFlow). The viewer's standing drives the paid
-// buttons' copy:
-// no subscription → "Join", subscribed on the free tier → "Upgrade" (their
-// cost goes up from $0), an active paid membership → monthly-pricier tiers say
-// "Upgrade" and the rest "Switch", and the free tier reads "Switch to free"
-// since taking it cancels their paid plan. Whichever tier the viewer is on —
-// free by subscription, paid by membership — reads "Subscribed". Flow decisions
-// (payment vs prorated switch vs downgrade) stay with the caller via
-// onSelectTier.
 export function TierGrid(props: {
   tiers: Tier[];
   cadence: Cadence;
@@ -74,6 +66,9 @@ export function TierGrid(props: {
   // The viewer's active paid membership tier, if any.
   currentTierId?: string | null;
   unlocksPost?: boolean;
+  // The tiers the gated post's delimiter names; with unlocksPost, only those
+  // get the "Unlocks post" badge. null/absent means every paid tier unlocks.
+  unlocksPostTierIds?: string[] | null;
   onSelectTier: (tier: Tier) => void;
 }) {
   const hasAnnual = props.tiers.some((t) => t.annual_price_cents != null);
@@ -103,6 +98,8 @@ export function TierGrid(props: {
     return `Switch for ${price}`;
   };
 
+  let cols = Math.min(renderTiers.length, renderTiers.length % 3 === 1 ? 2 : 3);
+
   return (
     <>
       <div className="flex justify-center pb-4">
@@ -117,7 +114,12 @@ export function TierGrid(props: {
         />
       </div>
 
-      <div className="tierGroup flex sm:flex-row gap-2 flex-col w-full items-stretch min-h-0 grow">
+      <div
+        className="tierGroup sm:grid sm:gap-x-3 sm:gap-y-6 gap-6 flex flex-col w-full items-stretch min-h-0 grow"
+        style={{
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+        }}
+      >
         {renderTiers.map((tier) => {
           const free = isFreeTier(tier);
           // A free-tier subscriber has no membership row to name a tier, so
@@ -133,9 +135,9 @@ export function TierGrid(props: {
               <div className="flex flex-col gap-1 grow min-h-0 overflow-y-scroll">
                 <h3 className="text-primary text-[20px]">{tier.name}</h3>
                 {tier.description && (
-                  <p className="text-secondary text-sm leading-snug pb-3">
-                    {tier.description}
-                  </p>
+                  <div className="text-secondary text-sm leading-snug pb-3">
+                    <TierDescription description={tier.description} />
+                  </div>
                 )}
               </div>
               <div className="tierJoinButton shrink-0 flex flex-col gap-2">
@@ -176,14 +178,15 @@ export function TierGrid(props: {
                   </ButtonPrimary>
                 )}
               </div>
-              {props.unlocksPost && (
-                <div className="tierPostUnlockIndicator absolute -bottom-3.5 left-0 right-0 flex justify-center">
-                  <div className="opaque-container rounded-full! flex items-center gap-1 mx-auto  px-2 py-0.5 text-xs font-bold text-accent-contrast ">
-                    <CheckTiny className="w-3 h-3 shrink-0" />
-                    Unlocks post
+              {props.unlocksPost &&
+                tierUnlocksGatedPost(tier, props.unlocksPostTierIds) && (
+                  <div className="tierPostUnlockIndicator absolute -bottom-3.5 left-0 right-0 flex justify-center">
+                    <div className="opaque-container rounded-full! flex items-center gap-1 mx-auto  px-2 py-0.5 text-xs font-bold text-accent-contrast ">
+                      <CheckTiny className="w-3 h-3 shrink-0" />
+                      Unlocks post
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           );
         })}

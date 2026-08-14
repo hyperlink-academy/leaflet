@@ -5,8 +5,17 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { getViewerIdentity } from "actions/viewerIdentity";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { getDocumentPages } from "lexicons/src/normalize";
-import { isEntitledToGatedPost, postHasMembersDelimiter } from "src/membership";
-import { getReaderMembership } from "src/membership.server";
+import {
+  gateUnlocksWithSubscription,
+  getGatedPostTierIds,
+  isEntitledToGatedPost,
+  postHasMembersDelimiter,
+  resolveUnlockingTierIds,
+} from "src/membership";
+import {
+  getReaderMembership,
+  isPublicationSubscriber,
+} from "src/membership.server";
 import { collectAndFetchBlockResources } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/collectAndFetchBlockResources";
 import type { PollData } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/fetchPollData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
@@ -36,6 +45,7 @@ export async function getUnlockedPost(
       `data, uri,
        documents_in_publications(publications(uri, identity_did,
          publication_membership_settings(enabled),
+         publication_membership_tiers(id, monthly_price_cents, is_free),
          publication_contributors(contributor_did, confirmed)))`,
     )
     .eq("uri", uri)
@@ -53,11 +63,25 @@ export async function getUnlockedPost(
     ownerDid: pub.identity_did,
     contributors: pub.publication_contributors,
   };
+  const tiers = pub.publication_membership_tiers ?? [];
+  const unlockingTierIds = resolveUnlockingTierIds(
+    getGatedPostTierIds(record),
+    tiers,
+  );
+  const subscriptionUnlocks = gateUnlocksWithSubscription(
+    unlockingTierIds,
+    tiers,
+  );
   const entitled =
     isEntitledToGatedPost({ ...rows, membership: null }) ||
     isEntitledToGatedPost({
       ...rows,
       membership: await getReaderMembership(pub.uri, identity.id),
+      unlockingTierIds,
+      subscriptionUnlocks,
+      isSubscriber:
+        subscriptionUnlocks &&
+        (await isPublicationSubscriber(pub.uri, identity)),
     });
   if (!entitled) return { entitled: false };
 

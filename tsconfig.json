@@ -8,7 +8,9 @@
     "types": [
       "@cloudflare/workers-types"
     ],
-    "baseUrl": ".",
+    "paths": {
+      "*": ["./*"]
+    },
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -16,7 +18,6 @@
     "noEmit": true,
     "incremental": true,
     "module": "esnext",
-    "downlevelIteration": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -40,6 +41,7 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "scripts"
   ]
 }

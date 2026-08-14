@@ -1599,7 +1599,16 @@ export const schemaDict = {
         description:
           'Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership.',
         required: [],
-        properties: {},
+        properties: {
+          tiers: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description:
+              'Ids of the membership tiers whose members can read past the delimiter. Absent means every paid tier.',
+          },
+        },
       },
     },
   },

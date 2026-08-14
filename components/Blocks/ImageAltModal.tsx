@@ -2,9 +2,7 @@ import React, { useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { localImages } from "src/utils/addImage";
 import { Modal } from "components/Modal";
-import { MobileSheet } from "components/MobileSheet";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
-import { useIsMobile } from "src/hooks/isMobile";
 
 // Alt-text editor shown as a modal (desktop) or mobile sheet. Does not
 // autosave — the value is committed on Save or Enter. Shared by ImageBlock,
@@ -16,25 +14,10 @@ export function ImageAltModal(props: {
 }) {
   let [altEditorOpen, setAltEditorOpen] = useState(false);
 
-  let isMobile = useIsMobile();
   // Mount fresh on open so the textarea seeds from the current alt text.
-
-  if (isMobile)
-    return (
-      <MobileSheet
-        trigger={props.trigger}
-        title={props.title}
-        open={altEditorOpen}
-        onOpenChange={setAltEditorOpen}
-      >
-        <ImageAltModalContent
-          entityID={props.entityID}
-          onClose={() => setAltEditorOpen(false)}
-        />
-      </MobileSheet>
-    );
   return (
     <Modal
+      sheetOnMobile
       asChild
       trigger={props.trigger}
       title={props.title}

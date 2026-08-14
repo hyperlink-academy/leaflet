@@ -1,7 +1,12 @@
 import { describe, expect, test } from "vitest";
 import { normalizeDocument, getDocumentPages } from "lexicons/src/normalize";
 import {
+  getGatedPostTierIds,
+  gateUnlocksWithSubscription,
+  getMembersDelimiterTierIds,
   isEntitledToGatedPost,
+  resolveUnlockingTierIds,
+  tierUnlocksGatedPost,
   truncatePagesAtMembersDelimiter,
 } from "src/membership";
 
@@ -175,5 +180,217 @@ describe("isEntitledToGatedPost", () => {
         membership: null,
       }),
     ).toBe(false);
+  });
+});
+
+describe("tiered gating", () => {
+  const owner = "did:plc:owner";
+  const free = { id: "free", monthly_price_cents: 0, is_free: true };
+  const tiers = [
+    free,
+    { id: "basic", monthly_price_cents: 500, is_free: false },
+    { id: "plus", monthly_price_cents: 1000, is_free: false },
+    { id: "premium", monthly_price_cents: 2000, is_free: false },
+  ];
+  const activeOn = (tier: string | null) => ({
+    status: "active",
+    current_period_end: null,
+    tier,
+  });
+  const base = {
+    viewerDid: null,
+    ownerDid: owner,
+    contributors: [],
+    unlockingTierIds: ["basic", "premium"],
+  };
+
+  test("member on an unnamed tier is locked out", () => {
+    expect(
+      isEntitledToGatedPost({ ...base, membership: activeOn("plus") }),
+    ).toBe(false);
+  });
+
+  test("members on the named tiers read through, in any price order", () => {
+    expect(
+      isEntitledToGatedPost({ ...base, membership: activeOn("basic") }),
+    ).toBe(true);
+    expect(
+      isEntitledToGatedPost({ ...base, membership: activeOn("premium") }),
+    ).toBe(true);
+  });
+
+  test("membership pointing at no tier or a deleted one is locked out", () => {
+    expect(isEntitledToGatedPost({ ...base, membership: activeOn(null) })).toBe(
+      false,
+    );
+    expect(
+      isEntitledToGatedPost({ ...base, membership: activeOn("gone") }),
+    ).toBe(false);
+  });
+
+  test("no tier requirement keeps the any-member rule", () => {
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        unlockingTierIds: null,
+        membership: activeOn("plus"),
+      }),
+    ).toBe(true);
+  });
+
+  test("owner bypasses the tier requirement", () => {
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        viewerDid: owner,
+        membership: null,
+      }),
+    ).toBe(true);
+  });
+
+  test("a lapsed member on a named tier is still locked out", () => {
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        membership: {
+          status: "canceled",
+          current_period_end: null,
+          tier: "premium",
+        },
+      }),
+    ).toBe(false);
+  });
+
+  test("resolveUnlockingTierIds keeps the named tiers that still exist", () => {
+    expect(resolveUnlockingTierIds(["basic", "gone"], tiers)).toEqual([
+      "basic",
+    ]);
+    expect(resolveUnlockingTierIds(null, tiers)).toBe(null);
+  });
+
+  test("resolveUnlockingTierIds falls back to any-member when every named tier is gone", () => {
+    expect(resolveUnlockingTierIds(["gone"], tiers)).toBe(null);
+  });
+
+  test("tierUnlocksGatedPost matches by id, and only names free explicitly", () => {
+    const ids = ["plus", "premium"];
+    expect(tierUnlocksGatedPost({ id: "basic", is_free: false }, ids)).toBe(
+      false,
+    );
+    expect(tierUnlocksGatedPost({ id: "plus", is_free: false }, ids)).toBe(
+      true,
+    );
+    expect(tierUnlocksGatedPost({ id: "free", is_free: true }, ids)).toBe(
+      false,
+    );
+    expect(
+      tierUnlocksGatedPost({ id: "free", is_free: true }, ["free", "plus"]),
+    ).toBe(true);
+    expect(tierUnlocksGatedPost({ id: "basic", is_free: false }, null)).toBe(
+      true,
+    );
+    expect(tierUnlocksGatedPost({ id: "free", is_free: true }, null)).toBe(
+      false,
+    );
+  });
+
+  describe("a gate naming the free tier", () => {
+    const unlockingTierIds = resolveUnlockingTierIds(
+      ["free", "premium"],
+      tiers,
+    );
+
+    test("resolves to the free tier and reads as subscription-unlocked", () => {
+      expect(unlockingTierIds).toEqual(["free", "premium"]);
+      expect(gateUnlocksWithSubscription(unlockingTierIds, tiers)).toBe(true);
+      expect(gateUnlocksWithSubscription(["premium"], tiers)).toBe(false);
+      expect(gateUnlocksWithSubscription(null, tiers)).toBe(false);
+    });
+
+    test("a subscriber with no membership reads through", () => {
+      expect(
+        isEntitledToGatedPost({
+          ...base,
+          unlockingTierIds,
+          subscriptionUnlocks: true,
+          isSubscriber: true,
+          membership: null,
+        }),
+      ).toBe(true);
+    });
+
+    test("a logged-in non-subscriber does not", () => {
+      expect(
+        isEntitledToGatedPost({
+          ...base,
+          unlockingTierIds,
+          subscriptionUnlocks: true,
+          isSubscriber: false,
+          membership: null,
+        }),
+      ).toBe(false);
+    });
+
+    test("an active member on an unnamed tier still reads through", () => {
+      // Free is the lowest bar there is, so paying past it can't lock you out
+      // — even if the membership somehow has no subscription row.
+      expect(
+        isEntitledToGatedPost({
+          ...base,
+          unlockingTierIds,
+          subscriptionUnlocks: true,
+          isSubscriber: false,
+          membership: activeOn("basic"),
+        }),
+      ).toBe(true);
+    });
+
+    test("a lapsed member who never subscribed does not", () => {
+      expect(
+        isEntitledToGatedPost({
+          ...base,
+          unlockingTierIds,
+          subscriptionUnlocks: true,
+          isSubscriber: false,
+          membership: {
+            status: "canceled",
+            current_period_end: null,
+            tier: "premium",
+          },
+        }),
+      ).toBe(false);
+    });
+  });
+
+  test("reads the delimiter's tiers off blocks and documents", () => {
+    const blocks = [
+      { block: { $type: "pub.leaflet.blocks.text", plaintext: "preview" } },
+      { block: { $type: DELIMITER, tiers: ["basic", "premium"] } },
+      { block: { $type: "pub.leaflet.blocks.text", plaintext: "paid" } },
+    ];
+    expect(getMembersDelimiterTierIds(blocks)).toEqual(["basic", "premium"]);
+    expect(getMembersDelimiterTierIds(blocks.slice(2))).toBe(null);
+    expect(getMembersDelimiterTierIds([{ block: { $type: DELIMITER } }])).toBe(
+      null,
+    );
+
+    const doc = normalizeDocument(
+      {
+        $type: "pub.leaflet.document",
+        title: "Gated",
+        author: "did:plc:author",
+        publication: "at://did:plc:author/pub.leaflet.publication/pub",
+        publishedAt: new Date().toISOString(),
+        pages: [
+          {
+            $type: "pub.leaflet.pages.linearDocument",
+            id: "root",
+            blocks,
+          },
+        ],
+      },
+      "at://did:plc:author/pub.leaflet.document/rkey",
+    );
+    expect(getGatedPostTierIds(doc)).toEqual(["basic", "premium"]);
   });
 });

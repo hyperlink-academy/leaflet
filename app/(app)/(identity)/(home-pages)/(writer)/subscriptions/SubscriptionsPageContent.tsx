@@ -48,7 +48,12 @@ export function SubscriptionsPageContent(props: {
                       {membership.tierName ?? "Membership"}
                       {price ? ` · ${price}` : ""}
                     </div>
-                    <PubListing constrainHeight showSubscribeButton {...pub} />
+                    <PubListing
+                      constrainHeight
+                      showSubscribeButton
+                      subscribeSource={{ placement: "profile" }}
+                      {...pub}
+                    />
                   </div>
                 );
               })}

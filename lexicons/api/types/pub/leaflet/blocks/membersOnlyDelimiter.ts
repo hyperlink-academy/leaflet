@@ -17,6 +17,8 @@ const id = 'pub.leaflet.blocks.membersOnlyDelimiter'
 /** Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership. */
 export interface Main {
   $type?: 'pub.leaflet.blocks.membersOnlyDelimiter'
+  /** Ids of the membership tiers whose members can read past the delimiter. Absent means every paid tier. */
+  tiers?: string[]
 }
 
 const hashMain = 'main'

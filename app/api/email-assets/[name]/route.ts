@@ -62,7 +62,7 @@ export async function GET(
 
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
 
-  return new NextResponse(png, {
+  return new NextResponse(new Uint8Array(png), {
     headers: {
       "Content-Type": "image/png",
       // URL fully identifies the rendering (name + color + size), so the

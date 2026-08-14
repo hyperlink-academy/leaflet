@@ -1,7 +1,10 @@
+import type { SubscriptionSource } from "src/subscriptionSource";
+
 export type ActionAfterSignIn =
   | {
       action: "subscribe";
       publication: string;
+      source?: SubscriptionSource;
     }
   | {
       action: "recommend";

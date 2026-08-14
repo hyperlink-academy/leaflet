@@ -13,8 +13,6 @@ import { useDocumentDiscussionData } from "app/(app)/(published)/lish/[did]/[pub
 import { GoToArrow } from "../Icons/GoToArrow";
 import { ButtonPrimary } from "../Buttons";
 import { StandardSitePostItem } from "../Blocks/StandardSitePostBlock/StandardSitePostItem";
-import { MobileSheet } from "../MobileSheet";
-import { useIsMobile } from "src/hooks/isMobile";
 
 // A self-contained modal that renders a post's comments and Bluesky mentions
 // with a toggle between them. Used from post listings, the reader feed, and
@@ -48,10 +46,6 @@ export function DiscussionModal(props: {
 
   const { isLoading, data, did, pages, documentContextValue, comments } =
     useDocumentDiscussionData(props.document_uri, props.open);
-
-  // On mobile this renders in the slide-up sheet (like the interaction drawer)
-  // instead of a centered modal.
-  const isMobile = useIsMobile();
 
   // Restrict mentions to the page this modal is about (mirrors InteractionDrawer).
   const quotesAndMentions = (data?.quotesAndMentions ?? []).filter((q) => {
@@ -148,23 +142,13 @@ export function DiscussionModal(props: {
     </>
   );
 
-  if (isMobile) {
-    return (
-      <MobileSheet
-        open={props.open}
-        onOpenChange={props.onOpenChange}
-        className="px-3! pt-0!"
-      >
-        {content}
-      </MobileSheet>
-    );
-  }
-
   return (
     <Modal
+      sheetOnMobile
       open={props.open}
       onOpenChange={props.onOpenChange}
       className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]! h-[1000px]!"
+      sheetClassName="px-3! pt-0!"
     >
       {content}
     </Modal>

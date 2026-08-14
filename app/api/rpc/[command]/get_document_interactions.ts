@@ -77,7 +77,7 @@ export const get_document_interactions = makeRoute({
 
     // Fetch constellation backlinks
     const constellationBacklinks = absoluteUrl
-      ? await getConstellationBacklinks(absoluteUrl)
+      ? await getConstellationBacklinks(absoluteUrl, document.uri)
       : [];
 
     // Deduplicate constellation backlinks internally

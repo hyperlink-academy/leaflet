@@ -5,6 +5,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublication";
 import { getStripe } from "stripe/client";
 import { Ok, Err, type Result } from "src/result";
+import { tierDescriptionPlainText } from "src/utils/tierDescriptionDoc";
 
 type ToggleError =
   | "unauthorized"
@@ -79,7 +80,7 @@ async function ensureFreeTier(publicationUri: string) {
     .insert({
       publication: publicationUri,
       name: "Free",
-      description: "Subscribe for free to get new posts.",
+      description: "Subscribe for free to get notified about new posts.",
       monthly_price_cents: 0,
       annual_price_cents: null,
       is_free: true,
@@ -134,7 +135,10 @@ export async function upsertMembershipTier(
   if (!owner) return Err("unauthorized");
 
   const name = tier.name.trim();
+
   const description = tier.description?.trim() || null;
+  if (description && description.length > 20_000) return Err("invalid_tier");
+  const stripeDescription = tierDescriptionPlainText(description);
 
   let existing = null;
   if (tier.id) {
@@ -215,7 +219,7 @@ export async function upsertMembershipTier(
       if (name !== existing?.name || description !== existing?.description) {
         await stripe.products.update(
           productId,
-          { name, description: description ?? "" },
+          { name, description: stripeDescription },
           { stripeAccount },
         );
       }
@@ -223,7 +227,7 @@ export async function upsertMembershipTier(
       const product = await stripe.products.create(
         {
           name,
-          ...(description ? { description } : {}),
+          ...(stripeDescription ? { description: stripeDescription } : {}),
           metadata: {
             kind: "publication_membership_tier",
             publication: publicationUri,

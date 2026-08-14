@@ -17,8 +17,6 @@ import { OAuthErrorMessage, isOAuthSessionError } from "../OAuthError";
 import { useIdentityData } from "../IdentityProvider";
 import { LoginModal } from "../LoginButton";
 import { Modal } from "../Modal";
-import { MobileSheet } from "../MobileSheet";
-import { useIsMobile } from "src/hooks/isMobile";
 import { RecommendsList, getDocumentRecommendsKey } from "./RecommendsList";
 import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import {
@@ -278,40 +276,20 @@ export function RecommendButton(props: {
   );
 }
 
-// Lists the profiles that have recommended a document. On mobile this slides up
-// in a sheet (like the interaction drawer / DiscussionModal) instead of a
-// centered modal.
-
+// Lists the profiles that have recommended a document. The sm: variants below
+// align with the useIsMobile breakpoint that swaps the modal for a sheet: the
+// sheet keeps the button's default chrome, the modal strips it down to a bare
+// inline count.
 function RecommendsModal(props: {
   documentUri: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recommendCount: number;
 }) {
-  const isMobile = useIsMobile();
-
-  if (isMobile)
-    return (
-      <MobileSheet
-        title="Recommended by"
-        open={props.open}
-        onOpenChange={props.onOpenChange}
-        actionButton={
-          <RecommendButton
-            documentUri={props.documentUri}
-            recommendsCount={props.recommendCount}
-            recommendOnly
-            large
-          />
-        }
-      >
-        <RecommendsList documentUri={props.documentUri} />{" "}
-      </MobileSheet>
-    );
-
   return (
     <Modal
-      title={`Recommends`}
+      sheetOnMobile
+      title="Recommended by"
       open={props.open}
       onOpenChange={props.onOpenChange}
       actionButton={
@@ -320,12 +298,12 @@ function RecommendsModal(props: {
           recommendsCount={props.recommendCount}
           recommendOnly
           large
-          className="p-0! border-none! flex-row-reverse! hover:sm:bg-transparent! h-fit! hover:text-accent-contrast!"
+          className="sm:p-0! sm:border-none! sm:flex-row-reverse! hover:sm:bg-transparent! sm:h-fit! hover:sm:text-accent-contrast!"
         />
       }
       className="px-3!  pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]!"
     >
-      <hr className="border-border-light -mx-3 mb-3" />
+      <hr className="border-border-light -mx-3 mb-3 hidden sm:block" />
       <RecommendsList documentUri={props.documentUri} />
     </Modal>
   );

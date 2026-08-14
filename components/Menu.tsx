@@ -6,6 +6,7 @@ import { PopoverArrow } from "./Icons/PopoverArrow";
 import { PopoverOpenContext } from "./Popover/PopoverContext";
 import { useState } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
+import { Drop } from "node_modules/@tiptap/core/dist/extensions";
 
 export const Menu = (props: {
   open?: boolean;
@@ -134,6 +135,11 @@ export const CheckboxMenuItem = (props: {
   );
 };
 
+export const MenuSeparator = () => {
+  return (
+    <DropdownMenu.Separator className="border-border-light w-full border-b my-0.5" />
+  );
+};
 export const MenuItem = (props: {
   children?: React.ReactNode;
   className?: string;

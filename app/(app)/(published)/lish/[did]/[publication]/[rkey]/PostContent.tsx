@@ -376,6 +376,7 @@ export let Block = ({
           <SubscribePanel
             publicationUri={document.publication.uri}
             publicationUrl={document.normalizedPublication?.url}
+            source={{ placement: "signup_block" }}
             publicationName={
               document.normalizedPublication?.name ?? document.publication.name
             }

@@ -96,8 +96,11 @@ export function PublicationHeader(props: {
         {props.author}
         {props.subscribe && (
           <div className="pt-4 pb-1 px-3">
-            <div className="max-w-sm mx-auto sm:w-fit w-full">
-              <SubscribeInput {...props.subscribe} />
+            <div className="max-w-sm mx-auto w-fit">
+              <SubscribeInput
+                {...props.subscribe}
+                source={{ placement: "pub_header" }}
+              />
             </div>
           </div>
         )}
@@ -167,7 +170,10 @@ export function NewPublicationHeader(props: {
             ${props.edit && "pointer-events-none"}
             block max-w-full w-fit mx-auto px-3 sm:px-0`}
         >
-          <SubscribeInput {...props.subscribe} />
+          <SubscribeInput
+            {...props.subscribe}
+            source={{ placement: "pub_header" }}
+          />
         </div>
       )}
     </div>

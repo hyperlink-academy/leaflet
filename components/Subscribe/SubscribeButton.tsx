@@ -24,6 +24,7 @@ import {
 } from "actions/publications/subscribeEmail";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { mainSiteAuthBase } from "src/utils/customDomain";
+import type { SubscriptionSource } from "src/subscriptionSource";
 
 import { useViewerSubscription } from "./viewerSubscription";
 import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
@@ -37,7 +38,11 @@ type SubscribeMode = "email" | "atproto";
 // Logged-out email subscribe goes through the main-site email-login flow with a
 // `subscribe` after-sign-in action, so the session is minted on the main site
 // and handed back to the custom domain (see postAuthRedirect).
-function redirectToEmailSubscribe(email: string, publicationUri: string) {
+function redirectToEmailSubscribe(
+  email: string,
+  publicationUri: string,
+  source?: SubscriptionSource,
+) {
   let base = mainSiteAuthBase() || window.location.origin;
   let url = new URL("/api/auth/email-login", base);
   url.searchParams.set("email", email);
@@ -47,6 +52,9 @@ function redirectToEmailSubscribe(email: string, publicationUri: string) {
     encodeActionToSearchParam({
       action: "subscribe",
       publication: publicationUri,
+      // The subscribe completes after a redirect, so stamp the originating
+      // page into the source now — the server won't see a useful Referer.
+      ...(source ? { source: { url: window.location.href, ...source } } : {}),
     }),
   );
   window.location.href = url.toString();
@@ -60,6 +68,8 @@ export type SubscribeProps = {
   publicationName: string;
   publicationDescription?: string;
   newsletterMode: boolean;
+  // Analytics: where on the page this subscribe control sits.
+  source?: SubscriptionSource;
 };
 
 export const SubscribePanel = (props: SubscribeProps) => {
@@ -129,6 +139,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
     let res = await requestPublicationEmailSubscription(
       props.publicationUri,
       email,
+      props.source,
     );
     setRequesting(false);
     if (!res.ok) {
@@ -167,7 +178,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           setLinkModalOpen(true);
           return;
         }
-        redirectToEmailSubscribe(email, props.publicationUri);
+        redirectToEmailSubscribe(email, props.publicationUri, props.source);
       }}
       action={
         <ButtonPrimary
@@ -238,6 +249,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
             <EmailButton
               publicationUri={props.publicationUri}
               publicationUrl={props.publicationUrl}
+              source={props.source}
               email={user.email}
               handle={user.handle}
               onSubscribed={() => setLocallySubscribed(true)}
@@ -255,6 +267,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               user={user}
               publicationUri={props.publicationUri}
               publicationUrl={props.publicationUrl}
+              source={props.source}
               onAtSuccess={() => setAtSuccessOpen(true)}
               leading={modeMenu}
             />
@@ -265,6 +278,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           user={user}
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
+          source={props.source}
           onSubscribed={() => setLocallySubscribed(true)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
@@ -330,6 +344,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   email,
                   code,
                   linkToCurrent,
+                  props.source,
                 );
                 setConfirming(false);
                 if (!res.ok) {
@@ -387,6 +402,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
           user={user}
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
+          source={props.source}
           onSubscribed={() => setLocallySubscribed(true)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
@@ -395,6 +411,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
           compact
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
+          source={props.source}
           email={user.email}
           handle={user.handle}
           onSubscribed={() => setLocallySubscribed(true)}
