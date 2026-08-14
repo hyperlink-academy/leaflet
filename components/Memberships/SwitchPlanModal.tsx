@@ -15,6 +15,10 @@ import {
   type AvailableTier,
 } from "actions/memberships";
 import { formatPrice } from "components/Memberships/TierGrid";
+import {
+  useSwitchPreview,
+  SwitchPreviewLine,
+} from "components/Memberships/switchPreview";
 
 export function membershipPrice(m: MyMembership): string | null {
   const cents = m.cadence === "year" ? m.annualPriceCents : m.monthlyPriceCents;
@@ -139,7 +143,6 @@ export function CancelMembershipForm(props: {
         {m.currentPeriodEnd
           ? `until ${endDate}`
           : "until the end of your billing period"}
-        , and you won't be charged again.
       </div>
       <div
         className={`flex ${props.onBack ? "justify-between" : "justify-end"}`}
@@ -192,9 +195,16 @@ export function SwitchPlanForm(props: {
   const selectedTier = m.availableTiers.find((t) => t.id === tierId);
   const canAnnual = selectedTier?.annual_price_cents != null;
   const effectiveCadence = canAnnual ? cadence : "month";
+  const unchanged = tierId === m.tierId && effectiveCadence === m.cadence;
+  const preview = useSwitchPreview({
+    enabled: !!tierId && !unchanged,
+    membershipId: m.id,
+    tierId,
+    cadence: effectiveCadence,
+  });
 
   const save = async () => {
-    if (saving || !tierId) return;
+    if (saving || !tierId || unchanged) return;
     setSaving(true);
     const res = await switchMembership({
       membershipId: m.id,
@@ -261,9 +271,10 @@ export function SwitchPlanForm(props: {
           ))}
         </div>
       )}
-      <div className="text-tertiary text-sm leading-snug">
-        Switching adjusts your next invoice with a prorated credit or charge.
-      </div>
+      <SwitchPreviewLine
+        state={preview}
+        className="text-tertiary text-sm leading-snug"
+      />
       <div
         className={`flex ${props.onBack ? "justify-between" : "justify-end"}`}
       >
@@ -274,7 +285,7 @@ export function SwitchPlanForm(props: {
         )}
         <ButtonPrimary
           type="button"
-          disabled={saving || !tierId}
+          disabled={saving || !tierId || unchanged}
           onClick={save}
         >
           {saving ? <DotLoader /> : "Save"}

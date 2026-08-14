@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { Modal } from "components/Modal";
 import { useToaster, useSmoker } from "components/Toast";
@@ -30,6 +30,10 @@ import {
 } from "components/Memberships/TierGrid";
 import { type JoinResume } from "components/Memberships/joinReturn";
 import {
+  useSwitchPreview,
+  SwitchPreviewLine,
+} from "components/Memberships/switchPreview";
+import {
   getMembershipJoinViewer,
   subscribeToTier,
   saveWalletCardFromSession,
@@ -56,6 +60,7 @@ import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import type { SubscriptionSource } from "src/subscriptionSource";
 import { LoginModal } from "components/LoginButton";
+import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 
 // 1. collect who's subscribing (email or Atmosphere
 // handle — or the session identity when signed in)
@@ -115,6 +120,9 @@ export function JoinMembershipFlow(props: {
   // An active paid member picked the free tier — confirm before we schedule
   // the cancellation (irreversible-feeling, so it isn't one click).
   const [confirmDowngrade, setConfirmDowngrade] = useState<Tier | null>(null);
+  // An active paid member picked another paid tier — confirm against a quote,
+  // since a monthly↔annual switch bills on the spot.
+  const [confirmSwitch, setConfirmSwitch] = useState<Tier | null>(null);
   // The embedded payment step for a picked paid tier: the reader confirms a
   // payment method in the Payment Element, then the subscription is created.
   const [cardStep, setCardStep] = useState<{
@@ -361,6 +369,7 @@ export function JoinMembershipFlow(props: {
       });
       return;
     }
+    setConfirmSwitch(null);
     finishJoin("Updated your plan!");
   };
 
@@ -387,7 +396,7 @@ export function JoinMembershipFlow(props: {
     finishJoin(
       res.value.subscribed
         ? "You'll move to the free plan at the end of your billing period."
-        : "Your membership ends at the period's end — subscribe to keep getting posts.",
+        : "Your membership expires at the end of your billing period.",
     );
   };
 
@@ -522,10 +531,10 @@ export function JoinMembershipFlow(props: {
     const free = isFreeTier(tier);
 
     // An active paid membership switches in place (prorated) between paid
-    // tiers, or downgrades to free through a confirm step (that path cancels
-    // the Stripe subscription instead of switching it).
+    // tiers, or downgrades to free (that path cancels the Stripe subscription
+    // instead of switching it). Both go through a confirm step first.
     if (viewer?.membership)
-      return free ? setConfirmDowngrade(tier) : runSwitch(tier);
+      return free ? setConfirmDowngrade(tier) : setConfirmSwitch(tier);
 
     if (identity) {
       if (hasNeededIdentity) return free ? freeJoin(tier) : payWithViewer(tier);
@@ -659,7 +668,8 @@ export function JoinMembershipFlow(props: {
           />{" "}
           {viewer?.membership ? (
             <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
-              Switching memberships will prorate your bill this month.
+              Switching memberships prorates your bill — pick a plan to see what
+              it costs before confirming.
             </p>
           ) : !identity ? (
             <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
@@ -691,11 +701,28 @@ export function JoinMembershipFlow(props: {
           }}
         />
       )}
+      {confirmSwitch && viewer?.membership && (
+        <SwitchConfirmModal
+          membershipId={viewer.membership.id}
+          currentTier={props.tiers.find(
+            (t) => t.id === viewer.membership?.tierId,
+          )}
+          newTier={confirmSwitch}
+          cadence={effectiveCadence(confirmSwitch)}
+          busy={busyTierId !== null}
+          onConfirm={() => runSwitch(confirmSwitch)}
+          onClose={() => setConfirmSwitch(null)}
+        />
+      )}
       {confirmDowngrade && (
         <DowngradeConfirmModal
           currentTier={props.tiers.find(
             (t) => t.id === viewer?.membership?.tierId,
           )}
+          currentCadence={
+            viewer?.membership?.cadence === "year" ? "year" : "month"
+          }
+          freeTier={confirmDowngrade}
           periodEnd={viewer?.membership?.currentPeriodEnd ?? null}
           busy={busyTierId !== null}
           onConfirm={() => downgradeToFree(confirmDowngrade)}
@@ -706,8 +733,69 @@ export function JoinMembershipFlow(props: {
   );
 }
 
+function SwitchConfirmModal(props: {
+  membershipId: string;
+  currentTier: Tier | undefined;
+  newTier: Tier;
+  cadence: Cadence;
+  busy: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const preview = useSwitchPreview({
+    enabled: true,
+    membershipId: props.membershipId,
+    tierId: props.newTier.id,
+    cadence: props.cadence,
+  });
+
+  return (
+    <Modal
+      open
+      onOpenChange={(o) => !o && props.onClose()}
+      title="Switch your Membership"
+      className="max-w-full w-sm bg-[var(--color-bg-light)]! text-center"
+    >
+      <div className="flex flex-col gap-3">
+        <div className="text-secondary leading-snug">
+          <div className="flex flex-col justify-center items-center mx-auto gap-1 pt-2">
+            {props.currentTier && (
+              <>
+                <div className="opaque-container w-fit py-0.5 px-2 text-tertiary">
+                  {props.currentTier.name} ·{" "}
+                  {tierPriceLabel(props.currentTier, props.cadence)}
+                </div>
+                <GoToArrowLined className="rotate-90 text-tertiary" />
+              </>
+            )}
+            <div className="accent-container w-fit py-0.5 px-2 font-bold text-accent-contrast border border-accent-contrast">
+              {props.newTier.name} ·{" "}
+              {tierPriceLabel(props.newTier, props.cadence)}
+            </div>
+          </div>
+        </div>
+        <SwitchPreviewLine state={preview} className="text-tertiary text-sm " />
+        <div className="flex gap-3 mx-auto">
+          <ButtonTertiary type="button" onClick={props.onClose}>
+            Nevermind{" "}
+          </ButtonTertiary>
+          <ButtonPrimary
+            type="button"
+            disabled={props.busy || preview?.status === "loading"}
+            onClick={props.onConfirm}
+          >
+            {props.busy ? <DotLoader /> : "Switch!"}
+          </ButtonPrimary>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function DowngradeConfirmModal(props: {
   currentTier: Tier | undefined;
+  currentCadence: Cadence;
+  freeTier: Tier;
   periodEnd: string | null;
   busy: boolean;
   onConfirm: () => void;
@@ -722,35 +810,42 @@ function DowngradeConfirmModal(props: {
     <Modal
       open
       onOpenChange={(o) => !o && props.onClose()}
-      title="Switch to the free plan?"
-      className="max-w-full w-sm"
+      title="Switch your Membership"
+      className="max-w-full w-sm bg-[var(--color-bg-light)]! text-center"
     >
       <div className="flex flex-col gap-3">
         <div className="text-secondary leading-snug">
-          {props.currentTier ? (
-            <>
-              Switch from <strong>{props.currentTier.name}</strong> to the free
-              plan?
-            </>
-          ) : (
-            "Switch to the free plan?"
-          )}{" "}
+          <div className="flex flex-col justify-center items-center mx-auto gap-1 pt-2">
+            {props.currentTier && (
+              <>
+                <div className="opaque-container w-fit py-0.5 px-2 text-tertiary">
+                  {props.currentTier.name} ·{" "}
+                  {tierPriceLabel(props.currentTier, props.currentCadence)}
+                </div>
+                <GoToArrowLined className="rotate-90 text-tertiary" />
+              </>
+            )}
+            <div className="accent-container w-fit py-0.5 px-2 font-bold text-accent-contrast border border-accent-contrast">
+              {props.freeTier.name} · Free
+            </div>
+          </div>
+        </div>
+        <div className="text-tertiary text-sm">
           You'll keep member access{" "}
           {props.periodEnd
             ? `until ${endDate}`
             : "until the end of your billing period"}
-          , then move to free and won't be charged again.
         </div>
-        <div className="flex justify-between">
-          <ButtonSecondary type="button" onClick={props.onClose}>
-            Keep membership
-          </ButtonSecondary>
+        <div className="flex gap-3 mx-auto">
+          <ButtonTertiary type="button" onClick={props.onClose}>
+            Nevermind
+          </ButtonTertiary>
           <ButtonPrimary
             type="button"
             disabled={props.busy}
             onClick={props.onConfirm}
           >
-            {props.busy ? <DotLoader /> : "Switch to free"}
+            {props.busy ? <DotLoader /> : "Switch!"}
           </ButtonPrimary>
         </div>
       </div>

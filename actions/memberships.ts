@@ -104,24 +104,25 @@ export async function downgradeMembershipToFree(args: {
   }
 }
 
-// Switch tier and/or monthly↔annual on the single subscription item, letting
-// Stripe apply its default proration.
+type SwitchArgs = {
+  membershipId: string;
+  tierId: string;
+  cadence: "month" | "year";
+};
+
+// Everything both the preview and the switch itself need: the membership row,
+// the destination price, the subscription item being repriced, and whether the
+// billing interval changes.
 //
 // Only works between paid tiers: a free-tier "member" is just a subscriber
 // with no membership row or Stripe subscription, so a free→paid upgrade must
 // go through the join/payment flow instead (JoinMembershipFlow routes on the
 // presence of an active paid membership). If a caller gets here anyway, the
-// missing stripe_subscription_id fails as not_found below.
-export async function switchMembership(args: {
-  membershipId: string;
-  tierId: string;
-  cadence: "month" | "year";
-}): Promise<Result<null, MembershipError>> {
-  const identity = await getAuthIdentity();
-  if (!identity) return Err("not_authenticated");
-  const m = await loadOwnedMembership(identity.id, args.membershipId);
+// missing stripe_subscription_id fails as not_found here.
+async function resolveSwitchTarget(identityId: string, args: SwitchArgs) {
+  const m = await loadOwnedMembership(identityId, args.membershipId);
   if (!m?.stripe_subscription_id || !m.stripe_account_id)
-    return Err("not_found");
+    return Err("not_found" as const);
 
   const { data: tier } = await supabaseServerClient
     .from("publication_membership_tiers")
@@ -130,31 +131,127 @@ export async function switchMembership(args: {
     .eq("publication", m.publication)
     .eq("active", true)
     .maybeSingle();
-  if (!tier) return Err("tier_not_found");
+  if (!tier) return Err("tier_not_found" as const);
   const priceId =
     args.cadence === "year"
       ? tier.stripe_price_annual_id
       : tier.stripe_price_monthly_id;
-  if (!priceId) return Err("tier_not_found");
+  if (!priceId) return Err("tier_not_found" as const);
+
+  const sub = await getStripe().subscriptions.retrieve(
+    m.stripe_subscription_id,
+    { stripeAccount: m.stripe_account_id },
+  );
+  const item = sub.items.data[0];
+  if (!item) return Err("stripe_error" as const);
+
+  return Ok({
+    stripeAccount: m.stripe_account_id,
+    subscriptionId: m.stripe_subscription_id,
+    tier,
+    priceId,
+    sub,
+    itemId: item.id,
+    currentPeriodEnd: item.current_period_end ?? null,
+    // Repricing across intervals resets the billing cycle, which makes Stripe
+    // invoice on the spot instead of deferring the prorations.
+    intervalChanged: item.price.recurring?.interval !== args.cadence,
+  });
+}
+
+export type MembershipSwitchPreview = {
+  // Whether the reader is charged right now. An interval change resets the
+  // billing cycle and bills immediately; a same-interval switch only moves
+  // the prorated credit/charge onto the next renewal invoice.
+  immediate: boolean;
+  amountDueCents: number;
+  currency: string;
+  // When the next invoice lands — the date the adjustment shows up on for a
+  // deferred switch. Null for an immediate one, which bills now.
+  nextInvoiceDate: string | null;
+  // Prorated credit beyond what this invoice can absorb; Stripe parks it on
+  // the customer balance and spends it on later invoices.
+  creditCents: number;
+};
+
+// The exact invoice the reader would get from switchMembership, so the UI can
+// name the amount before they commit. Mirrors switchMembership's update args —
+// the two must stay in step or the quoted number is a different scenario than
+// the one that runs.
+export async function previewMembershipSwitch(
+  args: SwitchArgs,
+): Promise<Result<MembershipSwitchPreview, MembershipError>> {
+  const identity = await getAuthIdentity();
+  if (!identity) return Err("not_authenticated");
+  try {
+    const resolved = await resolveSwitchTarget(identity.id, args);
+    if (!resolved.ok) return resolved;
+    const t = resolved.value;
+
+    const preview = await getStripe().invoices.createPreview(
+      {
+        subscription: t.subscriptionId,
+        subscription_details: {
+          items: [{ id: t.itemId, price: t.priceId }],
+          proration_behavior: "create_prorations",
+          billing_cycle_anchor: t.intervalChanged ? "now" : "unchanged",
+        },
+      },
+      { stripeAccount: t.stripeAccount },
+    );
+    return Ok({
+      immediate: t.intervalChanged,
+      amountDueCents: preview.amount_due,
+      currency: preview.currency,
+      nextInvoiceDate:
+        !t.intervalChanged && t.currentPeriodEnd
+          ? new Date(t.currentPeriodEnd * 1000).toISOString()
+          : null,
+      creditCents: preview.total < 0 ? -preview.total : 0,
+    });
+  } catch (e) {
+    console.error("[memberships] switch preview failed:", e);
+    return Err("stripe_error");
+  }
+}
+
+// Switch tier and/or monthly↔annual on the single subscription item.
+export async function switchMembership(
+  args: SwitchArgs,
+): Promise<Result<null, MembershipError>> {
+  const identity = await getAuthIdentity();
+  if (!identity) return Err("not_authenticated");
 
   try {
-    const stripe = getStripe();
-    const sub = await stripe.subscriptions.retrieve(m.stripe_subscription_id, {
-      stripeAccount: m.stripe_account_id,
-    });
-    const itemId = sub.items.data[0]?.id;
-    if (!itemId) return Err("stripe_error");
-    await stripe.subscriptions.update(
-      m.stripe_subscription_id,
-      { items: [{ id: itemId, price: priceId }] },
-      { stripeAccount: m.stripe_account_id },
+    const resolved = await resolveSwitchTarget(identity.id, args);
+    if (!resolved.ok) return resolved;
+    const t = resolved.value;
+
+    await getStripe().subscriptions.update(
+      t.subscriptionId,
+      {
+        items: [{ id: t.itemId, price: t.priceId }],
+        // Both are Stripe's defaults for this shape of update, pinned so the
+        // billed outcome can't drift from what previewMembershipSwitch quoted.
+        proration_behavior: "create_prorations",
+        billing_cycle_anchor: t.intervalChanged ? "now" : "unchanged",
+        // The subscription's metadata is what reconcileUntrackedSubscription
+        // rebuilds a lost membership row from, so leaving it on the old tier
+        // would restore the reader onto a plan they no longer pay for.
+        metadata: {
+          ...t.sub.metadata,
+          tier_id: t.tier.id,
+          cadence: args.cadence,
+        },
+      },
+      { stripeAccount: t.stripeAccount },
     );
     await supabaseServerClient
       .from("publication_memberships")
       .update({
-        tier: tier.id,
+        tier: t.tier.id,
         cadence: args.cadence,
-        stripe_price_id: priceId,
+        stripe_price_id: t.priceId,
         updated_at: new Date().toISOString(),
       })
       .eq("id", args.membershipId);
@@ -169,9 +266,9 @@ export async function switchMembership(args: {
 // re-clone it onto every membership's connected account and swap it in as the
 // subscription's payment method. Best-effort per membership: a failure on one
 // doesn't block the others.
-export async function updateWalletCard(sessionId: string): Promise<
-  Result<{ failedPublications: string[] }, MembershipError>
-> {
+export async function updateWalletCard(
+  sessionId: string,
+): Promise<Result<{ failedPublications: string[] }, MembershipError>> {
   return applyNewWalletCard(() => walletCheckoutSessionCard(sessionId));
 }
 
@@ -228,11 +325,7 @@ async function applyNewWalletCard(
           { stripeAccount: m.stripe_account_id },
         );
       } catch (e) {
-        console.error(
-          "[memberships] card swap failed for",
-          m.publication,
-          e,
-        );
+        console.error("[memberships] card swap failed for", m.publication, e);
         failedPublications.push(m.publication);
       }
     }
@@ -348,17 +441,23 @@ export async function getMyMemberships(): Promise<MyMembershipsData | null> {
       .maybeSingle(),
   ]);
 
-  const publicationUris = Array.from(new Set((rows ?? []).map((r) => r.publication)));
+  const publicationUris = Array.from(
+    new Set((rows ?? []).map((r) => r.publication)),
+  );
   const { data: allTiers } = publicationUris.length
     ? await supabaseServerClient
         .from("publication_membership_tiers")
-        .select("id, publication, name, monthly_price_cents, annual_price_cents, sort_order")
+        .select(
+          "id, publication, name, monthly_price_cents, annual_price_cents, sort_order",
+        )
         .in("publication", publicationUris)
         .eq("active", true)
         .eq("is_free", false)
     : { data: [] };
   const tiersByPublication = new Map<string, AvailableTier[]>();
-  for (const t of (allTiers ?? []).sort((a, b) => a.sort_order - b.sort_order)) {
+  for (const t of (allTiers ?? []).sort(
+    (a, b) => a.sort_order - b.sort_order,
+  )) {
     const list = tiersByPublication.get(t.publication) ?? [];
     list.push({
       id: t.id,
