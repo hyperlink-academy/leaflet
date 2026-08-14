@@ -106,7 +106,7 @@ function DocLinkBlock(props: {
             <div className="grow">
               {title && (
                 <div
-                  className={`pageBlockOne outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                  className={`pageBlockOne whitespace-pre-wrap outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={title.facets}
@@ -118,7 +118,7 @@ function DocLinkBlock(props: {
               )}
               {description && (
                 <div
-                  className={`pageBlockLineTwo outline-none resize-none align-top gap-2 ${description.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                  className={`pageBlockLineTwo whitespace-pre-wrap outline-none resize-none align-top gap-2 ${description.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={description.facets}
@@ -130,7 +130,7 @@ function DocLinkBlock(props: {
               )}
               {thirdLine && (
                 <div
-                  className={`pageBlockLineThree outline-none resize-none align-top gap-2 ${thirdLine.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                  className={`pageBlockLineThree whitespace-pre-wrap outline-none resize-none align-top gap-2 ${thirdLine.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={thirdLine.facets}

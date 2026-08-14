@@ -586,6 +586,11 @@ export let Block = ({
             onOpenLightbox={
               canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
             }
+            onOpenAltInLightbox={
+              canOpenLightbox
+                ? () => openLightbox?.(pageId, cid, { altExpanded: true })
+                : undefined
+            }
           />
         </div>
       );
@@ -601,7 +606,7 @@ export let Block = ({
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={`blockquote py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
+          className={`blockquote whitespace-pre-wrap py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
           {...blockProps}
         >
           <TextBlock
@@ -618,7 +623,7 @@ export let Block = ({
     "pub.leaflet.blocks.text": (block) => {
       return (
         <p
-          className={`textBlock ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"}`}
+          className={`textBlock whitespace-pre-wrap ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"}`}
           {...blockProps}
           // em-based so small/large scale with the theme's custom base font
           // size, matching the editor's .textSizeSmall/.textSizeLarge classes.
@@ -670,7 +675,7 @@ export let Block = ({
       if (block.level === 1)
         return (
           <h1
-            className={`h1Block ${className} ${HeadingStyle[1]}`}
+            className={`h1Block whitespace-pre-wrap ${className} ${HeadingStyle[1]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}
           >
@@ -680,7 +685,7 @@ export let Block = ({
       if (block.level === 2)
         return (
           <h2
-            className={`h2Block ${className} ${HeadingStyle[2]}`}
+            className={`h2Block whitespace-pre-wrap ${className} ${HeadingStyle[2]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}
           >
@@ -690,7 +695,7 @@ export let Block = ({
       if (block.level === 3)
         return (
           <h3
-            className={`h3Block ${className} ${HeadingStyle[3]}`}
+            className={`h3Block whitespace-pre-wrap ${className} ${HeadingStyle[3]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}
           >
@@ -699,7 +704,7 @@ export let Block = ({
         );
       return (
         <h6
-          className={`h6Block ${className} ${HeadingStyle[4]}`}
+          className={`h6Block whitespace-pre-wrap ${className} ${HeadingStyle[4]}`}
           {...headingProps}
           style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}
         >

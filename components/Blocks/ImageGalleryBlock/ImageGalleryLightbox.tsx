@@ -1,14 +1,24 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { GalleryImage, useGalleryImage } from "./shared";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
+
+const AltExpandedContext = createContext(false);
 
 export function ImageGalleryLightbox(props: {
   count: number;
   index: number | null;
   onIndexChange: (index: number | null) => void;
   renderSlide: (index: number) => ReactNode;
+  altExpanded?: boolean;
 }) {
   let open = props.index !== null;
 
@@ -37,6 +47,7 @@ export function ImageGalleryLightbox(props: {
             <LightboxContent
               count={props.count}
               initialIndex={props.index ?? 0}
+              altExpanded={!!props.altExpanded}
               renderSlide={props.renderSlide}
               onClose={() => props.onIndexChange(null)}
             />
@@ -50,6 +61,7 @@ export function ImageGalleryLightbox(props: {
 function LightboxContent(props: {
   count: number;
   initialIndex: number;
+  altExpanded: boolean;
   renderSlide: (index: number) => ReactNode;
   onClose: () => void;
 }) {
@@ -103,7 +115,11 @@ function LightboxContent(props: {
             key={i}
             className="h-full snap-center snap-always flex flex-col items-center justify-center gap-3"
           >
-            {props.renderSlide(i)}
+            <AltExpandedContext.Provider
+              value={props.altExpanded && i === props.initialIndex}
+            >
+              {props.renderSlide(i)}
+            </AltExpandedContext.Provider>
           </div>
         ))}
       </div>
@@ -151,7 +167,7 @@ function LightboxContent(props: {
 export function LightboxSlide(props: { image: GalleryImage }) {
   let { image } = props;
   return (
-    <div className="flex-1 h-full w-full flex flex-col gap-3 min-h-0 justify-center items-center px-8">
+    <div className="flex-1 h-full w-full flex flex-col gap-3 min-h-0 justify-center items-center px-4 sm:px-8">
       <img
         alt={image.alt}
         src={image.fullSrc ?? image.src}
@@ -159,13 +175,56 @@ export function LightboxSlide(props: { image: GalleryImage }) {
         onClick={(e) => e.stopPropagation()}
       />
       <div></div>
-      {image.alt && (
+      {image.alt && <LightboxAltText alt={image.alt} />}
+    </div>
+  );
+}
+
+function LightboxAltText(props: { alt: string }) {
+  let [expanded, setExpanded] = useState(useContext(AltExpandedContext));
+  let [clamped, setClamped] = useState(false);
+  let clampedRef = useRef<HTMLDivElement>(null);
+
+  // Only measure while collapsed — once expanded the clamp is gone and the
+  // element no longer overflows, which would hide the toggle.
+  useEffect(() => {
+    if (expanded) return;
+    let el = clampedRef.current;
+    if (!el) return;
+    let measure = () => setClamped(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    let observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [props.alt, expanded]);
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="shrink-0 w-full max-w-prose flex flex-col items-center gap-1"
+    >
+      <div className="relative w-full">
+        {/* Kept mounted while expanded so the image doesn't shift under the overlay. */}
         <div
-          onClick={(e) => e.stopPropagation()}
-          className="shrink-0 whitespace-pre-wrap text-bg-page text-sm line-clamp-6 max-w-prose text-center"
+          ref={clampedRef}
+          className={`whitespace-pre-wrap text-bg-page text-sm line-clamp-3 text-center ${expanded ? "invisible" : ""}`}
         >
-          {image.alt}
+          {props.alt}
         </div>
+        {expanded && (
+          <div className="absolute bottom-0 inset-x-0 max-h-[60svh] overflow-y-auto opaque-container whitespace-pre-wrap text-secondary text-sm px-2 py-1.5 text-left ">
+            {props.alt}
+          </div>
+        )}
+      </div>
+      {(clamped || expanded) && (
+        <button
+          type="button"
+          className="text-accent-contrast text-sm"
+          onClick={() => setExpanded((e) => !e)}
+        >
+          {expanded ? "See less" : "See more"}
+        </button>
       )}
     </div>
   );

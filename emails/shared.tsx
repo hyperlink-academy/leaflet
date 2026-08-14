@@ -153,14 +153,19 @@ export const makeEmailIconUrl = (
   return `${base}/api/email-assets/${name}.png?${params.toString()}`;
 };
 
+// The last space of a run stays a regular space so the line can still wrap
+// there; the rest become non-breaking so HTML doesn't collapse the run.
+const preserveSpaceRuns = (text: string): string =>
+  text.replace(/ {2,}/g, (run) => "\u00a0".repeat(run.length - 1) + " ");
+
 // Email clients don't render `white-space: pre-wrap` reliably (Outlook
 // collapses it), so newlines in plaintext become explicit <br /> elements.
 export const renderTextWithBreaks = (
   text: string,
   key: string,
 ): React.ReactNode => {
-  const parts = text.split("\n");
-  if (parts.length === 1) return text;
+  const parts = text.split("\n").map(preserveSpaceRuns);
+  if (parts.length === 1) return parts[0];
   return parts.flatMap((part, i) =>
     i < parts.length - 1 ? [part, <br key={`${key}-br-${i}`} />] : [part],
   );

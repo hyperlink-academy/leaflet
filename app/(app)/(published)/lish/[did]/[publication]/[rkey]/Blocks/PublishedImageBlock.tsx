@@ -13,6 +13,7 @@ export function PublishedImageBlock(props: {
   isFullBleed?: boolean;
   className?: string;
   onOpenLightbox?: () => void;
+  onOpenAltInLightbox?: () => void;
 }) {
   let [reloads, setReloads] = useState(0);
   let src =
@@ -56,7 +57,12 @@ export function PublishedImageBlock(props: {
           className={props.isFullBleed ? "rounded-none!" : "rounded-lg!"}
         />
       )}
-      {props.alt && <ReadOnlyAltText alt={props.alt} />}
+      {props.alt && (
+        <ReadOnlyAltText
+          alt={props.alt}
+          onSeeMore={props.onOpenAltInLightbox}
+        />
+      )}
     </div>
   );
 }
