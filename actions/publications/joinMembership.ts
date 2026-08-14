@@ -13,6 +13,15 @@ import {
 } from "stripe/wallet";
 import { isActiveMembership, filterJoinableTiers } from "src/membership";
 import { getReaderMembership, notifyNewMember } from "src/membership.server";
+import { publishAtprotoSubscriptionForDid } from "actions/publications/subscribeToPublication";
+import {
+  checkEmailSubscriptionAllowed,
+  recordEmailSubscription,
+} from "src/emailSubscription";
+import {
+  sanitizeSubscriptionSource,
+  type SubscriptionSource,
+} from "src/subscriptionSource";
 import { Ok, Err, type Result } from "src/result";
 import type { Tier } from "components/Memberships/TierGrid";
 
@@ -141,6 +150,8 @@ export async function subscribeToTier(args: {
   publicationUri: string;
   tierId: string;
   cadence: "month" | "year";
+  // Analytics: where the join flow was opened from.
+  source?: SubscriptionSource;
 }): Promise<Result<SubscribeToTierResult, SubscribeError>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
@@ -334,6 +345,44 @@ export async function subscribeToTier(args: {
         await notifyNewMember(args.publicationUri, membershipRow.id);
       } catch (e) {
         console.error("[joinMembership] new member notification failed:", e);
+      }
+      // A member is also a subscriber: record an email subscription when the
+      // publication sends newsletters — recordEmailSubscription also mirrors
+      // the join onto the reader's PDS. Skipped when a confirmed subscription
+      // already exists (the sign-in-during-join paths subscribe before
+      // payment), so the subscriber events and analytics aren't doubled. When
+      // the email path doesn't run — already subscribed, newsletter disabled,
+      // suppressed address, or a failure — mirror the PDS record directly so
+      // atproto readers still see the subscription (it dedupes internally).
+      // Awaited (not after()) so the client's identity refetch on success
+      // sees the new rows. Best-effort — the join already billed, so a
+      // subscriber-mirroring failure shouldn't fail it.
+      try {
+        const [{ data: existingEmailSub }, allowed] = await Promise.all([
+          supabaseServerClient
+            .from("publication_email_subscribers")
+            .select("state")
+            .eq("publication", args.publicationUri)
+            .eq("email", identity.email)
+            .maybeSingle(),
+          checkEmailSubscriptionAllowed(args.publicationUri, identity.email),
+        ]);
+        const recorded =
+          allowed.ok && existingEmailSub?.state !== "confirmed"
+            ? await recordEmailSubscription(
+                args.publicationUri,
+                identity.email,
+                identity.id,
+                sanitizeSubscriptionSource(args.source),
+              )
+            : null;
+        if (!recorded?.ok && identity.atp_did)
+          await publishAtprotoSubscriptionForDid(
+            identity.atp_did,
+            args.publicationUri,
+          );
+      } catch (e) {
+        console.error("[joinMembership] subscriber mirroring failed:", e);
       }
     }
 

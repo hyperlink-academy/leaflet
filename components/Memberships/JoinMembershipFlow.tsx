@@ -9,8 +9,13 @@ import { useToaster, useSmoker } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { EmailInput, EmailConfirm } from "components/Subscribe/EmailSubscribe";
+import { EmailSubscribeSuccess } from "components/Subscribe/EmailSubscribeSuccess";
+import { useSubscribeSuccessData } from "components/Subscribe/useSubscribeSuccessData";
 import { HandleSearchInput } from "components/HandleSearchInput";
-import { AtmosphericHandleInfo } from "components/Subscribe/HandleSubscribe";
+import {
+  AtmosphericHandleInfo,
+  AtSubscribeSuccess,
+} from "components/Subscribe/HandleSubscribe";
 import { SubscribeInputModeMenu } from "components/Subscribe/SubscribeButton";
 import { LinkIdentityModal } from "components/Subscribe/LinkIdentityModal";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
@@ -116,7 +121,13 @@ export function JoinMembershipFlow(props: {
     tier: Tier;
     cadence: Cadence;
   } | null>(null);
+  // A paid join completed — the flow shows the subscribe success screen in
+  // place of the tier grid until the reader dismisses it.
+  const [joined, setJoined] = useState(false);
   const resumeHandled = useRef(false);
+  // Warm the success-screen data (pub name + recommended listings) while the
+  // flow is open, so completing a join doesn't flash a loading spinner.
+  useSubscribeSuccessData(props.active ? props.publicationUri : undefined);
 
   const effectiveCadence = (tier: Tier): Cadence =>
     tier.annual_price_cents != null ? cadence : "month";
@@ -144,10 +155,11 @@ export function JoinMembershipFlow(props: {
     };
   }, [props.active, props.publicationUri]);
 
-  // Reload the page the reader joined from so it re-renders with member
-  // access (e.g. the full gated post); also the return target for redirects.
-  const currentPageUrl = () =>
-    window.location.origin + window.location.pathname;
+  // A join can entitle the viewer to gated posts — revalidate any members-only
+  // unlock islands on the page (keyed in PostDataProvider) so the full post
+  // renders in place instead of behind the paywall.
+  const revalidateUnlocks = () =>
+    mutate((key) => Array.isArray(key) && key[0] === "unlocked-post");
 
   const subscribeAction = () =>
     encodeActionToSearchParam({
@@ -179,20 +191,25 @@ export function JoinMembershipFlow(props: {
     props.onClose?.();
     setBusyTierId(null);
     mutate("identity");
+    revalidateUnlocks();
     router.refresh();
   };
 
   // Creates the subscription with the saved card and acts on the result.
-  // Returns "navigating" when it sends the browser elsewhere (success or
-  // hosted-invoice fallback), so callers keep their spinner.
+  // Returns "navigating" when it sends the browser elsewhere (the
+  // hosted-invoice fallback), so callers keep their spinner; "success" shows
+  // the subscribe success screen in place.
   const runSubscribe = async (
     tierId: string,
     joinCadence: Cadence,
-  ): Promise<"navigating" | "error"> => {
+  ): Promise<"success" | "navigating" | "error"> => {
     const res = await subscribeToTier({
       publicationUri: props.publicationUri,
       tierId,
       cadence: joinCadence,
+      source: props.source
+        ? { url: window.location.href, ...props.source }
+        : undefined,
     });
     if (!res.ok) {
       toaster({ type: "error", content: subscribeErrorMessage(res.error) });
@@ -200,12 +217,11 @@ export function JoinMembershipFlow(props: {
     }
     const { status, hostedInvoiceUrl } = res.value;
     if (status === "active" || status === "trialing") {
-      toaster({
-        type: "success",
-        content: `Welcome to ${props.publicationName}!`,
-      });
-      window.location.href = currentPageUrl();
-      return "navigating";
+      setJoined(true);
+      mutate("identity");
+      revalidateUnlocks();
+      router.refresh();
+      return "success";
     }
     // Authentication needed or the charge was declined: finish on Stripe's page.
     if (hostedInvoiceUrl) {
@@ -248,7 +264,7 @@ export function JoinMembershipFlow(props: {
       return;
     }
     const outcome = await runSubscribe(cardStep.tier.id, cardStep.cadence);
-    if (outcome === "error") setCardStep(null);
+    if (outcome !== "navigating") setCardStep(null);
   };
 
   // Returning from card setup or sign-in: finish what the reader started.
@@ -271,6 +287,10 @@ export function JoinMembershipFlow(props: {
         if (resume.tierId && resume.cadence) {
           const outcome = await runSubscribe(resume.tierId, resume.cadence);
           if (outcome === "navigating") return; // keep the spinner while we leave
+          if (outcome === "success") {
+            setProcessing(false);
+            return;
+          }
         }
         setViewer(await getMembershipJoinViewer(props.publicationUri));
         setProcessing(false);
@@ -528,7 +548,17 @@ export function JoinMembershipFlow(props: {
 
   return (
     <>
-      {processing ? (
+      {joined ? (
+        props.newsletterMode ? (
+          <EmailSubscribeSuccess
+            email={identity?.email ?? undefined}
+            handle={identity?.bsky_profiles?.handle ?? undefined}
+            publicationUri={props.publicationUri}
+          />
+        ) : (
+          <AtSubscribeSuccess publicationUri={props.publicationUri} />
+        )
+      ) : processing ? (
         <div className="px-4 py-8 flex flex-col items-center gap-2">
           <DotLoader />
           <div className="text-secondary text-sm">
