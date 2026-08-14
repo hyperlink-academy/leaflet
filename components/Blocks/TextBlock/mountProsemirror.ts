@@ -29,6 +29,7 @@ import { useLinkPopoverStore } from "components/LinkPopover";
 import { useEditorCommentSheetStore } from "components/EditorComments/editorCommentStores";
 import { useEditorCommentPopoverStore } from "components/EditorComments/EditorCommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
+import { searchHighlightPlugin } from "components/FindReplace/searchHighlightPlugin";
 import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
 
@@ -88,6 +89,7 @@ export function useMountProsemirror({
         keymap(baseKeymap),
         highlightSelectionPlugin,
         commentDraftPlugin,
+        searchHighlightPlugin,
         autolink({
           type: schema.marks.link,
           shouldAutoLink: () => true,
@@ -342,9 +344,11 @@ export function useMountProsemirror({
         let setState = (s: EditorState) => () =>
           useEditorStates.setState(
             produce((draft) => {
-              let view = draft.editorStates[entityID]?.view;
-              if (!view?.hasFocus() && !isBulkOp) view?.focus();
-              draft.editorStates[entityID]!.editor = s;
+              let existing = draft.editorStates[entityID];
+              if (!existing) return;
+              if (!existing.view?.hasFocus() && !isBulkOp)
+                existing.view?.focus();
+              existing.editor = s;
             }),
           );
 

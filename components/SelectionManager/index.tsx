@@ -382,6 +382,13 @@ export function SelectionManager() {
           );
         }
         if (e.key === "Tab") {
+          let el = e.target as HTMLElement;
+          if (
+            el.tagName === "INPUT" ||
+            el.tagName === "TEXTAREA" ||
+            el.tagName === "SELECT"
+          )
+            return;
           let [sortedSelection, siblings] = await getSortedSelectionBound();
           if (sortedSelection.length <= 1) return;
           e.preventDefault();
