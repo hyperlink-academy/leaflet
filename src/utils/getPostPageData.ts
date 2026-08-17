@@ -58,6 +58,20 @@ export const getPostPageData = cache(async function getPostPageData(
 
   if (!document) return null;
 
+  // A publication-addressed URL must resolve within that publication.
+  // resolveDocumentFilter falls back to a bare did+rkey match when the
+  // (publication, path) lookup misses, which would otherwise serve the post
+  // under any publication segment — minting a permanent ISR entry per
+  // spelling. Checked against every membership row (not the projected [0])
+  // since a document can legally join two publications.
+  if (
+    publicationName &&
+    !document.documents_in_publications.some((dip) =>
+      matchesPublicationSegment(dip.publications, did, publicationName),
+    )
+  )
+    return null;
+
   // Normalize the document record - this is the primary way consumers should access document data
   const normalizedDocument = normalizeDocumentRecord(
     document.data,
@@ -286,6 +300,22 @@ export const getPostPageData = cache(async function getPostPageData(
 });
 
 export type PostPageData = Awaited<ReturnType<typeof getPostPageData>>;
+
+// Mirrors publicationNameOrUriFilter's semantics: the URL segment may be the
+// publication's name or its rkey.
+function matchesPublicationSegment(
+  pub: { uri: string; name: string; identity_did: string } | null,
+  did: string,
+  segment: string,
+): boolean {
+  if (!pub || pub.identity_did !== did) return false;
+  if (pub.name === segment) return true;
+  try {
+    return new AtUri(pub.uri).rkey === segment;
+  } catch {
+    return false;
+  }
+}
 
 const headers = {
   "Content-type": "application/json",
