@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { cache } from "react";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
@@ -13,7 +14,6 @@ import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
 import { supabaseServerClient } from "supabase/serverClient";
 import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
-import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
 import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
 
@@ -39,16 +39,7 @@ const getInitialFacts = cache(async (root: string) => {
 export default async function LeafletPage(props: Props) {
   let { result: res } = await getLeafletData((await props.params).leaflet_id);
   let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data || res.data.blocked_by_admin)
-    return (
-      <NotFoundLayout>
-        <p className="font-bold">Sorry, we can't find this leaflet!</p>
-        <p>
-          This may be a glitch on our end. If the issue persists please{" "}
-          <a href="mailto:contact@leaflet.pub">send us a note</a>.
-        </p>
-      </NotFoundLayout>
-    );
+  if (!rootEntity || !res.data || res.data.blocked_by_admin) notFound();
 
   let [initialFacts, poll_data] = await Promise.all([
     getInitialFacts(rootEntity),
@@ -85,7 +76,8 @@ export default async function LeafletPage(props: Props) {
 export async function generateMetadata(props: Props): Promise<Metadata> {
   let { result: res } = await getLeafletData((await props.params).leaflet_id);
   let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data) return { title: "Leaflet not found" };
+  if (!rootEntity || !res.data || res.data.blocked_by_admin)
+    return { title: "Leaflet not found" };
   let publication_data = getPublicationMetadataFromLeafletData(res.data);
   if (publication_data) {
     return {
