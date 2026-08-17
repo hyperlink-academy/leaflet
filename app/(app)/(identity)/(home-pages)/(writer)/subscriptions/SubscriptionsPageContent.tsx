@@ -16,6 +16,7 @@ export function SubscriptionsPageContent(props: {
   memberships: MyMembership[];
   paidPubs: PublicationSubscription[];
   subscriptions: PublicationSubscription[];
+  emailOnlySubscriptions: PublicationSubscription[];
   nextCursor: Cursor | null;
 }) {
   let pubsByUri = new Map(props.paidPubs.map((pub) => [pub.uri, pub]));
@@ -67,6 +68,7 @@ export function SubscriptionsPageContent(props: {
           did={props.did}
           subscriptions={props.subscriptions}
           nextCursor={props.nextCursor}
+          prependSubscriptions={props.emailOnlySubscriptions}
           excludeUris={paidUris}
         />
       </div>

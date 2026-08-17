@@ -41,6 +41,8 @@ const BATCH_SIZE = 500;
 // so we only pay the React Email render cost once per batch.
 const UNSUB_PLACEHOLDER =
   "https://placeholder.leaflet.pub/unsubscribe-token-replace-me";
+const MANAGE_PLACEHOLDER =
+  "https://placeholder.leaflet.pub/manage-subscription-replace-me";
 
 export const send_post_broadcast = inngest.createFunction(
   {
@@ -346,6 +348,7 @@ export const send_post_broadcast = inngest.createFunction(
               did,
               assetsBaseUrl: `${assetsBaseUrl}/`,
               unsubscribeUrl: UNSUB_PLACEHOLDER,
+              manageUrl: MANAGE_PLACEHOLDER,
               membersUpsell: group.upsell ? membersUpsell : undefined,
             }),
           );
@@ -373,9 +376,20 @@ export const send_post_broadcast = inngest.createFunction(
               const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
                 sub.unsubscribe_token,
               )}`;
+              // Managing requires a session, so the footer link runs through
+              // email-login (reuses a matching session or emails a code) and
+              // lands on the publication with the manage panel auto-opened.
+              const manageUrl = `${assetsBaseUrl}/api/auth/email-login?${new URLSearchParams(
+                {
+                  email: sub.email,
+                  redirect: `${pubProps.publicationUrl.replace(/\/$/, "")}?manage_subscription=1`,
+                },
+              ).toString()}`;
               const htmlBody = htmlTemplate
                 .split(UNSUB_PLACEHOLDER)
-                .join(unsubscribeUrl);
+                .join(unsubscribeUrl)
+                .split(MANAGE_PLACEHOLDER)
+                .join(manageUrl.replace(/&/g, "&amp;"));
               return {
                 MessageStream: "broadcast",
                 From: fromHeader,

@@ -81,6 +81,7 @@ type PostEmailProps = {
    * real unsubscribe link — used by the Phase 4 preview-send path.
    */
   unsubscribeUrl?: string;
+  manageUrl?: string;
   /**
    * Absolute URL used to resolve bundled /email-assets/* images. Postmark
    * fetches `<img src>` verbatim so these must be absolute in outgoing mail.
@@ -935,17 +936,35 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                                 }}
                               >
                                 {p.unsubscribeUrl ? (
-                                  <Link
-                                    href={p.unsubscribeUrl}
-                                    style={{
-                                      color: c.tertiary,
-                                      fontSize: 14,
-                                      lineHeight: "20px",
-                                      textDecoration: "underline",
-                                    }}
-                                  >
-                                    Unsubscribe
-                                  </Link>
+                                  <>
+                                    {p.manageUrl ? (
+                                      <>
+                                        <Link
+                                          href={p.manageUrl}
+                                          style={{
+                                            color: c.tertiary,
+                                            fontSize: 14,
+                                            lineHeight: "20px",
+                                            textDecoration: "underline",
+                                          }}
+                                        >
+                                          Manage subscription
+                                        </Link>
+                                        {" · "}
+                                      </>
+                                    ) : null}
+                                    <Link
+                                      href={p.unsubscribeUrl}
+                                      style={{
+                                        color: c.tertiary,
+                                        fontSize: 14,
+                                        lineHeight: "20px",
+                                        textDecoration: "underline",
+                                      }}
+                                    >
+                                      Unsubscribe
+                                    </Link>
+                                  </>
                                 ) : (
                                   <span style={{ fontStyle: "italic" }}>
                                     (preview — not sent to subscribers)

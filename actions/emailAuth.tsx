@@ -7,7 +7,7 @@ import { email_auth_tokens, identities } from "drizzle/schema";
 import { and, desc, eq, gt } from "drizzle-orm";
 import { setAuthToken } from "src/auth";
 import { postAuthRedirect } from "src/postAuthRedirect";
-import { applyAfterSignInAction } from "src/emailSubscription";
+import { applyAfterSignInAction } from "src/subscriptions/email";
 import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";

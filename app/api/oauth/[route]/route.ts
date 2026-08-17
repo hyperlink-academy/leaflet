@@ -1,7 +1,5 @@
-import {
-  backfillAtprotoSubscriptionsForIdentity,
-  subscribeToPublication,
-} from "actions/publications/subscribeToPublication";
+import { subscribeToPublication } from "actions/publications/subscribeToPublication";
+import { backfillAtprotoSubscriptionsForIdentity } from "src/subscriptions/atproto";
 import { recommendAction } from "actions/recommendAction";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";

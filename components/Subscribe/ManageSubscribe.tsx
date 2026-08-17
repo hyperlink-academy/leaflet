@@ -1,14 +1,14 @@
 "use client";
 import { refreshIdentityData } from "components/IdentityProvider";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { Modal } from "components/Modal";
+import { Toggle } from "components/Toggle";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
-import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import {
   SwitchPlanForm,
   CancelMembershipForm,
@@ -29,6 +29,7 @@ import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
   unsubscribeFromPublication,
+  setEmailNotifications,
 } from "actions/publications/subscribeEmail";
 
 const BLUESKY_FEED_URL =
@@ -37,16 +38,42 @@ const BLUESKY_FEED_URL =
 const prefClassName =
   "flex gap-2 justify-between font-bold text-secondary items-center";
 
+// The manage link in newsletter emails lands back on the publication with
+// ?manage_subscription=1 (after a pass through email-login) so the panel opens
+// without hunting for the button. Several surfaces on one page can mount this
+// component — the first to claim the marker opens; the rest stand down.
+let manageReturnClaimed = false;
+function readManageSubscriptionReturn(): boolean {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  if (!params.get("manage_subscription")) return false;
+  if (manageReturnClaimed) return false;
+  manageReturnClaimed = true;
+  params.delete("manage_subscription");
+  const qs = params.toString();
+  window.history.replaceState(
+    null,
+    "",
+    window.location.pathname + (qs ? `?${qs}` : ""),
+  );
+  return true;
+}
+
 export const ManageSubscription = (props: {
   publicationUri: string;
   publicationUrl?: string;
   newsletterMode: boolean;
   user: ViewerUser;
 }) => {
+  let [open, setOpen] = useState(false);
   let [membershipView, setMembershipView] = useState<{
     type: "switch" | "cancel";
     membership: MyMembership;
   } | null>(null);
+
+  useEffect(() => {
+    if (readManageSubscriptionReturn()) setOpen(true);
+  }, []);
 
   const closeMembershipView = () => setMembershipView(null);
   const onMembershipChanged = () => {
@@ -57,6 +84,7 @@ export const ManageSubscription = (props: {
   return (
     <Modal
       asChild
+      open={open}
       title={
         <div className="relative mb-2">
           {membershipView?.type === "switch"
@@ -67,8 +95,9 @@ export const ManageSubscription = (props: {
         </div>
       }
       className="w-md max-w-full"
-      onOpenChange={(open) => {
-        if (!open) setMembershipView(null);
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setMembershipView(null);
       }}
       // A real button rather than a div Radix wraps in one: the wrapper made the
       // row 1.5px taller than the subscribe button it replaces, which is a
@@ -142,8 +171,43 @@ const ManageSubscriptionContent = (props: {
   let [linkRequesting, setLinkRequesting] = useState(false);
   let [linkConfirming, setLinkConfirming] = useState(false);
   let [unsubscribing, setUnsubscribing] = useState(false);
+  let [confirmForfeit, setConfirmForfeit] = useState(false);
+  let [emailToggleBusy, setEmailToggleBusy] = useState(false);
+  // Optimistic value while the toggle action + identity refetch are in flight.
+  let [emailToggleOverride, setEmailToggleOverride] = useState<boolean | null>(
+    null,
+  );
   let toaster = useToaster();
   let router = useRouter();
+
+  const emailEnabled = emailToggleOverride ?? user.emailEnabled;
+  useEffect(() => {
+    setEmailToggleOverride(null);
+  }, [user.emailEnabled]);
+
+  const onToggleEmail = async () => {
+    if (emailToggleBusy) return;
+    const next = !emailEnabled;
+    setEmailToggleBusy(true);
+    setEmailToggleOverride(next);
+    const res = await setEmailNotifications(props.publicationUri, next);
+    setEmailToggleBusy(false);
+    if (!res.ok) {
+      setEmailToggleOverride(null);
+      toaster({
+        type: "error",
+        content: (
+          <div className="font-bold">
+            {EMAIL_TOGGLE_ERROR_MESSAGES[res.error] ??
+              "We couldn't update your email notifications. Please try again!"}
+          </div>
+        ),
+      });
+      return;
+    }
+    refreshIdentityData();
+    router.refresh();
+  };
 
   const onRequestLink = async () => {
     if (linkRequesting || !email) return;
@@ -208,17 +272,15 @@ const ManageSubscriptionContent = (props: {
     router.refresh();
   };
 
-  const onUnsubscribe = async () => {
+  const onUnsubscribe = async (opts?: { cancelPaidImmediately?: boolean }) => {
     if (unsubscribing) return;
     setUnsubscribing(true);
-    const res = await unsubscribeFromPublication(props.publicationUri);
+    const res = await unsubscribeFromPublication(props.publicationUri, opts);
     setUnsubscribing(false);
     if (!res.ok) {
       toaster({
         type: "error",
-        content: isOAuthSessionError(res.error) ? (
-          <OAuthErrorMessage error={res.error} />
-        ) : (
+        content: (
           <div className="font-bold">
             {UNSUBSCRIBE_ERROR_MESSAGES[res.error] ??
               "We couldn't unsubscribe you. Please try again!"}
@@ -231,6 +293,7 @@ const ManageSubscriptionContent = (props: {
       content: <div className="font-bold">Unsubscribed!</div>,
       type: "success",
     });
+    mutateMyMembership(props.publicationUri);
     refreshIdentityData();
     router.refresh();
   };
@@ -242,12 +305,27 @@ const ManageSubscriptionContent = (props: {
       </div>
     );
 
+  const activeMembership =
+    membership && isMembershipActive(membership.status) ? membership : null;
   const cancellableMembership =
-    membership &&
-    isMembershipActive(membership.status) &&
-    !membership.cancelAtPeriodEnd
-      ? membership
+    activeMembership && !activeMembership.cancelAtPeriodEnd
+      ? activeMembership
       : null;
+  // Already winding down: fully unsubscribing now cancels the Stripe
+  // subscription immediately, forfeiting the remaining paid time — so it goes
+  // through an explicit confirm.
+  const pendingCancellation =
+    activeMembership && activeMembership.cancelAtPeriodEnd
+      ? activeMembership
+      : null;
+  // Turning email off is only a mute when something else keeps the
+  // subscription alive; for an email-only reader it *is* the unsubscribe.
+  // deriveSubscriptionState would drop `subscribed`, unmounting this panel
+  // mid-interaction with no way back in — so they get the address as a plain
+  // row (like Linked Handle below) and the deliberate Unsubscribe button.
+  // Turning email back on is always safe.
+  const canMuteEmail =
+    !emailEnabled || user.atprotoSubscribed || !!activeMembership;
 
   return (
     <div className="manageSubPrefs flex flex-col gap-2">
@@ -257,9 +335,18 @@ const ManageSubscriptionContent = (props: {
       {props.newsletterMode && user.email ? (
         <div className={prefClassName}>
           <div className="flex flex-col leading-snug">
-            <p>Linked Email</p>
+            <p>Email Notifications</p>
             <p className="text-tertiary font-normal italic">{user.email}</p>
           </div>
+          {canMuteEmail ? (
+            <Toggle toggle={emailEnabled} onToggle={onToggleEmail}>
+              <span className="sr-only">
+                {emailEnabled
+                  ? "Turn off email notifications"
+                  : "Turn on email notifications"}
+              </span>
+            </Toggle>
+          ) : null}
         </div>
       ) : null}
       {user.handle && (
@@ -339,21 +426,75 @@ const ManageSubscriptionContent = (props: {
 
       <hr className="border-border-light my-2" />
       {cancellableMembership ? (
-        <ButtonSecondary
-          fullWidth
-          onClick={() => props.onCancel(cancellableMembership)}
-        >
-          Cancel Membership
-        </ButtonSecondary>
+        <>
+          <ButtonSecondary
+            fullWidth
+            onClick={() => props.onCancel(cancellableMembership)}
+          >
+            Cancel Membership
+          </ButtonSecondary>
+          <p className="text-tertiary text-sm text-center leading-snug">
+            Cancel your membership first to fully unsubscribe.
+          </p>
+        </>
+      ) : pendingCancellation && confirmForfeit ? (
+        <ForfeitConfirm
+          membership={pendingCancellation}
+          unsubscribing={unsubscribing}
+          onBack={() => setConfirmForfeit(false)}
+          onConfirm={() => onUnsubscribe({ cancelPaidImmediately: true })}
+        />
       ) : (
         <ButtonSecondary
           fullWidth
           disabled={unsubscribing}
-          onClick={onUnsubscribe}
+          onClick={() =>
+            pendingCancellation ? setConfirmForfeit(true) : onUnsubscribe()
+          }
         >
           {unsubscribing ? "Unsubscribing…" : "Unsubscribe"}
         </ButtonSecondary>
       )}
+    </div>
+  );
+};
+
+const ForfeitConfirm = (props: {
+  membership: MyMembership;
+  unsubscribing: boolean;
+  onBack: () => void;
+  onConfirm: () => void;
+}) => {
+  const endDate = useLocalizedDate(props.membership.currentPeriodEnd ?? "", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-secondary text-sm leading-snug">
+        Your membership {props.membership.currentPeriodEnd ? (
+          <>
+            lasts until <strong>{endDate}</strong>
+          </>
+        ) : (
+          "is still active"
+        )}
+        . Unsubscribing now cancels it immediately and forfeits the remaining
+        time.
+      </p>
+      <div className="flex gap-2 justify-between">
+        <ButtonSecondary type="button" onClick={props.onBack}>
+          Back
+        </ButtonSecondary>
+        <ButtonPrimary
+          type="button"
+          disabled={props.unsubscribing}
+          onClick={props.onConfirm}
+        >
+          {props.unsubscribing ? <DotLoader /> : "Unsubscribe now"}
+        </ButtonPrimary>
+      </div>
     </div>
   );
 };
@@ -408,9 +549,26 @@ const LINK_ERROR_MESSAGES: Record<string, string> = {
     "We couldn't clear a prior delivery issue on this address. Try again later.",
 };
 
+const EMAIL_TOGGLE_ERROR_MESSAGES: Record<string, string> = {
+  unauthorized: "Sign in to manage your subscription.",
+  no_email: "Link an email to your account first.",
+  newsletter_disabled: "This publication isn't sending email newsletters.",
+  suppressed_spam_complaint:
+    "This address was previously marked as spam. Contact the publication to resolve.",
+  suppression_delete_failed:
+    "We couldn't clear a prior delivery issue on this address. Try again later.",
+  database_error: "Something went wrong. Try again.",
+};
+
 const UNSUBSCRIBE_ERROR_MESSAGES: Record<string, string> = {
   unauthorized: "Sign in to manage your subscription.",
   not_subscribed:
-    "We couldn't find an email subscription for this publication.",
+    "We couldn't find a subscription for this publication.",
+  membership_active:
+    "Cancel your membership first, then unsubscribe.",
+  membership_pending_cancellation:
+    "Your membership is still active — confirm cancelling it to unsubscribe.",
+  stripe_error:
+    "We couldn't cancel your membership's billing. Please try again.",
   database_error: "Something went wrong. Try again.",
 };
