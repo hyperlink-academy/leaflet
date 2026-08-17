@@ -119,6 +119,7 @@ export async function PublicationPageRenderer({
   const {
     bskyPostData,
     standardSitePostData: standardSitePosts,
+    standardSitePublicationData,
     pollData,
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
@@ -269,6 +270,9 @@ export async function PublicationPageRenderer({
                   bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                   standardSitePostData={JSON.parse(
                     JSON.stringify(standardSitePosts),
+                  )}
+                  standardSitePublicationData={JSON.parse(
+                    JSON.stringify(standardSitePublicationData),
                   )}
                   pollData={pollData}
                   prerenderedCodeBlocks={prerenderedCodeBlocks}

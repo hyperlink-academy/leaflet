@@ -35,7 +35,11 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
 import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
-import { StandardSitePublicationItem } from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
+import {
+  StandardSitePublicationItem,
+  StandardSitePublicationItemView,
+} from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import {
   WithPublicationTheme,
   PublicationThemeWrapper,
@@ -101,6 +105,7 @@ export function PostContent({
   pollData,
   footnoteIndexMap,
   postsListData,
+  standardSitePublicationData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -110,6 +115,9 @@ export function PostContent({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  // Server-fetched like standardSitePostData so the block is in the SSR HTML;
+  // callers that don't thread it fall back to the client SWR fetch.
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   footnoteIndexMap?: Map<string, number>;
@@ -129,6 +137,7 @@ export function PostContent({
             pages={pages}
             bskyPostData={bskyPostData}
             standardSitePostData={standardSitePostData}
+            standardSitePublicationData={standardSitePublicationData}
             block={b}
             did={did}
             key={index}
@@ -160,6 +169,7 @@ export let Block = ({
   prerenderedCodeBlocks,
   bskyPostData,
   standardSitePostData,
+  standardSitePublicationData,
   pageId,
   pages,
   pollData,
@@ -180,6 +190,7 @@ export let Block = ({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   footnoteIndexMap?: Map<string, number>;
   postsListData?: PostsListData;
@@ -331,6 +342,9 @@ export let Block = ({
           <PublishedStandardSitePublicationBlock
             uri={block.uri}
             showPublicationTheme={block.showPublicationTheme !== false}
+            initialData={standardSitePublicationData?.find(
+              (p) => p.uri === block.uri,
+            )}
           />
         </div>
       );
@@ -453,6 +467,7 @@ export let Block = ({
               pages={pages}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
+              standardSitePublicationData={standardSitePublicationData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -474,6 +489,7 @@ export let Block = ({
               pages={pages}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
+              standardSitePublicationData={standardSitePublicationData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -720,8 +736,12 @@ export let Block = ({
 function PublishedStandardSitePublicationBlock(props: {
   uri: string;
   showPublicationTheme: boolean;
+  initialData?: StandardSitePublicationData;
 }) {
-  let { data: publication } = useStandardSitePublication(props.uri);
+  let { data: fetched } = useStandardSitePublication(
+    props.initialData ? null : props.uri,
+  );
+  let publication = props.initialData ?? fetched;
 
   return (
     <div className="standardSitePublicationBlock block-border overflow-hidden w-full">
@@ -731,7 +751,11 @@ function PublishedStandardSitePublicationBlock(props: {
         enabled={props.showPublicationTheme}
       >
         <div className="bg-bg-page">
-          <StandardSitePublicationItem uri={props.uri} />
+          {props.initialData ? (
+            <StandardSitePublicationItemView publication={props.initialData} />
+          ) : (
+            <StandardSitePublicationItem uri={props.uri} />
+          )}
         </div>
       </WithPublicationTheme>
     </div>
@@ -816,6 +840,7 @@ function ListItem(props: {
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pageId?: string;
   footnoteIndexMap?: Map<string, number>;
@@ -828,6 +853,7 @@ function ListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -847,6 +873,7 @@ function ListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -878,6 +905,7 @@ function ListItem(props: {
           pages={props.pages}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           block={{ block: props.item.content }}
           did={props.did}
           isList
@@ -900,6 +928,7 @@ function OrderedListItem(props: {
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pageId?: string;
   startIndex?: number;
@@ -915,6 +944,7 @@ function OrderedListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -935,6 +965,7 @@ function OrderedListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -965,6 +996,7 @@ function OrderedListItem(props: {
           pages={props.pages}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           block={{ block: props.item.content }}
           did={props.did}
           isList

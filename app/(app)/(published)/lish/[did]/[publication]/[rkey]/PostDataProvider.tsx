@@ -9,12 +9,14 @@ import { useIdentityData } from "components/IdentityProvider";
 import { getUnlockedPost, type UnlockedPost } from "actions/getUnlockedPost";
 import type { PostPageData } from "src/utils/getPostPageData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import type { PollData } from "./fetchPollData";
 
 export type PostResources = {
   pages: PubLeafletContent.Main["pages"];
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
 };
 

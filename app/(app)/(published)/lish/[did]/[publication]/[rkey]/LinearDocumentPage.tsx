@@ -40,6 +40,7 @@ export function LinearDocumentPage({
     prerenderedCodeBlocks,
     bskyPostData,
     standardSitePostData,
+    standardSitePublicationData,
     pollData,
     document_uri,
     pageId,
@@ -90,6 +91,7 @@ export function LinearDocumentPage({
             pageId={pageId}
             bskyPostData={bskyPostData}
             standardSitePostData={standardSitePostData}
+            standardSitePublicationData={standardSitePublicationData}
             blocks={blocks}
             did={did}
             prerenderedCodeBlocks={prerenderedCodeBlocks}

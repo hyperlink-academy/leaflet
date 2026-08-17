@@ -19,12 +19,14 @@ import {
 import { collectAndFetchBlockResources } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/collectAndFetchBlockResources";
 import type { PollData } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/fetchPollData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import type { PubLeafletContent } from "lexicons/api";
 
 export type UnlockedPost = {
   pages: PubLeafletContent.Main["pages"];
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
 };
 
@@ -93,7 +95,7 @@ export async function getUnlockedPost(
     fetch: (...args) =>
       fetch(args[0], { ...args[1], next: { revalidate: 3600 } }),
   });
-  const { bskyPostData, standardSitePostData, pollData } =
+  const { bskyPostData, standardSitePostData, standardSitePublicationData, pollData } =
     await collectAndFetchBlockResources({
       agent,
       pages: pages as Parameters<
@@ -110,6 +112,9 @@ export async function getUnlockedPost(
     // undefined-valued keys that RSC serialization otherwise preserves).
     bskyPostData: JSON.parse(JSON.stringify(bskyPostData)),
     standardSitePostData: JSON.parse(JSON.stringify(standardSitePostData)),
+    standardSitePublicationData: JSON.parse(
+      JSON.stringify(standardSitePublicationData),
+    ),
     pollData,
   };
 }

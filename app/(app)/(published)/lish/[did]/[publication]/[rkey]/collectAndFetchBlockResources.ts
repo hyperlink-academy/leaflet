@@ -3,6 +3,7 @@ import {
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksPoll,
   PubLeafletBlocksStandardSitePost,
+  PubLeafletBlocksStandardSitePublication,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
 } from "lexicons/api";
@@ -13,6 +14,10 @@ import {
   get_standard_site_posts,
   type StandardSitePostData,
 } from "app/api/rpc/[command]/get_standard_site_posts";
+import {
+  get_standard_site_publications,
+  type StandardSitePublicationData,
+} from "app/api/rpc/[command]/get_standard_site_publications";
 import { extractBlocksByType } from "src/utils/extractBlocksByType";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { fetchPollData, type PollData } from "./fetchPollData";
@@ -38,6 +43,7 @@ export async function collectAndFetchBlockResources({
 }): Promise<{
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
   prerenderedCodeBlocks: Map<string, string>;
 }> {
@@ -70,6 +76,24 @@ export async function collectAndFetchBlockResources({
       : { result: { posts: [] } };
   const standardSitePostData = standardSitePostsResult.result.posts;
 
+  const standardSitePublicationUris = Array.from(
+    new Set(
+      extractBlocksByType<$Typed<PubLeafletBlocksStandardSitePublication.Main>>(
+        allBlocks,
+        ids.PubLeafletBlocksStandardSitePublication,
+      ).map((b) => b.block.uri),
+    ),
+  );
+  const standardSitePublicationsResult =
+    standardSitePublicationUris.length > 0
+      ? await get_standard_site_publications.handler(
+          { uris: standardSitePublicationUris },
+          { supabase: supabaseServerClient },
+        )
+      : { result: { publications: [] } };
+  const standardSitePublicationData =
+    standardSitePublicationsResult.result.publications;
+
   const pollBlocks = extractBlocksByType<$Typed<PubLeafletBlocksPoll.Main>>(
     allBlocks,
     ids.PubLeafletBlocksPoll,
@@ -98,6 +122,7 @@ export async function collectAndFetchBlockResources({
   return {
     bskyPostData,
     standardSitePostData,
+    standardSitePublicationData,
     pollData,
     prerenderedCodeBlocks,
   };
