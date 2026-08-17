@@ -599,6 +599,9 @@ export let Block = ({
             displayWidth={block.width}
             isFullBleed={isFullBleed}
             className={className}
+            // The first block of a page is the one image plausibly above the
+            // fold; everything below defers.
+            loading={isFirst ? undefined : "lazy"}
             onOpenLightbox={
               canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
             }

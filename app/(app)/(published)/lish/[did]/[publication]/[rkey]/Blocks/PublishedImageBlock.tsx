@@ -12,6 +12,7 @@ export function PublishedImageBlock(props: {
   displayWidth?: number;
   isFullBleed?: boolean;
   className?: string;
+  loading?: "lazy" | "eager";
   onOpenLightbox?: () => void;
   onOpenAltInLightbox?: () => void;
 }) {
@@ -38,7 +39,9 @@ export function PublishedImageBlock(props: {
       >
         <img
           {...imgProps}
-          alt={props.alt}
+          alt={props.alt ?? ""}
+          loading={props.loading}
+          decoding="async"
           height={props.height}
           width={props.width}
           className={`${props.isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${props.className ?? ""}`}
