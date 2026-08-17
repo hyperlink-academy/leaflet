@@ -9,7 +9,7 @@ export function PublicationPostItemSmall(props: CommonProps) {
     <div
       className={`postLinkSmall relative flex w-full grow flex-col py-2 ${props.inList ? "px-0" : "px-3"}`}
     >
-      <PostLink href={props.href} />
+      <PostLink href={props.href} title={props.title} />
       {props.pubInfo}
       {props.title && (
         // h2 slots under the pub-name h1 in the outline; text-[1.125em] pins

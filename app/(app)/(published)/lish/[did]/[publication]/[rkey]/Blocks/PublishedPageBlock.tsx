@@ -35,6 +35,13 @@ export function PublishedPageLinkBlock(props: {
 }) {
   let openPages = useOpenPages();
   let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
+  // The overlay anchor below needs real anchor text; mirror DocLinkBlock's
+  // title derivation (first text-ish block of the page).
+  let titleBlock = (props.blocks as { block: unknown }[])
+    .map((b) => b.block)
+    .find(
+      (b) => PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
+    ) as PubLeafletBlocksText.Main | PubLeafletBlocksHeader.Main | undefined;
   return (
     <div
       className={`w-full cursor-pointer
@@ -59,6 +66,19 @@ export function PublishedPageLinkBlock(props: {
         );
       }}
     >
+      {/* A real href (the same ?page= deep link the heading anchors use) so
+          the sub-page is reachable without JS. Clicks bubble to the wrapper's
+          handler, whose preventDefault cancels the navigation in favor of the
+          SPA page-opening flow; positioned children (the preview, the comments
+          button) paint above the overlay and stay interactive. An overlay
+          rather than an anchor wrapper because the preview can itself contain
+          links, and nested <a> tags get re-parented by the HTML parser. */}
+      <a
+        href={`?page=${props.pageId}`}
+        className="absolute inset-0"
+      >
+        <span className="sr-only">{titleBlock?.plaintext || "Open page"}</span>
+      </a>
       {props.isCanvas ? (
         <CanvasLinkBlock
           blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
