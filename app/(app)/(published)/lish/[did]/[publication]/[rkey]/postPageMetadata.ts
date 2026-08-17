@@ -1,14 +1,43 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import {
+  hasLeafletContent,
   normalizeDocumentRecord,
   normalizePublicationRecord,
+  type NormalizedDocument,
 } from "src/utils/normalizeRecords";
+import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import { truncateBlocksAtMembersDelimiter } from "src/membership";
 import { resolveDocumentFilter } from "src/utils/resolveDocumentFilter";
-import { getDocumentURL } from "src/utils/getPublicationURL";
+import { getDocumentURL, getPublicationURL } from "src/utils/getPublicationURL";
 import { findPublishedPage } from "src/utils/publishedPageMetadata";
 import { publicationAlternates } from "../publicationAlternates";
 import { fetchPublicationForPage } from "../getPublicationForPage";
+import { blocksToPlainText } from "../feedHtml";
+
+const absolutize = (url: string) =>
+  url.startsWith("/") ? `https://leaflet.pub${url}` : url;
+
+// Meta description for a document: the record's own description, else a
+// plain-text excerpt of its first blocks — never past the members-only
+// delimiter, since metadata is public regardless of gating. Undefined
+// (rather than "") when there's nothing, so the tag is omitted and search
+// engines write their own snippet.
+export function documentDescription(
+  docRecord: NormalizedDocument | null,
+): string | undefined {
+  if (!docRecord) return undefined;
+  if (docRecord.description) return docRecord.description;
+  let blocks: PubLeafletPagesLinearDocument.Block[] = [];
+  if (hasLeafletContent(docRecord) && docRecord.content.pages[0]) {
+    let firstPage = docRecord.content.pages[0];
+    if (PubLeafletPagesLinearDocument.isMain(firstPage))
+      blocks = firstPage.blocks || [];
+  }
+  let text = blocksToPlainText(truncateBlocksAtMembersDelimiter(blocks));
+  if (!text) return undefined;
+  return text.length > 160 ? text.slice(0, 157).trimEnd() + "…" : text;
+}
 
 /**
  * Metadata for whatever is published at /<segment> of a publication — a
@@ -35,9 +64,11 @@ export async function postPageMetadata(props: {
   if (match && match.record_uri) {
     return {
       title: `${match.title || match.path} - ${pub?.name}`,
+      description: documentDescription(normalizeDocumentRecord(match.record)),
       alternates: publicationAlternates(
         normalizePublicationRecord(pub?.record),
         "/" + segment,
+        pub ?? undefined,
       ),
     };
   }
@@ -65,19 +96,30 @@ export async function postPageMetadata(props: {
   let other: Metadata["other"] = {
     "at:canonical": document.uri,
   };
+  let pubName: string | undefined;
   if (publication) {
-    let url = getDocumentURL(docRecord, document.uri, publication);
-    if (url.startsWith("http")) canonical = url;
     let pubRecord = normalizePublicationRecord(publication.record);
-    if (pubRecord?.url) {
-      feedTypes = {
-        "application/rss+xml": `${pubRecord.url}/rss`,
-        "application/atom+xml": `${pubRecord.url}/atom`,
-        "application/feed+json": `${pubRecord.url}/json`,
-      };
-    }
+    pubName = publication.name || pubRecord?.name || undefined;
+    let url = absolutize(getDocumentURL(docRecord, document.uri, publication));
+    if (url.startsWith("http")) canonical = url;
+    // Legacy pub.leaflet publications without a configured domain don't
+    // normalize (no URL) but are still browsable at leaflet.pub/lish/…, so
+    // their posts advertise feeds there rather than none (same fallback as
+    // generateFeed).
+    let feedBase = absolutize(
+      pubRecord?.url ?? getPublicationURL(publication),
+    ).replace(/\/+$/, "");
+    feedTypes = {
+      "application/rss+xml": `${feedBase}/rss`,
+      "application/atom+xml": `${feedBase}/atom`,
+      "application/feed+json": `${feedBase}/json`,
+    };
     other["at:alternate"] = publication.uri;
   }
+
+  let authors = docRecord.contributors?.flatMap((c) =>
+    c.displayName ? [c.displayName] : [],
+  );
 
   return {
     alternates:
@@ -99,11 +141,22 @@ export async function postPageMetadata(props: {
         { rel: "site.standard.document", url: document.uri },
       ],
     },
-    title:
-      docRecord.title +
-      " - " +
-      document.documents_in_publications[0]?.publications?.name,
-    description: docRecord?.description || "",
+    title: pubName
+      ? docRecord.title
+        ? `${docRecord.title} - ${pubName}`
+        : pubName
+      : docRecord.title,
+    description: documentDescription(docRecord),
+    // og:image still comes from the route's opengraph-image file — file-based
+    // metadata takes priority over this object, so only the article fields
+    // are set here.
+    openGraph: {
+      type: "article",
+      publishedTime: docRecord.publishedAt,
+      url: canonical,
+      siteName: pubName,
+      authors: authors?.length ? authors : undefined,
+    },
     other,
   };
 }
