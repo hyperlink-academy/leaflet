@@ -13,6 +13,7 @@ import {
   mutateIdentityData,
 } from "components/IdentityProvider";
 import { ButtonPrimary } from "components/Buttons";
+import { DomainVerificationModal } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainVerification";
 import { SpeedyLink } from "components/SpeedyLink";
 import {
   usePublicationData,
@@ -377,13 +378,14 @@ function UnassignedDomainRow(props: {
     }
   }
 
+  if (pending)
+    return <DomainVerificationModal domain={props.domainData.domain} />;
+
   return (
     <div className="opaque-container text-tertiary w-full flex flex-col gap-1 px-[6px] py-1 border rounded-md border-border-light border-dashed">
       <div className="flex items-center justify-between">
         <span className="truncate text-left">{props.domainData.domain}</span>
-        {pending ? (
-          <div className="text-tertiary animate-pulse text-sm">unverified</div>
-        ) : confirming ? null : (
+        {confirming ? null : (
           <button
             className="text-accent-contrast text-xs font-bold"
             type="button"

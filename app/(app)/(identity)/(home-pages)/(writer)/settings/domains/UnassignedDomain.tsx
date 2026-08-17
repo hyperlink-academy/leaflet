@@ -1,29 +1,22 @@
 "use client";
 import type { CustomDomain } from "./DomainTab";
 import { useDomainStatus } from "./useDomainStatus";
-import { DomainVerification } from "./DomainVerification";
+import { DomainVerificationModal } from "./DomainVerification";
 import { DeleteDomainButton } from "./DeleteDomainButton";
-import { Modal } from "components/Modal";
-import { ButtonPrimary } from "components/Buttons";
-import { AddDomainForm } from "./AddDomainForm";
 
 export function UnassignedDomain(props: { domain: CustomDomain }) {
   let domain = props.domain.domain;
+  let { pending } = useDomainStatus(domain);
 
+  if (pending)
+    return (
+      <DomainVerificationModal domain={domain}>
+        <DeleteDomainButton domain={domain} />
+      </DomainVerificationModal>
+    );
   return (
     <div className="flex flex-row w-full items-center opaque-container px-2 py-1">
-      <div className="grow truncate min-w-0 font-bold">{domain}</div>
-      <Modal
-        title="Verify this Domain"
-        className="max-w-md"
-        trigger={
-          <div className="text-sm shrink-0  text-tertiary animate-pulse mr-2">
-            pending
-          </div>
-        }
-      >
-        <DomainVerification domain={domain} />
-      </Modal>
+      <div className="grow truncate min-w-0 font-bold mr-2">{domain}</div>
       <DeleteDomainButton domain={domain} />
     </div>
   );

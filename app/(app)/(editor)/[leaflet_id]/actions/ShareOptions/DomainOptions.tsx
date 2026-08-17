@@ -6,7 +6,10 @@ import {
   useIdentityData,
   mutateIdentityData,
 } from "components/IdentityProvider";
-import { useDomainStatus } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/useDomainStatus";
+import {
+  useDomainStatus,
+  useDomainStatuses,
+} from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/useDomainStatus";
 import { CustomDomain } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainTab";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { useReadOnlyShareLink } from ".";
@@ -15,7 +18,6 @@ import { useReplicache } from "src/replicache";
 import { DomainVerification } from "app/(app)/(identity)/(home-pages)/(writer)/settings/domains/DomainVerification";
 import { DotLoader } from "components/utils/DotLoader";
 import { GoToArrow } from "components/Icons/GoToArrow";
-import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { UnlinkTiny } from "components/Icons/UnlinkTiny";
 import Link from "next/link";
 
@@ -109,7 +111,6 @@ const DomainOptions = (props: {
       (r) => r.edit_permission_token === permission_token.id,
     ),
   );
-  // We'll categorize in the render since pending requires a hook per domain
   let nonLinkedDomains = allDomains.filter(
     (d: CustomDomain) =>
       !d.custom_domain_routes.some(
@@ -295,10 +296,13 @@ function NonLinkedDomains(props: {
   setSelectedRoute: (r: string) => void;
   setDomainMenuState: (state: DomainMenuState) => void;
 }) {
-  // Separate pending vs available using hooks rendered per-domain
+  let statuses = useDomainStatuses(props.domains.map((d) => d.domain));
+  let unverified = props.domains.filter((d) => statuses?.[d.domain]);
+  let available = props.domains.filter((d) => !statuses?.[d.domain]);
+
   return (
-    <>
-      {props.domains.map((domain) => (
+    <div className="flex flex-col gap-1">
+      {available.map((domain) => (
         <NonLinkedDomainRow
           key={domain.domain}
           domain={domain}
@@ -306,10 +310,47 @@ function NonLinkedDomains(props: {
           setSelectedDomain={props.setSelectedDomain}
           selectedRoute={props.selectedRoute}
           setSelectedRoute={props.setSelectedRoute}
-          setDomainMenuState={props.setDomainMenuState}
         />
       ))}
-    </>
+      {unverified.length > 0 && available.length > 0 && (
+        <>
+          <hr className="border-border-light my-1" />
+          <div className="text-xs text-tertiary -mb-0.5 ">STILL PENDING</div>
+          {unverified.map((domain) => (
+            <UnverifiedDomainRow
+              key={domain.domain}
+              domain={domain}
+              setDomainMenuState={props.setDomainMenuState}
+            />
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function UnverifiedDomainRow(props: {
+  domain: CustomDomain;
+  setDomainMenuState: (state: DomainMenuState) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="text-sm flex gap-2 items-center px-1 py-0.5 border block-border !rounded-md text-secondary text-left"
+      onMouseDown={() =>
+        props.setDomainMenuState({
+          state: "domain-settings",
+          domain: props.domain.domain,
+        })
+      }
+    >
+      <div className="grow truncate min-w-0 animate-pulse">
+        {props.domain.domain}
+      </div>
+      <div className="shrink-0 font-bold text-xs pr-0.5 text-accent-contrast">
+        Verify
+      </div>
+    </button>
   );
 }
 
@@ -319,35 +360,7 @@ function NonLinkedDomainRow(props: {
   setSelectedDomain: (d: string) => void;
   selectedRoute: string;
   setSelectedRoute: (r: string) => void;
-  setDomainMenuState: (state: DomainMenuState) => void;
 }) {
-  let { pending } = useDomainStatus(props.domain.domain);
-
-  if (pending) {
-    return (
-      <div className="text-sm flex px-1 py-0.5 border block-border !rounded-md text-secondary">
-        <div className="font-bold">{props.domain.domain}/</div>
-        <Input
-          disabled
-          value=""
-          className="w-full bg-transparent appearance-none focus:!outline-none"
-          placeholder=""
-        />
-        <button
-          className="text-accent-contrast text-sm"
-          onMouseDown={() =>
-            props.setDomainMenuState({
-              state: "domain-settings",
-              domain: props.domain.domain,
-            })
-          }
-        >
-          <LoadingTiny className="animate-spin text-accent-contrast" />
-        </button>
-      </div>
-    );
-  }
-
   let isSelected = props.selectedDomain === props.domain.domain;
 
   return (
