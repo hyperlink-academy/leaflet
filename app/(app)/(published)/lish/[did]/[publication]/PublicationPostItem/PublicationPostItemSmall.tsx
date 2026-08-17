@@ -12,10 +12,12 @@ export function PublicationPostItemSmall(props: CommonProps) {
       <PostLink href={props.href} />
       {props.pubInfo}
       {props.title && (
-        <h3 className="text-primary leading-snug">
+        // h2 slots under the pub-name h1 in the outline; text-[1.125em] pins
+        // the h3-scale size the base-layer heading rules would otherwise bump.
+        <h2 className="text-primary leading-snug text-[1.125em]">
           {props.title}
           {props.membersOnly && <MembersBadge />}
-        </h3>
+        </h2>
       )}
       <MetaRow
         author={props.author}

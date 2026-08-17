@@ -48,12 +48,12 @@ export function PublicationPostItemLarge(props: LargeProps) {
           className="postTitleAndContent flex flex-col gap-1 grow min-h-0 overflow-clip"
         >
           {props.title && (
-            <h3
+            <h2
               ref={titleRef as React.RefObject<HTMLHeadingElement>}
               className={`text-primary leading-snug text-lg  line-clamp-2 ${widePage ? "sm:text-xl " : ""}`}
             >
               {props.title}
-            </h3>
+            </h2>
           )}
           <p
             ref={descriptionRef}

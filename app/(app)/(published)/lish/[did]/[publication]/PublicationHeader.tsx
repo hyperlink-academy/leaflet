@@ -53,11 +53,13 @@ export function PublicationHeader(props: {
     />
   ) : null;
   let title = (
-    <h2
-      className={`pubHeaderTitle text-accent-contrast${variant === "stacked" ? " pt-1" : ""}`}
+    // The pub name is the page's h1; text-xl pins the h2-scale size the
+    // base-layer heading rules would otherwise bump.
+    <h1
+      className={`pubHeaderTitle text-accent-contrast text-xl${variant === "stacked" ? " pt-1" : ""}`}
     >
       {props.publicationName}
-    </h2>
+    </h1>
   );
 
   return (
@@ -71,7 +73,11 @@ export function PublicationHeader(props: {
       }}
     >
       {props.wordmark ? (
-        <Wordmark wordmark={props.wordmark} alt={props.publicationName} />
+        // The h1 wrapper keeps the page's top heading when the pub name renders
+        // as a wordmark image — the alt supplies its text.
+        <h1 className="contents">
+          <Wordmark wordmark={props.wordmark} alt={props.publicationName} />
+        </h1>
       ) : variant === "inline" ? (
         <div className="flex items-center justify-center gap-3">
           {icon}
@@ -124,10 +130,14 @@ export function NewPublicationHeader(props: {
       <div className="mx-auto">
         <div className="publicationName relative flex sm:flex-row flex-col items-start justify-center sm:gap-3 gap-1">
           {props.wordmark ? (
-            <Wordmark
-              wordmark={props.wordmark}
-              alt={props.subscribe?.publicationName}
-            />
+            // The h1 wrapper keeps the page's top heading when the pub name
+            // renders as a wordmark image — the alt supplies its text.
+            <h1 className="contents">
+              <Wordmark
+                wordmark={props.wordmark}
+                alt={props.subscribe?.publicationName}
+              />
+            </h1>
           ) : (
             <>
               {props.iconUrl && (
@@ -137,11 +147,11 @@ export function NewPublicationHeader(props: {
                   pubName={props.subscribe?.publicationName}
                 />
               )}
-              <h2
+              <h1
                 className={`sm:text-xl text-[1.5rem] text-accent-contrast sm:text-left text-center leading-snug`}
               >
                 {props.subscribe?.publicationName}
-              </h2>
+              </h1>
             </>
           )}
           {props.edit && (

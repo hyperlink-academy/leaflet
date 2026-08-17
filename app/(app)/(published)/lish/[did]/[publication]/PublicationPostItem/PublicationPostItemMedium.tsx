@@ -34,12 +34,15 @@ export function PublicationPostItemMedium(props: MediumProps) {
             className="postTitleAndDescription flex flex-col overflow-hidden grow min-h-0 "
           >
             {props.title && (
-              <h3
+              // h2 slots under the pub-name h1 in the outline; text-[1.125em]
+              // pins the h3-scale size the base-layer heading rules would
+              // otherwise bump.
+              <h2
                 ref={titleRef as React.RefObject<HTMLHeadingElement>}
-                className="postTitle text-primary leading-snug line-clamp-2"
+                className="postTitle text-primary leading-snug line-clamp-2 text-[1.125em]"
               >
                 {props.title}
-              </h3>
+              </h2>
             )}
             {/*the descriptionRef here is connected to useFitToHeight and is controlled the line clamp if theres not enough space for three lines*/}
             <p

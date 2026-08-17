@@ -150,6 +150,8 @@ export default async function PublicationArchive(props: {
           }}
         >
           <div className="flex flex-col gap-3 px-3 sm:px-4">
+            {/* h2: the page's h1 is the pub name in PublicationHeader, which
+                this layout always renders above. */}
             <h2 className="text-primary">Archive</h2>
             <ul className="flex flex-col gap-2 list-none pl-0">
               {posts.map((post) => (

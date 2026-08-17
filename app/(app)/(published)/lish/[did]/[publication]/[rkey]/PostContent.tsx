@@ -688,44 +688,49 @@ export let Block = ({
             {children}
           </a>
         );
+      // Tags sit one level below the block's nominal level: the page's h1 is
+      // outside the body (PostHeader's title on posts, the publication name on
+      // publication pages), so body headings start at h2. Sizes stay on the
+      // nominal scale via the inline blockTextSize font-size, and the
+      // hNBlock class names keep matching the block level.
       if (block.level === 1)
         return (
-          <h1
+          <h2
             className={`h1Block whitespace-pre-wrap ${className} ${HeadingStyle[1]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h1>
+          </h2>
         );
       if (block.level === 2)
         return (
-          <h2
+          <h3
             className={`h2Block whitespace-pre-wrap ${className} ${HeadingStyle[2]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h2>
+          </h3>
         );
       if (block.level === 3)
         return (
-          <h3
+          <h4
             className={`h3Block whitespace-pre-wrap ${className} ${HeadingStyle[3]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h3>
+          </h4>
         );
       return (
-        <h6
+        <h5
           className={`h6Block whitespace-pre-wrap ${className} ${HeadingStyle[4]}`}
           {...headingProps}
           style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}
         >
           {link(<TextBlock {...textBlockProps} />)}
-        </h6>
+        </h5>
       );
     },
   };
