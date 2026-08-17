@@ -17,6 +17,8 @@ import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
+import { JsonLd } from "components/JsonLd";
+import { getPublicationURL } from "src/utils/getPublicationURL";
 
 // On-demand ISR: rendered on first request, then served from the CDN and
 // re-rendered in the background. The empty generateStaticParams is what opts a
@@ -60,6 +62,17 @@ export default async function Publication(props: {
   const publication = await fetchPublicationForPage(did, publication_name);
   if (!publication) notFound();
 
+  const record = normalizePublicationRecord(publication.record);
+  // getPublicationURL is relative on dev/preview hosts; JSON-LD needs absolute.
+  const pubUrl = getPublicationURL(publication);
+  const blogJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: record?.name ?? publication.name,
+    url: pubUrl.startsWith("/") ? `https://leaflet.pub${pubUrl}` : pubUrl,
+    ...(record?.description ? { description: record.description } : {}),
+  };
+
   // Render a published "/" page when one exists; otherwise fall back to the
   // legacy post-listing homepage.
   const homePageRender = tryRenderPublicationPage({
@@ -67,9 +80,14 @@ export default async function Publication(props: {
     publication,
     path: "/",
   });
-  if (homePageRender) return homePageRender;
+  if (homePageRender)
+    return (
+      <>
+        <JsonLd data={blogJsonLd} />
+        {homePageRender}
+      </>
+    );
 
-  const record = normalizePublicationRecord(publication.record);
   // Resolve the author profile and post bylines server-side so they're in the
   // SSR HTML. The profile lookup is independent of the post queries, so it
   // runs alongside the rows → bylines chain.
@@ -89,6 +107,7 @@ export default async function Publication(props: {
       record={record}
       pub_creator={publication.identity_did}
     >
+      <JsonLd data={blogJsonLd} />
       <PublicationBackgroundProvider
         record={record}
         pub_creator={publication.identity_did}
