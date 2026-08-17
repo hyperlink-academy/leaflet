@@ -17,6 +17,7 @@ import {
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import type { AppBskyFeedDefs } from "@atproto/api";
 import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
+import { manageSubscriptionUrl } from "src/subscriptions/manageUrl";
 import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
 import { getProfiles } from "src/identity";
 import {
@@ -41,6 +42,8 @@ const BATCH_SIZE = 500;
 // so we only pay the React Email render cost once per batch.
 const UNSUB_PLACEHOLDER =
   "https://placeholder.leaflet.pub/unsubscribe-token-replace-me";
+const MANAGE_PLACEHOLDER =
+  "https://placeholder.leaflet.pub/manage-subscription-replace-me";
 
 export const send_post_broadcast = inngest.createFunction(
   {
@@ -346,6 +349,7 @@ export const send_post_broadcast = inngest.createFunction(
               did,
               assetsBaseUrl: `${assetsBaseUrl}/`,
               unsubscribeUrl: UNSUB_PLACEHOLDER,
+              manageUrl: MANAGE_PLACEHOLDER,
               membersUpsell: group.upsell ? membersUpsell : undefined,
             }),
           );
@@ -373,9 +377,16 @@ export const send_post_broadcast = inngest.createFunction(
               const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
                 sub.unsubscribe_token,
               )}`;
+              const manageUrl = manageSubscriptionUrl({
+                baseUrl: assetsBaseUrl,
+                email: sub.email,
+                publicationUrl: pubProps.publicationUrl,
+              });
               const htmlBody = htmlTemplate
                 .split(UNSUB_PLACEHOLDER)
-                .join(unsubscribeUrl);
+                .join(unsubscribeUrl)
+                .split(MANAGE_PLACEHOLDER)
+                .join(manageUrl.replace(/&/g, "&amp;"));
               return {
                 MessageStream: "broadcast",
                 From: fromHeader,

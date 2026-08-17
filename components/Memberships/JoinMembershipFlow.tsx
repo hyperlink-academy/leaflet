@@ -139,9 +139,7 @@ export function JoinMembershipFlow(props: {
 
   const effectiveCadence = (tier: Tier): Cadence =>
     tier.annual_price_cents != null ? cadence : "month";
-  const isSubscribed = props.newsletterMode
-    ? viewerSub.emailSubscribed
-    : viewerSub.atprotoSubscribed;
+  const isSubscribed = viewerSub.subscribed;
   const hasNeededIdentity = props.newsletterMode
     ? !!identity?.email
     : !!identity?.bsky_profiles?.handle;

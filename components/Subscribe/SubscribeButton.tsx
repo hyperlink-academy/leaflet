@@ -154,10 +154,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
     setConfirmOpen(true);
   };
 
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
-  const isSubscribed = showManage || locallySubscribed;
+  const isSubscribed = user.subscribed || locallySubscribed;
   const modeMenu = (
     <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
@@ -204,7 +201,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
 
           {props.newsletterMode &&
           user.atprotoSubscribed &&
-          !user.emailSubscribed ? (
+          !user.emailEnabled ? (
             <div
               className="text-secondary  w-full text-sm p-2 pt-1.5 mt-1 rounded-md flex flex-col gap-1"
               style={{
@@ -377,10 +374,6 @@ export const SubscribeButton = (props: SubscribeProps) => {
   if (joinable.hasPaidTiers && joinable.tiers)
     return <PaidSubscribeButton {...props} tiers={joinable.tiers} compact />;
 
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
-
   const subscribeTrigger = (
     <ButtonPrimary compact className="pubPageSubscribe text-sm!">
       Subscribe
@@ -389,7 +382,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
 
   return (
     <>
-      {showManage || locallySubscribed ? (
+      {user.subscribed || locallySubscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}

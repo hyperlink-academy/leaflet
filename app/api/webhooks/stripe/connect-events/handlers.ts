@@ -3,6 +3,7 @@ import { render } from "@react-email/render";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { notifyNewMember } from "src/membership.server";
+import { ensureSubscriberRecordsForMembership } from "src/subscriptions/membership";
 import MembershipPaymentFailed from "emails/membershipPaymentFailed";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
@@ -13,6 +14,23 @@ function isMembershipSub(sub: Stripe.Subscription): boolean {
 
 function isActiveStatus(status: string | null | undefined): boolean {
   return status === "active" || status === "trialing";
+}
+
+// A membership activated by webhook needs the same subscriber mirroring the
+// inline join flow does.
+async function mirrorSubscriberRecords(
+  identityId: string,
+  publication: string,
+) {
+  const { data: identity } = await supabaseServerClient
+    .from("identities")
+    .select("id, email, atp_did")
+    .eq("id", identityId)
+    .maybeSingle();
+  if (!identity) return;
+  await ensureSubscriberRecordsForMembership(publication, identity, null, {
+    respectUnsubscribed: true,
+  });
 }
 
 // Reconcile a membership row from a connected-account subscription event. Keyed
@@ -66,6 +84,11 @@ export async function handleMembershipSubscriptionEvent(
 
   if (isActiveStatus(sub.status) && !wasActive) {
     await notifyNewMember(sub.metadata.publication, existing.id);
+    if (sub.metadata.publication && sub.metadata.identity_id)
+      await mirrorSubscriberRecords(
+        sub.metadata.identity_id,
+        sub.metadata.publication,
+      );
   }
 }
 
@@ -142,6 +165,7 @@ async function reconcileUntrackedSubscription(
       .eq("id", tracked.id);
     if (error) throw error;
     await notifyNewMember(publication, tracked.id);
+    await mirrorSubscriberRecords(identity_id, publication);
     return;
   }
 
@@ -200,6 +224,7 @@ async function reconcileUntrackedSubscription(
 
   if (isActiveStatus(sub.status)) {
     await notifyNewMember(publication, inserted.id);
+    await mirrorSubscriberRecords(identity_id, publication);
   }
 }
 

@@ -45,21 +45,27 @@ export const PaidSubscribeButton = (
     setOpen(true);
   }, []);
 
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
-
   return (
     <>
-      <ManageSubscription
-        publicationUri={props.publicationUri}
-        publicationUrl={props.publicationUrl}
-        newsletterMode={props.newsletterMode}
-        user={user}
-      />
-
+      {user.subscribed ? (
+        <ManageSubscription
+          publicationUri={props.publicationUri}
+          publicationUrl={props.publicationUrl}
+          newsletterMode={props.newsletterMode}
+          user={user}
+        />
+      ) : (
+        <ButtonPrimary
+          compact={props.compact}
+          type="button"
+          className="pubPageSubscribe text-sm!"
+          onClick={() => setOpen(true)}
+        >
+          Subscribe
+        </ButtonPrimary>
+      )}
       {/* Stays mounted while the flow subscribes the reader mid-join, so the
-          payment step isn't lost when showManage flips. */}
+          payment step isn't lost when the trigger above flips to Manage. */}
       <JoinMembershipModal
         open={open}
         onOpenChange={setOpen}
