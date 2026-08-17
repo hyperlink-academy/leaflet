@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { decodeQuotePosition } from "src/utils/quotePosition";
 import { DocumentPageRenderer } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/DocumentPageRenderer";
 import { resolveDid } from "app/(app)/(published)/p/[didOrHandle]/resolveDid";
+import { generateMetadata as postMetadata } from "app/(app)/(published)/p/[didOrHandle]/[rkey]/page";
 
 // On-demand ISR: rendered on first request, then served from the CDN and
 // re-rendered in the background. The empty generateStaticParams is what opts a
@@ -14,7 +15,13 @@ export async function generateStaticParams() {
   return [];
 }
 
-export { generateMetadata } from "app/(app)/(published)/p/[didOrHandle]/[rkey]/page";
+// Quote-share URLs duplicate the post page; noindex so search engines don't
+// flag them as duplicates of the canonical post.
+export async function generateMetadata(props: {
+  params: Promise<{ didOrHandle: string; rkey: string }>;
+}) {
+  return { ...(await postMetadata(props)), robots: { index: false } };
+}
 export default async function Post(props: {
   params: Promise<{ didOrHandle: string; rkey: string; quote: string }>;
 }) {
