@@ -1,18 +1,9 @@
-export default function NotFound() {
-  return (
-    <div className="w-screen h-full flex place-items-center bg-bg-leaflet">
-      <div className="bg-bg-page mx-auto p-4 border border-border rounded-md flex flex-col text-center justify-centergap-1 w-fit">
-        <div className="font-bold">
-          Hmmm... Couldn&apos;t find that Leaflet.
-        </div>
-        <div>
-          You can{" "}
-          <a href="mailto:contact@leaflet.pub" target="blank">
-            email us
-          </a>{" "}
-          for help!
-        </div>
-      </div>
-    </div>
-  );
+import { notFound } from "next/navigation";
+
+// Kept as a real route because middleware rewrites unmatched custom-domain
+// paths here and old links point at it directly. Throwing notFound() renders
+// the root not-found UI with an actual 404 status (which also gets an
+// automatic robots noindex) instead of an indexable 200.
+export default function NotFoundRoute() {
+  notFound();
 }

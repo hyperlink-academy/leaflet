@@ -162,7 +162,10 @@ export default async function middleware(req: NextRequest) {
         ),
       );
     else {
-      return withMarker(NextResponse.redirect(new URL("/not-found", req.url)));
+      // Rewrite rather than redirect: /not-found responds with a real 404
+      // status, and a redirect would turn that into a 307 plus a soft 404 at
+      // a different URL.
+      return withMarker(NextResponse.rewrite(new URL("/not-found", req.url)));
     }
   }
   return withMarker();
