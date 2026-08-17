@@ -154,7 +154,9 @@ export function PostByline(props: {
       {record.publishedAt ? (
         <>
           <Separator classname="h-4!" />
-          <p>{formattedDate}</p>
+          <p>
+            <time dateTime={record.publishedAt}>{formattedDate}</time>
+          </p>
         </>
       ) : null}
       {tagCount > 0 && (
@@ -174,7 +176,7 @@ export const PostHeaderLayout = (props: {
   postInfo: React.ReactNode;
 }) => {
   return (
-    <div
+    <header
       className="postHeader w-full flex flex-col px-3 sm:px-4 sm:pt-3 pt-2 pb-5"
       id="post-header"
     >
@@ -194,6 +196,6 @@ export const PostHeaderLayout = (props: {
       <div className="postInfo text-sm text-tertiary pt-3 flex gap-1 flex-wrap justify-between">
         {props.postInfo}
       </div>
-    </div>
+    </header>
   );
 };

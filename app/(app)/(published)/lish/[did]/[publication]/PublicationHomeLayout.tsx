@@ -78,9 +78,9 @@ export function PublicationHomeLayout(props: {
         publicationUri={props.subscribe.publicationUri}
       />
       {header}
-      <div className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
+      <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
         {props.children}
-      </div>
+      </main>
     </>
   );
   if (props.showPageBackground) {

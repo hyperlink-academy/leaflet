@@ -76,29 +76,36 @@ export function LinearDocumentPage({
           ) : undefined
         }
       >
-        {!isSubpage && profile && (
-          <PostHeader
-            data={document}
-            profile={profile}
-            contributors={contributors}
-            preferences={preferences}
-          />
-        )}
-        <DrawerThreadPageProvider document_uri={document_uri} pageId={pageId}>
-          <PostContent
-            pollData={pollData}
-            pages={pages as PubLeafletPagesLinearDocument.Main[]}
-            pageId={pageId}
-            bskyPostData={bskyPostData}
-            standardSitePostData={standardSitePostData}
-            standardSitePublicationData={standardSitePublicationData}
-            blocks={blocks}
-            did={did}
-            prerenderedCodeBlocks={prerenderedCodeBlocks}
-            footnoteIndexMap={footnoteIndexMap}
-          />
-        </DrawerThreadPageProvider>
-        <PublishedFootnoteSection footnotes={footnotes} />
+        {/* display:contents keeps the article out of layout — PageWrapper's
+            content div is itself display:contents, so its children must land
+            directly in the scroll container. Not gated on `profile`: a failed
+            profile fetch during an ISR render must not bake a title-less page
+            into the CDN (PostHeader degrades to record data alone). */}
+        <article className="contents">
+          {!isSubpage && (
+            <PostHeader
+              data={document}
+              profile={profile}
+              contributors={contributors}
+              preferences={preferences}
+            />
+          )}
+          <DrawerThreadPageProvider document_uri={document_uri} pageId={pageId}>
+            <PostContent
+              pollData={pollData}
+              pages={pages as PubLeafletPagesLinearDocument.Main[]}
+              pageId={pageId}
+              bskyPostData={bskyPostData}
+              standardSitePostData={standardSitePostData}
+              standardSitePublicationData={standardSitePublicationData}
+              blocks={blocks}
+              did={did}
+              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              footnoteIndexMap={footnoteIndexMap}
+            />
+          </DrawerThreadPageProvider>
+          <PublishedFootnoteSection footnotes={footnotes} />
+        </article>
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}
           showFirstLast={preferences.showFirstLast === true && !isSubpage}

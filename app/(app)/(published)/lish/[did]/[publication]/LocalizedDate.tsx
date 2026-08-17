@@ -24,9 +24,10 @@ export function LocalizedDate(props: {
   // A 2-digit year reads as an abbreviation — "Jun 5 '24", apostrophe and no
   // comma. Rewriting the Intl parts rather than the formatted string keeps
   // that right in locales that lead with the year.
-  if (options?.year !== "2-digit") return <>{formattedDate}</>;
+  if (options?.year !== "2-digit")
+    return <time dateTime={props.dateString}>{formattedDate}</time>;
   return (
-    <>
+    <time dateTime={props.dateString}>
       {parts
         .map((part, i) => {
           if (part.type === "year") return `'${part.value}`;
@@ -35,6 +36,6 @@ export function LocalizedDate(props: {
           return part.value;
         })
         .join("")}
-    </>
+    </time>
   );
 }
