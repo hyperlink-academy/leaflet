@@ -86,6 +86,12 @@ export default async function StandaloneDocumentPage(props: {
   // Canonicalize handle URLs onto the DID form so a document has one cache
   // entry here instead of one per handle spelling — publishing revalidates
   // the DID path, and a stale handle entry would outlive the update.
+  //
+  // Temporary, not permanent: handles are reassignable, and a 308 is cached by
+  // browsers indefinitely, so a handle that later moves to another account
+  // would keep sending that visitor to the old DID's post. Search engines
+  // consolidate off the canonical tag above instead, which re-resolves on
+  // every crawl. Same reasoning at the other handle→DID redirects.
   if (didOrHandle !== did)
     redirect(`/p/${encodeURIComponent(did)}/${params.rkey}`);
 
