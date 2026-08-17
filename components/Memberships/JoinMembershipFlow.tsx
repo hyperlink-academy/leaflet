@@ -820,7 +820,6 @@ function DowngradeConfirmModal(props: {
                   {props.currentTier.name} ·{" "}
                   {tierPriceLabel(props.currentTier, props.currentCadence)}
                 </div>
-                <GoToArrowLined className="rotate-90 text-tertiary" />
               </>
             )}
             <div className="accent-container w-fit py-0.5 px-2 font-bold text-accent-contrast border border-accent-contrast">

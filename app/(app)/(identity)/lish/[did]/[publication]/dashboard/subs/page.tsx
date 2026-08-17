@@ -140,7 +140,7 @@ export default async function SubsPage(props: {
         a.monthly_price_cents - b.monthly_price_cents ||
         a.sort_order - b.sort_order,
     )
-    .map((t) => ({ id: t.id, name: t.name }));
+    .map((t) => ({ id: t.id, name: t.name, is_free: t.is_free }));
 
   return (
     <PublicationSubscribers
