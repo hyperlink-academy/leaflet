@@ -14,6 +14,7 @@ import {
   CancelMembershipForm,
   MembershipActions,
   membershipPrice,
+  isMembershipActive,
 } from "components/Memberships/SwitchPlanModal";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
@@ -89,12 +90,25 @@ export const ManageSubscription = (props: {
           membership={membershipView.membership}
           onSuccess={onMembershipChanged}
           onBack={closeMembershipView}
+          onCancel={() =>
+            setMembershipView({
+              type: "cancel",
+              membership: membershipView.membership,
+            })
+          }
         />
       ) : membershipView?.type === "cancel" ? (
         <CancelMembershipForm
           membership={membershipView.membership}
           onSuccess={onMembershipChanged}
-          onBack={closeMembershipView}
+          onBack={() =>
+            membershipView.membership.availableTiers.length > 0
+              ? setMembershipView({
+                  type: "switch",
+                  membership: membershipView.membership,
+                })
+              : closeMembershipView()
+          }
         />
       ) : (
         <ManageSubscriptionContent
@@ -228,14 +242,17 @@ const ManageSubscriptionContent = (props: {
       </div>
     );
 
+  const cancellableMembership =
+    membership &&
+    isMembershipActive(membership.status) &&
+    !membership.cancelAtPeriodEnd
+      ? membership
+      : null;
+
   return (
     <div className="manageSubPrefs flex flex-col gap-2">
       {membership && (
-        <MembershipSection
-          membership={membership}
-          onSwitch={props.onSwitch}
-          onCancel={props.onCancel}
-        />
+        <MembershipSection membership={membership} onSwitch={props.onSwitch} />
       )}
       {props.newsletterMode && user.email ? (
         <div className={prefClassName}>
@@ -321,13 +338,22 @@ const ManageSubscriptionContent = (props: {
       ) : null}
 
       <hr className="border-border-light my-2" />
-      <ButtonSecondary
-        fullWidth
-        disabled={unsubscribing}
-        onClick={onUnsubscribe}
-      >
-        {unsubscribing ? "Unsubscribing…" : "Unsubscribe"}
-      </ButtonSecondary>
+      {cancellableMembership ? (
+        <ButtonSecondary
+          fullWidth
+          onClick={() => props.onCancel(cancellableMembership)}
+        >
+          Cancel Membership
+        </ButtonSecondary>
+      ) : (
+        <ButtonSecondary
+          fullWidth
+          disabled={unsubscribing}
+          onClick={onUnsubscribe}
+        >
+          {unsubscribing ? "Unsubscribing…" : "Unsubscribe"}
+        </ButtonSecondary>
+      )}
     </div>
   );
 };
@@ -335,7 +361,6 @@ const ManageSubscriptionContent = (props: {
 const MembershipSection = (props: {
   membership: MyMembership;
   onSwitch: (membership: MyMembership) => void;
-  onCancel: (membership: MyMembership) => void;
 }) => {
   const { membership } = props;
   const price = membershipPrice(membership);
@@ -346,23 +371,24 @@ const MembershipSection = (props: {
   });
   return (
     <div className={prefClassName}>
-      <div className="flex flex-col leading-snug">
-        <p>Membership</p>
+      <div className="flex flex-col leading-snug w-full">
+        <div className=" flex justify-between gap-4 w-full">
+          <p>Membership</p>
+          <MembershipActions
+            membership={membership}
+            onSwitch={() => props.onSwitch(membership)}
+            onChanged={() => mutateMyMembership(membership.publication)}
+          />
+        </div>
         <p className="text-tertiary font-normal italic">
           {membership.tierName ?? "Membership"}
           {price ? ` · ${price}` : ""}
+        </p>
+        <p className="text-tertiary text-sm font-normal italic">
           {membership.cancelAtPeriodEnd && membership.currentPeriodEnd
-            ? ` · Ends ${endDate}`
+            ? `Ends ${endDate}`
             : ""}
         </p>
-      </div>
-      <div className="flex gap-2 shrink-0">
-        <MembershipActions
-          membership={membership}
-          onSwitch={() => props.onSwitch(membership)}
-          onCancel={() => props.onCancel(membership)}
-          onChanged={() => mutateMyMembership(membership.publication)}
-        />
       </div>
     </div>
   );
@@ -371,10 +397,11 @@ const MembershipSection = (props: {
 const LINK_ERROR_MESSAGES: Record<string, string> = {
   invalid_email: "Please enter a valid email address.",
   newsletter_disabled: "This publication isn't accepting email subscriptions.",
-  email_send_failed: "We couldn't send the confirmation email. Try again.",
-  subscriber_not_found: "No pending subscription. Start over.",
-  invalid_code: "That code didn't match. Try again.",
-  database_error: "Something went wrong. Try again.",
+  email_send_failed:
+    "We couldn't send the confirmation email. Please try again.",
+  subscriber_not_found: "No pending subscription. Please try again.",
+  invalid_code: "That code didn't match. Please try again.",
+  database_error: "Something went wrong. Please try again.",
   suppressed_spam_complaint:
     "This address was previously marked as spam and can't be linked. Contact the publication to resolve.",
   suppression_delete_failed:

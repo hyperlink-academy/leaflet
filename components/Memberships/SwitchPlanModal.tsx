@@ -30,14 +30,16 @@ export function isMembershipActive(status: string | null): boolean {
   return status === "active" || status === "trialing";
 }
 
-// Cancel/Resume and Change plan buttons for an active membership. Cancellation
-// takes effect at the period's end, so "Cancel" flips to "Resume" while the
-// membership is winding down. Cancelling goes through a confirm screen
-// (CancelMembershipForm) via onCancel; resuming applies immediately.
+// Entry point for an active membership. Cancelling normally lives inside the
+// change-plan form, so this only offers a direct Cancel when there's no plan to
+// change to — and only where the caller passes onCancel; the manage-subscription
+// modal owns cancelling itself. Cancellation takes effect at the period's end,
+// so it flips to "Resume" while the membership is winding down; resuming
+// applies immediately.
 export function MembershipActions(props: {
   membership: MyMembership;
   onSwitch: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
   onChanged?: () => void;
 }) {
   const m = props.membership;
@@ -64,19 +66,34 @@ export function MembershipActions(props: {
   return (
     <>
       {m.cancelAtPeriodEnd ? (
-        <ButtonSecondary type="button" compact disabled={busy} onClick={resume}>
+        <ButtonPrimary
+          className="text-sm"
+          type="button"
+          compact
+          disabled={busy}
+          onClick={resume}
+        >
           {busy ? <DotLoader /> : "Resume"}
-        </ButtonSecondary>
-      ) : (
-        <ButtonSecondary type="button" compact onClick={props.onCancel}>
+        </ButtonPrimary>
+      ) : m.availableTiers.length > 0 ? (
+        <ButtonPrimary
+          className="text-sm"
+          type="button"
+          compact
+          onClick={props.onSwitch}
+        >
+          Change
+        </ButtonPrimary>
+      ) : props.onCancel ? (
+        <ButtonPrimary
+          className="text-sm"
+          type="button"
+          compact
+          onClick={props.onCancel}
+        >
           Cancel
-        </ButtonSecondary>
-      )}
-      {m.availableTiers.length > 0 && (
-        <ButtonSecondary type="button" compact onClick={props.onSwitch}>
-          Change plan
-        </ButtonSecondary>
-      )}
+        </ButtonPrimary>
+      ) : null}
     </>
   );
 }
@@ -164,14 +181,27 @@ export function SwitchPlanModal(props: {
   membership: MyMembership;
   onClose: () => void;
 }) {
+  const [view, setView] = useState<"switch" | "cancel">("switch");
   return (
     <Modal
       open
       onOpenChange={(o) => !o && props.onClose()}
-      title="Change plan"
+      title={view === "cancel" ? "Cancel membership" : "Change plan"}
       className="max-w-full w-sm"
     >
-      <SwitchPlanForm membership={props.membership} onSuccess={props.onClose} />
+      {view === "cancel" ? (
+        <CancelMembershipForm
+          membership={props.membership}
+          onSuccess={props.onClose}
+          onBack={() => setView("switch")}
+        />
+      ) : (
+        <SwitchPlanForm
+          membership={props.membership}
+          onSuccess={props.onClose}
+          onCancel={() => setView("cancel")}
+        />
+      )}
     </Modal>
   );
 }
@@ -179,6 +209,7 @@ export function SwitchPlanModal(props: {
 export function SwitchPlanForm(props: {
   membership: MyMembership;
   onSuccess: () => void;
+  onCancel: () => void;
   onBack?: () => void;
 }) {
   const m = props.membership;
@@ -276,20 +307,25 @@ export function SwitchPlanForm(props: {
         className="text-tertiary text-sm leading-snug"
       />
       <div
-        className={`flex ${props.onBack ? "justify-between" : "justify-end"}`}
+        className={`flex gap-2 ${props.onBack ? "justify-between" : "justify-end"}`}
       >
         {props.onBack && (
           <ButtonSecondary type="button" onClick={props.onBack}>
             Back
           </ButtonSecondary>
         )}
-        <ButtonPrimary
-          type="button"
-          disabled={saving || !tierId || unchanged}
-          onClick={save}
-        >
-          {saving ? <DotLoader /> : "Save"}
-        </ButtonPrimary>
+        <div className="flex gap-2">
+          <ButtonSecondary type="button" onClick={props.onCancel}>
+            Cancel membership
+          </ButtonSecondary>
+          <ButtonPrimary
+            type="button"
+            disabled={saving || !tierId || unchanged}
+            onClick={save}
+          >
+            {saving ? <DotLoader /> : "Save"}
+          </ButtonPrimary>
+        </div>
       </div>
     </div>
   );
