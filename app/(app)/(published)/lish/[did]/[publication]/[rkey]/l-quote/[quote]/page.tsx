@@ -15,12 +15,12 @@ export async function generateStaticParams() {
   return [];
 }
 
-// Quote-share URLs duplicate the post page; noindex so search engines don't
-// flag them as duplicates of the canonical post.
+// Quote-share URLs duplicate the post page; the canonical inherited from the
+// post's metadata consolidates them (and any links they earn) into the post.
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
-  return { ...(await postMetadata(props)), robots: { index: false } };
+  return await postMetadata(props);
 }
 export default async function Post(props: {
   params: Promise<{
