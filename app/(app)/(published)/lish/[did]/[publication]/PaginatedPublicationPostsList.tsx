@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef } from "react";
 import useSWRInfinite from "swr/infinite";
+import { SpeedyLink } from "components/SpeedyLink";
+import { getPublicationURL } from "src/utils/getPublicationURL";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationPostsList } from "./PublicationPostsList";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
@@ -107,6 +109,18 @@ export function PaginatedPublicationPostsList({
       {isValidating && hasMore && (
         <div className="text-center text-tertiary py-4">
           Loading more posts...
+        </div>
+      )}
+      {/* Always in the SSR HTML: only the first batch of posts is served, so
+          crawlers need a plain anchor to the archive to reach the rest. */}
+      {!disableLinks && (
+        <div className="text-center pt-3">
+          <SpeedyLink
+            href={`${getPublicationURL(publication).replace(/\/+$/, "")}/archive`}
+            className="text-sm text-tertiary hover:text-accent-contrast"
+          >
+            View all posts
+          </SpeedyLink>
         </div>
       )}
     </div>

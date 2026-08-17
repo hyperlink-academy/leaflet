@@ -9,6 +9,7 @@ import {
 } from "./PublicationHeader";
 import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
 import { SubscribeSuccessPrefetch } from "components/Subscribe/useSubscribeSuccessData";
+import { SpeedyLink } from "components/SpeedyLink";
 import type { WordmarkData } from "src/utils/wordmark";
 
 export function PublicationHomeLayout(props: {
@@ -81,6 +82,18 @@ export function PublicationHomeLayout(props: {
       <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
         {props.children}
       </main>
+      {/* Always-rendered plain link so crawlers can reach every post through
+          the archive, which infinite scroll otherwise hides past the first
+          batch. Built off publicationUrl like the nav tabs, so it resolves on
+          custom domains too. */}
+      <div className="pubFooter text-center pb-4">
+        <SpeedyLink
+          href={`${props.publicationUrl.replace(/\/+$/, "")}/archive`}
+          className="text-sm text-tertiary hover:text-accent-contrast"
+        >
+          Archive
+        </SpeedyLink>
+      </div>
     </>
   );
   if (props.showPageBackground) {
