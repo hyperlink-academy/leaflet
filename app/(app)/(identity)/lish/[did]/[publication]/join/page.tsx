@@ -31,12 +31,13 @@ export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
 }): Promise<Metadata> {
   const params = await props.params;
+  const robots = { index: false };
   const publication = await fetchPublicationForJoin(
     decodeURIComponent(params.did),
     decodeURIComponent(params.publication),
   );
-  if (!publication) return { title: "404" };
-  return { title: `Join ${publication.name}` };
+  if (!publication) return { title: "404", robots };
+  return { title: `Join ${publication.name}`, robots };
 }
 
 export default async function JoinPage(props: {

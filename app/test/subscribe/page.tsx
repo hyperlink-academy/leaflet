@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { notFound } from "next/navigation";
 import { SWRConfig } from "swr";
 import {
   IdentityContextProvider,
@@ -156,6 +157,7 @@ function ComponentSection(props: { title: string; render: Render }) {
 }
 
 export default function SubscribePreviewPage() {
+  if (process.env.NODE_ENV === "production") notFound();
   return (
     <div className="max-w-3xl mx-auto flex flex-col gap-10 p-6">
       <h1>Subscribe Variants</h1>

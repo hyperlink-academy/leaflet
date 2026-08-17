@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { notFound } from "next/navigation";
 
 type Page = "drafts" | "posts" | "analytics" | "settings";
 
@@ -21,6 +22,7 @@ const INITIAL: Box[] = [
 const PAGES: Page[] = ["drafts", "posts", "analytics", "settings"];
 
 export default function PositionLinks() {
+  if (process.env.NODE_ENV === "production") notFound();
   let [image, setImage] = useState<Page>("drafts");
   let [boxes, setBoxes] = useState<Box[]>(INITIAL);
   let [syncX, setSyncX] = useState(true);

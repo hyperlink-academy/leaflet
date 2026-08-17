@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { notFound } from "next/navigation";
 import { IdentityContext, type Identity } from "components/IdentityProvider";
 import { ToggleGroup } from "components/ToggleGroup";
 import { PaidSubscribeButton } from "components/Subscribe/PaidSubscribeButton";
@@ -101,6 +102,7 @@ const THEME_FONTS = {
 } as const;
 
 export default function PaidSubscribePreviewPage() {
+  if (process.env.NODE_ENV === "production") notFound();
   let [subscribeVia, setSubscribeVia] = useState<"email" | "handle">("email");
   let [loggedIn, setLoggedIn] = useState(false);
   let [subscribed, setSubscribed] = useState(false);

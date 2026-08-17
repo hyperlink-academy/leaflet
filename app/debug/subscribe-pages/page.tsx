@@ -1,10 +1,14 @@
 import { AtUri } from "@atproto/syntax";
+import { notFound } from "next/navigation";
 import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+
+export const metadata = { robots: { index: false } };
 
 // Debug page: lists publications with more than 10 subscribers and links to
 // their /subscribe/[did]/[rkey] pages.
 export default async function DebugSubscribePages() {
+  if (process.env.NODE_ENV === "production") notFound();
   const { data: publications } = await supabaseServerClient
     .from("publications")
     .select(`uri, identity_did, record, publication_subscriptions(count)`);
