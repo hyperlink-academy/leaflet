@@ -103,16 +103,30 @@ export function MembershipActions(props: {
 export function ChangePlanModal(props: {
   membership: MyMembership;
   onClose: () => void;
+  onSuccess?: () => void;
+  title?: string;
+  unlocksPost?: boolean;
+  unlocksPostTierIds?: string[] | null;
 }) {
   return (
     <Modal
       open
       onOpenChange={(o) => !o && props.onClose()}
-      title=<h2 className="mx-auto text-center pb-2">Change your membership</h2>
+      title=<h2 className="mx-auto text-center pb-2">
+        {props.title ? props.title : "Change your membership"}
+      </h2>
       className="max-w-full w-fit bg-[var(--color-bg-light)]!"
       sheetOnMobile
     >
-      <ChangePlanForm membership={props.membership} onSuccess={props.onClose} />
+      <ChangePlanForm
+        membership={props.membership}
+        unlocksPost={props.unlocksPost}
+        unlocksPostTierIds={props.unlocksPostTierIds}
+        onSuccess={() => {
+          props.onSuccess?.();
+          props.onClose();
+        }}
+      />
     </Modal>
   );
 }
@@ -120,6 +134,8 @@ export function ChangePlanModal(props: {
 export function ChangePlanForm(props: {
   membership: MyMembership;
   onSuccess: () => void;
+  unlocksPost?: boolean;
+  unlocksPostTierIds?: string[] | null;
 }) {
   const m = props.membership;
   const toaster = useToaster();
@@ -215,6 +231,8 @@ export function ChangePlanForm(props: {
             busyTierId={null}
             isSubscribed
             currentTierId={m.tierId}
+            unlocksPost={props.unlocksPost}
+            unlocksPostTierIds={props.unlocksPostTierIds}
             onSelectTier={setConfirmTier}
           />
           <p className="tierPaymentInfo text-tertiary text-sm text-center">

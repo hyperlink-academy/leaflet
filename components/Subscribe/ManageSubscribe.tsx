@@ -59,6 +59,7 @@ export const ManageSubscription = (props: {
   publicationUrl?: string;
   newsletterMode: boolean;
   user: ViewerUser;
+  triggerLabel?: string;
 }) => {
   let [open, setOpen] = useState(false);
   let [modalState, setModalState] = useState<ModalContent | null>(null);
@@ -102,10 +103,16 @@ export const ManageSubscription = (props: {
           type="button"
           className="manageSubPrefsTrigger flex gap-1 text-accent-contrast text-sm items-center "
         >
-          <div className="font-bold flex gap-1 items-center">
-            <CheckTiny /> Subscribed
-          </div>
-          <div className="underline">Manage</div>
+          {props.triggerLabel ? (
+            <div className="hover:underline">{props.triggerLabel}</div>
+          ) : (
+            <>
+              <div className="font-bold flex gap-1 items-center">
+                <CheckTiny /> Subscribed
+              </div>
+              <div className="underline">Manage</div>
+            </>
+          )}
         </button>
       }
     >

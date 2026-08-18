@@ -28,6 +28,7 @@ import {
   type Cadence,
 } from "components/Memberships/TierGrid";
 import { type JoinResume } from "components/Memberships/joinReturn";
+import { revalidateUnlocks } from "components/Memberships/revalidateUnlocks";
 import {
   getMembershipJoinViewer,
   subscribeToTier,
@@ -141,12 +142,6 @@ export function JoinMembershipFlow(props: {
       cancelled = true;
     };
   }, [props.active, props.publicationUri]);
-
-  // A join can entitle the viewer to gated posts — revalidate any members-only
-  // unlock islands on the page (keyed in PostDataProvider) so the full post
-  // renders in place instead of behind the paywall.
-  const revalidateUnlocks = () =>
-    mutate((key) => Array.isArray(key) && key[0] === "unlocked-post");
 
   const subscribeAction = () =>
     encodeActionToSearchParam({

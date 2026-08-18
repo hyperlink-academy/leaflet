@@ -66,11 +66,8 @@ export function TierGrid(props: {
   onCadenceChange: (cadence: Cadence) => void;
   busyTierId: string | null;
   isSubscribed: boolean;
-  // The viewer's active paid membership tier, if any.
   currentTierId?: string | null;
   unlocksPost?: boolean;
-  // The tiers the gated post's delimiter names; with unlocksPost, only those
-  // get the "Unlocks post" badge. null/absent means every paid tier unlocks.
   unlocksPostTierIds?: string[] | null;
   onSelectTier: (tier: Tier) => void;
 }) {
@@ -83,8 +80,7 @@ export function TierGrid(props: {
   const currentTier = props.currentTierId
     ? props.tiers.find((t) => t.id === props.currentTierId)
     : undefined;
-  // "Upgrade" compares cost per month; a free-tier subscriber sits at $0 so
-  // every paid tier is an upgrade for them.
+
   const currentMonthlyCents = currentTier
     ? currentTier.monthly_price_cents
     : props.isSubscribed
