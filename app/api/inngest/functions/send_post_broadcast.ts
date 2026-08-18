@@ -17,6 +17,7 @@ import {
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import type { AppBskyFeedDefs } from "@atproto/api";
 import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
+import { manageSubscriptionUrl } from "src/subscriptions/manageUrl";
 import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
 import { getProfiles } from "src/identity";
 import {
@@ -376,15 +377,11 @@ export const send_post_broadcast = inngest.createFunction(
               const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
                 sub.unsubscribe_token,
               )}`;
-              // Managing requires a session, so the footer link runs through
-              // email-login (reuses a matching session or emails a code) and
-              // lands on the publication with the manage panel auto-opened.
-              const manageUrl = `${assetsBaseUrl}/api/auth/email-login?${new URLSearchParams(
-                {
-                  email: sub.email,
-                  redirect: `${pubProps.publicationUrl.replace(/\/$/, "")}?manage_subscription=1`,
-                },
-              ).toString()}`;
+              const manageUrl = manageSubscriptionUrl({
+                baseUrl: assetsBaseUrl,
+                email: sub.email,
+                publicationUrl: pubProps.publicationUrl,
+              });
               const htmlBody = htmlTemplate
                 .split(UNSUB_PLACEHOLDER)
                 .join(unsubscribeUrl)

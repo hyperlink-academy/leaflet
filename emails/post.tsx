@@ -14,7 +14,7 @@ import {
 } from "@react-email/components";
 import type { PrismLanguage } from "@react-email/code-block";
 import { UnicodeString, type AppBskyFeedDefs } from "@atproto/api";
-import React, { type CSSProperties } from "react";
+import React, { Fragment, type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
@@ -936,11 +936,22 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                                 }}
                               >
                                 {p.unsubscribeUrl ? (
-                                  <>
-                                    {p.manageUrl ? (
-                                      <>
+                                  [
+                                    p.manageUrl && {
+                                      href: p.manageUrl,
+                                      label: "Manage subscription",
+                                    },
+                                    {
+                                      href: p.unsubscribeUrl,
+                                      label: "Unsubscribe",
+                                    },
+                                  ]
+                                    .filter((l) => !!l)
+                                    .map((l, i) => (
+                                      <Fragment key={l.label}>
+                                        {i > 0 ? " · " : null}
                                         <Link
-                                          href={p.manageUrl}
+                                          href={l.href}
                                           style={{
                                             color: c.tertiary,
                                             fontSize: 14,
@@ -948,23 +959,10 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                                             textDecoration: "underline",
                                           }}
                                         >
-                                          Manage subscription
+                                          {l.label}
                                         </Link>
-                                        {" · "}
-                                      </>
-                                    ) : null}
-                                    <Link
-                                      href={p.unsubscribeUrl}
-                                      style={{
-                                        color: c.tertiary,
-                                        fontSize: 14,
-                                        lineHeight: "20px",
-                                        textDecoration: "underline",
-                                      }}
-                                    >
-                                      Unsubscribe
-                                    </Link>
-                                  </>
+                                      </Fragment>
+                                    ))
                                 ) : (
                                   <span style={{ fontStyle: "italic" }}>
                                     (preview — not sent to subscribers)

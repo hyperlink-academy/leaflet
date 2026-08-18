@@ -162,6 +162,15 @@ export async function extractThemeFromFacts(
         ...(wordmarkWidth?.data.value && {
           width: Math.floor(wordmarkWidth.data.value),
         }),
+        // Intrinsic dimensions let renderers reserve space before the image
+        // loads, avoiding layout shift.
+        ...(wordmarkImage.data.width &&
+          wordmarkImage.data.height && {
+            aspectRatio: {
+              width: wordmarkImage.data.width,
+              height: wordmarkImage.data.height,
+            },
+          }),
       };
     }
   }

@@ -6,7 +6,9 @@ import { supabaseServerClient } from "supabase/serverClient";
 import {
   recordEmailSubscription,
   checkEmailSubscriptionAllowed,
-  disableEmailForIdentity,
+  disableEmailSubscription,
+  upsertSubscriber,
+  onEmailSubscriptionConfirmed,
 } from "src/subscriptions/email";
 import { PubConfirmEmail } from "emails/pubConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
@@ -17,10 +19,7 @@ import {
   sendConfirmationEmail,
   type ConfirmationError,
 } from "src/utils/confirmationEmail";
-import {
-  backfillAtprotoSubscriptionsForIdentity,
-  publishAtprotoSubscriptionForDid,
-} from "src/subscriptions/atproto";
+import { backfillAtprotoSubscriptionsForIdentity } from "src/subscriptions/atproto";
 import {
   fullUnsubscribe,
   type FullUnsubscribeError,
@@ -29,8 +28,6 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 import { blobRefToSrc, EMAIL_ICON_TRANSFORM } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/api";
-import { after } from "next/server";
-import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
 import {
   sanitizeSubscriptionSource,
   type SubscriptionSource,
@@ -94,54 +91,16 @@ export async function requestPublicationEmailSubscription(
     return Ok({ confirmed: true });
   }
 
-  // A previous `unsubscribed` row makes the first event `resubscribed`.
   const pendingCode = generateConfirmationCode();
-  const { data: existing } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .select("state")
-    .eq("publication", publicationUri)
-    .eq("email", email)
-    .maybeSingle();
-  const wasUnsubscribed = existing?.state === "unsubscribed";
-
-  const { data: subscriber, error } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .upsert(
-      {
-        publication: publicationUri,
-        email,
-        identity_id: identity?.id ?? null,
-        state: "pending",
-        confirmation_code: pendingCode,
-        unsubscribed_at: null,
-      },
-      { onConflict: "publication,email" },
-    )
-    .select("id")
-    .single();
-  if (error || !subscriber) {
-    console.error("[subscribeEmail] upsert subscriber failed:", error);
-    return Err("database_error");
-  }
-
-  const { error: eventsError } = await supabaseServerClient
-    .from("publication_email_subscriber_events")
-    .insert([
-      {
-        subscriber: subscriber.id,
-        publication: publicationUri,
-        event_type: wasUnsubscribed ? "resubscribed" : "subscribe_requested",
-      },
-      {
-        subscriber: subscriber.id,
-        publication: publicationUri,
-        event_type: "confirmation_sent",
-      },
-    ]);
-  if (eventsError) {
-    console.error("[subscribeEmail] insert events failed:", eventsError);
-    return Err("database_error");
-  }
+  const upserted = await upsertSubscriber({
+    publicationUri,
+    email,
+    identityId: identity?.id ?? null,
+    state: "pending",
+    confirmationCode: pendingCode,
+    event: "confirmation_sent",
+  });
+  if (!upserted.ok) return Err(upserted.error);
 
   const sent = await sendConfirmationEmail({
     to: email,
@@ -220,33 +179,12 @@ export async function confirmPublicationEmailSubscription(
     return Err("database_error");
   }
 
-  const { data: confirmedIdentity } = await supabaseServerClient
-    .from("identities")
-    .select("atp_did")
-    .eq("id", identityId)
-    .maybeSingle();
-
-  // The atproto mirror below is the same subscription, not a second one — only
-  // the email event is tracked.
-  after(() =>
-    trackSubscriptionEvent({
-      event: "subscribe",
-      method: "email",
-      origin: "app",
-      publicationUri,
-      subscriberDid: confirmedIdentity?.atp_did,
-      subscriberEmail: email,
-      source: sanitizeSubscriptionSource(source),
-    }),
+  await onEmailSubscriptionConfirmed(
+    publicationUri,
+    email,
+    identityId,
+    sanitizeSubscriptionSource(source),
   );
-
-  if (confirmedIdentity?.atp_did) {
-    await publishAtprotoSubscriptionForDid(
-      confirmedIdentity.atp_did,
-      publicationUri,
-    );
-  }
-
   return Ok(null);
 }
 
@@ -264,11 +202,7 @@ export async function unsubscribeFromPublication(
 
   return fullUnsubscribe({
     publication: publicationUri,
-    identity: {
-      id: identity.id,
-      atp_did: identity.atp_did,
-      email: identity.email,
-    },
+    identity,
     cancelPaidImmediately: opts?.cancelPaidImmediately,
     allowStripeCancel: true,
   });
@@ -295,12 +229,7 @@ export async function setEmailNotifications(
   const identity = await getAuthIdentity();
   if (!identity?.id) return Err("unauthorized");
 
-  if (!enabled)
-    return disableEmailForIdentity(publicationUri, {
-      id: identity.id,
-      atp_did: identity.atp_did,
-      email: identity.email,
-    });
+  if (!enabled) return disableEmailSubscription(publicationUri, identity);
 
   const email = identity.email?.toLowerCase();
   if (!email) return Err("no_email");

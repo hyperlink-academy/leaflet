@@ -16,18 +16,12 @@ export function useViewerSubscription(publicationUri: string): ViewerUser {
   const { identity } = useIdentityData();
 
   return useMemo(() => {
-    const state = identity
-      ? deriveSubscriptionState(publicationUri, {
-          subscriptions: identity.publication_subscriptions,
-          emailSubscribers: identity.publication_email_subscribers,
-          memberships: identity.publication_memberships,
-        })
-      : {
-          subscribed: false,
-          atprotoSubscribed: false,
-          emailEnabled: false,
-          membership: null,
-        };
+    // No identity means no rows, which derives to "not subscribed".
+    const state = deriveSubscriptionState(publicationUri, {
+      subscriptions: identity?.publication_subscriptions,
+      emailSubscribers: identity?.publication_email_subscribers,
+      memberships: identity?.publication_memberships,
+    });
     return {
       loggedIn: !!identity,
       email: identity?.email ?? undefined,

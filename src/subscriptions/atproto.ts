@@ -1,8 +1,9 @@
 import { AtpBaseClient } from "lexicons/api";
-import { restoreOAuthSession } from "src/atproto-oauth";
+import { restoreOAuthSession, type OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
+import { Ok, Err, type Result } from "src/result";
 import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
 import {
   Notification,
@@ -15,55 +16,67 @@ import { v7 } from "uuid";
 // never be exported from a "use server" file (that would make them
 // wire-callable with any DID).
 
-// Best-effort publish of an AT Protocol subscription record for a known DID.
-// Used by the email-subscribe flow when the subscribing email is linked to an
-// atp_did: we want the user's PDS record to match their email subscription.
-// Swallows all failures — the email subscription is the source of truth and
-// must succeed regardless of whether the atproto write goes through.
+// Writes the subscription record to the DID's PDS, mirrors it into
+// publication_subscriptions, and notifies the publication owner. Idempotent:
+// an existing row short-circuits to Ok(null), so no caller has to check first.
+// Throws on a failed PDS write — subscribeToPublication surfaces that to the
+// reader; publishAtprotoSubscriptionForDid is the best-effort wrapper.
+export async function createAtprotoSubscription(
+  atp_did: string,
+  publication: string,
+): Promise<Result<{ uri: string } | null, OAuthSessionError>> {
+  let { data: existingSubscription } = await supabaseServerClient
+    .from("publication_subscriptions")
+    .select("uri")
+    .eq("identity", atp_did)
+    .eq("publication", publication)
+    .maybeSingle();
+  if (existingSubscription) return Ok(null);
+
+  const sessionResult = await restoreOAuthSession(atp_did);
+  if (!sessionResult.ok) return Err(sessionResult.error);
+  let credentialSession = sessionResult.value;
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
+
+  let record = await agent.site.standard.graph.subscription.create(
+    { repo: atp_did, rkey: TID.nextStr() },
+    { publication },
+  );
+  await supabaseServerClient.from("publication_subscriptions").insert({
+    uri: record.uri,
+    record,
+    publication,
+    identity: atp_did,
+  });
+
+  let publicationOwner = new AtUri(publication).host;
+  if (publicationOwner !== atp_did) {
+    let notification: Notification = {
+      id: v7(),
+      recipient: publicationOwner,
+      data: {
+        type: "subscribe",
+        subscription_uri: record.uri,
+      },
+    };
+    await supabaseServerClient.from("notifications").insert(notification);
+    await pingIdentityToUpdateNotification(publicationOwner);
+  }
+  return Ok({ uri: record.uri });
+}
+
+// Best-effort mirror for flows where the subscription already exists elsewhere
+// (an email subscriber row, a paid membership) and the PDS record is a copy:
+// those flows are the source of truth and must succeed whether or not the
+// atproto write goes through.
 export async function publishAtprotoSubscriptionForDid(
   atp_did: string,
   publication: string,
 ): Promise<void> {
   try {
-    let { data: existingSubscription } = await supabaseServerClient
-      .from("publication_subscriptions")
-      .select("uri")
-      .eq("identity", atp_did)
-      .eq("publication", publication)
-      .maybeSingle();
-    if (existingSubscription) return;
-
-    const sessionResult = await restoreOAuthSession(atp_did);
-    if (!sessionResult.ok) return;
-    let credentialSession = sessionResult.value;
-    let agent = new AtpBaseClient(
-      credentialSession.fetchHandler.bind(credentialSession),
-    );
-
-    let record = await agent.site.standard.graph.subscription.create(
-      { repo: atp_did, rkey: TID.nextStr() },
-      { publication },
-    );
-    await supabaseServerClient.from("publication_subscriptions").insert({
-      uri: record.uri,
-      record,
-      publication,
-      identity: atp_did,
-    });
-
-    let publicationOwner = new AtUri(publication).host;
-    if (publicationOwner !== atp_did) {
-      let notification: Notification = {
-        id: v7(),
-        recipient: publicationOwner,
-        data: {
-          type: "subscribe",
-          subscription_uri: record.uri,
-        },
-      };
-      await supabaseServerClient.from("notifications").insert(notification);
-      await pingIdentityToUpdateNotification(publicationOwner);
-    }
+    await createAtprotoSubscription(atp_did, publication);
   } catch (e) {
     console.error(
       "[publishAtprotoSubscriptionForDid] failed:",

@@ -16,11 +16,12 @@ function isActiveStatus(status: string | null | undefined): boolean {
   return status === "active" || status === "trialing";
 }
 
-// A membership activated by webhook (requires_action joins only become active
-// here) needs the same subscriber mirroring the inline join flow does.
-// respectUnsubscribed: activation events also fire on recoveries, which must
-// not override a member's deliberate email opt-out.
-async function mirrorSubscriberRecords(identityId: string, publication: string) {
+// A membership activated by webhook needs the same subscriber mirroring the
+// inline join flow does.
+async function mirrorSubscriberRecords(
+  identityId: string,
+  publication: string,
+) {
   const { data: identity } = await supabaseServerClient
     .from("identities")
     .select("id, email, atp_did")

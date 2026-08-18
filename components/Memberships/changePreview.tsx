@@ -2,13 +2,11 @@
 import { useEffect, useState } from "react";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
-  previewMembershipSwitch,
-  type MembershipSwitchPreview,
+  previewMembershipChange,
+  type MembershipChangePreview,
 } from "actions/memberships";
 import { DotLoader } from "components/utils/DotLoader";
 
-// Tier prices are stored in cents throughout, so the connected account's
-// currency only decides the symbol here.
 export function formatMoney(cents: number, currency: string): string {
   return (cents / 100).toLocaleString("en-US", {
     style: "currency",
@@ -17,23 +15,19 @@ export function formatMoney(cents: number, currency: string): string {
   });
 }
 
-export type SwitchPreviewState =
+export type ChangePreviewState =
   | { status: "loading" }
   | { status: "error" }
-  | { status: "ready"; preview: MembershipSwitchPreview };
+  | { status: "ready"; preview: MembershipChangePreview };
 
-// Quotes the selected plan change. Refetches on every selection change and
-// drops stale responses, so a slow request for a tier the reader has already
-// clicked past can't overwrite the current quote. `enabled` is false when
-// there's nothing to quote (no selection, or the current plan re-picked).
-export function useSwitchPreview(args: {
+export function useChangePreview(args: {
   enabled: boolean;
   membershipId: string;
   tierId: string;
   cadence: "month" | "year";
-}): SwitchPreviewState | null {
+}): ChangePreviewState | null {
   const { enabled, membershipId, tierId, cadence } = args;
-  const [state, setState] = useState<SwitchPreviewState | null>(null);
+  const [state, setState] = useState<ChangePreviewState | null>(null);
 
   useEffect(() => {
     if (!enabled || !tierId) {
@@ -42,7 +36,7 @@ export function useSwitchPreview(args: {
     }
     let stale = false;
     setState({ status: "loading" });
-    previewMembershipSwitch({ membershipId, tierId, cadence })
+    previewMembershipChange({ membershipId, tierId, cadence })
       .then((res) => {
         if (stale) return;
         setState(
@@ -62,18 +56,14 @@ export function useSwitchPreview(args: {
   return state;
 }
 
-// The sentence describing what a switch bills. `formattedDate` is passed in
-// because the caller's hook owns the reader's locale and timezone.
-function switchPreviewText(
-  preview: MembershipSwitchPreview,
+function changePreviewText(
+  preview: MembershipChangePreview,
   formattedDate: string,
 ): string {
   const { immediate, amountDueCents, currency, creditCents } = preview;
   const amount = formatMoney(amountDueCents, currency);
   const credit = formatMoney(creditCents, currency);
 
-  // Changing between monthly and annual restarts the billing period, so Stripe
-  // bills the new plan now, less credit for the time already paid for.
   if (immediate) {
     if (amountDueCents <= 0) {
       return creditCents > 0
@@ -87,7 +77,7 @@ function switchPreviewText(
   if (creditCents > 0) {
     return `Unused time on your current plan leaves ${credit} in credit toward future invoices. Your next invoice will be ${when} for ${amount}.`;
   }
-  return `Your next invoice will be ${when} for ${amount}, prorated for the switch.`;
+  return `Your next invoice will be ${when} for ${amount}, prorated for the change.`;
 }
 
 const PREVIEW_DATE_FORMAT: Intl.DateTimeFormatOptions = {
@@ -96,10 +86,8 @@ const PREVIEW_DATE_FORMAT: Intl.DateTimeFormatOptions = {
   day: "numeric",
 };
 
-// The one place both switch surfaces get their billing copy, so the modal and
-// the join flow can't describe the same charge differently.
-export function SwitchPreviewLine(props: {
-  state: SwitchPreviewState | null;
+export function ChangePreviewLine(props: {
+  state: ChangePreviewState | null;
   className?: string;
 }) {
   const preview =
@@ -114,9 +102,9 @@ export function SwitchPreviewLine(props: {
     props.state.status === "loading" ? (
       <DotLoader />
     ) : props.state.status === "error" ? (
-      "Switching prorates your bill — you'll see the exact amount on your next invoice."
+      "Changing plans prorates your bill. You'll see the exact amount on your next invoice."
     ) : (
-      switchPreviewText(
+      changePreviewText(
         props.state.preview,
         props.state.preview.nextInvoiceDate ? date : "",
       )

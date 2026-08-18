@@ -78,41 +78,29 @@ export async function getEmailOnlySubscriptions(): Promise<
   const identity = await getAuthIdentity();
   if (!identity) return [];
 
-  const { data: rows } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .select(
-      `publication, publications(*, publication_subscriptions(*), publication_newsletter_settings(enabled), documents_in_publications(*, documents(*)))`,
-    )
-    .eq("identity_id", identity.id)
-    .eq("state", "confirmed")
-    .order("documents(sort_date)", {
-      ascending: false,
-      referencedTable: "publications.documents_in_publications",
-    })
-    .limit(1, { referencedTable: "publications.documents_in_publications" });
-  if (!rows || rows.length === 0) return [];
+  const [{ data: emailRows }, { data: atprotoRows }] = await Promise.all([
+    supabaseServerClient
+      .from("publication_email_subscribers")
+      .select("publication")
+      .eq("identity_id", identity.id)
+      .eq("state", "confirmed"),
+    identity.atp_did
+      ? supabaseServerClient
+          .from("publication_subscriptions")
+          .select("publication")
+          .eq("identity", identity.atp_did)
+      : { data: [] },
+  ]);
 
   // Anything the viewer also holds an atproto subscription for already renders
   // in the main list; the same pub can also appear on multiple subscriber rows
-  // (merged identities with several historical emails).
-  const atprotoPubs = new Set<string>();
-  if (identity.atp_did) {
-    const { data: atprotoSubs } = await supabaseServerClient
-      .from("publication_subscriptions")
-      .select("publication")
-      .eq("identity", identity.atp_did);
-    for (const s of atprotoSubs ?? []) atprotoPubs.add(s.publication);
-  }
-  const seen = new Set<string>();
-  const emailOnly = rows.filter((r) => {
-    if (atprotoPubs.has(r.publication) || seen.has(r.publication)) return false;
-    seen.add(r.publication);
-    return true;
-  });
-
-  return (
-    await Promise.all(emailOnly.map((r) => hydratePublication(r.publications)))
-  ).filter((sub): sub is PublicationSubscription => sub !== null);
+  // (merged identities with several historical emails), which the Set folds.
+  const atprotoPubs = new Set((atprotoRows ?? []).map((s) => s.publication));
+  return getPublicationsByUris(
+    [...new Set((emailRows ?? []).map((r) => r.publication))].filter(
+      (uri) => !atprotoPubs.has(uri),
+    ),
+  );
 }
 
 // Full listing data for specific publications, in the same shape as

@@ -22,6 +22,10 @@ export function Wordmark(props: {
     <img
       src={props.wordmark.src}
       alt={props.alt || ""}
+      // Intrinsic dimensions reserve the image's space before it loads so the
+      // page doesn't shift; CSS still controls the rendered width.
+      width={props.wordmark.aspectRatio?.width}
+      height={props.wordmark.aspectRatio?.height}
       className={`pubHeaderWordmark mx-auto h-auto object-contain ${props.className || ""}`}
       style={{
         width: props.wordmark.width ? `${props.wordmark.width}px` : "auto",

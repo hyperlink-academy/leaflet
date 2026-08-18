@@ -6,12 +6,12 @@ import { useToaster } from "components/Toast";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
-  SwitchPlanModal,
-  CancelMembershipModal,
+  ChangePlanModal,
   MembershipActions,
   membershipPrice,
   isMembershipActive as isActive,
-} from "components/Memberships/SwitchPlanModal";
+} from "components/Memberships/ChangePlanModal";
+import { CancelMembershipModal } from "components/Memberships/CancelMembershipModal";
 import {
   updateWalletCard,
   updateWalletCardFromSetupIntent,
@@ -23,8 +23,9 @@ import { useIdentityData } from "components/IdentityProvider";
 import { WalletPaymentForm } from "components/Payments/WalletPaymentForm";
 import { SettingsSection } from "components/SettingsLayout";
 
-export function MembershipsTab(props: { initial: MyMembershipsData }) {
+export function BillingTab(props: { initial: MyMembershipsData }) {
   const { memberships, wallet } = props.initial;
+
   const toaster = useToaster();
   const router = useRouter();
   const [processingReturn, setProcessingReturn] = useState(false);
@@ -174,7 +175,7 @@ function WalletCardSection(props: {
 
 function MembershipRow(props: { membership: MyMembership }) {
   const m = props.membership;
-  const [switching, setSwitching] = useState(false);
+  const [changingPlan, setChangingPlan] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const renewal = useLocalizedDate(m.currentPeriodEnd ?? "", {
     year: "numeric",
@@ -184,52 +185,42 @@ function MembershipRow(props: { membership: MyMembership }) {
 
   const price = membershipPrice(m);
 
-  const statusLabel = m.cancelAtPeriodEnd
-    ? "Canceling"
-    : m.status === "past_due"
-      ? "Payment failed"
-      : isActive(m.status)
-        ? "Active"
-        : m.status === "incomplete"
-          ? "Pending"
-          : m.status ?? "Inactive";
-
   return (
-    <div className="opaque-container px-4 py-4 flex flex-col gap-2">
-      <div className="flex items-baseline justify-between gap-2">
+    <>
+      <div>
         <SpeedyLink
           href={m.publicationUrl}
           className="text-primary font-bold no-underline! hover:underline!"
         >
           {m.publicationName ?? m.publication}
         </SpeedyLink>
-        <span className="text-sm text-tertiary shrink-0">{statusLabel}</span>
-      </div>
-      <div className="text-secondary text-sm">
-        {m.tierName ?? "Membership"}
-        {price ? ` · ${price}` : ""}
-      </div>
-      {m.currentPeriodEnd && (
-        <div className="text-tertiary text-sm">
+
+        <div className="text-secondary text-sm">
+          {price && ` ${price} · `}
           {m.cancelAtPeriodEnd ? "Ends" : "Renews"} {renewal}
         </div>
-      )}
-      <div className="flex gap-2 flex-wrap pt-1">
-        <MembershipActions
-          membership={m}
-          onSwitch={() => setSwitching(true)}
-          onCancel={() => setCancelling(true)}
-        />
+        {m.currentPeriodEnd && <div className="text-tertiary text-sm"></div>}
+        <div className="flex gap-2 flex-wrap pt-2">
+          <MembershipActions
+            membership={m}
+            onChangePlan={() => setChangingPlan(true)}
+            onCancel={() => setCancelling(true)}
+          />
+        </div>
+        {changingPlan && (
+          <ChangePlanModal
+            membership={m}
+            onClose={() => setChangingPlan(false)}
+          />
+        )}
+        {cancelling && (
+          <CancelMembershipModal
+            membership={m}
+            onClose={() => setCancelling(false)}
+          />
+        )}
       </div>
-      {switching && (
-        <SwitchPlanModal membership={m} onClose={() => setSwitching(false)} />
-      )}
-      {cancelling && (
-        <CancelMembershipModal
-          membership={m}
-          onClose={() => setCancelling(false)}
-        />
-      )}
-    </div>
+      <hr className="last:hidden" />
+    </>
   );
 }

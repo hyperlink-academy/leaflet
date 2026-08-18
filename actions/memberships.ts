@@ -74,10 +74,20 @@ export async function resumeMembership(
   return setCancelAtPeriodEnd(membershipId, false);
 }
 
-export async function downgradeMembershipToFree(args: {
+async function publicationHasNewsletter(publicationUri: string) {
+  const { data } = await supabaseServerClient
+    .from("publication_newsletter_settings")
+    .select("enabled")
+    .eq("publication", publicationUri)
+    .maybeSingle();
+  return !!data?.enabled;
+}
+
+export async function changeMembershipToFree(args: {
   membershipId: string;
   publicationUri: string;
-  newsletterMode: boolean;
+
+  newsletterMode?: boolean;
 }): Promise<Result<{ subscribed: boolean }, MembershipError>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
@@ -85,8 +95,12 @@ export async function downgradeMembershipToFree(args: {
   const cancelled = await setCancelAtPeriodEnd(args.membershipId, true);
   if (!cancelled.ok) return cancelled;
 
+  const newsletterMode =
+    args.newsletterMode ??
+    (await publicationHasNewsletter(args.publicationUri));
+
   try {
-    if (args.newsletterMode && identity.email) {
+    if (newsletterMode && identity.email) {
       const res = await requestPublicationEmailSubscription(
         args.publicationUri,
         identity.email,
@@ -104,22 +118,13 @@ export async function downgradeMembershipToFree(args: {
   }
 }
 
-type SwitchArgs = {
+type ChangeArgs = {
   membershipId: string;
   tierId: string;
   cadence: "month" | "year";
 };
 
-// Everything both the preview and the switch itself need: the membership row,
-// the destination price, the subscription item being repriced, and whether the
-// billing interval changes.
-//
-// Only works between paid tiers: a free-tier "member" is just a subscriber
-// with no membership row or Stripe subscription, so a free→paid upgrade must
-// go through the join/payment flow instead (JoinMembershipFlow routes on the
-// presence of an active paid membership). If a caller gets here anyway, the
-// missing stripe_subscription_id fails as not_found here.
-async function resolveSwitchTarget(identityId: string, args: SwitchArgs) {
+async function resolveChangeTarget(identityId: string, args: ChangeArgs) {
   const m = await loadOwnedMembership(identityId, args.membershipId);
   if (!m?.stripe_subscription_id || !m.stripe_account_id)
     return Err("not_found" as const);
@@ -159,32 +164,21 @@ async function resolveSwitchTarget(identityId: string, args: SwitchArgs) {
   });
 }
 
-export type MembershipSwitchPreview = {
-  // Whether the reader is charged right now. An interval change resets the
-  // billing cycle and bills immediately; a same-interval switch only moves
-  // the prorated credit/charge onto the next renewal invoice.
+export type MembershipChangePreview = {
   immediate: boolean;
   amountDueCents: number;
   currency: string;
-  // When the next invoice lands — the date the adjustment shows up on for a
-  // deferred switch. Null for an immediate one, which bills now.
   nextInvoiceDate: string | null;
-  // Prorated credit beyond what this invoice can absorb; Stripe parks it on
-  // the customer balance and spends it on later invoices.
   creditCents: number;
 };
 
-// The exact invoice the reader would get from switchMembership, so the UI can
-// name the amount before they commit. Mirrors switchMembership's update args —
-// the two must stay in step or the quoted number is a different scenario than
-// the one that runs.
-export async function previewMembershipSwitch(
-  args: SwitchArgs,
-): Promise<Result<MembershipSwitchPreview, MembershipError>> {
+export async function previewMembershipChange(
+  args: ChangeArgs,
+): Promise<Result<MembershipChangePreview, MembershipError>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   try {
-    const resolved = await resolveSwitchTarget(identity.id, args);
+    const resolved = await resolveChangeTarget(identity.id, args);
     if (!resolved.ok) return resolved;
     const t = resolved.value;
 
@@ -210,20 +204,19 @@ export async function previewMembershipSwitch(
       creditCents: preview.total < 0 ? -preview.total : 0,
     });
   } catch (e) {
-    console.error("[memberships] switch preview failed:", e);
+    console.error("[memberships] change preview failed:", e);
     return Err("stripe_error");
   }
 }
 
-// Switch tier and/or monthly↔annual on the single subscription item.
-export async function switchMembership(
-  args: SwitchArgs,
+export async function changeMembership(
+  args: ChangeArgs,
 ): Promise<Result<null, MembershipError>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
 
   try {
-    const resolved = await resolveSwitchTarget(identity.id, args);
+    const resolved = await resolveChangeTarget(identity.id, args);
     if (!resolved.ok) return resolved;
     const t = resolved.value;
 
@@ -231,13 +224,8 @@ export async function switchMembership(
       t.subscriptionId,
       {
         items: [{ id: t.itemId, price: t.priceId }],
-        // Both are Stripe's defaults for this shape of update, pinned so the
-        // billed outcome can't drift from what previewMembershipSwitch quoted.
         proration_behavior: "create_prorations",
         billing_cycle_anchor: t.intervalChanged ? "now" : "unchanged",
-        // The subscription's metadata is what reconcileUntrackedSubscription
-        // rebuilds a lost membership row from, so leaving it on the old tier
-        // would restore the reader onto a plan they no longer pay for.
         metadata: {
           ...t.sub.metadata,
           tier_id: t.tier.id,
@@ -257,24 +245,17 @@ export async function switchMembership(
       .eq("id", args.membershipId);
     return Ok(null);
   } catch (e) {
-    console.error("[memberships] switch failed:", e);
+    console.error("[memberships] change failed:", e);
     return Err("stripe_error");
   }
 }
 
-// Save a card collected via the hosted setup Checkout to the wallet, then
-// re-clone it onto every membership's connected account and swap it in as the
-// subscription's payment method. Best-effort per membership: a failure on one
-// doesn't block the others.
 export async function updateWalletCard(
   sessionId: string,
 ): Promise<Result<{ failedPublications: string[] }, MembershipError>> {
   return applyNewWalletCard(() => walletCheckoutSessionCard(sessionId));
 }
 
-// The embedded Payment Element flow's variant of updateWalletCard: same save +
-// re-clone, sourced from a confirmed SetupIntent instead of a hosted checkout
-// session.
 export async function updateWalletCardFromSetupIntent(
   setupIntentId: string,
 ): Promise<Result<{ failedPublications: string[] }, MembershipError>> {

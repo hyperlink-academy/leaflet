@@ -374,8 +374,6 @@ export const SubscribeButton = (props: SubscribeProps) => {
   if (joinable.hasPaidTiers && joinable.tiers)
     return <PaidSubscribeButton {...props} tiers={joinable.tiers} compact />;
 
-  const showManage = user.subscribed;
-
   const subscribeTrigger = (
     <ButtonPrimary compact className="pubPageSubscribe text-sm!">
       Subscribe
@@ -384,7 +382,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
 
   return (
     <>
-      {showManage || locallySubscribed ? (
+      {user.subscribed || locallySubscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}

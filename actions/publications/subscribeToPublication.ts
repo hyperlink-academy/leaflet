@@ -1,11 +1,7 @@
 "use server";
 
-import { AtpBaseClient } from "lexicons/api";
 import { getAuthIdentity } from "src/auth";
-import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
-import { TID } from "@atproto/common";
-import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/syntax";
+import { OAuthSessionError } from "src/atproto-oauth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { after } from "next/server";
@@ -16,11 +12,7 @@ import {
 } from "src/subscriptionSource";
 import { buildOauthLoginUrl } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
-import {
-  Notification,
-  pingIdentityToUpdateNotification,
-} from "src/notifications";
-import { v7 } from "uuid";
+import { createAtprotoSubscription } from "src/subscriptions/atproto";
 
 type SubscribeResult =
   | { success: true }
@@ -54,68 +46,27 @@ export async function subscribeToPublication(
     );
   }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
-  if (!sessionResult.ok) {
-    return { success: false, error: sessionResult.error };
-  }
-  let credentialSession = sessionResult.value;
-  let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
+  const created = await createAtprotoSubscription(
+    identity.atp_did,
+    publication,
   );
-
-  let { data: existingSubscription } = await supabaseServerClient
-    .from("publication_subscriptions")
-    .select("uri")
-    .eq("identity", credentialSession.did!)
-    .eq("publication", publication)
-    .maybeSingle();
-  if (existingSubscription) {
-    return { success: true };
-  }
-
-  let record = await agent.site.standard.graph.subscription.create(
-    { repo: credentialSession.did!, rkey: TID.nextStr() },
-    {
-      publication,
-    },
-  );
-  let { error } = await supabaseServerClient
-    .from("publication_subscriptions")
-    .insert({
-      uri: record.uri,
-      record,
-      publication,
-      identity: credentialSession.did!,
-    });
-
-  after(() =>
-    trackSubscriptionEvent({
-      event: "subscribe",
-      method: "atproto",
-      origin: "app",
-      publicationUri: publication,
-      subscriberDid: credentialSession.did,
-      recordUri: record.uri,
-      source: subscribeSource,
-    }),
-  );
-
-  // Create notification for the publication owner
-  let publicationOwner = new AtUri(publication).host;
-  if (publicationOwner !== credentialSession.did) {
-    let notification: Notification = {
-      id: v7(),
-      recipient: publicationOwner,
-      data: {
-        type: "subscribe",
-        subscription_uri: record.uri,
-      },
-    };
-    await supabaseServerClient.from("notifications").insert(notification);
-    await pingIdentityToUpdateNotification(publicationOwner);
+  if (!created.ok) return { success: false, error: created.error };
+  // Null when a subscription already existed, which isn't a new subscribe.
+  if (created.value) {
+    let recordUri = created.value.uri;
+    let subscriberDid = identity.atp_did;
+    after(() =>
+      trackSubscriptionEvent({
+        event: "subscribe",
+        method: "atproto",
+        origin: "app",
+        publicationUri: publication,
+        subscriberDid,
+        recordUri,
+        source: subscribeSource,
+      }),
+    );
   }
 
-  return {
-    success: true,
-  };
+  return { success: true };
 }

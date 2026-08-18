@@ -33,6 +33,18 @@ export const PubLeafletThemeWordmark = {
           maxSize: 1000000,
         },
         width: { type: "integer" },
+        aspectRatio: {
+          type: "ref",
+          ref: "#aspectRatio",
+        },
+      },
+    },
+    aspectRatio: {
+      type: "object",
+      required: ["width", "height"],
+      properties: {
+        width: { type: "integer" },
+        height: { type: "integer" },
       },
     },
   },

@@ -13,67 +13,102 @@ import {
   type SubscriptionSource,
 } from "src/subscriptionSource";
 
-export async function recordEmailSubscription(
-  publicationUri: string,
-  email: string,
-  identityId: string,
-  source?: SubscriptionSource | null,
-): Promise<Result<null, "database_error">> {
+// Upserts the subscriber row for (publication, email) and logs the pair of
+// events every subscription attempt produces: how the subscriber entered — an
+// address that previously unsubscribed re-enters as a resubscribe rather than a
+// fresh request — and what just happened to them. Shared by the code
+// round-trip's `pending` row and the confirmed row every other path writes.
+export async function upsertSubscriber(args: {
+  publicationUri: string;
+  email: string;
+  identityId: string | null;
+  state: "pending" | "confirmed";
+  confirmationCode: string | null;
+  event: "confirmation_sent" | "confirmed";
+}): Promise<Result<{ id: string }, "database_error">> {
   const { data: existing } = await supabaseServerClient
     .from("publication_email_subscribers")
     .select("state")
-    .eq("publication", publicationUri)
-    .eq("email", email)
+    .eq("publication", args.publicationUri)
+    .eq("email", args.email)
     .maybeSingle();
-  const wasUnsubscribed = existing?.state === "unsubscribed";
+  const entryEvent =
+    existing?.state === "unsubscribed" ? "resubscribed" : "subscribe_requested";
 
   const { data: subscriber, error } = await supabaseServerClient
     .from("publication_email_subscribers")
     .upsert(
       {
-        publication: publicationUri,
-        email,
-        identity_id: identityId,
-        state: "confirmed",
-        confirmation_code: null,
-        confirmed_at: new Date().toISOString(),
+        publication: args.publicationUri,
+        email: args.email,
+        identity_id: args.identityId,
+        state: args.state,
+        confirmation_code: args.confirmationCode,
         unsubscribed_at: null,
+        ...(args.state === "confirmed"
+          ? { confirmed_at: new Date().toISOString() }
+          : {}),
       },
       { onConflict: "publication,email" },
     )
     .select("id")
     .single();
   if (error || !subscriber) {
-    console.error("[recordEmailSubscription] upsert failed:", error);
+    console.error("[upsertSubscriber] upsert failed:", error);
     return Err("database_error");
   }
 
   const { error: eventsError } = await supabaseServerClient
     .from("publication_email_subscriber_events")
-    .insert([
-      {
+    .insert(
+      [entryEvent, args.event].map((event_type) => ({
         subscriber: subscriber.id,
-        publication: publicationUri,
-        event_type: wasUnsubscribed ? "resubscribed" : "subscribe_requested",
-      },
-      {
-        subscriber: subscriber.id,
-        publication: publicationUri,
-        event_type: "confirmed",
-      },
-    ]);
+        publication: args.publicationUri,
+        event_type,
+      })),
+    );
   if (eventsError) {
-    console.error("[recordEmailSubscription] events failed:", eventsError);
+    console.error("[upsertSubscriber] events failed:", eventsError);
     return Err("database_error");
   }
+  return Ok(subscriber);
+}
 
+export async function recordEmailSubscription(
+  publicationUri: string,
+  email: string,
+  identityId: string,
+  source?: SubscriptionSource | null,
+): Promise<Result<null, "database_error">> {
+  const upserted = await upsertSubscriber({
+    publicationUri,
+    email,
+    identityId,
+    state: "confirmed",
+    confirmationCode: null,
+    event: "confirmed",
+  });
+  if (!upserted.ok) return upserted;
+
+  await onEmailSubscriptionConfirmed(publicationUri, email, identityId, source);
+  return Ok(null);
+}
+
+// The tail every path that lands a subscriber row on `confirmed` shares: the
+// analytics event, and the PDS record for a linked atproto account. That
+// record mirrors the same subscription rather than adding a second one, so
+// only the email event is tracked.
+export async function onEmailSubscriptionConfirmed(
+  publicationUri: string,
+  email: string,
+  identityId: string,
+  source?: SubscriptionSource | null,
+): Promise<void> {
   const { data: confirmedIdentity } = await supabaseServerClient
     .from("identities")
     .select("atp_did")
     .eq("id", identityId)
     .maybeSingle();
-  // The atproto mirror below is the same subscription, not a second one — only
-  // the email event is tracked.
   after(() =>
     trackSubscriptionEvent({
       event: "subscribe",
@@ -85,29 +120,53 @@ export async function recordEmailSubscription(
       source,
     }),
   );
-
-  if (confirmedIdentity?.atp_did) {
+  if (confirmedIdentity?.atp_did)
     await publishAtprotoSubscriptionForDid(
       confirmedIdentity.atp_did,
       publicationUri,
     );
-  }
-
-  return Ok(null);
 }
 
-// Flips the given subscriber rows to `unsubscribed` and logs events. This is
-// both "turn off email notifications" and the email half of a full
-// unsubscribe: with the atproto record carrying "subscribed" for linked
-// accounts, an email row's only job is delivery, so muting and unsubscribing
-// the email channel are the same state. Re-enabling goes back through
-// recordEmailSubscription (the resubscribe path), which restores `confirmed`.
-export async function disableEmailRows(
+// Flips every still-active subscriber row for this publication to
+// `unsubscribed` and logs the events. This is both "turn off email
+// notifications" and the email half of a full unsubscribe: with the atproto
+// record carrying "subscribed" for linked accounts, an email row's only job is
+// delivery, so muting and unsubscribing the email channel are the same state.
+// Re-enabling goes back through recordEmailSubscription (the resubscribe
+// path), which restores `confirmed`.
+//
+// Rows come from the identity — which may own several historically (different
+// emails tied to the same identity, e.g. a linked address that predates an
+// email change), so one click stops all future mail — plus any `extraRows`
+// resolved outside it, i.e. the row an unsubscribe token points at, which may
+// have no identity at all.
+export async function disableEmailSubscription(
   publicationUri: string,
-  rowIds: string[],
-  tracking: { atp_did?: string | null; email?: string | null },
+  identity: {
+    id?: string | null;
+    atp_did?: string | null;
+    email?: string | null;
+  } | null,
+  extraRows?: { id: string; state: string }[],
 ): Promise<Result<null, "database_error">> {
+  const rows = [...(extraRows ?? [])];
+  if (identity?.id) {
+    const { data, error } = await supabaseServerClient
+      .from("publication_email_subscribers")
+      .select("id, state")
+      .eq("publication", publicationUri)
+      .eq("identity_id", identity.id);
+    if (error) {
+      console.error("[disableEmailSubscription] read failed:", error);
+      return Err("database_error");
+    }
+    rows.push(...(data ?? []));
+  }
+  const rowIds = [
+    ...new Set(rows.filter((r) => r.state !== "unsubscribed").map((r) => r.id)),
+  ];
   if (rowIds.length === 0) return Ok(null);
+
   const nowIso = new Date().toISOString();
   const [{ error: updateError }, { error: eventError }] = await Promise.all([
     supabaseServerClient
@@ -128,7 +187,7 @@ export async function disableEmailRows(
   ]);
   if (updateError || eventError) {
     console.error(
-      "[disableEmailRows] update/event failed:",
+      "[disableEmailSubscription] update/event failed:",
       updateError ?? eventError,
     );
     return Err("database_error");
@@ -139,35 +198,11 @@ export async function disableEmailRows(
       method: "email",
       origin: "app",
       publicationUri,
-      subscriberDid: tracking.atp_did,
-      subscriberEmail: tracking.email,
+      subscriberDid: identity?.atp_did,
+      subscriberEmail: identity?.email,
     }),
   );
   return Ok(null);
-}
-
-// Identity may have multiple matching subscriber rows historically (different
-// emails tied to the same identity, e.g. a linked address that predates an
-// email change) — act on all of them so one click stops all future mail.
-export async function disableEmailForIdentity(
-  publicationUri: string,
-  identity: { id: string; atp_did: string | null; email: string | null },
-): Promise<Result<null, "database_error">> {
-  const { data: subscribers, error } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .select("id, state")
-    .eq("publication", publicationUri)
-    .eq("identity_id", identity.id);
-  if (error) {
-    console.error("[disableEmailForIdentity] read failed:", error);
-    return Err("database_error");
-  }
-  const active = (subscribers ?? []).filter((s) => s.state !== "unsubscribed");
-  return disableEmailRows(
-    publicationUri,
-    active.map((s) => s.id),
-    identity,
-  );
 }
 
 export async function checkEmailSubscriptionAllowed(
