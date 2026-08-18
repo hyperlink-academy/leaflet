@@ -25,6 +25,7 @@ export async function copyLeafletContents({
   title,
   description,
   markAsCopy,
+  facts,
   tailCte,
 }: {
   rootEntity: string;
@@ -33,12 +34,14 @@ export async function copyLeafletContents({
   // Write a "(Copy)" marker into the leaflet's title block, for copies whose
   // title lives in the document itself rather than in metadata.
   markAsCopy?: boolean;
+  facts?: Fact<Attribute>[];
   tailCte?: (ids: { permTokenId: string; rootEntityId: string }) => SQL;
 }): Promise<{ permTokenId: string; rootEntityId: string }> {
-  let { data } = await supabaseServerClient.rpc("get_facts", {
-    root: rootEntity,
-  });
-  let sourceFacts = (data as unknown as Fact<Attribute>[]) || [];
+  let sourceFacts =
+    facts ??
+    (((await supabaseServerClient.rpc("get_facts", { root: rootEntity }))
+      .data as unknown as Fact<Attribute>[]) ||
+      []);
   if (markAsCopy) sourceFacts = markTitleBlockAsCopy(sourceFacts, rootEntity);
 
   // Map reference targets as well as fact subjects: an entity that has no
