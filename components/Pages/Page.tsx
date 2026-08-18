@@ -11,6 +11,7 @@ import { DesktopPageFooter } from "../DesktopFooter";
 import { Canvas } from "../Canvas";
 import { Blocks } from "components/Blocks";
 import { PublicationMetadata } from "./PublicationMetadata";
+import { InlineVersionBanner } from "components/VersionBanner";
 import { useLeafletPublicationPage } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "./useCardBorderHidden";
 import { focusPage } from "src/utils/focusPage";
@@ -99,6 +100,7 @@ export function Page(props: {
             {props.first && pageType === "doc" && !publicationPage && (
               <PublicationMetadata />
             )}
+            {props.first && pageType === "doc" && <InlineVersionBanner />}
             <PageContent entityID={props.entityID} first={props.first} />
           </PageWrapper>
           <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
