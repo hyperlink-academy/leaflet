@@ -185,6 +185,41 @@ export const permission_tokens = pgTable("permission_tokens", {
 	description: text("description"),
 });
 
+export const document_versions = pgTable("document_versions", {
+	id: uuid("id").primaryKey().notNull(),
+	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	kind: text("kind").default('named').notNull(),
+	name: text("name"),
+	author_did: text("author_did"),
+	closure_hash: text("closure_hash").notNull(),
+	snapshot: jsonb("snapshot"),
+	snapshot_path: text("snapshot_path"),
+	fact_count: integer("fact_count").notNull(),
+	byte_size: integer("byte_size").notNull(),
+},
+(table) => {
+	return {
+		token_created_at_idx: index("document_versions_token_created_at_idx").on(table.token, table.created_at),
+	}
+});
+
+export const document_version_blob_refs = pgTable("document_version_blob_refs", {
+	version: uuid("version").notNull().references(() => document_versions.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	path: text("path").notNull(),
+},
+(table) => {
+	return {
+		path_idx: index("document_version_blob_refs_path_idx").on(table.path),
+		document_version_blob_refs_pkey: primaryKey({ columns: [table.version, table.path], name: "document_version_blob_refs_pkey"}),
+	}
+});
+
+export const blob_cleanup_queue = pgTable("blob_cleanup_queue", {
+	path: text("path").primaryKey().notNull(),
+	queued_at: timestamp("queued_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
 export const user_subscriptions = pgTable("user_subscriptions", {
 	identity_id: uuid("identity_id").primaryKey().notNull().references(() => identities.id, { onDelete: "cascade" } ),
 	stripe_customer_id: text("stripe_customer_id").notNull(),
