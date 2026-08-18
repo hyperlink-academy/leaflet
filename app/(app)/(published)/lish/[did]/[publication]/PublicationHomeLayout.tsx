@@ -86,7 +86,7 @@ export function PublicationHomeLayout(props: {
           the archive, which infinite scroll otherwise hides past the first
           batch. Built off publicationUrl like the nav tabs, so it resolves on
           custom domains too. */}
-      <div className="pubFooter text-center pb-4">
+      <div className="pubFooter text-center pb-4 hidden">
         <SpeedyLink
           href={`${props.publicationUrl.replace(/\/+$/, "")}/archive`}
           className="text-sm text-tertiary hover:text-accent-contrast"

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
-import { Modal } from "components/Modal";
+import { Modal, useModalBack } from "components/Modal";
 import { useToaster } from "components/Toast";
 import {
   changeMembershipToFree,
@@ -12,12 +12,13 @@ import {
   changeMembership,
   type MyMembership,
 } from "actions/memberships";
-import { TierChangeConfirmModal } from "components/Memberships/TierChangeConfirmModal";
+import { TierChangeConfirm } from "components/Memberships/TierChangeConfirm";
 import { useJoinableTiers } from "components/Memberships/useJoinableTiers";
 import {
   TierGrid,
   formatPrice,
   isFreeTier,
+  effectiveCadence,
   type Tier,
   type Cadence,
 } from "components/Memberships/TierGrid";
@@ -130,9 +131,7 @@ export function ChangePlanForm(props: {
   );
   const [confirmTier, setConfirmTier] = useState<Tier | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const effectiveCadence = (tier: Tier): Cadence =>
-    tier.annual_price_cents != null ? cadence : "month";
+  useModalBack(confirmTier ? () => setConfirmTier(null) : null);
 
   const finish = (message: string) => {
     toaster({ type: "success", content: message });
@@ -148,7 +147,7 @@ export function ChangePlanForm(props: {
     const res = await changeMembership({
       membershipId: m.id,
       tierId: tier.id,
-      cadence: effectiveCadence(tier),
+      cadence: effectiveCadence(tier, cadence),
     });
     setSaving(false);
     if (!res.ok) {
@@ -190,6 +189,21 @@ export function ChangePlanForm(props: {
       </div>
     );
 
+  if (confirmTier)
+    return (
+      <TierChangeConfirm
+        membership={m}
+        tiers={tiers}
+        newTier={confirmTier}
+        cadence={effectiveCadence(confirmTier, cadence)}
+        busy={saving}
+        onConfirm={() =>
+          isFreeTier(confirmTier) ? downgrade() : save(confirmTier)
+        }
+        onClose={() => setConfirmTier(null)}
+      />
+    );
+
   return (
     <div className="flex flex-col gap-3 max-w-3xl">
       {tiers.length > 0 ? (
@@ -198,7 +212,7 @@ export function ChangePlanForm(props: {
             tiers={tiers}
             cadence={cadence}
             onCadenceChange={setCadence}
-            busyTierId={saving ? confirmTier?.id ?? null : null}
+            busyTierId={null}
             isSubscribed
             currentTierId={m.tierId}
             onSelectTier={setConfirmTier}
@@ -211,22 +225,6 @@ export function ChangePlanForm(props: {
         <p className="text-tertiary text-sm text-center py-4 italic">
           This publication doesn't have any other plans right now.
         </p>
-      )}
-
-      {confirmTier && (
-        <TierChangeConfirmModal
-          membershipId={m.id}
-          currentTier={tiers.find((t) => t.id === m.tierId)}
-          currentCadence={m.cadence === "year" ? "year" : "month"}
-          newTier={confirmTier}
-          cadence={effectiveCadence(confirmTier)}
-          periodEnd={m.currentPeriodEnd}
-          busy={saving}
-          onConfirm={() =>
-            isFreeTier(confirmTier) ? downgrade() : save(confirmTier)
-          }
-          onClose={() => setConfirmTier(null)}
-        />
       )}
     </div>
   );

@@ -57,6 +57,9 @@ export function subscribeErrorMessage(error: string): string {
   }
 }
 
+export const effectiveCadence = (tier: Tier, cadence: Cadence): Cadence =>
+  tier.annual_price_cents != null ? cadence : "month";
+
 export function TierGrid(props: {
   tiers: Tier[];
   cadence: Cadence;
@@ -72,8 +75,6 @@ export function TierGrid(props: {
   onSelectTier: (tier: Tier) => void;
 }) {
   const hasAnnual = props.tiers.some((t) => t.annual_price_cents != null);
-  const effectiveCadence = (tier: Tier): Cadence =>
-    tier.annual_price_cents != null ? props.cadence : "month";
   const renderTiers = [...props.tiers].sort(
     (a, b) =>
       tierPriceCents(a, props.cadence) - tierPriceCents(b, props.cadence),
@@ -91,7 +92,7 @@ export function TierGrid(props: {
       : null;
 
   const paidLabel = (tier: Tier) => {
-    const price = tierPriceLabel(tier, effectiveCadence(tier));
+    const price = tierPriceLabel(tier, effectiveCadence(tier, props.cadence));
     if (currentMonthlyCents == null) return `Join for ${price}`;
     if (tier.monthly_price_cents > currentMonthlyCents)
       return `Upgrade for ${price}`;

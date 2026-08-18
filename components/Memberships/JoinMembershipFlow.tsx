@@ -21,13 +21,13 @@ import { SUBSCRIBE_ERROR_MESSAGES } from "components/Subscribe/subscribeErrors";
 import {
   TierGrid,
   isFreeTier,
+  effectiveCadence,
   subscribeErrorMessage,
   tierPriceLabel,
   type Tier,
   type Cadence,
 } from "components/Memberships/TierGrid";
 import { type JoinResume } from "components/Memberships/joinReturn";
-import { TierChangeConfirmModal } from "components/Memberships/TierChangeConfirmModal";
 import {
   getMembershipJoinViewer,
   subscribeToTier,
@@ -36,7 +36,6 @@ import {
 } from "actions/publications/joinMembership";
 import { saveWalletCardFromSetupIntent } from "actions/walletPayment";
 import { WalletPaymentForm } from "components/Payments/WalletPaymentForm";
-import { changeMembershipToFree, changeMembership } from "actions/memberships";
 import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
@@ -109,7 +108,6 @@ export function JoinMembershipFlow(props: {
   const [linkTier, setLinkTier] = useState<Tier | null>(null);
   const [inputMissing, setInputMissing] = useState(false);
 
-  const [confirmChange, setConfirmChange] = useState<Tier | null>(null);
   const [cardStep, setCardStep] = useState<{
     tier: Tier;
     cadence: Cadence;
@@ -122,8 +120,6 @@ export function JoinMembershipFlow(props: {
   // flow is open, so completing a join doesn't flash a loading spinner.
   useSubscribeSuccessData(props.active ? props.publicationUri : undefined);
 
-  const effectiveCadence = (tier: Tier): Cadence =>
-    tier.annual_price_cents != null ? cadence : "month";
   const isSubscribed = viewerSub.subscribed;
   const hasNeededIdentity = props.newsletterMode
     ? !!identity?.email
@@ -172,7 +168,7 @@ export function JoinMembershipFlow(props: {
     url.searchParams.delete("join_cadence");
     if (!isFreeTier(tier)) {
       url.searchParams.set("join_tier", tier.id);
-      url.searchParams.set("join_cadence", effectiveCadence(tier));
+      url.searchParams.set("join_cadence", effectiveCadence(tier, cadence));
     }
     return url.toString();
   };
@@ -234,7 +230,7 @@ export function JoinMembershipFlow(props: {
     v?: MembershipJoinViewer | null,
     cadenceOverride?: Cadence | null,
   ) => {
-    const joinCadence = cadenceOverride ?? effectiveCadence(tier);
+    const joinCadence = cadenceOverride ?? effectiveCadence(tier, cadence);
     if (v && !viewer) setViewer(v);
     setCardStep({ tier, cadence: joinCadence });
   };
@@ -332,55 +328,6 @@ export function JoinMembershipFlow(props: {
       }
     }
     finishJoin("You're subscribed!");
-  };
-
-  // Prorated in-place change for an active paid membership.
-  const runChange = async (tier: Tier) => {
-    const m = viewer?.membership;
-    if (!m) return;
-    setBusyTierId(tier.id);
-    const res = await changeMembership({
-      membershipId: m.id,
-      tierId: tier.id,
-      cadence: effectiveCadence(tier),
-    });
-    setBusyTierId(null);
-    if (!res.ok) {
-      toaster({
-        type: "error",
-        content: "We couldn't change your plan. Please try again!",
-      });
-      return;
-    }
-    setConfirmChange(null);
-    finishJoin("Updated your plan!");
-  };
-
-  // Paid access runs to the period's end, so the reader stays a member for now
-  // and lands on free after — the server owns both halves of that transition.
-  const downgradeToFree = async (tier: Tier) => {
-    const m = viewer?.membership;
-    if (!m) return;
-    setBusyTierId(tier.id);
-    const res = await changeMembershipToFree({
-      membershipId: m.id,
-      publicationUri: props.publicationUri,
-      newsletterMode: props.newsletterMode,
-    });
-    if (!res.ok) {
-      setBusyTierId(null);
-      toaster({
-        type: "error",
-        content: "We couldn't downgrade your plan. Please try again!",
-      });
-      return;
-    }
-    setConfirmChange(null);
-    finishJoin(
-      res.value.subscribed
-        ? "You'll move to the free plan at the end of your billing period."
-        : "Your membership expires at the end of your billing period.",
-    );
   };
 
   // Signed-out email joins mint a session with an auth code confirmed right
@@ -513,8 +460,6 @@ export function JoinMembershipFlow(props: {
     if (busyTierId || processing) return;
     const free = isFreeTier(tier);
 
-    if (viewer?.membership) return setConfirmChange(tier);
-
     if (identity) {
       if (hasNeededIdentity) return free ? freeJoin(tier) : payWithViewer(tier);
       if (mode === "email" ? !validEmail(email) : !handle.trim())
@@ -585,6 +530,21 @@ export function JoinMembershipFlow(props: {
         <div className="px-4 py-6 text-center text-secondary">
           This is your publication — readers see your membership tiers here.
         </div>
+      ) : viewer?.membership ? (
+        <div className="px-4 py-6 flex flex-col gap-2 text-center text-secondary">
+          <p>
+            You&apos;re already a member — change or cancel your plan from the
+            publication&apos;s subscribe menu.
+          </p>
+          {props.publicationUrl && (
+            <a
+              href={props.publicationUrl}
+              className="font-bold text-accent-contrast"
+            >
+              Go to {props.publicationName}
+            </a>
+          )}
+        </div>
       ) : (
         <div className="memberSignUp flex flex-col max-w-3xl">
           <div className="text-center flex flex-col gap-1 max-w-md mx-auto">
@@ -640,17 +600,11 @@ export function JoinMembershipFlow(props: {
             onCadenceChange={setCadence}
             busyTierId={busyTierId}
             isSubscribed={isSubscribed}
-            currentTierId={viewer?.membership?.tierId}
             unlocksPost={props.unlocksPost}
             unlocksPostTierIds={props.unlocksPostTierIds}
             onSelectTier={selectTier}
           />{" "}
-          {viewer?.membership ? (
-            <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
-              Changing plans prorates your bill — pick a plan to see what it
-              costs before confirming.
-            </p>
-          ) : !identity ? (
+          {!identity ? (
             <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
               Already Subscribed?{" "}
               <LoginModal trigger={<div className="underline">Sign in</div>} />
@@ -678,27 +632,6 @@ export function JoinMembershipFlow(props: {
             if (mode === "email") await sendPubCode(tier);
             else redirectToOauthJoin(tier, true);
           }}
-        />
-      )}
-      {confirmChange && viewer?.membership && (
-        <TierChangeConfirmModal
-          membershipId={viewer.membership.id}
-          currentTier={props.tiers.find(
-            (t) => t.id === viewer.membership?.tierId,
-          )}
-          currentCadence={
-            viewer.membership.cadence === "year" ? "year" : "month"
-          }
-          newTier={confirmChange}
-          cadence={effectiveCadence(confirmChange)}
-          periodEnd={viewer.membership.currentPeriodEnd ?? null}
-          busy={busyTierId !== null}
-          onConfirm={() =>
-            isFreeTier(confirmChange)
-              ? downgradeToFree(confirmChange)
-              : runChange(confirmChange)
-          }
-          onClose={() => setConfirmChange(null)}
         />
       )}
     </>

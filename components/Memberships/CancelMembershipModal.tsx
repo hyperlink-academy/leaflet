@@ -24,7 +24,7 @@ export function CancelMembershipModal(props: {
       open
       onOpenChange={(o) => !o && props.onClose()}
       title="Cancel Membership?"
-      className="max-w-full w-sm"
+      className="max-w-full w-sm text-center"
     >
       <CancelMembershipForm
         membership={props.membership}
@@ -44,7 +44,7 @@ export function CancelMembershipForm(props: {
   const toaster = useToaster();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [canceled, setCanceled] = useState(false);
+  const [canceled, setCanceled] = useState(m.cancelAtPeriodEnd);
   const endDate = useLocalizedDate(m.currentPeriodEnd ?? "", {
     year: "numeric",
     month: "short",
@@ -80,7 +80,10 @@ export function CancelMembershipForm(props: {
       });
       return;
     }
-    toaster({ type: "success", content: "Unsubscribed!" });
+    toaster({
+      type: "success",
+      content: "Unsubscribed from updates.",
+    });
     mutateMyMembership(m.publication);
     props.onSuccess();
     refreshIdentityData();
@@ -90,28 +93,23 @@ export function CancelMembershipForm(props: {
   if (canceled)
     return (
       <div className="flex flex-col gap-3 text-center justify-center">
-        <div className="text-secondary leading-snug flex flex-col gap-2">
-          <strong>You&apos;ve cancelled your membership</strong>
+        <div className="text-secondary leading-snug flex flex-col">
+          <strong>Your membership has been cancelled.</strong>
           <p>
             You will continue to receive updates until{" "}
             <strong>
               {m.currentPeriodEnd ? endDate : "the end of your billing period"}
             </strong>
-            . Click here to stop recieving updates
+            . Stop receiving updates now?
           </p>
         </div>
-        <div className="flex gap-2 justify-between">
-          <ButtonTertiary type="button" disabled={busy} onClick={unsubscribe}>
-            {busy ? <DotLoader /> : "Unsubscribe"}
-          </ButtonTertiary>
-          <ButtonPrimary
-            type="button"
-            disabled={busy}
-            onClick={props.onSuccess}
-          >
-            Close
-          </ButtonPrimary>
-        </div>
+        <ButtonTertiary type="button" disabled={busy} onClick={unsubscribe}>
+          {busy ? <DotLoader /> : "Stop Updates"}
+        </ButtonTertiary>
+        <hr />
+        <ButtonPrimary type="button" disabled={busy} onClick={props.onSuccess}>
+          Close
+        </ButtonPrimary>
       </div>
     );
 

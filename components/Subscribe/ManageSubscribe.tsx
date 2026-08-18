@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { GoToArrow } from "components/Icons/GoToArrow";
-import { Modal } from "components/Modal";
+import { Modal, useModalBack } from "components/Modal";
 import { Toggle } from "components/Toggle";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
@@ -38,10 +38,6 @@ const BLUESKY_FEED_URL =
 const prefClassName =
   "flex gap-2 justify-between font-bold text-secondary items-center";
 
-// The manage link in newsletter emails lands back on the publication with
-// ?manage_subscription=1 (after a pass through email-login) so the panel opens
-// without hunting for the button. Several surfaces on one page can mount this
-// component; stripping the param claims it, so only the first one opens.
 function readManageSubscriptionReturn(): boolean {
   if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
@@ -56,6 +52,8 @@ function readManageSubscriptionReturn(): boolean {
   return true;
 }
 
+type ModalContent = { type: "change" | "cancel"; membership: MyMembership };
+
 export const ManageSubscription = (props: {
   publicationUri: string;
   publicationUrl?: string;
@@ -63,18 +61,14 @@ export const ManageSubscription = (props: {
   user: ViewerUser;
 }) => {
   let [open, setOpen] = useState(false);
-  let [membershipView, setMembershipView] = useState<{
-    type: "change" | "cancel";
-    membership: MyMembership;
-  } | null>(null);
+  let [modalState, setModalState] = useState<ModalContent | null>(null);
 
   useEffect(() => {
     if (readManageSubscriptionReturn()) setOpen(true);
   }, []);
 
-  const closeMembershipView = () => setMembershipView(null);
   const onMembershipChanged = () => {
-    setMembershipView(null);
+    setModalState(null);
     mutateMyMembership(props.publicationUri);
   };
 
@@ -84,23 +78,24 @@ export const ManageSubscription = (props: {
       open={open}
       title={
         <div className="relative mb-2 mx-auto text-center">
-          {membershipView?.type === "change"
+          {modalState?.type === "change"
             ? "Change Membership"
-            : membershipView?.type === "cancel"
-              ? "Cancel Membership"
+            : modalState?.type === "cancel"
+              ? modalState.membership.cancelAtPeriodEnd
+                ? "Membership Cancelled"
+                : "Cancel Membership"
               : "Manage Subscription"}
         </div>
       }
       className={
-        membershipView?.type === "change"
+        modalState?.type === "change"
           ? "w-fit max-w-full bg-[var(--color-bg-light)]!"
           : "w-md max-w-full"
       }
       onOpenChange={(o) => {
         setOpen(o);
-        if (!o) setMembershipView(null);
+        if (!o) setModalState(null);
       }}
-      onBack={membershipView ? closeMembershipView : undefined}
       sheetOnMobile
       trigger={
         <button
@@ -114,34 +109,53 @@ export const ManageSubscription = (props: {
         </button>
       }
     >
-      {membershipView?.type === "change" ? (
-        <ChangePlanForm
-          membership={membershipView.membership}
-          onSuccess={onMembershipChanged}
-        />
-      ) : membershipView?.type === "cancel" ? (
-        <CancelMembershipForm
-          membership={membershipView.membership}
-          onSuccess={onMembershipChanged}
-          onBack={closeMembershipView}
-        />
-      ) : (
-        <ManageSubscriptionContent
-          {...props}
-          onChangePlan={(membership) =>
-            setMembershipView({ type: "change", membership })
-          }
-          onCancel={(membership) =>
-            setMembershipView({ type: "cancel", membership })
-          }
-        />
-      )}
+      <ModalContent
+        {...props}
+        state={modalState}
+        setState={setModalState}
+        onSuccess={onMembershipChanged}
+      />
     </Modal>
   );
 };
 
-// Rendered inside the modal, so the membership fetch only fires when it's
-// opened; SWR keeps the result cached across opens and view swaps.
+const ModalContent = ({
+  state,
+  setState,
+  onSuccess,
+  ...content
+}: {
+  publicationUri: string;
+  publicationUrl?: string;
+  newsletterMode: boolean;
+  user: ViewerUser;
+  state: ModalContent | null;
+  setState: (state: ModalContent | null) => void;
+  onSuccess: () => void;
+}) => {
+  const back = () => setState(null);
+  useModalBack(state ? back : null);
+
+  if (!state)
+    return (
+      <ManageSubscriptionContent
+        {...content}
+        onChangePlan={(membership) => setState({ type: "change", membership })}
+        onCancel={(membership) => setState({ type: "cancel", membership })}
+      />
+    );
+
+  return state.type === "change" ? (
+    <ChangePlanForm membership={state.membership} onSuccess={onSuccess} />
+  ) : (
+    <CancelMembershipForm
+      membership={state.membership}
+      onSuccess={onSuccess}
+      onBack={back}
+    />
+  );
+};
+
 const ManageSubscriptionContent = (props: {
   publicationUri: string;
   publicationUrl?: string;
@@ -157,7 +171,6 @@ const ManageSubscriptionContent = (props: {
   let [linkRequesting, setLinkRequesting] = useState(false);
   let [linkConfirming, setLinkConfirming] = useState(false);
   let [unsubscribing, setUnsubscribing] = useState(false);
-  let [confirmForfeit, setConfirmForfeit] = useState(false);
   let [emailOverride, setEmailOverride] = useState<boolean | null>(null);
   let toaster = useToaster();
   let router = useRouter();
@@ -231,10 +244,10 @@ const ManageSubscriptionContent = (props: {
     refreshSubscription();
   };
 
-  const onUnsubscribe = async (opts?: { cancelPaidImmediately?: boolean }) => {
+  const onUnsubscribe = async () => {
     if (unsubscribing) return;
     setUnsubscribing(true);
-    const res = await unsubscribeFromPublication(props.publicationUri, opts);
+    const res = await unsubscribeFromPublication(props.publicationUri);
     setUnsubscribing(false);
     if (!res.ok) {
       notifyError(res.error, "We couldn't unsubscribe you. Please try again!");
@@ -364,73 +377,25 @@ const ManageSubscriptionContent = (props: {
 
       <hr className="border-border-light my-2" />
       {activeMembership && !pendingCancellation ? (
-        <>
-          <ButtonSecondary
-            fullWidth
-            onClick={() => props.onCancel(activeMembership)}
-          >
-            Cancel Membership
-          </ButtonSecondary>
-        </>
-      ) : pendingCancellation && confirmForfeit ? (
-        <ForfeitConfirm
-          membership={pendingCancellation}
-          unsubscribing={unsubscribing}
-          onBack={() => setConfirmForfeit(false)}
-          onConfirm={() => onUnsubscribe({ cancelPaidImmediately: true })}
-        />
+        <ButtonSecondary
+          fullWidth
+          onClick={() => props.onCancel(activeMembership)}
+        >
+          Cancel Membership
+        </ButtonSecondary>
       ) : (
         <ButtonSecondary
           fullWidth
           disabled={unsubscribing}
           onClick={() =>
-            pendingCancellation ? setConfirmForfeit(true) : onUnsubscribe()
+            pendingCancellation
+              ? props.onCancel(pendingCancellation)
+              : onUnsubscribe()
           }
         >
           {unsubscribing ? "Unsubscribing…" : "Unsubscribe"}
         </ButtonSecondary>
       )}
-    </div>
-  );
-};
-
-const ForfeitConfirm = (props: {
-  membership: MyMembership;
-  unsubscribing: boolean;
-  onBack: () => void;
-  onConfirm: () => void;
-}) => {
-  const endDate = useLocalizedDate(props.membership.currentPeriodEnd ?? "", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-secondary text-sm leading-snug">
-        Your membership{" "}
-        {props.membership.currentPeriodEnd ? (
-          <>
-            lasts until <strong>{endDate}</strong>
-          </>
-        ) : (
-          "is still active"
-        )}
-        . Unsubscribing now cancels it immediately and forfeits the remaining
-        time.
-      </p>
-      <div className="flex gap-2 justify-between">
-        <ButtonSecondary type="button" onClick={props.onBack}>
-          Back
-        </ButtonSecondary>
-        <ButtonPrimary
-          type="button"
-          disabled={props.unsubscribing}
-          onClick={props.onConfirm}
-        >
-          {props.unsubscribing ? <DotLoader /> : "Unsubscribe now"}
-        </ButtonPrimary>
-      </div>
     </div>
   );
 };

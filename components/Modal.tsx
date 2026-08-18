@@ -1,6 +1,13 @@
 "use client";
 import * as Dialog from "@radix-ui/react-dialog";
-import React from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { isIOS } from "src/utils/isDevice";
 import { CloseTiny } from "./Icons/CloseTiny";
 import { useVisualViewport } from "./ViewportSizeLayout";
@@ -19,15 +26,49 @@ type ModalProps = {
   actionButton?: React.ReactNode;
   sheetOnMobile?: boolean;
   sheetClassName?: string;
-  onBack?: () => void;
 };
+
+type ModalChromeProps = ModalProps & { onBack?: () => void };
+
+type BackEntry = { run: () => void };
+const ModalBackContext = createContext<
+  ((entry: BackEntry) => () => void) | null
+>(null);
+
+export function useModalBack(back: (() => void) | null) {
+  let register = useContext(ModalBackContext);
+  let latest = useRef(back);
+  latest.current = back;
+  let active = !!back;
+  useEffect(() => {
+    if (!register || !active) return;
+    return register({ run: () => latest.current?.() });
+  }, [register, active]);
+}
 
 export const Modal = (props: ModalProps) => {
-  if (props.sheetOnMobile) return <SheetOnMobileModal {...props} />;
-  return <DialogModal {...props} />;
+  let [backStack, setBackStack] = useState<BackEntry[]>([]);
+  let register = useMemo(
+    () => (entry: BackEntry) => {
+      setBackStack((stack) => [...stack, entry]);
+      return () => setBackStack((stack) => stack.filter((e) => e !== entry));
+    },
+    [],
+  );
+  let modalProps = {
+    ...props,
+    onBack: backStack[backStack.length - 1]?.run,
+    children: (
+      <ModalBackContext.Provider value={register}>
+        {props.children}
+      </ModalBackContext.Provider>
+    ),
+  };
+  if (props.sheetOnMobile) return <SheetOnMobileModal {...modalProps} />;
+  return <DialogModal {...modalProps} />;
 };
 
-const SheetOnMobileModal = (props: ModalProps) => {
+const SheetOnMobileModal = (props: ModalChromeProps) => {
   let isMobile = useIsMobile();
   if (!isMobile) return <DialogModal {...props} />;
   return (
@@ -56,7 +97,7 @@ const DialogModal = ({
   title,
   children,
   onBack,
-}: ModalProps) => {
+}: ModalChromeProps) => {
   let { height, offsetTop, difference } = useVisualViewport();
   let keyboardOpen = isIOS() && difference !== 0 && height > 0;
 
