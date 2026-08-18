@@ -137,6 +137,10 @@ function PublicationDraftEditorContent(props: {
     ? {
         src: wordmarkImage.data.src,
         width: wordmarkWidth?.data.value ?? undefined,
+        aspectRatio: {
+          width: wordmarkImage.data.width,
+          height: wordmarkImage.data.height,
+        },
       }
     : null;
   // Read from the live theme context so the layout responds to page-background

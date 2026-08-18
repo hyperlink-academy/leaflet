@@ -2883,6 +2883,22 @@ export const schemaDict = {
           width: {
             type: 'integer',
           },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.wordmark#aspectRatio',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
         },
       },
     },
