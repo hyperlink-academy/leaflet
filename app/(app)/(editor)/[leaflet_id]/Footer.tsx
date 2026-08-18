@@ -18,6 +18,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { PostSettings } from "components/PostSettings";
+import { VersionHistory } from "./actions/VersionHistory";
 import useSWR from "swr";
 import { getHomeDocs } from "src/utils/homeDocsStorage";
 import { useAddToHomeParam } from "./AddToHomeEffect";
@@ -110,6 +111,7 @@ export function LeafletFooter(props: { entityID: string }) {
 
             <ShareOptions />
             <PostSettings />
+            <VersionHistory />
             <ThemePopover entityID={props.entityID} />
           </div>
         </FooterLayout>
