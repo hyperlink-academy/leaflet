@@ -7,6 +7,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
+import { enqueueBlobCleanup } from "src/utils/blobCleanup";
 
 export type MutationContext = {
   permission_token_id: string;
@@ -508,12 +509,7 @@ const removeBlock: Mutation<
   for (let block of [args].flat()) {
     let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
     await ctx.runOnServer(async ({ supabase }) => {
-      if (image) {
-        let paths = image.data.src.split("/");
-        await supabase.storage
-          .from("minilink-user-assets")
-          .remove([paths[paths.length - 1]]);
-      }
+      if (image) await enqueueBlobCleanup(supabase, image.data.src);
     });
     await ctx.runOnClient(async () => {
       if (image) {
@@ -869,12 +865,7 @@ const removeGalleryImage: Mutation<{
 }> = async (args, ctx) => {
   let [image] = await ctx.scanIndex.eav(args.imageEntity, "block/image");
   await ctx.runOnServer(async ({ supabase }) => {
-    if (image) {
-      let paths = image.data.src.split("/");
-      await supabase.storage
-        .from("minilink-user-assets")
-        .remove([paths[paths.length - 1]]);
-    }
+    if (image) await enqueueBlobCleanup(supabase, image.data.src);
   });
   await ctx.runOnClient(async () => {
     if (image) {

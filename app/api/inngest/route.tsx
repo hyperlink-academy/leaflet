@@ -14,6 +14,7 @@ import {
 import { write_records_to_pds } from "./functions/write_records_to_pds";
 import { sync_document_metadata } from "./functions/sync_document_metadata";
 import { send_post_broadcast } from "./functions/send_post_broadcast";
+import { cleanup_deleted_blobs } from "./functions/cleanup_deleted_blobs";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -30,5 +31,6 @@ export const { GET, POST, PUT } = serve({
     write_records_to_pds,
     sync_document_metadata,
     send_post_broadcast,
+    cleanup_deleted_blobs,
   ],
 });
