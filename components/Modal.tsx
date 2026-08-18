@@ -6,6 +6,7 @@ import { CloseTiny } from "./Icons/CloseTiny";
 import { useVisualViewport } from "./ViewportSizeLayout";
 import { useIsMobile } from "src/hooks/isMobile";
 import { MobileSheet } from "./MobileSheet";
+import { GoToArrowLined } from "./Icons/GoToArrowLined";
 
 type ModalProps = {
   className?: string;
@@ -17,14 +18,11 @@ type ModalProps = {
   children: React.ReactNode;
   actionButton?: React.ReactNode;
   sheetOnMobile?: boolean;
-  // className is sized for a centered modal (widths, max-heights), so the sheet
-  // takes its own overrides rather than inheriting them.
   sheetClassName?: string;
+  onBack?: () => void;
 };
 
 export const Modal = (props: ModalProps) => {
-  // Split so the viewport listener behind useIsMobile only runs for modals that
-  // actually branch on it.
   if (props.sheetOnMobile) return <SheetOnMobileModal {...props} />;
   return <DialogModal {...props} />;
 };
@@ -41,6 +39,7 @@ const SheetOnMobileModal = (props: ModalProps) => {
       trigger={props.trigger}
       title={props.title}
       actionButton={props.actionButton}
+      onBack={props.onBack}
     >
       {props.children}
     </MobileSheet>
@@ -56,10 +55,9 @@ const DialogModal = ({
   actionButton,
   title,
   children,
+  onBack,
 }: ModalProps) => {
   let { height, offsetTop, difference } = useVisualViewport();
-  // iOS keyboard open: re-center modal against the visual viewport. Android
-  // resizes the layout viewport via interactiveWidget: "resizes-content".
   let keyboardOpen = isIOS() && difference !== 0 && height > 0;
 
   return (
@@ -91,9 +89,20 @@ const DialogModal = ({
           overflow-y-scroll no-scrollbar max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] flex flex-col w-full sm:w-max text-primary
           `}
         >
-          <Dialog.Close className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit p-0.5 place-self-end border border-border-light text-tertiary">
-            <CloseTiny />
-          </Dialog.Close>
+          <div className="flex gap-3 justify-end">
+            {onBack && (
+              <button
+                className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit p-0.5 place-self-end border border-border-light text-tertiary"
+                type="button"
+                onClick={onBack}
+              >
+                <GoToArrowLined className="rotate-180" />
+              </button>
+            )}
+            <Dialog.Close className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit p-0.5 place-self-end border border-border-light text-tertiary">
+              <CloseTiny />
+            </Dialog.Close>
+          </div>
           <div
             className={`
             opaque-container p-3

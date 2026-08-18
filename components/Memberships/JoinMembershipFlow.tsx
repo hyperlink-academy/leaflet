@@ -2,12 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
-import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { Modal } from "components/Modal";
 import { useToaster, useSmoker } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { EmailInput, EmailConfirm } from "components/Subscribe/EmailSubscribe";
 import { EmailSubscribeSuccess } from "components/Subscribe/EmailSubscribeSuccess";
 import { useSubscribeSuccessData } from "components/Subscribe/useSubscribeSuccessData";
@@ -29,10 +27,7 @@ import {
   type Cadence,
 } from "components/Memberships/TierGrid";
 import { type JoinResume } from "components/Memberships/joinReturn";
-import {
-  useSwitchPreview,
-  SwitchPreviewLine,
-} from "components/Memberships/switchPreview";
+import { TierChangeConfirmModal } from "components/Memberships/TierChangeConfirmModal";
 import {
   getMembershipJoinViewer,
   subscribeToTier,
@@ -41,10 +36,7 @@ import {
 } from "actions/publications/joinMembership";
 import { saveWalletCardFromSetupIntent } from "actions/walletPayment";
 import { WalletPaymentForm } from "components/Payments/WalletPaymentForm";
-import {
-  downgradeMembershipToFree,
-  switchMembership,
-} from "actions/memberships";
+import { changeMembershipToFree, changeMembership } from "actions/memberships";
 import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
@@ -60,7 +52,6 @@ import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import type { SubscriptionSource } from "src/subscriptionSource";
 import { LoginModal } from "components/LoginButton";
-import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 
 // 1. collect who's subscribing (email or Atmosphere
 // handle — or the session identity when signed in)
@@ -76,7 +67,7 @@ export function JoinMembershipFlow(props: {
   // closed modal doesn't work in the background. The /join page passes true.
   active: boolean;
   // Called on a completed join that stays on the page (free join, plan
-  // switch) — the modal closes itself; the /join page has nothing to close.
+  // change) — the modal closes itself; the /join page has nothing to close.
   onClose?: () => void;
   publicationUri: string;
   publicationName: string;
@@ -117,14 +108,8 @@ export function JoinMembershipFlow(props: {
   // continue to once the reader confirms linking it (mirrors SubscribeInput).
   const [linkTier, setLinkTier] = useState<Tier | null>(null);
   const [inputMissing, setInputMissing] = useState(false);
-  // An active paid member picked the free tier — confirm before we schedule
-  // the cancellation (irreversible-feeling, so it isn't one click).
-  const [confirmDowngrade, setConfirmDowngrade] = useState<Tier | null>(null);
-  // An active paid member picked another paid tier — confirm against a quote,
-  // since a monthly↔annual switch bills on the spot.
-  const [confirmSwitch, setConfirmSwitch] = useState<Tier | null>(null);
-  // The embedded payment step for a picked paid tier: the reader confirms a
-  // payment method in the Payment Element, then the subscription is created.
+
+  const [confirmChange, setConfirmChange] = useState<Tier | null>(null);
   const [cardStep, setCardStep] = useState<{
     tier: Tier;
     cadence: Cadence;
@@ -349,12 +334,12 @@ export function JoinMembershipFlow(props: {
     finishJoin("You're subscribed!");
   };
 
-  // Prorated in-place switch for an active paid membership.
-  const runSwitch = async (tier: Tier) => {
+  // Prorated in-place change for an active paid membership.
+  const runChange = async (tier: Tier) => {
     const m = viewer?.membership;
     if (!m) return;
     setBusyTierId(tier.id);
-    const res = await switchMembership({
+    const res = await changeMembership({
       membershipId: m.id,
       tierId: tier.id,
       cadence: effectiveCadence(tier),
@@ -363,11 +348,11 @@ export function JoinMembershipFlow(props: {
     if (!res.ok) {
       toaster({
         type: "error",
-        content: "We couldn't switch your plan. Please try again!",
+        content: "We couldn't change your plan. Please try again!",
       });
       return;
     }
-    setConfirmSwitch(null);
+    setConfirmChange(null);
     finishJoin("Updated your plan!");
   };
 
@@ -377,7 +362,7 @@ export function JoinMembershipFlow(props: {
     const m = viewer?.membership;
     if (!m) return;
     setBusyTierId(tier.id);
-    const res = await downgradeMembershipToFree({
+    const res = await changeMembershipToFree({
       membershipId: m.id,
       publicationUri: props.publicationUri,
       newsletterMode: props.newsletterMode,
@@ -390,7 +375,7 @@ export function JoinMembershipFlow(props: {
       });
       return;
     }
-    setConfirmDowngrade(null);
+    setConfirmChange(null);
     finishJoin(
       res.value.subscribed
         ? "You'll move to the free plan at the end of your billing period."
@@ -528,11 +513,7 @@ export function JoinMembershipFlow(props: {
     if (busyTierId || processing) return;
     const free = isFreeTier(tier);
 
-    // An active paid membership switches in place (prorated) between paid
-    // tiers, or downgrades to free (that path cancels the Stripe subscription
-    // instead of switching it). Both go through a confirm step first.
-    if (viewer?.membership)
-      return free ? setConfirmDowngrade(tier) : setConfirmSwitch(tier);
+    if (viewer?.membership) return setConfirmChange(tier);
 
     if (identity) {
       if (hasNeededIdentity) return free ? freeJoin(tier) : payWithViewer(tier);
@@ -666,8 +647,8 @@ export function JoinMembershipFlow(props: {
           />{" "}
           {viewer?.membership ? (
             <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
-              Switching memberships prorates your bill — pick a plan to see what
-              it costs before confirming.
+              Changing plans prorates your bill — pick a plan to see what it
+              costs before confirming.
             </p>
           ) : !identity ? (
             <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
@@ -699,162 +680,30 @@ export function JoinMembershipFlow(props: {
           }}
         />
       )}
-      {confirmSwitch && viewer?.membership && (
-        <SwitchConfirmModal
+      {confirmChange && viewer?.membership && (
+        <TierChangeConfirmModal
           membershipId={viewer.membership.id}
           currentTier={props.tiers.find(
             (t) => t.id === viewer.membership?.tierId,
           )}
-          newTier={confirmSwitch}
-          cadence={effectiveCadence(confirmSwitch)}
-          busy={busyTierId !== null}
-          onConfirm={() => runSwitch(confirmSwitch)}
-          onClose={() => setConfirmSwitch(null)}
-        />
-      )}
-      {confirmDowngrade && (
-        <DowngradeConfirmModal
-          currentTier={props.tiers.find(
-            (t) => t.id === viewer?.membership?.tierId,
-          )}
           currentCadence={
-            viewer?.membership?.cadence === "year" ? "year" : "month"
+            viewer.membership.cadence === "year" ? "year" : "month"
           }
-          freeTier={confirmDowngrade}
-          periodEnd={viewer?.membership?.currentPeriodEnd ?? null}
+          newTier={confirmChange}
+          cadence={effectiveCadence(confirmChange)}
+          periodEnd={viewer.membership.currentPeriodEnd ?? null}
           busy={busyTierId !== null}
-          onConfirm={() => downgradeToFree(confirmDowngrade)}
-          onClose={() => setConfirmDowngrade(null)}
+          onConfirm={() =>
+            isFreeTier(confirmChange)
+              ? downgradeToFree(confirmChange)
+              : runChange(confirmChange)
+          }
+          onClose={() => setConfirmChange(null)}
         />
       )}
     </>
   );
 }
-
-function SwitchConfirmModal(props: {
-  membershipId: string;
-  currentTier: Tier | undefined;
-  newTier: Tier;
-  cadence: Cadence;
-  busy: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-}) {
-  const preview = useSwitchPreview({
-    enabled: true,
-    membershipId: props.membershipId,
-    tierId: props.newTier.id,
-    cadence: props.cadence,
-  });
-
-  return (
-    <Modal
-      open
-      onOpenChange={(o) => !o && props.onClose()}
-      title="Switch your Membership"
-      className="max-w-full w-sm bg-[var(--color-bg-light)]! text-center"
-    >
-      <div className="flex flex-col gap-3">
-        <div className="text-secondary leading-snug">
-          <div className="flex flex-col justify-center items-center mx-auto gap-1 pt-2">
-            {props.currentTier && (
-              <>
-                <div className="opaque-container w-fit py-0.5 px-2 text-tertiary">
-                  {props.currentTier.name} ·{" "}
-                  {tierPriceLabel(props.currentTier, props.cadence)}
-                </div>
-                <GoToArrowLined className="rotate-90 text-tertiary" />
-              </>
-            )}
-            <div className="accent-container w-fit py-0.5 px-2 font-bold text-accent-contrast border border-accent-contrast">
-              {props.newTier.name} ·{" "}
-              {tierPriceLabel(props.newTier, props.cadence)}
-            </div>
-          </div>
-        </div>
-        <SwitchPreviewLine state={preview} className="text-tertiary text-sm " />
-        <div className="flex gap-3 mx-auto">
-          <ButtonTertiary type="button" onClick={props.onClose}>
-            Nevermind{" "}
-          </ButtonTertiary>
-          <ButtonPrimary
-            type="button"
-            disabled={props.busy || preview?.status === "loading"}
-            onClick={props.onConfirm}
-          >
-            {props.busy ? <DotLoader /> : "Switch!"}
-          </ButtonPrimary>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function DowngradeConfirmModal(props: {
-  currentTier: Tier | undefined;
-  currentCadence: Cadence;
-  freeTier: Tier;
-  periodEnd: string | null;
-  busy: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-}) {
-  const endDate = useLocalizedDate(
-    props.periodEnd ?? "",
-    DOWNGRADE_DATE_FORMAT,
-  );
-
-  return (
-    <Modal
-      open
-      onOpenChange={(o) => !o && props.onClose()}
-      title="Switch your Membership"
-      className="max-w-full w-sm bg-[var(--color-bg-light)]! text-center"
-    >
-      <div className="flex flex-col gap-3">
-        <div className="text-secondary leading-snug">
-          <div className="flex flex-col justify-center items-center mx-auto gap-1 pt-2">
-            {props.currentTier && (
-              <>
-                <div className="opaque-container w-fit py-0.5 px-2 text-tertiary">
-                  {props.currentTier.name} ·{" "}
-                  {tierPriceLabel(props.currentTier, props.currentCadence)}
-                </div>
-              </>
-            )}
-            <div className="accent-container w-fit py-0.5 px-2 font-bold text-accent-contrast border border-accent-contrast">
-              {props.freeTier.name} · Free
-            </div>
-          </div>
-        </div>
-        <div className="text-tertiary text-sm">
-          You'll keep member access{" "}
-          {props.periodEnd
-            ? `until ${endDate}`
-            : "until the end of your billing period"}
-        </div>
-        <div className="flex gap-3 mx-auto">
-          <ButtonTertiary type="button" onClick={props.onClose}>
-            Nevermind
-          </ButtonTertiary>
-          <ButtonPrimary
-            type="button"
-            disabled={props.busy}
-            onClick={props.onConfirm}
-          >
-            {props.busy ? <DotLoader /> : "Switch!"}
-          </ButtonPrimary>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-const DOWNGRADE_DATE_FORMAT: Intl.DateTimeFormatOptions = {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-};
 
 function validEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());

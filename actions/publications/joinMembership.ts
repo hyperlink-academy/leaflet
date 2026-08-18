@@ -26,7 +26,7 @@ type CheckoutSessionError = "not_authenticated" | "stripe_error";
 export type MembershipJoinViewer = {
   loggedIn: boolean;
   isOwner: boolean;
-  // The viewer's active membership, for the switch/upgrade flow. Always a paid
+  // The viewer's active membership, for the change/upgrade flow. Always a paid
   // tier — the free tier is a plain subscription with no membership row. Its
   // presence is what "is a member" means, so consumers derive that from here.
   membership: {

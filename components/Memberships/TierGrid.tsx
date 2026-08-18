@@ -95,7 +95,7 @@ export function TierGrid(props: {
     if (currentMonthlyCents == null) return `Join for ${price}`;
     if (tier.monthly_price_cents > currentMonthlyCents)
       return `Upgrade for ${price}`;
-    return `Switch for ${price}`;
+    return `Change for ${price}`;
   };
 
   let cols = Math.min(renderTiers.length, renderTiers.length % 3 === 1 ? 2 : 3);
@@ -158,7 +158,7 @@ export function TierGrid(props: {
                     {props.busyTierId === tier.id ? (
                       <DotLoader />
                     ) : props.currentTierId ? (
-                      "Switch to free"
+                      "Change to free"
                     ) : (
                       "Subscribe for free"
                     )}

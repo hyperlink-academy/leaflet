@@ -6,12 +6,12 @@ import { useToaster } from "components/Toast";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
-  SwitchPlanModal,
-  CancelMembershipModal,
+  ChangePlanModal,
   MembershipActions,
   membershipPrice,
   isMembershipActive as isActive,
-} from "components/Memberships/SwitchPlanModal";
+} from "components/Memberships/ChangePlanModal";
+import { CancelMembershipModal } from "components/Memberships/CancelMembershipModal";
 import {
   updateWalletCard,
   updateWalletCardFromSetupIntent,
@@ -23,8 +23,9 @@ import { useIdentityData } from "components/IdentityProvider";
 import { WalletPaymentForm } from "components/Payments/WalletPaymentForm";
 import { SettingsSection } from "components/SettingsLayout";
 
-export function MembershipsTab(props: { initial: MyMembershipsData }) {
+export function BillingTab(props: { initial: MyMembershipsData }) {
   const { memberships, wallet } = props.initial;
+
   const toaster = useToaster();
   const router = useRouter();
   const [processingReturn, setProcessingReturn] = useState(false);
@@ -174,7 +175,7 @@ function WalletCardSection(props: {
 
 function MembershipRow(props: { membership: MyMembership }) {
   const m = props.membership;
-  const [switching, setSwitching] = useState(false);
+  const [changingPlan, setChangingPlan] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const renewal = useLocalizedDate(m.currentPeriodEnd ?? "", {
     year: "numeric",
@@ -217,12 +218,15 @@ function MembershipRow(props: { membership: MyMembership }) {
       <div className="flex gap-2 flex-wrap pt-1">
         <MembershipActions
           membership={m}
-          onSwitch={() => setSwitching(true)}
+          onChangePlan={() => setChangingPlan(true)}
           onCancel={() => setCancelling(true)}
         />
       </div>
-      {switching && (
-        <SwitchPlanModal membership={m} onClose={() => setSwitching(false)} />
+      {changingPlan && (
+        <ChangePlanModal
+          membership={m}
+          onClose={() => setChangingPlan(false)}
+        />
       )}
       {cancelling && (
         <CancelMembershipModal

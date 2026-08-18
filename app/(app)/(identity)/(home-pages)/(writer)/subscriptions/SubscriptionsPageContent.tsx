@@ -8,7 +8,7 @@ import type { Cursor } from "actions/reader/getReaderFeed";
 import {
   membershipPrice,
   isMembershipActive,
-} from "components/Memberships/SwitchPlanModal";
+} from "components/Memberships/ChangePlanModal";
 import type { MyMembership } from "actions/memberships";
 
 export function SubscriptionsPageContent(props: {

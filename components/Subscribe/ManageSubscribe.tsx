@@ -10,12 +10,12 @@ import { Toggle } from "components/Toggle";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import {
-  SwitchPlanForm,
-  CancelMembershipForm,
+  ChangePlanForm,
   MembershipActions,
   membershipPrice,
   isMembershipActive,
-} from "components/Memberships/SwitchPlanModal";
+} from "components/Memberships/ChangePlanModal";
+import { CancelMembershipForm } from "components/Memberships/CancelMembershipModal";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   useMyMembership,
@@ -64,7 +64,7 @@ export const ManageSubscription = (props: {
 }) => {
   let [open, setOpen] = useState(false);
   let [membershipView, setMembershipView] = useState<{
-    type: "switch" | "cancel";
+    type: "change" | "cancel";
     membership: MyMembership;
   } | null>(null);
 
@@ -83,22 +83,25 @@ export const ManageSubscription = (props: {
       asChild
       open={open}
       title={
-        <div className="relative mb-2">
-          {membershipView?.type === "switch"
-            ? "Change Plan"
+        <div className="relative mb-2 mx-auto text-center">
+          {membershipView?.type === "change"
+            ? "Change Membership"
             : membershipView?.type === "cancel"
               ? "Cancel Membership"
               : "Manage Subscription"}
         </div>
       }
-      className="w-md max-w-full"
+      className={
+        membershipView?.type === "change"
+          ? "w-fit max-w-full bg-[var(--color-bg-light)]!"
+          : "w-md max-w-full"
+      }
       onOpenChange={(o) => {
         setOpen(o);
         if (!o) setMembershipView(null);
       }}
-      // A real button rather than a div Radix wraps in one: the wrapper made the
-      // row 1.5px taller than the subscribe button it replaces, which is a
-      // layout shift when identity resolves on a published page.
+      onBack={membershipView ? closeMembershipView : undefined}
+      sheetOnMobile
       trigger={
         <button
           type="button"
@@ -111,36 +114,22 @@ export const ManageSubscription = (props: {
         </button>
       }
     >
-      {membershipView?.type === "switch" ? (
-        <SwitchPlanForm
+      {membershipView?.type === "change" ? (
+        <ChangePlanForm
           membership={membershipView.membership}
           onSuccess={onMembershipChanged}
-          onBack={closeMembershipView}
-          onCancel={() =>
-            setMembershipView({
-              type: "cancel",
-              membership: membershipView.membership,
-            })
-          }
         />
       ) : membershipView?.type === "cancel" ? (
         <CancelMembershipForm
           membership={membershipView.membership}
           onSuccess={onMembershipChanged}
-          onBack={() =>
-            membershipView.membership.availableTiers.length > 0
-              ? setMembershipView({
-                  type: "switch",
-                  membership: membershipView.membership,
-                })
-              : closeMembershipView()
-          }
+          onBack={closeMembershipView}
         />
       ) : (
         <ManageSubscriptionContent
           {...props}
-          onSwitch={(membership) =>
-            setMembershipView({ type: "switch", membership })
+          onChangePlan={(membership) =>
+            setMembershipView({ type: "change", membership })
           }
           onCancel={(membership) =>
             setMembershipView({ type: "cancel", membership })
@@ -158,7 +147,7 @@ const ManageSubscriptionContent = (props: {
   publicationUrl?: string;
   newsletterMode: boolean;
   user: ViewerUser;
-  onSwitch: (membership: MyMembership) => void;
+  onChangePlan: (membership: MyMembership) => void;
   onCancel: (membership: MyMembership) => void;
 }) => {
   const { user } = props;
@@ -169,8 +158,6 @@ const ManageSubscriptionContent = (props: {
   let [linkConfirming, setLinkConfirming] = useState(false);
   let [unsubscribing, setUnsubscribing] = useState(false);
   let [confirmForfeit, setConfirmForfeit] = useState(false);
-  // Optimistic value, held from the click until the identity refetch lands (or
-  // the action fails); non-null also means a toggle is already in flight.
   let [emailOverride, setEmailOverride] = useState<boolean | null>(null);
   let toaster = useToaster();
   let router = useRouter();
@@ -267,25 +254,21 @@ const ManageSubscriptionContent = (props: {
 
   const activeMembership =
     membership && isMembershipActive(membership.status) ? membership : null;
-  // A membership already winding down: fully unsubscribing now cancels the
-  // Stripe subscription immediately, forfeiting the remaining paid time — so it
-  // goes through an explicit confirm. One that isn't must be cancelled first.
+
   const pendingCancellation = activeMembership?.cancelAtPeriodEnd
     ? activeMembership
     : null;
-  // Turning email off is only a mute when something else keeps the
-  // subscription alive; for an email-only reader it *is* the unsubscribe.
-  // deriveSubscriptionState would drop `subscribed`, unmounting this panel
-  // mid-interaction with no way back in — so they get the address as a plain
-  // row (like Linked Handle below) and the deliberate Unsubscribe button.
-  // Turning email back on is always safe.
+
   const canMuteEmail =
     !emailEnabled || user.atprotoSubscribed || !!activeMembership;
 
   return (
     <div className="manageSubPrefs flex flex-col gap-2">
       {membership && (
-        <MembershipSection membership={membership} onSwitch={props.onSwitch} />
+        <MembershipSection
+          membership={membership}
+          onChangePlan={props.onChangePlan}
+        />
       )}
       {props.newsletterMode && user.email ? (
         <div className={prefClassName}>
@@ -388,9 +371,6 @@ const ManageSubscriptionContent = (props: {
           >
             Cancel Membership
           </ButtonSecondary>
-          <p className="text-tertiary text-sm text-center leading-snug">
-            Cancel your membership first to fully unsubscribe.
-          </p>
         </>
       ) : pendingCancellation && confirmForfeit ? (
         <ForfeitConfirm
@@ -457,7 +437,7 @@ const ForfeitConfirm = (props: {
 
 const MembershipSection = (props: {
   membership: MyMembership;
-  onSwitch: (membership: MyMembership) => void;
+  onChangePlan: (membership: MyMembership) => void;
 }) => {
   const { membership } = props;
   const price = membershipPrice(membership);
@@ -473,7 +453,7 @@ const MembershipSection = (props: {
           <p>Membership</p>
           <MembershipActions
             membership={membership}
-            onSwitch={() => props.onSwitch(membership)}
+            onChangePlan={() => props.onChangePlan(membership)}
             onChanged={() => mutateMyMembership(membership.publication)}
           />
         </div>
@@ -491,8 +471,6 @@ const MembershipSection = (props: {
   );
 };
 
-// Every error code the panel's actions can return; the per-action fallback
-// covers anything not listed.
 const ERROR_MESSAGES: Record<string, string> = {
   unauthorized: "Sign in to manage your subscription.",
   database_error: "Something went wrong. Please try again.",

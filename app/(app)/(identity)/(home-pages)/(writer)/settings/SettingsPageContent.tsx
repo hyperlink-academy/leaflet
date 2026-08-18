@@ -9,7 +9,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { useIdentityData } from "components/IdentityProvider";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
-import { MembershipsTab } from "./MembershipsTab";
+import { BillingTab } from "./BillingTab";
 import type { MyMembershipsData } from "actions/memberships";
 import { DomainTab } from "./domains/DomainTab";
 import { MonetizationTab } from "./MonetizationTab";
@@ -65,7 +65,7 @@ export function SettingsPageContent(props: {
       <SettingsPageLayout>
         {tab === "domains" && <DomainTab />}
         {tab === "billing" && (
-          <MembershipsTab
+          <BillingTab
             initial={props.memberships ?? { memberships: [], wallet: null }}
           />
         )}
