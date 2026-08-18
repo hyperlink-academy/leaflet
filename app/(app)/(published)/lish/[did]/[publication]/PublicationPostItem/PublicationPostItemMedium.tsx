@@ -23,7 +23,12 @@ export function PublicationPostItemMedium(props: MediumProps) {
           className={`postItemInfo flex w-full grow flex-col justify-between min-w-0 py-2  ${props.inList ? "" : "px-3 py-2"} ${props.inList && !hasCoverImage ? "pr-0" : "pr-3"}`}
         >
           {props.pubInfo && props.pubInfo}
-          {props.membersOnly && <MembersBadge />}
+          {props.membersOnly && (
+            <MembersBadge
+              publicationUri={props.publicationUri}
+              unlockingTierIds={props.unlockingTierIds}
+            />
+          )}
 
           {/* Budget for title + description: the cover image's height
                 (w-24 / sm:w-48, square). useFitToHeight measures against it and

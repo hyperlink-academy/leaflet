@@ -10,6 +10,8 @@ export type CommonProps = {
   pubInfo?: React.ReactNode;
   inList?: boolean;
   membersOnly?: boolean;
+  publicationUri?: string;
+  unlockingTierIds?: string[] | null;
 };
 
 export type LargeProps = CommonProps & {

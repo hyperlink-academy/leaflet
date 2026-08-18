@@ -207,6 +207,28 @@ export type MembershipStatusFields = {
   current_period_end: string | null;
 };
 
+export function findActiveMembership<
+  T extends { publication: string } & MembershipStatusFields,
+>(
+  memberships: T[] | null | undefined,
+  publicationUri: string | undefined,
+): T | null {
+  if (!publicationUri) return null;
+  return (
+    (memberships ?? []).find(
+      (m) => m.publication === publicationUri && isActiveMembership(m),
+    ) ?? null
+  );
+}
+
+export function memberTierUnlocksGatedPost(
+  memberTier: string | null | undefined,
+  unlockingTierIds: string[] | null | undefined,
+): boolean {
+  if (!unlockingTierIds) return true;
+  return !!memberTier && unlockingTierIds.includes(memberTier);
+}
+
 export function isActiveMembership(
   m: MembershipStatusFields | null | undefined,
 ): boolean {
@@ -257,7 +279,8 @@ export function isEntitledToGatedPost(input: {
   if (input.subscriptionUnlocks && input.isSubscriber) return true;
   if (!isActiveMembership(input.membership)) return false;
   if (input.subscriptionUnlocks) return true;
-  if (!input.unlockingTierIds) return true;
-  const memberTier = input.membership?.tier;
-  return !!memberTier && input.unlockingTierIds.includes(memberTier);
+  return memberTierUnlocksGatedPost(
+    input.membership?.tier,
+    input.unlockingTierIds,
+  );
 }

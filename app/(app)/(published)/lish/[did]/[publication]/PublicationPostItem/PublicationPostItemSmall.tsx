@@ -16,7 +16,12 @@ export function PublicationPostItemSmall(props: CommonProps) {
         // the h3-scale size the base-layer heading rules would otherwise bump.
         <h2 className="text-primary leading-snug text-[1.125em]">
           {props.title}
-          {props.membersOnly && <MembersBadge />}
+          {props.membersOnly && (
+            <MembersBadge
+              publicationUri={props.publicationUri}
+              unlockingTierIds={props.unlockingTierIds}
+            />
+          )}
         </h2>
       )}
       <MetaRow

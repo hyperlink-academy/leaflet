@@ -1,5 +1,5 @@
 import {
-  isActiveMembership,
+  findActiveMembership,
   type MembershipStatusFields,
 } from "src/membership";
 
@@ -16,14 +16,21 @@ export type SubscriptionState = {
   // A confirmed email row = email delivery on. Muting email flips the row to
   // `unsubscribed`; there is no separate "muted" state.
   emailEnabled: boolean;
+  isMember: boolean;
+  memberTier: string | null;
 };
 
 export function deriveSubscriptionState(
-  publicationUri: string,
+  publicationUri: string | undefined,
   rows: {
     subscriptions?: { publication: string }[] | null;
     emailSubscribers?: { publication: string; state: string }[] | null;
-    memberships?: ({ publication: string } & MembershipStatusFields)[] | null;
+    memberships?:
+      | ({
+          publication: string;
+          tier?: string | null;
+        } & MembershipStatusFields)[]
+      | null;
   },
 ): SubscriptionState {
   const atprotoSubscribed = (rows.subscriptions ?? []).some(
@@ -32,12 +39,12 @@ export function deriveSubscriptionState(
   const emailEnabled = (rows.emailSubscribers ?? []).some(
     (s) => s.publication === publicationUri && s.state === "confirmed",
   );
-  const isMember = (rows.memberships ?? []).some(
-    (m) => m.publication === publicationUri && isActiveMembership(m),
-  );
+  const membership = findActiveMembership(rows.memberships, publicationUri);
   return {
-    subscribed: atprotoSubscribed || emailEnabled || isMember,
+    subscribed: atprotoSubscribed || emailEnabled || !!membership,
     atprotoSubscribed,
     emailEnabled,
+    isMember: !!membership,
+    memberTier: membership?.tier ?? null,
   };
 }
