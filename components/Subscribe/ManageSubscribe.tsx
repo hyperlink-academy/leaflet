@@ -16,6 +16,7 @@ import {
   isMembershipActive,
 } from "components/Memberships/ChangePlanModal";
 import { CancelMembershipForm } from "components/Memberships/CancelMembershipModal";
+import { ResumeMembershipForm } from "components/Memberships/ResumeMembershipModal";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   useMyMembership,
@@ -52,7 +53,10 @@ function readManageSubscriptionReturn(): boolean {
   return true;
 }
 
-type ModalContent = { type: "change" | "cancel"; membership: MyMembership };
+type ModalContent = {
+  type: "change" | "cancel" | "resume";
+  membership: MyMembership;
+};
 
 export const ManageSubscription = (props: {
   publicationUri: string;
@@ -68,24 +72,21 @@ export const ManageSubscription = (props: {
     if (readManageSubscriptionReturn()) setOpen(true);
   }, []);
 
-  const onMembershipChanged = () => {
-    setModalState(null);
-    mutateMyMembership(props.publicationUri);
-  };
-
   return (
     <Modal
       asChild
       open={open}
       title={
-        <div className="relative mb-2 mx-auto text-center">
+        <div className="relative mx-auto text-center">
           {modalState?.type === "change"
             ? "Change Membership"
-            : modalState?.type === "cancel"
-              ? modalState.membership.cancelAtPeriodEnd
-                ? "Membership Cancelled"
-                : "Cancel Membership"
-              : "Manage Subscription"}
+            : modalState?.type === "resume"
+              ? "Resume Membership?"
+              : modalState?.type === "cancel"
+                ? modalState.membership.cancelAtPeriodEnd
+                  ? "Membership Cancelled"
+                  : "Cancel Membership"
+                : "Manage Subscription"}
         </div>
       }
       className={
@@ -120,7 +121,10 @@ export const ManageSubscription = (props: {
         {...props}
         state={modalState}
         setState={setModalState}
-        onSuccess={onMembershipChanged}
+        onSuccess={() => {
+          setModalState(null);
+          setOpen(false);
+        }}
       />
     </Modal>
   );
@@ -148,13 +152,26 @@ const ModalContent = ({
       <ManageSubscriptionContent
         {...content}
         onChangePlan={(membership) => setState({ type: "change", membership })}
+        onResume={(membership) => setState({ type: "resume", membership })}
         onCancel={(membership) => setState({ type: "cancel", membership })}
       />
     );
 
-  return state.type === "change" ? (
-    <ChangePlanForm membership={state.membership} onSuccess={onSuccess} />
-  ) : (
+  if (state.type === "change")
+    return (
+      <ChangePlanForm membership={state.membership} onSuccess={onSuccess} />
+    );
+
+  if (state.type === "resume")
+    return (
+      <ResumeMembershipForm
+        membership={state.membership}
+        onSuccess={onSuccess}
+        onBack={back}
+      />
+    );
+
+  return (
     <CancelMembershipForm
       membership={state.membership}
       onSuccess={onSuccess}
@@ -169,6 +186,7 @@ const ManageSubscriptionContent = (props: {
   newsletterMode: boolean;
   user: ViewerUser;
   onChangePlan: (membership: MyMembership) => void;
+  onResume: (membership: MyMembership) => void;
   onCancel: (membership: MyMembership) => void;
 }) => {
   const { user } = props;
@@ -288,6 +306,7 @@ const ManageSubscriptionContent = (props: {
         <MembershipSection
           membership={membership}
           onChangePlan={props.onChangePlan}
+          onResume={props.onResume}
         />
       )}
       {props.newsletterMode && user.email ? (
@@ -410,6 +429,7 @@ const ManageSubscriptionContent = (props: {
 const MembershipSection = (props: {
   membership: MyMembership;
   onChangePlan: (membership: MyMembership) => void;
+  onResume: (membership: MyMembership) => void;
 }) => {
   const { membership } = props;
   const price = membershipPrice(membership);
@@ -426,7 +446,7 @@ const MembershipSection = (props: {
           <MembershipActions
             membership={membership}
             onChangePlan={() => props.onChangePlan(membership)}
-            onChanged={() => mutateMyMembership(membership.publication)}
+            onResume={() => props.onResume(membership)}
           />
         </div>
         <p className="text-tertiary font-normal italic">

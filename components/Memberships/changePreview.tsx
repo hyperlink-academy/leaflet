@@ -68,7 +68,7 @@ function changePreviewText(
     if (amountDueCents <= 0) {
       return creditCents > 0
         ? `The unused time on your current plan leaves ${credit} in credit toward future invoices.`
-        : "The unused time on your current plan covers the change.";
+        : "The unused time on your current plan covers your next invoice.";
     }
     return `You'll be charged ${amount} now, prorated for the time left on your current plan.`;
   }
@@ -77,7 +77,7 @@ function changePreviewText(
   if (creditCents > 0) {
     return `Unused time on your current plan leaves ${credit} in credit toward future invoices. Your next invoice will be ${when} for ${amount}.`;
   }
-  return `Your next invoice will be ${when} for ${amount}, prorated for the change.`;
+  return `Your next prorated invoice will be ${when} for ${amount}.`;
 }
 
 const PREVIEW_DATE_FORMAT: Intl.DateTimeFormatOptions = {

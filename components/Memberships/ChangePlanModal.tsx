@@ -8,17 +8,18 @@ import { Modal, useModalBack } from "components/Modal";
 import { useToaster } from "components/Toast";
 import {
   changeMembershipToFree,
-  resumeMembership,
   changeMembership,
   type MyMembership,
 } from "actions/memberships";
 import { TierChangeConfirm } from "components/Memberships/TierChangeConfirm";
 import { useJoinableTiers } from "components/Memberships/useJoinableTiers";
+import { mutateMyMembership } from "components/Memberships/useMyMembership";
 import {
   TierGrid,
   formatPrice,
   isFreeTier,
   effectiveCadence,
+  tierPriceLabel,
   type Tier,
   type Cadence,
 } from "components/Memberships/TierGrid";
@@ -36,28 +37,10 @@ export function isMembershipActive(status: string | null): boolean {
 export function MembershipActions(props: {
   membership: MyMembership;
   onChangePlan: () => void;
+  onResume: () => void;
   onCancel?: () => void;
-  onChanged?: () => void;
 }) {
   const m = props.membership;
-  const toaster = useToaster();
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-
-  const resume = async () => {
-    if (busy) return;
-    setBusy(true);
-    const res = await resumeMembership(m.id);
-    setBusy(false);
-    if (!res.ok) {
-      toaster({ type: "error", content: "Couldn't resume. Please try again." });
-      return;
-    }
-    toaster({ type: "success", content: "Membership resumed." });
-    props.onChanged?.();
-    refreshIdentityData();
-    router.refresh();
-  };
 
   if (!isMembershipActive(m.status)) return null;
   return (
@@ -67,10 +50,9 @@ export function MembershipActions(props: {
           className="text-sm"
           type="button"
           compact
-          disabled={busy}
-          onClick={resume}
+          onClick={props.onResume}
         >
-          {busy ? <DotLoader /> : "Resume"}
+          Resume
         </ButtonPrimary>
       ) : (
         <>
@@ -146,13 +128,16 @@ export function ChangePlanForm(props: {
     m.cadence === "year" ? "year" : "month",
   );
   const [confirmTier, setConfirmTier] = useState<Tier | null>(null);
+  const [changed, setChanged] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   useModalBack(confirmTier ? () => setConfirmTier(null) : null);
 
-  const finish = (message: string) => {
-    toaster({ type: "success", content: message });
+  // Leaves the success screen up rather than closing: onSuccess runs when the
+  // reader dismisses it.
+  const finish = (detail: string) => {
     setConfirmTier(null);
-    props.onSuccess();
+    setChanged(detail);
+    mutateMyMembership(m.publication);
     refreshIdentityData();
     router.refresh();
   };
@@ -173,7 +158,9 @@ export function ChangePlanForm(props: {
       });
       return;
     }
-    finish("Plan updated.");
+    finish(
+      `You're now on the ${tier.name} plan, at ${tierPriceLabel(tier, effectiveCadence(tier, cadence))}.`,
+    );
   };
 
   const downgrade = async () => {
@@ -197,6 +184,19 @@ export function ChangePlanForm(props: {
         : "Your membership expires at the end of your billing period.",
     );
   };
+
+  if (changed)
+    return (
+      <div className="flex flex-col gap-3 w-full max-w-sm mx-auto text-center justify-center">
+        <div className="text-secondary leading-snug flex flex-col">
+          <strong>Your membership has been updated!</strong>
+          <p>{changed}</p>
+        </div>
+        <ButtonPrimary type="button" fullWidth onClick={props.onSuccess}>
+          Close
+        </ButtonPrimary>
+      </div>
+    );
 
   if (!tiers)
     return (

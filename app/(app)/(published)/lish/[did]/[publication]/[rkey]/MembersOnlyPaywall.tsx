@@ -7,10 +7,7 @@ import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { ButtonPrimary } from "components/Buttons";
 import { PubIcon } from "components/ActionBar/Publications";
 import { formatPrice } from "components/Memberships/TierGrid";
-import {
-  useMyMembership,
-  mutateMyMembership,
-} from "components/Memberships/useMyMembership";
+import { useMyMembership } from "components/Memberships/useMyMembership";
 import { revalidateUnlocks } from "components/Memberships/revalidateUnlocks";
 import {
   gateUnlocksWithSubscription,
@@ -116,10 +113,7 @@ export const MembersOnlyPaywall = () => {
               title="Upgrade your membership"
               unlocksPost
               unlocksPostTierIds={unlockingTierIds}
-              onSuccess={() => {
-                mutateMyMembership(membership.publication);
-                revalidateUnlocks();
-              }}
+              onSuccess={revalidateUnlocks}
               onClose={() => setChangingPlan(false)}
             />
           )}

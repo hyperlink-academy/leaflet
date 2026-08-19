@@ -12,6 +12,7 @@ import {
   isMembershipActive as isActive,
 } from "components/Memberships/ChangePlanModal";
 import { CancelMembershipModal } from "components/Memberships/CancelMembershipModal";
+import { ResumeMembershipModal } from "components/Memberships/ResumeMembershipModal";
 import {
   updateWalletCard,
   updateWalletCardFromSetupIntent,
@@ -177,6 +178,7 @@ function MembershipRow(props: { membership: MyMembership }) {
   const m = props.membership;
   const [changingPlan, setChangingPlan] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const renewal = useLocalizedDate(m.currentPeriodEnd ?? "", {
     year: "numeric",
     month: "short",
@@ -204,6 +206,7 @@ function MembershipRow(props: { membership: MyMembership }) {
           <MembershipActions
             membership={m}
             onChangePlan={() => setChangingPlan(true)}
+            onResume={() => setResuming(true)}
             onCancel={() => setCancelling(true)}
           />
         </div>
@@ -211,6 +214,12 @@ function MembershipRow(props: { membership: MyMembership }) {
           <ChangePlanModal
             membership={m}
             onClose={() => setChangingPlan(false)}
+          />
+        )}
+        {resuming && (
+          <ResumeMembershipModal
+            membership={m}
+            onClose={() => setResuming(false)}
           />
         )}
         {cancelling && (
