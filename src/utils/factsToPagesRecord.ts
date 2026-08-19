@@ -293,13 +293,30 @@ export async function processBlocksToPages(opts: {
     },
     "members-only-delimiter": async (b) => {
       // Sorted so an unchanged selection always serializes identically.
-      const tiers = scan
+      const tierIds = scan
         .eav(b.entityID, "block/members-only-tier")
         .map((f) => f.data.value)
         .sort();
+      const [audienceFact] = scan.eav(
+        b.entityID,
+        "block/members-only-audience",
+      );
+      // A block that predates the audience fact never had one asserted, so
+      // its audience falls back to whatever its tier facts already imply —
+      // matching the pre-audience lexicon's "empty tiers means every paid
+      // tier" default instead of discarding those facts on republish.
+      const audience =
+        audienceFact?.data.value === "subscribers" ||
+        audienceFact?.data.value === "paid" ||
+        audienceFact?.data.value === "tiers"
+          ? audienceFact.data.value
+          : tierIds.length > 0
+            ? "tiers"
+            : "paid";
       const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
         $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
-        ...(tiers.length > 0 && { tiers }),
+        audience,
+        ...(audience === "tiers" && { tierIds }),
       };
       return block;
     },

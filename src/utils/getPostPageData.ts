@@ -11,10 +11,12 @@ import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { getDocumentPages } from "src/utils/normalizeRecords";
 import {
-  getGatedPostTierIds,
+  buildMembershipTiers,
+  getGatedPostPolicy,
   postHasMembersDelimiter,
-  resolveUnlockingTierIds,
   truncatePagesAtMembersDelimiter,
+  type GatePolicy,
+  type MembershipTiers,
 } from "src/membership";
 import {
   projectDocumentRowForClient,
@@ -41,8 +43,8 @@ export const getPostPageData = cache(async function getPostPageData(
         documents_in_publications(publications(uri, name, identity_did, record,
           documents_in_publications(members_only, documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
           publication_newsletter_settings(enabled),
-          publication_membership_settings(enabled),
-          publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, is_free))
+          publication_membership_settings(enabled, subscriber_tier_name, subscriber_tier_description),
+          publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order))
         ),
         document_mentions_in_bsky(uri, link),
         recommends_on_documents(count)
@@ -90,37 +92,24 @@ export const getPostPageData = cache(async function getPostPageData(
   // — every viewer gets the gated variant so the page stays cacheable — and
   // entitled readers unlock the tail client-side via getUnlockedPost.
   const gatePub = document.documents_in_publications[0]?.publications;
-  const membershipTiers = (gatePub?.publication_membership_tiers ?? [])
-    .filter((t) => t.active)
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((t) => ({
-      id: t.id,
-      name: t.name,
-      description: t.description,
-      monthly_price_cents: t.monthly_price_cents,
-      annual_price_cents: t.annual_price_cents,
-      currency: t.currency,
-      is_free: t.is_free,
-    }));
+  const membershipTiers = buildMembershipTiers(
+    gatePub?.publication_membership_settings,
+    gatePub?.publication_membership_tiers ?? [],
+  );
   let membersOnly: {
     gated: boolean;
-    tiers: typeof membershipTiers;
-    // The tiers the delimiter unlocks, resolved against every tier row
-    // (archived tiers still resolve); null when any paid membership unlocks.
-    unlockingTierIds: string[] | null;
+    tiers: MembershipTiers;
+    gatePolicy: GatePolicy | null;
   } = {
     gated: false,
-    tiers: [],
-    unlockingTierIds: null,
+    tiers: membershipTiers,
+    gatePolicy: null,
   };
   if (
     gatePub?.publication_membership_settings?.enabled &&
     postHasMembersDelimiter(normalizedDocument)
   ) {
-    const unlockingTierIds = resolveUnlockingTierIds(
-      getGatedPostTierIds(normalizedDocument),
-      gatePub.publication_membership_tiers ?? [],
-    );
+    const gatePolicy = getGatedPostPolicy(normalizedDocument);
     // normalizeDocumentRecord shares the pages array with `document.data`, so
     // this one splice gates both the normalized view and the raw record we
     // return. See the by-reference test in src/membership.test.ts.
@@ -129,7 +118,7 @@ export const getPostPageData = cache(async function getPostPageData(
     membersOnly = {
       gated: true,
       tiers: membershipTiers,
-      unlockingTierIds,
+      gatePolicy,
     };
   }
 

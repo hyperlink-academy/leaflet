@@ -16,7 +16,7 @@ import { InteractionPreview } from "components/Interactions/InteractionsPreview"
 import { PubIcon } from "components/ActionBar/Publications";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { formatBylineNames } from "src/utils/byline";
-import { getGatedPostTierIds, postHasMembersDelimiter } from "src/membership";
+import { getGatedPostPolicy, postHasMembersDelimiter } from "src/membership";
 
 export type StandardSitePostSize = "large" | "medium" | "small";
 
@@ -231,7 +231,7 @@ export function StandardSitePostItemView({
     href: docUrl,
     membersOnly: postHasMembersDelimiter(post.record),
     publicationUri: post.publication?.uri,
-    unlockingTierIds: getGatedPostTierIds(post.record),
+    gatePolicy: getGatedPostPolicy(post.record),
     title: post.record.title,
     author: authorLabel,
     date,

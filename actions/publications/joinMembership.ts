@@ -11,7 +11,11 @@ import {
   provisionCardOnAccount,
   walletCheckoutSessionCard,
 } from "stripe/wallet";
-import { isActiveMembership, filterJoinableTiers } from "src/membership";
+import {
+  isActiveMembership,
+  buildMembershipTiers,
+  type MembershipTiers,
+} from "src/membership";
 import { getReaderMembership, notifyNewMember } from "src/membership.server";
 import { ensureSubscriberRecordsForMembership } from "src/subscriptions/membership";
 import {
@@ -19,19 +23,19 @@ import {
   type SubscriptionSource,
 } from "src/subscriptionSource";
 import { Ok, Err, type Result } from "src/result";
-import type { Tier } from "components/Memberships/TierGrid";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
 
 export type MembershipJoinViewer = {
   loggedIn: boolean;
+  hasEmail: boolean;
   isOwner: boolean;
-  // The viewer's active membership, for the change/upgrade flow. Always a paid
-  // tier — the free tier is a plain subscription with no membership row. Its
-  // presence is what "is a member" means, so consumers derive that from here.
-  membership: {
+  // The persisted active paid-membership row. The join UI combines this with
+  // subscription state through resolvePublicationMembership; free membership
+  // deliberately has no row here.
+  paidMembership: {
     id: string;
-    tierId: string | null;
+    tierId: string;
     cadence: string | null;
     currentPeriodEnd: string | null;
   } | null;
@@ -47,8 +51,9 @@ export async function getMembershipJoinViewer(
   if (!identity)
     return {
       loggedIn: false,
+      hasEmail: false,
       isOwner: false,
-      membership: null,
+      paidMembership: null,
     };
   const [{ data: publication }, membership] = await Promise.all([
     supabaseServerClient
@@ -60,9 +65,10 @@ export async function getMembershipJoinViewer(
   ]);
   return {
     loggedIn: true,
+    hasEmail: !!identity.email,
     isOwner:
       !!identity.atp_did && identity.atp_did === publication?.identity_did,
-    membership:
+    paidMembership:
       membership && isActiveMembership(membership)
         ? {
             id: membership.id,
@@ -74,27 +80,24 @@ export async function getMembershipJoinViewer(
   };
 }
 
-// The joinable tier list for a publication — what PaidSubscribeButton needs to
-// decide a pub takes paid memberships and to render the join modal. Empty when
-// memberships are disabled.
-export async function getJoinableTiers(publicationUri: string): Promise<Tier[]> {
+// The subscriber baseline lives on settings; only billable plans are tier rows.
+export async function getMembershipTiers(
+  publicationUri: string,
+): Promise<MembershipTiers | null> {
   const { data } = await supabaseServerClient
     .from("publications")
     .select(
-      `publication_membership_settings(enabled),
-       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order, stripe_price_monthly_id, is_free)`,
+      `publication_membership_settings(enabled, subscriber_tier_name, subscriber_tier_description),
+       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order)`,
     )
     .eq("uri", publicationUri)
     .maybeSingle();
-  if (!data?.publication_membership_settings?.enabled) return [];
-  return filterJoinableTiers(data.publication_membership_tiers).map((t) => ({
-    id: t.id,
-    name: t.name,
-    description: t.description,
-    monthly_price_cents: t.monthly_price_cents,
-    annual_price_cents: t.annual_price_cents,
-    is_free: t.is_free,
-  }));
+  const settings = data?.publication_membership_settings;
+  if (!settings?.enabled) return null;
+  return buildMembershipTiers(
+    settings,
+    data?.publication_membership_tiers ?? [],
+  );
 }
 
 // Called on return from the hosted setup page (the pre-embedded-form flow;
@@ -172,8 +175,7 @@ export async function subscribeToTier(args: {
     return Err("memberships_not_enabled");
   if (identity.atp_did && identity.atp_did === publication.identity_did)
     return Err("own_publication");
-  // The free tier isn't a paid membership — it's reached via the subscribe flow.
-  if (!tier || tier.is_free) return Err("tier_not_found");
+  if (!tier) return Err("tier_not_found");
 
   const priceId =
     args.cadence === "year"

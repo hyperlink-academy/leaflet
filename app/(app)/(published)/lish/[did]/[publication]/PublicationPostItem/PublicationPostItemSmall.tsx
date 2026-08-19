@@ -19,7 +19,7 @@ export function PublicationPostItemSmall(props: CommonProps) {
           {props.membersOnly && (
             <MembersBadge
               publicationUri={props.publicationUri}
-              unlockingTierIds={props.unlockingTierIds}
+              gatePolicy={props.gatePolicy}
             />
           )}
         </h2>

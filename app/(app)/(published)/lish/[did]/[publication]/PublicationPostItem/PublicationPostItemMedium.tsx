@@ -26,7 +26,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
           {props.membersOnly && (
             <MembersBadge
               publicationUri={props.publicationUri}
-              unlockingTierIds={props.unlockingTierIds}
+              gatePolicy={props.gatePolicy}
             />
           )}
 

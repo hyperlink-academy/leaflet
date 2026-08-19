@@ -20,13 +20,14 @@ import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { SUBSCRIBE_ERROR_MESSAGES } from "components/Subscribe/subscribeErrors";
 import {
   TierGrid,
-  isFreeTier,
   effectiveCadence,
+  membershipPlanKey,
   subscribeErrorMessage,
   tierPriceLabel,
-  type Tier,
+  type MembershipPlan,
   type Cadence,
 } from "components/Memberships/TierGrid";
+import type { GatePolicy, MembershipTiers, PaidTier } from "src/membership";
 import { type JoinResume } from "components/Memberships/joinReturn";
 import { revalidateUnlocks } from "components/Memberships/revalidateUnlocks";
 import {
@@ -73,9 +74,8 @@ export function JoinMembershipFlow(props: {
   publicationName: string;
   publicationUrl?: string;
   newsletterMode: boolean;
-  tiers: Tier[];
-  unlocksPost?: boolean;
-  unlocksPostTierIds?: string[] | null;
+  tiers: MembershipTiers;
+  gatePolicy?: GatePolicy | null;
   resume?: JoinResume | null;
   // Analytics: where the join flow was opened from.
   source?: SubscriptionSource;
@@ -96,21 +96,21 @@ export function JoinMembershipFlow(props: {
     props.newsletterMode ? "email" : "atproto",
   );
   const [cadence, setCadence] = useState<Cadence>("month");
-  const [busyTierId, setBusyTierId] = useState<string | null>(null);
+  const [busyPlan, setBusyPlan] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [confirmStep, setConfirmStep] = useState<
-    | { kind: "authToken"; tokenId: string; tier: Tier }
-    | { kind: "pubCode"; tier: Tier }
+    | { kind: "authToken"; tokenId: string; plan: MembershipPlan }
+    | { kind: "pubCode"; plan: MembershipPlan }
     | null
   >(null);
   // Signed in but missing the identity being subscribed with — the tier we
   // continue to once the reader confirms linking it (mirrors SubscribeInput).
-  const [linkTier, setLinkTier] = useState<Tier | null>(null);
+  const [linkPlan, setLinkPlan] = useState<MembershipPlan | null>(null);
   const [inputMissing, setInputMissing] = useState(false);
 
   const [cardStep, setCardStep] = useState<{
-    tier: Tier;
+    tier: PaidTier;
     cadence: Cadence;
   } | null>(null);
   // A paid join completed — the flow shows the subscribe success screen in
@@ -121,7 +121,6 @@ export function JoinMembershipFlow(props: {
   // flow is open, so completing a join doesn't flash a loading spinner.
   useSubscribeSuccessData(props.active ? props.publicationUri : undefined);
 
-  const isSubscribed = viewerSub.subscribed;
   const hasNeededIdentity = props.newsletterMode
     ? !!identity?.email
     : !!identity?.bsky_profiles?.handle;
@@ -157,13 +156,16 @@ export function JoinMembershipFlow(props: {
   // Where sign-in should land: back here, carrying the picked tier for paid
   // joins so payment resumes (free joins are done once the after-sign-in
   // subscribe action runs).
-  const joinReturnUrl = (tier: Tier) => {
+  const joinReturnUrl = (plan: MembershipPlan) => {
     const url = new URL(window.location.href);
     url.searchParams.delete("join_tier");
     url.searchParams.delete("join_cadence");
-    if (!isFreeTier(tier)) {
-      url.searchParams.set("join_tier", tier.id);
-      url.searchParams.set("join_cadence", effectiveCadence(tier, cadence));
+    if (plan.kind === "paid") {
+      url.searchParams.set("join_tier", plan.tier.id);
+      url.searchParams.set(
+        "join_cadence",
+        effectiveCadence(plan.tier, cadence),
+      );
     }
     return url.toString();
   };
@@ -171,7 +173,7 @@ export function JoinMembershipFlow(props: {
   const finishJoin = (message: string) => {
     toaster({ type: "success", content: message });
     props.onClose?.();
-    setBusyTierId(null);
+    setBusyPlan(null);
     mutate("identity");
     revalidateUnlocks();
     router.refresh();
@@ -221,10 +223,18 @@ export function JoinMembershipFlow(props: {
   // the wallet's saved payment methods (and Link) so the reader picks how to
   // pay before the subscription is created.
   const payWithViewer = async (
-    tier: Tier,
+    tier: PaidTier,
     v?: MembershipJoinViewer | null,
     cadenceOverride?: Cadence | null,
   ) => {
+    const hasEmail = v?.hasEmail ?? viewer?.hasEmail ?? !!identity?.email;
+    if (!hasEmail) {
+      toaster({
+        type: "error",
+        content: "Add an email to your account before joining.",
+      });
+      return;
+    }
     const joinCadence = cadenceOverride ?? effectiveCadence(tier, cadence);
     if (v && !viewer) setViewer(v);
     setCardStep({ tier, cadence: joinCadence });
@@ -281,7 +291,7 @@ export function JoinMembershipFlow(props: {
         // already subscribed them, so pick the payment back up.
         const v = await getMembershipJoinViewer(props.publicationUri);
         setViewer(v);
-        const tier = props.tiers.find((t) => t.id === resume.tierId);
+        const tier = props.tiers.paid.find((t) => t.id === resume.tierId);
         if (resume.cadence === "year") setCadence("year");
         setProcessing(false);
         if (!v.loggedIn || !tier) return;
@@ -291,8 +301,8 @@ export function JoinMembershipFlow(props: {
   }, [props.active, props.resume]);
 
   // One-click free join for a signed-in reader who has the needed identity.
-  const freeJoin = async (tier: Tier) => {
-    setBusyTierId(tier.id);
+  const freeJoin = async () => {
+    setBusyPlan("subscriber");
     if (props.newsletterMode && identity?.email) {
       const res = await requestPublicationEmailSubscription(
         props.publicationUri,
@@ -300,7 +310,7 @@ export function JoinMembershipFlow(props: {
         props.source,
       );
       if (!res.ok) {
-        setBusyTierId(null);
+        setBusyPlan(null);
         toaster({
           type: "error",
           content: SUBSCRIBE_ERROR_MESSAGES[res.error],
@@ -314,7 +324,7 @@ export function JoinMembershipFlow(props: {
         props.source,
       );
       if (!res.success) {
-        setBusyTierId(null);
+        setBusyPlan(null);
         toaster({
           type: "error",
           content: "We couldn't subscribe you. Try again.",
@@ -328,38 +338,38 @@ export function JoinMembershipFlow(props: {
   // Signed-out email joins mint a session with an auth code confirmed right
   // here — except on custom domains, where sessions are first-party on the
   // main site, so we bounce through its email login instead.
-  const startEmailAuth = async (tier: Tier) => {
+  const startEmailAuth = async (plan: MembershipPlan) => {
     const base = mainSiteAuthBase();
     if (base) {
-      setBusyTierId(tier.id);
+      setBusyPlan(membershipPlanKey(plan));
       const url = new URL("/api/auth/email-login", base);
       url.searchParams.set("email", email);
-      url.searchParams.set("redirect", joinReturnUrl(tier));
+      url.searchParams.set("redirect", joinReturnUrl(plan));
       url.searchParams.set("action", subscribeAction());
       window.location.href = url.toString();
       return;
     }
-    setBusyTierId(tier.id);
+    setBusyPlan(membershipPlanKey(plan));
     try {
       const tokenId = await requestAuthEmailToken(email, {
         publicationName: props.publicationName,
         publicationUrl: props.publicationUrl,
       });
-      setConfirmStep({ kind: "authToken", tokenId, tier });
+      setConfirmStep({ kind: "authToken", tokenId, plan });
     } catch {
       toaster({
         type: "error",
         content: "We couldn't send the email. Please try again!",
       });
     }
-    setBusyTierId(null);
+    setBusyPlan(null);
   };
 
-  const redirectToOauthJoin = (tier: Tier, link: boolean) => {
-    setBusyTierId(tier.id);
+  const redirectToOauthJoin = (plan: MembershipPlan, link: boolean) => {
+    setBusyPlan(membershipPlanKey(plan));
     window.location.href = buildOauthLoginUrl({
       handle: handle.trim(),
-      redirect: joinReturnUrl(tier),
+      redirect: joinReturnUrl(plan),
       action: subscribeAction(),
       link,
       autoMerge: link,
@@ -368,29 +378,29 @@ export function JoinMembershipFlow(props: {
 
   // The signed-in-but-linking email path: the publication confirmation code
   // attaches the typed email to the current identity on confirm.
-  const sendPubCode = async (tier: Tier) => {
-    setBusyTierId(tier.id);
+  const sendPubCode = async (plan: MembershipPlan) => {
+    setBusyPlan(membershipPlanKey(plan));
     const res = await requestPublicationEmailSubscription(
       props.publicationUri,
       email,
       props.source,
     );
-    setBusyTierId(null);
+    setBusyPlan(null);
     if (!res.ok) {
       toaster({ type: "error", content: SUBSCRIBE_ERROR_MESSAGES[res.error] });
       return;
     }
     if (res.value.confirmed) {
-      if (isFreeTier(tier)) finishJoin("You're subscribed!");
-      else await payAfterIdentityChange(tier);
+      if (plan.kind === "subscriber") finishJoin("You're subscribed!");
+      else await payAfterIdentityChange(plan.tier);
       return;
     }
-    setConfirmStep({ kind: "pubCode", tier });
+    setConfirmStep({ kind: "pubCode", plan });
   };
 
   // The session identity just changed (login or link) — refetch wallet and
   // membership before routing to payment.
-  const payAfterIdentityChange = async (tier: Tier) => {
+  const payAfterIdentityChange = async (tier: PaidTier) => {
     mutate("identity");
     const v = await getMembershipJoinViewer(props.publicationUri);
     setViewer(v);
@@ -400,7 +410,7 @@ export function JoinMembershipFlow(props: {
   const submitCode = async (code: string) => {
     if (!confirmStep || confirming) return;
     setConfirming(true);
-    const tier = confirmStep.tier;
+    const plan = confirmStep.plan;
     if (confirmStep.kind === "authToken") {
       const token = await confirmEmailAuthToken(confirmStep.tokenId, code);
       if (!token) {
@@ -444,32 +454,34 @@ export function JoinMembershipFlow(props: {
     }
     setConfirming(false);
     setConfirmStep(null);
-    if (isFreeTier(tier)) {
+    if (plan.kind === "subscriber") {
       finishJoin("You're subscribed!");
       return;
     }
-    await payAfterIdentityChange(tier);
+    await payAfterIdentityChange(plan.tier);
   };
 
-  const selectTier = async (tier: Tier) => {
-    if (busyTierId || processing) return;
-    const free = isFreeTier(tier);
+  const selectPlan = async (plan: MembershipPlan) => {
+    if (busyPlan || processing) return;
 
     if (identity) {
-      if (hasNeededIdentity) return free ? freeJoin(tier) : payWithViewer(tier);
+      if (hasNeededIdentity)
+        return plan.kind === "subscriber"
+          ? freeJoin()
+          : payWithViewer(plan.tier);
       if (mode === "email" ? !validEmail(email) : !handle.trim())
         return setInputMissing(true);
-      setLinkTier(tier);
+      setLinkPlan(plan);
       return;
     }
 
     // Logged out: sign in/up with the typed identity first, then pay.
     if (mode === "email") {
       if (!validEmail(email)) return setInputMissing(true);
-      return startEmailAuth(tier);
+      return startEmailAuth(plan);
     }
     if (!handle.trim()) return setInputMissing(true);
-    redirectToOauthJoin(tier, false);
+    redirectToOauthJoin(plan, false);
   };
 
   const modeMenu = <SubscribeInputModeMenu mode={mode} onChange={setMode} />;
@@ -525,7 +537,7 @@ export function JoinMembershipFlow(props: {
         <div className="px-4 py-6 text-center text-secondary">
           This is your publication — readers see your membership tiers here.
         </div>
-      ) : viewer?.membership ? (
+      ) : viewer?.paidMembership ? (
         <div className="px-4 py-6 flex flex-col gap-2 text-center text-secondary">
           <p>
             You&apos;re already a member — change or cancel your plan from the
@@ -593,11 +605,10 @@ export function JoinMembershipFlow(props: {
             tiers={props.tiers}
             cadence={cadence}
             onCadenceChange={setCadence}
-            busyTierId={busyTierId}
-            isSubscribed={isSubscribed}
-            unlocksPost={props.unlocksPost}
-            unlocksPostTierIds={props.unlocksPostTierIds}
-            onSelectTier={selectTier}
+            busyPlan={busyPlan}
+            currentMembership={viewerSub.membership}
+            gatePolicy={props.gatePolicy}
+            onSelectPlan={selectPlan}
           />{" "}
           {!identity ? (
             <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
@@ -607,11 +618,11 @@ export function JoinMembershipFlow(props: {
           ) : null}
         </div>
       )}
-      {linkTier && identity && (
+      {linkPlan && identity && (
         <LinkIdentityModal
           open
           onOpenChange={(open) => {
-            if (!open) setLinkTier(null);
+            if (!open) setLinkPlan(null);
           }}
           signedInAs={
             identity.bsky_profiles?.handle
@@ -620,12 +631,12 @@ export function JoinMembershipFlow(props: {
           }
           linkingIdentity={mode === "email" ? email : `@${handle.trim()}`}
           confirmButtonLabel={mode === "email" ? "Link email" : "Link Bluesky"}
-          confirming={busyTierId !== null}
+          confirming={busyPlan !== null}
           onConfirm={async () => {
-            const tier = linkTier;
-            setLinkTier(null);
-            if (mode === "email") await sendPubCode(tier);
-            else redirectToOauthJoin(tier, true);
+            const plan = linkPlan;
+            setLinkPlan(null);
+            if (mode === "email") await sendPubCode(plan);
+            else redirectToOauthJoin(plan, true);
           }}
         />
       )}

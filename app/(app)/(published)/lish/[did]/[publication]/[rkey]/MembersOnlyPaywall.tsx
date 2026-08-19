@@ -9,10 +9,7 @@ import { PubIcon } from "components/ActionBar/Publications";
 import { formatPrice } from "components/Memberships/TierGrid";
 import { useMyMembership } from "components/Memberships/useMyMembership";
 import { revalidateUnlocks } from "components/Memberships/revalidateUnlocks";
-import {
-  gateUnlocksWithSubscription,
-  tierUnlocksGatedPost,
-} from "src/membership";
+import { membershipUnlocksGatedPost } from "src/membership";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
@@ -45,26 +42,27 @@ export const MembersOnlyPaywall = () => {
       </div>
     );
 
-  let tiers = document?.membersOnly?.tiers ?? [];
-  let unlockingTierIds = document?.membersOnly?.unlockingTierIds ?? null;
+  let membershipTiers = document?.membersOnly?.tiers;
+  if (!membershipTiers) return null;
+  let tiers = membershipTiers.paid;
+  let gatePolicy = document?.membersOnly?.gatePolicy ?? null;
 
-  let subscriptionUnlocks = gateUnlocksWithSubscription(
-    unlockingTierIds,
-    tiers,
-  );
-  let paidUnlockingTiers = tiers.filter(
-    (t) => !t.is_free && tierUnlocksGatedPost(t, unlockingTierIds),
+  let subscriptionUnlocks = gatePolicy?.audience === "subscribers";
+  let paidUnlockingTiers = tiers.filter((tier) =>
+    membershipUnlocksGatedPost({ kind: "paid", tierId: tier.id }, gatePolicy),
   );
   let startingPriceCents = paidUnlockingTiers.length
     ? Math.min(...paidUnlockingTiers.map((t) => t.monthly_price_cents))
     : null;
 
   let namedTiers =
-    paidUnlockingTiers.length < tiers.filter((t) => !t.is_free).length
+    paidUnlockingTiers.length < tiers.length
       ? paidUnlockingTiers.map((t) => t.name)
       : [];
 
-  let needsUpgrade = viewer.isMember && !subscriptionUnlocks;
+  let needsUpgrade =
+    viewer.membership?.kind === "paid" &&
+    !membershipUnlocksGatedPost(viewer.membership, gatePolicy);
 
   return (
     <div className="membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6">
@@ -111,8 +109,7 @@ export const MembersOnlyPaywall = () => {
             <ChangePlanModal
               membership={membership}
               title="Upgrade your membership"
-              unlocksPost
-              unlocksPostTierIds={unlockingTierIds}
+              gatePolicy={gatePolicy}
               onSuccess={revalidateUnlocks}
               onClose={() => setChangingPlan(false)}
             />
@@ -122,6 +119,7 @@ export const MembersOnlyPaywall = () => {
             newsletterMode={pub.newsletterMode}
             user={viewer}
             triggerLabel="Manage Subscription"
+            membershipTiers={membershipTiers}
           />
         </div>
       ) : (
@@ -130,9 +128,8 @@ export const MembersOnlyPaywall = () => {
           publicationName={pub.name}
           source={{ placement: "paywall" }}
           newsletterMode={pub.newsletterMode}
-          tiers={tiers}
-          unlocksPost
-          unlocksPostTierIds={unlockingTierIds}
+          tiers={membershipTiers}
+          gatePolicy={gatePolicy}
         />
       )}
     </div>

@@ -2,9 +2,9 @@
 import { Modal } from "components/Modal";
 import { JoinMembershipFlow } from "./JoinMembershipFlow";
 import { type JoinResume } from "./joinReturn";
-import { type Tier } from "./TierGrid";
 import { type MembershipJoinViewer } from "actions/publications/joinMembership";
 import type { SubscriptionSource } from "src/subscriptionSource";
+import type { GatePolicy, MembershipTiers } from "src/membership";
 
 // The paid join flow (JoinMembershipFlow) hosted in a modal, opened by
 // PaidSubscribeButton. The /join page renders the same flow inline.
@@ -15,9 +15,8 @@ export function JoinMembershipModal(props: {
   publicationName: string;
   publicationUrl?: string;
   newsletterMode: boolean;
-  tiers: Tier[];
-  unlocksPost?: boolean;
-  unlocksPostTierIds?: string[] | null;
+  tiers: MembershipTiers;
+  gatePolicy?: GatePolicy | null;
   resume?: JoinResume | null;
   source?: SubscriptionSource;
   // Test-harness seam, threaded to the flow.
@@ -38,8 +37,7 @@ export function JoinMembershipModal(props: {
         publicationUrl={props.publicationUrl}
         newsletterMode={props.newsletterMode}
         tiers={props.tiers}
-        unlocksPost={props.unlocksPost}
-        unlocksPostTierIds={props.unlocksPostTierIds}
+        gatePolicy={props.gatePolicy}
         resume={props.resume}
         source={props.source}
         viewerOverride={props.viewerOverride}

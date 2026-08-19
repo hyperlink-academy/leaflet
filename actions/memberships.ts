@@ -317,19 +317,12 @@ async function applyNewWalletCard(
   }
 }
 
-export type AvailableTier = {
-  id: string;
-  name: string;
-  monthly_price_cents: number;
-  annual_price_cents: number | null;
-};
-
 export type MyMembership = {
   id: string;
   publication: string;
   publicationName: string | null;
   publicationUrl: string;
-  tierId: string | null;
+  tierId: string;
   tierName: string | null;
   monthlyPriceCents: number | null;
   annualPriceCents: number | null;
@@ -337,7 +330,6 @@ export type MyMembership = {
   status: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
-  availableTiers: AvailableTier[];
 };
 
 export type MyMembershipsData = {
@@ -354,27 +346,18 @@ export async function getMyMembershipForPublication(
   const identity = await getAuthIdentity();
   if (!identity) return null;
 
-  const [{ data: row }, { data: tiers }] = await Promise.all([
-    supabaseServerClient
-      .from("publication_memberships")
-      .select(
-        `id, publication, tier, cadence, status, current_period_end, cancel_at_period_end,
-         publications(uri, name, record),
-         publication_membership_tiers(id, name, monthly_price_cents, annual_price_cents)`,
-      )
-      .eq("identity_id", identity.id)
-      .eq("publication", publicationUri)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabaseServerClient
-      .from("publication_membership_tiers")
-      .select("id, name, monthly_price_cents, annual_price_cents, sort_order")
-      .eq("publication", publicationUri)
-      .eq("active", true)
-      .eq("is_free", false)
-      .order("sort_order", { ascending: true }),
-  ]);
+  const { data: row } = await supabaseServerClient
+    .from("publication_memberships")
+    .select(
+      `id, publication, tier, cadence, status, current_period_end, cancel_at_period_end,
+       publications(uri, name, record),
+       publication_membership_tiers(id, name, monthly_price_cents, annual_price_cents)`,
+    )
+    .eq("identity_id", identity.id)
+    .eq("publication", publicationUri)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   if (!row) return null;
 
   const pub = row.publications;
@@ -392,12 +375,6 @@ export async function getMyMembershipForPublication(
     status: row.status,
     currentPeriodEnd: row.current_period_end,
     cancelAtPeriodEnd: row.cancel_at_period_end,
-    availableTiers: (tiers ?? []).map((t) => ({
-      id: t.id,
-      name: t.name,
-      monthly_price_cents: t.monthly_price_cents,
-      annual_price_cents: t.annual_price_cents,
-    })),
   };
 }
 
@@ -422,33 +399,6 @@ export async function getMyMemberships(): Promise<MyMembershipsData | null> {
       .maybeSingle(),
   ]);
 
-  const publicationUris = Array.from(
-    new Set((rows ?? []).map((r) => r.publication)),
-  );
-  const { data: allTiers } = publicationUris.length
-    ? await supabaseServerClient
-        .from("publication_membership_tiers")
-        .select(
-          "id, publication, name, monthly_price_cents, annual_price_cents, sort_order",
-        )
-        .in("publication", publicationUris)
-        .eq("active", true)
-        .eq("is_free", false)
-    : { data: [] };
-  const tiersByPublication = new Map<string, AvailableTier[]>();
-  for (const t of (allTiers ?? []).sort(
-    (a, b) => a.sort_order - b.sort_order,
-  )) {
-    const list = tiersByPublication.get(t.publication) ?? [];
-    list.push({
-      id: t.id,
-      name: t.name,
-      monthly_price_cents: t.monthly_price_cents,
-      annual_price_cents: t.annual_price_cents,
-    });
-    tiersByPublication.set(t.publication, list);
-  }
-
   const memberships: MyMembership[] = (rows ?? []).map((r) => {
     const pub = r.publications;
     const tier = r.publication_membership_tiers;
@@ -465,7 +415,6 @@ export async function getMyMemberships(): Promise<MyMembershipsData | null> {
       status: r.status,
       currentPeriodEnd: r.current_period_end,
       cancelAtPeriodEnd: r.cancel_at_period_end,
-      availableTiers: tiersByPublication.get(r.publication) ?? [],
     };
   });
 

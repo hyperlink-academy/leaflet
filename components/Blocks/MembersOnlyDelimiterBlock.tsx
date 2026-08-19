@@ -5,8 +5,15 @@ import { BlockProps } from "./Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { Menu, CheckboxMenuItem, MenuSeparator } from "components/Menu";
+import {
+  Menu,
+  CheckboxMenuItem,
+  MenuSeparator,
+  RadioMenuGroup,
+  RadioMenuItem,
+} from "components/Menu";
 import { formatPrice } from "components/Memberships/TierGrid";
+import type { GatePolicy } from "src/membership";
 import { v7 } from "uuid";
 
 export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
@@ -14,17 +21,29 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   let { permissions } = useEntitySetContext();
   let { data: pub } = useLeafletPublicationData();
 
+  let audienceFact = useEntity(props.entityID, "block/members-only-audience");
   let tierFacts = useEntity(props.entityID, "block/members-only-tier");
 
   let tiers = (pub?.publications?.publication_membership_tiers ?? [])
     .filter((t) => t.active)
     .sort((a, b) => a.monthly_price_cents - b.monthly_price_cents);
 
-  let checkedIds = tierFacts
-    .map((f) => f.data.value)
-    .filter((id) => tiers.some((t) => t.id === id));
-  if (checkedIds.length === 0)
-    checkedIds = tiers.filter((t) => !t.is_free).map((t) => t.id);
+  let checkedIds = [
+    ...new Set(
+      tierFacts
+        .map((f) => f.data.value)
+        .filter((id) => tiers.some((t) => t.id === id)),
+    ),
+  ];
+  let audience = audienceFact?.data.value;
+  let policy: GatePolicy =
+    audience === "subscribers"
+      ? { audience }
+      : audience === "paid"
+        ? { audience }
+        : audience === "tiers"
+          ? { audience, tierIds: checkedIds }
+          : { audience: "tiers", tierIds: [] };
 
   return (
     <div
@@ -36,17 +55,17 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
       <div className="flex items-center gap-2 min-w-0 font-bold">
         <LockTiny className="shrink-0" />
         <span className="w-max shrink-0">Only for</span>
-        {tiers.length > 0 &&
-          (permissions.write ? (
-            <TierSelector
-              entityID={props.entityID}
-              tiers={tiers}
-              tierFacts={tierFacts}
-              checkedIds={checkedIds}
-            />
-          ) : (
-            tierSummary(checkedIds, tiers)
-          ))}
+        {permissions.write ? (
+          <TierSelector
+            entityID={props.entityID}
+            tiers={tiers}
+            audienceFact={audienceFact}
+            tierFacts={tierFacts}
+            policy={policy}
+          />
+        ) : (
+          gateSummary(policy, tiers)
+        )}
       </div>
       <hr className="grow border-border-light" />
     </div>
@@ -57,57 +76,78 @@ type Tier = {
   id: string;
   name: string;
   monthly_price_cents: number;
-  is_free: boolean;
 };
 
-// "Free" reads as a price point among the other tiers, but what checking it
-// means here is everyone on the subscriber list. A renamed free tier keeps its
-// own name.
-function tierLabel(tier: Tier) {
-  return tier.name === "Free" ? "Subscribers" : tier.name;
-}
-
-function tierSummary(checkedIds: string[], tiers: Tier[]) {
-  let paid = tiers.filter((t) => !t.is_free);
-  if (
-    paid.length === checkedIds.length &&
-    paid.every((t) => checkedIds.includes(t.id))
-  )
-    return "Paid Members";
-  return tiers
-    .filter((t) => checkedIds.includes(t.id))
-    .map(tierLabel)
-    .join(", ");
+function gateSummary(policy: GatePolicy, tiers: Tier[]) {
+  if (policy.audience === "subscribers") return "Subscribers";
+  if (policy.audience === "paid") return "Paid Members";
+  const names = tiers
+    .filter((tier) => policy.tierIds.includes(tier.id))
+    .map((tier) => tier.name);
+  return names.length > 0 ? names.join(", ") : "Selected Tiers";
 }
 
 function TierSelector(props: {
   entityID: string;
   tiers: Tier[];
+  audienceFact: { id: string; data: { value: string } } | null | undefined;
   tierFacts: { id: string; data: { value: string } }[];
-  checkedIds: string[];
+  policy: GatePolicy;
 }) {
   let { rep, undoManager } = useReplicache();
-  let freeTier = props.tiers.find((t) => t.is_free);
-  let paidIds = props.tiers.filter((t) => !t.is_free).map((t) => t.id);
+  const checkedIds =
+    props.policy.audience === "tiers" ? props.policy.tierIds : [];
+
+  let setAudience = (audience: string) => {
+    if (!rep) return;
+    if (
+      audience !== "subscribers" &&
+      audience !== "paid" &&
+      audience !== "tiers"
+    )
+      return;
+    if (audience === "tiers" && props.tiers.length === 0) return;
+    undoManager.withUndoGroup(async () => {
+      await rep.mutate.assertFact({
+        id: props.audienceFact?.id ?? v7(),
+        entity: props.entityID,
+        attribute: "block/members-only-audience",
+        data: { type: "string", value: audience },
+      });
+      if (audience === "tiers") {
+        const activeTierIds = new Set(props.tiers.map((tier) => tier.id));
+        const selectedActiveTierIds = new Set(
+          props.tierFacts
+            .map((fact) => fact.data.value)
+            .filter((id) => activeTierIds.has(id)),
+        );
+        const mutations = props.tierFacts
+          .filter((fact) => !activeTierIds.has(fact.data.value))
+          .map((fact) => rep.mutate.retractFact({ factID: fact.id }));
+        if (selectedActiveTierIds.size === 0) {
+          mutations.push(
+            ...props.tiers.map((tier) =>
+              rep.mutate.assertFact({
+                id: v7(),
+                entity: props.entityID,
+                attribute: "block/members-only-tier",
+                data: { type: "string", value: tier.id },
+              }),
+            ),
+          );
+        }
+        await Promise.all(mutations);
+      }
+    });
+  };
 
   let toggleTier = (tier: Tier) => {
     if (!rep) return;
-    let checked = props.checkedIds.includes(tier.id);
-    let next: string[];
-    if (tier.is_free) {
-      // make sure free is checked if no paid is checked
-      if (checked) return;
-      next = [tier.id];
-    } else {
-      let paidChecked = props.checkedIds.filter((id) => paidIds.includes(id));
-      next = checked
-        ? paidChecked.filter((id) => id !== tier.id)
-        : [...paidChecked, tier.id];
-      if (next.length === 0) {
-        if (!freeTier) return;
-        next = [freeTier.id];
-      }
-    }
+    let checked = checkedIds.includes(tier.id);
+    if (checked && checkedIds.length === 1) return;
+    let next = checked
+      ? checkedIds.filter((id) => id !== tier.id)
+      : [...checkedIds, tier.id];
     undoManager.withUndoGroup(async () => {
       if (!rep) return;
       for (let fact of props.tierFacts) {
@@ -141,7 +181,7 @@ function TierSelector(props: {
         >
           <div className="truncate">
             {" "}
-            {tierSummary(props.checkedIds, props.tiers)}
+            {gateSummary(props.policy, props.tiers)}
           </div>
           <ArrowDownTiny className="shrink-0 scale-90" />
         </button>
@@ -150,30 +190,37 @@ function TierSelector(props: {
       <div className="text-tertiary text-sm font-bold px-2 pt-1">
         Unlocked for…{" "}
       </div>
+      <RadioMenuGroup value={props.policy.audience} onValueChange={setAudience}>
+        <RadioMenuItem value="subscribers">Subscribers</RadioMenuItem>
+        <RadioMenuItem value="paid">Paid Members</RadioMenuItem>
+        {props.tiers.length > 0 && (
+          <RadioMenuItem value="tiers">Selected Paid Tiers</RadioMenuItem>
+        )}
+      </RadioMenuGroup>
+      {props.policy.audience === "tiers" && props.tiers.length > 0 && (
+        <MenuSeparator />
+      )}
       <div className="flex flex-col gap-0.5">
-        {props.tiers.map((tier, index) => (
-          <div key={tier.id} className="flex flex-col gap-0.5">
+        {props.policy.audience === "tiers" &&
+          props.tiers.map((tier) => (
             <CheckboxMenuItem
+              key={tier.id}
               // Selecting would close the menu, but the whole point here is
               // checking off several tiers in a row.
               onSelect={(e) => {
                 e.preventDefault();
                 toggleTier(tier);
               }}
-              checked={props.checkedIds.includes(tier.id)}
+              checked={checkedIds.includes(tier.id)}
             >
               <div className="flex flex-col min-w-0 leading-tight">
-                <span className="truncate">{tierLabel(tier)}</span>
+                <span className="truncate">{tier.name}</span>
                 <span className="text-tertiary text-xs font-normal">
-                  {tier.is_free
-                    ? "Including free members"
-                    : `${formatPrice(tier.monthly_price_cents)}/month`}
+                  {formatPrice(tier.monthly_price_cents)}/month
                 </span>
               </div>
             </CheckboxMenuItem>
-            {tier.is_free && props.tiers[index + 1] && <MenuSeparator />}
-          </div>
-        ))}
+          ))}
       </div>
     </Menu>
   );

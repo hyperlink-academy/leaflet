@@ -23,7 +23,7 @@ export type ChangePreviewState =
 export function useChangePreview(args: {
   enabled: boolean;
   membershipId: string;
-  tierId: string;
+  tierId: string | null;
   cadence: "month" | "year";
 }): ChangePreviewState | null {
   const { enabled, membershipId, tierId, cadence } = args;

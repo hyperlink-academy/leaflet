@@ -19,6 +19,7 @@ export type DashboardState = {
     unsubscribed: boolean;
   };
   membersOnly: boolean;
+  subscriberTierSelected: boolean;
   memberTiers: string[];
 };
 
@@ -42,6 +43,7 @@ const defaultDashboardState: DashboardState = {
     unsubscribed: false,
   },
   membersOnly: false,
+  subscriberTierSelected: false,
   memberTiers: [],
 };
 

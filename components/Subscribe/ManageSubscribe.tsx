@@ -13,7 +13,6 @@ import {
   ChangePlanForm,
   MembershipActions,
   membershipPrice,
-  isMembershipActive,
 } from "components/Memberships/ChangePlanModal";
 import { CancelMembershipForm } from "components/Memberships/CancelMembershipModal";
 import { ResumeMembershipForm } from "components/Memberships/ResumeMembershipModal";
@@ -26,6 +25,7 @@ import { LinkHandle } from "./HandleSubscribe";
 import { EmailInput, EmailConfirm } from "./EmailSubscribe";
 import type { ViewerUser } from "./viewerSubscription";
 import { type MyMembership } from "actions/memberships";
+import type { MembershipTiers, SubscriberTier } from "src/membership";
 import {
   requestPublicationEmailSubscription,
   confirmPublicationEmailSubscription,
@@ -64,6 +64,8 @@ export const ManageSubscription = (props: {
   newsletterMode: boolean;
   user: ViewerUser;
   triggerLabel?: string;
+  membershipTiers?: MembershipTiers;
+  onChangeMembership?: () => void;
 }) => {
   let [open, setOpen] = useState(false);
   let [modalState, setModalState] = useState<ModalContent | null>(null);
@@ -72,6 +74,15 @@ export const ManageSubscription = (props: {
     if (readManageSubscriptionReturn()) setOpen(true);
   }, []);
 
+  const onMembershipChanged = () => {
+    setModalState(null);
+    setOpen(false);
+    mutateMyMembership(props.publicationUri);
+  };
+  const onFreeMembershipChange = () => {
+    setOpen(false);
+    props.onChangeMembership?.();
+  };
   return (
     <Modal
       asChild
@@ -121,10 +132,8 @@ export const ManageSubscription = (props: {
         {...props}
         state={modalState}
         setState={setModalState}
-        onSuccess={() => {
-          setModalState(null);
-          setOpen(false);
-        }}
+        onSuccess={onMembershipChanged}
+        onFreeMembershipChange={onFreeMembershipChange}
       />
     </Modal>
   );
@@ -140,9 +149,12 @@ const ModalContent = ({
   publicationUrl?: string;
   newsletterMode: boolean;
   user: ViewerUser;
+  membershipTiers?: MembershipTiers;
+  onChangeMembership?: () => void;
   state: ModalContent | null;
   setState: (state: ModalContent | null) => void;
   onSuccess: () => void;
+  onFreeMembershipChange: () => void;
 }) => {
   const back = () => setState(null);
   useModalBack(state ? back : null);
@@ -185,9 +197,12 @@ const ManageSubscriptionContent = (props: {
   publicationUrl?: string;
   newsletterMode: boolean;
   user: ViewerUser;
+  membershipTiers?: MembershipTiers;
+  onChangeMembership?: () => void;
   onChangePlan: (membership: MyMembership) => void;
   onResume: (membership: MyMembership) => void;
   onCancel: (membership: MyMembership) => void;
+  onFreeMembershipChange: () => void;
 }) => {
   const { user } = props;
   const { membership, isLoading } = useMyMembership(props.publicationUri);
@@ -290,25 +305,37 @@ const ManageSubscriptionContent = (props: {
       </div>
     );
 
+  const resolvedMembership = user.membership;
   const activeMembership =
-    membership && isMembershipActive(membership.status) ? membership : null;
+    membership && resolvedMembership?.kind === "paid" ? membership : null;
 
   const pendingCancellation = activeMembership?.cancelAtPeriodEnd
     ? activeMembership
     : null;
+  const freeMembership =
+    !activeMembership && resolvedMembership?.kind === "free"
+      ? props.membershipTiers?.subscriber
+      : null;
 
   const canMuteEmail =
     !emailEnabled || user.atprotoSubscribed || !!activeMembership;
 
   return (
     <div className="manageSubPrefs flex flex-col gap-2">
-      {membership && (
+      {activeMembership ? (
         <MembershipSection
-          membership={membership}
+          membership={activeMembership}
           onChangePlan={props.onChangePlan}
           onResume={props.onResume}
         />
-      )}
+      ) : freeMembership ? (
+        <FreeMembershipSection
+          tier={freeMembership}
+          onChangePlan={
+            props.onChangeMembership ? props.onFreeMembershipChange : undefined
+          }
+        />
+      ) : null}
       {props.newsletterMode && user.email ? (
         <div className={prefClassName}>
           <div className="flex flex-col leading-snug">
@@ -425,6 +452,28 @@ const ManageSubscriptionContent = (props: {
     </div>
   );
 };
+
+const FreeMembershipSection = (props: {
+  tier: SubscriberTier;
+  onChangePlan?: () => void;
+}) => (
+  <div className={prefClassName}>
+    <div className="flex flex-col leading-snug">
+      <p>Membership</p>
+      <p className="text-tertiary font-normal italic">{props.tier.name}</p>
+    </div>
+    {props.onChangePlan && (
+      <ButtonPrimary
+        className="text-sm"
+        type="button"
+        compact
+        onClick={props.onChangePlan}
+      >
+        Change
+      </ButtonPrimary>
+    )}
+  </div>
+);
 
 const MembershipSection = (props: {
   membership: MyMembership;

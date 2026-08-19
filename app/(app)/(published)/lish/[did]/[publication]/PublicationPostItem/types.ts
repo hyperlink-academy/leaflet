@@ -1,4 +1,5 @@
 import React from "react";
+import type { GatePolicy } from "src/membership";
 
 export type CommonProps = {
   href?: string;
@@ -11,7 +12,7 @@ export type CommonProps = {
   inList?: boolean;
   membersOnly?: boolean;
   publicationUri?: string;
-  unlockingTierIds?: string[] | null;
+  gatePolicy?: GatePolicy | null;
 };
 
 export type LargeProps = CommonProps & {

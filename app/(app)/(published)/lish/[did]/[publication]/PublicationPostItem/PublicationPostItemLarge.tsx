@@ -44,7 +44,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
         {props.membersOnly && (
           <MembersBadge
             publicationUri={props.publicationUri}
-            unlockingTierIds={props.unlockingTierIds}
+            gatePolicy={props.gatePolicy}
           />
         )}
 

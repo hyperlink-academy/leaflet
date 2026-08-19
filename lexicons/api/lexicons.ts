@@ -1597,16 +1597,22 @@ export const schemaDict = {
       main: {
         type: 'object',
         description:
-          'Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership.',
-        required: [],
+          'Marks where members-only content begins and declares which publication members can read past it.',
+        required: ['audience'],
         properties: {
-          tiers: {
+          audience: {
+            type: 'string',
+            knownValues: ['subscribers', 'paid', 'tiers'],
+            description:
+              'Whether access is available to all subscribers, all paid members, or selected paid tiers.',
+          },
+          tierIds: {
             type: 'array',
             items: {
               type: 'string',
             },
             description:
-              'Ids of the membership tiers whose members can read past the delimiter. Absent means every paid tier.',
+              'Paid tier ids that grant access when audience is tiers. An empty selection grants no membership access.',
           },
         },
       },

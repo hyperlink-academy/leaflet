@@ -68,8 +68,12 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
-  // On a members-only delimiter: one fact per membership tier whose members
-  // can read past it. No facts = every paid tier.
+  "block/members-only-audience": {
+    type: "string",
+    cardinality: "one",
+  },
+  // Present only for a selected-tier audience: one fact per paid tier that can
+  // read past the delimiter.
   "block/members-only-tier": {
     type: "string",
     cardinality: "many",

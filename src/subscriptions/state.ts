@@ -1,12 +1,14 @@
 import {
-  findActiveMembership,
+  isActiveMembership,
+  resolvePublicationMembership,
   type MembershipStatusFields,
+  type ResolvedPublicationMembership,
 } from "src/membership";
 
 // The one viewer-facing shape for "how am I subscribed to this publication",
 // derived from the three underlying tables (atproto subscription row, email
-// subscriber rows, membership row). Client-safe: used by useViewerSubscription
-// off the identity payload's SUBSCRIPTION_STATE_EMBEDS.
+// subscriber rows, paid membership row). Client-safe: used by
+// useViewerSubscription off the identity payload's SUBSCRIPTION_STATE_EMBEDS.
 export type SubscriptionState = {
   // Any form of subscription, including an active membership. The atproto
   // record is the root for linked accounts, but an email-only identity's email
@@ -16,8 +18,9 @@ export type SubscriptionState = {
   // A confirmed email row = email delivery on. Muting email flips the row to
   // `unsubscribed`; there is no separate "muted" state.
   emailEnabled: boolean;
-  isMember: boolean;
-  memberTier: string | null;
+  // The application-level relationship. Free membership is synthesized from
+  // subscription state; only paid membership has a persisted billing row.
+  membership: ResolvedPublicationMembership | null;
 };
 
 export function deriveSubscriptionState(
@@ -26,10 +29,9 @@ export function deriveSubscriptionState(
     subscriptions?: { publication: string }[] | null;
     emailSubscribers?: { publication: string; state: string }[] | null;
     memberships?:
-      | ({
-          publication: string;
-          tier?: string | null;
-        } & MembershipStatusFields)[]
+      | ({ publication: string } & MembershipStatusFields & {
+            tier: string;
+          })[]
       | null;
   },
 ): SubscriptionState {
@@ -39,12 +41,18 @@ export function deriveSubscriptionState(
   const emailEnabled = (rows.emailSubscribers ?? []).some(
     (s) => s.publication === publicationUri && s.state === "confirmed",
   );
-  const membership = findActiveMembership(rows.memberships, publicationUri);
+  const paidMembership =
+    (rows.memberships ?? []).find(
+      (m) => m.publication === publicationUri && isActiveMembership(m),
+    ) ?? null;
+  const subscribed = atprotoSubscribed || emailEnabled || !!paidMembership;
   return {
-    subscribed: atprotoSubscribed || emailEnabled || !!membership,
+    subscribed,
     atprotoSubscribed,
     emailEnabled,
-    isMember: !!membership,
-    memberTier: membership?.tier ?? null,
+    membership: resolvePublicationMembership({
+      isSubscriber: subscribed,
+      paidMembership,
+    }),
   };
 }
