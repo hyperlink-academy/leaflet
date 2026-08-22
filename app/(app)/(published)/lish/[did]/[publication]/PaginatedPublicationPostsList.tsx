@@ -72,6 +72,9 @@ export function PaginatedPublicationPostsList({
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const hasMore = cappedUris.length > size * POSTS_LIST_PAGE_SIZE;
+  // Posts this list won't reach: either still windowed off by pagination, or
+  // cut off entirely by `limit`.
+  const hasUnshownPosts = hasMore || cappedUris.length < uris.length;
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -111,9 +114,10 @@ export function PaginatedPublicationPostsList({
           Loading more posts...
         </div>
       )}
-      {/* Always in the SSR HTML: only the first batch of posts is served, so
-          crawlers need a plain anchor to the archive to reach the rest. */}
-      {!disableLinks && (
+      {/* In the SSR HTML whenever posts are missing from it: only the first
+          batch is served, so crawlers need a plain anchor to the archive to
+          reach the rest. */}
+      {!disableLinks && hasUnshownPosts && (
         <div className="text-center pt-3">
           <SpeedyLink
             href={`${getPublicationURL(publication).replace(/\/+$/, "")}/archive`}
