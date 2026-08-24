@@ -44,7 +44,7 @@ const nextConfig = {
   // Caps the CDN stale-while-revalidate window for ISR pages (default is one
   // year — a bad cached page could be served stale that long).
   expireTime: 86400,
-  serverExternalPackages: ["yjs", "pino"],
+  serverExternalPackages: ["yjs", "pino", "jsdom"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {
     loader: "custom",

@@ -70,7 +70,13 @@ export default async function AdminPage() {
 
   return (
     <>
-      <div className="w-full max-w-2xl mx-auto px-4 pt-8 -mb-8 flex justify-end">
+      <div className="w-full max-w-2xl mx-auto px-4 pt-8 -mb-8 flex justify-end gap-4">
+        <Link
+          href="/admin/import-ghost"
+          className="text-sm text-accent-contrast hover:underline"
+        >
+          Import from Ghost →
+        </Link>
         <Link
           href="/admin/import-subscribers"
           className="text-sm text-accent-contrast hover:underline"

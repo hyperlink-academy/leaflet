@@ -27,12 +27,22 @@ export async function createLeaflet({
   firstBlocks,
   rootFacts = [],
   pageFacts = [],
+  extraEntities = [],
+  extraFacts,
   tailCte,
 }: {
   pageType: "canvas" | "doc";
   firstBlocks?: DefaultBlockSpec[];
   rootFacts?: FactInput[];
   pageFacts?: FactInput[];
+  // Caller-minted entities (blocks, footnotes, a cover image) that join the
+  // leaflet's entity set, and their facts — which may also target the root or
+  // first page (e.g. a card/block list built ahead of time).
+  extraEntities?: string[];
+  extraFacts?: (ids: {
+    rootEntityId: string;
+    firstPageId: string;
+  }) => Array<FactInput & { entity: string }>;
   tailCte?: (ids: { permTokenId: string; rootEntityId: string }) => SQL;
 }): Promise<{
   permTokenId: string;
@@ -134,7 +144,15 @@ export async function createLeaflet({
     });
   }
 
-  const entityIds = [rootEntityId, firstPageId, ...blockEntityIds];
+  for (const f of extraFacts?.({ rootEntityId, firstPageId }) ?? [])
+    factRows.push({ id: v7(), ...f });
+
+  const entityIds = [
+    rootEntityId,
+    firstPageId,
+    ...blockEntityIds,
+    ...extraEntities,
+  ];
 
   const entityValues = sql.join(
     entityIds.map((id) => sql`(${id}, ${entitySetId})`),

@@ -129,6 +129,7 @@
     "@cloudflare/workers-types": "^4.20240512.0",
     "@react-email/ui": "^6.0.0",
     "@tailwindcss/postcss": "^4.1.13",
+    "@types/jsdom": "^30.0.0",
     "@types/katex": "^0.16.7",
     "@types/luxon": "^3.7.1",
     "@types/node": "^22.15.17",
