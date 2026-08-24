@@ -131,9 +131,10 @@ export type DraftFacts = {
   droppedImages: ImportImage[];
 };
 
-// Materialise a plan into the entities and facts of one linear-document page,
-// given the resolved storage location of each image. Images that failed to
-// resolve are dropped along with their block.
+// Materialise a plan into the entities and facts of a complete leaflet — root,
+// one linear-document page, and its blocks — given the resolved storage
+// location of each image. Images that failed to resolve are dropped along with
+// their block.
 export function draftFacts(
   plan: DraftPlan,
   resolveImage: (image: ImportImage) => ImageData | null,
@@ -151,10 +152,22 @@ export function draftFacts(
     (b) => !droppedEntities.has(b.entityID),
   );
   const entities = new Set<string>([
+    plan.rootEntityId,
+    plan.firstPageId,
     ...blocks.map((b) => b.entityID),
     ...plan.content.extraEntities,
   ]);
-  const facts: Array<FactInput & { entity: string }> = [];
+  const facts: Array<FactInput & { entity: string }> = [
+    {
+      entity: plan.rootEntityId,
+      attribute: "root/page",
+      data: {
+        type: "ordered-reference",
+        value: plan.firstPageId,
+        position: "a0",
+      },
+    },
+  ];
 
   const topLevel = blocks.filter((b) => b.parent === plan.firstPageId);
   const positions = generateNKeysBetween(null, null, topLevel.length);
@@ -226,21 +239,8 @@ export type PlanPreview = {
 // the preview upload hook that passes image URLs straight through.
 export async function renderPlanPreview(plan: DraftPlan): Promise<PlanPreview> {
   const { facts } = draftFacts(plan, previewImage);
-  const allFacts: Fact<Attribute>[] = [
-    {
-      id: v7(),
-      entity: plan.rootEntityId,
-      attribute: "root/page",
-      data: {
-        type: "ordered-reference",
-        value: plan.firstPageId,
-        position: "a0",
-      },
-    },
-    ...facts.map((f) => ({ id: v7(), ...f }) as Fact<Attribute>),
-  ];
   const { pages } = await processBlocksToPages({
-    facts: allFacts,
+    facts: facts.map((f) => ({ id: v7(), ...f }) as Fact<Attribute>),
     root_entity: plan.rootEntityId,
     hooks: {
       uploadImage: async (src) =>

@@ -8,7 +8,7 @@ import { Ok, Err, type Result } from "src/result";
 import { isAdminEmail } from "src/adminAllowlist";
 import { getProfiles } from "src/identity";
 import { restoreOAuthSession } from "src/atproto-oauth";
-import { createLeaflet } from "src/utils/createLeaflet";
+import { insertLeaflet } from "src/utils/insertLeaflet";
 import { publishLeaflet } from "src/utils/publishLeaflet";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import type { PubLeafletPublication } from "lexicons/api";
@@ -240,13 +240,10 @@ export async function importGhostPost(args: {
   );
 
   let built = draftFacts(plan, (img) => uploaded.get(img.entityID) ?? null);
-  let { permTokenId, rootEntityId } = await createLeaflet({
-    pageType: "doc",
-    firstBlocks: [],
+  let { permTokenId } = await insertLeaflet({
     rootEntityId: plan.rootEntityId,
-    firstPageId: plan.firstPageId,
-    extraEntities: built.entities,
-    extraFacts: built.facts,
+    entityIds: built.entities,
+    facts: built.facts,
     tailCte: ({ permTokenId }) => sql`, link AS (
       INSERT INTO leaflets_in_publications (publication, leaflet, doc, title, description, tags)
       VALUES (${args.publicationUri}, ${permTokenId}, NULL, ${plan.title}, ${plan.description},
@@ -276,7 +273,7 @@ export async function importGhostPost(args: {
   try {
     let published = await publishLeaflet({
       actorDid: pub.identity_did,
-      root_entity: rootEntityId,
+      root_entity: plan.rootEntityId,
       publication_uri: args.publicationUri,
       leaflet_id: permTokenId,
       title: plan.title,
