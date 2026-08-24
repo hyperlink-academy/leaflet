@@ -26,6 +26,10 @@ export type GhostImportOptions = {
 };
 
 export type DraftPlan = {
+  // Ids of the leaflet this plan materialises into; the content's top-level
+  // blocks are parented to firstPageId.
+  rootEntityId: string;
+  firstPageId: string;
   ghostId: string;
   slug: string;
   title: string;
@@ -37,19 +41,18 @@ export type DraftPlan = {
   warnings: ImportWarning[];
 };
 
-// Stand-ins for ids createLeaflet mints later; swapped for the real ones in
-// draftFacts.
-const PAGE_PLACEHOLDER = "__ghost_import_page__";
-const PERMISSION_SET_PLACEHOLDER = "__ghost_import_set__";
-
 export function planGhostDraft(
   post: GhostPost,
   opts: GhostImportOptions,
 ): DraftPlan {
+  const rootEntityId = v7();
+  const firstPageId = v7();
   const content = ghostHtmlToBlocks(post.html, {
     siteUrl: opts.siteUrl,
-    parent: PAGE_PLACEHOLDER,
-    permission_set: PERMISSION_SET_PLACEHOLDER,
+    parent: firstPageId,
+    // Only the entity ids of extra entities are used; they join the leaflet's
+    // set via createLeaflet.
+    permission_set: "",
   });
   const warnings = [...content.warnings];
 
@@ -58,7 +61,7 @@ export function planGhostDraft(
       const entityID = v7();
       content.blocks.unshift({
         entityID,
-        parent: PAGE_PLACEHOLDER,
+        parent: firstPageId,
         type: "members-only-delimiter",
         facts: [
           {
@@ -100,6 +103,8 @@ export function planGhostDraft(
     });
 
   return {
+    rootEntityId,
+    firstPageId,
     ghostId: post.id,
     slug: post.slug,
     title: post.title,
@@ -127,11 +132,10 @@ export type DraftFacts = {
 };
 
 // Materialise a plan into the entities and facts of one linear-document page,
-// given the real page/root ids and the resolved storage location of each
-// image. Images that failed to resolve are dropped along with their block.
+// given the resolved storage location of each image. Images that failed to
+// resolve are dropped along with their block.
 export function draftFacts(
   plan: DraftPlan,
-  ids: { rootEntityId: string; firstPageId: string },
   resolveImage: (image: ImportImage) => ImageData | null,
 ): DraftFacts {
   const resolved = new Map<string, ImageData>();
@@ -152,11 +156,11 @@ export function draftFacts(
   ]);
   const facts: Array<FactInput & { entity: string }> = [];
 
-  const topLevel = blocks.filter((b) => b.parent === PAGE_PLACEHOLDER);
+  const topLevel = blocks.filter((b) => b.parent === plan.firstPageId);
   const positions = generateNKeysBetween(null, null, topLevel.length);
   topLevel.forEach((b, i) => {
     facts.push({
-      entity: ids.firstPageId,
+      entity: plan.firstPageId,
       attribute: "card/block",
       data: {
         type: "ordered-reference",
@@ -194,7 +198,7 @@ export function draftFacts(
         data: { type: "image", ...cover },
       });
       facts.push({
-        entity: ids.rootEntityId,
+        entity: plan.rootEntityId,
         attribute: "root/cover-image",
         data: { type: "reference", value: plan.coverImage.entityID },
       });
@@ -221,25 +225,23 @@ export type PlanPreview = {
 // Run the plan through the same facts → record projection publish uses, with
 // the preview upload hook that passes image URLs straight through.
 export async function renderPlanPreview(plan: DraftPlan): Promise<PlanPreview> {
-  const rootEntityId = v7();
-  const firstPageId = v7();
-  const { facts } = draftFacts(
-    plan,
-    { rootEntityId, firstPageId },
-    previewImage,
-  );
+  const { facts } = draftFacts(plan, previewImage);
   const allFacts: Fact<Attribute>[] = [
     {
       id: v7(),
-      entity: rootEntityId,
+      entity: plan.rootEntityId,
       attribute: "root/page",
-      data: { type: "ordered-reference", value: firstPageId, position: "a0" },
+      data: {
+        type: "ordered-reference",
+        value: plan.firstPageId,
+        position: "a0",
+      },
     },
     ...facts.map((f) => ({ id: v7(), ...f }) as Fact<Attribute>),
   ];
   const { pages } = await processBlocksToPages({
     facts: allFacts,
-    root_entity: rootEntityId,
+    root_entity: plan.rootEntityId,
     hooks: {
       uploadImage: async (src) =>
         ({

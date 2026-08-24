@@ -239,29 +239,14 @@ export async function importGhostPost(args: {
     ),
   );
 
-  // The facts reference the root/page ids createLeaflet mints; build them
-  // against placeholders and swap in the real ids inside the callback.
-  const ROOT = "__root__";
-  const PAGE = "__page__";
-  let built = draftFacts(
-    plan,
-    { rootEntityId: ROOT, firstPageId: PAGE },
-    (img) => uploaded.get(img.entityID) ?? null,
-  );
+  let built = draftFacts(plan, (img) => uploaded.get(img.entityID) ?? null);
   let { permTokenId, rootEntityId } = await createLeaflet({
     pageType: "doc",
     firstBlocks: [],
+    rootEntityId: plan.rootEntityId,
+    firstPageId: plan.firstPageId,
     extraEntities: built.entities,
-    extraFacts: (ids) =>
-      built.facts.map((f) => ({
-        ...f,
-        entity:
-          f.entity === ROOT
-            ? ids.rootEntityId
-            : f.entity === PAGE
-              ? ids.firstPageId
-              : f.entity,
-      })),
+    extraFacts: built.facts,
     tailCte: ({ permTokenId }) => sql`, link AS (
       INSERT INTO leaflets_in_publications (publication, leaflet, doc, title, description, tags)
       VALUES (${args.publicationUri}, ${permTokenId}, NULL, ${plan.title}, ${plan.description},

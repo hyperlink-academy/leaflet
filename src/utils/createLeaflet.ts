@@ -28,7 +28,9 @@ export async function createLeaflet({
   rootFacts = [],
   pageFacts = [],
   extraEntities = [],
-  extraFacts,
+  extraFacts = [],
+  rootEntityId = v7(),
+  firstPageId = v7(),
   tailCte,
 }: {
   pageType: "canvas" | "doc";
@@ -37,12 +39,12 @@ export async function createLeaflet({
   pageFacts?: FactInput[];
   // Caller-minted entities (blocks, footnotes, a cover image) that join the
   // leaflet's entity set, and their facts — which may also target the root or
-  // first page (e.g. a card/block list built ahead of time).
+  // first page (e.g. a card/block list built ahead of time), provided the
+  // caller also supplies those ids.
   extraEntities?: string[];
-  extraFacts?: (ids: {
-    rootEntityId: string;
-    firstPageId: string;
-  }) => Array<FactInput & { entity: string }>;
+  extraFacts?: Array<FactInput & { entity: string }>;
+  rootEntityId?: string;
+  firstPageId?: string;
   tailCte?: (ids: { permTokenId: string; rootEntityId: string }) => SQL;
 }): Promise<{
   permTokenId: string;
@@ -53,8 +55,6 @@ export async function createLeaflet({
   // RETURNING-driven data dependencies between statements.
   const entitySetId = v7();
   const permTokenId = v7();
-  const rootEntityId = v7();
-  const firstPageId = v7();
 
   const factRows: FactRow[] = [
     {
@@ -144,8 +144,7 @@ export async function createLeaflet({
     });
   }
 
-  for (const f of extraFacts?.({ rootEntityId, firstPageId }) ?? [])
-    factRows.push({ id: v7(), ...f });
+  for (const f of extraFacts) factRows.push({ id: v7(), ...f });
 
   const entityIds = [
     rootEntityId,
