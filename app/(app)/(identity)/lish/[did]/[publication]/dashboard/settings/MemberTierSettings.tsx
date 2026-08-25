@@ -33,7 +33,11 @@ type Tier = {
   currency: string;
   active: boolean;
   sort_order: number;
+  publication_memberships: { count: number }[];
 };
+
+const memberCount = (tier: Tier) =>
+  tier.publication_memberships?.[0]?.count ?? 0;
 
 export const MembershipTiers = (props: { publicationUri: string }) => {
   let { data, mutate } = usePublicationData();
@@ -296,6 +300,8 @@ const TierEditorModal = (props: {
   );
   let [saving, setSaving] = useState(false);
   let [deleting, setDeleting] = useState(false);
+  let members = props.tier ? memberCount(props.tier) : 0;
+  let priceLocked = members > 0;
 
   let parsePrice = (value: string): number | null => {
     if (!value.trim()) return null;
@@ -343,8 +349,12 @@ const TierEditorModal = (props: {
       id: props.tier?.id,
       name: name.trim(),
       description,
-      monthly_price_cents: monthlyCents,
-      annual_price_cents: annualCents,
+      monthly_price_cents: priceLocked
+        ? props.tier!.monthly_price_cents
+        : monthlyCents,
+      annual_price_cents: priceLocked
+        ? props.tier!.annual_price_cents
+        : annualCents,
       sort_order: props.tier?.sort_order,
     };
     setSaving(true);
@@ -354,9 +364,11 @@ const TierEditorModal = (props: {
       toaster({
         type: "error",
         content:
-          res.error === "stripe_error"
-            ? "We couldn't sync the tier with Stripe. Please try again!"
-            : "We couldn't save the tier. Please try again!",
+          res.error === "tier_has_members"
+            ? "This tier has members, so its price can't be changed."
+            : res.error === "stripe_error"
+              ? "We couldn't sync the tier with Stripe. Please try again!"
+              : "We couldn't save the tier. Please try again!",
       });
       return;
     }
@@ -420,6 +432,7 @@ const TierEditorModal = (props: {
                 min="1"
                 step="0.01"
                 value={monthly}
+                disabled={priceLocked}
                 onChange={(e) => onMonthlyChange(e.currentTarget.value)}
               />
             </div>
@@ -438,6 +451,7 @@ const TierEditorModal = (props: {
                 min="1"
                 step="0.01"
                 value={annual}
+                disabled={priceLocked}
                 onChange={(e) => {
                   setAnnualEdited(true);
                   setAnnual(e.currentTarget.value);
@@ -446,6 +460,13 @@ const TierEditorModal = (props: {
             </div>
           </div>
         </div>
+        {priceLocked && (
+          <p className="text-tertiary text-sm leading-snug">
+            {members === 1 ? "1 member is" : `${members} members are`} on this
+            tier, so its price can't be changed. To offer a different price,
+            add a new tier.
+          </p>
+        )}
         <div className="flex justify-between items-center pt-1">
           {props.tier ? (
             <ButtonSecondary

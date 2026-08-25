@@ -188,6 +188,11 @@ export function truncatePagesAtMembersDelimiter(pages: unknown[]): void {
   }
 }
 
+// Statuses under which a member still holds a live Stripe subscription on
+// their tier's price. A canceled/incomplete row is history; these are the
+// members a price change would leave on a price the tier no longer offers.
+export const LIVE_MEMBERSHIP_STATUSES = ["active", "trialing", "past_due"];
+
 export type MembershipStatusFields = {
   status: string | null;
   current_period_end: string | null;

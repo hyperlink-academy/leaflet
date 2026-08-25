@@ -6,6 +6,7 @@ import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublicat
 import { getStripe } from "stripe/client";
 import { Ok, Err, type Result } from "src/result";
 import { tierDescriptionPlainText } from "src/utils/tierDescriptionDoc";
+import { LIVE_MEMBERSHIP_STATUSES } from "src/membership";
 
 type ToggleError =
   | "unauthorized"
@@ -16,6 +17,7 @@ type TierError =
   | "unauthorized"
   | "invalid_tier"
   | "tier_not_found"
+  | "tier_has_members"
   | "no_connected_account"
   | "database_error"
   | "stripe_error";
@@ -163,6 +165,25 @@ export async function upsertMembershipTier(
   }
 
   if (!validTierInput(tier)) return Err("invalid_tier");
+
+  // Existing members keep their old Stripe price, so a change would split the
+  // tier across two prices; offer a new tier instead.
+  if (
+    existing &&
+    (existing.monthly_price_cents !== tier.monthly_price_cents ||
+      existing.annual_price_cents !== (tier.annual_price_cents ?? null))
+  ) {
+    const { count, error } = await supabaseServerClient
+      .from("publication_memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("tier", existing.id)
+      .in("status", LIVE_MEMBERSHIP_STATUSES);
+    if (error) {
+      console.error("[membershipSettings] member count failed:", error);
+      return Err("database_error");
+    }
+    if (count) return Err("tier_has_members");
+  }
 
   // Products and prices are provisioned on the publisher's connected account
   // (direct-charge model), so we need that account before touching Stripe.
