@@ -1,11 +1,6 @@
 import { v7 } from "uuid";
 import { generateNKeysBetween } from "fractional-indexing";
-import { BlobRef } from "@atproto/lexicon";
-import type { Fact } from "src/replicache";
-import type { Attribute } from "src/replicache/attributes";
 import type { FactInput } from "src/replicache/mutations";
-import { processBlocksToPages } from "src/utils/factsToPagesRecord";
-import type { PubLeafletPagesLinearDocument } from "lexicons/api";
 import {
   ghostHtmlToBlocks,
   type ConvertedContent,
@@ -229,35 +224,3 @@ export const previewImage = (image: ImportImage): ImageData => ({
   height: image.height ?? 1,
   fallback: "",
 });
-
-export type PlanPreview = {
-  blocks: PubLeafletPagesLinearDocument.Block[];
-  coverImageUrl: string | null;
-};
-
-// Run the plan through the same facts → record projection publish uses, with
-// the preview upload hook that passes image URLs straight through.
-export async function renderPlanPreview(plan: DraftPlan): Promise<PlanPreview> {
-  const { facts } = draftFacts(plan, previewImage);
-  const { pages } = await processBlocksToPages({
-    facts: facts.map((f) => ({ id: v7(), ...f }) as Fact<Attribute>),
-    root_entity: plan.rootEntityId,
-    hooks: {
-      uploadImage: async (src) =>
-        ({
-          ref: { $link: src },
-          mimeType: "image/*",
-          size: 0,
-        }) as unknown as BlobRef,
-      uploadPoll: null,
-    },
-  });
-  const first = pages[0];
-  return {
-    blocks:
-      first?.type === "doc"
-        ? (first.blocks as PubLeafletPagesLinearDocument.Block[])
-        : [],
-    coverImageUrl: plan.coverImage?.url ?? null,
-  };
-}

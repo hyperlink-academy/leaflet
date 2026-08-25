@@ -530,8 +530,8 @@ function PostTable(props: {
                     {preview && (
                       <span className="text-xs text-tertiary flex flex-wrap gap-x-2">
                         <span>
-                          {preview.blocks.length} block
-                          {preview.blocks.length === 1 ? "" : "s"}
+                          {preview.blockCount} block
+                          {preview.blockCount === 1 ? "" : "s"}
                         </span>
                         <span>
                           {preview.imageCount} image
@@ -641,7 +641,7 @@ function PreviewSummary(props: {
   mode: GhostImportMode;
   target: GhostImportTarget;
 }) {
-  let blocks = props.previews.reduce((n, p) => n + p.blocks.length, 0);
+  let blocks = props.previews.reduce((n, p) => n + p.blockCount, 0);
   let images = props.previews.reduce((n, p) => n + p.imageCount, 0);
   let warnings = props.previews.reduce((n, p) => n + p.warnings.length, 0);
   return (

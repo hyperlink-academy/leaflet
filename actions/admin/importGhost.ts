@@ -1,6 +1,7 @@
 "use server";
 
 import { sql } from "drizzle-orm";
+import { v7 } from "uuid";
 import { AtUri } from "@atproto/syntax";
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -12,13 +13,14 @@ import { insertLeaflet } from "src/utils/insertLeaflet";
 import { publishLeaflet } from "src/utils/publishLeaflet";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import type { PubLeafletPublication } from "lexicons/api";
+import type { Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import type { GhostPost } from "src/ghostImport/parseGhostExport";
 import {
   planGhostDraft,
   draftFacts,
-  renderPlanPreview,
+  previewImage,
   type GhostImportOptions,
-  type PlanPreview,
 } from "src/ghostImport/planDraft";
 import type { ImportWarning } from "src/ghostImport/ghostToBlocks";
 import { makeImageFetcher } from "src/ghostImport/uploadRemoteImage";
@@ -115,7 +117,14 @@ export async function getGhostImportTarget(
   });
 }
 
-export type GhostPostPreview = PlanPreview & {
+export type GhostPostPreview = {
+  // The draft exactly as importGhostPost would write it, with images left at
+  // their Ghost URLs; the client renders it with the editor's block components.
+  rootEntityId: string;
+  firstPageId: string;
+  facts: Fact<Attribute>[];
+  blockCount: number;
+  coverImageUrl: string | null;
   ghostId: string;
   slug: string;
   title: string;
@@ -138,9 +147,15 @@ export async function previewGhostImport(args: {
   let previews: GhostPostPreview[] = [];
   for (let post of args.posts) {
     let plan = planGhostDraft(post, args.options);
-    let rendered = await renderPlanPreview(plan);
+    let { facts } = draftFacts(plan, previewImage);
     previews.push({
-      ...rendered,
+      rootEntityId: plan.rootEntityId,
+      firstPageId: plan.firstPageId,
+      facts: facts.map((f) => ({ id: v7(), ...f }) as Fact<Attribute>),
+      blockCount: facts.filter(
+        (f) => f.attribute === "card/block" && f.entity === plan.firstPageId,
+      ).length,
+      coverImageUrl: plan.coverImage?.url ?? null,
       ghostId: plan.ghostId,
       slug: plan.slug,
       title: plan.title,

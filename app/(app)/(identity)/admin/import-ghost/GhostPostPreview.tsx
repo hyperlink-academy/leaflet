@@ -1,141 +1,140 @@
 "use client";
 
-import { LinearDocumentPage } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/LinearDocumentPage";
-import { LeafletContentProvider } from "contexts/LeafletContentContext";
-import {
-  DocumentProvider,
-  type DocumentContextValue,
-  type PublicationContext,
-} from "contexts/DocumentContext";
+import { useMemo, type ContextType } from "react";
+import { ReplicacheProvider, type PermissionToken } from "src/replicache";
+import { EntitySetProvider } from "components/EntitySetProvider";
+import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
-import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import type { PubLeafletPagesLinearDocument } from "lexicons/api";
-import type { PostPageData } from "src/utils/getPostPageData";
+import { Block } from "components/Blocks/Block";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+import { localImages } from "src/utils/addImage";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import type { Json } from "supabase/database.types";
-import type { BlobRef } from "@atproto/lexicon";
 import type {
   GhostImportTarget,
   GhostPostPreview as Preview,
 } from "actions/admin/importGhost";
 
-// Renders a planned import the way the published post page would, from the
-// in-memory record projection: the same LinearDocumentPage the live site uses,
-// fed hand-built context values (see theme-settings/PostPreview.tsx for the
-// same trick).
+const PREVIEW_SET = "ghost-import-preview";
+
+// Renders a planned import the way the editor shows a draft: the real block
+// components over the plan's facts, with no Replicache instance behind them —
+// the same read-only setup the home page's leaflet cards use.
 export function GhostPostPreview(props: {
   target: GhostImportTarget;
   preview: Preview;
 }) {
   let { target, preview } = props;
-  let pubRecord = normalizePublicationRecord(target.record as Json);
-  let docUri = `at://${target.identity_did}/site.standard.document/${preview.slug}`;
-
-  let normalizedDocument = {
-    $type: "site.standard.document" as const,
-    title: preview.title,
-    description: preview.description,
-    publishedAt: preview.publishedAt,
-    site: target.uri,
-    tags: preview.tags,
-    ...(preview.coverImageUrl && {
-      // blobRefToSrc passes http(s) links through untouched.
-      coverImage: {
-        ref: { $link: preview.coverImageUrl },
-        mimeType: "image/*",
-        size: 0,
-      } as unknown as BlobRef,
+  let token = useMemo<PermissionToken>(
+    () => ({
+      id: `ghost-import-preview-${preview.ghostId}`,
+      root_entity: preview.rootEntityId,
+      permission_token_rights: [
+        {
+          token: `ghost-import-preview-${preview.ghostId}`,
+          entity_set: PREVIEW_SET,
+          created_at: "",
+          read: true,
+          write: false,
+          create_token: false,
+          change_entity_set: false,
+        },
+      ],
     }),
-  };
-
-  let publication: PublicationContext = {
-    uri: target.uri,
-    name: target.name,
-    identity_did: target.identity_did,
-    record: target.record as NonNullable<PublicationContext>["record"],
-    newsletterMode: false,
-  };
-
-  let contextValue: DocumentContextValue = {
-    uri: docUri,
-    normalizedDocument,
-    normalizedPublication: pubRecord,
-    postUrl: `https://leaflet.pub/preview/${preview.slug}`,
-    theme: undefined,
-    prevNext: undefined,
-    quotesAndMentions: [],
-    publication,
-    commentsCount: 0,
-    commentsCountByPage: {},
-    mentions: [],
-    recommendsCount: 0,
-  };
-
-  let document = {
-    data: {},
-    uri: docUri,
-    normalizedDocument,
-    normalizedPublication: pubRecord,
-    quotesAndMentions: [],
-    theme: null,
-    prevNext: undefined,
-    publication,
-    commentsCount: 0,
-    commentsCountByPage: {},
-    comments_on_documents: [],
-    mentions: [],
-    document_mentions_in_bsky: [],
-    recommendsCount: 0,
-    documents_in_publications: [{ publications: publication }],
-    recommends_on_documents: [],
-  } as unknown as NonNullable<PostPageData>;
-
-  let profile = {
-    did: target.identity_did,
-    handle: target.handle ?? target.identity_did,
-    displayName: target.name,
-  } as ProfileViewDetailed;
-
-  let page = {
-    $type: "pub.leaflet.pages.linearDocument" as const,
-    id: preview.slug,
-    blocks: preview.blocks,
-  } as PubLeafletPagesLinearDocument.Main & { $type: string };
+    [preview.ghostId, preview.rootEntityId],
+  );
+  // Blocks that show publication context (subscribe, members-only delimiter)
+  // read it from the leaflet data; without this they'd fetch it by token id.
+  let leafletData = useMemo(
+    () =>
+      ({
+        ...token,
+        title: preview.title,
+        description: preview.description,
+        leaflets_in_publications: [
+          {
+            publication: target.uri,
+            leaflet: token.id,
+            doc: null,
+            title: preview.title,
+            description: preview.description,
+            tags: preview.tags,
+            publications: {
+              uri: target.uri,
+              name: target.name,
+              identity_did: target.identity_did,
+              record: target.record,
+            },
+          },
+        ],
+        leaflets_to_documents: [],
+        publications: [],
+        blocked_by_admin: null,
+        custom_domain_routes: [],
+      }) as unknown as ContextType<typeof StaticLeafletDataContext>,
+    [token, preview, target],
+  );
+  // ImageBlock serves stored images through the Supabase resize proxy, which
+  // can't fetch Ghost-hosted URLs; images registered as local render as-is.
+  useMemo(() => {
+    for (let f of preview.facts)
+      if (f.data.type === "image") localImages.set(f.data.src, f.data.src);
+  }, [preview.facts]);
 
   return (
     <PublicationThemeProvider
       local
-      record={pubRecord}
+      record={normalizePublicationRecord(target.record as Json)}
       pub_creator={target.identity_did}
     >
-      <DocumentProvider value={contextValue}>
-        <LeafletContentProvider value={{ pages: [page] }}>
-          <div className="bg-bg-leaflet w-full overflow-x-auto py-4 px-2 rounded-md">
-            <div className="w-fit mx-auto">
-              <LinearDocumentPage
-                document={document}
-                did={target.identity_did}
-                profile={profile}
-                preferences={{
-                  showComments: false,
-                  showMentions: false,
-                  showRecommends: false,
-                  showPrevNext: false,
-                }}
-                prerenderedCodeBlocks={new Map()}
-                bskyPostData={[]}
-                standardSitePostData={[]}
-                standardSitePublicationData={[]}
-                pollData={[]}
-                document_uri={docUri}
-                fullPageScroll={false}
-                hasPageBackground={!!pubRecord?.theme?.showPageBackground}
-                blocks={preview.blocks}
-              />
+      <ReplicacheProvider
+        initialFactsOnly
+        disablePull
+        rootEntity={preview.rootEntityId}
+        token={token}
+        name={token.id}
+        initialFacts={preview.facts}
+      >
+        <EntitySetProvider set={PREVIEW_SET}>
+          <StaticLeafletDataContext value={leafletData}>
+            <div className="bg-bg-leaflet w-full overflow-x-auto py-4 px-2 rounded-md">
+              <div className="bg-bg-page border border-border-light rounded-md px-3 sm:px-4 py-4 max-w-prose mx-auto flex flex-col gap-2">
+                {preview.coverImageUrl && (
+                  <img
+                    src={preview.coverImageUrl}
+                    alt=""
+                    className="rounded-md w-full"
+                  />
+                )}
+                <h1>{preview.title}</h1>
+                {preview.description && (
+                  <p className="text-secondary">{preview.description}</p>
+                )}
+                <PreviewBlocks pageId={preview.firstPageId} />
+              </div>
             </div>
-          </div>
-        </LeafletContentProvider>
-      </DocumentProvider>
+          </StaticLeafletDataContext>
+        </EntitySetProvider>
+      </ReplicacheProvider>
     </PublicationThemeProvider>
+  );
+}
+
+function PreviewBlocks(props: { pageId: string }) {
+  let blocks = useBlocks(props.pageId);
+  return (
+    <div className="flex flex-col">
+      {blocks.map((b, i, arr) => (
+        <Block
+          key={b.factID}
+          {...b}
+          preview
+          pageType="doc"
+          previousBlock={arr[i - 1] || null}
+          nextBlock={arr[i + 1] || null}
+          nextPosition={null}
+        />
+      ))}
+    </div>
   );
 }
