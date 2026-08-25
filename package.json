@@ -1,6 +1,9 @@
 {
   "name": "minilink",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=22.13"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -80,6 +83,7 @@
     "immer": "^10.2.0",
     "inngest": "^4.2.4",
     "ioredis": "^5.6.1",
+    "jsdom": "^29.1.1",
     "katex": "^0.16.22",
     "l": "^0.6.0",
     "linkifyjs": "^4.2.0",
@@ -138,7 +142,6 @@
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.21.2",
     "esbuild": "^0.25.4",
-    "jsdom": "^29.1.1",
     "postcss": "^8.4.38",
     "prettier": "3.2.5",
     "supabase": "^1.187.3",
