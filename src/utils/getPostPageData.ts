@@ -24,6 +24,7 @@ import {
 } from "./postPageProjection";
 import { resolveDocumentFilter } from "./resolveDocumentFilter";
 import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
+import { sortPostsForPrevNext } from "src/utils/prevNextPosts";
 
 export const getPostPageData = cache(async function getPostPageData(
   did: string,
@@ -145,18 +146,13 @@ export const getPostPageData = cache(async function getPostPageData(
       ?.documents_in_publications;
 
   if (currentPublishedAt && allDocs) {
-    const sortedDocs = allDocs
-      .flatMap((dip) =>
+    const sortedDocs = sortPostsForPrevNext(
+      allDocs.flatMap((dip) =>
         dip.documents
           ? [{ ...dip.documents, membersOnly: dip.members_only }]
           : [],
-      )
-      .filter((doc) => doc.publishedAt && doc.title)
-      .sort(
-        (a, b) =>
-          new Date(a.sort_date || 0).getTime() -
-          new Date(b.sort_date || 0).getTime(),
-      );
+      ),
+    );
 
     const currentIndex = sortedDocs.findIndex(
       (doc) => doc.uri === document.uri,

@@ -22,7 +22,11 @@ export type AppviewRevalidateEvent =
   | {
       kind: "document";
       uri: string;
-      snapshot?: { publications: string[]; path?: string | null };
+      snapshot?: {
+        publications: string[];
+        path?: string | null;
+        sort_date?: string | null;
+      };
     }
   | { kind: "publication"; uri: string; names: (string | null | undefined)[] }
   | { kind: "interaction"; document: string };

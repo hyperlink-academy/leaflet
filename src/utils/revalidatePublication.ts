@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { adjacentPosts, sortPostsForPrevNext } from "src/utils/prevNextPosts";
 
 // ISR cache tags include the route group segment
 // (_N_T_/(published)/lish/...), so the pattern form
@@ -29,25 +30,30 @@ export function revalidatePublicationPaths(
     for (const sub of subpaths) revalidatePath(`${base}${sub}`);
 }
 
+function postSubpath(rkey: string, docPath: string | null | undefined) {
+  return docPath && docPath !== `/${rkey}`
+    ? [docPath.startsWith("/") ? docPath : `/${docPath}`]
+    : [];
+}
+
 // A single post's pages: its base URL, the archive listing, its rkey path,
 // its record `path` (if set to something other than the rkey) since documents
-// can publish under a custom path, and the publication's own published pages,
-// any of which may carry a posts list that includes this post.
+// can publish under a custom path, and `extraPaths` — the publication's own
+// published pages (any of which may carry a posts list that includes this
+// post) and the neighbouring posts whose prev/next buttons name it.
 function revalidatePostPaths(
   pubUri: string,
   name: string | null | undefined,
   rkey: string,
   docPath: string | null | undefined,
-  pagePaths: string[] = [],
+  extraPaths: string[] = [],
 ) {
   revalidatePublicationPaths(pubUri, name, [
     "",
     "/archive",
     `/${rkey}`,
-    ...pagePaths,
-    ...(docPath && docPath !== `/${rkey}`
-      ? [docPath.startsWith("/") ? docPath : `/${docPath}`]
-      : []),
+    ...extraPaths,
+    ...postSubpath(rkey, docPath),
   ]);
 }
 
@@ -71,15 +77,66 @@ async function publishedPagePathsByPublication(pubUris: string[]) {
   return byPub;
 }
 
+// The publication's posts as the prev/next buttons order them, plus the
+// preferences that decide whether any post renders those buttons.
+const POST_NEIGHBOURS_SELECT =
+  "documents_in_publications(documents(uri, sort_date, path:data->>path, title:data->>title, publishedAt:data->>publishedAt))";
+type PostNeighboursRows = {
+  documents: {
+    uri: string;
+    sort_date: string | null;
+    path: string | null;
+    title: string | null;
+    publishedAt: string | null;
+  } | null;
+}[];
+
+// Post pages render their neighbours' titles in the prev/next row and the
+// first/last post in the first/last row, so a post appearing, disappearing,
+// or changing title stales the pages either side of it — and, when first/last
+// buttons are on and the post is at an edge, every post in the publication.
+// `doc.sort_date` is where the post sits (or sat, for a delete) in that order.
+function neighbourPostPaths(
+  record: unknown,
+  rows: PostNeighboursRows | null | undefined,
+  doc: { uri: string; sort_date: string | null | undefined },
+) {
+  const preferences = normalizePublicationRecord(record)?.preferences;
+  const showPrevNext = preferences?.showPrevNext !== false;
+  const showFirstLast = preferences?.showFirstLast === true;
+  if (!showPrevNext && !showFirstLast) return [];
+  const sorted = sortPostsForPrevNext(
+    (rows ?? []).flatMap((r) => (r.documents ? [r.documents] : [])),
+  );
+  const { prev, next, atEdge } = adjacentPosts(sorted, doc);
+  const targets =
+    showFirstLast && atEdge
+      ? sorted
+      : showPrevNext
+        ? [prev, next].filter((d): d is (typeof sorted)[number] => !!d)
+        : [];
+  return targets
+    .filter((d) => d.uri !== doc.uri)
+    .flatMap((d) => {
+      const rkey = new AtUri(d.uri).rkey;
+      return [`/${rkey}`, ...postSubpath(rkey, d.path)];
+    });
+}
+
 // Every cached page that lists or renders a document: the standalone /p/ URL
-// and, for each publication it belongs to, the post/index/archive paths.
-// Callable before the document row exists (nothing to look up → /p/ only) or
-// after it's gone: pass `snapshot` (captured pre-delete) and the join-row
-// lookup is skipped — publication names still resolve from the publications
-// table, which outlives the document.
+// and, for each publication it belongs to, the post/index/archive paths and
+// the neighbouring posts whose prev/next buttons point at it. Callable before
+// the document row exists (nothing to look up → /p/ only) or after it's gone:
+// pass `snapshot` (captured pre-delete) and the join-row lookup is skipped —
+// publication names, posts and preferences still resolve from the
+// publications table, which outlives the document.
 export async function revalidateDocumentPaths(
   documentUri: string,
-  snapshot?: { publications: string[]; path?: string | null },
+  snapshot?: {
+    publications: string[];
+    path?: string | null;
+    sort_date?: string | null;
+  },
 ) {
   let docUri;
   try {
@@ -87,31 +144,48 @@ export async function revalidateDocumentPaths(
   } catch {
     return;
   }
-  let pubs: { uri: string; name: string | null | undefined }[] = [];
+  let pubs: {
+    uri: string;
+    name: string | null | undefined;
+    neighbours: string[];
+  }[] = [];
   let docPath = snapshot?.path;
   if (snapshot) {
     if (snapshot.publications.length) {
       const { data } = await supabaseServerClient
         .from("publications")
-        .select("uri, record")
+        .select(`uri, record, ${POST_NEIGHBOURS_SELECT}`)
         .in("uri", snapshot.publications);
-      pubs = snapshot.publications.map((uri) => ({
-        uri,
-        name: normalizePublicationRecord(
-          data?.find((r) => r.uri === uri)?.record,
-        )?.name,
-      }));
+      pubs = snapshot.publications.map((uri) => {
+        const pub = data?.find((r) => r.uri === uri);
+        return {
+          uri,
+          name: normalizePublicationRecord(pub?.record)?.name,
+          neighbours: neighbourPostPaths(
+            pub?.record,
+            pub?.documents_in_publications,
+            { uri: documentUri, sort_date: snapshot.sort_date },
+          ),
+        };
+      });
     }
   } else {
     const { data: rows } = await supabaseServerClient
       .from("documents_in_publications")
-      .select("publications(uri, record), documents(data)")
+      .select(
+        `publications(uri, record, ${POST_NEIGHBOURS_SELECT}), documents(data, sort_date)`,
+      )
       .eq("document", documentUri);
     for (const row of rows ?? []) {
       if (!row.publications) continue;
       pubs.push({
         uri: row.publications.uri,
         name: normalizePublicationRecord(row.publications.record)?.name,
+        neighbours: neighbourPostPaths(
+          row.publications.record,
+          row.publications.documents_in_publications,
+          { uri: documentUri, sort_date: row.documents?.sort_date },
+        ),
       });
       // Documents publish under record.path (usually "/<rkey>", but other
       // clients can write any path) — drop both spellings.
@@ -123,13 +197,10 @@ export async function revalidateDocumentPaths(
     pubs.map((p) => p.uri),
   );
   for (const pub of pubs)
-    revalidatePostPaths(
-      pub.uri,
-      pub.name,
-      docUri.rkey,
-      docPath,
-      pagePaths.get(pub.uri),
-    );
+    revalidatePostPaths(pub.uri, pub.name, docUri.rkey, docPath, [
+      ...(pagePaths.get(pub.uri) ?? []),
+      ...pub.neighbours,
+    ]);
   // Handle-form /p/ URLs canonical-redirect onto this one, so the did
   // spelling is the only cache entry a document has here.
   revalidatePath(`/p/${docUri.host}/${docUri.rkey}`);
