@@ -47,10 +47,18 @@ import {
   getDocumentType,
 } from "src/utils/collectionHelpers";
 import { inngest } from "app/api/inngest/client";
+import { withPublishLock } from "src/utils/publishLock";
+
+export type PublishError =
+  | OAuthSessionError
+  // Another publish of the same leaflet is still running (double submit, a
+  // second tab); the caller should wait for that one rather than retry.
+  | { type: "publish_in_progress"; message: string }
+  | { type: "publish_failed"; message: string };
 
 export type PublishResult =
   | { success: true; rkey: string; record: SiteStandardDocument.Record }
-  | { success: false; error: OAuthSessionError };
+  | { success: false; error: PublishError };
 
 export type PublishLeafletArgs = {
   root_entity: string;
@@ -80,7 +88,22 @@ export type PublishLeafletArgs = {
 // the trust boundary's inside: callers must have already established that the
 // actor may publish this leaflet (the server action checks the signed-in user;
 // admin tooling acts as the publication owner).
-export async function publishLeaflet({
+export async function publishLeaflet(
+  args: PublishLeafletArgs & { actorDid: string },
+): Promise<PublishResult> {
+  let result = await withPublishLock(args.leaflet_id, () => publish(args));
+  if (!result.acquired)
+    return {
+      success: false,
+      error: {
+        type: "publish_in_progress",
+        message: "This post is already being published. Hang on a moment!",
+      },
+    };
+  return result.value;
+}
+
+async function publish({
   actorDid,
   root_entity,
   publication_uri,
@@ -385,16 +408,20 @@ export async function publishLeaflet({
     validate: false, //TODO publish the lexicon so we can validate!
   });
 
-  // Optimistically create database entries
-  await supabaseServerClient.from("documents").upsert({
-    uri: result.uri,
-    data: record as unknown as Json,
-    indexed: true,
-  });
+  // Link the record to the draft. A link write that fails silently leaves a
+  // published post the draft doesn't know about, and the next publish would
+  // mint a second one — so every write is checked, and a first publish whose
+  // link failed removes the record again so nothing is left behind.
+  let linkError = (
+    await supabaseServerClient.from("documents").upsert({
+      uri: result.uri,
+      data: record as unknown as Json,
+      indexed: true,
+    })
+  ).error;
 
-  if (publication_uri) {
-    // Publishing to a publication - update both tables
-    await Promise.all([
+  if (!linkError && publication_uri) {
+    let results = await Promise.all([
       supabaseServerClient.from("documents_in_publications").upsert({
         publication: publication_uri,
         document: result.uri,
@@ -409,16 +436,40 @@ export async function publishLeaflet({
         tags: resolvedTags ?? [],
       }),
     ]);
-  } else {
-    // Publishing standalone - update leaflets_to_documents
-    await supabaseServerClient.from("leaflets_to_documents").upsert({
-      leaflet: leaflet_id,
-      document: result.uri,
-      title: title || "",
-      description: description || "",
-      tags: resolvedTags ?? [],
-    });
+    linkError = results.find((r) => r.error)?.error ?? null;
+  } else if (!linkError) {
+    linkError = (
+      await supabaseServerClient.from("leaflets_to_documents").upsert({
+        leaflet: leaflet_id,
+        document: result.uri,
+        title: title || "",
+        description: description || "",
+        tags: resolvedTags ?? [],
+      })
+    ).error;
+  }
 
+  if (linkError) {
+    console.error("Failed to link published document to draft", linkError);
+    if (!existingDocUri) {
+      await agent.com.atproto.repo
+        .deleteRecord({
+          repo: credentialSession.did!,
+          collection: recordForPDS.$type,
+          rkey,
+        })
+        .catch(console.error);
+    }
+    return {
+      success: false,
+      error: {
+        type: "publish_failed",
+        message: "We couldn't save this post. Please try again!",
+      },
+    };
+  }
+
+  if (!publication_uri) {
     // Heuristic: Remove title entities if this is the first time publishing standalone
     // (when entitiesToDelete is provided and there's no existing document)
     if (entitiesToDelete && entitiesToDelete.length > 0 && !existingDocUri) {
