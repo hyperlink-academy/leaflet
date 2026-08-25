@@ -11,7 +11,9 @@ import type { AdminPublicationSearchResult } from "actions/admin/importSubscribe
 import {
   previewGhostImport,
   importGhostPost,
+  publishGhostPages,
   type GhostImportMode,
+  type GhostImportResult,
   type GhostPostPreview as Preview,
 } from "actions/admin/importGhost";
 import {
@@ -23,7 +25,12 @@ import { GhostPostPreview } from "./GhostPostPreview";
 
 type PostStatus =
   | { state: "importing" }
-  | { state: "done"; leafletId: string; rkey: string | null }
+  | { state: "done"; result: GhostImportResult }
+  | { state: "failed"; error: string };
+
+type PagesStatus =
+  | { state: "publishing" }
+  | { state: "published" }
   | { state: "failed"; error: string };
 
 export function AdminImportGhost() {
@@ -40,6 +47,7 @@ export function AdminImportGhost() {
   let [previews, setPreviews] = useState<Map<string, Preview>>(new Map());
   let [expanded, setExpanded] = useState<string | null>(null);
   let [statuses, setStatuses] = useState<Map<string, PostStatus>>(new Map());
+  let [pagesStatus, setPagesStatus] = useState<PagesStatus | null>(null);
   let [importing, setImporting] = useState(false);
 
   let posts = file?.posts ?? [];
@@ -51,18 +59,15 @@ export function AdminImportGhost() {
     setSelected(new Set());
     setPreviews(new Map());
     setStatuses(new Map());
+    setPagesStatus(null);
     if (!f) return;
     try {
       let posts = parseGhostExport(JSON.parse(await f.text()));
       setFile({ name: f.name, posts });
-      // Published posts are the default selection; pages, drafts, and
+      // Published posts and pages are the default selection; drafts and
       // scheduled posts are opted into by hand.
       setSelected(
-        new Set(
-          posts
-            .filter((p) => p.type === "post" && p.status === "published")
-            .map((p) => p.id),
-        ),
+        new Set(posts.filter((p) => p.status === "published").map((p) => p.id)),
       );
     } catch (e) {
       toaster({ type: "error", content: String(e) });
@@ -85,8 +90,10 @@ export function AdminImportGhost() {
   let runImport = async () => {
     if (!publication || importing) return;
     setImporting(true);
+    setPagesStatus(null);
     let next = new Map<string, PostStatus>();
     let failed = 0;
+    let pagesImported = 0;
     // One post per request: each one fetches and uploads its images, so a
     // single call for the whole export would outlive a server action.
     for (let post of selectedPosts) {
@@ -98,17 +105,29 @@ export function AdminImportGhost() {
         mode,
         showInDiscover,
       });
-      if (res.ok) next.set(post.id, { state: "done", ...res.value });
-      else {
+      if (res.ok) {
+        next.set(post.id, { state: "done", result: res.value });
+        if (res.value.kind === "page") pagesImported++;
+      } else {
         next.set(post.id, { state: "failed", error: res.error });
         failed++;
       }
       setStatuses(new Map(next));
     }
+    // Pages all land in the one draft leaflet, so they publish in one go.
+    if (mode === "publish" && pagesImported > 0) {
+      setPagesStatus({ state: "publishing" });
+      let res = await publishGhostPages({ publicationUri: publication.uri });
+      if (res.ok) setPagesStatus({ state: "published" });
+      else {
+        setPagesStatus({ state: "failed", error: res.error });
+        failed++;
+      }
+    }
     setImporting(false);
     toaster({
       type: failed === 0 ? "success" : "error",
-      content: `Imported ${selectedPosts.length - failed} of ${selectedPosts.length} posts to ${publication.name}`,
+      content: `Imported ${selectedPosts.length - failed} of ${selectedPosts.length} posts and pages to ${publication.name}`,
     });
   };
 
@@ -118,11 +137,12 @@ export function AdminImportGhost() {
         <h2>Import from Ghost</h2>
         <div className="text-secondary leading-snug">
           Turn a Ghost export (Settings → Advanced → Import/Export → Export
-          content) into drafts in a publication, optionally publishing each one
-          as a post on the publication owner&apos;s behalf. Images are copied
-          into Leaflet storage. Subscribers are never emailed about imported
-          posts. Members-only and paid posts are placed behind a members-only
-          delimiter.
+          content) into drafts in a publication, optionally publishing them on
+          the publication owner&apos;s behalf. Ghost posts become posts; Ghost
+          pages become pages in the publication&apos;s navigation, at the same
+          /slug. Images are copied into Leaflet storage. Subscribers are never
+          emailed about imported posts. Members-only and paid posts are placed
+          behind a members-only delimiter.
         </div>
       </div>
 
@@ -162,14 +182,14 @@ export function AdminImportGhost() {
           current={mode}
           onChange={setMode}
           label="Create drafts and publish"
-          description="Each post is published as the owner under its Ghost slug, backdated to its Ghost publish date."
+          description="Each post is published as the owner under its Ghost slug, backdated to its Ghost publish date. Pages are added to the publication's navigation and published along with any pending page edits."
         />
         <ModeRadio
           value="draft"
           current={mode}
           onChange={setMode}
           label="Create drafts only"
-          description="Posts appear in the publication's drafts for the owner to publish."
+          description="Posts appear in the publication's drafts, and pages in its page editor, for the owner to publish."
         />
         <Checkbox
           small
@@ -183,7 +203,7 @@ export function AdminImportGhost() {
       {posts.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <h3>Posts</h3>
+            <h3>Posts and pages</h3>
             <div className="text-xs text-tertiary">
               {selected.size} of {posts.length} selected
             </div>
@@ -222,10 +242,27 @@ export function AdminImportGhost() {
                 canPreview={siteUrlValid}
                 onTogglePreview={() => togglePreview(p)}
                 status={statuses.get(p.id)}
+                pagesPublished={pagesStatus?.state === "published"}
                 publication={publication}
               />
             ))}
           </div>
+          {pagesStatus && (
+            <div className="text-sm">
+              {pagesStatus.state === "publishing" && (
+                <span className="text-tertiary">Publishing pages…</span>
+              )}
+              {pagesStatus.state === "published" && (
+                <span className="text-tertiary">Pages published.</span>
+              )}
+              {pagesStatus.state === "failed" && (
+                <span className="text-accent-1">
+                  Pages were added to the draft but publishing them failed:{" "}
+                  {pagesStatus.error}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -280,9 +317,13 @@ function PostRow(props: {
   canPreview: boolean;
   onTogglePreview: () => void;
   status: PostStatus | undefined;
+  pagesPublished: boolean;
   publication: AdminPublicationSearchResult | null;
 }) {
   let { post: p, status, publication } = props;
+  let pubBase = publication
+    ? `/lish/${publication.identity_did}/${new AtUri(publication.uri).rkey}`
+    : null;
   return (
     <div className="border-b border-border-light last:border-b-0">
       <div className="flex items-start gap-2 px-3 py-2">
@@ -309,20 +350,20 @@ function PostRow(props: {
                 {status.state === "failed" && (
                   <span className="text-accent-1">Failed: {status.error}</span>
                 )}
-                {status.state === "done" && (
+                {status.state === "done" && status.result.kind === "post" && (
                   <>
                     <a
                       className="text-accent-contrast hover:underline"
-                      href={`/${status.leafletId}`}
+                      href={`/${status.result.leafletId}`}
                       target="_blank"
                       rel="noreferrer"
                     >
                       Edit draft
                     </a>
-                    {status.rkey && publication && (
+                    {status.result.rkey && pubBase && (
                       <a
                         className="text-accent-contrast hover:underline"
-                        href={`/lish/${publication.identity_did}/${new AtUri(publication.uri).rkey}/${status.rkey}`}
+                        href={`${pubBase}/${status.result.rkey}`}
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -331,6 +372,30 @@ function PostRow(props: {
                     )}
                   </>
                 )}
+                {status.state === "done" &&
+                  status.result.kind === "page" &&
+                  pubBase && (
+                    <>
+                      <a
+                        className="text-accent-contrast hover:underline"
+                        href={`${pubBase}/edit`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Edit pages
+                      </a>
+                      {props.pagesPublished && (
+                        <a
+                          className="text-accent-contrast hover:underline"
+                          href={`${pubBase}${status.result.route}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View page
+                        </a>
+                      )}
+                    </>
+                  )}
               </span>
             )}
           </span>

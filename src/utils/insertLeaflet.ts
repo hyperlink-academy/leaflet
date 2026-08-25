@@ -74,3 +74,46 @@ export async function insertLeaflet({
 
   return { permTokenId };
 }
+
+// Add entities and facts to an existing leaflet's entity set, in one
+// statement for the same reason as above.
+export async function appendToLeaflet({
+  entitySetId,
+  entityIds,
+  facts,
+}: {
+  entitySetId: string;
+  entityIds: string[];
+  facts: LeafletFact[];
+}): Promise<void> {
+  if (entityIds.length === 0 && facts.length === 0) return;
+  const entityValues = sql.join(
+    entityIds.map((id) => sql`(${id}, ${entitySetId})`),
+    sql`, `,
+  );
+  const factValues = sql.join(
+    facts.map(
+      (f) =>
+        sql`(${v7()}, ${f.entity}, ${f.attribute}, ${JSON.stringify(f.data)}::jsonb)`,
+    ),
+    sql`, `,
+  );
+  const client = await pool.connect();
+  const db = drizzle(client);
+  try {
+    await db.execute(sql`
+      WITH new_entities AS (
+        INSERT INTO entities (id, set) VALUES ${entityValues}
+      )${
+        facts.length > 0
+          ? sql`, new_facts AS (
+        INSERT INTO facts (id, entity, attribute, data) VALUES ${factValues}
+      )`
+          : sql``
+      }
+      SELECT 1
+    `);
+  } finally {
+    client.release();
+  }
+}
