@@ -4,16 +4,11 @@ import { useMemo, type ContextType } from "react";
 import { ReplicacheProvider, type PermissionToken } from "src/replicache";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
-import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import { Block } from "components/Blocks/Block";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { localImages } from "src/utils/addImage";
-import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import type { Json } from "supabase/database.types";
-import type {
-  GhostImportTarget,
-  GhostPostPreview as Preview,
-} from "actions/admin/importGhost";
+import type { AdminPublicationSearchResult } from "actions/admin/importSubscribers";
+import type { GhostPostPreview as Preview } from "actions/admin/importGhost";
 
 const PREVIEW_SET = "ghost-import-preview";
 
@@ -21,10 +16,10 @@ const PREVIEW_SET = "ghost-import-preview";
 // components over the plan's facts, with no Replicache instance behind them —
 // the same read-only setup the home page's leaflet cards use.
 export function GhostPostPreview(props: {
-  target: GhostImportTarget;
+  publication: AdminPublicationSearchResult | null;
   preview: Preview;
 }) {
-  let { target, preview } = props;
+  let { publication, preview } = props;
   let token = useMemo<PermissionToken>(
     () => ({
       id: `ghost-import-preview-${preview.ghostId}`,
@@ -51,28 +46,25 @@ export function GhostPostPreview(props: {
         ...token,
         title: preview.title,
         description: preview.description,
-        leaflets_in_publications: [
-          {
-            publication: target.uri,
-            leaflet: token.id,
-            doc: null,
-            title: preview.title,
-            description: preview.description,
-            tags: preview.tags,
-            publications: {
-              uri: target.uri,
-              name: target.name,
-              identity_did: target.identity_did,
-              record: target.record,
-            },
-          },
-        ],
+        leaflets_in_publications: publication
+          ? [
+              {
+                publication: publication.uri,
+                leaflet: token.id,
+                doc: null,
+                title: preview.title,
+                description: preview.description,
+                tags: preview.tags,
+                publications: { ...publication, record: null },
+              },
+            ]
+          : [],
         leaflets_to_documents: [],
         publications: [],
         blocked_by_admin: null,
         custom_domain_routes: [],
       }) as unknown as ContextType<typeof StaticLeafletDataContext>,
-    [token, preview, target],
+    [token, preview, publication],
   );
   // ImageBlock serves stored images through the Supabase resize proxy, which
   // can't fetch Ghost-hosted URLs; images registered as local render as-is.
@@ -82,41 +74,35 @@ export function GhostPostPreview(props: {
   }, [preview.facts]);
 
   return (
-    <PublicationThemeProvider
-      local
-      record={normalizePublicationRecord(target.record as Json)}
-      pub_creator={target.identity_did}
+    <ReplicacheProvider
+      initialFactsOnly
+      disablePull
+      rootEntity={preview.rootEntityId}
+      token={token}
+      name={token.id}
+      initialFacts={preview.facts}
     >
-      <ReplicacheProvider
-        initialFactsOnly
-        disablePull
-        rootEntity={preview.rootEntityId}
-        token={token}
-        name={token.id}
-        initialFacts={preview.facts}
-      >
-        <EntitySetProvider set={PREVIEW_SET}>
-          <StaticLeafletDataContext value={leafletData}>
-            <div className="bg-bg-leaflet w-full overflow-x-auto py-4 px-2 rounded-md">
-              <div className="bg-bg-page border border-border-light rounded-md px-3 sm:px-4 py-4 max-w-prose mx-auto flex flex-col gap-2">
-                {preview.coverImageUrl && (
-                  <img
-                    src={preview.coverImageUrl}
-                    alt=""
-                    className="rounded-md w-full"
-                  />
-                )}
-                <h1>{preview.title}</h1>
-                {preview.description && (
-                  <p className="text-secondary">{preview.description}</p>
-                )}
-                <PreviewBlocks pageId={preview.firstPageId} />
-              </div>
+      <EntitySetProvider set={PREVIEW_SET}>
+        <StaticLeafletDataContext value={leafletData}>
+          <div className="bg-bg-leaflet w-full overflow-x-auto py-4 px-2 rounded-md">
+            <div className="bg-bg-page border border-border-light rounded-md px-3 sm:px-4 py-4 max-w-prose mx-auto flex flex-col gap-2">
+              {preview.coverImageUrl && (
+                <img
+                  src={preview.coverImageUrl}
+                  alt=""
+                  className="rounded-md w-full"
+                />
+              )}
+              <h1>{preview.title}</h1>
+              {preview.description && (
+                <p className="text-secondary">{preview.description}</p>
+              )}
+              <PreviewBlocks pageId={preview.firstPageId} />
             </div>
-          </StaticLeafletDataContext>
-        </EntitySetProvider>
-      </ReplicacheProvider>
-    </PublicationThemeProvider>
+          </div>
+        </StaticLeafletDataContext>
+      </EntitySetProvider>
+    </ReplicacheProvider>
   );
 }
 

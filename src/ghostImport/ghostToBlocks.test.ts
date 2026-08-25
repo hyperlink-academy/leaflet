@@ -5,11 +5,7 @@ import type { BuiltBlock } from "src/utils/paste/htmlToBlocks";
 
 const SITE = "https://blog.example.com";
 const convert = (html: string) =>
-  ghostHtmlToBlocks(html, {
-    siteUrl: SITE,
-    parent: "page",
-    permission_set: "set",
-  });
+  ghostHtmlToBlocks(html, { siteUrl: SITE, parent: "page" });
 
 const fact = (b: BuiltBlock, attribute: string) =>
   b.facts.find((f) => f.attribute === attribute)?.data as
@@ -36,7 +32,6 @@ describe("ghostHtmlToBlocks", () => {
     ]);
     expect(fact(r.blocks[1], "block/heading-level")?.value).toBe(2);
     expect(fact(r.blocks[2], "block/is-list")?.value).toBe(true);
-    expect(r.warnings).toEqual([]);
   });
 
   test("drops the empty paragraphs Ghost leaves behind", () => {
@@ -55,11 +50,32 @@ describe("ghostHtmlToBlocks", () => {
       {
         entityID: r.blocks[0].entityID,
         url: `${SITE}/content/images/a.png`,
-        alt: "An apple",
         width: 800,
         height: 600,
       },
     ]);
+  });
+
+  test("images wrapped in a paragraph (markdown cards) become image blocks", () => {
+    const r = convert(
+      `<!--kg-card-begin: markdown--><p>md</p><p><img src="__GHOST_URL__/c.png" alt="x" width="20" height="10"></p><!--kg-card-end: markdown-->`,
+    );
+    expect(outline(r.blocks)).toEqual(["text: md", "image"]);
+    expect(fact(r.blocks[1], "image/alt")?.value).toBe("x");
+    expect(r.images).toEqual([
+      {
+        entityID: r.blocks[1].entityID,
+        url: `${SITE}/c.png`,
+        width: 20,
+        height: 10,
+      },
+    ]);
+  });
+
+  test("refuses images inline with text", () => {
+    expect(() =>
+      convert(`<p>see <img src="__GHOST_URL__/c.png"> here</p>`),
+    ).toThrow(/Inline image/);
   });
 
   test("gallery cards yield one image block per image", () => {
@@ -93,30 +109,25 @@ describe("ghostHtmlToBlocks", () => {
     expect(fact(r.blocks[1], "embed/html")?.value).toBe(
       `<div class="thing"><b>raw</b></div>`,
     );
-    expect(r.warnings.map((w) => w.kind)).toEqual(["raw_html"]);
   });
 
-  test("bookmark, button, callout, toggle, and signup cards", () => {
+  test("bookmark, button, callout, and signup cards", () => {
     const r = convert(
       `<figure class="kg-card kg-bookmark-card"><a class="kg-bookmark-container" href="https://site.com/post"><div class="kg-bookmark-content"><div class="kg-bookmark-title">Title</div><div class="kg-bookmark-description">Desc</div></div></a></figure>` +
         `<div class="kg-card kg-button-card kg-align-center"><a href="https://buy.com" class="kg-btn kg-btn-accent">Buy now</a></div>` +
         `<div class="kg-card kg-callout-card kg-callout-card-blue"><div class="kg-callout-emoji">💡</div><div class="kg-callout-text">Note <b>this</b></div></div>` +
-        `<div class="kg-card kg-toggle-card"><div class="kg-toggle-heading"><h4 class="kg-toggle-heading-text">Details</h4></div><div class="kg-toggle-content"><p>Hidden</p></div></div>` +
         `<div class="kg-card kg-signup-card"><form>…</form></div>`,
     );
     expect(outline(r.blocks)).toEqual([
       "link",
       "button",
       "blockquote: 💡 Note this",
-      "heading: Details",
-      "text: Hidden",
       "signup",
     ]);
     expect(fact(r.blocks[0], "link/title")?.value).toBe("Title");
     expect(fact(r.blocks[0], "link/description")?.value).toBe("Desc");
     expect(fact(r.blocks[1], "button/url")?.value).toBe("https://buy.com");
     expect(fact(r.blocks[1], "button/text")?.value).toBe("Buy now");
-    expect(fact(r.blocks[3], "block/heading-level")?.value).toBe(3);
   });
 
   test("the paywall comment becomes a members-only delimiter", () => {
@@ -128,18 +139,16 @@ describe("ghostHtmlToBlocks", () => {
     ]);
   });
 
-  test("media cards are kept as links with a warning; unknown cards fall through", () => {
-    const r = convert(
-      `<figure class="kg-card kg-file-card"><a class="kg-file-card-container" href="__GHOST_URL__/content/files/x.pdf"><div class="kg-file-card-title">The PDF</div></a></figure>` +
-        `<div class="kg-card kg-nft-card"><p>NFT</p></div>`,
-    );
-    expect(outline(r.blocks)).toEqual(["link", "text: NFT"]);
-    expect(fact(r.blocks[0], "link/url")?.value).toBe(
-      `${SITE}/content/files/x.pdf`,
-    );
-    expect(r.warnings.map((w) => w.kind)).toEqual([
-      "media_linked",
-      "unknown_card",
-    ]);
+  test("refuses cards it doesn't understand", () => {
+    expect(() =>
+      convert(
+        `<figure class="kg-card kg-file-card"><a href="__GHOST_URL__/x.pdf">PDF</a></figure>`,
+      ),
+    ).toThrow(/kg-file-card|file/);
+    expect(() =>
+      convert(
+        `<figure class="kg-card kg-embed-card"><blockquote>tweet</blockquote></figure>`,
+      ),
+    ).toThrow(/iframe/);
   });
 });

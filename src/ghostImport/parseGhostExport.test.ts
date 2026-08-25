@@ -18,27 +18,30 @@ const post = (over: Record<string, unknown>) => ({
   custom_excerpt: null,
   published_at: "2026-01-02T00:00:00.000Z",
   created_at: "2026-01-01T00:00:00.000Z",
-  updated_at: null,
   ...over,
 });
 
 const exportWith = (data: Record<string, unknown>) => ({
-  db: [{ meta: { version: "6.0.0" }, data }],
+  db: [
+    { meta: { version: "6.0.0" }, data: { tags: [], posts_tags: [], ...data } },
+  ],
 });
 
 describe("parseGhostExport", () => {
-  test("rejects files without a posts table", () => {
-    expect(parseGhostExport({ db: [{ data: {} }] }).ok).toBe(false);
-    expect(parseGhostExport("nope").ok).toBe(false);
+  test("throws on anything but the full export shape", () => {
+    expect(() => parseGhostExport({ db: [{ data: {} }] })).toThrow(/table/);
+    expect(() => parseGhostExport({ data: { posts: [] } })).toThrow();
+    expect(() => parseGhostExport("nope")).toThrow();
   });
 
-  test("accepts the bare {data} shape", () => {
-    const r = parseGhostExport({ data: { posts: [post({})] } });
-    expect(r.ok && r.value.posts.map((p) => p.slug)).toEqual(["hello"]);
+  test("throws on a post missing a required field", () => {
+    expect(() =>
+      parseGhostExport(exportWith({ posts: [post({ slug: null })] })),
+    ).toThrow(/slug/);
   });
 
   test("joins public tags in sort order and drops internal ones", () => {
-    const r = parseGhostExport(
+    const posts = parseGhostExport(
       exportWith({
         posts: [post({})],
         tags: [
@@ -53,11 +56,11 @@ describe("parseGhostExport", () => {
         ],
       }),
     );
-    expect(r.ok && r.value.posts[0].tags).toEqual(["cozy", "games"]);
+    expect(posts[0].tags).toEqual(["cozy", "games"]);
   });
 
-  test("classifies pages, drafts, and visibility; sorts oldest first", () => {
-    const r = parseGhostExport(
+  test("keeps pages, drafts, and visibility; sorts oldest first", () => {
+    const posts = parseGhostExport(
       exportWith({
         posts: [
           post({
@@ -75,22 +78,15 @@ describe("parseGhostExport", () => {
             created_at: "2026-02-01T00:00:00.000Z",
           }),
         ],
-        settings: [
-          { key: "title", value: "My Blog" },
-          { key: "description", value: "Words" },
-        ],
       }),
     );
-    if (!r.ok) throw new Error(r.error);
-    expect(r.value.posts.map((p) => p.slug)).toEqual(["a", "b"]);
-    expect(r.value.posts[0]).toMatchObject({
+    expect(posts.map((p) => p.slug)).toEqual(["a", "b"]);
+    expect(posts[0]).toMatchObject({
       type: "page",
       status: "draft",
       visibility: "paid",
       publishedAt: null,
     });
-    expect(r.value.site).toEqual({ title: "My Blog", description: "Words" });
-    expect(r.value.counts).toMatchObject({ posts: 1, pages: 1 });
   });
 });
 
@@ -99,26 +95,24 @@ describe("resolveGhostUrl", () => {
     expect(
       resolveGhostUrl("__GHOST_URL__/content/images/a.png", "https://x.com/"),
     ).toBe("https://x.com/content/images/a.png");
-    expect(resolveGhostUrl(null, "https://x.com")).toBeNull();
   });
 });
 
 describe("ghostExcerpt", () => {
   test("prefers the custom excerpt", () => {
-    const r = parseGhostExport(
+    const [p] = parseGhostExport(
       exportWith({ posts: [post({ custom_excerpt: "  Custom  " })] }),
     );
-    expect(r.ok && ghostExcerpt(r.value.posts[0])).toBe("Custom");
+    expect(ghostExcerpt(p)).toBe("Custom");
   });
 
   test("falls back to the first paragraph, trimmed at a word boundary", () => {
-    const r = parseGhostExport(
+    const [p] = parseGhostExport(
       exportWith({
         posts: [post({ plaintext: "first para words here\n\nsecond" })],
       }),
     );
-    if (!r.ok) throw new Error(r.error);
-    expect(ghostExcerpt(r.value.posts[0])).toBe("first para words here");
-    expect(ghostExcerpt(r.value.posts[0], 12)).toBe("first para…");
+    expect(ghostExcerpt(p)).toBe("first para words here");
+    expect(ghostExcerpt(p, 12)).toBe("first para…");
   });
 });
