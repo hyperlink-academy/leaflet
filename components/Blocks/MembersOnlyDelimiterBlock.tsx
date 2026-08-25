@@ -194,7 +194,13 @@ function TierSelector(props: {
         <RadioMenuItem value="subscribers">Subscribers</RadioMenuItem>
         <RadioMenuItem value="paid">Paid Members</RadioMenuItem>
         {props.tiers.length > 0 && (
-          <RadioMenuItem value="tiers">Selected Paid Tiers</RadioMenuItem>
+          <RadioMenuItem
+            value="tiers"
+            // Keep the menu open so the tier checkboxes it reveals can be used
+            onSelect={(e) => e.preventDefault()}
+          >
+            Selected Paid Tiers
+          </RadioMenuItem>
         )}
       </RadioMenuGroup>
       {props.policy.audience === "tiers" && props.tiers.length > 0 && (
