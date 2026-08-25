@@ -9,6 +9,7 @@ import {
   ChangePlanModal,
   MembershipActions,
   membershipPrice,
+  pendingPlanLabel,
   isMembershipActive as isActive,
 } from "components/Memberships/ChangePlanModal";
 import { CancelMembershipModal } from "components/Memberships/CancelMembershipModal";
@@ -186,6 +187,7 @@ function MembershipRow(props: { membership: MyMembership }) {
   });
 
   const price = membershipPrice(m);
+  const pendingPlan = pendingPlanLabel(m, m.currentPeriodEnd ? renewal : "");
 
   return (
     <>
@@ -201,7 +203,9 @@ function MembershipRow(props: { membership: MyMembership }) {
           {price && ` ${price} · `}
           {m.cancelAtPeriodEnd ? "Ends" : "Renews"} {renewal}
         </div>
-        {m.currentPeriodEnd && <div className="text-tertiary text-sm"></div>}
+        {pendingPlan && (
+          <div className="text-tertiary text-sm">{pendingPlan}</div>
+        )}
         <div className="flex gap-2 flex-wrap pt-2">
           <MembershipActions
             membership={m}

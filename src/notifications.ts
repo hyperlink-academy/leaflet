@@ -660,7 +660,7 @@ async function hydrateNewMemberNotifications(notifications: NotificationRow[]) {
   const { data: memberships } = await supabaseServerClient
     .from("publication_memberships")
     .select(
-      "id, identities(atp_did), publication_membership_tiers(name), publications(record)",
+      "id, identities(atp_did), publication_membership_tiers!publication_memberships_tier_publication_fkey(name), publications(record)",
     )
     .in("id", membershipIds);
 

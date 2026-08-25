@@ -46,7 +46,7 @@ export async function handleMembershipSubscriptionEvent(
 
   const { data: existing, error: readError } = await supabaseServerClient
     .from("publication_memberships")
-    .select("id, status")
+    .select("id, status, publication, pending_tier, pending_cadence")
     .eq("stripe_subscription_id", sub.id)
     .maybeSingle();
   // Throw so the route 500s and Stripe redelivers; treating a failed read as
@@ -64,9 +64,21 @@ export async function handleMembershipSubscriptionEvent(
   if (!opts?.fresh && stripeAccount) {
     sub = await getStripe().subscriptions.retrieve(sub.id, { stripeAccount });
   }
-  const periodEnd = sub.items.data[0]?.current_period_end ?? 0;
+  const item = sub.items.data[0];
+  const periodEnd = item?.current_period_end ?? 0;
 
   const wasActive = isActiveStatus(existing.status);
+
+  // The billed price is the tier of record: a scheduled downgrade swaps it at
+  // the period boundary with no call back into the app.
+  const plan = item
+    ? await planForPrice(existing.publication, item.price)
+    : null;
+  const pendingApplied =
+    !sub.schedule ||
+    (!!plan &&
+      plan.tier === existing.pending_tier &&
+      plan.cadence === existing.pending_cadence);
 
   const { error: writeError } = await supabaseServerClient
     .from("publication_memberships")
@@ -77,6 +89,8 @@ export async function handleMembershipSubscriptionEvent(
         ? new Date(periodEnd * 1000).toISOString()
         : null,
       cancel_at_period_end: sub.cancel_at_period_end,
+      ...(plan ?? {}),
+      ...(pendingApplied ? { pending_tier: null, pending_cadence: null } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq("stripe_subscription_id", sub.id);
@@ -90,6 +104,27 @@ export async function handleMembershipSubscriptionEvent(
         sub.metadata.publication,
       );
   }
+}
+
+// Resolves the tier a subscription item's price belongs to. A price no tier
+// claims (e.g. one retired before the member was repriced) keeps the row's
+// current tier.
+async function planForPrice(publication: string, price: Stripe.Price) {
+  const { data: tier, error } = await supabaseServerClient
+    .from("publication_membership_tiers")
+    .select("id")
+    .eq("publication", publication)
+    .or(
+      `stripe_price_monthly_id.eq.${price.id},stripe_price_annual_id.eq.${price.id}`,
+    )
+    .maybeSingle();
+  if (error) throw error;
+  if (!tier) return null;
+  return {
+    tier: tier.id,
+    cadence: price.recurring?.interval ?? null,
+    stripe_price_id: price.id,
+  };
 }
 
 // The join flow writes the membership row only after the Stripe subscription

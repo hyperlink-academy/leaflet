@@ -13,6 +13,7 @@ import {
   ChangePlanForm,
   MembershipActions,
   membershipPrice,
+  pendingPlanLabel,
 } from "components/Memberships/ChangePlanModal";
 import { CancelMembershipForm } from "components/Memberships/CancelMembershipModal";
 import { ResumeMembershipForm } from "components/Memberships/ResumeMembershipModal";
@@ -505,7 +506,10 @@ const MembershipSection = (props: {
         <p className="text-tertiary text-sm font-normal italic">
           {membership.cancelAtPeriodEnd && membership.currentPeriodEnd
             ? `Ends ${endDate}`
-            : ""}
+            : pendingPlanLabel(
+                membership,
+                membership.currentPeriodEnd ? endDate : "",
+              ) ?? ""}
         </p>
       </div>
     </div>

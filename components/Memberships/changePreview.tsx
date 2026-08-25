@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   previewMembershipChange,
   type MembershipChangePreview,
@@ -55,31 +56,53 @@ export function useChangePreview(args: {
   return state;
 }
 
-function changePreviewText(preview: MembershipChangePreview): string {
-  const { amountDueCents, currency, creditCents } = preview;
-  const amount = formatMoney(amountDueCents, currency);
-  const credit = formatMoney(creditCents, currency);
-
-  if (amountDueCents <= 0) {
-    return creditCents > 0
-      ? `The unused time on your current plan leaves ${credit} in credit toward future invoices.`
-      : "The unused time on your current plan covers your next invoice.";
+function changePreviewText(
+  preview: MembershipChangePreview,
+  effectiveDate: string,
+): string {
+  const { immediate, totalCents, amountDueCents, currency } = preview;
+  if (!immediate) {
+    return `You'll keep your current plan ${
+      effectiveDate
+        ? `until ${effectiveDate}`
+        : "until the end of your billing period"
+    }, then switch. Nothing is charged today.`;
   }
-  return `You'll be charged ${amount} now, prorated for the time left on your current plan.`;
+  if (totalCents === 0)
+    return "Same price as your current plan, so you switch right away with nothing to pay.";
+  if (amountDueCents <= 0)
+    return "Your account credit covers the rest of this period.";
+  return `You'll be charged ${formatMoney(amountDueCents, currency)} now, prorated for the time left on your current plan.`;
 }
+
+const PREVIEW_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+};
 
 export function ChangePreviewLine(props: {
   state: ChangePreviewState | null;
   className?: string;
 }) {
+  const preview =
+    props.state?.status === "ready" ? props.state.preview : undefined;
+  const date = useLocalizedDate(
+    preview?.effectiveDate ?? "",
+    PREVIEW_DATE_FORMAT,
+  );
+
   if (!props.state) return null;
   const text =
     props.state.status === "loading" ? (
       <DotLoader />
     ) : props.state.status === "error" ? (
-      "Changing plans prorates your bill. You'll be charged the exact amount for the rest of the period when you confirm."
+      "Upgrades are charged now, prorated for the rest of the period. Downgrades take effect when the period ends."
     ) : (
-      changePreviewText(props.state.preview)
+      changePreviewText(
+        props.state.preview,
+        props.state.preview.effectiveDate ? date : "",
+      )
     );
 
   return <div className={props.className}>{text}</div>;

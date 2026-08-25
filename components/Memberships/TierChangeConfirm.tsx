@@ -12,6 +12,7 @@ type ChangingMembership = {
   tierId: string | null;
   cadence: string | null;
   currentPeriodEnd: string | null;
+  pendingPlan?: { tierName: string | null } | null;
 };
 
 type TierChangeConfirmProps = {
@@ -77,6 +78,12 @@ export function TierChangeConfirm(props: TierChangeConfirmProps) {
           state={preview}
           className="text-tertiary text-sm text-center mx-auto"
         />
+      )}
+      {membership.pendingPlan && (
+        <div className="text-tertiary text-sm">
+          This replaces your scheduled switch to{" "}
+          {membership.pendingPlan.tierName ?? "another plan"}.
+        </div>
       )}
       <div className="flex gap-3 mx-auto">
         <ButtonTertiary type="button" onClick={props.onClose}>

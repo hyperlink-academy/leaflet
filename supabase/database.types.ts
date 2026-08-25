@@ -1364,6 +1364,8 @@ export type Database = {
           current_period_end: string | null
           id: string
           identity_id: string
+          pending_cadence: string | null
+          pending_tier: string | null
           publication: string
           status: string | null
           stripe_account_id: string | null
@@ -1380,6 +1382,8 @@ export type Database = {
           current_period_end?: string | null
           id?: string
           identity_id: string
+          pending_cadence?: string | null
+          pending_tier?: string | null
           publication: string
           status?: string | null
           stripe_account_id?: string | null
@@ -1396,6 +1400,8 @@ export type Database = {
           current_period_end?: string | null
           id?: string
           identity_id?: string
+          pending_cadence?: string | null
+          pending_tier?: string | null
           publication?: string
           status?: string | null
           stripe_account_id?: string | null
@@ -1411,6 +1417,13 @@ export type Database = {
             columns: ["identity_id"]
             isOneToOne: false
             referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_memberships_pending_tier_fkey"
+            columns: ["pending_tier"]
+            isOneToOne: false
+            referencedRelation: "publication_membership_tiers"
             referencedColumns: ["id"]
           },
           {

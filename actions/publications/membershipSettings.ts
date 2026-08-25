@@ -4,6 +4,7 @@ import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublication";
 import { getStripe } from "stripe/client";
+import { releasePendingDowngradesToTier } from "stripe/schedules";
 import { Ok, Err, type Result } from "src/result";
 import { tierDescriptionPlainText } from "src/utils/tierDescriptionDoc";
 import { LIVE_MEMBERSHIP_STATUSES } from "src/membership";
@@ -176,7 +177,7 @@ export async function upsertMembershipTier(
     const { count, error } = await supabaseServerClient
       .from("publication_memberships")
       .select("id", { count: "exact", head: true })
-      .eq("tier", existing.id)
+      .or(`tier.eq.${existing.id},pending_tier.eq.${existing.id}`)
       .in("status", LIVE_MEMBERSHIP_STATUSES);
     if (error) {
       console.error("[membershipSettings] member count failed:", error);
@@ -355,6 +356,7 @@ export async function deleteMembershipTier(
 
   const stripe = getStripe();
   try {
+    await releasePendingDowngradesToTier(existing.id);
     for (const priceId of [
       existing.stripe_price_monthly_id,
       existing.stripe_price_annual_id,

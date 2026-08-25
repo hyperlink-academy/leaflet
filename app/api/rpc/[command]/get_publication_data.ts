@@ -52,7 +52,7 @@ export const get_publication_data = makeRoute({
         publication_domains(*),
         publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at),
         publication_membership_settings(enabled, subscriber_tier_name, subscriber_tier_description),
-        publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, publication_memberships(count)),
+        publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, publication_memberships!publication_memberships_tier_publication_fkey(count)),
         leaflets_in_publications(*,
           documents(*),
           permission_tokens(*,

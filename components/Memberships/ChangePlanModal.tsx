@@ -2,6 +2,7 @@
 import { refreshIdentityData } from "components/IdentityProvider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { Modal, useModalBack } from "components/Modal";
@@ -28,6 +29,21 @@ export function membershipPrice(m: MyMembership): string | null {
   const cents = m.cadence === "year" ? m.annualPriceCents : m.monthlyPriceCents;
   if (cents == null) return null;
   return `${formatPrice(cents)}/${m.cadence === "year" ? "yr" : "mo"}`;
+}
+
+// "Switches to Supporter · $5/mo on Sep 1" for a scheduled downgrade.
+export function pendingPlanLabel(
+  m: MyMembership,
+  formattedDate: string,
+): string | null {
+  const p = m.pendingPlan;
+  if (!p) return null;
+  const price =
+    p.priceCents == null
+      ? ""
+      : ` · ${formatPrice(p.priceCents)}/${p.cadence === "year" ? "yr" : "mo"}`;
+  const when = formattedDate ? ` on ${formattedDate}` : "";
+  return `Switches to ${p.tierName ?? "another plan"}${price}${when}`;
 }
 
 export function isMembershipActive(status: string | null): boolean {
@@ -128,6 +144,11 @@ export function ChangePlanForm(props: {
   const [changed, setChanged] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   useModalBack(confirmPlan ? () => setConfirmPlan(null) : null);
+  const periodEnd = useLocalizedDate(m.currentPeriodEnd ?? "", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 
   const finish = (detail: string) => {
     setConfirmPlan(null);
@@ -153,8 +174,18 @@ export function ChangePlanForm(props: {
       });
       return;
     }
+    const price = tierPriceLabel(
+      plan.tier,
+      effectiveCadence(plan.tier, cadence),
+    );
     finish(
-      `You're now on the ${plan.tier.name} plan, at ${tierPriceLabel(plan.tier, effectiveCadence(plan.tier, cadence))}.`,
+      res.value.immediate
+        ? `You're now on the ${plan.tier.name} plan, at ${price}.`
+        : `You'll move to the ${plan.tier.name} plan, at ${price}, ${
+            m.currentPeriodEnd
+              ? `on ${periodEnd}`
+              : "at the end of your billing period"
+          }.`,
     );
   };
 
@@ -230,9 +261,6 @@ export function ChangePlanForm(props: {
         gatePolicy={props.gatePolicy}
         onSelectPlan={setConfirmPlan}
       />
-      <p className="tierPaymentInfo text-tertiary text-sm text-center">
-        Changing plans prorates your bill.
-      </p>
     </div>
   );
 }

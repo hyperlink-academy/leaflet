@@ -66,7 +66,7 @@ export default async function SubsPage(props: {
     supabaseServerClient
       .from("publication_memberships")
       .select(
-        "id, tier, status, current_period_end, created_at, publication_membership_tiers(id, name), identities(atp_did, email)",
+        "id, tier, status, current_period_end, created_at, publication_membership_tiers!publication_memberships_tier_publication_fkey(id, name), identities(atp_did, email)",
       )
       .eq("publication", pub.uri),
     getProfiles(Array.from(channelDids)),
