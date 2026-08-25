@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   previewMembershipChange,
   type MembershipChangePreview,
@@ -56,58 +55,31 @@ export function useChangePreview(args: {
   return state;
 }
 
-function changePreviewText(
-  preview: MembershipChangePreview,
-  formattedDate: string,
-): string {
-  const { immediate, amountDueCents, currency, creditCents } = preview;
+function changePreviewText(preview: MembershipChangePreview): string {
+  const { amountDueCents, currency, creditCents } = preview;
   const amount = formatMoney(amountDueCents, currency);
   const credit = formatMoney(creditCents, currency);
 
-  if (immediate) {
-    if (amountDueCents <= 0) {
-      return creditCents > 0
-        ? `The unused time on your current plan leaves ${credit} in credit toward future invoices.`
-        : "The unused time on your current plan covers your next invoice.";
-    }
-    return `You'll be charged ${amount} now, prorated for the time left on your current plan.`;
+  if (amountDueCents <= 0) {
+    return creditCents > 0
+      ? `The unused time on your current plan leaves ${credit} in credit toward future invoices.`
+      : "The unused time on your current plan covers your next invoice.";
   }
-
-  const when = formattedDate ? `on ${formattedDate}` : "at your next renewal";
-  if (creditCents > 0) {
-    return `Unused time on your current plan leaves ${credit} in credit toward future invoices. Your next invoice will be ${when} for ${amount}.`;
-  }
-  return `Your next prorated invoice will be ${when} for ${amount}.`;
+  return `You'll be charged ${amount} now, prorated for the time left on your current plan.`;
 }
-
-const PREVIEW_DATE_FORMAT: Intl.DateTimeFormatOptions = {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-};
 
 export function ChangePreviewLine(props: {
   state: ChangePreviewState | null;
   className?: string;
 }) {
-  const preview =
-    props.state?.status === "ready" ? props.state.preview : undefined;
-  const date = useLocalizedDate(
-    preview?.nextInvoiceDate ?? "",
-    PREVIEW_DATE_FORMAT,
-  );
-
   if (!props.state) return null;
   const text =
     props.state.status === "loading" ? (
       <DotLoader />
     ) : props.state.status === "error" ? (
-      "Changing plans prorates your bill. You'll see the exact amount on your next invoice."
+      "Changing plans prorates your bill. You'll be charged the exact amount for the rest of the period when you confirm."
     ) : (
-      changePreviewText(
-        props.state.preview,
-        props.state.preview.nextInvoiceDate ? date : "",
-      )
+      changePreviewText(props.state.preview)
     );
 
   return <div className={props.className}>{text}</div>;

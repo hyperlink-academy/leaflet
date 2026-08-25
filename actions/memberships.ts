@@ -157,18 +157,15 @@ async function resolveChangeTarget(identityId: string, args: ChangeArgs) {
     priceId,
     sub,
     itemId: item.id,
-    currentPeriodEnd: item.current_period_end ?? null,
-    // Repricing across intervals resets the billing cycle, which makes Stripe
-    // invoice on the spot instead of deferring the prorations.
+    // Repricing across intervals has to reset the billing cycle so the new
+    // interval starts now instead of stacking on the old period's end.
     intervalChanged: item.price.recurring?.interval !== args.cadence,
   });
 }
 
 export type MembershipChangePreview = {
-  immediate: boolean;
   amountDueCents: number;
   currency: string;
-  nextInvoiceDate: string | null;
   creditCents: number;
 };
 
@@ -187,20 +184,15 @@ export async function previewMembershipChange(
         subscription: t.subscriptionId,
         subscription_details: {
           items: [{ id: t.itemId, price: t.priceId }],
-          proration_behavior: "create_prorations",
+          proration_behavior: "always_invoice",
           billing_cycle_anchor: t.intervalChanged ? "now" : "unchanged",
         },
       },
       { stripeAccount: t.stripeAccount },
     );
     return Ok({
-      immediate: t.intervalChanged,
       amountDueCents: preview.amount_due,
       currency: preview.currency,
-      nextInvoiceDate:
-        !t.intervalChanged && t.currentPeriodEnd
-          ? new Date(t.currentPeriodEnd * 1000).toISOString()
-          : null,
       creditCents: preview.total < 0 ? -preview.total : 0,
     });
   } catch (e) {
@@ -224,7 +216,9 @@ export async function changeMembership(
       t.subscriptionId,
       {
         items: [{ id: t.itemId, price: t.priceId }],
-        proration_behavior: "create_prorations",
+        // Charge the prorated difference for the rest of the period right
+        // away rather than rolling it into the next renewal invoice.
+        proration_behavior: "always_invoice",
         billing_cycle_anchor: t.intervalChanged ? "now" : "unchanged",
         metadata: {
           ...t.sub.metadata,
