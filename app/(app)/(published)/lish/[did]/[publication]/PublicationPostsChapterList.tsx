@@ -170,6 +170,9 @@ function ChapterItem({
         <div className="chapterTitle text-primary font-bold leading-snug line-clamp-2">
           {card.label}
         </div>
+          <div className="chapterPageCount text-tertiary text-sm leading-snug pt-0.5">
+            {card.pageCount} page{card.pageCount > 1 && "s"}
+          </div>
       </div>
     </>
   );
