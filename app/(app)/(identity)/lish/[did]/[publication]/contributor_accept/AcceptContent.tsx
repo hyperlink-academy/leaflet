@@ -117,7 +117,7 @@ export function AcceptContent(props: {
           this publication.
         </p>
 
-        {props.state !== "pending" ? (
+        {props.state === "pending" ? (
           <>
             <div className="flex flex-col gap-2 items-center justify-center ">
               <ButtonPrimary
