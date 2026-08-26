@@ -31,6 +31,7 @@ import {
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
+  PubLeafletPagesCanvas,
   PubLeafletPagesLinearDocument,
   PubLeafletRichtextFacet,
 } from "lexicons/api";
@@ -61,6 +62,19 @@ import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_si
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import { supabaseServerClient } from "supabase/serverClient";
 
+/**
+ * A document page in the shape both send paths already have on hand: the
+ * broadcast's lexicon record pages and the preview's processBlocksToPages
+ * output both carry an id plus a typed block list.
+ */
+export type PostEmailPage = {
+  id: string;
+  type: "doc" | "canvas";
+  blocks:
+    | PubLeafletPagesLinearDocument.Block[]
+    | PubLeafletPagesCanvas.Block[];
+};
+
 type PostEmailProps = {
   publicationName: string;
   publicationUrl: string;
@@ -76,6 +90,12 @@ type PostEmailProps = {
    * direct URL in the blob ref's $link instead — we pass those through.
    */
   did: string;
+  /**
+   * Every page of the document, so `pub.leaflet.blocks.page` blocks can show
+   * the linked sub-page's opening lines. Blocks whose page is missing render
+   * nothing, matching the published web page.
+   */
+  pages?: PostEmailPage[];
   /**
    * If omitted the template renders a "(preview)" footer in place of the
    * real unsubscribe link — used by the Phase 4 preview-send path.
@@ -121,6 +141,13 @@ type PostEmailProps = {
 const drawerUrl = (base: string, drawer: "quotes" | "comments") => {
   const sep = base.includes("?") ? "&" : "?";
   return `${base}${sep}interactionDrawer=${drawer}`;
+};
+
+// The same ?page= deep link the published post's page-link anchors use; the
+// post page reads it on load to open that sub-page next to the body.
+const pageUrl = (base: string, pageId: string) => {
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}page=${encodeURIComponent(pageId)}`;
 };
 
 const textBlock = (
@@ -540,6 +567,19 @@ const defaultProps: PostEmailProps = {
     },
     {
       $type: "pub.leaflet.pages.linearDocument#block",
+      block: { $type: "pub.leaflet.blocks.page", id: "preview-subpage" },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: { $type: "pub.leaflet.blocks.page", id: "preview-canvas" },
+    },
+    // No fixture page for this id — renders nothing, like the web.
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
+      block: { $type: "pub.leaflet.blocks.page", id: "preview-missing" },
+    },
+    {
+      $type: "pub.leaflet.pages.linearDocument#block",
       block: {
         $type: "pub.leaflet.blocks.button",
         text: "Click me",
@@ -625,6 +665,45 @@ const defaultProps: PostEmailProps = {
     {
       $type: "pub.leaflet.pages.linearDocument#block",
       block: { $type: "pub.leaflet.blocks.math" },
+    },
+  ],
+  pages: [
+    {
+      id: "preview-subpage",
+      type: "doc",
+      blocks: [
+        headingBlock("A sub-page with a title", 2),
+        textBlock(
+          "The first few lines of the page show up in the card, with bold and a link kept intact.",
+          [
+            facet(58, 62, [{ $type: "pub.leaflet.richtext.facet#bold" }]),
+            facet(69, 73, [
+              {
+                $type: "pub.leaflet.richtext.facet#link",
+                uri: "https://leaflet.pub",
+              },
+            ]),
+          ],
+        ),
+        textBlock("A third line, and then it stops."),
+        textBlock("This fourth line is never shown."),
+      ],
+    },
+    {
+      id: "preview-canvas",
+      type: "canvas",
+      blocks: [
+        {
+          $type: "pub.leaflet.pages.canvas#block",
+          x: 0,
+          y: 0,
+          width: 200,
+          block: {
+            $type: "pub.leaflet.blocks.text",
+            plaintext: "A note on a canvas page",
+          },
+        },
+      ],
     },
   ],
   bskyPosts: previewBskyPosts,
@@ -874,6 +953,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             theme={theme}
                             colors={c}
                             postUrl={p.postUrl}
+                            pages={p.pages}
                             bskyPosts={p.bskyPosts}
                             standardSitePosts={p.standardSitePosts}
                             standardSitePublications={
@@ -1114,6 +1194,7 @@ const BlockRenderer = ({
   colors,
   postUrl,
   blockUrl,
+  pages,
   bskyPosts,
   standardSitePosts,
   standardSitePublications,
@@ -1127,6 +1208,7 @@ const BlockRenderer = ({
   colors: ResolvedColors;
   postUrl: string;
   blockUrl?: string;
+  pages?: PostEmailPage[];
   bskyPosts?: Record<string, AppBskyFeedDefs.PostView>;
   standardSitePosts?: Record<string, StandardSitePostData>;
   standardSitePublications?: Record<string, StandardSitePublicationData>;
@@ -1381,7 +1463,20 @@ const BlockRenderer = ({
     "pub.leaflet.blocks.iframe": notSupported,
     "pub.leaflet.blocks.html": notSupported,
     "pub.leaflet.blocks.math": notSupported,
-    "pub.leaflet.blocks.page": notSupported,
+    "pub.leaflet.blocks.page": (block) => {
+      const page = pages?.find((p) => p.id === block.id);
+      if (!page) return null;
+      return (
+        <PageLinkEmailBlock
+          page={page}
+          href={pageUrl(postUrl, block.id)}
+          did={did}
+          theme={theme}
+          colors={colors}
+          assetsBaseUrl={assetsBaseUrl}
+        />
+      );
+    },
     "pub.leaflet.blocks.poll": notSupported,
     "pub.leaflet.blocks.postsList": notSupported,
     "pub.leaflet.blocks.signup": notSupported,
@@ -1710,6 +1805,421 @@ const LinkBlock = ({
       </Row>
     </Section>
   );
+};
+
+// Mirrors PublishedPageLinkBlock: a page-colored card the whole of which
+// links to the sub-page. Doc pages show the first three text/heading lines
+// beside a rotated mini-page thumbnail; canvas pages show the canvas scaled
+// down. The card clips at the web's fixed heights so the thumbnail pokes up
+// from the bottom edge the same way.
+const PAGE_LINK_PREVIEW_LINES = 3;
+const PAGE_LINK_DOC_HEIGHT = 104;
+const PAGE_LINK_CANVAS_HEIGHT = 200;
+const PAGE_LINK_THUMB_WIDTH = 120;
+const CANVAS_WIDTH = 1272;
+// Web thumbnails render the page at full width scaled by transform; email
+// re-renders the blocks at scaled sizes instead, so `transform`-less clients
+// (Gmail, Outlook) still get a thumbnail — only the 4° tilt is lost there.
+const PageLinkEmailBlock = ({
+  page,
+  href,
+  did,
+  theme,
+  colors,
+  assetsBaseUrl,
+}: {
+  page: PostEmailPage;
+  href: string;
+  did: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+  assetsBaseUrl: string;
+}) => {
+  const isCanvas = page.type === "canvas";
+  const cellLinkStyle: CSSProperties = {
+    color: "inherit",
+    display: "block",
+    textDecoration: "none",
+  };
+  return (
+    <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+      <div
+        style={{
+          backgroundColor: theme.pageBackground,
+          border: `1px solid ${colors.borderLight}`,
+          borderRadius: 8,
+          boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+          height: isCanvas ? PAGE_LINK_CANVAS_HEIGHT : PAGE_LINK_DOC_HEIGHT,
+          overflow: "hidden",
+          width: "100%",
+        }}
+      >
+        {isCanvas ? (
+          <Link href={href} style={{ ...cellLinkStyle, height: "100%" }}>
+            <CanvasThumbnail
+              blocks={page.blocks as PubLeafletPagesCanvas.Block[]}
+              did={did}
+              theme={theme}
+              colors={colors}
+              assetsBaseUrl={assetsBaseUrl}
+            />
+          </Link>
+        ) : (
+          <Row style={{ minWidth: "100%" }}>
+            <Column style={{ verticalAlign: "top", wordBreak: "break-word" }}>
+              <Link
+                href={href}
+                style={{
+                  ...cellLinkStyle,
+                  height: PAGE_LINK_DOC_HEIGHT,
+                  padding: "8px 0 0 12px",
+                }}
+              >
+                <DocLinkLines
+                  blocks={page.blocks as PubLeafletPagesLinearDocument.Block[]}
+                  theme={theme}
+                  assetsBaseUrl={assetsBaseUrl}
+                />
+              </Link>
+            </Column>
+            <Column
+              style={{
+                verticalAlign: "top",
+                width: PAGE_LINK_THUMB_WIDTH + 24,
+              }}
+            >
+              <Link
+                href={href}
+                style={{ ...cellLinkStyle, height: PAGE_LINK_DOC_HEIGHT }}
+              >
+                <DocThumbnail
+                  blocks={page.blocks as PubLeafletPagesLinearDocument.Block[]}
+                  did={did}
+                  theme={theme}
+                  colors={colors}
+                  assetsBaseUrl={assetsBaseUrl}
+                />
+              </Link>
+            </Column>
+          </Row>
+        )}
+      </div>
+    </Section>
+  );
+};
+
+// The lines sit inside the card's anchor, so link/mention facets must not
+// render their own <a>: the HTML parser closes the outer anchor at a nested
+// one and everything after it lands outside the card.
+const stripLinkFeatures = (facets?: PubLeafletRichtextFacet.Main[]) =>
+  facets?.map((f) => ({
+    ...f,
+    features: f.features.filter(
+      (feat) =>
+        !PubLeafletRichtextFacet.isLink(feat) &&
+        !PubLeafletRichtextFacet.isDidMention(feat) &&
+        !PubLeafletRichtextFacet.isAtMention(feat),
+    ),
+  }));
+
+const DocLinkLines = ({
+  blocks,
+  theme,
+  assetsBaseUrl,
+}: {
+  blocks: PubLeafletPagesLinearDocument.Block[];
+  theme: EmailTheme;
+  assetsBaseUrl: string;
+}) => {
+  const lines = blocks
+    .map((b): unknown => b.block)
+    .filter(
+      (b): b is PubLeafletBlocksText.Main | PubLeafletBlocksHeader.Main =>
+        PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
+    )
+    .slice(0, PAGE_LINK_PREVIEW_LINES);
+  return (
+    <>
+      {lines.map((line, i) => (
+        <span
+          key={i}
+          style={{
+            color: theme.primary,
+            display: "block",
+            fontFamily: theme.bodyFont,
+            fontSize: 14,
+            fontWeight: PubLeafletBlocksHeader.isMain(line) ? "bold" : "normal",
+            lineHeight: "20px",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          <RichTextSpans
+            plaintext={line.plaintext}
+            facets={stripLinkFeatures(line.facets)}
+            theme={theme}
+            assetsBaseUrl={assetsBaseUrl}
+          />
+        </span>
+      ))}
+    </>
+  );
+};
+
+// The web thumbnail is the page at `pageWidth` scaled to 120px, with the
+// published page's own padding (px-4 pt-3).
+const DocThumbnail = ({
+  blocks,
+  did,
+  theme,
+  colors,
+  assetsBaseUrl,
+}: {
+  blocks: PubLeafletPagesLinearDocument.Block[];
+  did: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+  assetsBaseUrl: string;
+}) => {
+  const scale = PAGE_LINK_THUMB_WIDTH / theme.pageWidth;
+  return (
+    <div
+      style={{
+        backgroundColor: theme.pageBackground,
+        border: `1px solid ${colors.borderLight}`,
+        borderRadius: 6,
+        boxSizing: "border-box",
+        height: PAGE_LINK_DOC_HEIGHT,
+        margin: "12px 12px 0",
+        overflow: "hidden",
+        padding: `${12 * scale}px ${16 * scale}px 0`,
+        transform: "rotate(4deg)",
+        transformOrigin: "center",
+        width: PAGE_LINK_THUMB_WIDTH,
+      }}
+    >
+      {blocks.slice(0, 20).map((b, i) => (
+        <MiniBlock
+          key={i}
+          block={b.block}
+          scale={scale}
+          did={did}
+          theme={theme}
+          colors={colors}
+          assetsBaseUrl={assetsBaseUrl}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Web: the 1272px canvas scaled to fit the card width, blocks placed at their
+// canvas coordinates. Positioning is absolute like the web; clients without
+// `position` support stack the blocks in reading order instead (they're
+// sorted top-to-bottom, left-to-right for that reason).
+const CanvasThumbnail = ({
+  blocks,
+  did,
+  theme,
+  colors,
+  assetsBaseUrl,
+}: {
+  blocks: PubLeafletPagesCanvas.Block[];
+  did: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+  assetsBaseUrl: string;
+}) => {
+  const cardWidth = theme.pageWidth - CARD_HORIZONTAL_PADDING;
+  const scale = (cardWidth - 36) / CANVAS_WIDTH;
+  const sorted = [...blocks].sort((a, b) =>
+    a.y === b.y ? a.x - b.x : a.y - b.y,
+  );
+  return (
+    <div
+      style={{
+        height: PAGE_LINK_CANVAS_HEIGHT,
+        overflow: "hidden",
+        position: "relative",
+        width: "100%",
+      }}
+    >
+      {sorted.map((canvasBlock, i) => (
+        <div
+          key={i}
+          style={{
+            boxSizing: "border-box",
+            left: canvasBlock.x * scale,
+            padding: 12 * scale,
+            position: "absolute",
+            top: canvasBlock.y * scale,
+            transform: canvasBlock.rotation
+              ? `rotate(${canvasBlock.rotation}deg)`
+              : undefined,
+            width: canvasBlock.width * scale,
+          }}
+        >
+          <MiniBlock
+            block={canvasBlock.block}
+            scale={scale}
+            did={did}
+            theme={theme}
+            colors={colors}
+            assetsBaseUrl={assetsBaseUrl}
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// A block at thumbnail scale: the email's own block metrics (font sizes,
+// margins) multiplied down, so the thumbnail is a miniature of the email
+// body the way the web thumbnail is a miniature of the page. Blocks with no
+// cheap miniature (embeds, polls, code) are skipped.
+const MiniBlock = ({
+  block,
+  scale,
+  did,
+  theme,
+  colors,
+  assetsBaseUrl,
+}: {
+  block: PubLeafletPagesLinearDocument.Block["block"];
+  scale: number;
+  did: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+  assetsBaseUrl: string;
+}) => {
+  const margin = `${BLOCK_MARGIN_TOP * scale}px 0 ${BLOCK_MARGIN_BOTTOM * scale}px`;
+  const text = (
+    plaintext: string,
+    opts: { bold?: boolean; size?: number; italic?: boolean } = {},
+  ) => (
+    <div
+      style={{
+        color: theme.primary,
+        fontFamily: theme.bodyFont,
+        fontSize: (opts.size ?? 16) * scale,
+        fontStyle: opts.italic ? "italic" : undefined,
+        fontWeight: opts.bold ? "bold" : "normal",
+        lineHeight: opts.size ? 1.25 : 1.5,
+        margin: opts.size ? `${BLOCK_MARGIN_TOP * scale}px 0 0` : margin,
+        overflow: "hidden",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+      }}
+    >
+      {plaintext}
+    </div>
+  );
+  const listText = (items: ListItem[], depth = 0): React.ReactNode =>
+    items.map((item, i) => (
+      <Fragment key={i}>
+        <div
+          style={{
+            color: theme.primary,
+            fontFamily: theme.bodyFont,
+            fontSize: 16 * scale,
+            lineHeight: 1.5,
+            paddingLeft: 24 * scale * (depth + 1),
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+          {"• "}
+          {listItemContent(item).plaintext}
+        </div>
+        {item.children?.length ? listText(item.children, depth + 1) : null}
+      </Fragment>
+    ));
+  const handlers: BlockHandlers<React.ReactNode> = {
+    "pub.leaflet.blocks.text": (b) => text(b.plaintext),
+    "pub.leaflet.blocks.header": (b) => {
+      const level = (b.level ?? 1) as 1 | 2 | 3;
+      return text(b.plaintext, {
+        bold: true,
+        size: HEADING_FONT_SIZE_PX[level] ?? HEADING_FONT_SIZE_PX[1],
+      });
+    },
+    "pub.leaflet.blocks.blockquote": (b) => (
+      <div
+        style={{
+          borderLeft: `${2 * scale}px solid ${colors.border}`,
+          margin,
+          paddingLeft: 12 * scale,
+        }}
+      >
+        {text(b.plaintext, { italic: true })}
+      </div>
+    ),
+    "pub.leaflet.blocks.unorderedList": (b) => (
+      <div style={{ margin }}>{listText(b.children)}</div>
+    ),
+    "pub.leaflet.blocks.orderedList": (b) => (
+      <div style={{ margin }}>{listText(b.children)}</div>
+    ),
+    "pub.leaflet.blocks.image": (b) => (
+      <Img
+        src={blobRefToSrc(b.image.ref, did, assetsBaseUrl, {
+          width: 360,
+          format: "email",
+        })}
+        alt=""
+        style={{
+          display: "block",
+          height: "auto",
+          margin,
+          maxWidth: b.aspectRatio?.width
+            ? `${b.aspectRatio.width * scale}px`
+            : "100%",
+          width: "100%",
+        }}
+      />
+    ),
+    "pub.leaflet.blocks.horizontalRule": () => (
+      <div
+        style={{
+          borderTop: `1px solid ${colors.border}`,
+          margin: `${16 * scale}px 0`,
+        }}
+      />
+    ),
+    "pub.leaflet.blocks.website": (b) =>
+      text(b.title || b.src, { bold: true }),
+    "pub.leaflet.blocks.button": (b) => (
+      <div
+        style={{
+          backgroundColor: theme.accentBackground,
+          borderRadius: 6 * scale,
+          color: theme.accentText,
+          display: "inline-block",
+          fontFamily: theme.bodyFont,
+          fontSize: 16 * scale,
+          fontWeight: "bold",
+          lineHeight: 1.5,
+          margin,
+          padding: `${4 * scale}px ${8 * scale}px`,
+        }}
+      >
+        {b.text}
+      </div>
+    ),
+    "pub.leaflet.blocks.code": () => null,
+    "pub.leaflet.blocks.math": () => null,
+    "pub.leaflet.blocks.iframe": () => null,
+    "pub.leaflet.blocks.html": () => null,
+    "pub.leaflet.blocks.page": () => null,
+    "pub.leaflet.blocks.poll": () => null,
+    "pub.leaflet.blocks.postsList": () => null,
+    "pub.leaflet.blocks.signup": () => null,
+    "pub.leaflet.blocks.bskyPost": () => null,
+    "pub.leaflet.blocks.standardSitePost": () => null,
+    "pub.leaflet.blocks.standardSitePublication": () => null,
+    "pub.leaflet.blocks.imageGallery": () => null,
+    "pub.leaflet.blocks.membersOnlyDelimiter": () => null,
+  };
+  return matchBlock(block, handlers, () => null);
 };
 
 const ImageBlock = ({

@@ -2,7 +2,7 @@ import { render } from "@react-email/render";
 import { AtUri } from "@atproto/syntax";
 import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PostEmail } from "emails/post";
+import { PostEmail, type PostEmailPage } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
 import {
   getDocumentPages,
@@ -14,7 +14,10 @@ import {
   resolveFromDomain,
   resolveReplyToEmail,
 } from "src/utils/newsletterSender";
-import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import {
+  PubLeafletPagesCanvas,
+  PubLeafletPagesLinearDocument,
+} from "lexicons/api";
 import type { AppBskyFeedDefs } from "@atproto/api";
 import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
 import { manageSubscriptionUrl } from "src/subscriptions/manageUrl";
@@ -161,11 +164,20 @@ export const send_post_broadcast = inngest.createFunction(
     // The first page is the document body. Canvas pages don't map to a linear
     // email body — the email renders an empty postContent section and falls
     // back to the "See Full Post" link.
-    const firstPage = docRecord ? getDocumentPages(docRecord)?.[0] : undefined;
+    const docPages = docRecord ? (getDocumentPages(docRecord) ?? []) : [];
+    const firstPage = docPages[0];
     let blocks: PubLeafletPagesLinearDocument.Block[] =
       firstPage?.$type === "pub.leaflet.pages.linearDocument"
         ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
         : [];
+    // Pages without an id can't be the target of a page block.
+    const pages: PostEmailPage[] = docPages.flatMap((p): PostEmailPage[] => {
+      if (PubLeafletPagesLinearDocument.isMain(p) && p.id)
+        return [{ id: p.id, type: "doc", blocks: p.blocks ?? [] }];
+      if (PubLeafletPagesCanvas.isMain(p) && p.id)
+        return [{ id: p.id, type: "canvas", blocks: p.blocks ?? [] }];
+      return [];
+    });
 
     const pubTiers = loaded.pub.publication_membership_tiers ?? [];
     const hasDelimiter =
@@ -348,6 +360,7 @@ export const send_post_broadcast = inngest.createFunction(
               authorName,
               publishedAtLabel,
               blocks: group.blocks,
+              pages,
               bskyPosts,
               standardSitePosts,
               standardSitePublications,
