@@ -3,11 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { LoginContent } from "components/LoginButton";
 import { acceptContributorInvitation } from "actions/publications/contributors";
+import { PubIcon } from "components/ActionBar/Publications";
 
 type AcceptState =
   | "no_publication"
@@ -61,6 +66,7 @@ const STATIC_STATES: Record<
 export function AcceptContent(props: {
   publicationUri: string | null;
   publicationName: string;
+  publicationIcon: string | null;
   state: AcceptState;
   dashboardHref: string;
 }) {
@@ -91,42 +97,48 @@ export function AcceptContent(props: {
   };
 
   let body: React.ReactNode;
-  if (props.state === "not_signed_in") {
+  if (props.state === "not_signed_in" || props.state === "pending") {
     body = (
       <>
-        <h3 className="text-secondary">Sign in to accept your invitation</h3>
-        <p className="text-tertiary leading-snug pb-2">
-          Sign in with the Bluesky account that received the invitation to
-          contribute to{" "}
-          <span className="font-bold">{props.publicationName}</span>.
-        </p>
-        <LoginContent pageView noEmailLogin />
-      </>
-    );
-  } else if (props.state === "pending") {
-    body = (
-      <>
-        <h3 className="text-secondary">
-          Contribute to {props.publicationName}?
-        </h3>
-        <p className="text-tertiary leading-snug">
-          You've been invited to contribute. As a contributor you can create
-          drafts and publish posts on behalf of the publication.
-        </p>
-        <div className="flex gap-2 justify-center pt-2">
-          <Link href="/home">
-            <ButtonSecondary type="button" disabled={accepting}>
-              Decline
-            </ButtonSecondary>
-          </Link>
-          <ButtonPrimary
-            type="button"
-            disabled={accepting}
-            onClick={handleAccept}
-          >
-            {accepting ? <DotLoader /> : "Accept Invitation"}
-          </ButtonPrimary>
+        <div className="flex flex-col sm:gap-0 gap-1 w-full justify-center text-center">
+          <div className="text-secondary font-bold ">
+            You've been invited to
+          </div>
+          <div className="flex sm:flex-row flex-col justify-center sm:gap-3 items-center leading-snug">
+            <PubIcon
+              icon={props.publicationIcon ?? undefined}
+              pubName={props.publicationName}
+            />
+            <h2>{props.publicationName}</h2>
+          </div>
         </div>
+        <p className="text-secondary leading-snug pb-2">
+          Invited contributors are able to create drafts and publish posts to
+          this publication.
+        </p>
+
+        {props.state !== "pending" ? (
+          <>
+            <div className="flex flex-col gap-2 items-center justify-center ">
+              <ButtonPrimary
+                type="button"
+                disabled={accepting}
+                onClick={handleAccept}
+              >
+                {accepting ? <DotLoader /> : "Accept Invitation"}
+              </ButtonPrimary>
+              <Link href="/home">
+                <ButtonTertiary type="button" disabled={accepting}>
+                  Decline
+                </ButtonTertiary>
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <LoginContent pageView noEmailLogin className="w-full!" />
+          </>
+        )}
       </>
     );
   } else {
@@ -147,7 +159,7 @@ export function AcceptContent(props: {
 
   return (
     <div className="h-full w-full flex place-items-center text-center">
-      <div className="frosted-container p-4 max-w-md mx-auto justify-center place-items-center flex flex-col gap-2">
+      <div className="frosted-container mx-4 p-4 max-w-md sm:mx-auto justify-center place-items-center flex flex-col gap-2">
         {body}
       </div>
     </div>

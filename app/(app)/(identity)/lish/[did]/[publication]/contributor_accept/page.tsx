@@ -3,6 +3,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { getIdentityData } from "actions/getIdentityData";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
@@ -34,6 +35,10 @@ export default async function ContributorAcceptPage(props: {
     ? normalizePublicationRecord(publication.record)
     : null;
   let pubName = pubRecord?.name || publication?.name || "this publication";
+  let pubIcon =
+    pubRecord?.icon && publication
+      ? blobRefToSrc(pubRecord.icon.ref, publication.identity_did)
+      : null;
 
   let identity = await getIdentityData();
 
@@ -73,6 +78,7 @@ export default async function ContributorAcceptPage(props: {
     <AcceptContent
       publicationUri={publication?.uri ?? null}
       publicationName={pubName}
+      publicationIcon={pubIcon}
       state={inviteState.state}
       dashboardHref={dashboardHref}
     />
