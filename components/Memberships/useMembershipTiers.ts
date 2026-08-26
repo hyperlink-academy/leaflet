@@ -3,10 +3,10 @@ import useSWR from "swr";
 import { getMembershipTiers } from "actions/publications/joinMembership";
 
 // Cached per publication across every subscribe surface.
-export function useMembershipTiers(publicationUri: string) {
+export function useMembershipTiers(publicationUri: string | undefined) {
   const { data } = useSWR(
-    `membership-tiers-${publicationUri}`,
-    () => getMembershipTiers(publicationUri),
+    publicationUri ? `membership-tiers-${publicationUri}` : null,
+    () => getMembershipTiers(publicationUri!),
     { revalidateOnFocus: false },
   );
   const tiers = data ?? null;

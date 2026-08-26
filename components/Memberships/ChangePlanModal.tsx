@@ -23,7 +23,7 @@ import {
   type MembershipPlan,
   type Cadence,
 } from "components/Memberships/TierGrid";
-import type { GatePolicy } from "src/membership";
+import type { GatePolicy, MembershipTiers } from "src/membership";
 
 export function membershipPrice(m: MyMembership): string | null {
   const cents = m.cadence === "year" ? m.annualPriceCents : m.monthlyPriceCents;
@@ -131,12 +131,17 @@ export function ChangePlanForm(props: {
   membership: MyMembership;
   onSuccess: () => void;
   gatePolicy?: GatePolicy | null;
+  // Skips the tiers fetch when the host already has them (the join flow).
+  tiers?: MembershipTiers;
 }) {
   const m = props.membership;
   const toaster = useToaster();
   const router = useRouter();
 
-  const { tiers } = useMembershipTiers(m.publication);
+  const { tiers: fetchedTiers } = useMembershipTiers(
+    props.tiers ? undefined : m.publication,
+  );
+  const tiers = props.tiers ?? fetchedTiers;
   const [cadence, setCadence] = useState<Cadence>(
     m.cadence === "year" ? "year" : "month",
   );
@@ -259,7 +264,16 @@ export function ChangePlanForm(props: {
         busyPlan={null}
         currentMembership={{ kind: "paid", tierId: m.tierId }}
         gatePolicy={props.gatePolicy}
-        onSelectPlan={setConfirmPlan}
+        // A change on a cancelled subscription would bill the new plan while
+        // leaving the cancellation in place, so it has to be resumed first.
+        onSelectPlan={(plan) =>
+          m.cancelAtPeriodEnd
+            ? toaster({
+                type: "error",
+                content: "Resume your membership to change plans.",
+              })
+            : setConfirmPlan(plan)
+        }
       />
     </div>
   );

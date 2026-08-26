@@ -53,6 +53,18 @@ import { buildOauthLoginUrl, mainSiteAuthBase } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import type { SubscriptionSource } from "src/subscriptionSource";
 import { LoginModal } from "components/LoginButton";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { useMyMembership } from "components/Memberships/useMyMembership";
+import {
+  ChangePlanForm,
+  isMembershipActive,
+  membershipPrice,
+  pendingPlanLabel,
+} from "components/Memberships/ChangePlanModal";
+import { CancelMembershipForm } from "components/Memberships/CancelMembershipModal";
+import { ResumeMembershipForm } from "components/Memberships/ResumeMembershipModal";
+import type { MyMembership } from "actions/memberships";
 
 // 1. collect who's subscribing (email or Atmosphere
 // handle — or the session identity when signed in)
@@ -63,6 +75,10 @@ import { LoginModal } from "components/LoginButton";
 // 3c. Through sign-in/up first then to card form if user is logged out.
 // email confirms with a code inline;
 // handles round-trip through OAuth with the tier in the return URL).
+//
+// The tier grid always renders; the viewer's state only changes what the
+// buttons do. Paid members get the same grid as a plan switcher
+// (ChangePlanForm) plus cancel/resume, so the page and modal are one surface.
 export function JoinMembershipFlow(props: {
   // Whether the flow is live: gates the viewer fetch and resume handling so a
   // closed modal doesn't work in the background. The /join page passes true.
@@ -85,8 +101,16 @@ export function JoinMembershipFlow(props: {
   const toaster = useToaster();
   const smoker = useSmoker();
   const router = useRouter();
-  const { identity } = useIdentityData();
+  const { identity, identityPending } = useIdentityData();
   const viewerSub = useViewerSubscription(props.publicationUri);
+  const { membership: myMembership } = useMyMembership(props.publicationUri);
+  const isPaidMember = viewerSub.membership?.kind === "paid";
+  const [manageStep, setManageStep] = useState<"cancel" | "resume" | null>(
+    null,
+  );
+  // Remounts ChangePlanForm off its "updated" screen when there's no modal
+  // to close.
+  const [changeKey, setChangeKey] = useState(0);
   const [viewer, setViewer] = useState<MembershipJoinViewer | null>(
     props.viewerOverride ?? null,
   );
@@ -462,7 +486,17 @@ export function JoinMembershipFlow(props: {
   };
 
   const selectPlan = async (plan: MembershipPlan) => {
-    if (busyPlan || processing) return;
+    if (busyPlan || processing || identityPending) return;
+    if (viewer?.isOwner) {
+      toaster({
+        type: "error",
+        content: "This is your publication — you can't join it.",
+      });
+      return;
+    }
+    // Paid members' grid is ChangePlanForm once their membership row loads;
+    // until then the plain grid renders and clicks wait.
+    if (isPaidMember) return;
 
     if (identity) {
       if (hasNeededIdentity)
@@ -533,34 +567,52 @@ export function JoinMembershipFlow(props: {
             onCancel={() => setCardStep(null)}
           />
         </div>
-      ) : viewer?.isOwner ? (
-        <div className="px-4 py-6 text-center text-secondary">
-          This is your publication — readers see your membership tiers here.
-        </div>
-      ) : viewer?.paidMembership ? (
-        <div className="px-4 py-6 flex flex-col gap-2 text-center text-secondary">
-          <p>
-            You&apos;re already a member — change or cancel your plan from the
-            publication&apos;s subscribe menu.
-          </p>
-          {props.publicationUrl && (
-            <a
-              href={props.publicationUrl}
-              className="font-bold text-accent-contrast"
-            >
-              Go to {props.publicationName}
-            </a>
+      ) : manageStep && myMembership ? (
+        <div className="flex justify-center">
+          {manageStep === "cancel" ? (
+            <CancelMembershipForm
+              membership={myMembership}
+              onSuccess={() => setManageStep(null)}
+              onBack={() => setManageStep(null)}
+            />
+          ) : (
+            <ResumeMembershipForm
+              membership={myMembership}
+              onSuccess={() => setManageStep(null)}
+              onBack={() => setManageStep(null)}
+            />
           )}
         </div>
       ) : (
         <div className="memberSignUp flex flex-col max-w-3xl">
           <div className="text-center flex flex-col gap-1 max-w-md mx-auto">
             <h2 className="text-primary leading-snug text-xl">
-              Become a member of <br />
+              {isPaidMember ? "Your membership to" : "Become a member of"}{" "}
+              <br />
               {props.publicationName}
             </h2>
           </div>
-          {subscribingAs ? (
+          {isPaidMember ? (
+            myMembership ? (
+              <PaidMembershipStatus
+                membership={myMembership}
+                onCancel={() => setManageStep("cancel")}
+                onResume={() => setManageStep("resume")}
+              />
+            ) : (
+              <div className="flex justify-center pt-1 pb-4">
+                <DotLoader />
+              </div>
+            )
+          ) : viewer?.isOwner ? (
+            <p className="text-tertiary text-lg text-center pt-1 pb-4">
+              This is your publication — this is what readers see.
+            </p>
+          ) : identityPending ? (
+            <div className="flex justify-center pt-1 pb-4">
+              <DotLoader />
+            </div>
+          ) : subscribingAs ? (
             <p className="text-tertiary text-lg text-center pt-1 pb-4">
               Subscribe as {subscribingAs}
             </p>
@@ -601,16 +653,29 @@ export function JoinMembershipFlow(props: {
               )}
             </div>
           )}
-          <TierGrid
-            tiers={props.tiers}
-            cadence={cadence}
-            onCadenceChange={setCadence}
-            busyPlan={busyPlan}
-            currentMembership={viewerSub.membership}
-            gatePolicy={props.gatePolicy}
-            onSelectPlan={selectPlan}
-          />{" "}
-          {!identity ? (
+          {isPaidMember && myMembership ? (
+            <ChangePlanForm
+              key={changeKey}
+              membership={myMembership}
+              tiers={props.tiers}
+              gatePolicy={props.gatePolicy}
+              onSuccess={() => {
+                setChangeKey((k) => k + 1);
+                props.onClose?.();
+              }}
+            />
+          ) : (
+            <TierGrid
+              tiers={props.tiers}
+              cadence={cadence}
+              onCadenceChange={setCadence}
+              busyPlan={busyPlan}
+              currentMembership={viewerSub.membership}
+              gatePolicy={props.gatePolicy}
+              onSelectPlan={selectPlan}
+            />
+          )}
+          {!identity && !identityPending ? (
             <p className="tierPaymentInfo text-tertiary text-sm text-center pt-4">
               Already Subscribed?{" "}
               <LoginModal trigger={<div className="underline">Sign in</div>} />
@@ -641,6 +706,58 @@ export function JoinMembershipFlow(props: {
         />
       )}
     </>
+  );
+}
+
+function PaidMembershipStatus(props: {
+  membership: MyMembership;
+  onCancel: () => void;
+  onResume: () => void;
+}) {
+  const m = props.membership;
+  const price = membershipPrice(m);
+  const periodEnd = useLocalizedDate(m.currentPeriodEnd ?? "", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const active = isMembershipActive(m.status);
+  const detail = !active
+    ? "Not active"
+    : m.cancelAtPeriodEnd
+      ? m.currentPeriodEnd
+        ? `Ends ${periodEnd}`
+        : "Ends at the end of your billing period"
+      : pendingPlanLabel(m, m.currentPeriodEnd ? periodEnd : "") ??
+        (m.currentPeriodEnd ? `Renews ${periodEnd}` : "");
+  return (
+    <div className="membershipStatus flex flex-wrap items-center justify-center gap-x-3 gap-y-1 pt-1 pb-4 text-center">
+      <p className="text-tertiary text-lg">
+        {m.tierName ?? "Membership"}
+        {price ? ` · ${price}` : ""}
+        {detail ? ` · ${detail}` : ""}
+      </p>
+      {active &&
+        (m.cancelAtPeriodEnd ? (
+          <ButtonPrimary
+            compact
+            type="button"
+            className="text-sm"
+            onClick={props.onResume}
+          >
+            Resume
+          </ButtonPrimary>
+        ) : (
+          <ButtonSecondary
+            compact
+            type="button"
+            className="text-sm"
+            onClick={props.onCancel}
+          >
+            Cancel membership
+          </ButtonSecondary>
+        ))}
+    </div>
   );
 }
 

@@ -240,7 +240,12 @@ export async function revalidateAllPublicationPaths(
       .select("documents(uri, data)")
       .eq("publication", pubUri),
   ]);
-  const subpaths = new Set<string>(["", "/archive", "/subscribe"]);
+  const subpaths = new Set<string>([
+    "",
+    "/archive",
+    "/subscribe",
+    "/membership",
+  ]);
   for (const p of pages ?? []) {
     // External link tabs store a full URL in `path`; only real routes count.
     if (p.path && p.path.startsWith("/") && p.path !== "/")
