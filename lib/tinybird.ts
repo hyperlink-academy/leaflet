@@ -12,6 +12,7 @@ import {
   defineDatasource,
   defineEndpoint,
   Tinybird,
+  defineToken,
   node,
   t,
   p,
@@ -22,7 +23,10 @@ import {
   TokenDefinition,
 } from "@tinybirdco/sdk";
 
-const PROD_READ_TOKEN = { name: "prod_read_token_v1", scopes: ["READ"] };
+// The token the app runs with (TINYBIRD_TOKEN in prod and the appview): reads
+// every endpoint and appends subscription events.
+const PROD_TOKEN = defineToken("prod_read_token_v1");
+const PROD_TOKEN_READ = { token: PROD_TOKEN, scope: "READ" } as const;
 
 // ============================================================================
 // Datasources
@@ -111,6 +115,7 @@ export const subscriptionEvents = defineDatasource("subscription_events", {
     sortingKey: ["publication_uri", "timestamp"],
     partitionKey: "toYYYYMM(fromUnixTimestamp64Milli(timestamp))",
   }),
+  tokens: [{ token: PROD_TOKEN, scope: "APPEND" }],
 });
 
 export type SubscriptionEventsRow = InferRow<typeof subscriptionEvents>;
@@ -132,7 +137,7 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
     referrer_host: p.string().optional(),
     bsky_post: p.string().optional(),
   },
-  tokens: [PROD_READ_TOKEN],
+  tokens: [PROD_TOKEN_READ],
   nodes: [
     node({
       name: "endpoint",
@@ -183,7 +188,7 @@ export type PublicationTrafficOutput = InferOutputRow<
 export const publicationTopReferrers = defineEndpoint(
   "publication_top_referrers",
   {
-    tokens: [PROD_READ_TOKEN],
+    tokens: [PROD_TOKEN_READ],
     description: "Top referrers for a publication domain",
     params: {
       domains: p.string(),
@@ -247,7 +252,7 @@ export type PublicationTopReferrersOutput = InferOutputRow<
  */
 export const publicationTopPages = defineEndpoint("publication_top_pages", {
   description: "Top pages for a publication domain",
-  tokens: [PROD_READ_TOKEN],
+  tokens: [PROD_TOKEN_READ],
   params: {
     domains: p.string(),
     date_from: p.string().optional(),
@@ -307,7 +312,7 @@ export const publicationBskyTraffic = defineEndpoint(
   "publication_bsky_traffic",
   {
     description: "Pageviews per referring Bluesky post for a publication",
-    tokens: [PROD_READ_TOKEN],
+    tokens: [PROD_TOKEN_READ],
     params: {
       domains: p.string(),
       date_from: p.string().optional(),
@@ -366,7 +371,7 @@ export const publicationSubscribesTimeseries = defineEndpoint(
   "publication_subscribes_timeseries",
   {
     description: "Daily subscription event counts for a publication",
-    tokens: [PROD_READ_TOKEN],
+    tokens: [PROD_TOKEN_READ],
     params: {
       publication_uri: p.string(),
       date_from: p.string().optional(),
@@ -419,7 +424,7 @@ export const publicationSubscribeSources = defineEndpoint(
   "publication_subscribe_sources",
   {
     description: "Subscribe counts by source placement for a publication",
-    tokens: [PROD_READ_TOKEN],
+    tokens: [PROD_TOKEN_READ],
     params: {
       publication_uri: p.string(),
       date_from: p.string().optional(),
