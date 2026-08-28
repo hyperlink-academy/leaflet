@@ -9,8 +9,9 @@ import { useUIState } from "src/useUIState";
 // root/collapsed-blocks fact, so fold state syncs across their devices via
 // Replicache. The zustand store stays the synchronous source every editor
 // call site reads and writes; this component seeds it from the fact and
-// persists store changes back as one whole-state fact per user. Signed-out
-// users keep the ephemeral store-only behavior.
+// persists store changes back as collapse/uncollapse deltas against the
+// user's single whole-state fact. Signed-out users keep the ephemeral
+// store-only behavior.
 export function CollapsedBlocksSync() {
   let { rep, rootEntity, permission_token } = useReplicache();
   let { identity } = useIdentityData();
@@ -61,8 +62,11 @@ export function CollapsedBlocksSync() {
     return () => clearTimeout(t);
   }, [serialized, did, rep, rootEntity]);
 
-  // Outbound: store -> fact, for changes made after seeding. ignoreUndo keeps
-  // fold toggles out of the cmd-Z stack, matching the store-only behavior.
+  // Outbound: store -> fact, for changes made after seeding. Each change is
+  // persisted as the delta the user actually made (diffed against the previous
+  // store state), not the whole set — deltas rebase over other clients'
+  // concurrent toggles instead of clobbering them. ignoreUndo keeps fold
+  // toggles out of the cmd-Z stack, matching the store-only behavior.
   useEffect(() => {
     if (!did || !rep) return;
     let r = rep;
@@ -70,13 +74,22 @@ export function CollapsedBlocksSync() {
     return useUIState.subscribe((state, prev) => {
       if (state.foldedBlocks === prev.foldedBlocks) return;
       if (!seeded.current) return;
+      // Inbound echo: the store was just set to the fact's value.
       if (sameSet(state.foldedBlocks, factValue.current)) return;
+      let collapse = state.foldedBlocks.filter(
+        (b) => !prev.foldedBlocks.includes(b),
+      );
+      let uncollapse = prev.foldedBlocks.filter(
+        (b) => !state.foldedBlocks.includes(b),
+      );
+      if (collapse.length === 0 && uncollapse.length === 0) return;
       factValue.current = [...state.foldedBlocks];
-      r.mutate.setCollapsedBlocks({
+      r.mutate.toggleCollapsedBlocks({
         rootEntity,
         authorDid,
         factID,
-        collapsedBlocks: [...state.foldedBlocks],
+        collapse,
+        uncollapse,
         ignoreUndo: true,
       });
     });

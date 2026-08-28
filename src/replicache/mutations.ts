@@ -1068,36 +1068,46 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
-// Replace a signed-in user's whole collapsed-block set on the root entity.
-// One authenticated fact per user (author_did gates writes server-side) holds
-// the full list; open is the default, so an empty list retracts the fact
-// rather than storing it. factID is caller-generated so client and server mint
-// the same id when the fact is first created — a diverged id would leave an
-// orphan on the server to resurrect on the next pull.
-const setCollapsedBlocks: Mutation<{
+// Apply a delta to a signed-in user's collapsed-block set on the root entity.
+// Storage stays one authenticated fact per user (author_did gates writes
+// server-side) holding the whole list, but the mutation carries only the
+// blocks the user acted on: deltas rebase over whatever state is current on
+// replay, so the same user's concurrent toggles on two devices compose
+// instead of last-write-wins clobbering a whole-set replace would cause.
+// The delta names the intended state (collapse/uncollapse) rather than a
+// blind toggle, which a rebase over a device that made the same change would
+// invert. Open is the default, so an empty resulting set retracts the fact
+// rather than storing it. factID is caller-generated so client and server
+// mint the same id when the fact is first created — a diverged id would
+// leave an orphan on the server to resurrect on the next pull.
+const toggleCollapsedBlocks: Mutation<{
   rootEntity: string;
   authorDid: string;
   factID: string;
-  collapsedBlocks: string[];
+  collapse?: string[];
+  uncollapse?: string[];
 }> = async (args, ctx) => {
   let facts = await ctx.scanIndex.eav(args.rootEntity, "root/collapsed-blocks");
   let mine = facts
     .filter((f) => f.author_did === args.authorDid)
     .toSorted((a, b) => (a.id > b.id ? 1 : -1));
-  if (args.collapsedBlocks.length === 0) {
-    for (let fact of mine) await ctx.retractFact(fact.id);
+  // Concurrent first writes from two of the user's devices can each mint a
+  // fact; union their values, keep the lowest id, and retract the rest so the
+  // state converges back to a single fact.
+  let [keep, ...extra] = mine;
+  let current = new Set(mine.flatMap((f) => f.data.value));
+  for (let entity of args.uncollapse ?? []) current.delete(entity);
+  for (let entity of args.collapse ?? []) current.add(entity);
+  for (let fact of extra) await ctx.retractFact(fact.id);
+  if (current.size === 0) {
+    if (keep) await ctx.retractFact(keep.id);
     return;
   }
-  // Concurrent first writes from two of the user's devices can each mint a
-  // fact; deterministically keep the lowest id and retract the rest so the
-  // state stays a single fact.
-  let [keep, ...extra] = mine;
-  for (let fact of extra) await ctx.retractFact(fact.id);
   await ctx.assertFact({
     id: keep?.id ?? args.factID,
     entity: args.rootEntity,
     attribute: "root/collapsed-blocks",
-    data: { type: "string-array", value: args.collapsedBlocks },
+    data: { type: "string-array", value: [...current] },
     author_did: args.authorDid,
   });
 };
@@ -1281,7 +1291,7 @@ export const mutations = {
   updatePublicationDraft,
   updateLeafletMetadata,
   toggleDraftContributor,
-  setCollapsedBlocks,
+  toggleCollapsedBlocks,
   createFootnote,
   deleteFootnote,
   createEditorComment,
