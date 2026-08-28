@@ -42,14 +42,7 @@ export function Blocks(props: { entityID: string }) {
         key: "ArrowUp",
         shift: true,
         handler: () => {
-          let allParents = foldableParents(blocks);
-          useUIState.setState((s) => {
-            let foldedBlocks = [...s.foldedBlocks];
-            allParents.forEach((p) => {
-              if (!foldedBlocks.includes(p)) foldedBlocks.push(p);
-            });
-            return { foldedBlocks };
-          });
+          useUIState.getState().foldAll(foldableParents(blocks));
         },
       },
       {
@@ -58,13 +51,7 @@ export function Blocks(props: { entityID: string }) {
         key: "ArrowDown",
         shift: true,
         handler: () => {
-          let allParents = foldableParents(blocks);
-          useUIState.setState((s) => {
-            let foldedBlocks = [...s.foldedBlocks].filter(
-              (f) => !allParents.includes(f),
-            );
-            return { foldedBlocks };
-          });
+          useUIState.getState().unfoldAll(foldableParents(blocks));
         },
       },
     ]);
