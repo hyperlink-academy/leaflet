@@ -3,15 +3,15 @@ import { useEffect, useState } from "react";
 import { v7 } from "uuid";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIdentityData } from "components/IdentityProvider";
-import { registerFoldPersister, useUIState } from "src/useUIState";
+import { registerFoldMutator, useUIState } from "src/useUIState";
 
-// Bridges the zustand foldedBlocks UI state with the signed-in user's
-// root/collapsed-blocks fact, so fold state syncs across their devices via
-// Replicache. The zustand store stays the synchronous source every editor
-// call site reads and writes; this component seeds it from the fact and
-// registers as the store's fold persister, so the store's own fold actions
-// hand it the collapse/uncollapse delta they applied. Signed-out users keep
-// the ephemeral store-only behavior.
+// Puts the signed-in user's fold state on the standard Replicache flow: the
+// store's fold actions dispatch their collapse/uncollapse delta as a mutation
+// against the user's root/collapsed-blocks fact (via the mutator registered
+// here), and the fact syncs back into the zustand store, which every editor
+// call site keeps reading synchronously as a mirror. Signed-out users keep
+// the ephemeral store-only behavior — nothing is registered, so the actions
+// write the store directly.
 export function CollapsedBlocksSync() {
   let { rep, rootEntity, permission_token } = useReplicache();
   let { identity } = useIdentityData();
@@ -29,7 +29,7 @@ export function CollapsedBlocksSync() {
   // fact ids in agreement.
   let [factID] = useState(() => v7());
 
-  // Outbound: persist each user fold action as the delta it applied — deltas
+  // Outbound: each fold action becomes the delta the user intended — deltas
   // rebase over other clients' concurrent toggles instead of clobbering them.
   // ignoreUndo keeps fold toggles out of the cmd-Z stack, matching the
   // store-only behavior.
@@ -37,7 +37,7 @@ export function CollapsedBlocksSync() {
     if (!did || !rep) return;
     let r = rep;
     let authorDid = did;
-    return registerFoldPersister(({ collapse, uncollapse }) => {
+    return registerFoldMutator(({ collapse, uncollapse }) => {
       r.mutate.toggleCollapsedBlocks({
         rootEntity,
         authorDid,

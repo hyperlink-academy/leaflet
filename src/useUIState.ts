@@ -17,22 +17,21 @@ export type EditorOpenPage = string | EditorIframePage;
 export const getEditorPageKey = (page: EditorOpenPage): string =>
   typeof page === "string" ? page : `iframe:${page.url}`;
 
-// Persistence for foldedBlocks is driven by the store's own fold actions
-// (toggleFold/foldAll/unfoldAll) calling this registered persister with the
-// delta they applied, rather than by observing store writes — so
-// non-user-action writes (the route-change reset, the inbound fact sync) can
-// set foldedBlocks freely without being mistaken for something to persist.
-// CollapsedBlocksSync registers while mounted for a signed-in user with write
-// rights; signed-out users stay ephemeral because nothing is registered.
+// While a mutator is registered (CollapsedBlocksSync, for a signed-in user
+// with write rights), the fold actions send their delta as a Replicache
+// mutation instead of writing the store, and foldedBlocks is a mirror of the
+// user's synced fact filled by the sync's inbound effect — the standard
+// mutation → subscription → view flow. With nothing registered (signed out,
+// read-only) the actions write the store directly and folds stay ephemeral.
 export type FoldDelta = { collapse?: string[]; uncollapse?: string[] };
-let foldPersister: ((delta: FoldDelta) => void) | null = null;
-export const registerFoldPersister = (persist: (delta: FoldDelta) => void) => {
-  foldPersister = persist;
+let foldMutator: ((delta: FoldDelta) => void) | null = null;
+export const registerFoldMutator = (mutate: (delta: FoldDelta) => void) => {
+  foldMutator = mutate;
   return () => {
-    if (foldPersister === persist) foldPersister = null;
+    if (foldMutator === mutate) foldMutator = null;
   };
 };
-export const hasFoldPersister = () => foldPersister !== null;
+export const foldStateIsSynced = () => foldMutator !== null;
 
 export const useUIState = create(
   combine(
@@ -44,45 +43,43 @@ export const useUIState = create(
       selectedBlocks: [] as SelectedBlock[],
       openPopover: null as string | null,
     },
-    (set) => ({
+    (set, get) => ({
       setOpenPopover: (id: string | null) => {
         set({ openPopover: id });
       },
       toggleFold: (entityID: string) => {
-        let folded = false;
-        set((state) => {
-          folded = !state.foldedBlocks.includes(entityID);
-          return {
-            foldedBlocks: folded
-              ? [...state.foldedBlocks, entityID]
-              : state.foldedBlocks.filter((b) => b !== entityID),
-          };
-        });
-        foldPersister?.(
-          folded ? { collapse: [entityID] } : { uncollapse: [entityID] },
-        );
+        let folded = get().foldedBlocks.includes(entityID);
+        if (foldMutator)
+          return foldMutator(
+            folded ? { uncollapse: [entityID] } : { collapse: [entityID] },
+          );
+        set((state) => ({
+          foldedBlocks: folded
+            ? state.foldedBlocks.filter((b) => b !== entityID)
+            : [...state.foldedBlocks, entityID],
+        }));
       },
       foldAll: (entityIDs: string[]) => {
-        let collapse: string[] = [];
-        set((state) => {
-          collapse = entityIDs.filter((e) => !state.foldedBlocks.includes(e));
-          if (collapse.length === 0) return state;
-          return { foldedBlocks: [...state.foldedBlocks, ...collapse] };
-        });
-        if (collapse.length > 0) foldPersister?.({ collapse });
+        let collapse = entityIDs.filter(
+          (e) => !get().foldedBlocks.includes(e),
+        );
+        if (collapse.length === 0) return;
+        if (foldMutator) return foldMutator({ collapse });
+        set((state) => ({
+          foldedBlocks: [...state.foldedBlocks, ...collapse],
+        }));
       },
       unfoldAll: (entityIDs: string[]) => {
-        let uncollapse: string[] = [];
-        set((state) => {
-          uncollapse = state.foldedBlocks.filter((f) => entityIDs.includes(f));
-          if (uncollapse.length === 0) return state;
-          return {
-            foldedBlocks: state.foldedBlocks.filter(
-              (f) => !entityIDs.includes(f),
-            ),
-          };
-        });
-        if (uncollapse.length > 0) foldPersister?.({ uncollapse });
+        let uncollapse = get().foldedBlocks.filter((f) =>
+          entityIDs.includes(f),
+        );
+        if (uncollapse.length === 0) return;
+        if (foldMutator) return foldMutator({ uncollapse });
+        set((state) => ({
+          foldedBlocks: state.foldedBlocks.filter(
+            (f) => !entityIDs.includes(f),
+          ),
+        }));
       },
       openPage: (parent: EditorOpenPage, page: EditorOpenPage) =>
         set((state) => {
