@@ -13,6 +13,15 @@ const RootAttributes = {
     type: "reference",
     cardinality: "one",
   },
+  // Per-user fold state: which blocks a signed-in user has collapsed, so it
+  // follows them across devices. One fact per user (cardinality many, keyed by
+  // author_did) holding the whole list — never one fact per block, which would
+  // amplify every fold into its own row. Open is the default; a user with
+  // nothing collapsed has no fact at all.
+  "root/collapsed-blocks": {
+    type: "string-array",
+    cardinality: "many",
+  },
 } as const;
 const PageAttributes = {
   "card/block": {
@@ -454,6 +463,7 @@ export type Attribute = keyof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
   text: { type: "text"; value: string };
   string: { type: "string"; value: string };
+  "string-array": { type: "string-array"; value: string[] };
   "spatial-reference": {
     type: "spatial-reference";
     position: { x: number; y: number };

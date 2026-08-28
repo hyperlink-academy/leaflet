@@ -1068,6 +1068,40 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
+// Replace a signed-in user's whole collapsed-block set on the root entity.
+// One authenticated fact per user (author_did gates writes server-side) holds
+// the full list; open is the default, so an empty list retracts the fact
+// rather than storing it. factID is caller-generated so client and server mint
+// the same id when the fact is first created — a diverged id would leave an
+// orphan on the server to resurrect on the next pull.
+const setCollapsedBlocks: Mutation<{
+  rootEntity: string;
+  authorDid: string;
+  factID: string;
+  collapsedBlocks: string[];
+}> = async (args, ctx) => {
+  let facts = await ctx.scanIndex.eav(args.rootEntity, "root/collapsed-blocks");
+  let mine = facts
+    .filter((f) => f.author_did === args.authorDid)
+    .toSorted((a, b) => (a.id > b.id ? 1 : -1));
+  if (args.collapsedBlocks.length === 0) {
+    for (let fact of mine) await ctx.retractFact(fact.id);
+    return;
+  }
+  // Concurrent first writes from two of the user's devices can each mint a
+  // fact; deterministically keep the lowest id and retract the rest so the
+  // state stays a single fact.
+  let [keep, ...extra] = mine;
+  for (let fact of extra) await ctx.retractFact(fact.id);
+  await ctx.assertFact({
+    id: keep?.id ?? args.factID,
+    entity: args.rootEntity,
+    attribute: "root/collapsed-blocks",
+    data: { type: "string-array", value: args.collapsedBlocks },
+    author_did: args.authorDid,
+  });
+};
+
 // A comment and a reply share the same body: an entity holding the YJS
 // content plus author/created-at facts, all carrying the author's did so the
 // server's authentication gate (sessionDid must match author_did) verifies
@@ -1247,6 +1281,7 @@ export const mutations = {
   updatePublicationDraft,
   updateLeafletMetadata,
   toggleDraftContributor,
+  setCollapsedBlocks,
   createFootnote,
   deleteFootnote,
   createEditorComment,

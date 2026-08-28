@@ -21,6 +21,7 @@ import {
 } from "components/ThemeManager/ThemeProvider";
 import { usePublicationNavEntries } from "./usePublicationNavEntries";
 import { PublicationEditMobileFooter } from "./PublicationEditMobileFooter";
+import { CollapsedBlocksSync } from "components/CollapsedBlocksSync";
 
 export function PublicationDraftEditor(props: {
   token: PermissionToken;
@@ -50,6 +51,7 @@ export function PublicationDraftEditor(props: {
         set={props.token.permission_token_rights[0].entity_set}
       >
         <SelectionManager />
+        <CollapsedBlocksSync />
         <LeafletThemeProvider entityID={props.leaflet_id} local>
           <div className="flex flex-col h-full w-full bg-accent-1">
             <PublicationEditHeader

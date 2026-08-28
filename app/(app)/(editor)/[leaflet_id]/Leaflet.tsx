@@ -14,6 +14,7 @@ import { LeafletLayout } from "components/LeafletLayout";
 import { WelcomeModal } from "./WelcomeModal";
 import { AddToHomeEffect } from "./AddToHomeEffect";
 import { EditorCommentSelectionPopover } from "components/EditorComments/EditorCommentSelectionPopover";
+import { CollapsedBlocksSync } from "components/CollapsedBlocksSync";
 
 export function Leaflet(props: {
   token: PermissionToken;
@@ -39,6 +40,7 @@ export function Leaflet(props: {
         >
           <ThemeBackgroundProvider entityID={props.leaflet_id}>
             <UpdateLeafletTitle entityID={props.leaflet_id} />
+            <CollapsedBlocksSync />
             <WelcomeModal />
             <AddToHomeEffect />
             <SelectionManager />
