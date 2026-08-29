@@ -244,7 +244,7 @@ const DomainOptions = (props: {
         )}
         <div className="text-sm text-tertiary leading-snug pt-1">
           You can add or delete domains from{" "}
-          <Link href="/settings?tab=domains" className="text-accent-contrast">
+          <Link href="/settings?tab=general" className="text-accent-contrast">
             domain settings
           </Link>
         </div>

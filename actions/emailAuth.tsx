@@ -5,14 +5,23 @@ import { drizzle } from "drizzle-orm/node-postgres";
 
 import { email_auth_tokens, identities } from "drizzle/schema";
 import { and, desc, eq, gt } from "drizzle-orm";
-import { setAuthToken } from "src/auth";
+import { getAuthIdentity, setAuthToken } from "src/auth";
+import { Err, Ok, type Result } from "src/result";
+import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
+import { backfillAtprotoSubscriptionsForIdentity } from "src/subscriptions/atproto";
+import { readdressIdentitySubscriptions } from "src/subscriptions/email";
+import { updateStripeCustomerEmails } from "stripe/wallet";
 import { postAuthRedirect } from "src/postAuthRedirect";
 import { applyAfterSignInAction } from "src/subscriptions/email";
 import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
 import { PubConfirmEmail } from "emails/pubConfirmEmail";
-import { sendConfirmationEmail } from "src/utils/confirmationEmail";
+import {
+  EMAIL_REGEX,
+  matchesConfirmationCode,
+  sendConfirmationEmail,
+} from "src/utils/confirmationEmail";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 
 // When the email-login flow is entered as part of subscribing to a publication
@@ -77,6 +86,17 @@ export async function requestAuthEmailToken(
   emailNonNormalized: string,
   subscription?: AuthEmailSubscription,
 ) {
+  return mintAuthEmailToken(emailNonNormalized, (email, code) =>
+    subscription
+      ? sendSubscriptionAuthCode(email, code, subscription)
+      : sendAuthCode(email, code),
+  );
+}
+
+async function mintAuthEmailToken(
+  emailNonNormalized: string,
+  send: (email: string, code: string) => Promise<void>,
+) {
   let email = emailNonNormalized.toLowerCase();
   const client = await pool.connect();
   const db = drizzle(client);
@@ -110,11 +130,7 @@ export async function requestAuthEmailToken(
         id: email_auth_tokens.id,
       });
 
-    if (subscription) {
-      await sendSubscriptionAuthCode(email, code, subscription);
-    } else {
-      await sendAuthCode(email, code);
-    }
+    await send(email, code);
 
     return token.id;
   } finally {
@@ -203,4 +219,102 @@ export async function confirmEmailLogin(
     confirmed.identity,
   );
   return { ok: true, url: await postAuthRedirect(finalRedirect, confirmed.id) };
+}
+
+async function sendEmailChangeCode(email: string, code: string) {
+  await sendConfirmationEmail({
+    to: email,
+    subject: `Your Leaflet confirmation code is ${code}`,
+    template: (
+      <LeafletConfirmEmail
+        code={code}
+        title="Confirm your new email"
+        message="Paste this code to set this address as the email for your Leaflet account"
+        assetsBaseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"}
+      />
+    ),
+    text: `Paste this code to set this address as the email for your Leaflet account:\n\n${code}\n`,
+    devLogTag: "email change",
+    code,
+  });
+}
+
+export type AccountEmailChangeError =
+  | "unauthorized"
+  | "invalid_email"
+  | "same_email"
+  | "invalid_code"
+  | "email_belongs_to_other_account"
+  | "database_error";
+
+export async function requestAccountEmailChange(
+  emailRaw: string,
+): Promise<Result<{ tokenId: string }, AccountEmailChangeError>> {
+  const identity = await getAuthIdentity();
+  if (!identity) return Err("unauthorized");
+  const email = emailRaw.trim().toLowerCase();
+  if (!EMAIL_REGEX.test(email)) return Err("invalid_email");
+  if (identity.email?.toLowerCase() === email) return Err("same_email");
+  const tokenId = await mintAuthEmailToken(email, sendEmailChangeCode);
+  return Ok({ tokenId });
+}
+
+export async function confirmAccountEmailChange(
+  tokenId: string,
+  code: string,
+): Promise<Result<{ email: string }, AccountEmailChangeError>> {
+  const identity = await getAuthIdentity();
+  if (!identity) return Err("unauthorized");
+
+  const { data: token } = await supabaseServerClient
+    .from("email_auth_tokens")
+    .select("id, email, confirmation_code, confirmed")
+    .eq("id", tokenId)
+    .maybeSingle();
+  if (
+    !token?.email ||
+    token.confirmed ||
+    !matchesConfirmationCode(token.confirmation_code, code)
+  )
+    return Err("invalid_code");
+  const email = token.email;
+
+  const { data: existing } = await supabaseServerClient
+    .from("identities")
+    .select("id, atp_did")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existing && existing.id !== identity.id) {
+    if (existing.atp_did || !identity.atp_did)
+      return Err("email_belongs_to_other_account");
+    const merged = await mergeEmailIdentityIntoAtpIdentity({
+      sourceId: existing.id,
+      targetId: identity.id,
+    });
+    if (!merged.ok) return Err("database_error");
+  } else {
+    const { error } = await supabaseServerClient
+      .from("identities")
+      .update({ email })
+      .eq("id", identity.id);
+    if (error) {
+      console.error("[emailAuth] set account email failed:", error);
+      return Err("database_error");
+    }
+    await linkOrphanedEmailSubscribers(identity.id, email);
+    if (identity.atp_did)
+      await backfillAtprotoSubscriptionsForIdentity(
+        identity.id,
+        identity.atp_did,
+      );
+  }
+
+  await readdressIdentitySubscriptions(identity.id, email);
+  await updateStripeCustomerEmails(identity.id, email);
+  await supabaseServerClient
+    .from("email_auth_tokens")
+    .delete()
+    .eq("id", tokenId);
+  return Ok({ email });
 }

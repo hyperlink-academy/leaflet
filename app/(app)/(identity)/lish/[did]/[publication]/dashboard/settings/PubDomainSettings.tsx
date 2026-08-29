@@ -120,7 +120,7 @@ export const PubDomainSettings = () => {
               <div className="text-sm text-tertiary pt-0.5">
                 Add new domains from your{" "}
                 <SpeedyLink
-                  href="/settings?tab=domains"
+                  href="/settings?tab=general"
                   className="text-accent-contrast"
                 >
                   profile settings
@@ -133,7 +133,7 @@ export const PubDomainSettings = () => {
               <strong>No available domains! </strong>
               Add new domains from your{" "}
               <SpeedyLink
-                href="/settings?tab=domains"
+                href="/settings?tab=general"
                 className="text-accent-contrast"
               >
                 profile settings
