@@ -19,6 +19,7 @@ import { CollapsedBlocksSync } from "components/CollapsedBlocksSync";
 export function Leaflet(props: {
   token: PermissionToken;
   initialFacts: Fact<Attribute>[];
+  initialFoldedBlocks?: string[];
   leaflet_id: string;
   initialHeadingFontId?: string;
   initialBodyFontId?: string;
@@ -40,7 +41,9 @@ export function Leaflet(props: {
         >
           <ThemeBackgroundProvider entityID={props.leaflet_id}>
             <UpdateLeafletTitle entityID={props.leaflet_id} />
-            <CollapsedBlocksSync />
+            <CollapsedBlocksSync
+              initialFoldedBlocks={props.initialFoldedBlocks}
+            />
             <WelcomeModal />
             <AddToHomeEffect />
             <SelectionManager />

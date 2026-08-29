@@ -1,10 +1,20 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIdentityData } from "components/IdentityProvider";
 import { useUIState } from "src/useUIState";
 
-export function CollapsedBlocksSync() {
+// Applies fold state before the browser paints, and is server-render safe
+// (useLayoutEffect warns and never runs during SSR).
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+export function CollapsedBlocksSync(props: {
+  // Server-resolved fold state for the session's viewer, so a hard load
+  // respects it on first paint instead of waiting for the client-side
+  // identity fetch; once identity resolves the fact takes over.
+  initialFoldedBlocks?: string[];
+}) {
   let { rootEntity, permission_token } = useReplicache();
   let { identity } = useIdentityData();
   let canWrite = permission_token.permission_token_rights?.some((r) => r.write);
@@ -13,7 +23,13 @@ export function CollapsedBlocksSync() {
   let mine = did ? facts.find((f) => f.author_did === did) : undefined;
   let serialized = JSON.stringify(mine?.data.value ?? []);
 
-  useEffect(() => {
+  let initial = props.initialFoldedBlocks;
+  useIsomorphicLayoutEffect(() => {
+    if (did || !initial || initial.length === 0) return;
+    useUIState.setState({ foldedBlocks: [...initial] });
+  }, []);
+
+  useIsomorphicLayoutEffect(() => {
     if (!did) return;
     let value = JSON.parse(serialized) as string[];
     if (!sameSet(useUIState.getState().foldedBlocks, value))
