@@ -1068,18 +1068,6 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
-// Apply a delta to a signed-in user's collapsed-block set on the root entity.
-// Storage stays one authenticated fact per user (author_did gates writes
-// server-side) holding the whole list, but the mutation carries only the
-// blocks the user acted on: deltas rebase over whatever state is current on
-// replay, so the same user's concurrent toggles on two devices compose
-// instead of last-write-wins clobbering a whole-set replace would cause.
-// The delta names the intended state (collapse/uncollapse) rather than a
-// blind toggle, which a rebase over a device that made the same change would
-// invert. Open is the default, so an empty resulting set retracts the fact
-// rather than storing it. factID is caller-generated so client and server
-// mint the same id when the fact is first created — a diverged id would
-// leave an orphan on the server to resurrect on the next pull.
 const toggleCollapsedBlocks: Mutation<{
   rootEntity: string;
   authorDid: string;
@@ -1091,9 +1079,6 @@ const toggleCollapsedBlocks: Mutation<{
   let mine = facts
     .filter((f) => f.author_did === args.authorDid)
     .toSorted((a, b) => (a.id > b.id ? 1 : -1));
-  // Concurrent first writes from two of the user's devices can each mint a
-  // fact; union their values, keep the lowest id, and retract the rest so the
-  // state converges back to a single fact.
   let [keep, ...extra] = mine;
   let current = new Set(mine.flatMap((f) => f.data.value));
   for (let entity of args.uncollapse ?? []) current.delete(entity);

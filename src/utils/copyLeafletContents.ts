@@ -35,8 +35,6 @@ export async function copyLeafletContents({
     root: rootEntity,
   });
   let sourceFacts = (data as unknown as Fact<Attribute>[]) || [];
-  // Per-user UI state, not document content — and its block ids wouldn't
-  // survive the entity remap below anyway.
   sourceFacts = sourceFacts.filter(
     (f) => f.attribute !== "root/collapsed-blocks",
   );

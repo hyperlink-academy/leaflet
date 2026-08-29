@@ -17,12 +17,6 @@ export type EditorOpenPage = string | EditorIframePage;
 export const getEditorPageKey = (page: EditorOpenPage): string =>
   typeof page === "string" ? page : `iframe:${page.url}`;
 
-// While a mutator is registered (CollapsedBlocksSync, for a signed-in user
-// with write rights), the fold actions send their delta as a Replicache
-// mutation instead of writing the store, and foldedBlocks is a mirror of the
-// user's synced fact filled by the sync's inbound effect — the standard
-// mutation → subscription → view flow. With nothing registered (signed out,
-// read-only) the actions write the store directly and folds stay ephemeral.
 export type FoldDelta = { collapse?: string[]; uncollapse?: string[] };
 let foldMutator: ((delta: FoldDelta) => void) | null = null;
 export const registerFoldMutator = (mutate: (delta: FoldDelta) => void) => {
