@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { isUuid } from "./utils/isUuid";
 import type { Profile } from "./identity";
 import { deriveConnectedAccountStatus } from "stripe/accountStatus";
+import { supabaseServerClient } from "supabase/serverClient";
 
 // Shared plumbing for the three identity fetchers (getIdentityData,
 // getViewerIdentity, getAuthIdentity). Deliberately not a "use server" module:
@@ -17,6 +18,18 @@ export async function getValidAuthToken() {
     cookieStore.get("external_auth_token")?.value;
   if (!auth_token || !isUuid(auth_token)) return null;
   return auth_token;
+}
+
+export async function getSessionDid() {
+  let auth_token = await getValidAuthToken();
+  if (!auth_token) return null;
+  let { data } = await supabaseServerClient
+    .from("email_auth_tokens")
+    .select("identities(atp_did)")
+    .eq("id", auth_token)
+    .eq("confirmed", true)
+    .single();
+  return data?.identities?.atp_did ?? null;
 }
 
 // Embed fragments shared by getIdentityData and getViewerIdentity's

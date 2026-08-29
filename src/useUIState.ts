@@ -1,4 +1,4 @@
-import { Block } from "components/Blocks/Block";
+import type { Block } from "components/Blocks/Block";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
 
@@ -30,15 +30,6 @@ export const useUIState = create(
     (set) => ({
       setOpenPopover: (id: string | null) => {
         set({ openPopover: id });
-      },
-      toggleFold: (entityID: string) => {
-        set((state) => {
-          return {
-            foldedBlocks: state.foldedBlocks.includes(entityID)
-              ? state.foldedBlocks.filter((b) => b !== entityID)
-              : [...state.foldedBlocks, entityID],
-          };
-        });
       },
       openPage: (parent: EditorOpenPage, page: EditorOpenPage) =>
         set((state) => {

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
+import { toggleFold } from "src/utils/foldBlocks";
 import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
@@ -161,7 +162,7 @@ export function SelectionManager() {
           let [sortedBlocks, siblings] = await getSortedSelectionBound();
           if (!sortedBlocks[0].listData && sortedBlocks[0].type !== "heading")
             return;
-          useUIState.getState().toggleFold(sortedBlocks[0].entityID);
+          toggleFold(rep, sortedBlocks[0].entityID);
         },
       },
     ];
@@ -387,17 +388,9 @@ export function SelectionManager() {
           e.preventDefault();
 
           if (e.shiftKey) {
-            let { foldedBlocks, toggleFold } = useUIState.getState();
-            await multiSelectOutdent(sortedSelection, siblings, rep, {
-              foldedBlocks,
-              toggleFold,
-            });
+            await multiSelectOutdent(sortedSelection, siblings, rep);
           } else {
-            let { foldedBlocks, toggleFold } = useUIState.getState();
-            await multiSelectIndent(sortedSelection, siblings, rep, {
-              foldedBlocks,
-              toggleFold,
-            });
+            await multiSelectIndent(sortedSelection, siblings, rep);
           }
         }
         if (e.key === "ArrowDown") {

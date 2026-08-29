@@ -13,6 +13,10 @@ const RootAttributes = {
     type: "reference",
     cardinality: "one",
   },
+  "root/collapsed-blocks": {
+    type: "string-array",
+    cardinality: "many",
+  },
 } as const;
 const PageAttributes = {
   "card/block": {
@@ -454,6 +458,7 @@ export type Attribute = keyof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
   text: { type: "text"; value: string };
   string: { type: "string"; value: string };
+  "string-array": { type: "string-array"; value: string[] };
   "spatial-reference": {
     type: "spatial-reference";
     position: { x: number; y: number };

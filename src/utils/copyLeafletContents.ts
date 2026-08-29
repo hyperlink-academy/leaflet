@@ -35,6 +35,9 @@ export async function copyLeafletContents({
     root: rootEntity,
   });
   let sourceFacts = (data as unknown as Fact<Attribute>[]) || [];
+  sourceFacts = sourceFacts.filter(
+    (f) => f.attribute !== "root/collapsed-blocks",
+  );
   if (markAsCopy) sourceFacts = markTitleBlockAsCopy(sourceFacts, rootEntity);
 
   // Map reference targets as well as fact subjects: an entity that has no

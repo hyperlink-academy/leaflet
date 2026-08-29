@@ -33,7 +33,10 @@ function computeHeadingSections(blocks: Block[]): void {
 // A block is hidden when collapsed by a fold: either a folded list ancestor on
 // its own listData.path (excluding itself, so the folded row stays visible), or
 // a folded heading whose section contains it.
-export function isBlockHidden(block: Block, foldedBlocks: string[]): boolean {
+export function isBlockHidden(
+  block: Block,
+  foldedBlocks: readonly string[],
+): boolean {
   return (
     (block.listData?.path.some(
       (p) => foldedBlocks.includes(p.entity) && p.entity !== block.entityID,

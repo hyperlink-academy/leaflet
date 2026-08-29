@@ -3,6 +3,8 @@
 import { Fact, useEntity, useReplicache } from "src/replicache";
 
 import { useUIState } from "src/useUIState";
+import { foldBlocks, unfoldBlocks } from "src/utils/foldBlocks";
+import { useFoldedBlocks } from "components/FoldStateProvider";
 import { isBlockHidden } from "src/replicache/getBlocks";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEditorStates } from "src/state/useEditorState";
@@ -28,7 +30,8 @@ export function Blocks(props: { entityID: string }) {
     return focusedPageID === props.entityID;
   });
   let blocks = useBlocks(props.entityID);
-  let foldedBlocks = useUIState((s) => s.foldedBlocks);
+  let { rep } = useReplicache();
+  let foldedBlocks = useFoldedBlocks();
   let foldableHeadings = useMemo(
     () => new Set(blocks.flatMap((b) => b.headingPath ?? [])),
     [blocks],
@@ -42,14 +45,7 @@ export function Blocks(props: { entityID: string }) {
         key: "ArrowUp",
         shift: true,
         handler: () => {
-          let allParents = foldableParents(blocks);
-          useUIState.setState((s) => {
-            let foldedBlocks = [...s.foldedBlocks];
-            allParents.forEach((p) => {
-              if (!foldedBlocks.includes(p)) foldedBlocks.push(p);
-            });
-            return { foldedBlocks };
-          });
+          foldBlocks(rep, foldableParents(blocks));
         },
       },
       {
@@ -58,17 +54,11 @@ export function Blocks(props: { entityID: string }) {
         key: "ArrowDown",
         shift: true,
         handler: () => {
-          let allParents = foldableParents(blocks);
-          useUIState.setState((s) => {
-            let foldedBlocks = [...s.foldedBlocks].filter(
-              (f) => !allParents.includes(f),
-            );
-            return { foldedBlocks };
-          });
+          unfoldBlocks(rep, foldableParents(blocks));
         },
       },
     ]);
-  }, [blocks, isPageFocused]);
+  }, [blocks, isPageFocused, rep]);
 
   let lastRootBlock = blocks.findLast(
     (f) => !f.listData || f.listData.depth === 1,

@@ -4,12 +4,15 @@ import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
-import { v7 } from "uuid";
+import { v5, v7 } from "uuid";
 import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
+import { useUIState } from "src/useUIState";
 
 export type MutationContext = {
   permission_token_id: string;
+  rootEntity: string;
+  sessionDid: string | null;
   createEntity: (args: {
     entityID: string;
     permission_set: string;
@@ -1068,6 +1071,45 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
+const COLLAPSED_BLOCKS_FACT_NAMESPACE = "5f4bfb95-2a1f-49f4-8f6b-77f0f1a72897";
+const toggleCollapsedBlocks: Mutation<{
+  collapse?: string[];
+  uncollapse?: string[];
+}> = async (args, ctx) => {
+  await ctx.runOnClient(async () => {
+    useUIState.setState((s) => {
+      let foldedBlocks = s.foldedBlocks.filter(
+        (f) => !args.uncollapse?.includes(f),
+      );
+      for (let entity of args.collapse ?? [])
+        if (!foldedBlocks.includes(entity)) foldedBlocks.push(entity);
+      return { foldedBlocks };
+    });
+  });
+  if (!ctx.sessionDid) return;
+  let facts = await ctx.scanIndex.eav(ctx.rootEntity, "root/collapsed-blocks");
+  let mine = facts.find((f) => f.author_did === ctx.sessionDid);
+  let current = new Set(mine?.data.value ?? []);
+  for (let entity of args.uncollapse ?? []) current.delete(entity);
+  for (let entity of args.collapse ?? []) current.add(entity);
+  if (current.size === 0) {
+    if (mine) await ctx.retractFact(mine.id);
+    return;
+  }
+  await ctx.assertFact({
+    id:
+      mine?.id ??
+      v5(
+        `${ctx.rootEntity}:${ctx.sessionDid}`,
+        COLLAPSED_BLOCKS_FACT_NAMESPACE,
+      ),
+    entity: ctx.rootEntity,
+    attribute: "root/collapsed-blocks",
+    data: { type: "string-array", value: [...current] },
+    author_did: ctx.sessionDid,
+  });
+};
+
 // A comment and a reply share the same body: an entity holding the YJS
 // content plus author/created-at facts, all carrying the author's did so the
 // server's authentication gate (sessionDid must match author_did) verifies
@@ -1247,6 +1289,7 @@ export const mutations = {
   updatePublicationDraft,
   updateLeafletMetadata,
   toggleDraftContributor,
+  toggleCollapsedBlocks,
   createFootnote,
   deleteFootnote,
   createEditorComment,
