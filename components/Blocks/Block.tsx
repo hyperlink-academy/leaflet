@@ -11,6 +11,7 @@ import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { indent, outdent } from "src/utils/list-operations";
 import { toggleFold } from "src/utils/foldBlocks";
+import { useIsFolded } from "components/FoldStateProvider";
 import { useDrag } from "@use-gesture/react";
 import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
@@ -528,7 +529,7 @@ const NonTextBlockOptions = (props: {
 // text, and only shows on hover unless the heading is currently folded.
 const HeadingFoldButton = (props: { entityID: string }) => {
   let { rep } = useReplicache();
-  let folded = useUIState((s) => s.foldedBlocks.includes(props.entityID));
+  let folded = useIsFolded(props.entityID);
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let top =
@@ -569,9 +570,7 @@ export const ListMarker = (
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let children = useEntity(props.entityID, "card/block");
-  let folded =
-    useUIState((s) => s.foldedBlocks.includes(props.entityID)) &&
-    children.length > 0;
+  let folded = useIsFolded(props.entityID) && children.length > 0;
 
   let depth = props.listData?.depth;
   let { permissions } = useEntitySetContext();

@@ -4,6 +4,7 @@ import { Fact, useEntity, useReplicache } from "src/replicache";
 
 import { useUIState } from "src/useUIState";
 import { foldBlocks, unfoldBlocks } from "src/utils/foldBlocks";
+import { useFoldedBlocks } from "components/FoldStateProvider";
 import { isBlockHidden } from "src/replicache/getBlocks";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEditorStates } from "src/state/useEditorState";
@@ -30,7 +31,7 @@ export function Blocks(props: { entityID: string }) {
   });
   let blocks = useBlocks(props.entityID);
   let { rep } = useReplicache();
-  let foldedBlocks = useUIState((s) => s.foldedBlocks);
+  let foldedBlocks = useFoldedBlocks();
   let foldableHeadings = useMemo(
     () => new Set(blocks.flatMap((b) => b.headingPath ?? [])),
     [blocks],

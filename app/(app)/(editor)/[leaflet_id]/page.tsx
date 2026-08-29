@@ -48,16 +48,6 @@ export default async function LeafletPage(props: Props) {
     getSessionDid(),
   ]);
 
-  // The viewer's fold state, resolved server-side so the editor can respect it
-  // on first paint instead of waiting for the client-side identity fetch.
-  let initialFoldedBlocks = viewerDid
-    ? (initialFacts.find(
-        (f): f is Fact<"root/collapsed-blocks"> =>
-          f.attribute === "root/collapsed-blocks" &&
-          f.author_did === viewerDid,
-      )?.data.value ?? [])
-    : [];
-
   // Extract font settings from facts for server-side font loading
   const { headingFontId, bodyFontId } = extractFontsFromFacts(
     initialFacts as any,
@@ -75,7 +65,7 @@ export default async function LeafletPage(props: Props) {
       >
         <Leaflet
           initialFacts={initialFacts}
-          initialFoldedBlocks={initialFoldedBlocks}
+          viewerDid={viewerDid}
           leaflet_id={rootEntity}
           token={res.data}
           initialHeadingFontId={headingFontId}

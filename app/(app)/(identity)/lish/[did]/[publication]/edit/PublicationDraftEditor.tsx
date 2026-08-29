@@ -21,7 +21,7 @@ import {
 } from "components/ThemeManager/ThemeProvider";
 import { usePublicationNavEntries } from "./usePublicationNavEntries";
 import { PublicationEditMobileFooter } from "./PublicationEditMobileFooter";
-import { CollapsedBlocksSync } from "components/CollapsedBlocksSync";
+import { FoldStateProvider } from "components/FoldStateProvider";
 
 export function PublicationDraftEditor(props: {
   token: PermissionToken;
@@ -51,31 +51,32 @@ export function PublicationDraftEditor(props: {
         set={props.token.permission_token_rights[0].entity_set}
       >
         <SelectionManager />
-        <CollapsedBlocksSync />
-        <LeafletThemeProvider entityID={props.leaflet_id} local>
-          <div className="flex flex-col h-full w-full bg-accent-1">
-            <PublicationEditHeader
-              did={props.did}
-              publicationName={props.publicationName}
-            />
-            <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto ">
-              <DraftLeafletBackground
-                entityID={props.leaflet_id}
-                className="h-full flex items-stretch place-items-center"
-              >
-                <PublicationDraftEditorContent
-                  leaflet_id={props.leaflet_id}
-                  did={props.did}
-                  record={record}
-                  iconUrl={iconUrl}
-                  publicationUri={props.publicationUri}
-                  newsletterMode={props.newsletterMode}
-                />
-              </DraftLeafletBackground>
+        <FoldStateProvider>
+          <LeafletThemeProvider entityID={props.leaflet_id} local>
+            <div className="flex flex-col h-full w-full bg-accent-1">
+              <PublicationEditHeader
+                did={props.did}
+                publicationName={props.publicationName}
+              />
+              <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto ">
+                <DraftLeafletBackground
+                  entityID={props.leaflet_id}
+                  className="h-full flex items-stretch place-items-center"
+                >
+                  <PublicationDraftEditorContent
+                    leaflet_id={props.leaflet_id}
+                    did={props.did}
+                    record={record}
+                    iconUrl={iconUrl}
+                    publicationUri={props.publicationUri}
+                    newsletterMode={props.newsletterMode}
+                  />
+                </DraftLeafletBackground>
+              </div>
+              <PublicationEditMobileFooter />
             </div>
-            <PublicationEditMobileFooter />
-          </div>
-        </LeafletThemeProvider>
+          </LeafletThemeProvider>
+        </FoldStateProvider>
       </EntitySetProvider>
     </ReplicacheProvider>
   );
