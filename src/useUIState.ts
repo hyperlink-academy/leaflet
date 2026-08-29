@@ -1,4 +1,4 @@
-import { Block } from "components/Blocks/Block";
+import type { Block } from "components/Blocks/Block";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
 
@@ -17,16 +17,6 @@ export type EditorOpenPage = string | EditorIframePage;
 export const getEditorPageKey = (page: EditorOpenPage): string =>
   typeof page === "string" ? page : `iframe:${page.url}`;
 
-export type FoldDelta = { collapse?: string[]; uncollapse?: string[] };
-let foldMutator: ((delta: FoldDelta) => void) | null = null;
-export const registerFoldMutator = (mutate: (delta: FoldDelta) => void) => {
-  foldMutator = mutate;
-  return () => {
-    if (foldMutator === mutate) foldMutator = null;
-  };
-};
-export const foldStateIsSynced = () => foldMutator !== null;
-
 export const useUIState = create(
   combine(
     {
@@ -37,43 +27,9 @@ export const useUIState = create(
       selectedBlocks: [] as SelectedBlock[],
       openPopover: null as string | null,
     },
-    (set, get) => ({
+    (set) => ({
       setOpenPopover: (id: string | null) => {
         set({ openPopover: id });
-      },
-      toggleFold: (entityID: string) => {
-        let folded = get().foldedBlocks.includes(entityID);
-        if (foldMutator)
-          return foldMutator(
-            folded ? { uncollapse: [entityID] } : { collapse: [entityID] },
-          );
-        set((state) => ({
-          foldedBlocks: folded
-            ? state.foldedBlocks.filter((b) => b !== entityID)
-            : [...state.foldedBlocks, entityID],
-        }));
-      },
-      foldAll: (entityIDs: string[]) => {
-        let collapse = entityIDs.filter(
-          (e) => !get().foldedBlocks.includes(e),
-        );
-        if (collapse.length === 0) return;
-        if (foldMutator) return foldMutator({ collapse });
-        set((state) => ({
-          foldedBlocks: [...state.foldedBlocks, ...collapse],
-        }));
-      },
-      unfoldAll: (entityIDs: string[]) => {
-        let uncollapse = get().foldedBlocks.filter((f) =>
-          entityIDs.includes(f),
-        );
-        if (uncollapse.length === 0) return;
-        if (foldMutator) return foldMutator({ uncollapse });
-        set((state) => ({
-          foldedBlocks: state.foldedBlocks.filter(
-            (f) => !entityIDs.includes(f),
-          ),
-        }));
       },
       openPage: (parent: EditorOpenPage, page: EditorOpenPage) =>
         set((state) => {

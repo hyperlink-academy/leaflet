@@ -4,12 +4,15 @@ import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
-import { v7 } from "uuid";
+import { v5, v7 } from "uuid";
 import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
+import { useUIState } from "src/useUIState";
 
 export type MutationContext = {
   permission_token_id: string;
+  rootEntity: string;
+  sessionDid: string | null;
   createEntity: (args: {
     entityID: string;
     permission_set: string;
@@ -1068,32 +1071,42 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
+const COLLAPSED_BLOCKS_FACT_NAMESPACE = "5f4bfb95-2a1f-49f4-8f6b-77f0f1a72897";
 const toggleCollapsedBlocks: Mutation<{
-  rootEntity: string;
-  authorDid: string;
-  factID: string;
   collapse?: string[];
   uncollapse?: string[];
 }> = async (args, ctx) => {
-  let facts = await ctx.scanIndex.eav(args.rootEntity, "root/collapsed-blocks");
-  let mine = facts
-    .filter((f) => f.author_did === args.authorDid)
-    .toSorted((a, b) => (a.id > b.id ? 1 : -1));
-  let [keep, ...extra] = mine;
-  let current = new Set(mine.flatMap((f) => f.data.value));
+  await ctx.runOnClient(async () => {
+    useUIState.setState((s) => {
+      let foldedBlocks = s.foldedBlocks.filter(
+        (f) => !args.uncollapse?.includes(f),
+      );
+      for (let entity of args.collapse ?? [])
+        if (!foldedBlocks.includes(entity)) foldedBlocks.push(entity);
+      return { foldedBlocks };
+    });
+  });
+  if (!ctx.sessionDid) return;
+  let facts = await ctx.scanIndex.eav(ctx.rootEntity, "root/collapsed-blocks");
+  let mine = facts.find((f) => f.author_did === ctx.sessionDid);
+  let current = new Set(mine?.data.value ?? []);
   for (let entity of args.uncollapse ?? []) current.delete(entity);
   for (let entity of args.collapse ?? []) current.add(entity);
-  for (let fact of extra) await ctx.retractFact(fact.id);
   if (current.size === 0) {
-    if (keep) await ctx.retractFact(keep.id);
+    if (mine) await ctx.retractFact(mine.id);
     return;
   }
   await ctx.assertFact({
-    id: keep?.id ?? args.factID,
-    entity: args.rootEntity,
+    id:
+      mine?.id ??
+      v5(
+        `${ctx.rootEntity}:${ctx.sessionDid}`,
+        COLLAPSED_BLOCKS_FACT_NAMESPACE,
+      ),
+    entity: ctx.rootEntity,
     attribute: "root/collapsed-blocks",
     data: { type: "string-array", value: [...current] },
-    author_did: args.authorDid,
+    author_did: ctx.sessionDid,
   });
 };
 

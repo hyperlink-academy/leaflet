@@ -3,6 +3,7 @@
 import { Fact, useEntity, useReplicache } from "src/replicache";
 
 import { useUIState } from "src/useUIState";
+import { foldBlocks, unfoldBlocks } from "src/utils/foldBlocks";
 import { isBlockHidden } from "src/replicache/getBlocks";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEditorStates } from "src/state/useEditorState";
@@ -28,6 +29,7 @@ export function Blocks(props: { entityID: string }) {
     return focusedPageID === props.entityID;
   });
   let blocks = useBlocks(props.entityID);
+  let { rep } = useReplicache();
   let foldedBlocks = useUIState((s) => s.foldedBlocks);
   let foldableHeadings = useMemo(
     () => new Set(blocks.flatMap((b) => b.headingPath ?? [])),
@@ -42,7 +44,7 @@ export function Blocks(props: { entityID: string }) {
         key: "ArrowUp",
         shift: true,
         handler: () => {
-          useUIState.getState().foldAll(foldableParents(blocks));
+          foldBlocks(rep, foldableParents(blocks));
         },
       },
       {
@@ -51,11 +53,11 @@ export function Blocks(props: { entityID: string }) {
         key: "ArrowDown",
         shift: true,
         handler: () => {
-          useUIState.getState().unfoldAll(foldableParents(blocks));
+          unfoldBlocks(rep, foldableParents(blocks));
         },
       },
     ]);
-  }, [blocks, isPageFocused]);
+  }, [blocks, isPageFocused, rep]);
 
   let lastRootBlock = blocks.findLast(
     (f) => !f.listData || f.listData.depth === 1,

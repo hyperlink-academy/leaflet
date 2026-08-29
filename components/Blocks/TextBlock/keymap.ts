@@ -22,6 +22,7 @@ import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
+import { unfoldBlocks } from "src/utils/foldBlocks";
 import { getPageBlocks } from "src/replicache/getBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
@@ -478,12 +479,7 @@ const shifttab =
   async () => {
     if (useUIState.getState().selectedBlocks.length > 1) return false;
     if (!repRef.current) return false;
-    if (!repRef.current) return false;
-    let { foldedBlocks, toggleFold } = useUIState.getState();
-    await outdent(propsRef.current, propsRef.current.previousBlock, repRef.current, {
-      foldedBlocks,
-      toggleFold,
-    });
+    await outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);
     return true;
   };
 
@@ -766,10 +762,7 @@ const enter =
         });
         // Splitting a folded heading would drop the new block into its hidden
         // section; unfold so the freshly created block stays visible.
-        if (
-          useUIState.getState().foldedBlocks.includes(propsRef.current.entityID)
-        )
-          useUIState.getState().toggleFold(propsRef.current.entityID);
+        unfoldBlocks(repRef.current, [propsRef.current.entityID]);
       }
       // if you are are the beginning of a heading, move the heading level to the new block
       if (blockType === "heading") {

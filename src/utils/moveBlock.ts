@@ -3,6 +3,7 @@ import { ReplicacheMutators } from "src/replicache";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
 import { getPageBlocks } from "src/replicache/getBlocks";
 import { useUIState } from "src/useUIState";
+import { unfoldBlocks } from "src/utils/foldBlocks";
 
 type BlockData = ReturnType<typeof getPageBlocks>[number];
 
@@ -149,8 +150,7 @@ export const moveBlockUp = async (rep: Replicache<ReplicacheMutators>) => {
       (f) => f.depth === depth - 1,
     );
     if (!newParent) return;
-    if (useUIState.getState().foldedBlocks.includes(newParent.entity))
-      useUIState.getState().toggleFold(newParent.entity);
+    unfoldBlocks(rep, [newParent.entity]);
     rep?.mutate.moveBlock({
       block: block.entityID,
       oldParent: block.listData?.parent,
@@ -189,8 +189,7 @@ export const moveBlockDown = async (
     block.listData &&
     nextBlock.listData.depth === block.listData.depth - 1
   ) {
-    if (useUIState.getState().foldedBlocks.includes(nextBlock.entityID))
-      useUIState.getState().toggleFold(nextBlock.entityID);
+    unfoldBlocks(rep, [nextBlock.entityID]);
     rep?.mutate.moveBlock({
       block: block.entityID,
       oldParent: block.listData?.parent,
@@ -202,11 +201,8 @@ export const moveBlockDown = async (
     // section; unfold it so the moved block stays visible.
     let visibleNext =
       siblings[siblings.findIndex((s) => s.entityID === block.entityID) + 1];
-    if (
-      visibleNext?.type === "heading" &&
-      useUIState.getState().foldedBlocks.includes(visibleNext.entityID)
-    )
-      useUIState.getState().toggleFold(visibleNext.entityID);
+    if (visibleNext?.type === "heading")
+      unfoldBlocks(rep, [visibleNext.entityID]);
     rep?.mutate.moveBlockDown({
       entityID: block.entityID,
       parent: block.listData?.parent || block.parent,

@@ -10,6 +10,7 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { indent, outdent } from "src/utils/list-operations";
+import { toggleFold } from "src/utils/foldBlocks";
 import { useDrag } from "@use-gesture/react";
 import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
@@ -140,32 +141,12 @@ export const Block = memo(function Block(
       if (!rep || !props.listData || !entity_set.permissions.write) return;
       if (Math.abs(mx) < SWIPE_THRESHOLD) return;
       event?.preventDefault();
-      let { foldedBlocks, toggleFold } = useUIState.getState();
       if (mx > 0) {
         if (props.previousBlock) {
-          indent(
-            props,
-            props.previousBlock,
-            rep,
-            {
-              foldedBlocks,
-              toggleFold,
-            },
-            undoManager,
-          );
+          indent(props, props.previousBlock, rep, undoManager);
         }
       } else {
-        outdent(
-          props,
-          props.previousBlock,
-          rep,
-          {
-            foldedBlocks,
-            toggleFold,
-          },
-          undefined,
-          undoManager,
-        );
+        outdent(props, props.previousBlock, rep, undefined, undoManager);
       }
     },
     {
@@ -546,6 +527,7 @@ const NonTextBlockOptions = (props: {
 // (absolutely positioned in the wrapper padding) so it never shifts the heading
 // text, and only shows on hover unless the heading is currently folded.
 const HeadingFoldButton = (props: { entityID: string }) => {
+  let { rep } = useReplicache();
   let folded = useUIState((s) => s.foldedBlocks.includes(props.entityID));
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
@@ -563,7 +545,7 @@ const HeadingFoldButton = (props: { entityID: string }) => {
             ? "opacity-100 bg-accent-contrast"
             : "opacity-0 sm:group-hover/blockWrapper:opacity-100 bg-border "
         }`}
-      onClick={() => useUIState.getState().toggleFold(props.entityID)}
+      onClick={() => toggleFold(rep, props.entityID)}
     >
       <ArrowDownTiny
         className={`transition-transform ${folded ? "-rotate-90" : ""}`}
@@ -653,8 +635,7 @@ export const ListMarker = (
     >
       <button
         onClick={() => {
-          if (children.length > 0)
-            useUIState.getState().toggleFold(props.entityID);
+          if (children.length > 0) toggleFold(rep, props.entityID);
         }}
         className={`listMarker group/list-marker ${listStyle?.data.value === "ordered" ? "" : "px-3 py-2"} ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
