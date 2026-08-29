@@ -11,25 +11,28 @@ import { useUIState } from "src/useUIState";
 // initialFacts.
 const ServerDid = createContext<string | null>(null);
 
-function useFoldDid() {
+// The viewer's root/collapsed-blocks fact. `did` is null for signed-out and
+// read-only viewers, whose fold state stays on the ephemeral store: their fact
+// writes are dropped server-side and would revert on pull.
+function useMyFoldFact() {
   let serverDid = useContext(ServerDid);
   let { identity } = useIdentityData();
-  let { permission_token } = useReplicache();
-  // Read-only viewers stay on the ephemeral store: their fact writes are
-  // dropped server-side and would revert on pull.
+  let { rootEntity, permission_token } = useReplicache();
   let canWrite = permission_token.permission_token_rights?.some((r) => r.write);
-  if (!canWrite) return null;
-  return identity?.atp_did ?? serverDid;
+  let did = canWrite ? identity?.atp_did ?? serverDid : null;
+  let facts = useEntity(did ? rootEntity : null, "root/collapsed-blocks");
+  return {
+    did,
+    rootEntity,
+    fact: did ? facts.find((f) => f.author_did === did) : undefined,
+  };
 }
 
 const empty: string[] = [];
 export function useFoldedBlocks(): readonly string[] {
-  let did = useFoldDid();
-  let { rootEntity } = useReplicache();
-  let facts = useEntity(did ? rootEntity : null, "root/collapsed-blocks");
+  let { did, fact } = useMyFoldFact();
   let store = useUIState((s) => s.foldedBlocks);
-  if (!did) return store;
-  return facts.find((f) => f.author_did === did)?.data.value ?? empty;
+  return did ? fact?.data.value ?? empty : store;
 }
 
 export function useIsFolded(entityID: string) {
@@ -52,11 +55,8 @@ export function FoldStateProvider(props: {
 // foldedBlocks synchronously from the zustand store; keep it mirroring the
 // signed-in user's fact.
 function FoldMirrorSync() {
-  let did = useFoldDid();
-  let { rootEntity } = useReplicache();
-  let facts = useEntity(did ? rootEntity : null, "root/collapsed-blocks");
-  let mine = did ? facts.find((f) => f.author_did === did) : undefined;
-  let serialized = JSON.stringify(mine?.data.value ?? []);
+  let { did, rootEntity, fact } = useMyFoldFact();
+  let serialized = JSON.stringify(fact?.data.value ?? []);
   useEffect(() => {
     if (!did) return;
     let value = JSON.parse(serialized) as string[];

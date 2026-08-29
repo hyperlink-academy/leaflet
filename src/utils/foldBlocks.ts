@@ -5,11 +5,9 @@ import { useUIState } from "src/useUIState";
 type Rep = Replicache<ReplicacheMutators> | null | undefined;
 
 export const toggleFold = (rep: Rep, entityID: string) => {
-  let folded = useUIState.getState().foldedBlocks.includes(entityID);
-  rep?.mutate.toggleCollapsedBlocks({
-    ...(folded ? { uncollapse: [entityID] } : { collapse: [entityID] }),
-    ignoreUndo: true,
-  });
+  if (useUIState.getState().foldedBlocks.includes(entityID))
+    unfoldBlocks(rep, [entityID]);
+  else foldBlocks(rep, [entityID]);
 };
 
 export const foldBlocks = (rep: Rep, entityIDs: string[]) => {
