@@ -165,6 +165,16 @@ export function SelectionManager() {
           toggleFold(rep, sortedBlocks[0].entityID);
         },
       },
+      {
+        metaKey: true,
+        key: " ",
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          let block = sortedBlocks[0];
+          if (!block || (!block.listData && block.type !== "heading")) return;
+          toggleFold(rep, block.entityID);
+        },
+      },
     ];
     if (moreThanOneSelected)
       shortcuts = shortcuts.concat([
