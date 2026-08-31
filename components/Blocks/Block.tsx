@@ -1,7 +1,14 @@
 "use client";
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { memo, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import {
+  ListDragHandleContext,
+  didListDragJustEnd,
+  useListDragHandle,
+  useListDragState,
+} from "./ListDndState";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
@@ -103,6 +110,23 @@ export const Block = memo(function Block(
     }
   });
 
+  // The dragged block and its whole subtree stay in place, dimmed, while the
+  // DragOverlay carries the preview.
+  let isDragSource = useListDragState(
+    (s) =>
+      !props.preview &&
+      s.activeId !== null &&
+      (s.activeId === props.entityID ||
+        !!props.listData?.path.some((p) => p.entity === s.activeId)),
+  );
+  // Encoded as a primitive so the zustand subscription only re-renders this
+  // block when its own indicator appears, moves edge, or changes depth.
+  let dropIndicator = useListDragState((s) =>
+    !props.preview && s.dropTarget?.entityID === props.entityID
+      ? `${s.dropTarget.edge}:${s.dropTarget.depth}`
+      : null,
+  );
+
   let selected = useIsBlockSelected(props.entityID);
   let focused = useUIState(
     (s) =>
@@ -185,6 +209,7 @@ export const Block = memo(function Block(
         px-3 sm:px-4 pt-1
 
         z-1 w-full
+        ${isDragSource ? "opacity-30" : ""}
         ${props.listData && focused ? "touch-pan-y" : ""}
       ${alignmentStyle}
       ${
@@ -219,14 +244,102 @@ export const Block = memo(function Block(
       }`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
-      <BaseBlock
-        {...props}
-        areYouSure={areYouSure}
-        setAreYouSure={setAreYouSure}
-      />
+      {dropIndicator && <ListDropIndicator indicator={dropIndicator} />}
+      <BlockListDnd
+        entityID={props.entityID}
+        isListItem={!!props.listData}
+        preview={props.preview}
+      >
+        <BaseBlock
+          {...props}
+          areYouSure={areYouSure}
+          setAreYouSure={setAreYouSure}
+        />
+      </BlockListDnd>
     </div>
   );
 }, deepEqualsBlockProps);
+
+// Registers the block as a draggable list item and a drop target, and hands
+// the activator down to the ListMarker through ListDragHandleContext. Lives in
+// its own leaf component because dnd-kit's hooks re-render their consumers on
+// every `over` change during a drag: everything they touch here is memoized,
+// so the block subtree (passed through as `children`) bails out and only this
+// wiring re-renders. The measured node is an inset overlay div rather than the
+// block wrapper itself for the same reason. The preview copy rendered in the
+// DragOverlay must not register itself, hence the disabled/namespaced ids.
+const BlockListDnd = (props: {
+  entityID: string;
+  isListItem: boolean;
+  preview?: boolean;
+  children: React.ReactNode;
+}) => {
+  let entity_set = useEntitySetContext();
+  let write = entity_set.permissions.write;
+  let draggable = useDraggable({
+    id: props.preview ? `preview/${props.entityID}` : props.entityID,
+    disabled: !!props.preview || !props.isListItem || !write,
+  });
+  let droppable = useDroppable({
+    id: props.preview ? `preview/${props.entityID}` : props.entityID,
+    disabled: !!props.preview || !write,
+  });
+  let setNodeRef = useCallback(
+    (el: HTMLElement | null) => {
+      draggable.setNodeRef(el);
+      droppable.setNodeRef(el);
+    },
+    [draggable.setNodeRef, droppable.setNodeRef],
+  );
+  let dragHandle = useMemo(
+    () =>
+      !props.preview && props.isListItem && write
+        ? {
+            attributes: draggable.attributes,
+            listeners: draggable.listeners,
+            setActivatorNodeRef: draggable.setActivatorNodeRef,
+          }
+        : null,
+    [
+      props.preview,
+      props.isListItem,
+      write,
+      draggable.attributes,
+      draggable.listeners,
+      draggable.setActivatorNodeRef,
+    ],
+  );
+  return (
+    <>
+      {!props.preview && write && (
+        <div
+          ref={setNodeRef}
+          className="absolute inset-0 pointer-events-none"
+          aria-hidden
+        />
+      )}
+      <ListDragHandleContext.Provider value={dragHandle}>
+        {props.children}
+      </ListDragHandleContext.Provider>
+    </>
+  );
+};
+
+// The line marking where a dragged list item will drop, drawn on the edge of
+// the adjacent block and indented to the depth the item will land at.
+const ListDropIndicator = (props: { indicator: string }) => {
+  let [edge, depth] = props.indicator.split(":");
+  return (
+    <div
+      className={`listDropIndicator pointer-events-none absolute left-3 right-3 sm:left-4 sm:right-4 z-10 h-[3px] rounded-full bg-accent-contrast ${
+        edge === "top" ? "-top-[2px]" : "-bottom-[2px]"
+      }`}
+      style={{
+        marginLeft: `calc(${parseInt(depth, 10) - 1} * var(--list-marker-width))`,
+      }}
+    />
+  );
+};
 
 // Everything the Block render tree reads off its props. headingLevel /
 // headingPath / listData.checked / listData.listStart are deliberately not
@@ -575,6 +688,7 @@ export const ListMarker = (
   let depth = props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
+  let dragHandle = useListDragHandle();
 
   let [editingNumber, setEditingNumber] = useState(false);
   let [numberInputValue, setNumberInputValue] = useState("");
@@ -633,10 +747,20 @@ export const ListMarker = (
       }}
     >
       <button
+        ref={dragHandle?.setActivatorNodeRef}
+        {...(dragHandle?.attributes ?? {})}
+        {...(dragHandle?.listeners ?? {})}
+        onPointerDown={(e) => {
+          dragHandle?.listeners?.onPointerDown?.(e);
+          // Keep the hold from also triggering the block wrapper's own
+          // long-press/swipe handlers while the drag sensor's delay runs.
+          if (dragHandle) e.stopPropagation();
+        }}
         onClick={() => {
+          if (didListDragJustEnd()) return;
           if (children.length > 0) toggleFold(rep, props.entityID);
         }}
-        className={`listMarker group/list-marker ${listStyle?.data.value === "ordered" ? "" : "px-3 py-2"} ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+        className={`listMarker group/list-marker ${listStyle?.data.value === "ordered" ? "" : "px-3 py-2"} ${children.length > 0 ? "cursor-pointer" : "cursor-default"} ${dragHandle ? "touch-none select-none" : ""}`}
       >
         {listStyle?.data.value === "ordered" ? (
           editingNumber ? (

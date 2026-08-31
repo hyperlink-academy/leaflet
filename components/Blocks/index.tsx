@@ -18,6 +18,7 @@ import { Block } from "./Block";
 import { useEffect, useMemo, useState } from "react";
 import { addShortcut } from "src/shortcuts";
 import { useHandleDrop } from "./useHandleDrop";
+import { ListDndContext } from "./ListDnd";
 import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
 
 export function Blocks(props: { entityID: string }) {
@@ -64,9 +65,12 @@ export function Blocks(props: { entityID: string }) {
     (f) => !f.listData || f.listData.depth === 1,
   );
 
-  let lastVisibleBlock = blocks.findLast(
-    (f) => !isBlockHidden(f, foldedBlocks),
+  let visibleBlocks = useMemo(
+    () => blocks.filter((f) => !isBlockHidden(f, foldedBlocks)),
+    [blocks, foldedBlocks],
   );
+
+  let lastVisibleBlock = visibleBlocks[visibleBlocks.length - 1];
 
   let { footnotes } = useFootnoteContext();
 
@@ -86,9 +90,8 @@ export function Blocks(props: { entityID: string }) {
       // collapse out through the container's top edge.
       className={`blocks w-full flow-root outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
     >
-      {blocks
-        .filter((f) => !isBlockHidden(f, foldedBlocks))
-        .map((f, index, arr) => {
+      <ListDndContext pageID={props.entityID} blocks={visibleBlocks}>
+        {visibleBlocks.map((f, index, arr) => {
           let nextBlock = arr[index + 1];
           let depth = f.listData?.depth || 1;
           let nextDepth = nextBlock?.listData?.depth || 1;
@@ -109,6 +112,7 @@ export function Blocks(props: { entityID: string }) {
             />
           );
         })}
+      </ListDndContext>
       <NewBlockButton
         lastBlock={lastRootBlock || null}
         entityID={props.entityID}

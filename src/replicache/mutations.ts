@@ -158,6 +158,7 @@ const moveBlock: Mutation<{
   position:
     | { type: "first" }
     | { type: "end" }
+    | { type: "before"; entity: string }
     | { type: "after"; entity: string };
 }> = async (args, ctx) => {
   let children = (
@@ -187,6 +188,14 @@ const moveBlock: Mutation<{
       newPosition = generateKeyBetween(
         newSiblings[newSiblings.length - 1]?.data.position || null,
         null,
+      );
+      break;
+    }
+    case "before": {
+      let index = newSiblings.findIndex((f) => f.data.value == pos.entity);
+      newPosition = generateKeyBetween(
+        (index > 0 && newSiblings[index - 1].data.position) || null,
+        newSiblings[index]?.data.position || null,
       );
       break;
     }
