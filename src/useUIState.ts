@@ -23,6 +23,9 @@ export const useUIState = create(
       lastUsedHighlight: "1" as "1" | "2" | "3",
       focusedEntity: null as FocusedEntity,
       foldedBlocks: [] as string[],
+      // page entity -> list-item entity the page is zoomed into; when set, the
+      // page renders that block as its root instead of the full document.
+      zoomedBlocks: {} as { [pageEntity: string]: string },
       openPages: [] as EditorOpenPage[],
       selectedBlocks: [] as SelectedBlock[],
       openPopover: null as string | null,
@@ -54,6 +57,30 @@ export const useUIState = create(
           };
         }),
       setFocusedBlock: (b: FocusedEntity) => set(() => ({ focusedEntity: b })),
+      // `parent` is whatever list the block was rendered in — the page itself,
+      // or the current zoom root when zooming deeper — so resolve it back to
+      // the page entity that keys the zoom.
+      zoomIntoBlock: (parent: string, blockEntity: string) =>
+        set((state) => {
+          let page =
+            Object.keys(state.zoomedBlocks).find(
+              (p) => state.zoomedBlocks[p] === parent,
+            ) ?? parent;
+          return {
+            zoomedBlocks: { ...state.zoomedBlocks, [page]: blockEntity },
+            selectedBlocks: [],
+            focusedEntity: { entityType: "page" as const, entityID: blockEntity },
+          };
+        }),
+      zoomOutOfBlock: (page: string) =>
+        set((state) => {
+          let { [page]: _, ...zoomedBlocks } = state.zoomedBlocks;
+          return {
+            zoomedBlocks,
+            selectedBlocks: [],
+            focusedEntity: { entityType: "page" as const, entityID: page },
+          };
+        }),
       // Callers often pass full block-prop objects; store only {entityID, parent}
       // so selection entries stay slim and identity-stable. Re-selecting the
       // current selection bails without notifying subscribers.

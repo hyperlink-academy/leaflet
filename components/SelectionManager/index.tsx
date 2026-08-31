@@ -175,6 +175,18 @@ export function SelectionManager() {
           toggleFold(rep, block.entityID);
         },
       },
+      {
+        metaKey: true,
+        shift: true,
+        // shift+; produces ":" on most layouts, but not all
+        key: [":", ";"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          let block = sortedBlocks[0];
+          if (!block?.listData) return;
+          useUIState.getState().zoomIntoBlock(block.parent, block.entityID);
+        },
+      },
     ];
     if (moreThanOneSelected)
       shortcuts = shortcuts.concat([
