@@ -95,8 +95,7 @@ async function deleteDocumentAndRevalidate(uri: string) {
     kind: "document",
     uri,
     snapshot: {
-      publications:
-        doc?.documents_in_publications.map((r) => r.publication) ?? [],
+      publication: doc?.documents_in_publications[0]?.publication ?? null,
       path: (doc?.data as { path?: string } | null)?.path ?? null,
       sort_date: doc?.sort_date ?? null,
     },
