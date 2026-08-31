@@ -9,6 +9,7 @@ import {
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { truncateBlocksAtMembersDelimiter } from "src/membership";
 import { resolveDocumentFilter } from "src/utils/resolveDocumentFilter";
+import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL, getPublicationURL } from "src/utils/getPublicationURL";
 import { findPublishedPage } from "src/utils/publishedPageMetadata";
 import { publicationAlternates } from "../publicationAlternates";
@@ -73,11 +74,14 @@ export async function postPageMetadata(props: {
     };
   }
 
+  let filter = pub
+    ? await resolveDocumentFilter(did, pub.uri, segment)
+    : documentUriFilter(did, segment);
   let [{ data: documents }] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select("*, documents_in_publications(publications(*))")
-      .or(await resolveDocumentFilter(did, publication_name, segment))
+      .or(filter)
       .order("uri", { ascending: false })
       .limit(1),
   ]);

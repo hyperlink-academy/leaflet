@@ -23,6 +23,7 @@ import {
   projectPublicationForClient,
 } from "./postPageProjection";
 import { resolveDocumentFilter } from "./resolveDocumentFilter";
+import { fetchPublicationForPage } from "app/(app)/(published)/lish/[did]/[publication]/getPublicationForPage";
 import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
 import { sortPostsForPrevNext } from "src/utils/prevNextPosts";
 
@@ -31,8 +32,13 @@ export const getPostPageData = cache(async function getPostPageData(
   rkey: string,
   publicationName?: string,
 ) {
-  let filter = publicationName
-    ? await resolveDocumentFilter(did, publicationName, rkey)
+  // Per-request memoized alongside the page's own publication fetch, so the
+  // path resolver can filter on the indexed publication column.
+  let pub = publicationName
+    ? await fetchPublicationForPage(did, publicationName)
+    : null;
+  let filter = pub
+    ? await resolveDocumentFilter(did, pub.uri, rkey)
     : documentUriFilter(did, rkey);
   let { data: documents } = await supabaseServerClient
     .from("documents")
