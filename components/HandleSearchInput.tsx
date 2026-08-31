@@ -159,6 +159,7 @@ export const HandleSearchInput = (props: {
           ) : props.onSubmit && props.action ? (
             <button
               type="button"
+              className="shrink-0 whitespace-nowrap"
               onClick={(e) => {
                 e.stopPropagation();
                 handleSelect();
