@@ -112,6 +112,14 @@ export const TextBlockKeymap = (
     ArrowUp: moveCursorUp(propsRef, repRef),
     "Ctrl-j": moveCursorDown(propsRef, repRef, true),
     ArrowDown: moveCursorDown(propsRef, repRef),
+    "Ctrl-h": moveCursorHorizontally(propsRef, -1, false),
+    "Meta-h": moveCursorHorizontally(propsRef, -1, false),
+    "Ctrl-l": moveCursorHorizontally(propsRef, 1, false),
+    "Meta-l": moveCursorHorizontally(propsRef, 1, false),
+    "Ctrl-Shift-h": moveCursorHorizontally(propsRef, -1, true),
+    "Meta-Shift-h": moveCursorHorizontally(propsRef, -1, true),
+    "Ctrl-Shift-l": moveCursorHorizontally(propsRef, 1, true),
+    "Meta-Shift-l": moveCursorHorizontally(propsRef, 1, true),
     ArrowLeft: (state, dispatch, view) => {
       if (!state.selection.empty) return false;
       if (skipFootnote(state, dispatch, "before")) return true;
@@ -238,6 +246,57 @@ const moveCursorUp =
       return false || jumpToNextBlock;
     }
     return false;
+  };
+
+const moveCursorHorizontally =
+  (propsRef: PropsRef, dir: -1 | 1, byWord: boolean): Command =>
+  (state, dispatch, view) => {
+    if (useUIState.getState().selectedBlocks.length > 1) return true;
+    if (!state.selection.empty) {
+      let pos = dir === -1 ? state.selection.from : state.selection.to;
+      dispatch?.(state.tr.setSelection(TextSelection.create(state.doc, pos)));
+      return true;
+    }
+    if (!byWord && skipFootnote(state, dispatch, dir === -1 ? "before" : "after"))
+      return true;
+    let $head = state.selection.$head;
+    let target: number | null = null;
+    if (byWord) {
+      let parent = $head.parent;
+      // All inline leaves (footnote, mention, hard_break) have nodeSize 1, so a
+      // single-char leafText keeps string offsets aligned with parentOffset.
+      let text = parent.textBetween(0, parent.content.size, undefined, (node) =>
+        node.type === schema.nodes.hard_break ? "\n" : "￼",
+      );
+      let i = $head.parentOffset;
+      if (dir === -1) {
+        while (i > 0 && /\s/.test(text[i - 1])) i--;
+        while (i > 0 && !/\s/.test(text[i - 1])) i--;
+      } else {
+        while (i < text.length && /\s/.test(text[i])) i++;
+        while (i < text.length && !/\s/.test(text[i])) i++;
+      }
+      if (i !== $head.parentOffset) target = $head.start() + i;
+    } else {
+      if (dir === -1 && $head.parentOffset > 0) target = $head.pos - 1;
+      if (dir === 1 && $head.parentOffset < $head.parent.content.size)
+        target = $head.pos + 1;
+    }
+    if (target !== null) {
+      dispatch?.(
+        state.tr
+          .setSelection(TextSelection.create(state.doc, target))
+          .scrollIntoView(),
+      );
+      return true;
+    }
+    let block =
+      dir === -1 ? propsRef.current.previousBlock : propsRef.current.nextBlock;
+    if (block) {
+      view?.dom.blur();
+      focusBlock(block, { type: dir === -1 ? "end" : "start" });
+    }
+    return true;
   };
 
 const backspace =
