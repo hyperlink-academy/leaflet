@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     case "document":
       if (typeof event.uri !== "string")
         return new NextResponse(null, { status: 400 });
-      await revalidateDocumentPaths(event.uri, event.snapshot);
+      await revalidateDocumentPaths(event.uri, { snapshot: event.snapshot });
       break;
     case "publication":
       if (typeof event.uri !== "string")
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     case "interaction":
       if (typeof event.document !== "string")
         return new NextResponse(null, { status: 400 });
-      await revalidateDocumentPaths(event.document);
+      await revalidateDocumentPaths(event.document, { neighbours: false });
       break;
     default:
       return new NextResponse(null, { status: 400 });

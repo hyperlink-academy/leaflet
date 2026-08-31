@@ -77,19 +77,44 @@ async function publishedPagePathsByPublication(pubUris: string[]) {
   return byPub;
 }
 
-// The publication's posts as the prev/next buttons order them, plus the
-// preferences that decide whether any post renders those buttons.
-const POST_NEIGHBOURS_SELECT =
-  "documents_in_publications(documents(uri, sort_date, path:data->>path, title:data->>title, publishedAt:data->>publishedAt))";
-type PostNeighboursRows = {
-  documents: {
-    uri: string;
-    sort_date: string | null;
-    path: string | null;
-    title: string | null;
-    publishedAt: string | null;
-  } | null;
-}[];
+type NeighbourDoc = {
+  uri: string;
+  sort_date: string | null;
+  path: string | null;
+  title: string | null;
+  publishedAt: string | null;
+};
+
+// Whether any of the publication's post pages render neighbour buttons at
+// all — when neither is on, the sibling-post list is never needed.
+function neighbourButtonPrefs(record: unknown) {
+  const preferences = normalizePublicationRecord(record)?.preferences;
+  return {
+    showPrevNext: preferences?.showPrevNext !== false,
+    showFirstLast: preferences?.showFirstLast === true,
+  };
+}
+
+// Each publication's posts as the prev/next buttons order them, keyed by
+// publication uri.
+async function postNeighboursByPublication(pubUris: string[]) {
+  const byPub = new Map<string, NeighbourDoc[]>();
+  if (!pubUris.length) return byPub;
+  const { data } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select(
+      "publication, documents(uri, sort_date, path:data->>path, title:data->>title, publishedAt:data->>publishedAt)",
+    )
+    .in("publication", pubUris);
+  for (const row of data ?? []) {
+    if (!row.documents) continue;
+    byPub.set(row.publication, [
+      ...(byPub.get(row.publication) ?? []),
+      row.documents,
+    ]);
+  }
+  return byPub;
+}
 
 // Post pages render their neighbours' titles in the prev/next row and the
 // first/last post in the first/last row, so a post appearing, disappearing,
@@ -97,17 +122,15 @@ type PostNeighboursRows = {
 // buttons are on and the post is at an edge, every post in the publication.
 // `doc.sort_date` is where the post sits (or sat, for a delete) in that order.
 function neighbourPostPaths(
-  record: unknown,
-  rows: PostNeighboursRows | null | undefined,
+  {
+    showPrevNext,
+    showFirstLast,
+  }: { showPrevNext: boolean; showFirstLast: boolean },
+  docs: NeighbourDoc[] | undefined,
   doc: { uri: string; sort_date: string | null | undefined },
 ) {
-  const preferences = normalizePublicationRecord(record)?.preferences;
-  const showPrevNext = preferences?.showPrevNext !== false;
-  const showFirstLast = preferences?.showFirstLast === true;
-  if (!showPrevNext && !showFirstLast) return [];
-  const sorted = sortPostsForPrevNext(
-    (rows ?? []).flatMap((r) => (r.documents ? [r.documents] : [])),
-  );
+  if (!docs || (!showPrevNext && !showFirstLast)) return [];
+  const sorted = sortPostsForPrevNext(docs);
   const { prev, next, atEdge } = adjacentPosts(sorted, doc);
   const targets =
     showFirstLast && atEdge
@@ -132,12 +155,19 @@ function neighbourPostPaths(
 // publications table, which outlives the document.
 export async function revalidateDocumentPaths(
   documentUri: string,
-  snapshot?: {
-    publications: string[];
-    path?: string | null;
-    sort_date?: string | null;
+  opts?: {
+    snapshot?: {
+      publications: string[];
+      path?: string | null;
+      sort_date?: string | null;
+    };
+    // Interaction events (comments/recommends) re-render a post's own pages
+    // but never change adjacency or neighbour titles, so they skip the
+    // sibling-post lookup entirely.
+    neighbours?: boolean;
   },
 ) {
+  const snapshot = opts?.snapshot;
   let docUri;
   try {
     docUri = new AtUri(documentUri);
@@ -147,25 +177,22 @@ export async function revalidateDocumentPaths(
   let pubs: {
     uri: string;
     name: string | null | undefined;
-    neighbours: string[];
+    record: unknown;
   }[] = [];
   let docPath = snapshot?.path;
+  let sortDate = snapshot?.sort_date;
   if (snapshot) {
     if (snapshot.publications.length) {
       const { data } = await supabaseServerClient
         .from("publications")
-        .select(`uri, record, ${POST_NEIGHBOURS_SELECT}`)
+        .select("uri, record")
         .in("uri", snapshot.publications);
       pubs = snapshot.publications.map((uri) => {
-        const pub = data?.find((r) => r.uri === uri);
+        const record = data?.find((r) => r.uri === uri)?.record;
         return {
           uri,
-          name: normalizePublicationRecord(pub?.record)?.name,
-          neighbours: neighbourPostPaths(
-            pub?.record,
-            pub?.documents_in_publications,
-            { uri: documentUri, sort_date: snapshot.sort_date },
-          ),
+          record,
+          name: normalizePublicationRecord(record)?.name,
         };
       });
     }
@@ -173,33 +200,47 @@ export async function revalidateDocumentPaths(
     const { data: rows } = await supabaseServerClient
       .from("documents_in_publications")
       .select(
-        `publications(uri, record, ${POST_NEIGHBOURS_SELECT}), documents(data, sort_date)`,
+        "publications(uri, record), documents(sort_date, path:data->>path)",
       )
       .eq("document", documentUri);
     for (const row of rows ?? []) {
       if (!row.publications) continue;
       pubs.push({
         uri: row.publications.uri,
+        record: row.publications.record,
         name: normalizePublicationRecord(row.publications.record)?.name,
-        neighbours: neighbourPostPaths(
-          row.publications.record,
-          row.publications.documents_in_publications,
-          { uri: documentUri, sort_date: row.documents?.sort_date },
-        ),
       });
       // Documents publish under record.path (usually "/<rkey>", but other
       // clients can write any path) — drop both spellings.
-      docPath =
-        docPath ?? (row.documents?.data as { path?: string } | null)?.path;
+      docPath = docPath ?? row.documents?.path;
+      sortDate = sortDate ?? row.documents?.sort_date;
     }
   }
-  const pagePaths = await publishedPagePathsByPublication(
-    pubs.map((p) => p.uri),
+  const prefsByPub = new Map(
+    pubs.map((p) => [p.uri, neighbourButtonPrefs(p.record)]),
   );
+  const neighbourPubs =
+    opts?.neighbours === false
+      ? []
+      : pubs.filter((p) => {
+          const prefs = prefsByPub.get(p.uri)!;
+          return prefs.showPrevNext || prefs.showFirstLast;
+        });
+  const [pagePaths, neighbourDocs] = await Promise.all([
+    publishedPagePathsByPublication(pubs.map((p) => p.uri)),
+    postNeighboursByPublication(neighbourPubs.map((p) => p.uri)),
+  ]);
   for (const pub of pubs)
     revalidatePostPaths(pub.uri, pub.name, docUri.rkey, docPath, [
       ...(pagePaths.get(pub.uri) ?? []),
-      ...pub.neighbours,
+      ...neighbourPostPaths(
+        prefsByPub.get(pub.uri)!,
+        neighbourDocs.get(pub.uri),
+        {
+          uri: documentUri,
+          sort_date: sortDate,
+        },
+      ),
     ]);
   // Handle-form /p/ URLs canonical-redirect onto this one, so the did
   // spelling is the only cache entry a document has here.
