@@ -17,9 +17,10 @@ export type ListDropTarget = {
     | { type: "first" }
     | { type: "before"; entity: string }
     | { type: "after"; entity: string };
-  // A folded heading the drop lands directly after; it must be unfolded on
-  // drop so the moved block doesn't disappear into its hidden section.
-  unfoldHeading?: string;
+  // A folded block the drop lands directly inside or after (a collapsed new
+  // parent, or a folded heading's section); it must be unfolded on drop so
+  // the moved block doesn't disappear into its hidden content.
+  unfold?: string;
 };
 
 // Blocks subscribe with primitive-returning selectors so only the dragged

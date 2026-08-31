@@ -55,6 +55,8 @@ export function ListDndContext(props: {
   let pointerRef = useRef<{ x: number; y: number } | null>(null);
   let rectsRef = useRef<Map<UniqueIdentifier, ClientRect> | null>(null);
   let dropRef = useRef<ListDropTarget | null>(null);
+  // One horizontal indent unit, read from the theme at drag start.
+  let indentWidthRef = useRef(38);
   let blocksRef = useRef(props.blocks);
   blocksRef.current = props.blocks;
   let foldedRef = useRef(foldedBlocks);
@@ -72,6 +74,12 @@ export function ListDndContext(props: {
     let index = arr.findIndex((b) => b.entityID === dragActive.id);
     let block = arr[index];
     if (!block?.listData) return;
+    indentWidthRef.current =
+      parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          "--list-marker-width",
+        ),
+      ) || 38;
     // Build the same props the page's block map would pass, so the drag
     // preview renders the identical component.
     let nextBlock = arr[index + 1] || null;
@@ -88,13 +96,15 @@ export function ListDndContext(props: {
     useListDragState.setState({ activeId: block.entityID, dropTarget: null });
   };
 
-  let onDragMove = ({ active: dragActive, over }: DragMoveEvent) => {
+  let onDragMove = ({ active: dragActive, over, delta }: DragMoveEvent) => {
     let target =
       over && pointerRef.current
         ? computeDropTarget(
             String(dragActive.id),
             String(over.id),
             pointerRef.current.y,
+            delta.x,
+            indentWidthRef.current,
             rectsRef.current?.get(over.id),
             blocksRef.current,
             props.pageID,
@@ -120,7 +130,7 @@ export function ListDndContext(props: {
     let activeBlock = active;
     reset();
     if (!rep || !target || !activeBlock?.listData) return;
-    if (target.unfoldHeading) unfoldBlocks(rep, [target.unfoldHeading]);
+    if (target.unfold) unfoldBlocks(rep, [target.unfold]);
     rep.mutate.moveBlock({
       block: activeBlock.entityID,
       oldParent: activeBlock.listData.parent,
@@ -154,6 +164,8 @@ function computeDropTarget(
   activeId: string,
   overId: string,
   pointerY: number,
+  deltaX: number,
+  indentWidth: number,
   overRect: ClientRect | undefined,
   blocks: Block[],
   pageID: string,
@@ -161,7 +173,8 @@ function computeDropTarget(
 ): ListDropTarget | null {
   if (!overRect) return null;
   let overIndex = blocks.findIndex((b) => b.entityID === overId);
-  if (overIndex === -1) return null;
+  let activeBlock = blocks.find((b) => b.entityID === activeId);
+  if (overIndex === -1 || !activeBlock?.listData) return null;
   let edge: "top" | "bottom" =
     pointerY < overRect.top + overRect.height / 2 ? "top" : "bottom";
   let above = edge === "top" ? blocks[overIndex - 1] : blocks[overIndex];
@@ -174,28 +187,59 @@ function computeDropTarget(
   // Gaps touching the dragged subtree are either no-ops or drops into itself.
   if (inActiveSubtree(above) || inActiveSubtree(below)) return null;
 
-  // The dropped item fits the depth context of the gap: it takes the depth of
-  // the item below the line, or continues the list above when nothing follows.
-  if (below?.listData)
+  // Horizontal drag distance projects the preferred depth (one indent unit
+  // per level), clamped to what the gap allows: no shallower than the item
+  // below the line, no deeper than one level under the item above it.
+  let minDepth = below?.listData?.depth ?? 1;
+  let maxDepth = above?.listData ? above.listData.depth + 1 : 1;
+  let depth = Math.min(
+    maxDepth,
+    Math.max(
+      minDepth,
+      activeBlock.listData.depth + Math.round(deltaX / indentWidth),
+    ),
+  );
+
+  if (below?.listData && depth === below.listData.depth)
     return {
       entityID: overId,
       edge,
-      depth: below.listData.depth,
+      depth,
       newParent: below.listData.parent,
       position: { type: "before", entity: below.entityID },
     };
-  if (above)
+  if (above) {
+    // Deeper than the item below: land inside the list context of the block
+    // above. Its ancestor at `depth` is the sibling to follow; when there is
+    // none (depth is one level under `above`) the item becomes its first
+    // child.
+    let newParent =
+      depth === 1
+        ? pageID
+        : above.listData?.path.find((p) => p.depth === depth - 1)?.entity;
+    if (!newParent) return null;
+    let anchor = above.listData
+      ? above.listData.path.find((p) => p.depth === depth)?.entity
+      : above.entityID;
+    // Landing as the first child of a collapsed `above`, or directly after a
+    // folded heading (inside its hidden section), would put the block into
+    // hidden content. Landing as a *sibling* after a folded list item is fine.
+    let landsInHiddenContent =
+      !anchor || (anchor === above.entityID && !above.listData);
     return {
       entityID: overId,
       edge,
-      depth: above.listData?.depth ?? 1,
-      newParent: above.listData?.parent ?? pageID,
-      position: { type: "after", entity: above.entityID },
-      unfoldHeading:
-        above.type === "heading" && foldedBlocks.includes(above.entityID)
+      depth,
+      newParent,
+      position: anchor
+        ? { type: "after", entity: anchor }
+        : { type: "first" },
+      unfold:
+        landsInHiddenContent && foldedBlocks.includes(above.entityID)
           ? above.entityID
           : undefined,
     };
+  }
   return {
     entityID: overId,
     edge,
@@ -216,6 +260,6 @@ function dropTargetEquals(a: ListDropTarget | null, b: ListDropTarget | null) {
     a.position.type === b.position.type &&
     ("entity" in a.position ? a.position.entity : null) ===
       ("entity" in b.position ? b.position.entity : null) &&
-    a.unfoldHeading === b.unfoldHeading
+    a.unfold === b.unfold
   );
 }
