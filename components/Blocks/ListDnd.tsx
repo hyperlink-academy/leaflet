@@ -42,8 +42,10 @@ export function ListDndContext(props: {
 
   let sensors = useSensors(
     useSensor(PointerSensor, {
-      // Long press, matching the app's 500ms useLongPress convention.
-      activationConstraint: { delay: 500, tolerance: 5 },
+      // Long press. The OS long-press timeout isn't exposed to the web;
+      // 250ms matches native drag-lift timing (and dnd-kit's recommended
+      // touch delay) while a quick tap still falls through as a click.
+      activationConstraint: { delay: 250, tolerance: 5 },
     }),
   );
 
