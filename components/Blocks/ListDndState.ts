@@ -17,9 +17,14 @@ export type ListDropTarget = {
     | { type: "first" }
     | { type: "before"; entity: string }
     | { type: "after"; entity: string };
+  // Present when the drop lands one level above the list run below the line:
+  // the children of `parent` from `from` onward are adopted under the dropped
+  // block (a list split, keeping the run's rendered depth).
+  adopt?: { parent: string; from: string };
   // A folded block the drop lands directly inside or after (a collapsed new
-  // parent, or a folded heading's section); it must be unfolded on drop so
-  // the moved block doesn't disappear into its hidden content.
+  // parent, a folded heading's section, or the dragged block itself when it
+  // adopts a run); it must be unfolded on drop so nothing disappears into
+  // hidden content.
   unfold?: string;
 };
 

@@ -133,12 +133,23 @@ export function ListDndContext(props: {
     reset();
     if (!rep || !target || !activeBlock?.listData) return;
     if (target.unfold) unfoldBlocks(rep, [target.unfold]);
-    rep.mutate.moveBlock({
-      block: activeBlock.entityID,
-      oldParent: activeBlock.listData.parent,
-      newParent: target.newParent,
-      position: target.position,
-    });
+    if (target.adopt && target.position.type === "after") {
+      rep.mutate.moveBlockAdoptingSiblings({
+        block: activeBlock.entityID,
+        oldParent: activeBlock.listData.parent,
+        newParent: target.newParent,
+        after: target.position.entity,
+        adoptParent: target.adopt.parent,
+        adoptFrom: target.adopt.from,
+      });
+    } else {
+      rep.mutate.moveBlock({
+        block: activeBlock.entityID,
+        oldParent: activeBlock.listData.parent,
+        newParent: target.newParent,
+        position: target.position,
+      });
+    }
   };
 
   return (
@@ -175,24 +186,52 @@ function computeDropTarget(
 ): ListDropTarget | null {
   if (!overRect) return null;
   let overIndex = blocks.findIndex((b) => b.entityID === overId);
-  let activeBlock = blocks.find((b) => b.entityID === activeId);
+  let activeIndex = blocks.findIndex((b) => b.entityID === activeId);
+  let activeBlock = blocks[activeIndex];
   if (overIndex === -1 || !activeBlock?.listData) return null;
-  let edge: "top" | "bottom" =
-    pointerY < overRect.top + overRect.height / 2 ? "top" : "bottom";
-  let above = edge === "top" ? blocks[overIndex - 1] : blocks[overIndex];
-  let below = edge === "top" ? blocks[overIndex] : blocks[overIndex + 1];
 
   let inActiveSubtree = (b: Block | undefined) =>
     !!b &&
     (b.entityID === activeId ||
       !!b.listData?.path.some((p) => p.entity === activeId));
-  // Gaps touching the dragged subtree are either no-ops or drops into itself.
-  if (inActiveSubtree(above) || inActiveSubtree(below)) return null;
+
+  // Treat the document as if the dragged subtree were lifted out: the gaps on
+  // either side of it collapse into its own slot, whose neighbors are the
+  // blocks just outside the subtree. That makes the item's starting position
+  // a valid target, so a purely horizontal drag projects an indent/outdent.
+  let subtreeEnd = activeIndex;
+  while (
+    subtreeEnd + 1 < blocks.length &&
+    inActiveSubtree(blocks[subtreeEnd + 1])
+  )
+    subtreeEnd++;
+  let slotAbove = blocks[activeIndex - 1];
+  let slotBelow = blocks[subtreeEnd + 1];
+
+  let above: Block | undefined;
+  let below: Block | undefined;
+  let edge: "top" | "bottom" = "top";
+  if (inActiveSubtree(blocks[overIndex])) {
+    above = slotAbove;
+    below = slotBelow;
+  } else {
+    edge = pointerY < overRect.top + overRect.height / 2 ? "top" : "bottom";
+    above = edge === "top" ? blocks[overIndex - 1] : blocks[overIndex];
+    below = edge === "top" ? blocks[overIndex] : blocks[overIndex + 1];
+    if (inActiveSubtree(above)) above = slotAbove;
+    if (inActiveSubtree(below)) below = slotBelow;
+  }
+  let ownSlot =
+    (above?.entityID ?? null) === (slotAbove?.entityID ?? null) &&
+    (below?.entityID ?? null) === (slotBelow?.entityID ?? null);
+  let indicator = ownSlot
+    ? { entityID: activeId, edge: "top" as const }
+    : { entityID: overId, edge };
 
   // Horizontal drag distance projects the preferred depth (one indent unit
-  // per level), clamped to what the gap allows: no shallower than the item
-  // below the line, no deeper than one level under the item above it.
-  let minDepth = below?.listData?.depth ?? 1;
+  // per level), clamped to what the gap allows: from one level above the item
+  // below the line (a list split) down to one level under the item above it.
+  let minDepth = below?.listData ? Math.max(1, below.listData.depth - 1) : 1;
   let maxDepth = above?.listData ? above.listData.depth + 1 : 1;
   let depth = Math.min(
     maxDepth,
@@ -201,15 +240,36 @@ function computeDropTarget(
       activeBlock.listData.depth + Math.round(deltaX / indentWidth),
     ),
   );
+  // Back in its own slot at its own depth: not a move.
+  if (ownSlot && depth === activeBlock.listData.depth) return null;
 
   if (below?.listData && depth === below.listData.depth)
     return {
-      entityID: overId,
-      edge,
+      ...indicator,
       depth,
       newParent: below.listData.parent,
       position: { type: "before", entity: below.entityID },
     };
+  if (below?.listData && depth === below.listData.depth - 1) {
+    // One level above the run below the line: the dropped item splits the
+    // list, landing after the run's parent and adopting the run as children,
+    // which keeps the run's rendered depth. At the item's own slot this is
+    // exactly a swipe-outdent.
+    let splitParent = below.listData.parent;
+    let newParent =
+      depth === 1
+        ? pageID
+        : below.listData.path.find((p) => p.depth === depth - 1)?.entity;
+    if (!newParent) return null;
+    return {
+      ...indicator,
+      depth,
+      newParent,
+      position: { type: "after", entity: splitParent },
+      adopt: { parent: splitParent, from: below.entityID },
+      unfold: foldedBlocks.includes(activeId) ? activeId : undefined,
+    };
+  }
   if (above) {
     // Deeper than the item below: land inside the list context of the block
     // above. Its ancestor at `depth` is the sibling to follow; when there is
@@ -229,8 +289,7 @@ function computeDropTarget(
     let landsInHiddenContent =
       !anchor || (anchor === above.entityID && !above.listData);
     return {
-      entityID: overId,
-      edge,
+      ...indicator,
       depth,
       newParent,
       position: anchor
@@ -243,8 +302,7 @@ function computeDropTarget(
     };
   }
   return {
-    entityID: overId,
-    edge,
+    ...indicator,
     depth: 1,
     newParent: pageID,
     position: { type: "first" },
@@ -262,6 +320,8 @@ function dropTargetEquals(a: ListDropTarget | null, b: ListDropTarget | null) {
     a.position.type === b.position.type &&
     ("entity" in a.position ? a.position.entity : null) ===
       ("entity" in b.position ? b.position.entity : null) &&
+    (a.adopt?.parent ?? null) === (b.adopt?.parent ?? null) &&
+    (a.adopt?.from ?? null) === (b.adopt?.from ?? null) &&
     a.unfold === b.unfold
   );
 }

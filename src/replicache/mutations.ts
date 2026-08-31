@@ -367,6 +367,77 @@ const outdentBlock: Mutation<{
   });
 };
 
+// Drop a block one level above a list run, splitting that list: the children
+// of adoptParent from adoptFrom onward are appended under the block (after its
+// existing children, keeping their rendered depth), and the block itself lands
+// in newParent directly after `after` (adoptFrom's old parent). The outdentBlock
+// shape generalized to a block arriving from anywhere in the document.
+const moveBlockAdoptingSiblings: Mutation<{
+  block: string;
+  oldParent: string;
+  newParent: string;
+  after: string;
+  adoptParent: string;
+  adoptFrom: string;
+}> = async (args, ctx) => {
+  let oldSiblings = (
+    await ctx.scanIndex.eav(args.oldParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let newSiblings = (
+    await ctx.scanIndex.eav(args.newParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let adoptSiblings = (
+    await ctx.scanIndex.eav(args.adoptParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+
+  let blockFact = oldSiblings.find((f) => f.data.value === args.block);
+  let afterIndex = newSiblings.findIndex((f) => f.data.value === args.after);
+  let adoptIndex = adoptSiblings.findIndex(
+    (f) => f.data.value === args.adoptFrom,
+  );
+  // Bail before any writes: a missing anchor must be a clean no-op, not a
+  // half-applied split that orphans the adopted run.
+  if (!blockFact || afterIndex === -1 || adoptIndex === -1) return;
+
+  let run = adoptSiblings
+    .slice(adoptIndex)
+    .filter((f) => f.data.value !== args.block);
+  let blockChildren = (
+    await ctx.scanIndex.eav(args.block, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let lastPosition =
+    blockChildren[blockChildren.length - 1]?.data.position || null;
+  for (let sib of run) {
+    lastPosition = generateKeyBetween(lastPosition, null);
+    // Reparent in place (reusing the fact id) so undo/redo never passes
+    // through a state where a run member is gone.
+    await ctx.assertFact({
+      entity: args.block,
+      id: sib.id,
+      attribute: "card/block",
+      data: {
+        type: "ordered-reference",
+        position: lastPosition,
+        value: sib.data.value,
+      },
+    });
+  }
+
+  await ctx.assertFact({
+    id: blockFact.id,
+    entity: args.newParent,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      position: generateKeyBetween(
+        newSiblings[afterIndex]?.data.position || null,
+        newSiblings[afterIndex + 1]?.data.position || null,
+      ),
+      value: args.block,
+    },
+  });
+};
+
 const addPageLinkBlock: Mutation<{
   type: "canvas" | "doc";
   permission_set: string;
@@ -1280,6 +1351,7 @@ export const mutations = {
   addPublicationNavLink,
   removePublicationNavEntry,
   moveBlock,
+  moveBlockAdoptingSiblings,
   moveBlocks,
   assertFact,
   retractFact,
