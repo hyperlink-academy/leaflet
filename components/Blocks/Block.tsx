@@ -10,6 +10,8 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { indent, outdent } from "src/utils/list-operations";
+import { toggleFold } from "src/utils/foldBlocks";
+import { useIsFolded } from "components/FoldStateProvider";
 import { useDrag } from "@use-gesture/react";
 import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
@@ -122,6 +124,9 @@ export const Block = memo(function Block(
       justify: "justify-start",
     }[alignment];
 
+  let displayedAsHeading =
+    props.type === "heading" || props.parent === props.entityID;
+
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
     if (!selected) {
@@ -140,32 +145,12 @@ export const Block = memo(function Block(
       if (!rep || !props.listData || !entity_set.permissions.write) return;
       if (Math.abs(mx) < SWIPE_THRESHOLD) return;
       event?.preventDefault();
-      let { foldedBlocks, toggleFold } = useUIState.getState();
       if (mx > 0) {
         if (props.previousBlock) {
-          indent(
-            props,
-            props.previousBlock,
-            rep,
-            {
-              foldedBlocks,
-              toggleFold,
-            },
-            undoManager,
-          );
+          indent(props, props.previousBlock, rep, undoManager);
         }
       } else {
-        outdent(
-          props,
-          props.previousBlock,
-          rep,
-          {
-            foldedBlocks,
-            toggleFold,
-          },
-          undefined,
-          undoManager,
-        );
+        outdent(props, props.previousBlock, rep, undefined, undoManager);
       }
     },
     {
@@ -208,14 +193,13 @@ export const Block = memo(function Block(
       ${
         !props.nextBlock
           ? "pb-3 sm:pb-4"
-          : props.type === "heading" ||
-              (props.listData && props.nextBlock?.listData)
+          : displayedAsHeading || (props.listData && props.nextBlock?.listData)
             ? "pb-0"
             : "pb-2"
       }
-      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
+      ${!displayedAsHeading && props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
       ${
-        props.type === "heading" &&
+        displayedAsHeading &&
         props.previousBlock &&
         props.previousBlock.type !== "horizontal-rule"
           ? props.previousBlock.type !== "heading"
@@ -230,7 +214,7 @@ export const Block = memo(function Block(
       }
       ${
         !props.previousBlock
-          ? props.type === "heading" || props.type === "text"
+          ? displayedAsHeading || props.type === "text"
             ? "mt-1 sm:mt-2"
             : "mt-2 sm:mt-3"
           : ""
@@ -546,7 +530,8 @@ const NonTextBlockOptions = (props: {
 // (absolutely positioned in the wrapper padding) so it never shifts the heading
 // text, and only shows on hover unless the heading is currently folded.
 const HeadingFoldButton = (props: { entityID: string }) => {
-  let folded = useUIState((s) => s.foldedBlocks.includes(props.entityID));
+  let { rep } = useReplicache();
+  let folded = useIsFolded(props.entityID);
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let top =
@@ -563,7 +548,7 @@ const HeadingFoldButton = (props: { entityID: string }) => {
             ? "opacity-100 bg-accent-contrast"
             : "opacity-0 sm:group-hover/blockWrapper:opacity-100 bg-border "
         }`}
-      onClick={() => useUIState.getState().toggleFold(props.entityID)}
+      onClick={() => toggleFold(rep, props.entityID)}
     >
       <ArrowDownTiny
         className={`transition-transform ${folded ? "-rotate-90" : ""}`}
@@ -587,9 +572,7 @@ export const ListMarker = (
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let children = useEntity(props.entityID, "card/block");
-  let folded =
-    useUIState((s) => s.foldedBlocks.includes(props.entityID)) &&
-    children.length > 0;
+  let folded = useIsFolded(props.entityID) && children.length > 0;
 
   let depth = props.listData?.depth;
   let { permissions } = useEntitySetContext();
@@ -653,8 +636,7 @@ export const ListMarker = (
     >
       <button
         onClick={() => {
-          if (children.length > 0)
-            useUIState.getState().toggleFold(props.entityID);
+          if (children.length > 0) toggleFold(rep, props.entityID);
         }}
         className={`listMarker group/list-marker ${listStyle?.data.value === "ordered" ? "" : "px-3 py-2"} ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >

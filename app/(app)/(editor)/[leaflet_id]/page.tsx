@@ -14,6 +14,7 @@ import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
 import { supabaseServerClient } from "supabase/serverClient";
 import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
+import { getSessionDid } from "src/identityPayload";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
 import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
 
@@ -41,9 +42,10 @@ export default async function LeafletPage(props: Props) {
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data || res.data.blocked_by_admin) notFound();
 
-  let [initialFacts, poll_data] = await Promise.all([
+  let [initialFacts, poll_data, viewerDid] = await Promise.all([
     getInitialFacts(rootEntity),
     getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
+    getSessionDid(),
   ]);
 
   // Extract font settings from facts for server-side font loading
@@ -63,6 +65,7 @@ export default async function LeafletPage(props: Props) {
       >
         <Leaflet
           initialFacts={initialFacts}
+          viewerDid={viewerDid}
           leaflet_id={rootEntity}
           token={res.data}
           initialHeadingFontId={headingFontId}

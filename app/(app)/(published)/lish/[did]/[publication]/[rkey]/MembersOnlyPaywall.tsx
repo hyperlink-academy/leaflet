@@ -1,21 +1,20 @@
 "use client";
 import { useDocumentOptional } from "contexts/DocumentContext";
+import { useState } from "react";
 import { PaidSubscribeButton } from "components/Subscribe/PaidSubscribeButton";
+import { ManageSubscription } from "components/Subscribe/ManageSubscribe";
+import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { ButtonPrimary } from "components/Buttons";
 import { PubIcon } from "components/ActionBar/Publications";
 import { formatPrice } from "components/Memberships/TierGrid";
-import {
-  gateUnlocksWithSubscription,
-  tierUnlocksGatedPost,
-} from "src/membership";
+import { useMyMembership } from "components/Memberships/useMyMembership";
+import { revalidateUnlocks } from "components/Memberships/revalidateUnlocks";
+import { membershipUnlocksGatedPost } from "src/membership";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { useUnlockStatus } from "./PostDataProvider";
-
-const formatList = (items: string[]) =>
-  new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(
-    items,
-  );
+import { ChangePlanModal } from "components/Memberships/ChangePlanModal";
 
 // Rendered in place of the members-only delimiter for readers without an
 // active membership; the gated blocks were already dropped server-side. Shows
@@ -25,13 +24,11 @@ export const MembersOnlyPaywall = () => {
   let unlockStatus = useUnlockStatus();
 
   let pub = document?.publication;
+  let viewer = useViewerSubscription(pub?.uri);
+  let { membership } = useMyMembership(pub?.uri ?? "");
+  let [changingPlan, setChangingPlan] = useState(false);
   if (!pub) return null;
 
-  // The membership check runs client-side (the page itself is cached and
-  // anonymous). While it's pending the viewer may turn out to be an entitled
-  // member, so hold the join pitch — flashing it and then swapping in the full
-  // post reads as a glitch. "loading" only happens for viewers with a session
-  // marker; definitely-anonymous readers get the pitch immediately.
   if (unlockStatus === "loading")
     return (
       <div className="membersOnlyPaywall my-4 flex flex-col items-center gap-2 text-center block-border bg-bg-page px-4 py-6">
@@ -45,24 +42,27 @@ export const MembersOnlyPaywall = () => {
       </div>
     );
 
-  let tiers = document?.membersOnly?.tiers ?? [];
-  let unlockingTierIds = document?.membersOnly?.unlockingTierIds ?? null;
+  let membershipTiers = document?.membersOnly?.tiers;
+  if (!membershipTiers) return null;
+  let tiers = membershipTiers.paid;
+  let gatePolicy = document?.membersOnly?.gatePolicy ?? null;
 
-  let subscriptionUnlocks = gateUnlocksWithSubscription(
-    unlockingTierIds,
-    tiers,
-  );
-  let paidUnlockingTiers = tiers.filter(
-    (t) => !t.is_free && tierUnlocksGatedPost(t, unlockingTierIds),
+  let subscriptionUnlocks = gatePolicy?.audience === "subscribers";
+  let paidUnlockingTiers = tiers.filter((tier) =>
+    membershipUnlocksGatedPost({ kind: "paid", tierId: tier.id }, gatePolicy),
   );
   let startingPriceCents = paidUnlockingTiers.length
     ? Math.min(...paidUnlockingTiers.map((t) => t.monthly_price_cents))
     : null;
 
   let namedTiers =
-    paidUnlockingTiers.length < tiers.filter((t) => !t.is_free).length
+    paidUnlockingTiers.length < tiers.length
       ? paidUnlockingTiers.map((t) => t.name)
       : [];
+
+  let needsUpgrade =
+    viewer.membership?.kind === "paid" &&
+    !membershipUnlocksGatedPost(viewer.membership, gatePolicy);
 
   return (
     <div className="membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6">
@@ -77,31 +77,61 @@ export const MembersOnlyPaywall = () => {
       />
       <div className="">
         <h3 className="leading-tight pb-1">
-          {subscriptionUnlocks
-            ? "Subscribe to continue reading"
-            : "Become a member to continue reading"}
+          {needsUpgrade
+            ? "Upgrade your membership to continue reading"
+            : subscriptionUnlocks
+              ? "Subscribe to continue reading"
+              : "Become a member to continue reading"}
         </h3>
         {subscriptionUnlocks ? (
           <p>Free for subscribers</p>
         ) : (
           startingPriceCents !== null && (
             <p>
-              {namedTiers.length > 0
-                ? `Available on the ${formatList(namedTiers)} ${namedTiers.length > 1 ? "tiers" : "tier"}, from ${formatPrice(startingPriceCents)}/month`
+              {needsUpgrade && namedTiers.length > 0
+                ? `Available starting from ${formatPrice(startingPriceCents)}/month`
                 : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
             </p>
           )
         )}
       </div>
-      <PaidSubscribeButton
-        publicationUri={pub.uri}
-        publicationName={pub.name}
-        source={{ placement: "paywall" }}
-        newsletterMode={pub.newsletterMode}
-        tiers={tiers}
-        unlocksPost
-        unlocksPostTierIds={unlockingTierIds}
-      />
+      {needsUpgrade ? (
+        <div className="flex flex-col gap-1 items-center justify-center">
+          <ButtonPrimary
+            type="button"
+            className="pubPageUpgrade"
+            disabled={!membership}
+            onClick={() => setChangingPlan(true)}
+          >
+            Upgrade
+          </ButtonPrimary>
+          {changingPlan && membership && (
+            <ChangePlanModal
+              membership={membership}
+              title="Upgrade your membership"
+              gatePolicy={gatePolicy}
+              onSuccess={revalidateUnlocks}
+              onClose={() => setChangingPlan(false)}
+            />
+          )}
+          <ManageSubscription
+            publicationUri={pub.uri}
+            newsletterMode={pub.newsletterMode}
+            user={viewer}
+            triggerLabel="Manage Subscription"
+            membershipTiers={membershipTiers}
+          />
+        </div>
+      ) : (
+        <PaidSubscribeButton
+          publicationUri={pub.uri}
+          publicationName={pub.name}
+          source={{ placement: "paywall" }}
+          newsletterMode={pub.newsletterMode}
+          tiers={membershipTiers}
+          gatePolicy={gatePolicy}
+        />
+      )}
     </div>
   );
 };

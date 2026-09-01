@@ -31,7 +31,7 @@ import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { PaidSubscribeButton } from "./PaidSubscribeButton";
-import { useJoinableTiers } from "components/Memberships/useJoinableTiers";
+import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
 
 type SubscribeMode = "email" | "atproto";
 
@@ -120,7 +120,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [linkModalOpen, setLinkModalOpen] = useState(false);
   let [subscribeMode, setSubscribeMode] = useState<SubscribeMode>("email");
-  const joinable = useJoinableTiers(props.publicationUri);
+  const membershipTiers = useMembershipTiers(props.publicationUri);
   // Warm the success-modal data (pub name + recommended listings) while the
   // form is idle, so subscribing opens the modal without a loading spinner.
   useSubscribeSuccessData(props.publicationUri);
@@ -159,8 +159,8 @@ export const SubscribeInput = (props: SubscribeProps) => {
     <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
   // Paid memberships replace the subscribe form with the paid join flow.
-  if (joinable.hasPaidTiers && joinable.tiers)
-    return <PaidSubscribeButton {...props} tiers={joinable.tiers} />;
+  if (membershipTiers.hasPaidTiers && membershipTiers.tiers)
+    return <PaidSubscribeButton {...props} tiers={membershipTiers.tiers} />;
   const emailForm = (
     <EmailInput
       publicationUrl={props.publicationUrl}
@@ -368,11 +368,13 @@ export const SubscribeButton = (props: SubscribeProps) => {
   let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [atSuccessOpen, setAtSuccessOpen] = useState(false);
   let [emailSuccessOpen, setEmailSuccessOpen] = useState(false);
-  const joinable = useJoinableTiers(props.publicationUri);
+  const membershipTiers = useMembershipTiers(props.publicationUri);
 
   // Paid memberships replace the one-click subscribe with the paid join flow.
-  if (joinable.hasPaidTiers && joinable.tiers)
-    return <PaidSubscribeButton {...props} tiers={joinable.tiers} compact />;
+  if (membershipTiers.hasPaidTiers && membershipTiers.tiers)
+    return (
+      <PaidSubscribeButton {...props} tiers={membershipTiers.tiers} compact />
+    );
 
   const subscribeTrigger = (
     <ButtonPrimary compact className="pubPageSubscribe text-sm!">

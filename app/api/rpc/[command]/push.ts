@@ -5,6 +5,7 @@ import {
   email_auth_tokens,
   identities,
   permission_token_rights,
+  permission_tokens,
   replicache_clients,
 } from "drizzle/schema";
 import { getClientGroup } from "src/replicache/utils";
@@ -108,6 +109,10 @@ export const push = makeRoute({
           .select()
           .from(permission_token_rights)
           .where(eq(permission_token_rights.token, token.id));
+        let [tokenRow] = await tx
+          .select({ root_entity: permission_tokens.root_entity })
+          .from(permission_tokens)
+          .where(eq(permission_tokens.id, token.id));
         timeGettingTokenRights = performance.now() - tokenRightsStart;
 
         // Resolve the session cookie to a DID once per push. The cookie value
@@ -130,6 +135,7 @@ export const push = makeRoute({
           token.id,
           token_rights,
           sessionDid,
+          tokenRow?.root_entity ?? "",
         );
 
         let lastMutations = new Map<string, number>();

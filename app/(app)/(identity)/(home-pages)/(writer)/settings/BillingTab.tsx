@@ -9,9 +9,11 @@ import {
   ChangePlanModal,
   MembershipActions,
   membershipPrice,
+  pendingPlanLabel,
   isMembershipActive as isActive,
 } from "components/Memberships/ChangePlanModal";
 import { CancelMembershipModal } from "components/Memberships/CancelMembershipModal";
+import { ResumeMembershipModal } from "components/Memberships/ResumeMembershipModal";
 import {
   updateWalletCard,
   updateWalletCardFromSetupIntent,
@@ -177,6 +179,7 @@ function MembershipRow(props: { membership: MyMembership }) {
   const m = props.membership;
   const [changingPlan, setChangingPlan] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const renewal = useLocalizedDate(m.currentPeriodEnd ?? "", {
     year: "numeric",
     month: "short",
@@ -184,6 +187,7 @@ function MembershipRow(props: { membership: MyMembership }) {
   });
 
   const price = membershipPrice(m);
+  const pendingPlan = pendingPlanLabel(m, m.currentPeriodEnd ? renewal : "");
 
   return (
     <>
@@ -199,11 +203,14 @@ function MembershipRow(props: { membership: MyMembership }) {
           {price && ` ${price} · `}
           {m.cancelAtPeriodEnd ? "Ends" : "Renews"} {renewal}
         </div>
-        {m.currentPeriodEnd && <div className="text-tertiary text-sm"></div>}
+        {pendingPlan && (
+          <div className="text-tertiary text-sm">{pendingPlan}</div>
+        )}
         <div className="flex gap-2 flex-wrap pt-2">
           <MembershipActions
             membership={m}
             onChangePlan={() => setChangingPlan(true)}
+            onResume={() => setResuming(true)}
             onCancel={() => setCancelling(true)}
           />
         </div>
@@ -211,6 +218,12 @@ function MembershipRow(props: { membership: MyMembership }) {
           <ChangePlanModal
             membership={m}
             onClose={() => setChangingPlan(false)}
+          />
+        )}
+        {resuming && (
+          <ResumeMembershipModal
+            membership={m}
+            onClose={() => setResuming(false)}
           />
         )}
         {cancelling && (

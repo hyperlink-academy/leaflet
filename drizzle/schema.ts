@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, unique, uniqueIndex, smallint, integer, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, unique, uniqueIndex, smallint, integer, primaryKey, check } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -272,6 +272,8 @@ export const identities = pgTable("identities", {
 export const publication_membership_settings = pgTable("publication_membership_settings", {
 	publication: text("publication").primaryKey().notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	enabled: boolean("enabled").default(false).notNull(),
+	subscriber_tier_name: text("subscriber_tier_name").default('Free').notNull(),
+	subscriber_tier_description: text("subscriber_tier_description").default('Subscribe for free to get notified about new posts.'),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 },
@@ -292,7 +294,7 @@ export const publication_membership_tiers = pgTable("publication_membership_tier
 	stripe_product_id: text("stripe_product_id"),
 	stripe_price_monthly_id: text("stripe_price_monthly_id"),
 	stripe_price_annual_id: text("stripe_price_annual_id"),
-	active: boolean("active").default(true).notNull(),
+	active: boolean("active").default(false).notNull(),
 	sort_order: integer("sort_order").default(0).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -300,6 +302,10 @@ export const publication_membership_tiers = pgTable("publication_membership_tier
 (table) => {
 	return {
 		publication_idx: index("publication_membership_tiers_publication_idx").on(table.publication),
+		id_publication_key: unique("publication_membership_tiers_id_publication_key").on(table.id, table.publication),
+		monthly_price_check: check("publication_membership_tiers_monthly_price_check", sql`${table.monthly_price_cents} >= 100`),
+		annual_price_check: check("publication_membership_tiers_annual_price_check", sql`${table.annual_price_cents} IS NULL OR ${table.annual_price_cents} >= 100`),
+		active_monthly_price_check: check("publication_membership_tiers_active_monthly_price_check", sql`NOT ${table.active} OR ${table.stripe_price_monthly_id} IS NOT NULL`),
 	}
 });
 
@@ -307,7 +313,7 @@ export const publication_memberships = pgTable("publication_memberships", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	identity_id: uuid("identity_id").notNull().references(() => identities.id, { onDelete: "cascade" } ),
-	tier: uuid("tier").references(() => publication_membership_tiers.id, { onDelete: "set null" } ),
+	tier: uuid("tier").notNull(),
 	stripe_customer_id: text("stripe_customer_id"),
 	stripe_subscription_id: text("stripe_subscription_id"),
 	status: text("status"),
@@ -321,6 +327,11 @@ export const publication_memberships = pgTable("publication_memberships", {
 		identity_idx: index("publication_memberships_identity_idx").on(table.identity_id),
 		publication_identity_key: unique("publication_memberships_publication_identity_key").on(table.publication, table.identity_id),
 		stripe_subscription_id_key: uniqueIndex("publication_memberships_stripe_subscription_id_key").on(table.stripe_subscription_id),
+		tier_publication_fkey: foreignKey({
+			columns: [table.tier, table.publication],
+			foreignColumns: [publication_membership_tiers.id, publication_membership_tiers.publication],
+			name: "publication_memberships_tier_publication_fkey"
+		}).onDelete("no action"),
 	}
 });
 

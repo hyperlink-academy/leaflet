@@ -41,7 +41,12 @@ export function PublicationPostItemLarge(props: LargeProps) {
         className={`relative flex flex-col pt-2 ${widePage ? "sm:py-2 sm:px-4 " : ""} ${!props.inList && "px-3 py-2"}`}
       >
         {props.pubInfo}
-        {props.membersOnly && <MembersBadge />}
+        {props.membersOnly && (
+          <MembersBadge
+            publicationUri={props.publicationUri}
+            gatePolicy={props.gatePolicy}
+          />
+        )}
 
         <div
           ref={boxRef}

@@ -20,7 +20,6 @@ export const RouteUIStateManager = () => {
     useUIState.setState({
       focusedEntity: null,
       selectedBlocks: [],
-      foldedBlocks: [],
       openPages: savedOpenPages,
       lastUsedHighlight: "1",
     });

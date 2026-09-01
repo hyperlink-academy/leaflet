@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { isZoomedBlockRoot, useUIState } from "src/useUIState";
+import { toggleFold } from "src/utils/foldBlocks";
 import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
@@ -161,7 +162,29 @@ export function SelectionManager() {
           let [sortedBlocks, siblings] = await getSortedSelectionBound();
           if (!sortedBlocks[0].listData && sortedBlocks[0].type !== "heading")
             return;
-          useUIState.getState().toggleFold(sortedBlocks[0].entityID);
+          toggleFold(rep, sortedBlocks[0].entityID);
+        },
+      },
+      {
+        metaKey: true,
+        key: " ",
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          let block = sortedBlocks[0];
+          if (!block || (!block.listData && block.type !== "heading")) return;
+          toggleFold(rep, block.entityID);
+        },
+      },
+      {
+        metaKey: true,
+        shift: true,
+        // shift+; produces ":" on most layouts, but not all
+        key: [":", ";"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          let block = sortedBlocks[0];
+          if (!block?.listData) return;
+          useUIState.getState().zoomIntoBlock(block.parent, block.entityID);
         },
       },
     ];
@@ -241,6 +264,8 @@ export function SelectionManager() {
             e.preventDefault();
             let [sortedBlocks, siblings] = await getSortedSelectionBound();
             let selectedBlocks = useUIState.getState().selectedBlocks;
+            if (selectedBlocks.some((b) => isZoomedBlockRoot(b.entityID)))
+              return;
             let firstBlock = sortedBlocks[0];
 
             await rep?.mutate.removeBlock(
@@ -387,17 +412,9 @@ export function SelectionManager() {
           e.preventDefault();
 
           if (e.shiftKey) {
-            let { foldedBlocks, toggleFold } = useUIState.getState();
-            await multiSelectOutdent(sortedSelection, siblings, rep, {
-              foldedBlocks,
-              toggleFold,
-            });
+            await multiSelectOutdent(sortedSelection, siblings, rep);
           } else {
-            let { foldedBlocks, toggleFold } = useUIState.getState();
-            await multiSelectIndent(sortedSelection, siblings, rep, {
-              foldedBlocks,
-              toggleFold,
-            });
+            await multiSelectIndent(sortedSelection, siblings, rep);
           }
         }
         if (e.key === "ArrowDown") {

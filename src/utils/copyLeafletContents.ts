@@ -1,9 +1,8 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { sql, type SQL } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { v7 } from "uuid";
-import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
 import { markTitleBlockAsCopy } from "src/utils/markTitleBlockAsCopy";
+import { insertLeaflet } from "src/utils/insertLeaflet";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 
@@ -16,9 +15,6 @@ const REFERENCE_TYPES = ["reference", "ordered-reference", "spatial-reference"];
  * uploaded assets duplicated in storage so neither copy can disturb the
  * other's images.
  *
- * All the inserts run in one statement (FK checks fire at end-of-statement and
- * see rows from sibling CTEs), so callers can append a tail CTE to link the new
- * token to something in the same round trip.
  */
 export async function copyLeafletContents({
   rootEntity,
@@ -42,6 +38,9 @@ export async function copyLeafletContents({
     (((await supabaseServerClient.rpc("get_facts", { root: rootEntity }))
       .data as unknown as Fact<Attribute>[]) ||
       []);
+  sourceFacts = sourceFacts.filter(
+    (f) => f.attribute !== "root/collapsed-blocks",
+  );
   if (markAsCopy) sourceFacts = markTitleBlockAsCopy(sourceFacts, rootEntity);
 
   // Map reference targets as well as fact subjects: an entity that has no
@@ -66,7 +65,6 @@ export async function copyLeafletContents({
           entityIDMap[(data as { value: string }).value];
       if (data.type === "image") data.src = await copyAsset(data.src);
       return {
-        id: v7(),
         entity: entityIDMap[fact.entity],
         attribute: fact.attribute,
         data,
@@ -74,54 +72,15 @@ export async function copyLeafletContents({
     }),
   );
 
-  const entitySetId = v7();
-  const permTokenId = v7();
   const rootEntityId = entityIDMap[rootEntity];
-
-  const entityValues = sql.join(
-    Object.values(entityIDMap).map((id) => sql`(${id}, ${entitySetId})`),
-    sql`, `,
-  );
-  const factValues = sql.join(
-    newFacts.map(
-      (f) =>
-        sql`(${f.id}, ${f.entity}, ${f.attribute}, ${JSON.stringify(f.data)}::jsonb)`,
-    ),
-    sql`, `,
-  );
-  const tail = tailCte?.({ permTokenId, rootEntityId }) ?? sql``;
-
-  const client = await pool.connect();
-  const db = drizzle(client);
-  try {
-    await db.execute(sql`
-      WITH new_set AS (
-        INSERT INTO entity_sets (id) VALUES (${entitySetId})
-      ),
-      new_entities AS (
-        INSERT INTO entities (id, set) VALUES ${entityValues}
-      ),
-      new_token AS (
-        INSERT INTO permission_tokens (id, root_entity, title, description)
-        VALUES (${permTokenId}, ${rootEntityId}, ${title ?? null}, ${description ?? null})
-      ),
-      new_rights AS (
-        INSERT INTO permission_token_rights
-          (token, entity_set, read, write, create_token, change_entity_set)
-        VALUES (${permTokenId}, ${entitySetId}, true, true, true, true)
-      )${
-        newFacts.length > 0
-          ? sql`, new_facts AS (
-        INSERT INTO facts (id, entity, attribute, data) VALUES ${factValues}
-      )`
-          : sql``
-      }${tail}
-      SELECT 1
-    `);
-  } finally {
-    client.release();
-  }
-
+  const { permTokenId } = await insertLeaflet({
+    rootEntityId,
+    entityIds: Object.values(entityIDMap),
+    facts: newFacts,
+    title,
+    description,
+    tailCte,
+  });
   return { permTokenId, rootEntityId };
 }
 

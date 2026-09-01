@@ -1,9 +1,6 @@
 import { cache } from "react";
 import { supabaseServerClient } from "supabase/serverClient";
-import {
-  documentUriFilter,
-  publicationNameOrUriFilter,
-} from "src/utils/uriHelpers";
+import { documentUriFilter } from "src/utils/uriHelpers";
 
 /**
  * Resolves the trailing segment of a publication post URL to a documents
@@ -12,34 +9,31 @@ import {
  * the record path within the publication first and fall back to treating the
  * segment as an rkey.
  *
+ * Takes the caller's already-resolved publication uri so the lookup stays an
+ * indexed scan over that publication's membership rows — a miss (every 404
+ * probe) costs the same as a hit.
+ *
  * Per-request memoized: both generateMetadata and the page body resolve the
- * same segment, and this is one of the heavier queries in the post path.
+ * same segment, and this used to be one of the heavier queries in the post
+ * path.
  */
 export const resolveDocumentFilter = cache(async function resolveDocumentFilter(
   did: string,
-  publicationName: string,
+  publicationUri: string,
   segment: string,
 ): Promise<string> {
   const path = segment.startsWith("/") ? segment : "/" + segment;
-  // plan-checked: KNOWN DEBT — every filter here lives in an !inner embed, so
-  // the limit walks documents_in_publications probing publications + documents
-  // per row, and scans the whole membership table when the segment matches
-  // nothing (every 404 probe). Needs the publication resolved first (callers
-  // usually have it) so this can filter on the indexed publication column.
   const { data } = await supabaseServerClient
     .from("documents_in_publications")
-    .select(
-      "document, documents!inner(uri), publications!inner(uri, name, identity_did)",
-    )
-    .eq("publications.identity_did", did)
-    .or(publicationNameOrUriFilter(did, publicationName), {
-      referencedTable: "publications",
-    })
+    .select("document, documents!inner(uri)")
+    .eq("publication", publicationUri)
     // Record paths may be stored with or without the leading slash
-    .in("documents.data->>path", [path, path.slice(1)])
-    .order("document", { ascending: false })
-    .limit(1);
+    .in("documents.data->>path", [path, path.slice(1)]);
 
-  const uri = data?.[0]?.document;
+  // A path can legally appear on more than one document; the newest uri wins.
+  const uri = data?.reduce<string | undefined>(
+    (max, row) => (!max || row.document > max ? row.document : max),
+    undefined,
+  );
   return uri ? `uri.eq.${uri}` : documentUriFilter(did, segment);
 });

@@ -1,6 +1,9 @@
 {
   "name": "minilink",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=22.13"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -79,7 +82,8 @@
     "hono": "^4.7.11",
     "immer": "^10.2.0",
     "inngest": "^4.2.4",
-    "ioredis": "^5.6.1",
+    "ioredis": "^5.11.1",
+    "jsdom": "^29.1.1",
     "katex": "^0.16.22",
     "l": "^0.6.0",
     "linkifyjs": "^4.2.0",
@@ -129,6 +133,7 @@
     "@cloudflare/workers-types": "^4.20240512.0",
     "@react-email/ui": "^6.0.0",
     "@tailwindcss/postcss": "^4.1.13",
+    "@types/jsdom": "^30.0.0",
     "@types/katex": "^0.16.7",
     "@types/luxon": "^3.7.1",
     "@types/node": "^22.15.17",
@@ -137,7 +142,6 @@
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.21.2",
     "esbuild": "^0.25.4",
-    "jsdom": "^29.1.1",
     "postcss": "^8.4.38",
     "prettier": "3.2.5",
     "supabase": "^1.187.3",

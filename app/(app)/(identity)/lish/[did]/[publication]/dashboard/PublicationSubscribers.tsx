@@ -12,14 +12,13 @@ import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { CheckboxMenuItem, Menu, MenuSeparator } from "components/Menu";
+import type { MembershipTiers, PaidTier } from "src/membership";
 
 export type SubscriberStatus = "subscribed" | "unconfirmed" | "unsubscribed";
 
-// id is null when the member's tier row was deleted (memberships keep the
-// tier FK ON DELETE SET NULL); they still count as a member, just untierable.
-export type MemberTier = { id: string | null; name: string };
-
-export type Tier = { id: string; name: string; is_free: boolean };
+export type MemberTier =
+  | { kind: "subscriber"; name: string }
+  | { kind: "paid"; id: string; name: string };
 
 export type MergedSubscriber = {
   key: string;
@@ -36,24 +35,19 @@ export function PublicationSubscribers(props: {
   publicationShareUrl: string;
   publicationUri: string;
   showPageBackground: boolean;
-  membershipsEnabled: boolean;
-  tiers: Tier[];
+  tiers: MembershipTiers | null;
 }) {
   let smoker = useSmoker();
   let { subscriberStatus } = useDashboardState();
   let { membersOnly, selected, freeSelected, selectedPaidTiers, tierNarrowed } =
-    useTierFilter(props.tiers);
+    useTierFilter(props.tiers?.paid ?? []);
   let filtered = props.subscribers.filter((s) => {
     if (!subscriberStatus[s.status]) return false;
     if (!membersOnly && !freeSelected) return true;
-    // Joining the free tier is a plain subscription with no membership row, so
-    // the free tier is everyone without a paid one.
-    if (!s.memberTier) return freeSelected;
+    if (!s.memberTier) return false;
+    if (s.memberTier.kind === "subscriber") return freeSelected;
     if (!membersOnly) return false;
-    return (
-      !tierNarrowed ||
-      (!!s.memberTier.id && selectedPaidTiers.includes(s.memberTier.id))
-    );
+    return !tierNarrowed || selectedPaidTiers.includes(s.memberTier.id);
   });
 
   let activeStatuses = (
@@ -63,6 +57,7 @@ export function PublicationSubscribers(props: {
     activeStatuses.length === 1 &&
     activeStatuses[0] === "subscribed" &&
     !membersOnly &&
+    !freeSelected &&
     selected.length === 0;
 
   let bgStyle = props.showPageBackground
@@ -76,12 +71,7 @@ export function PublicationSubscribers(props: {
     <DashboardPageLayout
       scrollKey={`dashboard-${props.publicationUri}-Subs`}
       pageTitle="Subscribers"
-      mobileActions={
-        <SubscriberStatusFilter
-          membershipsEnabled={props.membershipsEnabled}
-          tiers={props.tiers}
-        />
-      }
+      mobileActions={<SubscriberStatusFilter tiers={props.tiers} />}
       publication={props.publicationUri}
       showHeader={true}
       controls={
@@ -89,10 +79,7 @@ export function PublicationSubscribers(props: {
           <div className="font-bold text-secondary px-1">
             {filtered.length} Subscriber{filtered.length !== 1 && "s"}
           </div>
-          <SubscriberStatusFilter
-            membershipsEnabled={props.membershipsEnabled}
-            tiers={props.tiers}
-          />
+          <SubscriberStatusFilter tiers={props.tiers} />
         </div>
       }
     >
@@ -233,10 +220,12 @@ function SubscriberDate(props: { createdAt: string }) {
   );
 }
 
-const useTierFilter = (tiers: Tier[]) => {
-  let { membersOnly, memberTiers } = useDashboardState();
-  let selected = memberTiers.filter((id) => tiers.some((t) => t.id === id));
-  let paidTiers = tiers.filter((t) => !t.is_free);
+const useTierFilter = (paidTiers: PaidTier[]) => {
+  let { membersOnly, memberTiers, subscriberTierSelected } =
+    useDashboardState();
+  let selected = memberTiers.filter((id) =>
+    paidTiers.some((tier) => tier.id === id),
+  );
   let selectedPaidTiers = selected.filter((id) =>
     paidTiers.some((t) => t.id === id),
   );
@@ -245,18 +234,16 @@ const useTierFilter = (tiers: Tier[]) => {
     selected,
     paidTiers,
     selectedPaidTiers,
-    freeSelected: tiers.some((t) => t.is_free && selected.includes(t.id)),
+    freeSelected: subscriberTierSelected,
     tierNarrowed:
       selectedPaidTiers.length > 0 &&
       selectedPaidTiers.length < paidTiers.length,
   };
 };
 
-const SubscriberStatusFilter = (props: {
-  membershipsEnabled: boolean;
-  tiers: Tier[];
-}) => {
-  let { subscriberStatus, memberTiers } = useDashboardState();
+const SubscriberStatusFilter = (props: { tiers: MembershipTiers | null }) => {
+  let { subscriberStatus, memberTiers, subscriberTierSelected } =
+    useDashboardState();
   let setState = useSetDashboardState();
   let {
     membersOnly,
@@ -265,7 +252,7 @@ const SubscriberStatusFilter = (props: {
     selectedPaidTiers,
     freeSelected,
     tierNarrowed,
-  } = useTierFilter(props.tiers);
+  } = useTierFilter(props.tiers?.paid ?? []);
 
   let count =
     Object.values(subscriberStatus).filter(Boolean).length +
@@ -298,7 +285,7 @@ const SubscriberStatusFilter = (props: {
     </CheckboxMenuItem>
   );
 
-  const tierCheckbox = (tier: Tier, className?: string) => (
+  const tierCheckbox = (tier: PaidTier, className?: string) => (
     <CheckboxMenuItem
       key={tier.id}
       compact
@@ -309,7 +296,6 @@ const SubscriberStatusFilter = (props: {
         let ids = selected.includes(tier.id)
           ? memberTiers.filter((id) => id !== tier.id)
           : [...memberTiers.filter((id) => id !== tier.id), tier.id];
-        if (tier.is_free) return setState({ memberTiers: ids });
         setMemberTiers(ids);
       }}
     >
@@ -332,13 +318,22 @@ const SubscriberStatusFilter = (props: {
       {statusCheckbox("unconfirmed", "Unconfirmed")}
       {statusCheckbox("unsubscribed", "Unsubscribed")}
 
-      {props.membershipsEnabled && (
+      {props.tiers && (
         <>
           <MenuSeparator />
 
-          {props.tiers
-            .filter((t) => t.is_free)
-            .map((tier) => tierCheckbox(tier))}
+          <CheckboxMenuItem
+            compact
+            checked={subscriberTierSelected}
+            onSelect={(event) => {
+              event.preventDefault();
+              setState({ subscriberTierSelected: !subscriberTierSelected });
+            }}
+          >
+            <span className="truncate min-w-0">
+              {props.tiers.subscriber.name}
+            </span>
+          </CheckboxMenuItem>
 
           <CheckboxMenuItem
             compact
@@ -351,8 +346,6 @@ const SubscriberStatusFilter = (props: {
                 (id) => !paidTiers.some((t) => t.id === id),
               );
               setState({
-                // Set directly rather than derived from the tiers below: a
-                // publication can have members with no paid tier left to check.
                 membersOnly: checked,
                 memberTiers: checked
                   ? [...withoutPaid, ...paidTiers.map((t) => t.id)]
@@ -362,9 +355,7 @@ const SubscriberStatusFilter = (props: {
           >
             Paid Members
           </CheckboxMenuItem>
-          {props.tiers
-            .filter((t) => !t.is_free)
-            .map((tier) => tierCheckbox(tier, "pl-6!"))}
+          {paidTiers.map((tier) => tierCheckbox(tier, "pl-6!"))}
         </>
       )}
     </Menu>

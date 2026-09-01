@@ -23,7 +23,7 @@ export type ChangePreviewState =
 export function useChangePreview(args: {
   enabled: boolean;
   membershipId: string;
-  tierId: string;
+  tierId: string | null;
   cadence: "month" | "year";
 }): ChangePreviewState | null {
   const { enabled, membershipId, tierId, cadence } = args;
@@ -58,26 +58,21 @@ export function useChangePreview(args: {
 
 function changePreviewText(
   preview: MembershipChangePreview,
-  formattedDate: string,
+  effectiveDate: string,
 ): string {
-  const { immediate, amountDueCents, currency, creditCents } = preview;
-  const amount = formatMoney(amountDueCents, currency);
-  const credit = formatMoney(creditCents, currency);
-
-  if (immediate) {
-    if (amountDueCents <= 0) {
-      return creditCents > 0
-        ? `The unused time on your current plan leaves ${credit} in credit toward future invoices.`
-        : "The unused time on your current plan covers the change.";
-    }
-    return `You'll be charged ${amount} now, prorated for the time left on your current plan.`;
+  const { immediate, totalCents, amountDueCents, currency } = preview;
+  if (!immediate) {
+    return `You'll keep your current plan ${
+      effectiveDate
+        ? `until ${effectiveDate}`
+        : "until the end of your billing period"
+    }, then switch. Nothing is charged today.`;
   }
-
-  const when = formattedDate ? `on ${formattedDate}` : "at your next renewal";
-  if (creditCents > 0) {
-    return `Unused time on your current plan leaves ${credit} in credit toward future invoices. Your next invoice will be ${when} for ${amount}.`;
-  }
-  return `Your next invoice will be ${when} for ${amount}, prorated for the change.`;
+  if (totalCents === 0)
+    return "Same price as your current plan, so you switch right away with nothing to pay.";
+  if (amountDueCents <= 0)
+    return "Your account credit covers the rest of this period.";
+  return `You'll be charged ${formatMoney(amountDueCents, currency)} now, prorated for the time left on your current plan.`;
 }
 
 const PREVIEW_DATE_FORMAT: Intl.DateTimeFormatOptions = {
@@ -93,7 +88,7 @@ export function ChangePreviewLine(props: {
   const preview =
     props.state?.status === "ready" ? props.state.preview : undefined;
   const date = useLocalizedDate(
-    preview?.nextInvoiceDate ?? "",
+    preview?.effectiveDate ?? "",
     PREVIEW_DATE_FORMAT,
   );
 
@@ -102,11 +97,11 @@ export function ChangePreviewLine(props: {
     props.state.status === "loading" ? (
       <DotLoader />
     ) : props.state.status === "error" ? (
-      "Changing plans prorates your bill. You'll see the exact amount on your next invoice."
+      "Upgrades are charged now, prorated for the rest of the period. Downgrades take effect when the period ends."
     ) : (
       changePreviewText(
         props.state.preview,
-        props.state.preview.nextInvoiceDate ? date : "",
+        props.state.preview.effectiveDate ? date : "",
       )
     );
 

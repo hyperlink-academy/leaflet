@@ -284,3 +284,55 @@ export async function applyAfterSignInAction(
       return redirect;
   }
 }
+
+export async function readdressIdentitySubscriptions(
+  identityId: string,
+  newEmail: string,
+): Promise<void> {
+  const email = newEmail.trim().toLowerCase();
+  const { data: rows, error } = await supabaseServerClient
+    .from("publication_email_subscribers")
+    .select("id, publication, email, state")
+    .eq("identity_id", identityId);
+  if (error) {
+    console.error("[readdressIdentitySubscriptions] read failed:", error);
+    return;
+  }
+  const atNewAddress = new Map(
+    (rows ?? [])
+      .filter((r) => r.email === email)
+      .map((r) => [r.publication, r]),
+  );
+  const toMove: string[] = [];
+  const toDelete: string[] = [];
+  for (const row of rows ?? []) {
+    if (row.email === email) continue;
+    const existing = atNewAddress.get(row.publication);
+    if (!existing) {
+      toMove.push(row.id);
+    } else if (row.state === "confirmed" && existing.state !== "confirmed") {
+      toDelete.push(existing.id);
+      toMove.push(row.id);
+    } else {
+      toDelete.push(row.id);
+    }
+  }
+  if (toDelete.length) {
+    const { error } = await supabaseServerClient
+      .from("publication_email_subscribers")
+      .delete()
+      .in("id", toDelete);
+    if (error) {
+      console.error("[readdressIdentitySubscriptions] delete failed:", error);
+      return;
+    }
+  }
+  if (toMove.length) {
+    const { error } = await supabaseServerClient
+      .from("publication_email_subscribers")
+      .update({ email })
+      .in("id", toMove);
+    if (error)
+      console.error("[readdressIdentitySubscriptions] update failed:", error);
+  }
+}

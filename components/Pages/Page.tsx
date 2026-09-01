@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { useUIState } from "src/useUIState";
+import React, { useEffect } from "react";
+import { useIsPageFocused, useUIState } from "src/useUIState";
 
 import { elementId } from "src/utils/elementId";
 
@@ -10,6 +10,11 @@ import { useEntity, useReferenceToEntity, useReplicache } from "src/replicache";
 import { DesktopPageFooter } from "../DesktopFooter";
 import { Canvas } from "../Canvas";
 import { Blocks } from "components/Blocks";
+import { Block } from "components/Blocks/Block";
+import { GoBackTiny } from "components/Icons/GoBackTiny";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+import { addShortcut } from "src/shortcuts";
+import { generateKeyBetween } from "fractional-indexing";
 import { PublicationMetadata } from "./PublicationMetadata";
 import { InlineVersionBanner } from "components/VersionBanner";
 import { useLeafletPublicationPage } from "components/PageSWRDataProvider";
@@ -41,19 +46,19 @@ export function Page(props: {
   let { rep } = useReplicache();
   let publicationPage = useLeafletPublicationPage();
 
-  let isFocused = useUIState((s) => {
-    let focusedElement = s.focusedEntity;
-    let focusedPageID =
-      focusedElement?.entityType === "page"
-        ? focusedElement.entityID
-        : focusedElement?.parent;
-    return focusedPageID === props.entityID;
-  });
+  // When zoomed into a list item, that block entity stands in for the page
+  // everywhere content and focus are concerned — blocks rendered under it get
+  // parent = zoomedBlock, so focus checks, toolbars, and mutations all stay
+  // consistent by treating it as the page entity.
+  let zoomedBlock = useUIState((s) => s.zoomedBlocks[props.entityID]);
+  let contentEntityID = zoomedBlock ?? props.entityID;
+
+  let isFocused = useIsPageFocused(contentEntityID);
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
 
   let drawerOpen = useDrawerOpen(props.entityID);
-  let footnoteData = usePageFootnotes(props.entityID);
-  let commentData = usePageEditorComments(props.entityID);
+  let footnoteData = usePageFootnotes(contentEntityID);
+  let commentData = usePageEditorComments(contentEntityID);
   let isRightmostPage = useUIState((s) => {
     let pages = s.openPages;
     if (pages.length === 0) return true;
@@ -70,10 +75,10 @@ export function Page(props: {
               if (e.defaultPrevented) return;
               if (rep) {
                 if (isFocused) return;
-                focusPage(props.entityID, rep);
+                focusPage(contentEntityID, rep);
               }
             }}
-            id={elementId.page(props.entityID).container}
+            id={elementId.page(contentEntityID).container}
             drawerOpen={!!drawerOpen}
             isFocused={isFocused}
             fullPageScroll={props.fullPageScroll}
@@ -88,7 +93,7 @@ export function Page(props: {
             }
             footnoteSideColumn={
               <AnnotationSideColumn
-                pageEntityID={props.entityID}
+                pageEntityID={contentEntityID}
                 visible={sideColumnVisible}
                 fullPageScroll={props.fullPageScroll}
               />
@@ -97,18 +102,24 @@ export function Page(props: {
             {/*this is used in the publication page, for publication information and
           nav*/}
             {props.header}
-            {props.first && pageType === "doc" && !publicationPage && (
-              <PublicationMetadata />
-            )}
+            {props.first &&
+              pageType === "doc" &&
+              !publicationPage &&
+              !zoomedBlock && <PublicationMetadata />}
             {props.first && pageType === "doc" && <InlineVersionBanner />}
-            <PageContent entityID={props.entityID} first={props.first} />
+            <PageContent
+              entityID={props.entityID}
+              first={props.first}
+              zoomedBlock={zoomedBlock}
+            />
+
           </PageWrapper>
-          <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
-          <FootnotePopover pageID={props.entityID} />
+          <DesktopPageFooter pageID={contentEntityID} flow={props.flow} />
+          <FootnotePopover pageID={contentEntityID} />
           <EditorCommentPopover />
           <EditorCommentMobileSheet />
           <EditorCommentAnchorHover />
-          <LinkPopover pageID={props.entityID} />
+          <LinkPopover pageID={contentEntityID} />
         </EditorCommentContext.Provider>
       </FootnoteContext.Provider>
     </CardThemeProvider>
@@ -195,13 +206,20 @@ export const PageWrapper = (props: {
   );
 };
 
-const PageContent = (props: { entityID: string; first?: boolean }) => {
+const PageContent = (props: {
+  entityID: string;
+  first?: boolean;
+  zoomedBlock?: string;
+}) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  if (pageType === "doc") return <DocContent entityID={props.entityID} />;
+  if (pageType === "doc")
+    return (
+      <DocContent entityID={props.entityID} zoomedBlock={props.zoomedBlock} />
+    );
   return <Canvas entityID={props.entityID} first={props.first} />;
 };
 
-const DocContent = (props: { entityID: string }) => {
+const DocContent = (props: { entityID: string; zoomedBlock?: string }) => {
   let { rootEntity } = useReplicache();
 
   let cardBorderHidden = useCardBorderHidden(props.entityID);
@@ -263,12 +281,82 @@ const DocContent = (props: { entityID: string }) => {
           }}
         />
       ) : null}
-      <Blocks entityID={props.entityID} />
+      {props.zoomedBlock ? (
+        <ZoomedBlockContent
+          pageEntity={props.entityID}
+          entityID={props.zoomedBlock}
+        />
+      ) : (
+        <Blocks entityID={props.entityID} />
+      )}
       <FootnoteSection />
       <div className="h-4 sm:h-6 w-full" />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image
     without affecting the opacity of the rest of the page */}
+    </>
+  );
+};
+
+const ZoomedBlockContent = (props: {
+  pageEntity: string;
+  entityID: string;
+}) => {
+  let [reference] = useReferenceToEntity("card/block", props.entityID);
+  let type = useEntity(props.entityID, "block/type");
+  let firstChild = useBlocks(props.entityID)[0] ?? null;
+  let zoomOut = useUIState((state) => state.zoomOutOfBlock);
+  let isFocused = useIsPageFocused(props.entityID);
+  let parentEntity = reference?.entity;
+  let titleBlock: Block | null =
+    reference && type
+      ? {
+          entityID: props.entityID,
+          factID: reference.id,
+          parent: props.entityID,
+          position: generateKeyBetween(null, firstChild?.position ?? null),
+          type: type.data.value,
+        }
+      : null;
+
+  useEffect(() => {
+    if (!isFocused) return;
+    return addShortcut({
+      metaKey: true,
+      shift: true,
+      key: ["H", "h"],
+      handler: () => {
+        if (!parentEntity || parentEntity === props.pageEntity)
+          zoomOut(props.pageEntity);
+        else useUIState.getState().zoomIntoBlock(props.entityID, parentEntity);
+      },
+    });
+  }, [isFocused, parentEntity, props.entityID, props.pageEntity, zoomOut]);
+
+  return (
+    <>
+      <div className="px-3 sm:px-4 pt-2 sm:pt-3">
+        <button
+          className="flex items-center gap-1 text-sm text-tertiary hover:text-accent-contrast"
+          onClick={(event) => {
+            event.preventDefault();
+            zoomOut(props.pageEntity);
+          }}
+        >
+          <GoBackTiny /> back to full document
+        </button>
+      </div>
+      {titleBlock && (
+        <Block
+          {...titleBlock}
+          key={titleBlock.entityID}
+          pageType="doc"
+          previousBlock={null}
+          nextBlock={firstChild}
+          nextPosition={firstChild?.position ?? null}
+        />
+      )}
+      <Blocks entityID={props.entityID} zoomTitleBlock={titleBlock} />
     </>
   );
 };

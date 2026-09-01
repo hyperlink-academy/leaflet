@@ -66,48 +66,26 @@ export function CancelMembershipForm(props: {
     router.refresh();
   };
 
-  const unsubscribe = async () => {
-    if (busy) return;
-    setBusy(true);
-    const res = await unsubscribeFromPublication(m.publication, {
-      cancelPaidImmediately: true,
-    });
-    setBusy(false);
-    if (!res.ok) {
-      toaster({
-        type: "error",
-        content: "We couldn't unsubscribe you. Please try again!",
-      });
-      return;
-    }
-    toaster({
-      type: "success",
-      content: "Unsubscribed from updates.",
-    });
-    mutateMyMembership(m.publication);
-    props.onSuccess();
-    refreshIdentityData();
-    router.refresh();
-  };
-
   if (canceled)
     return (
       <div className="flex flex-col gap-3 text-center justify-center">
         <div className="text-secondary leading-snug flex flex-col">
-          <strong>Your membership has been cancelled.</strong>
+          <strong>Your membership has been cancelled!</strong>
           <p>
-            You will continue to receive updates until{" "}
+            You will continue to receive updates and access member posts until{" "}
+            <br />
             <strong>
               {m.currentPeriodEnd ? endDate : "the end of your billing period"}
             </strong>
-            . Stop receiving updates now?
+            .
           </p>
         </div>
-        <ButtonTertiary type="button" disabled={busy} onClick={unsubscribe}>
-          {busy ? <DotLoader /> : "Stop Updates"}
-        </ButtonTertiary>
-        <hr />
-        <ButtonPrimary type="button" disabled={busy} onClick={props.onSuccess}>
+        <ButtonPrimary
+          type="button"
+          fullWidth
+          disabled={busy}
+          onClick={props.onSuccess}
+        >
           Close
         </ButtonPrimary>
       </div>

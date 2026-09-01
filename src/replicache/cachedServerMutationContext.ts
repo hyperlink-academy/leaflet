@@ -21,6 +21,7 @@ export function cachedServerMutationContext(
   permission_token_id: string,
   token_rights: PermissionToken["permission_token_rights"],
   sessionDid: string | null,
+  rootEntity: string,
   options?: { trustedAuthorWrites?: boolean },
 ) {
   let trustedAuthorWrites = options?.trustedAuthorWrites ?? false;
@@ -121,6 +122,8 @@ export function cachedServerMutationContext(
     } = {
       scanIndex,
       permission_token_id,
+      rootEntity,
+      sessionDid,
       async runOnServer(cb) {
         return cb({ supabase: supabaseServerClient });
       },

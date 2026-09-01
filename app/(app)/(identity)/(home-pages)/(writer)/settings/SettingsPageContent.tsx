@@ -11,8 +11,8 @@ import { useIdentityData } from "components/IdentityProvider";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
 import { BillingTab } from "./BillingTab";
 import type { MyMembershipsData } from "actions/memberships";
-import { DomainTab } from "./domains/DomainTab";
 import { MonetizationTab } from "./MonetizationTab";
+import { GeneralTab } from "./GeneralTab";
 
 export type MonetizationPub = {
   uri: string;
@@ -21,7 +21,7 @@ export type MonetizationPub = {
   monetizationEnabled: boolean;
 };
 
-type SettingsTab = "domains" | "billing" | "monetization" | "pro";
+type SettingsTab = "general" | "billing" | "monetization" | "pro";
 
 export function SettingsPageContent(props: {
   memberships: MyMembershipsData | null;
@@ -31,7 +31,7 @@ export function SettingsPageContent(props: {
   let searchParams = useSearchParams();
 
   let tabs: { value: SettingsTab; label: string }[] = [
-    { value: "domains", label: "Domains" },
+    { value: "general", label: "General" },
     { value: "billing", label: "Billing" },
     ...(canSeePayments
       ? [{ value: "monetization" as const, label: "Monetization" }]
@@ -43,7 +43,7 @@ export function SettingsPageContent(props: {
     tabs,
     // Returning from the hosted card-update page lands on /settings with only
     // a wallet_session param; the billing tab owns processing it.
-    searchParams.get("wallet_session") ? "billing" : "domains",
+    searchParams.get("wallet_session") ? "billing" : "general",
   );
 
   let onTabChange = (value: SettingsTab) => {
@@ -63,7 +63,7 @@ export function SettingsPageContent(props: {
       {/* The header (and the tab bar in it) only renders on desktop. */}
       <div className="sm:hidden pb-2">{tabBar}</div>
       <SettingsPageLayout>
-        {tab === "domains" && <DomainTab />}
+        {tab === "general" && <GeneralTab />}
         {tab === "billing" && (
           <BillingTab
             initial={props.memberships ?? { memberships: [], wallet: null }}

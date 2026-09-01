@@ -31,11 +31,6 @@ export async function generateMetadata(props: {
     .select("*, documents_in_publications(publications(*))")
     .or(documentUriFilter(did, params.rkey))
     .order("uri", { ascending: false })
-    // A document can legally join two publications, and the [0] pick below
-    // decides the canonical URL; without an embed order it varies between
-    // renders and the page would advertise a different canonical each time
-    // ISR regenerates. Same ordering as getPostPageData so both agree.
-    .order("publication", { referencedTable: "documents_in_publications" })
     .limit(1);
   let document = documents?.[0];
 

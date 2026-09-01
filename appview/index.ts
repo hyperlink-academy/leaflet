@@ -87,7 +87,7 @@ async function notifyRevalidate(event: AppviewRevalidateEvent) {
 async function deleteDocumentAndRevalidate(uri: string) {
   let { data: doc } = await supabase
     .from("documents")
-    .select("data, documents_in_publications(publication)")
+    .select("data, sort_date, documents_in_publications(publication)")
     .eq("uri", uri)
     .maybeSingle();
   await supabase.from("documents").delete().eq("uri", uri);
@@ -95,9 +95,9 @@ async function deleteDocumentAndRevalidate(uri: string) {
     kind: "document",
     uri,
     snapshot: {
-      publications:
-        doc?.documents_in_publications.map((r) => r.publication) ?? [],
+      publication: doc?.documents_in_publications[0]?.publication ?? null,
       path: (doc?.data as { path?: string } | null)?.path ?? null,
+      sort_date: doc?.sort_date ?? null,
     },
   });
 }

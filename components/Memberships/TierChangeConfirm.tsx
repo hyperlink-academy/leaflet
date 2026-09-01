@@ -3,12 +3,8 @@ import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
-import {
-  isFreeTier,
-  tierPriceLabel,
-  type Tier,
-  type Cadence,
-} from "./TierGrid";
+import { tierPriceLabel, type Cadence, type MembershipPlan } from "./TierGrid";
+import type { MembershipTiers } from "src/membership";
 import { useChangePreview, ChangePreviewLine } from "./changePreview";
 
 type ChangingMembership = {
@@ -16,12 +12,13 @@ type ChangingMembership = {
   tierId: string | null;
   cadence: string | null;
   currentPeriodEnd: string | null;
+  pendingPlan?: { tierName: string | null } | null;
 };
 
 type TierChangeConfirmProps = {
   membership: ChangingMembership;
-  tiers: Tier[];
-  newTier: Tier;
+  tiers: MembershipTiers;
+  newPlan: MembershipPlan;
   cadence: Cadence;
   busy: boolean;
   onConfirm: () => void;
@@ -30,14 +27,16 @@ type TierChangeConfirmProps = {
 
 export function TierChangeConfirm(props: TierChangeConfirmProps) {
   const { membership } = props;
-  const free = isFreeTier(props.newTier);
-  const currentTier = props.tiers.find((t) => t.id === membership.tierId);
+  const free = props.newPlan.kind === "subscriber";
+  const currentTier = props.tiers.paid.find(
+    (tier) => tier.id === membership.tierId,
+  );
   const currentCadence: Cadence =
     membership.cadence === "year" ? "year" : "month";
   const preview = useChangePreview({
     enabled: !free,
     membershipId: membership.id,
-    tierId: props.newTier.id,
+    tierId: props.newPlan.kind === "paid" ? props.newPlan.tier.id : null,
     cadence: props.cadence,
   });
   const endDate = useLocalizedDate(membership.currentPeriodEnd ?? "", {
@@ -60,8 +59,10 @@ export function TierChangeConfirm(props: TierChangeConfirmProps) {
             </>
           )}
           <div className="accent-container w-fit py-0.5 px-2 font-bold text-accent-contrast border border-accent-contrast">
-            {props.newTier.name}
-            {!free && <> · {tierPriceLabel(props.newTier, props.cadence)}</>}
+            {props.newPlan.tier.name}
+            {props.newPlan.kind === "paid" && (
+              <> · {tierPriceLabel(props.newPlan.tier, props.cadence)}</>
+            )}
           </div>
         </div>
       </div>
@@ -77,6 +78,12 @@ export function TierChangeConfirm(props: TierChangeConfirmProps) {
           state={preview}
           className="text-tertiary text-sm text-center mx-auto"
         />
+      )}
+      {membership.pendingPlan && (
+        <div className="text-tertiary text-sm">
+          This replaces your scheduled switch to{" "}
+          {membership.pendingPlan.tierName ?? "another plan"}.
+        </div>
       )}
       <div className="flex gap-3 mx-auto">
         <ButtonTertiary type="button" onClick={props.onClose}>

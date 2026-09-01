@@ -25,6 +25,7 @@ import { callRPC } from "app/api/rpc/client";
 import { UndoManager } from "@rocicorp/undo";
 import { addShortcut } from "src/shortcuts";
 import { createUndoManager } from "src/undoManager";
+import { useIdentityData } from "components/IdentityProvider";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { YjsRealtimeProvider } from "src/yjsRealtime";
 
@@ -108,6 +109,11 @@ export function ReplicacheProvider(props: {
   let [undoManager] = useState(createUndoManager());
   let tokenRef = useRef(props.token);
   tokenRef.current = props.token;
+  let rootEntityRef = useRef(props.rootEntity);
+  rootEntityRef.current = props.rootEntity;
+  let { identity } = useIdentityData();
+  let sessionDidRef = useRef<string | null>(null);
+  sessionDidRef.current = identity?.atp_did ?? null;
   let token_signature = tokenSignature(props.token);
   useEffect(() => {
     return addShortcut([
@@ -158,6 +164,8 @@ export function ReplicacheProvider(props: {
                 args,
                 clientMutationContext(tx, {
                   permission_token_id: tokenRef.current.id,
+                  rootEntity: rootEntityRef.current,
+                  sessionDid: sessionDidRef.current,
                   undoManager,
                   rep: newRep,
                   ignoreUndo: args.ignoreUndo || tx.reason !== "initial",

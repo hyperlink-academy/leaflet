@@ -4,7 +4,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { getPublicationURL } from "src/utils/getPublicationURL";
-import { filterJoinableTiers } from "src/membership";
+import { buildMembershipTiers } from "src/membership";
 import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
@@ -16,9 +16,9 @@ async function fetchPublicationForJoin(did: string, publicationName: string) {
     .from("publications")
     .select(
       `uri, name, identity_did, record,
-       publication_membership_settings(enabled),
+       publication_membership_settings(enabled, subscriber_tier_name, subscriber_tier_description),
        publication_newsletter_settings(enabled),
-       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, stripe_price_monthly_id, is_free)`,
+       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order)`,
     )
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publicationName))
@@ -52,16 +52,10 @@ export default async function JoinPage(props: {
     notFound();
 
   const record = normalizePublicationRecord(publication.record);
-  const tiers = filterJoinableTiers(
+  const tiers = buildMembershipTiers(
+    publication.publication_membership_settings,
     publication.publication_membership_tiers,
-  ).map((t) => ({
-    id: t.id,
-    name: t.name,
-    description: t.description,
-    monthly_price_cents: t.monthly_price_cents,
-    annual_price_cents: t.annual_price_cents,
-    is_free: t.is_free,
-  }));
+  );
 
   return (
     <PublicationThemeProvider

@@ -4,8 +4,10 @@ import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublication";
 import { getStripe } from "stripe/client";
+import { releasePendingDowngradesToTier } from "stripe/schedules";
 import { Ok, Err, type Result } from "src/result";
 import { tierDescriptionPlainText } from "src/utils/tierDescriptionDoc";
+import { LIVE_MEMBERSHIP_STATUSES } from "src/membership";
 
 type ToggleError =
   | "unauthorized"
@@ -16,6 +18,7 @@ type TierError =
   | "unauthorized"
   | "invalid_tier"
   | "tier_not_found"
+  | "tier_has_members"
   | "no_connected_account"
   | "database_error"
   | "stripe_error";
@@ -59,36 +62,8 @@ export async function enableMemberships(
     console.error("[membershipSettings] enable upsert failed:", error);
     return Err("database_error");
   }
-  await ensureFreeTier(publicationUri);
   await revalidatePublicationSettingsPaths(publicationUri);
   return Ok(null);
-}
-
-// Every membership publication offers one always-free tier: readers who pick it
-// just subscribe to the pub (no paid membership, no Stripe). It's created here
-// on enable and can't be removed or priced; the owner can only rename it.
-async function ensureFreeTier(publicationUri: string) {
-  const { data: existing } = await supabaseServerClient
-    .from("publication_membership_tiers")
-    .select("id")
-    .eq("publication", publicationUri)
-    .eq("is_free", true)
-    .maybeSingle();
-  if (existing) return;
-  const { error } = await supabaseServerClient
-    .from("publication_membership_tiers")
-    .insert({
-      publication: publicationUri,
-      name: "Free",
-      description: "Subscribe for free to get notified about new posts.",
-      monthly_price_cents: 0,
-      annual_price_cents: null,
-      is_free: true,
-      active: true,
-      sort_order: 0,
-    });
-  if (error)
-    console.error("[membershipSettings] free tier insert failed:", error);
 }
 
 // Disabling is not supported: active members hold direct-charge subscriptions on
@@ -108,11 +83,49 @@ export type MembershipTierInput = {
   sort_order?: number;
 };
 
+export type SubscriberTierInput = {
+  name: string;
+  description?: string | null;
+};
+
+export async function updateSubscriberTier(
+  publicationUri: string,
+  tier: SubscriberTierInput,
+): Promise<Result<null, "unauthorized" | "invalid_tier" | "database_error">> {
+  const owner = await assertPublicationOwner(publicationUri);
+  if (!owner) return Err("unauthorized");
+
+  const name = tier.name.trim();
+  const description = tier.description?.trim() || null;
+  if (!name || name.length > 200 || (description?.length ?? 0) > 20_000)
+    return Err("invalid_tier");
+
+  const { error } = await supabaseServerClient
+    .from("publication_membership_settings")
+    .upsert(
+      {
+        publication: publicationUri,
+        subscriber_tier_name: name,
+        subscriber_tier_description: description,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "publication" },
+    );
+  if (error) {
+    console.error("[membershipSettings] subscriber tier update failed:", error);
+    return Err("database_error");
+  }
+
+  await revalidatePublicationSettingsPaths(publicationUri);
+  return Ok(null);
+}
+
 // Stripe's minimum charge is $0.50; require at least $1 to leave room for fees.
 const MIN_PRICE_CENTS = 100;
 
 function validTierInput(tier: MembershipTierInput): boolean {
-  if (!tier.name.trim()) return false;
+  const name = tier.name.trim();
+  if (!name || name.length > 200) return false;
   if (
     !Number.isInteger(tier.monthly_price_cents) ||
     tier.monthly_price_cents < MIN_PRICE_CENTS
@@ -152,30 +165,26 @@ export async function upsertMembershipTier(
     existing = data;
   }
 
-  // The free tier has no price and no Stripe product — the owner can only
-  // rename it (and edit its description); it stays free and active.
-  if (existing?.is_free) {
-    if (!name) return Err("invalid_tier");
-    const { error } = await supabaseServerClient
-      .from("publication_membership_tiers")
-      .update({
-        name,
-        description,
-        monthly_price_cents: 0,
-        annual_price_cents: null,
-        active: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
+  if (!validTierInput(tier)) return Err("invalid_tier");
+
+  // Existing members keep their old Stripe price, so a change would split the
+  // tier across two prices; offer a new tier instead.
+  if (
+    existing &&
+    (existing.monthly_price_cents !== tier.monthly_price_cents ||
+      existing.annual_price_cents !== (tier.annual_price_cents ?? null))
+  ) {
+    const { count, error } = await supabaseServerClient
+      .from("publication_memberships")
+      .select("id", { count: "exact", head: true })
+      .or(`tier.eq.${existing.id},pending_tier.eq.${existing.id}`)
+      .in("status", LIVE_MEMBERSHIP_STATUSES);
     if (error) {
-      console.error("[membershipSettings] free tier update failed:", error);
+      console.error("[membershipSettings] member count failed:", error);
       return Err("database_error");
     }
-    await revalidatePublicationSettingsPaths(publicationUri);
-    return Ok({ id: existing.id });
+    if (count) return Err("tier_has_members");
   }
-
-  if (!validTierInput(tier)) return Err("invalid_tier");
 
   // Products and prices are provisioned on the publisher's connected account
   // (direct-charge model), so we need that account before touching Stripe.
@@ -344,11 +353,10 @@ export async function deleteMembershipTier(
     .eq("publication", publicationUri)
     .maybeSingle();
   if (!existing) return Err("tier_not_found");
-  // The free tier is permanent — every membership publication keeps it.
-  if (existing.is_free) return Err("invalid_tier");
 
   const stripe = getStripe();
   try {
+    await releasePendingDowngradesToTier(existing.id);
     for (const priceId of [
       existing.stripe_price_monthly_id,
       existing.stripe_price_annual_id,

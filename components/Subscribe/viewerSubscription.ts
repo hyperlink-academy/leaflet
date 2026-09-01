@@ -12,7 +12,9 @@ export type ViewerUser = {
   handle: string | undefined;
 } & SubscriptionState;
 
-export function useViewerSubscription(publicationUri: string): ViewerUser {
+export function useViewerSubscription(
+  publicationUri: string | undefined,
+): ViewerUser {
   const { identity } = useIdentityData();
 
   return useMemo(() => {

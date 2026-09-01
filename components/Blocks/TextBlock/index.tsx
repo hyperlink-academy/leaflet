@@ -142,7 +142,13 @@ export function RenderedTextBlock(props: {
   pageID?: string;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
-  let headingLevel = useEntity(props.entityID, "block/heading-level");
+  let storedHeadingLevel = useEntity(props.entityID, "block/heading-level");
+  let headingLevel =
+    props.pageID === props.entityID
+      ? 1
+      : props.type === "heading"
+        ? storedHeadingLevel?.data.value || 1
+        : undefined;
   let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
@@ -168,11 +174,11 @@ export function RenderedTextBlock(props: {
           className={`${props.className}
             pointer-events-none italic text-tertiary flex flex-col `}
         >
-          {headingLevel?.data.value === 1
+          {headingLevel === 1
             ? "Title"
-            : headingLevel?.data.value === 2
+            : headingLevel === 2
               ? "Header"
-              : headingLevel?.data.value === 3
+              : headingLevel === 3
                 ? "Subheader"
                 : "write something…"}
           <div className=" text-xs font-normal">
@@ -193,9 +199,7 @@ export function RenderedTextBlock(props: {
     <div
       style={{
         wordBreak: "break-word",
-        ...(props.type === "heading"
-          ? { fontSize: headingFontSize[headingLevel?.data.value || 1] }
-          : {}),
+        ...(headingLevel ? { fontSize: headingFontSize[headingLevel] } : {}),
       }}
       onClick={(e) => {
         let target = e.target as HTMLElement;
@@ -212,8 +216,8 @@ export function RenderedTextBlock(props: {
       }}
       className={`
         ${alignmentClass}
-        ${props.type === "blockquote" ? (props.previousBlock?.type === "blockquote" ? `blockquote pt-3 ` : "blockquote") : ""}
-        ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
+        ${props.type === "blockquote" && !headingLevel ? (props.previousBlock?.type === "blockquote" ? `blockquote pt-3 ` : "blockquote") : ""}
+        ${headingLevel ? HeadingStyle[headingLevel] : textStyle}
       w-full whitespace-pre-wrap outline-hidden ${props.className} `}
     >
       {content}
@@ -222,7 +226,13 @@ export function RenderedTextBlock(props: {
 }
 
 function BaseTextBlock(props: BlockProps & { className?: string }) {
-  let headingLevel = useEntity(props.entityID, "block/heading-level");
+  let storedHeadingLevel = useEntity(props.entityID, "block/heading-level");
+  let headingLevel =
+    props.parent === props.entityID
+      ? 1
+      : props.type === "heading"
+        ? storedHeadingLevel?.data.value || 1
+        : undefined;
   let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
@@ -263,7 +273,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
         className={`relative flex items-center justify-between
           ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
           ${
-            props.type === "blockquote"
+            props.type === "blockquote" && !headingLevel
               ? props.previousBlock?.type === "blockquote" && !props.listData
                 ? "blockquote w-auto pt-3"
                 : "blockquote w-auto"
@@ -288,12 +298,11 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
           // forces break if a single text string (e.g. a url) spans more than a full line
           style={{
             wordBreak: "break-word",
-            fontFamily:
-              props.type === "heading"
-                ? "var(--theme-heading-font)"
-                : "var(--theme-font)",
-            ...(props.type === "heading"
-              ? { fontSize: headingFontSize[headingLevel?.data.value || 1] }
+            fontFamily: headingLevel
+              ? "var(--theme-heading-font)"
+              : "var(--theme-font)",
+            ...(headingLevel
+              ? { fontSize: headingFontSize[headingLevel] }
               : {}),
           }}
           className={`
@@ -302,7 +311,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
           outline-hidden
           ${focused ? "block-focused" : ""}
 
-          ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
+          ${headingLevel ? HeadingStyle[headingLevel] : textStyle}
           ${props.className}`}
           ref={mountRef}
         />
@@ -319,14 +328,15 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
         {/* The overlays subscribe to the block's editor text; only mount them
             when one of them could show, so unfocused blocks carry no
             per-keystroke store subscription at all. */}
-        {((props.previousBlock === null && props.nextBlock === null) ||
+        {((props.previousBlock === null &&
+          (props.nextBlock === null || props.parent === props.entityID)) ||
           focused ||
           selected) && (
           <TextBlockOverlays
             {...props}
             focused={focused}
             selected={selected}
-            headingLevel={headingLevel?.data.value}
+            headingLevel={headingLevel}
             alignmentClass={alignmentClass}
             textStyle={textStyle}
           />
@@ -355,25 +365,25 @@ const TextBlockOverlays = (
     <>
       {textContent.length === 0 &&
       props.previousBlock === null &&
-      props.nextBlock === null ? (
+      (props.nextBlock === null || props.parent === props.entityID) ? (
         // if this is the only block on the page and is empty or is a canvas, show placeholder
         <div
           style={
-            props.type === "heading"
-              ? { fontSize: headingFontSize[props.headingLevel || 1] }
+            props.headingLevel
+              ? { fontSize: headingFontSize[props.headingLevel] }
               : undefined
           }
           className={`${props.className} ${props.alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
-              ${props.type === "heading" ? HeadingStyle[props.headingLevel || 1] : props.textStyle}
+              ${props.headingLevel ? HeadingStyle[props.headingLevel] : props.textStyle}
               `}
         >
-          {props.type === "text"
-            ? "write something…"
-            : props.headingLevel === 3
-              ? "Subheader"
-              : props.headingLevel === 2
-                ? "Header"
-                : "Title"}
+          {props.headingLevel === 3
+            ? "Subheader"
+            : props.headingLevel === 2
+              ? "Header"
+              : props.headingLevel === 1
+                ? "Title"
+                : "write something…"}
           <div className=" text-xs font-normal">
             or type &quot;/&quot; to add a block
           </div>

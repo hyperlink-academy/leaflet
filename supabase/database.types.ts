@@ -1355,18 +1355,24 @@ export type Database = {
           created_at: string
           enabled: boolean
           publication: string
+          subscriber_tier_description: string | null
+          subscriber_tier_name: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           enabled?: boolean
           publication: string
+          subscriber_tier_description?: string | null
+          subscriber_tier_name?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           enabled?: boolean
           publication?: string
+          subscriber_tier_description?: string | null
+          subscriber_tier_name?: string
           updated_at?: string
         }
         Relationships: [
@@ -1387,7 +1393,6 @@ export type Database = {
           currency: string
           description: string | null
           id: string
-          is_free: boolean
           monthly_price_cents: number
           name: string
           publication: string
@@ -1404,7 +1409,6 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
-          is_free?: boolean
           monthly_price_cents: number
           name: string
           publication: string
@@ -1421,7 +1425,6 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
-          is_free?: boolean
           monthly_price_cents?: number
           name?: string
           publication?: string
@@ -1449,13 +1452,15 @@ export type Database = {
           current_period_end: string | null
           id: string
           identity_id: string
+          pending_cadence: string | null
+          pending_tier: string | null
           publication: string
           status: string | null
           stripe_account_id: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
           stripe_subscription_id: string | null
-          tier: string | null
+          tier: string
           updated_at: string
         }
         Insert: {
@@ -1465,13 +1470,15 @@ export type Database = {
           current_period_end?: string | null
           id?: string
           identity_id: string
+          pending_cadence?: string | null
+          pending_tier?: string | null
           publication: string
           status?: string | null
           stripe_account_id?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
-          tier?: string | null
+          tier: string
           updated_at?: string
         }
         Update: {
@@ -1481,13 +1488,15 @@ export type Database = {
           current_period_end?: string | null
           id?: string
           identity_id?: string
+          pending_cadence?: string | null
+          pending_tier?: string | null
           publication?: string
           status?: string | null
           stripe_account_id?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
-          tier?: string | null
+          tier?: string
           updated_at?: string
         }
         Relationships: [
@@ -1499,6 +1508,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "publication_memberships_pending_tier_fkey"
+            columns: ["pending_tier"]
+            isOneToOne: false
+            referencedRelation: "publication_membership_tiers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "publication_memberships_publication_fkey"
             columns: ["publication"]
             isOneToOne: false
@@ -1506,11 +1522,11 @@ export type Database = {
             referencedColumns: ["uri"]
           },
           {
-            foreignKeyName: "publication_memberships_tier_fkey"
-            columns: ["tier"]
+            foreignKeyName: "publication_memberships_tier_publication_fkey"
+            columns: ["tier", "publication"]
             isOneToOne: false
             referencedRelation: "publication_membership_tiers"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "publication"]
           },
         ]
       }
@@ -2718,4 +2734,3 @@ export type Enums<
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
-

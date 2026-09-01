@@ -143,6 +143,7 @@ export async function restoreDocumentVersion(args: {
         tokenId,
         token_rights,
         authorDid,
+        rootEntity,
         { trustedAuthorWrites: true },
       );
       let ctx = getContext("version-restore", 0);

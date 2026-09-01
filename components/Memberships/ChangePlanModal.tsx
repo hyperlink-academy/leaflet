@@ -2,31 +2,48 @@
 import { refreshIdentityData } from "components/IdentityProvider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { Modal, useModalBack } from "components/Modal";
 import { useToaster } from "components/Toast";
 import {
   changeMembershipToFree,
-  resumeMembership,
   changeMembership,
   type MyMembership,
 } from "actions/memberships";
 import { TierChangeConfirm } from "components/Memberships/TierChangeConfirm";
-import { useJoinableTiers } from "components/Memberships/useJoinableTiers";
+import { mutateMyMembership } from "components/Memberships/useMyMembership";
+import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
 import {
   TierGrid,
   formatPrice,
-  isFreeTier,
   effectiveCadence,
-  type Tier,
+  tierPriceLabel,
+  type MembershipPlan,
   type Cadence,
 } from "components/Memberships/TierGrid";
+import type { GatePolicy, MembershipTiers } from "src/membership";
 
 export function membershipPrice(m: MyMembership): string | null {
   const cents = m.cadence === "year" ? m.annualPriceCents : m.monthlyPriceCents;
   if (cents == null) return null;
   return `${formatPrice(cents)}/${m.cadence === "year" ? "yr" : "mo"}`;
+}
+
+// "Switches to Supporter · $5/mo on Sep 1" for a scheduled downgrade.
+export function pendingPlanLabel(
+  m: MyMembership,
+  formattedDate: string,
+): string | null {
+  const p = m.pendingPlan;
+  if (!p) return null;
+  const price =
+    p.priceCents == null
+      ? ""
+      : ` · ${formatPrice(p.priceCents)}/${p.cadence === "year" ? "yr" : "mo"}`;
+  const when = formattedDate ? ` on ${formattedDate}` : "";
+  return `Switches to ${p.tierName ?? "another plan"}${price}${when}`;
 }
 
 export function isMembershipActive(status: string | null): boolean {
@@ -36,28 +53,10 @@ export function isMembershipActive(status: string | null): boolean {
 export function MembershipActions(props: {
   membership: MyMembership;
   onChangePlan: () => void;
+  onResume: () => void;
   onCancel?: () => void;
-  onChanged?: () => void;
 }) {
   const m = props.membership;
-  const toaster = useToaster();
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-
-  const resume = async () => {
-    if (busy) return;
-    setBusy(true);
-    const res = await resumeMembership(m.id);
-    setBusy(false);
-    if (!res.ok) {
-      toaster({ type: "error", content: "Couldn't resume. Please try again." });
-      return;
-    }
-    toaster({ type: "success", content: "Membership resumed." });
-    props.onChanged?.();
-    refreshIdentityData();
-    router.refresh();
-  };
 
   if (!isMembershipActive(m.status)) return null;
   return (
@@ -67,23 +66,20 @@ export function MembershipActions(props: {
           className="text-sm"
           type="button"
           compact
-          disabled={busy}
-          onClick={resume}
+          onClick={props.onResume}
         >
-          {busy ? <DotLoader /> : "Resume"}
+          Resume
         </ButtonPrimary>
       ) : (
         <>
-          {m.availableTiers.length > 0 && (
-            <ButtonPrimary
-              className="text-sm"
-              type="button"
-              compact
-              onClick={props.onChangePlan}
-            >
-              Change
-            </ButtonPrimary>
-          )}
+          <ButtonPrimary
+            className="text-sm"
+            type="button"
+            compact
+            onClick={props.onChangePlan}
+          >
+            Change
+          </ButtonPrimary>
           {props.onCancel && (
             <ButtonSecondary
               className="text-sm"
@@ -103,16 +99,30 @@ export function MembershipActions(props: {
 export function ChangePlanModal(props: {
   membership: MyMembership;
   onClose: () => void;
+  onSuccess?: () => void;
+  title?: string;
+  gatePolicy?: GatePolicy | null;
 }) {
   return (
     <Modal
       open
       onOpenChange={(o) => !o && props.onClose()}
-      title=<h2 className="mx-auto text-center pb-2">Change your membership</h2>
+      title={
+        <h2 className="mx-auto text-center pb-2">
+          {props.title ? props.title : "Change your membership"}
+        </h2>
+      }
       className="max-w-full w-fit bg-[var(--color-bg-light)]!"
       sheetOnMobile
     >
-      <ChangePlanForm membership={props.membership} onSuccess={props.onClose} />
+      <ChangePlanForm
+        membership={props.membership}
+        gatePolicy={props.gatePolicy}
+        onSuccess={() => {
+          props.onSuccess?.();
+          props.onClose();
+        }}
+      />
     </Modal>
   );
 }
@@ -120,34 +130,46 @@ export function ChangePlanModal(props: {
 export function ChangePlanForm(props: {
   membership: MyMembership;
   onSuccess: () => void;
+  gatePolicy?: GatePolicy | null;
+  // Skips the tiers fetch when the host already has them (the join flow).
+  tiers?: MembershipTiers;
 }) {
   const m = props.membership;
   const toaster = useToaster();
   const router = useRouter();
 
-  const { tiers } = useJoinableTiers(m.publication);
+  const { tiers: fetchedTiers } = useMembershipTiers(
+    props.tiers ? undefined : m.publication,
+  );
+  const tiers = props.tiers ?? fetchedTiers;
   const [cadence, setCadence] = useState<Cadence>(
     m.cadence === "year" ? "year" : "month",
   );
-  const [confirmTier, setConfirmTier] = useState<Tier | null>(null);
+  const [confirmPlan, setConfirmPlan] = useState<MembershipPlan | null>(null);
+  const [changed, setChanged] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  useModalBack(confirmTier ? () => setConfirmTier(null) : null);
+  useModalBack(confirmPlan ? () => setConfirmPlan(null) : null);
+  const periodEnd = useLocalizedDate(m.currentPeriodEnd ?? "", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 
-  const finish = (message: string) => {
-    toaster({ type: "success", content: message });
-    setConfirmTier(null);
-    props.onSuccess();
+  const finish = (detail: string) => {
+    setConfirmPlan(null);
+    setChanged(detail);
+    mutateMyMembership(m.publication);
     refreshIdentityData();
     router.refresh();
   };
 
-  const save = async (tier: Tier) => {
+  const save = async (plan: Extract<MembershipPlan, { kind: "paid" }>) => {
     if (saving) return;
     setSaving(true);
     const res = await changeMembership({
       membershipId: m.id,
-      tierId: tier.id,
-      cadence: effectiveCadence(tier, cadence),
+      tierId: plan.tier.id,
+      cadence: effectiveCadence(plan.tier, cadence),
     });
     setSaving(false);
     if (!res.ok) {
@@ -157,7 +179,19 @@ export function ChangePlanForm(props: {
       });
       return;
     }
-    finish("Plan updated.");
+    const price = tierPriceLabel(
+      plan.tier,
+      effectiveCadence(plan.tier, cadence),
+    );
+    finish(
+      res.value.immediate
+        ? `You're now on the ${plan.tier.name} plan, at ${price}.`
+        : `You'll move to the ${plan.tier.name} plan, at ${price}, ${
+            m.currentPeriodEnd
+              ? `on ${periodEnd}`
+              : "at the end of your billing period"
+          }.`,
+    );
   };
 
   const downgrade = async () => {
@@ -182,6 +216,19 @@ export function ChangePlanForm(props: {
     );
   };
 
+  if (changed)
+    return (
+      <div className="flex flex-col gap-3 w-full max-w-sm mx-auto text-center justify-center">
+        <div className="text-secondary leading-snug flex flex-col">
+          <strong>Your membership has been updated!</strong>
+          <p>{changed}</p>
+        </div>
+        <ButtonPrimary type="button" fullWidth onClick={props.onSuccess}>
+          Close
+        </ButtonPrimary>
+      </div>
+    );
+
   if (!tiers)
     return (
       <div className="flex justify-center py-8">
@@ -189,43 +236,45 @@ export function ChangePlanForm(props: {
       </div>
     );
 
-  if (confirmTier)
+  if (confirmPlan)
     return (
       <TierChangeConfirm
         membership={m}
         tiers={tiers}
-        newTier={confirmTier}
-        cadence={effectiveCadence(confirmTier, cadence)}
+        newPlan={confirmPlan}
+        cadence={
+          confirmPlan.kind === "paid"
+            ? effectiveCadence(confirmPlan.tier, cadence)
+            : "month"
+        }
         busy={saving}
         onConfirm={() =>
-          isFreeTier(confirmTier) ? downgrade() : save(confirmTier)
+          confirmPlan.kind === "subscriber" ? downgrade() : save(confirmPlan)
         }
-        onClose={() => setConfirmTier(null)}
+        onClose={() => setConfirmPlan(null)}
       />
     );
 
   return (
     <div className="flex flex-col gap-3 max-w-3xl">
-      {tiers.length > 0 ? (
-        <>
-          <TierGrid
-            tiers={tiers}
-            cadence={cadence}
-            onCadenceChange={setCadence}
-            busyTierId={null}
-            isSubscribed
-            currentTierId={m.tierId}
-            onSelectTier={setConfirmTier}
-          />
-          <p className="tierPaymentInfo text-tertiary text-sm text-center">
-            Changing plans prorates your bill.
-          </p>
-        </>
-      ) : (
-        <p className="text-tertiary text-sm text-center py-4 italic">
-          This publication doesn't have any other plans right now.
-        </p>
-      )}
+      <TierGrid
+        tiers={tiers}
+        cadence={cadence}
+        onCadenceChange={setCadence}
+        busyPlan={null}
+        currentMembership={{ kind: "paid", tierId: m.tierId }}
+        gatePolicy={props.gatePolicy}
+        // A change on a cancelled subscription would bill the new plan while
+        // leaving the cancellation in place, so it has to be resumed first.
+        onSelectPlan={(plan) =>
+          m.cancelAtPeriodEnd
+            ? toaster({
+                type: "error",
+                content: "Resume your membership to change plans.",
+              })
+            : setConfirmPlan(plan)
+        }
+      />
     </div>
   );
 }

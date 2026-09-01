@@ -11,6 +11,7 @@ export const SUBSCRIPTION_PLACEMENTS = [
   "subscribe_page",
   "paywall",
   "join_page",
+  "membership_page",
   "profile",
   "recommendation",
   "editor",

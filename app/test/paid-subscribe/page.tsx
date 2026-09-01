@@ -7,38 +7,34 @@ import { PaidSubscribeButton } from "components/Subscribe/PaidSubscribeButton";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import { JoinMembershipModal } from "components/Memberships/JoinMembershipModal";
 import { ButtonSecondary } from "components/Buttons";
-import type { Tier } from "components/Memberships/TierGrid";
 import type { MembershipJoinViewer } from "actions/publications/joinMembership";
+import type { MembershipTiers } from "src/membership";
 
 const PUBLICATION_URI = "at://did:plc:example/pub.leaflet.publication/test";
 const PUBLICATION_URL = "https://example.leaflet.pub";
 
-const TIERS: Tier[] = [
-  {
-    id: "tier-free",
+const MEMBERSHIP_TIERS: MembershipTiers = {
+  subscriber: {
     name: "Free",
     description: "Follow along with public posts.",
-    monthly_price_cents: 0,
-    annual_price_cents: null,
-    is_free: true,
   },
-  {
-    id: "tier-supporter",
-    name: "Supporter",
-    description: "Unlock members-only posts.",
-    monthly_price_cents: 500,
-    annual_price_cents: 5000,
-    is_free: false,
-  },
-  {
-    id: "tier-patron",
-    name: "Patron",
-    description: "Everything, plus our undying gratitude.",
-    monthly_price_cents: 1000,
-    annual_price_cents: null,
-    is_free: false,
-  },
-];
+  paid: [
+    {
+      id: "tier-supporter",
+      name: "Supporter",
+      description: "Unlock members-only posts.",
+      monthly_price_cents: 500,
+      annual_price_cents: 5000,
+    },
+    {
+      id: "tier-patron",
+      name: "Patron",
+      description: "Everything, plus our undying gratitude.",
+      monthly_price_cents: 1000,
+      annual_price_cents: null,
+    },
+  ],
+};
 
 // Build a logged-in identity with both an email and a handle so either
 // subscribe mode can one-click.
@@ -116,8 +112,9 @@ export default function PaidSubscribePreviewPage() {
   const identity = loggedIn ? makeIdentity(isSubscribed) : null;
   const viewer: MembershipJoinViewer = {
     loggedIn,
+    hasEmail: loggedIn,
     isOwner: false,
-    membership: isPaidMember
+    paidMembership: isPaidMember
       ? {
           id: "membership-1",
           tierId: "tier-supporter",
@@ -175,7 +172,7 @@ export default function PaidSubscribePreviewPage() {
             publicationName="Test Publication"
             publicationDescription="A publication for previewing the paid subscribe flow."
             newsletterMode={subscribeVia === "email"}
-            tiers={TIERS}
+            tiers={MEMBERSHIP_TIERS}
             viewerOverride={viewer}
           />
           {/* A subscribed viewer gets the manage control instead of Subscribe, so
@@ -191,7 +188,7 @@ export default function PaidSubscribePreviewPage() {
             publicationUrl={PUBLICATION_URL}
             publicationName="Test Publication"
             newsletterMode={subscribeVia === "email"}
-            tiers={TIERS}
+            tiers={MEMBERSHIP_TIERS}
             viewerOverride={viewer}
           />
         </MockIdentity>

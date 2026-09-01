@@ -15,13 +15,14 @@ export const blockListAttributes = [
   "block/list-number",
 ] as const;
 
-// usePageFootnotes additionally needs canvas ordering and per-block
-// footnotes, and getPostImageEntities pages lightboxes through gallery
-// children.
+// usePageFootnotes and usePageEditorComments additionally need canvas
+// ordering and per-block footnotes/comments, and getPostImageEntities pages
+// lightboxes through gallery children.
 const mirroredAttributes = [
   ...blockListAttributes,
   "canvas/block",
   "block/footnote",
+  "block/comment",
   "gallery/image",
 ] as const;
 type MirroredAttribute = (typeof mirroredAttributes)[number];

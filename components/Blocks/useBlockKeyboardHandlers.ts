@@ -101,14 +101,13 @@ const AllowedIfTextBlock = ["Tab"];
 async function Tab({ e, props, rep }: Args) {
   // if tab or shift tab, indent or outdent
   if (useUIState.getState().selectedBlocks.length > 1) return false;
-  let { foldedBlocks, toggleFold } = useUIState.getState();
   if (e.shiftKey) {
     e.preventDefault();
-    await outdent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
+    await outdent(props, props.previousBlock, rep);
   } else {
     e.preventDefault();
     if (props.previousBlock) {
-      await indent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
+      await indent(props, props.previousBlock, rep);
     }
   }
 }

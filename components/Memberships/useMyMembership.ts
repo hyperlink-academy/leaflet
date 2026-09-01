@@ -6,8 +6,11 @@ import { getMyMembershipForPublication } from "actions/memberships";
 const membershipKey = (publicationUri: string) =>
   `my-membership-${publicationUri}`;
 
-// The identity's membership rows gate the fetch (a null key skips it) — most
-// viewers aren't paying members of the publication and never hit the server.
+// The identity's paid row gates the fetch (a null key skips it) — just its
+// presence, not whether it's currently active, since the cached identity seed
+// can lag the billing state (e.g. an unreconciled Stripe webhook) and a
+// stale-active row must still load so the UI can offer resume/cancel. Free
+// memberships resolve from subscription state and never need billing details.
 export function useMyMembership(publicationUri: string) {
   const { identity } = useIdentityData();
   const hasMembership = !!identity?.publication_memberships?.some(

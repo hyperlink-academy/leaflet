@@ -105,12 +105,10 @@ export const ListToolbar = (props: { onClose: () => void }) => {
         onClick={async () => {
           if (!rep) return;
           let [sortedSelection, visibleSiblings] = await getSortedSelection(rep);
-          let { foldedBlocks, toggleFold } = useUIState.getState();
           await multiSelectOutdent(
             sortedSelection,
             visibleSiblings,
             rep,
-            { foldedBlocks, toggleFold },
             undoManager,
           );
         }}
@@ -133,12 +131,10 @@ export const ListToolbar = (props: { onClose: () => void }) => {
         onClick={async () => {
           if (!rep) return;
           let [sortedSelection, visibleSiblings] = await getSortedSelection(rep);
-          let { foldedBlocks, toggleFold } = useUIState.getState();
           await multiSelectIndent(
             sortedSelection,
             visibleSiblings,
             rep,
-            { foldedBlocks, toggleFold },
             undoManager,
           );
         }}
