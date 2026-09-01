@@ -12,10 +12,8 @@ import { EntitySetProvider } from "components/EntitySetProvider";
 import { LeafletLayout } from "components/LeafletLayout";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
-import {
-  SavedVersionContext,
-  FloatingVersionBanner,
-} from "components/VersionBanner";
+import { FloatingVersionBanner } from "components/VersionBanner";
+import { SavedVersionContext } from "components/SavedVersionContext";
 
 export function VersionViewer(props: {
   token: PermissionToken;
@@ -53,7 +51,8 @@ export function VersionViewer(props: {
                 value={{
                   name: props.version.name,
                   savedAt: props.version.created_at,
-                  currentLeafletHref: `/${props.token.id}`,
+                  tokenId: props.token.id,
+                  versionId: props.version.id,
                 }}
               >
                 {firstPageType === "canvas" && <FloatingVersionBanner />}

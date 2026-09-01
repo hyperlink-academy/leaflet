@@ -2,28 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import useSWR, { mutate as globalMutate } from "swr";
+import useSWR from "swr";
 
 import { Modal } from "components/Modal";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { HistorySmall } from "components/Icons/HistorySmall";
-import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { Input } from "components/Input";
-import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
+import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { EmptyState } from "components/EmptyState";
-import { Menu, MenuItem } from "components/Menu";
 import { useToaster } from "components/Toast";
 import { useReplicache } from "src/replicache";
-import { useIdentityData } from "components/IdentityProvider";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { timeAgo } from "src/utils/timeAgo";
-import { addDocToHome } from "src/utils/homeDocsStorage";
 import {
   getVersions,
   saveVersion,
-  restoreVersion,
-  forkVersionAsNewLeaflet,
   type DocumentVersionListing,
 } from "actions/versions";
 
@@ -48,35 +42,38 @@ export function VersionHistory() {
     <Modal
       asChild
       sheetOnMobile
-      className="max-w-sm w-full"
-      title="Version History"
+      className="sm:w-[1000px] max-w-md w-full"
       open={open}
       onOpenChange={setOpen}
       trigger={<ActionButton icon={<HistorySmall />} label="Versions" />}
     >
       <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-0 leading-snug">
+          <h3>Version History</h3>
+          <div className="text-sm text-tertiary">
+            Select a version to view it
+          </div>
+        </div>
         <SaveVersionForm tokenId={tokenId} flush={flush} onSaved={mutate} />
         {versions === undefined ? null : versions.length === 0 ? (
-          <EmptyState container="opaque">
-            <div className="font-bold">No versions yet</div>
+          <EmptyState container="light">
+            <div className="font-bold">No versions yet…</div>
             <div>
-              Versions are saved manually — save one to snapshot this doc as it
-              is now, then view or restore it anytime.
+              Once you've saved a version of this document, you can view and
+              restore versions here.
             </div>
           </EmptyState>
         ) : (
-          <div className="flex flex-col gap-2">
-            {versions.map((v) => (
-              <VersionRow
-                key={v.id}
-                version={v}
-                tokenId={tokenId}
-                flush={flush}
-                onMutate={mutate}
-                closeModal={() => setOpen(false)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-col gap-0.5">
+              {versions.map((v) => (
+                <>
+                  <VersionRow key={v.id} version={v} tokenId={tokenId} />
+                  <hr className="last:hidden" />
+                </>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </Modal>
@@ -94,7 +91,7 @@ function SaveVersionForm(props: {
 
   return (
     <form
-      className="flex gap-2 items-center"
+      className="flex flex-col gap-2 items-center light-container p-3"
       onSubmit={async (e) => {
         e.preventDefault();
         if (saving) return;
@@ -119,14 +116,20 @@ function SaveVersionForm(props: {
     >
       <Input
         autoFocus
-        className="input-with-border grow min-w-0"
-        placeholder="Name this version (optional)"
+        className="input-with-border grow min-w-0 w-full"
+        placeholder="Version name (optional)"
         value={name}
         maxLength={120}
         onChange={(e) => setName(e.currentTarget.value)}
       />
-      <ButtonPrimary type="submit" disabled={saving} className="shrink-0">
-        {saving ? <DotLoader /> : "Save"}
+      <ButtonPrimary
+        type="submit"
+        disabled={saving}
+        fullWidth
+        className="shrink-0"
+        compact
+      >
+        {saving ? <DotLoader /> : "Save Version"}
       </ButtonPrimary>
     </form>
   );
@@ -135,15 +138,8 @@ function SaveVersionForm(props: {
 function VersionRow(props: {
   version: DocumentVersionListing;
   tokenId: string;
-  flush: () => Promise<unknown> | undefined;
-  onMutate: () => void;
-  closeModal: () => void;
 }) {
   let { version } = props;
-  let [confirmingRestore, setConfirmingRestore] = useState(false);
-  let [busy, setBusy] = useState(false);
-  let toaster = useToaster();
-  let { identity } = useIdentityData();
   let date = useLocalizedDate(version.created_at, {
     month: "short",
     day: "numeric",
@@ -152,88 +148,26 @@ function VersionRow(props: {
     minute: "numeric",
     hour12: true,
   });
-
-  let restore = async () => {
-    setBusy(true);
-    try {
-      await props.flush();
-      let res = await restoreVersion(props.tokenId, version.id);
-      if (!res.ok) return showError(toaster, res.error);
-      props.onMutate();
-      props.closeModal();
-      toaster({ content: "Version restored", type: "success" });
-    } finally {
-      setBusy(false);
-      setConfirmingRestore(false);
-    }
-  };
-
-  let fork = async () => {
-    setBusy(true);
-    try {
-      let res = await forkVersionAsNewLeaflet(props.tokenId, version.id);
-      if (!res.ok) return showError(toaster, res.error);
-      if (!identity) {
-        addDocToHome(res.value.token);
-        globalMutate("leaflets");
-      }
-      window.open(`/${res.value.token.id}`, "_blank");
-    } finally {
-      setBusy(false);
-    }
-  };
+  let withinLastDay =
+    Date.now() - new Date(version.created_at).getTime() < 24 * 60 * 60 * 1000;
 
   return (
-    <div className="opaque-container px-2 py-1 flex gap-2 items-center justify-between">
-      <div className="flex flex-col min-w-0">
+    <Link
+      href={`/${props.tokenId}/versions/${version.id}`}
+      className="no-underline! "
+    >
+      <div className=" menuItem px-3! flex flex-col gap-0! leading-snug min-w-0">
         <div className="font-bold truncate">
           {version.name ||
             (version.kind === "pre_restore" ? "Backup before restore" : date)}
         </div>
-        <div className="text-tertiary text-sm truncate" title={date}>
-          {timeAgo(version.created_at)}
-          {version.name || version.kind === "pre_restore" ? ` · ${date}` : ""}
+        <div
+          className="text-tertiary font-normal italic text-sm truncate"
+          title={date}
+        >
+          {withinLastDay ? timeAgo(version.created_at) : date}
         </div>
       </div>
-      {confirmingRestore ? (
-        <div className="flex gap-2 items-center shrink-0">
-          <ButtonPrimary compact onClick={restore} disabled={busy}>
-            {busy ? <DotLoader /> : "Restore"}
-          </ButtonPrimary>
-          <ButtonTertiary
-            compact
-            onClick={() => setConfirmingRestore(false)}
-            disabled={busy}
-          >
-            Cancel
-          </ButtonTertiary>
-        </div>
-      ) : (
-        <div className="flex gap-1 items-center shrink-0">
-          <Link
-            href={`/${props.tokenId}/versions/${version.id}`}
-            className="text-accent-contrast font-bold text-sm no-underline! px-1"
-          >
-            View
-          </Link>
-          <Menu
-            align="end"
-            trigger={
-              <div
-                className="text-tertiary hover:text-accent-contrast px-1 flex items-center"
-                aria-label="Version options"
-              >
-                {busy ? <DotLoader /> : <MoreOptionsTiny />}
-              </div>
-            }
-          >
-            <MenuItem onSelect={() => setConfirmingRestore(true)}>
-              Restore this version
-            </MenuItem>
-            <MenuItem onSelect={fork}>Open as new leaflet</MenuItem>
-          </Menu>
-        </div>
-      )}
-    </div>
+    </Link>
   );
 }

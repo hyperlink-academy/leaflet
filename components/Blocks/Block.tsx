@@ -42,6 +42,7 @@ import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import { useIsVersion } from "components/SavedVersionContext";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
@@ -526,20 +527,19 @@ const NonTextBlockOptions = (props: {
   );
 };
 
-// Disclosure triangle for folding a heading's section. Lives in the left gutter
-// (absolutely positioned in the wrapper padding) so it never shifts the heading
-// text, and only shows on hover unless the heading is currently folded.
 const HeadingFoldButton = (props: { entityID: string }) => {
   let { rep } = useReplicache();
   let folded = useIsFolded(props.entityID);
+  let isVersion = useIsVersion();
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let top =
     headingLevel === 1
-      ? "top-[20px]"
+      ? "top-[16px]"
       : headingLevel === 2
-        ? "top-[14px]"
-        : "top-[11px]";
+        ? "top-[11px]"
+        : "top-[8px]";
+  if (isVersion) return null;
   return (
     <button
       className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-[3px] rounded-r-full text-bg-page  transition-opacity

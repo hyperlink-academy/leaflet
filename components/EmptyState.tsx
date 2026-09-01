@@ -6,7 +6,7 @@ export function EmptyState({
 }: {
   title?: string;
   className?: string;
-  container?: "frosted" | "opaque" | "none";
+  container?: "frosted" | "opaque" | "none" | "light";
   children?: React.ReactNode;
 }) {
   const containerClass =
@@ -14,7 +14,9 @@ export function EmptyState({
       ? "frosted-container"
       : container === "opaque"
         ? "opaque-container"
-        : "";
+        : container === "light"
+          ? "light-container"
+          : "";
 
   return (
     <div
