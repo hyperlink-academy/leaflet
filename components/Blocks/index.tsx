@@ -2,7 +2,7 @@
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
 
-import { useUIState } from "src/useUIState";
+import { useIsPageFocused } from "src/useUIState";
 import { foldBlocks, unfoldBlocks } from "src/utils/foldBlocks";
 import { useFoldedBlocks } from "components/FoldStateProvider";
 import { isBlockHidden } from "src/replicache/getBlocks";
@@ -20,15 +20,11 @@ import { addShortcut } from "src/shortcuts";
 import { useHandleDrop } from "./useHandleDrop";
 import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
 
-export function Blocks(props: { entityID: string }) {
-  let isPageFocused = useUIState((s) => {
-    let focusedElement = s.focusedEntity;
-    let focusedPageID =
-      focusedElement?.entityType === "page"
-        ? focusedElement.entityID
-        : focusedElement?.parent;
-    return focusedPageID === props.entityID;
-  });
+export function Blocks(props: {
+  entityID: string;
+  zoomTitleBlock?: Block | null;
+}) {
+  let isPageFocused = useIsPageFocused(props.entityID);
   let blocks = useBlocks(props.entityID);
   let { rep } = useReplicache();
   let foldedBlocks = useFoldedBlocks();
@@ -102,7 +98,7 @@ export function Blocks(props: { entityID: string }) {
               key={f.entityID}
               entityID={f.entityID}
               parent={props.entityID}
-              previousBlock={arr[index - 1] || null}
+              previousBlock={arr[index - 1] || props.zoomTitleBlock || null}
               nextBlock={arr[index + 1] || null}
               nextPosition={nextPosition}
               headingFoldable={foldableHeadings.has(f.entityID)}

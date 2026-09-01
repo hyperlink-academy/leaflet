@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
+import { isZoomedBlockRoot, useUIState } from "src/useUIState";
 import { toggleFold } from "src/utils/foldBlocks";
 import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
@@ -264,6 +264,8 @@ export function SelectionManager() {
             e.preventDefault();
             let [sortedBlocks, siblings] = await getSortedSelectionBound();
             let selectedBlocks = useUIState.getState().selectedBlocks;
+            if (selectedBlocks.some((b) => isZoomedBlockRoot(b.entityID)))
+              return;
             let firstBlock = sortedBlocks[0];
 
             await rep?.mutate.removeBlock(

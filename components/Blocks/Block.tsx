@@ -124,6 +124,9 @@ export const Block = memo(function Block(
       justify: "justify-start",
     }[alignment];
 
+  let displayedAsHeading =
+    props.type === "heading" || props.parent === props.entityID;
+
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
     if (!selected) {
@@ -190,14 +193,13 @@ export const Block = memo(function Block(
       ${
         !props.nextBlock
           ? "pb-3 sm:pb-4"
-          : props.type === "heading" ||
-              (props.listData && props.nextBlock?.listData)
+          : displayedAsHeading || (props.listData && props.nextBlock?.listData)
             ? "pb-0"
             : "pb-2"
       }
-      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
+      ${!displayedAsHeading && props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
       ${
-        props.type === "heading" &&
+        displayedAsHeading &&
         props.previousBlock &&
         props.previousBlock.type !== "horizontal-rule"
           ? props.previousBlock.type !== "heading"
@@ -212,7 +214,7 @@ export const Block = memo(function Block(
       }
       ${
         !props.previousBlock
-          ? props.type === "heading" || props.type === "text"
+          ? displayedAsHeading || props.type === "text"
             ? "mt-1 sm:mt-2"
             : "mt-2 sm:mt-3"
           : ""

@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { useUIState } from "src/useUIState";
+import React, { useEffect } from "react";
+import { useIsPageFocused, useUIState } from "src/useUIState";
 
 import { elementId } from "src/utils/elementId";
 
@@ -10,8 +10,11 @@ import { useEntity, useReferenceToEntity, useReplicache } from "src/replicache";
 import { DesktopPageFooter } from "../DesktopFooter";
 import { Canvas } from "../Canvas";
 import { Blocks } from "components/Blocks";
-import { RenderedTextBlock } from "components/Blocks/TextBlock";
+import { Block } from "components/Blocks/Block";
 import { GoBackTiny } from "components/Icons/GoBackTiny";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+import { addShortcut } from "src/shortcuts";
+import { generateKeyBetween } from "fractional-indexing";
 import { PublicationMetadata } from "./PublicationMetadata";
 import { useLeafletPublicationPage } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "./useCardBorderHidden";
@@ -49,14 +52,7 @@ export function Page(props: {
   let zoomedBlock = useUIState((s) => s.zoomedBlocks[props.entityID]);
   let contentEntityID = zoomedBlock ?? props.entityID;
 
-  let isFocused = useUIState((s) => {
-    let focusedElement = s.focusedEntity;
-    let focusedPageID =
-      focusedElement?.entityType === "page"
-        ? focusedElement.entityID
-        : focusedElement?.parent;
-    return focusedPageID === contentEntityID;
-  });
+  let isFocused = useIsPageFocused(contentEntityID);
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
 
   let drawerOpen = useDrawerOpen(props.entityID);
@@ -282,13 +278,14 @@ const DocContent = (props: { entityID: string; zoomedBlock?: string }) => {
           }}
         />
       ) : null}
-      {props.zoomedBlock && (
-        <ZoomedBlockHeader
+      {props.zoomedBlock ? (
+        <ZoomedBlockContent
           pageEntity={props.entityID}
           entityID={props.zoomedBlock}
         />
+      ) : (
+        <Blocks entityID={props.entityID} />
       )}
-      <Blocks entityID={props.zoomedBlock ?? props.entityID} />
       <FootnoteSection />
       <div className="h-4 sm:h-6 w-full" />
       {/* we handle page bg in this sepate div so that
@@ -298,28 +295,65 @@ const DocContent = (props: { entityID: string; zoomedBlock?: string }) => {
   );
 };
 
-const ZoomedBlockHeader = (props: { pageEntity: string; entityID: string }) => {
-  let zoomOutOfBlock = useUIState((s) => s.zoomOutOfBlock);
+const ZoomedBlockContent = (props: {
+  pageEntity: string;
+  entityID: string;
+}) => {
+  let [reference] = useReferenceToEntity("card/block", props.entityID);
+  let type = useEntity(props.entityID, "block/type");
+  let firstChild = useBlocks(props.entityID)[0] ?? null;
+  let zoomOut = useUIState((state) => state.zoomOutOfBlock);
+  let isFocused = useIsPageFocused(props.entityID);
+  let parentEntity = reference?.entity;
+  let titleBlock: Block | null =
+    reference && type
+      ? {
+          entityID: props.entityID,
+          factID: reference.id,
+          parent: props.entityID,
+          position: generateKeyBetween(null, firstChild?.position ?? null),
+          type: type.data.value,
+        }
+      : null;
+
+  useEffect(() => {
+    if (!isFocused) return;
+    return addShortcut({
+      metaKey: true,
+      shift: true,
+      key: ["H", "h"],
+      handler: () => {
+        if (!parentEntity || parentEntity === props.pageEntity)
+          zoomOut(props.pageEntity);
+        else useUIState.getState().zoomIntoBlock(props.entityID, parentEntity);
+      },
+    });
+  }, [isFocused, parentEntity, props.entityID, props.pageEntity, zoomOut]);
+
   return (
-    <div className="zoomedBlockHeader relative px-3 sm:px-4 pt-2 sm:pt-3">
-      <button
-        className="flex items-center gap-1 text-sm text-tertiary hover:text-accent-contrast"
-        onClick={(e) => {
-          e.preventDefault();
-          zoomOutOfBlock(props.pageEntity);
-        }}
-      >
-        <GoBackTiny /> back to full document
-      </button>
-      {/* Rendered as a heading regardless of the block's actual type so the
-          zoomed-into item reads as the document title. */}
-      <div className="pt-2 sm:pt-3">
-        <RenderedTextBlock
-          entityID={props.entityID}
-          type="heading"
-          pageID={props.pageEntity}
-        />
+    <>
+      <div className="px-3 sm:px-4 pt-2 sm:pt-3">
+        <button
+          className="flex items-center gap-1 text-sm text-tertiary hover:text-accent-contrast"
+          onClick={(event) => {
+            event.preventDefault();
+            zoomOut(props.pageEntity);
+          }}
+        >
+          <GoBackTiny /> back to full document
+        </button>
       </div>
-    </div>
+      {titleBlock && (
+        <Block
+          {...titleBlock}
+          key={titleBlock.entityID}
+          pageType="doc"
+          previousBlock={null}
+          nextBlock={firstChild}
+          nextPosition={firstChild?.position ?? null}
+        />
+      )}
+      <Blocks entityID={props.entityID} zoomTitleBlock={titleBlock} />
+    </>
   );
 };

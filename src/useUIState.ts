@@ -150,3 +150,18 @@ const selectionEntry = (block: SelectedBlock): SelectedBlock => ({
 
 export const useIsBlockSelected = (entityID: string) =>
   useUIState((s) => s.selectedBlocks.some((b) => b.entityID === entityID));
+
+export const useIsPageFocused = (entityID: string) =>
+  useUIState((s) =>
+    s.focusedEntity?.entityType === "page"
+      ? s.focusedEntity.entityID === entityID
+      : s.focusedEntity?.parent === entityID,
+  );
+
+export const getZoomedBlockPage = (entity: string) =>
+  Object.entries(useUIState.getState().zoomedBlocks).find(
+    ([, zoomed]) => zoomed === entity,
+  )?.[0];
+
+export const isZoomedBlockRoot = (entity: string) =>
+  getZoomedBlockPage(entity) !== undefined;

@@ -16,7 +16,7 @@ import { Replicache } from "replicache";
 import type { Fact, ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
-import { useUIState } from "src/useUIState";
+import { isZoomedBlockRoot, useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
@@ -337,6 +337,7 @@ const backspace =
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return finish(false);
     }
+    if (isZoomedBlockRoot(propsRef.current.entityID)) return finish(true);
     // if you are in a list...
     if (propsRef.current.listData) {
       // ...and the item is a checklist item, remove the checklist attribute
@@ -358,17 +359,21 @@ const backspace =
             ? propsRef.current.previousBlock.entityID
             : propsRef.current.listData.parent || propsRef.current.parent,
           after:
-            propsRef.current.previousBlock?.listData?.path.find(
-              (f) => f.depth === depth,
-            )?.entity ||
-            propsRef.current.previousBlock?.entityID ||
-            null,
+            propsRef.current.previousBlock &&
+            isZoomedBlockRoot(propsRef.current.previousBlock.entityID)
+              ? null
+              : propsRef.current.previousBlock?.listData?.path.find(
+                  (f) => f.depth === depth,
+                )?.entity ||
+                propsRef.current.previousBlock?.entityID ||
+                null,
         }),
       );
     }
     // if this is the first block and is it a list, remove list attribute
     if (!propsRef.current.previousBlock) {
       if (propsRef.current.listData) {
+        if (isZoomedBlockRoot(propsRef.current.parent)) return finish(true);
         mutate(
           repRef.current?.mutate.retractAttribute({
             entity: propsRef.current.entityID,
@@ -422,7 +427,8 @@ const backspace =
       block &&
       propsRef.current.previousBlock &&
       block.editor.doc.textContent.length === 0 &&
-      !propsRef.current.previousBlock?.listData
+      !propsRef.current.previousBlock?.listData &&
+      !isZoomedBlockRoot(propsRef.current.previousBlock.entityID)
     ) {
       mutate(
         repRef.current?.mutate.removeBlock({
