@@ -18,7 +18,7 @@ import { Block } from "./Block";
 import { useEffect, useMemo, useState } from "react";
 import { addShortcut } from "src/shortcuts";
 import { useHandleDrop } from "./useHandleDrop";
-import { ListDndContext } from "./ListDnd";
+import { registerListDndPage, unregisterListDndPage } from "./ListDndState";
 import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
 
 export function Blocks(props: { entityID: string }) {
@@ -73,6 +73,17 @@ export function Blocks(props: { entityID: string }) {
 
   let lastVisibleBlock = visibleBlocks.at(-1);
 
+  // Make this page a drop target for list items dragged from any open page
+  // (the DndContext lives in ListDndProvider, above all pages).
+  useEffect(() => {
+    registerListDndPage({
+      pageID: props.entityID,
+      blocks: visibleBlocks,
+      zoomDepth,
+    });
+    return () => unregisterListDndPage(props.entityID);
+  }, [props.entityID, visibleBlocks, zoomDepth]);
+
   let { footnotes } = useFootnoteContext();
 
   let [areFootnotes, setAreFootnotes] = useState(false);
@@ -91,37 +102,31 @@ export function Blocks(props: { entityID: string }) {
       // collapse out through the container's top edge.
       className={`blocks w-full flow-root outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
     >
-      <ListDndContext
-        pageID={props.entityID}
-        blocks={visibleBlocks}
-        zoomDepth={zoomDepth}
-      >
-        {visibleBlocks.map((f, index, arr) => {
-          let nextBlock = arr[index + 1];
-          let depth = f.listData?.depth || 1;
-          let nextDepth = nextBlock?.listData?.depth || 1;
-          let nextPosition: string | null;
-          if (depth === nextDepth) nextPosition = nextBlock?.position || null;
-          else nextPosition = null;
-          return (
-            <Block
-              pageType="doc"
-              {...f}
-              key={f.entityID}
-              entityID={f.entityID}
-              previousBlock={arr[index - 1] || null}
-              nextBlock={arr[index + 1] || null}
-              nextPosition={nextPosition}
-              headingFoldable={foldableParentSet.has(f.entityID) && !f.listData}
-              displayDepth={
-                zoomDepth && f.listData
-                  ? f.listData.depth - zoomDepth + 1
-                  : undefined
-              }
-            />
-          );
-        })}
-      </ListDndContext>
+      {visibleBlocks.map((f, index, arr) => {
+        let nextBlock = arr[index + 1];
+        let depth = f.listData?.depth || 1;
+        let nextDepth = nextBlock?.listData?.depth || 1;
+        let nextPosition: string | null;
+        if (depth === nextDepth) nextPosition = nextBlock?.position || null;
+        else nextPosition = null;
+        return (
+          <Block
+            pageType="doc"
+            {...f}
+            key={f.entityID}
+            entityID={f.entityID}
+            previousBlock={arr[index - 1] || null}
+            nextBlock={arr[index + 1] || null}
+            nextPosition={nextPosition}
+            headingFoldable={foldableParentSet.has(f.entityID) && !f.listData}
+            displayDepth={
+              zoomDepth && f.listData
+                ? f.listData.depth - zoomDepth + 1
+                : undefined
+            }
+          />
+        );
+      })}
       <NewBlockButton
         lastBlock={lastRootBlock || null}
         entityID={zoomedBlock ?? props.entityID}

@@ -16,32 +16,28 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { useReplicache } from "src/replicache";
+import { Replicache } from "replicache";
+import { ReplicacheMutators, useReplicache } from "src/replicache";
+import { scanIndex } from "src/replicache/utils";
 import { useFoldedBlocks } from "components/FoldStateProvider";
 import { unfoldBlocks } from "src/utils/foldBlocks";
 import {
+  ListDndPage,
   ListDropTarget,
+  findListDndPageForBlock,
   markListDragEnd,
   useListDragState,
 } from "./ListDndState";
 import { Block, BlockProps } from "./Block";
 
 // Drag and drop reordering for list items. Each Block registers itself as a
-// draggable (activated from its ListMarker by long press) and a droppable;
-// this context computes where the drop would land, publishes it through
-// useListDragState for the indicator line, and applies it as a single
-// moveBlock mutation on drop.
-export function ListDndContext(props: {
-  pageID: string;
-  // Visible blocks in document order — the same array the page maps over.
-  blocks: Block[];
-  // When the page is zoomed into a list item, the zoom root's absolute depth.
-  // Drops are floored to the root's child depth so nothing can be dragged out
-  // of the zoomed subtree, and indicator depths are converted to display
-  // depths.
-  zoomDepth?: number;
-  children: React.ReactNode;
-}) {
+// draggable (activated from its ListMarker by long press) and a droppable,
+// and each page's Blocks registers its visible block list (see ListDndState).
+// This provider mounts once above all open pages, so an item can be dropped
+// into any of them: it computes where the drop would land, publishes it
+// through useListDragState for the indicator line, and applies it as a single
+// mutation on drop.
+export function ListDndProvider(props: { children: React.ReactNode }) {
   let { rep } = useReplicache();
   let foldedBlocks = useFoldedBlocks();
 
@@ -64,8 +60,14 @@ export function ListDndContext(props: {
   let dropRef = useRef<ListDropTarget | null>(null);
   // One horizontal indent unit, read from the theme at drag start.
   let indentWidthRef = useRef(38);
-  let blocksRef = useRef(props.blocks);
-  blocksRef.current = props.blocks;
+  // The dragged block and the page it came from, set synchronously at drag
+  // start so the move handlers never race the re-render.
+  let activeRef = useRef<Block | null>(null);
+  let activePageRef = useRef<string | null>(null);
+  // Pages living inside the dragged subtree (via its page-link blocks):
+  // dropping into one would make the block a descendant of itself. Resolved
+  // asynchronously at drag start; until then cross-page drops are withheld.
+  let forbiddenPagesRef = useRef<Set<string> | null>(null);
   let foldedRef = useRef(foldedBlocks);
   foldedRef.current = foldedBlocks;
 
@@ -77,7 +79,9 @@ export function ListDndContext(props: {
   }, []);
 
   let onDragStart = ({ active: dragActive }: DragStartEvent) => {
-    let arr = blocksRef.current;
+    let page = findListDndPageForBlock(String(dragActive.id));
+    if (!page) return;
+    let arr = page.blocks;
     let index = arr.findIndex((b) => b.entityID === dragActive.id);
     let block = arr[index];
     if (!block?.listData) return;
@@ -87,6 +91,13 @@ export function ListDndContext(props: {
           "--list-marker-width",
         ),
       ) || 38;
+    activeRef.current = block;
+    activePageRef.current = page.pageID;
+    forbiddenPagesRef.current = null;
+    if (rep)
+      getDescendantPages(rep, block.entityID).then((pages) => {
+        forbiddenPagesRef.current = pages;
+      });
     // Build the same props the page's block map would pass, so the drag
     // preview renders the identical component.
     let nextBlock = arr[index + 1] || null;
@@ -98,35 +109,42 @@ export function ListDndContext(props: {
       nextBlock,
       nextPosition:
         block.listData.depth === nextDepth ? nextBlock?.position || null : null,
-      displayDepth: props.zoomDepth
-        ? block.listData.depth - props.zoomDepth + 1
+      displayDepth: page.zoomDepth
+        ? block.listData.depth - page.zoomDepth + 1
         : undefined,
     });
     useListDragState.setState({ activeId: block.entityID, dropTarget: null });
   };
 
-  let onDragMove = ({ active: dragActive, over, delta }: DragMoveEvent) => {
+  let onDragMove = ({ over, delta }: DragMoveEvent) => {
+    let activeBlock = activeRef.current;
+    let page = over ? findListDndPageForBlock(String(over.id)) : undefined;
+    let crossPage = !!page && page.pageID !== activePageRef.current;
     let target =
-      over && pointerRef.current
+      over &&
+      pointerRef.current &&
+      activeBlock &&
+      page &&
+      // Cross-page drops wait for the descendant-page walk, then exclude
+      // pages living inside the dragged subtree.
+      (!crossPage ||
+        (!!forbiddenPagesRef.current &&
+          !forbiddenPagesRef.current.has(page.pageID)))
         ? computeDropTarget(
-            String(dragActive.id),
+            activeBlock,
             String(over.id),
             pointerRef.current.y,
             delta.x,
             indentWidthRef.current,
             rectsRef.current?.get(over.id),
-            blocksRef.current,
-            props.pageID,
-            // In a zoomed view nothing may land shallower than the zoom
-            // root's children.
-            props.zoomDepth ? props.zoomDepth + 1 : 1,
+            page,
             foldedRef.current,
           )
         : null;
     // The placement fields stay absolute; the indicator's depth renders in
-    // display space (the zoom root displays at depth 1).
-    if (target && props.zoomDepth)
-      target = { ...target, depth: target.depth - props.zoomDepth + 1 };
+    // display space (a zoomed page displays its zoom root at depth 1).
+    if (target && page?.zoomDepth)
+      target = { ...target, depth: target.depth - page.zoomDepth + 1 };
     dropRef.current = target;
     // Only publish when the target actually changes, so pointer movement
     // within the same gap doesn't re-render anything.
@@ -136,6 +154,9 @@ export function ListDndContext(props: {
 
   let reset = () => {
     dropRef.current = null;
+    activeRef.current = null;
+    activePageRef.current = null;
+    forbiddenPagesRef.current = null;
     setActive(null);
     markListDragEnd();
     useListDragState.setState({ activeId: null, dropTarget: null });
@@ -143,7 +164,7 @@ export function ListDndContext(props: {
 
   let onDragEnd = (_e: DragEndEvent) => {
     let target = dropRef.current;
-    let activeBlock = active;
+    let activeBlock = activeRef.current;
     reset();
     if (!rep || !target || !activeBlock?.listData) return;
     if (target.unfold) unfoldBlocks(rep, [target.unfold]);
@@ -187,60 +208,101 @@ export function ListDndContext(props: {
   );
 }
 
+// Every page reachable from inside `root`'s subtree through page-link (card)
+// blocks, transitively — the pages a drop must never target.
+async function getDescendantPages(
+  rep: Replicache<ReplicacheMutators>,
+  root: string,
+): Promise<Set<string>> {
+  return rep.query(async (tx) => {
+    let scan = scanIndex(tx);
+    let pages = new Set<string>();
+    let queue = [root];
+    while (queue.length > 0) {
+      let entity = queue.pop()!;
+      let children = [
+        ...(await scan.eav(entity, "card/block")),
+        ...(await scan.eav(entity, "canvas/block")),
+      ];
+      for (let child of children) queue.push(child.data.value);
+      for (let card of await scan.eav(entity, "block/card")) {
+        if (!pages.has(card.data.value)) {
+          pages.add(card.data.value);
+          queue.push(card.data.value);
+        }
+      }
+    }
+    return pages;
+  });
+}
+
 function computeDropTarget(
-  activeId: string,
+  activeBlock: Block,
   overId: string,
   pointerY: number,
   deltaX: number,
   indentWidth: number,
   overRect: ClientRect | undefined,
-  blocks: Block[],
-  pageID: string,
-  // The shallowest depth this view may host (1, or the zoom root's child
-  // depth in a zoomed view).
-  floor: number,
+  // The page the pointer is over — not necessarily the page the dragged
+  // block came from.
+  page: ListDndPage,
   foldedBlocks: readonly string[],
 ): ListDropTarget | null {
-  if (!overRect) return null;
+  if (!overRect || !activeBlock.listData) return null;
+  let { blocks, pageID } = page;
+  // The shallowest depth this view may host: 1, or the zoom root's child
+  // depth in a zoomed view (so nothing lands outside the zoomed subtree).
+  let floor = page.zoomDepth ? page.zoomDepth + 1 : 1;
+  let activeId = activeBlock.entityID;
   let overIndex = blocks.findIndex((b) => b.entityID === overId);
+  if (overIndex === -1) return null;
+  // When dragging into a different page, the dragged subtree isn't in this
+  // page's block list at all, so there is no own slot and nothing to lift out.
   let activeIndex = blocks.findIndex((b) => b.entityID === activeId);
-  let activeBlock = blocks[activeIndex];
-  if (overIndex === -1 || !activeBlock?.listData) return null;
+  let samePage = activeIndex !== -1;
 
   let inActiveSubtree = (b: Block | undefined) =>
     !!b &&
     (b.entityID === activeId ||
       !!b.listData?.path.some((p) => p.entity === activeId));
 
-  // Treat the document as if the dragged subtree were lifted out: the gaps on
-  // either side of it collapse into its own slot, whose neighbors are the
-  // blocks just outside the subtree. That makes the item's starting position
-  // a valid target, so a purely horizontal drag projects an indent/outdent.
-  let subtreeEnd = activeIndex;
-  while (
-    subtreeEnd + 1 < blocks.length &&
-    inActiveSubtree(blocks[subtreeEnd + 1])
-  )
-    subtreeEnd++;
-  let slotAbove = blocks[activeIndex - 1];
-  let slotBelow = blocks[subtreeEnd + 1];
-
   let above: Block | undefined;
   let below: Block | undefined;
   let edge: "top" | "bottom" = "top";
-  if (inActiveSubtree(blocks[overIndex])) {
-    above = slotAbove;
-    below = slotBelow;
+  let ownSlot = false;
+  if (samePage) {
+    // Treat the page as if the dragged subtree were lifted out: the gaps on
+    // either side of it collapse into its own slot, whose neighbors are the
+    // blocks just outside the subtree. That makes the item's starting
+    // position a valid target, so a purely horizontal drag projects an
+    // indent/outdent.
+    let subtreeEnd = activeIndex;
+    while (
+      subtreeEnd + 1 < blocks.length &&
+      inActiveSubtree(blocks[subtreeEnd + 1])
+    )
+      subtreeEnd++;
+    let slotAbove = blocks[activeIndex - 1];
+    let slotBelow = blocks[subtreeEnd + 1];
+
+    if (inActiveSubtree(blocks[overIndex])) {
+      above = slotAbove;
+      below = slotBelow;
+    } else {
+      edge = pointerY < overRect.top + overRect.height / 2 ? "top" : "bottom";
+      above = edge === "top" ? blocks[overIndex - 1] : blocks[overIndex];
+      below = edge === "top" ? blocks[overIndex] : blocks[overIndex + 1];
+      if (inActiveSubtree(above)) above = slotAbove;
+      if (inActiveSubtree(below)) below = slotBelow;
+    }
+    ownSlot =
+      (above?.entityID ?? null) === (slotAbove?.entityID ?? null) &&
+      (below?.entityID ?? null) === (slotBelow?.entityID ?? null);
   } else {
     edge = pointerY < overRect.top + overRect.height / 2 ? "top" : "bottom";
     above = edge === "top" ? blocks[overIndex - 1] : blocks[overIndex];
     below = edge === "top" ? blocks[overIndex] : blocks[overIndex + 1];
-    if (inActiveSubtree(above)) above = slotAbove;
-    if (inActiveSubtree(below)) below = slotBelow;
   }
-  let ownSlot =
-    (above?.entityID ?? null) === (slotAbove?.entityID ?? null) &&
-    (below?.entityID ?? null) === (slotBelow?.entityID ?? null);
   let indicator = ownSlot
     ? { entityID: activeId, edge: "top" as const }
     : { entityID: overId, edge };
@@ -315,9 +377,7 @@ function computeDropTarget(
       ...indicator,
       depth,
       newParent,
-      position: anchor
-        ? { type: "after", entity: anchor }
-        : { type: "first" },
+      position: anchor ? { type: "after", entity: anchor } : { type: "first" },
       unfold:
         landsInHiddenContent && foldedBlocks.includes(above.entityID)
           ? above.entityID

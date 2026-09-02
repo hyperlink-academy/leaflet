@@ -11,6 +11,7 @@ import { SelectionManager } from "components/SelectionManager";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { Page } from "components/Pages/Page";
+import { ListDndProvider } from "components/Blocks/ListDnd";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { NewPublicationHeader } from "app/(app)/(published)/lish/[did]/[publication]/PublicationHeader";
 import { PublicationPagesEditNav } from "./PublicationPagesEditNav";
@@ -159,44 +160,46 @@ function PublicationDraftEditorContent(props: {
         showPageBackground ? "mx-auto py-6" : "pt-2"
       }`}
     >
-      <Page
-        key={currentPage}
-        entityID={currentPage}
-        fullPageScroll={!showPageBackground}
-        header={
-          <>
-            <NewPublicationHeader
-              edit
-              hideSubscribeInHeader={hideSubscribeInHeader}
-              iconUrl={props.iconUrl}
-              wordmark={wordmark}
-              description={record?.description}
-              subscribe={{
-                publicationUri: props.publicationUri,
-                publicationUrl: record.url,
-                publicationName: record.name,
-                publicationDescription: record.description,
-                newsletterMode: props.newsletterMode,
-              }}
-            />
+      <ListDndProvider>
+        <Page
+          key={currentPage}
+          entityID={currentPage}
+          fullPageScroll={!showPageBackground}
+          header={
+            <>
+              <NewPublicationHeader
+                edit
+                hideSubscribeInHeader={hideSubscribeInHeader}
+                iconUrl={props.iconUrl}
+                wordmark={wordmark}
+                description={record?.description}
+                subscribe={{
+                  publicationUri: props.publicationUri,
+                  publicationUrl: record.url,
+                  publicationName: record.name,
+                  publicationDescription: record.description,
+                  newsletterMode: props.newsletterMode,
+                }}
+              />
 
-            <PublicationPagesEditNav
-              publicationUrl={record.url}
-              hideSubscribeInHeader={hideSubscribeInHeader}
-              subscribe={{
-                publicationUri: props.publicationUri,
-                publicationUrl: record.url,
-                publicationName: record.name,
-                publicationDescription: record.description,
-                newsletterMode: props.newsletterMode,
-              }}
-              selectedPage={currentPage}
-              onSelectPage={setSelectedPage}
-            />
-            <div className="spacer h-3" />
-          </>
-        }
-      />
+              <PublicationPagesEditNav
+                publicationUrl={record.url}
+                hideSubscribeInHeader={hideSubscribeInHeader}
+                subscribe={{
+                  publicationUri: props.publicationUri,
+                  publicationUrl: record.url,
+                  publicationName: record.name,
+                  publicationDescription: record.description,
+                  newsletterMode: props.newsletterMode,
+                }}
+                selectedPage={currentPage}
+                onSelectPage={setSelectedPage}
+              />
+              <div className="spacer h-3" />
+            </>
+          }
+        />
+      </ListDndProvider>
     </div>
   );
 }

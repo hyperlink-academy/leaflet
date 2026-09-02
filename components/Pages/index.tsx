@@ -10,6 +10,7 @@ import { useCardBorderHidden } from "./useCardBorderHidden";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
 import { LeafletSidebar } from "app/(app)/(editor)/[leaflet_id]/Sidebar";
 import { Page } from "./Page";
+import { ListDndProvider } from "components/Blocks/ListDnd";
 import { IframePageView } from "./IframePageView";
 import { PageOptionButton } from "./PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
@@ -27,7 +28,9 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
     !!cardBorderHidden && pages.length === 0 && !firstPageIsCanvas;
 
   return (
-    <>
+    // One drag context above every open page, so list items can be dragged
+    // between them (e.g. into an open subpage).
+    <ListDndProvider>
       <LeafletSidebar />
       {!fullPageScroll && !props.flow && (
         <BookendSpacer
@@ -56,9 +59,7 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
               <IframePageView
                 url={page.url}
                 onOpen={(url) => {
-                  useUIState
-                    .getState()
-                    .openPage(page, { type: "iframe", url });
+                  useUIState.getState().openPage(page, { type: "iframe", url });
                   requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                       scrollIntoViewIfNeeded(
@@ -73,9 +74,7 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
                 pageOptions={
                   <div className="pageOptions w-fit z-10 absolute sm:-right-[19px] right-3 sm:top-3 top-0 flex sm:flex-col flex-row-reverse gap-1 items-start">
                     <PageOptionButton
-                      onClick={() =>
-                        useUIState.getState().closePage(page)
-                      }
+                      onClick={() => useUIState.getState().closePage(page)}
                     >
                       <CloseTiny />
                     </PageOptionButton>
@@ -103,7 +102,7 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
           }}
         />
       )}
-    </>
+    </ListDndProvider>
   );
 }
 

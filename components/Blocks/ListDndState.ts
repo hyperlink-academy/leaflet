@@ -5,6 +5,30 @@ import type {
 } from "@dnd-kit/core";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
+import type { Block } from "components/Blocks/Block";
+
+// Every mounted page's visible block list, so the drag handlers (which live
+// in one ListDndProvider above all open pages) can resolve which page a
+// droppable belongs to and compute drops across pages. Written from each
+// Blocks render via effect; read only inside drag event handlers.
+export type ListDndPage = {
+  pageID: string;
+  blocks: Block[];
+  zoomDepth?: number;
+};
+const pageRegistry = new Map<string, ListDndPage>();
+export const registerListDndPage = (page: ListDndPage) => {
+  pageRegistry.set(page.pageID, page);
+};
+export const unregisterListDndPage = (pageID: string) => {
+  pageRegistry.delete(pageID);
+};
+export const findListDndPageForBlock = (
+  entityID: string,
+): ListDndPage | undefined => {
+  for (let page of pageRegistry.values())
+    if (page.blocks.some((b) => b.entityID === entityID)) return page;
+};
 
 // Where a dragged list item would land: enough to render the indicator line
 // (entityID + edge + depth) and to apply the move on drop (newParent + position).
