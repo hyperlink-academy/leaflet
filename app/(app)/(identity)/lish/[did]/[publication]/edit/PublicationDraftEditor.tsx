@@ -11,6 +11,7 @@ import { SelectionManager } from "components/SelectionManager";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { Page } from "components/Pages/Page";
+import { ListDndProvider } from "components/Blocks/ListDnd";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { NewPublicationHeader } from "app/(app)/(published)/lish/[did]/[publication]/PublicationHeader";
 import { PublicationPagesEditNav } from "./PublicationPagesEditNav";
@@ -63,14 +64,16 @@ export function PublicationDraftEditor(props: {
                   entityID={props.leaflet_id}
                   className="h-full flex items-stretch place-items-center"
                 >
-                  <PublicationDraftEditorContent
-                    leaflet_id={props.leaflet_id}
-                    did={props.did}
-                    record={record}
-                    iconUrl={iconUrl}
-                    publicationUri={props.publicationUri}
-                    newsletterMode={props.newsletterMode}
-                  />
+                  <ListDndProvider>
+                    <PublicationDraftEditorContent
+                      leaflet_id={props.leaflet_id}
+                      did={props.did}
+                      record={record}
+                      iconUrl={iconUrl}
+                      publicationUri={props.publicationUri}
+                      newsletterMode={props.newsletterMode}
+                    />
+                  </ListDndProvider>
                 </DraftLeafletBackground>
               </div>
               <PublicationEditMobileFooter />
