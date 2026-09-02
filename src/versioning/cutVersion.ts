@@ -40,6 +40,7 @@ export async function cutVersion(
     kind: VersionKind;
     name?: string | null;
     authorDid?: string | null;
+    authorIdentity?: string | null;
     facts?: SnapshotFact[];
   },
 ): Promise<boolean> {
@@ -53,8 +54,7 @@ export async function cutVersion(
     .where(eq(document_versions.token, args.tokenId))
     .orderBy(desc(document_versions.created_at))
     .limit(1);
-  if (latest && latest.closure_hash === closureHash)
-    return false;
+  if (latest && latest.closure_hash === closureHash) return false;
 
   let versionId = v7();
   let byteSize = Buffer.byteLength(serialized);
@@ -64,6 +64,7 @@ export async function cutVersion(
     kind: args.kind,
     name: args.name ?? null,
     author_did: args.authorDid ?? null,
+    author_identity: args.authorIdentity ?? null,
     closure_hash: closureHash,
     // node-postgres serializes a bare JS array as a Postgres array literal,
     // not json, so the top-level array must be stringified and cast.

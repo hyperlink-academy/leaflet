@@ -51,7 +51,11 @@ export function VersionHistory() {
         <div className="flex flex-col gap-0 leading-snug">
           <h3>Version History</h3>
           <div className="text-sm text-tertiary">
-            Select a version to view it
+            {versions === undefined
+              ? null
+              : versions.length === 0
+                ? "Save versions of your document, restore or copy them later!"
+                : "Select a version to view it"}
           </div>
         </div>
         <SaveVersionForm tokenId={tokenId} flush={flush} onSaved={mutate} />
@@ -165,7 +169,8 @@ function VersionRow(props: {
           className="text-tertiary font-normal italic text-sm truncate"
           title={date}
         >
-          {withinLastDay ? timeAgo(version.created_at) : date}
+          {withinLastDay ? timeAgo(version.created_at) : date} ·{" "}
+          {version.author_name || "Someone"}
         </div>
       </div>
     </Link>

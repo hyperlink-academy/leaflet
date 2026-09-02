@@ -91,8 +91,9 @@ export async function restoreDocumentVersion(args: {
   tokenId: string;
   versionId: string;
   authorDid: string | null;
+  authorIdentity: string | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  let { tokenId, versionId, authorDid } = args;
+  let { tokenId, versionId, authorDid, authorIdentity } = args;
   const client = await pool.connect();
   const db = drizzle(client);
   try {
@@ -133,6 +134,7 @@ export async function restoreDocumentVersion(args: {
         rootEntity,
         kind: "pre_restore",
         authorDid,
+        authorIdentity,
         facts: currentFacts,
       });
 

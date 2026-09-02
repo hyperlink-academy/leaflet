@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getAuthIdentity } from "src/auth";
+import { getProfiles } from "src/identity/profileCache";
 import { isUuid } from "src/utils/isUuid";
 import { Ok, Err, type Result } from "src/result";
 import { cutVersion, type SnapshotFact } from "src/versioning/cutVersion";
@@ -19,6 +20,7 @@ export type DocumentVersionListing = {
   name: string | null;
   kind: string;
   created_at: string;
+  author_name: string | null;
 };
 
 async function getWritableToken(tokenId: string) {
@@ -41,11 +43,31 @@ export async function getVersions(
 
   let { data, error } = await supabaseServerClient
     .from("document_versions")
-    .select("id, name, kind, created_at")
+    .select("id, name, kind, created_at, author_did, identities(email)")
     .eq("token", tokenId)
     .order("created_at", { ascending: false });
   if (error) return Err("Couldn't load versions");
-  return Ok(data ?? []);
+
+  let dids = [
+    ...new Set(
+      (data ?? []).flatMap((v) => (v.author_did ? [v.author_did] : [])),
+    ),
+  ];
+  let profiles = dids.length > 0 ? await getProfiles(dids) : new Map();
+
+  return Ok(
+    (data ?? []).map(({ author_did, identities, ...version }) => {
+      let profile = author_did ? profiles.get(author_did) : null;
+      return {
+        ...version,
+        author_name:
+          profile?.displayName ||
+          (profile?.handle ? `@${profile.handle}` : null) ||
+          identities?.email ||
+          null,
+      };
+    }),
+  );
 }
 
 export async function saveVersion(
@@ -66,6 +88,7 @@ export async function saveVersion(
         kind: "named",
         name: name?.trim() || null,
         authorDid: identity?.atp_did ?? null,
+        authorIdentity: identity?.id ?? null,
       }),
     );
     return Ok({ unchanged: !cut });
@@ -87,6 +110,7 @@ export async function restoreVersion(
     tokenId,
     versionId,
     authorDid: identity?.atp_did ?? null,
+    authorIdentity: identity?.id ?? null,
   });
   return result.ok ? Ok(null) : Err(result.error);
 }
