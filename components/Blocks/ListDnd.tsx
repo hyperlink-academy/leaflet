@@ -16,9 +16,11 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { getEventCoordinates } from "@dnd-kit/utilities";
 import { Replicache } from "replicache";
 import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
+import { elementId } from "src/utils/elementId";
 import { useFoldedBlocks } from "components/FoldStateProvider";
 import { unfoldBlocks } from "src/utils/foldBlocks";
 import {
@@ -60,6 +62,13 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
   let dropRef = useRef<ListDropTarget | null>(null);
   // One horizontal indent unit, read from the theme at drag start.
   let indentWidthRef = useRef(38);
+  // Where on its own row the drag started (pointer x minus the row's left
+  // edge). Depth projection measures horizontal travel against the hovered
+  // row's left edge relative to this, which equals plain pointer delta within
+  // one page but stays meaningful across side-by-side pages — raw delta would
+  // absorb the whole page-to-page distance and pin cross-page drops to the
+  // clamp.
+  let startRelXRef = useRef(0);
   // The dragged block and the page it came from, set synchronously at drag
   // start so the move handlers never race the re-render.
   let activeRef = useRef<Block | null>(null);
@@ -78,13 +87,22 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
     return within.length > 0 ? within : closestCenter(args);
   }, []);
 
-  let onDragStart = ({ active: dragActive }: DragStartEvent) => {
+  let onDragStart = ({
+    active: dragActive,
+    activatorEvent,
+  }: DragStartEvent) => {
     let page = findListDndPageForBlock(String(dragActive.id));
     if (!page) return;
     let arr = page.blocks;
     let index = arr.findIndex((b) => b.entityID === dragActive.id);
     let block = arr[index];
     if (!block?.listData) return;
+    let rowLeft =
+      document
+        .getElementById(elementId.block(block.entityID).container)
+        ?.getBoundingClientRect().left ?? 0;
+    startRelXRef.current =
+      (getEventCoordinates(activatorEvent)?.x ?? rowLeft) - rowLeft;
     indentWidthRef.current =
       parseInt(
         getComputedStyle(document.documentElement).getPropertyValue(
@@ -116,7 +134,7 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
     useListDragState.setState({ activeId: block.entityID, dropTarget: null });
   };
 
-  let onDragMove = ({ over, delta }: DragMoveEvent) => {
+  let onDragMove = ({ over }: DragMoveEvent) => {
     let activeBlock = activeRef.current;
     let page = over ? findListDndPageForBlock(String(over.id)) : undefined;
     let crossPage = !!page && page.pageID !== activePageRef.current;
@@ -133,8 +151,8 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
         ? computeDropTarget(
             activeBlock,
             String(over.id),
-            pointerRef.current.y,
-            delta.x,
+            pointerRef.current,
+            startRelXRef.current,
             indentWidthRef.current,
             rectsRef.current?.get(over.id),
             page,
@@ -239,8 +257,8 @@ async function getDescendantPages(
 function computeDropTarget(
   activeBlock: Block,
   overId: string,
-  pointerY: number,
-  deltaX: number,
+  pointer: { x: number; y: number },
+  startRelX: number,
   indentWidth: number,
   overRect: ClientRect | undefined,
   // The page the pointer is over — not necessarily the page the dragged
@@ -289,7 +307,7 @@ function computeDropTarget(
       above = slotAbove;
       below = slotBelow;
     } else {
-      edge = pointerY < overRect.top + overRect.height / 2 ? "top" : "bottom";
+      edge = pointer.y < overRect.top + overRect.height / 2 ? "top" : "bottom";
       above = edge === "top" ? blocks[overIndex - 1] : blocks[overIndex];
       below = edge === "top" ? blocks[overIndex] : blocks[overIndex + 1];
       if (inActiveSubtree(above)) above = slotAbove;
@@ -299,7 +317,7 @@ function computeDropTarget(
       (above?.entityID ?? null) === (slotAbove?.entityID ?? null) &&
       (below?.entityID ?? null) === (slotBelow?.entityID ?? null);
   } else {
-    edge = pointerY < overRect.top + overRect.height / 2 ? "top" : "bottom";
+    edge = pointer.y < overRect.top + overRect.height / 2 ? "top" : "bottom";
     above = edge === "top" ? blocks[overIndex - 1] : blocks[overIndex];
     below = edge === "top" ? blocks[overIndex] : blocks[overIndex + 1];
   }
@@ -307,9 +325,14 @@ function computeDropTarget(
     ? { entityID: activeId, edge: "top" as const }
     : { entityID: overId, edge };
 
-  // Horizontal drag distance projects the preferred depth (one indent unit
-  // per level), clamped to what the gap allows: from one level above the item
+  // Horizontal travel projects the preferred depth (one indent unit per
+  // level), clamped to what the gap allows: from one level above the item
   // below the line (a list split) down to one level under the item above it.
+  // Travel is measured against the hovered row's left edge relative to where
+  // on its own row the drag started, so it carries across side-by-side pages.
+  // The baseline (the item's own depth) is clamped into range first, so a
+  // deep item over a shallow gap adjusts from the gap's range instead of
+  // needing to claw back the clamped-away distance.
   let minDepth = below?.listData
     ? Math.max(floor, below.listData.depth - 1)
     : floor;
@@ -318,12 +341,14 @@ function computeDropTarget(
     : above
       ? 1
       : minDepth;
+  let offsetX = pointer.x - overRect.left - startRelX;
+  let neutralDepth = Math.min(
+    maxDepth,
+    Math.max(minDepth, activeBlock.listData.depth),
+  );
   let depth = Math.min(
     maxDepth,
-    Math.max(
-      minDepth,
-      activeBlock.listData.depth + Math.round(deltaX / indentWidth),
-    ),
+    Math.max(minDepth, neutralDepth + Math.round(offsetX / indentWidth)),
   );
   // Back in its own slot at its own depth: not a move.
   if (ownSlot && depth === activeBlock.listData.depth) return null;
