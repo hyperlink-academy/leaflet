@@ -90,6 +90,21 @@ export type Database = {
           },
         ]
       }
+      blob_cleanup_queue: {
+        Row: {
+          path: string
+          queued_at: string
+        }
+        Insert: {
+          path: string
+          queued_at?: string
+        }
+        Update: {
+          path?: string
+          queued_at?: string
+        }
+        Relationships: []
+      }
       bsky_follows: {
         Row: {
           follows: string
@@ -346,6 +361,89 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_version_blob_refs: {
+        Row: {
+          path: string
+          version: string
+        }
+        Insert: {
+          path: string
+          version: string
+        }
+        Update: {
+          path?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_version_blob_refs_version_fkey"
+            columns: ["version"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_versions: {
+        Row: {
+          author_did: string | null
+          author_identity: string | null
+          byte_size: number
+          closure_hash: string
+          created_at: string
+          fact_count: number
+          id: string
+          kind: string
+          name: string | null
+          snapshot: Json | null
+          snapshot_path: string | null
+          token: string
+        }
+        Insert: {
+          author_did?: string | null
+          author_identity?: string | null
+          byte_size: number
+          closure_hash: string
+          created_at?: string
+          fact_count: number
+          id: string
+          kind?: string
+          name?: string | null
+          snapshot?: Json | null
+          snapshot_path?: string | null
+          token: string
+        }
+        Update: {
+          author_did?: string | null
+          author_identity?: string | null
+          byte_size?: number
+          closure_hash?: string
+          created_at?: string
+          fact_count?: number
+          id?: string
+          kind?: string
+          name?: string | null
+          snapshot?: Json | null
+          snapshot_path?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_author_identity_fkey"
+            columns: ["author_identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_token_fkey"
+            columns: ["token"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2102,6 +2200,7 @@ export type Database = {
         }
         Returns: {
           attribute: string
+          author_did: string | null
           created_at: string
           data: Json
           entity: string
