@@ -92,7 +92,7 @@ export default async function PublicationArchive(props: {
   // The post rows are fetched alongside the shadowing check; they only go
   // unused in the rare case a document publishes at the /archive path.
   const [{ data: shadowingDocs }, postRows] = await Promise.all([
-    resolveDocumentFilter(did, publication_name, "archive").then((filter) =>
+    resolveDocumentFilter(did, publication.uri, "archive").then((filter) =>
       supabaseServerClient.from("documents").select("uri").or(filter).limit(1),
     ),
     fetchPublicationPostRows(publication.uri),

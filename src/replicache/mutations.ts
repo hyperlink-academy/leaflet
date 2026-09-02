@@ -107,26 +107,29 @@ const addBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
-  if (args.list) {
+  let parentIsBlock =
+    !args.list &&
+    (await ctx.scanIndex.eav(args.parent, "block/type")).length > 0;
+  if (args.list || parentIsBlock) {
     await ctx.assertFact({
       entity: args.newEntityID,
       attribute: "block/is-list",
       data: { type: "boolean", value: true },
     });
-    if (args.list.listStyle) {
-      await ctx.assertFact({
-        entity: args.newEntityID,
-        attribute: "block/list-style",
-        data: { type: "list-style-union", value: args.list.listStyle },
-      });
-    }
-    if (args.list.checklist !== undefined) {
-      await ctx.assertFact({
-        entity: args.newEntityID,
-        attribute: "block/check-list",
-        data: { type: "boolean", value: args.list.checklist },
-      });
-    }
+  }
+  if (args.list?.listStyle) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "block/list-style",
+      data: { type: "list-style-union", value: args.list.listStyle },
+    });
+  }
+  if (args.list?.checklist !== undefined) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "block/check-list",
+      data: { type: "boolean", value: args.list.checklist },
+    });
   }
 };
 

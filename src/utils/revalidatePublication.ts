@@ -57,39 +57,47 @@ function revalidatePostPaths(
   ]);
 }
 
-// Route-serving paths of each publication's published pages, keyed by
-// publication uri. External link tabs store a full URL in `path`; only real
-// routes count, and "/" is the publication base every caller already drops.
-async function publishedPagePathsByPublication(pubUris: string[]) {
-  const byPub = new Map<string, string[]>();
-  if (!pubUris.length) return byPub;
+// Route-serving paths of a publication's published pages. External link tabs
+// store a full URL in `path`; only real routes count, and "/" is the
+// publication base every caller already drops.
+async function publishedPagePaths(publicationUri: string) {
   const { data } = await supabaseServerClient
     .from("publication_pages")
-    .select("publication, path")
-    .in("publication", pubUris);
-  for (const row of data ?? []) {
-    if (!row.path || !row.path.startsWith("/") || row.path === "/") continue;
-    byPub.set(row.publication, [
-      ...(byPub.get(row.publication) ?? []),
-      row.path,
-    ]);
-  }
-  return byPub;
+    .select("path")
+    .eq("publication", publicationUri);
+  return (data ?? []).flatMap((row) =>
+    row.path && row.path.startsWith("/") && row.path !== "/" ? [row.path] : [],
+  );
 }
 
-// The publication's posts as the prev/next buttons order them, plus the
-// preferences that decide whether any post renders those buttons.
-const POST_NEIGHBOURS_SELECT =
-  "documents_in_publications(documents(uri, sort_date, path:data->>path, title:data->>title, publishedAt:data->>publishedAt))";
-type PostNeighboursRows = {
-  documents: {
-    uri: string;
-    sort_date: string | null;
-    path: string | null;
-    title: string | null;
-    publishedAt: string | null;
-  } | null;
-}[];
+type NeighbourDoc = {
+  uri: string;
+  sort_date: string | null;
+  path: string | null;
+  title: string | null;
+  publishedAt: string | null;
+};
+
+// Whether any of the publication's post pages render neighbour buttons at
+// all — when neither is on, the sibling-post list is never needed.
+function neighbourButtonPrefs(record: unknown) {
+  const preferences = normalizePublicationRecord(record)?.preferences;
+  return {
+    showPrevNext: preferences?.showPrevNext !== false,
+    showFirstLast: preferences?.showFirstLast === true,
+  };
+}
+
+// The publication's posts as the prev/next buttons order them.
+async function postNeighbours(publicationUri: string) {
+  const { data } = await supabaseServerClient
+    .from("documents_in_publications")
+    .select(
+      "documents(uri, sort_date, path:data->>path, title:data->>title, publishedAt:data->>publishedAt)",
+    )
+    .eq("publication", publicationUri);
+  return (data ?? []).flatMap((row) => (row.documents ? [row.documents] : []));
+}
 
 // Post pages render their neighbours' titles in the prev/next row and the
 // first/last post in the first/last row, so a post appearing, disappearing,
@@ -97,17 +105,15 @@ type PostNeighboursRows = {
 // buttons are on and the post is at an edge, every post in the publication.
 // `doc.sort_date` is where the post sits (or sat, for a delete) in that order.
 function neighbourPostPaths(
-  record: unknown,
-  rows: PostNeighboursRows | null | undefined,
+  {
+    showPrevNext,
+    showFirstLast,
+  }: { showPrevNext: boolean; showFirstLast: boolean },
+  docs: NeighbourDoc[],
   doc: { uri: string; sort_date: string | null | undefined },
 ) {
-  const preferences = normalizePublicationRecord(record)?.preferences;
-  const showPrevNext = preferences?.showPrevNext !== false;
-  const showFirstLast = preferences?.showFirstLast === true;
   if (!showPrevNext && !showFirstLast) return [];
-  const sorted = sortPostsForPrevNext(
-    (rows ?? []).flatMap((r) => (r.documents ? [r.documents] : [])),
-  );
+  const sorted = sortPostsForPrevNext(docs);
   const { prev, next, atEdge } = adjacentPosts(sorted, doc);
   const targets =
     showFirstLast && atEdge
@@ -124,83 +130,91 @@ function neighbourPostPaths(
 }
 
 // Every cached page that lists or renders a document: the standalone /p/ URL
-// and, for each publication it belongs to, the post/index/archive paths and
-// the neighbouring posts whose prev/next buttons point at it. Callable before
-// the document row exists (nothing to look up → /p/ only) or after it's gone:
+// and, when it belongs to a publication, the post/index/archive paths and the
+// neighbouring posts whose prev/next buttons point at it. Callable before the
+// document row exists (nothing to look up → /p/ only) or after it's gone:
 // pass `snapshot` (captured pre-delete) and the join-row lookup is skipped —
-// publication names, posts and preferences still resolve from the
+// the publication name, posts and preferences still resolve from the
 // publications table, which outlives the document.
 export async function revalidateDocumentPaths(
   documentUri: string,
-  snapshot?: {
-    publications: string[];
-    path?: string | null;
-    sort_date?: string | null;
+  opts?: {
+    snapshot?: {
+      publication?: string | null;
+      path?: string | null;
+      sort_date?: string | null;
+    };
+    // Interaction events (comments/recommends) re-render a post's own pages
+    // but never change adjacency or neighbour titles, so they skip the
+    // sibling-post lookup entirely.
+    neighbours?: boolean;
   },
 ) {
+  const snapshot = opts?.snapshot;
   let docUri;
   try {
     docUri = new AtUri(documentUri);
   } catch {
     return;
   }
-  let pubs: {
+  let pub: {
     uri: string;
     name: string | null | undefined;
-    neighbours: string[];
-  }[] = [];
+    record: unknown;
+  } | null = null;
   let docPath = snapshot?.path;
+  let sortDate = snapshot?.sort_date;
   if (snapshot) {
-    if (snapshot.publications.length) {
+    if (snapshot.publication) {
       const { data } = await supabaseServerClient
         .from("publications")
-        .select(`uri, record, ${POST_NEIGHBOURS_SELECT}`)
-        .in("uri", snapshot.publications);
-      pubs = snapshot.publications.map((uri) => {
-        const pub = data?.find((r) => r.uri === uri);
-        return {
-          uri,
-          name: normalizePublicationRecord(pub?.record)?.name,
-          neighbours: neighbourPostPaths(
-            pub?.record,
-            pub?.documents_in_publications,
-            { uri: documentUri, sort_date: snapshot.sort_date },
-          ),
-        };
-      });
+        .select("record")
+        .eq("uri", snapshot.publication)
+        .maybeSingle();
+      pub = {
+        uri: snapshot.publication,
+        record: data?.record,
+        name: normalizePublicationRecord(data?.record)?.name,
+      };
     }
   } else {
-    const { data: rows } = await supabaseServerClient
+    const { data: row } = await supabaseServerClient
       .from("documents_in_publications")
       .select(
-        `publications(uri, record, ${POST_NEIGHBOURS_SELECT}), documents(data, sort_date)`,
+        "publications(uri, record), documents(sort_date, path:data->>path)",
       )
-      .eq("document", documentUri);
-    for (const row of rows ?? []) {
-      if (!row.publications) continue;
-      pubs.push({
+      .eq("document", documentUri)
+      .maybeSingle();
+    if (row?.publications) {
+      pub = {
         uri: row.publications.uri,
+        record: row.publications.record,
         name: normalizePublicationRecord(row.publications.record)?.name,
-        neighbours: neighbourPostPaths(
-          row.publications.record,
-          row.publications.documents_in_publications,
-          { uri: documentUri, sort_date: row.documents?.sort_date },
-        ),
-      });
+      };
       // Documents publish under record.path (usually "/<rkey>", but other
       // clients can write any path) — drop both spellings.
-      docPath =
-        docPath ?? (row.documents?.data as { path?: string } | null)?.path;
+      docPath = docPath ?? row.documents?.path;
+      sortDate = sortDate ?? row.documents?.sort_date;
     }
   }
-  const pagePaths = await publishedPagePathsByPublication(
-    pubs.map((p) => p.uri),
-  );
-  for (const pub of pubs)
-    revalidatePostPaths(pub.uri, pub.name, docUri.rkey, docPath, [
-      ...(pagePaths.get(pub.uri) ?? []),
-      ...pub.neighbours,
+  if (pub) {
+    const prefs = neighbourButtonPrefs(pub.record);
+    const loadNeighbours =
+      opts?.neighbours !== false && (prefs.showPrevNext || prefs.showFirstLast);
+    const [pagePaths, neighbourDocs] = await Promise.all([
+      publishedPagePaths(pub.uri),
+      loadNeighbours ? postNeighbours(pub.uri) : Promise.resolve([]),
     ]);
+    revalidatePostPaths(pub.uri, pub.name, docUri.rkey, docPath, [
+      ...pagePaths,
+      ...(loadNeighbours
+        ? neighbourPostPaths(prefs, neighbourDocs, {
+            uri: documentUri,
+            sort_date: sortDate,
+          })
+        : []),
+    ]);
+  }
   // Handle-form /p/ URLs canonical-redirect onto this one, so the did
   // spelling is the only cache entry a document has here.
   revalidatePath(`/p/${docUri.host}/${docUri.rkey}`);

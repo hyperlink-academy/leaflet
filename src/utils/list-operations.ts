@@ -3,6 +3,7 @@ import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import type { UndoManager } from "src/undoManager";
 import { unfoldBlocks } from "src/utils/foldBlocks";
+import { isZoomedBlockRoot } from "src/useUIState";
 
 export function orderListItems(
   block: Block,
@@ -34,7 +35,8 @@ export async function indent(
   rep?: Replicache<ReplicacheMutators> | null,
   undoManager?: UndoManager,
 ): Promise<{ success: boolean }> {
-  if (!block.listData) return { success: false };
+  if (!block.listData || isZoomedBlockRoot(block.entityID))
+    return { success: false };
 
   // All lists use parent/child structure - move to new parent
   if (!previousBlock?.listData) return { success: false };
@@ -66,6 +68,8 @@ export async function outdentFull(
 ) {
   if (!block.listData) return;
   let listData = block.listData;
+  if (isZoomedBlockRoot(block.entityID) || isZoomedBlockRoot(listData.parent))
+    return;
 
   let run = async () => {
     // make this block not a list
@@ -105,6 +109,9 @@ export async function outdent(
 ): Promise<{ success: boolean }> {
   if (!block.listData) return { success: false };
   let listData = block.listData;
+  // Neither the zoom root nor its direct children can leave the zoomed view.
+  if (isZoomedBlockRoot(block.entityID) || isZoomedBlockRoot(listData.parent))
+    return { success: false };
 
   // All lists use parent/child structure - move blocks between parents
   if (listData.depth === 1) {

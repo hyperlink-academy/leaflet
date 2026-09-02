@@ -2,7 +2,7 @@ import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
 import { getPageBlocks } from "src/replicache/getBlocks";
-import { useUIState } from "src/useUIState";
+import { isZoomedBlockRoot, useUIState } from "src/useUIState";
 import { unfoldBlocks } from "src/utils/foldBlocks";
 
 type BlockData = ReturnType<typeof getPageBlocks>[number];
@@ -129,7 +129,8 @@ export const moveBlockUp = async (rep: Replicache<ReplicacheMutators>) => {
     return;
   }
   let block = sortedBlocks[0];
-  if (block && (await moveFoldedHeadingSection(rep, block, "up"))) return;
+  if (!block || isZoomedBlockRoot(block.entityID)) return;
+  if (await moveFoldedHeadingSection(rep, block, "up")) return;
   let previousBlock =
     siblings?.[siblings.findIndex((s) => s.entityID === block.entityID) - 1];
   if (previousBlock.entityID === block.listData?.parent) {
@@ -175,7 +176,8 @@ export const moveBlockDown = async (
     return;
   }
   let block = sortedBlocks[0];
-  if (block && (await moveFoldedHeadingSection(rep, block, "down"))) return;
+  if (!block || isZoomedBlockRoot(block.entityID)) return;
+  if (await moveFoldedHeadingSection(rep, block, "down")) return;
   let nextBlock = siblings
     .slice(siblings.findIndex((s) => s.entityID === block.entityID) + 1)
     .find(

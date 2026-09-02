@@ -2,11 +2,24 @@ import { create } from "zustand";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { getPageBlocks, isBlockHidden } from "src/replicache/getBlocks";
+import {
+  filterBlocksForZoom,
+  getPageBlocks,
+  isBlockHidden,
+} from "src/replicache/getBlocks";
 
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
+
+export const getViewBlocks = (
+  rep: Replicache<ReplicacheMutators>,
+  page: string,
+) =>
+  filterBlocksForZoom(
+    getPageBlocks(rep, page),
+    useUIState.getState().zoomedBlocks[page],
+  );
 
 // Toolbar actions run against the selection, but the toolbar is also shown for
 // a block that has focus without ever having been selected (e.g. focused
@@ -18,7 +31,7 @@ export const getSelectedOrFocusedBlocks = async (
   if (sortedBlocks.length > 0) return sortedBlocks;
   let focused = useUIState.getState().focusedEntity;
   if (!focused || focused.entityType !== "block") return [];
-  return getPageBlocks(rep, focused.parent).filter(
+  return getViewBlocks(rep, focused.parent).filter(
     (s) => s.entityID === focused.entityID,
   );
 };
@@ -27,9 +40,12 @@ export const getSortedSelection = async (
   rep: Replicache<ReplicacheMutators>,
 ) => {
   let selectedBlocks = useUIState.getState().selectedBlocks;
-  let foldedBlocks = useUIState.getState().foldedBlocks;
   if (!selectedBlocks[0]) return [[], []];
-  let siblings = getPageBlocks(rep, selectedBlocks[0].parent);
+  let siblings = getViewBlocks(rep, selectedBlocks[0].parent);
+  let siblingIDs = new Set(siblings.map((block) => block.entityID));
+  let foldedBlocks = useUIState
+    .getState()
+    .foldedBlocks.filter((entity) => siblingIDs.has(entity));
   let sortedBlocks = siblings.filter((s) => {
     let selected = selectedBlocks.find((sb) => sb.entityID === s.entityID);
     return selected;

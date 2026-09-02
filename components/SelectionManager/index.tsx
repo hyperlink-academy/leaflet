@@ -7,7 +7,6 @@ import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
-import { getPageBlocks, isBlockHidden } from "src/replicache/getBlocks";
 import {
   multiSelectIndent,
   multiSelectOutdent,
@@ -24,6 +23,7 @@ import { schema } from "../Blocks/TextBlock/schema";
 import { MarkType } from "prosemirror-model";
 import { useSelectingMouse, getSortedSelection } from "./selectionState";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
+import { zoomIntoBlock } from "src/utils/zoomIntoBlock";
 
 //How should I model selection? As ranges w/ a start and end? Store *blocks* so that I can just construct ranges?
 // How does this relate to *when dragging* ?
@@ -41,9 +41,7 @@ export function SelectionManager() {
         metaKey: true,
         key: "ArrowUp",
         handler: async () => {
-          let [firstBlock] = rep
-            ? getPageBlocks(rep, useUIState.getState().selectedBlocks[0].parent)
-            : [];
+          let [, [firstBlock]] = await getSortedSelectionBound();
           if (firstBlock) focusBlock(firstBlock, { type: "start" });
         },
       },
@@ -51,12 +49,8 @@ export function SelectionManager() {
         metaKey: true,
         key: "ArrowDown",
         handler: async () => {
-          let blocks = rep
-            ? getPageBlocks(rep, useUIState.getState().selectedBlocks[0].parent)
-            : [];
-          let folded = useUIState.getState().foldedBlocks;
-          blocks = blocks.filter((f) => !isBlockHidden(f, folded));
-          let lastBlock = blocks[blocks.length - 1];
+          let [, siblings] = await getSortedSelectionBound();
+          let lastBlock = siblings.at(-1);
           if (lastBlock) focusBlock(lastBlock, { type: "end" });
         },
       },
@@ -173,6 +167,18 @@ export function SelectionManager() {
           let block = sortedBlocks[0];
           if (!block || (!block.listData && block.type !== "heading")) return;
           toggleFold(rep, block.entityID);
+        },
+      },
+      {
+        metaKey: true,
+        shift: true,
+        // shift+; produces ":" on most layouts, but not all
+        key: [":", ";"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          let block = sortedBlocks[0];
+          if (!block?.listData) return;
+          zoomIntoBlock(block.parent, block.entityID);
         },
       },
     ];

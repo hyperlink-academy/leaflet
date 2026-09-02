@@ -35,6 +35,11 @@ export function ListDndContext(props: {
   pageID: string;
   // Visible blocks in document order — the same array the page maps over.
   blocks: Block[];
+  // When the page is zoomed into a list item, the zoom root's absolute depth.
+  // Drops are floored to the root's child depth so nothing can be dragged out
+  // of the zoomed subtree, and indicator depths are converted to display
+  // depths.
+  zoomDepth?: number;
   children: React.ReactNode;
 }) {
   let { rep } = useReplicache();
@@ -89,11 +94,13 @@ export function ListDndContext(props: {
     setActive({
       ...block,
       pageType: "doc",
-      parent: props.pageID,
       previousBlock: arr[index - 1] || null,
       nextBlock,
       nextPosition:
         block.listData.depth === nextDepth ? nextBlock?.position || null : null,
+      displayDepth: props.zoomDepth
+        ? block.listData.depth - props.zoomDepth + 1
+        : undefined,
     });
     useListDragState.setState({ activeId: block.entityID, dropTarget: null });
   };
@@ -110,9 +117,16 @@ export function ListDndContext(props: {
             rectsRef.current?.get(over.id),
             blocksRef.current,
             props.pageID,
+            // In a zoomed view nothing may land shallower than the zoom
+            // root's children.
+            props.zoomDepth ? props.zoomDepth + 1 : 1,
             foldedRef.current,
           )
         : null;
+    // The placement fields stay absolute; the indicator's depth renders in
+    // display space (the zoom root displays at depth 1).
+    if (target && props.zoomDepth)
+      target = { ...target, depth: target.depth - props.zoomDepth + 1 };
     dropRef.current = target;
     // Only publish when the target actually changes, so pointer movement
     // within the same gap doesn't re-render anything.
@@ -182,6 +196,9 @@ function computeDropTarget(
   overRect: ClientRect | undefined,
   blocks: Block[],
   pageID: string,
+  // The shallowest depth this view may host (1, or the zoom root's child
+  // depth in a zoomed view).
+  floor: number,
   foldedBlocks: readonly string[],
 ): ListDropTarget | null {
   if (!overRect) return null;
@@ -231,8 +248,14 @@ function computeDropTarget(
   // Horizontal drag distance projects the preferred depth (one indent unit
   // per level), clamped to what the gap allows: from one level above the item
   // below the line (a list split) down to one level under the item above it.
-  let minDepth = below?.listData ? Math.max(1, below.listData.depth - 1) : 1;
-  let maxDepth = above?.listData ? above.listData.depth + 1 : 1;
+  let minDepth = below?.listData
+    ? Math.max(floor, below.listData.depth - 1)
+    : floor;
+  let maxDepth = above?.listData
+    ? above.listData.depth + 1
+    : above
+      ? 1
+      : minDepth;
   let depth = Math.min(
     maxDepth,
     Math.max(
@@ -301,6 +324,10 @@ function computeDropTarget(
           : undefined,
     };
   }
+  // No block above the gap: the top of an unzoomed page, where the item
+  // becomes the first root block. In a zoomed view the gap above the zoom
+  // root is not a valid target.
+  if (floor > 1) return null;
   return {
     ...indicator,
     depth: 1,

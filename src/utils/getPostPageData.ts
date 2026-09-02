@@ -23,6 +23,7 @@ import {
   projectPublicationForClient,
 } from "./postPageProjection";
 import { resolveDocumentFilter } from "./resolveDocumentFilter";
+import { fetchPublicationForPage } from "app/(app)/(published)/lish/[did]/[publication]/getPublicationForPage";
 import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
 import { sortPostsForPrevNext } from "src/utils/prevNextPosts";
 
@@ -31,8 +32,13 @@ export const getPostPageData = cache(async function getPostPageData(
   rkey: string,
   publicationName?: string,
 ) {
-  let filter = publicationName
-    ? await resolveDocumentFilter(did, publicationName, rkey)
+  // Per-request memoized alongside the page's own publication fetch, so the
+  // path resolver can filter on the indexed publication column.
+  let pub = publicationName
+    ? await fetchPublicationForPage(did, publicationName)
+    : null;
+  let filter = pub
+    ? await resolveDocumentFilter(did, pub.uri, rkey)
     : documentUriFilter(did, rkey);
   let { data: documents } = await supabaseServerClient
     .from("documents")
@@ -53,25 +59,21 @@ export const getPostPageData = cache(async function getPostPageData(
     )
     .or(filter)
     .order("uri", { ascending: false })
-    // A document can legally join two publications; without an embed order the
-    // [0] pick is nondeterministic and could disagree with getUnlockedPost's.
-    .order("publication", { referencedTable: "documents_in_publications" })
     .limit(1);
   let document = documents?.[0];
 
   if (!document) return null;
+  const documentPublication =
+    document.documents_in_publications[0]?.publications;
 
   // A publication-addressed URL must resolve within that publication.
   // resolveDocumentFilter falls back to a bare did+rkey match when the
   // (publication, path) lookup misses, which would otherwise serve the post
   // under any publication segment — minting a permanent ISR entry per
-  // spelling. Checked against every membership row (not the projected [0])
-  // since a document can legally join two publications.
+  // spelling.
   if (
     publicationName &&
-    !document.documents_in_publications.some((dip) =>
-      matchesPublicationSegment(dip.publications, did, publicationName),
-    )
+    !matchesPublicationSegment(documentPublication, did, publicationName)
   )
     return null;
 
@@ -84,7 +86,7 @@ export const getPostPageData = cache(async function getPostPageData(
 
   // Normalize the publication record - this is the primary way consumers should access publication data
   const normalizedPublication = normalizePublicationRecord(
-    document.documents_in_publications[0]?.publications?.record,
+    documentPublication?.record,
   );
 
   // Members-only gating: when the publication has paid memberships enabled and
@@ -92,7 +94,7 @@ export const getPostPageData = cache(async function getPostPageData(
   // the record leaves the server. This render is identity-free by construction
   // — every viewer gets the gated variant so the page stays cacheable — and
   // entitled readers unlock the tail client-side via getUnlockedPost.
-  const gatePub = document.documents_in_publications[0]?.publications;
+  const gatePub = documentPublication;
   const membershipTiers = buildMembershipTiers(
     gatePub?.publication_membership_settings,
     gatePub?.publication_membership_tiers ?? [],
@@ -141,9 +143,7 @@ export const getPostPageData = cache(async function getPostPageData(
     | undefined;
 
   const currentPublishedAt = normalizedDocument.publishedAt;
-  const allDocs =
-    document.documents_in_publications[0]?.publications
-      ?.documents_in_publications;
+  const allDocs = documentPublication?.documents_in_publications;
 
   if (currentPublishedAt && allDocs) {
     const sortedDocs = sortPostsForPrevNext(
@@ -245,9 +245,7 @@ export const getPostPageData = cache(async function getPostPageData(
     resolvePublicationTheme(normalizedPublication) || normalizedDocument?.theme;
 
   // Build explicit publication context for consumers
-  const publication = projectPublicationForClient(
-    document.documents_in_publications[0]?.publications,
-  );
+  const publication = projectPublicationForClient(documentPublication);
   const recommendsCount = document.recommends_on_documents?.[0]?.count ?? 0;
 
   // Comments are counted per-page so subpages (and the main page) each show only
