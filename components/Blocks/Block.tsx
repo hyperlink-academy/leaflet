@@ -75,7 +75,6 @@ export type BlockProps = {
   previousBlock: Block | null;
   nextPosition: string | null;
   headingFoldable?: boolean;
-  displayAsTitle?: boolean;
   displayDepth?: number;
 } & Block;
 
@@ -126,7 +125,7 @@ export const Block = memo(function Block(
       justify: "justify-start",
     }[alignment];
 
-  let displayedAsHeading = props.type === "heading" || props.displayAsTitle;
+  let displayedAsHeading = props.type === "heading";
 
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
@@ -247,7 +246,6 @@ function deepEqualsBlockProps(
     "type",
     "nextPosition",
     "headingFoldable",
-    "displayAsTitle",
     "displayDepth",
     "preview",
   ] as const;
@@ -305,7 +303,7 @@ export const BaseBlock = (
   return (
     <>
       {props.headingFoldable && <HeadingFoldButton {...props} />}
-      {props.listData && !props.displayAsTitle && <ListMarker {...props} />}
+      {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
           closeAreYouSure={() =>
@@ -530,16 +528,13 @@ const NonTextBlockOptions = (props: {
 // Disclosure triangle for folding a heading's section. Lives in the left gutter
 // (absolutely positioned in the wrapper padding) so it never shifts the heading
 // text, and only shows on hover unless the heading is currently folded.
-const HeadingFoldButton = (props: {
-  entityID: string;
-  displayAsTitle?: boolean;
-}) => {
+const HeadingFoldButton = (props: { entityID: string }) => {
   let { rep } = useReplicache();
   let folded = useIsFolded(props.entityID);
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let top =
-    props.displayAsTitle || headingLevel === 1
+    headingLevel === 1
       ? "top-[20px]"
       : headingLevel === 2
         ? "top-[14px]"

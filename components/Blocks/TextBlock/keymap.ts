@@ -16,7 +16,7 @@ import { Replicache } from "replicache";
 import type { Fact, ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
-import { useUIState } from "src/useUIState";
+import { isZoomedBlockRoot, useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
@@ -348,7 +348,7 @@ const backspace =
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return finish(false);
     }
-    if (propsRef.current.displayAsTitle) return finish(true);
+    if (isZoomedBlockRoot(propsRef.current.entityID)) return finish(true);
     // if you are in a list...
     if (propsRef.current.listData) {
       // ...and the item is a checklist item, remove the checklist attribute
@@ -661,7 +661,7 @@ const enter =
       state.selection.anchor <= 1 &&
       propsRef.current.pageType !== "canvas"
     ) {
-      if (propsRef.current.displayAsTitle) return true;
+      if (isZoomedBlockRoot(propsRef.current.entityID)) return true;
       insertAboveChain = insertAboveChain.then(async () => {
         um.startGroup();
         try {
@@ -741,7 +741,7 @@ const enter =
       }
       if (propsRef.current.listData) {
         let createChild =
-          propsRef.current.displayAsTitle ||
+          isZoomedBlockRoot(propsRef.current.entityID) ||
           (propsRef.current.nextBlock?.listData &&
             propsRef.current.nextBlock.listData.depth >
               propsRef.current.listData.depth &&

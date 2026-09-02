@@ -91,7 +91,6 @@ export function Blocks(props: { entityID: string }) {
       className={`blocks w-full flow-root outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
     >
       {visibleBlocks.map((f, index, arr) => {
-        let displayAsTitle = f.entityID === zoomedBlock;
         let nextBlock = arr[index + 1];
         let depth = f.listData?.depth || 1;
         let nextDepth = nextBlock?.listData?.depth || 1;
@@ -107,13 +106,11 @@ export function Blocks(props: { entityID: string }) {
             previousBlock={arr[index - 1] || null}
             nextBlock={arr[index + 1] || null}
             nextPosition={nextPosition}
-            headingFoldable={
-              foldableParentSet.has(f.entityID) &&
-              (displayAsTitle || !f.listData)
-            }
-            displayAsTitle={displayAsTitle}
+            headingFoldable={foldableParentSet.has(f.entityID) && !f.listData}
             displayDepth={
-              zoomDepth && f.listData ? f.listData.depth - zoomDepth : undefined
+              zoomDepth && f.listData
+                ? f.listData.depth - zoomDepth + 1
+                : undefined
             }
           />
         );
