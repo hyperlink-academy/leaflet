@@ -45,10 +45,19 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
 
   let sensors = useSensors(
     useSensor(PointerSensor, {
-      // Long press. The OS long-press timeout isn't exposed to the web;
-      // 250ms matches native drag-lift timing (and dnd-kit's recommended
-      // touch delay) while a quick tap still falls through as a click.
-      activationConstraint: { delay: 250, tolerance: 5 },
+      // The drag starts on whichever comes first: a 250ms hold (the OS
+      // long-press timeout isn't exposed to the web; 250ms matches native
+      // drag-lift timing and dnd-kit's recommended touch delay) or 8px of
+      // pointer travel. A quick clean tap still falls through as a click.
+      // dnd-kit reuses the one tolerance field as a movement-cancel in both
+      // constraint branches, and checks it before the distance start — the
+      // sentinel keeps any finite movement resolving as a drag start, never
+      // a cancel.
+      activationConstraint: {
+        delay: 250,
+        distance: 8,
+        tolerance: Number.MAX_SAFE_INTEGER,
+      },
     }),
   );
 
