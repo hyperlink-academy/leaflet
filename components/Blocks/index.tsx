@@ -18,7 +18,7 @@ import { Block } from "./Block";
 import { useEffect, useMemo, useState } from "react";
 import { addShortcut } from "src/shortcuts";
 import { useHandleDrop } from "./useHandleDrop";
-import { registerListDndPage, unregisterListDndPage } from "./ListDndState";
+import { listDndPages } from "./ListDndState";
 import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
 
 export function Blocks(props: { entityID: string }) {
@@ -76,12 +76,12 @@ export function Blocks(props: { entityID: string }) {
   // Make this page a drop target for list items dragged from any open page
   // (the DndContext lives in ListDndProvider, above all pages).
   useEffect(() => {
-    registerListDndPage({
+    listDndPages.set(props.entityID, {
       pageID: props.entityID,
       blocks: visibleBlocks,
       zoomDepth,
     });
-    return () => unregisterListDndPage(props.entityID);
+    return () => void listDndPages.delete(props.entityID);
   }, [props.entityID, visibleBlocks, zoomDepth]);
 
   let { footnotes } = useFootnoteContext();

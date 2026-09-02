@@ -16,17 +16,11 @@ export type ListDndPage = {
   blocks: Block[];
   zoomDepth?: number;
 };
-const pageRegistry = new Map<string, ListDndPage>();
-export const registerListDndPage = (page: ListDndPage) => {
-  pageRegistry.set(page.pageID, page);
-};
-export const unregisterListDndPage = (pageID: string) => {
-  pageRegistry.delete(pageID);
-};
+export const listDndPages = new Map<string, ListDndPage>();
 export const findListDndPageForBlock = (
   entityID: string,
 ): ListDndPage | undefined => {
-  for (let page of pageRegistry.values())
+  for (let page of listDndPages.values())
     if (page.blocks.some((b) => b.entityID === entityID)) return page;
 };
 

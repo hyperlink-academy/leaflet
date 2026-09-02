@@ -187,6 +187,13 @@ export const Block = memo(function Block(
     },
   );
 
+  let baseBlock = (
+    <BaseBlock
+      {...props}
+      areYouSure={areYouSure}
+      setAreYouSure={setAreYouSure}
+    />
+  );
   return (
     <div
       {...(!props.preview
@@ -247,17 +254,13 @@ export const Block = memo(function Block(
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
       {dropIndicator && <ListDropIndicator indicator={dropIndicator} />}
-      <BlockListDnd
-        entityID={props.entityID}
-        isListItem={!!props.listData}
-        preview={props.preview}
-      >
-        <BaseBlock
-          {...props}
-          areYouSure={areYouSure}
-          setAreYouSure={setAreYouSure}
-        />
-      </BlockListDnd>
+      {props.preview || !entity_set.permissions.write ? (
+        baseBlock
+      ) : (
+        <BlockListDnd entityID={props.entityID} isListItem={!!props.listData}>
+          {baseBlock}
+        </BlockListDnd>
+      )}
     </div>
   );
 }, deepEqualsBlockProps);
@@ -268,24 +271,17 @@ export const Block = memo(function Block(
 // every `over` change during a drag: everything they touch here is memoized,
 // so the block subtree (passed through as `children`) bails out and only this
 // wiring re-renders. The measured node is an inset overlay div rather than the
-// block wrapper itself for the same reason. The preview copy rendered in the
-// DragOverlay must not register itself, hence the disabled/namespaced ids.
+// block wrapper itself for the same reason.
 const BlockListDnd = (props: {
   entityID: string;
   isListItem: boolean;
-  preview?: boolean;
   children: React.ReactNode;
 }) => {
-  let entity_set = useEntitySetContext();
-  let write = entity_set.permissions.write;
   let draggable = useDraggable({
-    id: props.preview ? `preview/${props.entityID}` : props.entityID,
-    disabled: !!props.preview || !props.isListItem || !write,
+    id: props.entityID,
+    disabled: !props.isListItem,
   });
-  let droppable = useDroppable({
-    id: props.preview ? `preview/${props.entityID}` : props.entityID,
-    disabled: !!props.preview || !write,
-  });
+  let droppable = useDroppable({ id: props.entityID });
   let setNodeRef = useCallback(
     (el: HTMLElement | null) => {
       draggable.setNodeRef(el);
@@ -293,33 +289,19 @@ const BlockListDnd = (props: {
     },
     [draggable.setNodeRef, droppable.setNodeRef],
   );
+  let { attributes, listeners, setActivatorNodeRef } = draggable;
   let dragHandle = useMemo(
     () =>
-      !props.preview && props.isListItem && write
-        ? {
-            attributes: draggable.attributes,
-            listeners: draggable.listeners,
-            setActivatorNodeRef: draggable.setActivatorNodeRef,
-          }
-        : null,
-    [
-      props.preview,
-      props.isListItem,
-      write,
-      draggable.attributes,
-      draggable.listeners,
-      draggable.setActivatorNodeRef,
-    ],
+      props.isListItem ? { attributes, listeners, setActivatorNodeRef } : null,
+    [props.isListItem, attributes, listeners, setActivatorNodeRef],
   );
   return (
     <>
-      {!props.preview && write && (
-        <div
-          ref={setNodeRef}
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden
-        />
-      )}
+      <div
+        ref={setNodeRef}
+        className="absolute inset-0 pointer-events-none"
+        aria-hidden
+      />
       <ListDragHandleContext.Provider value={dragHandle}>
         {props.children}
       </ListDragHandleContext.Provider>
@@ -750,8 +732,8 @@ export const ListMarker = (
     >
       <button
         ref={dragHandle?.setActivatorNodeRef}
-        {...(dragHandle?.attributes ?? {})}
-        {...(dragHandle?.listeners ?? {})}
+        {...dragHandle?.attributes}
+        {...dragHandle?.listeners}
         onPointerDown={(e) => {
           dragHandle?.listeners?.onPointerDown?.(e);
           // Keep the hold from also triggering the block wrapper's own

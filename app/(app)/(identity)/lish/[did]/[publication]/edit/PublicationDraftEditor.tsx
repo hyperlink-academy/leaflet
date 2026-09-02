@@ -64,14 +64,16 @@ export function PublicationDraftEditor(props: {
                   entityID={props.leaflet_id}
                   className="h-full flex items-stretch place-items-center"
                 >
-                  <PublicationDraftEditorContent
-                    leaflet_id={props.leaflet_id}
-                    did={props.did}
-                    record={record}
-                    iconUrl={iconUrl}
-                    publicationUri={props.publicationUri}
-                    newsletterMode={props.newsletterMode}
-                  />
+                  <ListDndProvider>
+                    <PublicationDraftEditorContent
+                      leaflet_id={props.leaflet_id}
+                      did={props.did}
+                      record={record}
+                      iconUrl={iconUrl}
+                      publicationUri={props.publicationUri}
+                      newsletterMode={props.newsletterMode}
+                    />
+                  </ListDndProvider>
                 </DraftLeafletBackground>
               </div>
               <PublicationEditMobileFooter />
@@ -160,46 +162,44 @@ function PublicationDraftEditorContent(props: {
         showPageBackground ? "mx-auto py-6" : "pt-2"
       }`}
     >
-      <ListDndProvider>
-        <Page
-          key={currentPage}
-          entityID={currentPage}
-          fullPageScroll={!showPageBackground}
-          header={
-            <>
-              <NewPublicationHeader
-                edit
-                hideSubscribeInHeader={hideSubscribeInHeader}
-                iconUrl={props.iconUrl}
-                wordmark={wordmark}
-                description={record?.description}
-                subscribe={{
-                  publicationUri: props.publicationUri,
-                  publicationUrl: record.url,
-                  publicationName: record.name,
-                  publicationDescription: record.description,
-                  newsletterMode: props.newsletterMode,
-                }}
-              />
+      <Page
+        key={currentPage}
+        entityID={currentPage}
+        fullPageScroll={!showPageBackground}
+        header={
+          <>
+            <NewPublicationHeader
+              edit
+              hideSubscribeInHeader={hideSubscribeInHeader}
+              iconUrl={props.iconUrl}
+              wordmark={wordmark}
+              description={record?.description}
+              subscribe={{
+                publicationUri: props.publicationUri,
+                publicationUrl: record.url,
+                publicationName: record.name,
+                publicationDescription: record.description,
+                newsletterMode: props.newsletterMode,
+              }}
+            />
 
-              <PublicationPagesEditNav
-                publicationUrl={record.url}
-                hideSubscribeInHeader={hideSubscribeInHeader}
-                subscribe={{
-                  publicationUri: props.publicationUri,
-                  publicationUrl: record.url,
-                  publicationName: record.name,
-                  publicationDescription: record.description,
-                  newsletterMode: props.newsletterMode,
-                }}
-                selectedPage={currentPage}
-                onSelectPage={setSelectedPage}
-              />
-              <div className="spacer h-3" />
-            </>
-          }
-        />
-      </ListDndProvider>
+            <PublicationPagesEditNav
+              publicationUrl={record.url}
+              hideSubscribeInHeader={hideSubscribeInHeader}
+              subscribe={{
+                publicationUri: props.publicationUri,
+                publicationUrl: record.url,
+                publicationName: record.name,
+                publicationDescription: record.description,
+                newsletterMode: props.newsletterMode,
+              }}
+              selectedPage={currentPage}
+              onSelectPage={setSelectedPage}
+            />
+            <div className="spacer h-3" />
+          </>
+        }
+      />
     </div>
   );
 }

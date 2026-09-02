@@ -59,7 +59,9 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
               <IframePageView
                 url={page.url}
                 onOpen={(url) => {
-                  useUIState.getState().openPage(page, { type: "iframe", url });
+                  useUIState
+                    .getState()
+                    .openPage(page, { type: "iframe", url });
                   requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                       scrollIntoViewIfNeeded(
@@ -74,7 +76,9 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
                 pageOptions={
                   <div className="pageOptions w-fit z-10 absolute sm:-right-[19px] right-3 sm:top-3 top-0 flex sm:flex-col flex-row-reverse gap-1 items-start">
                     <PageOptionButton
-                      onClick={() => useUIState.getState().closePage(page)}
+                      onClick={() =>
+                        useUIState.getState().closePage(page)
+                      }
                     >
                       <CloseTiny />
                     </PageOptionButton>
