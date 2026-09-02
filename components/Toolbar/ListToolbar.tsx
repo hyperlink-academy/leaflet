@@ -18,6 +18,8 @@ import {
 import { useEffect } from "react";
 import { Props } from "components/Icons/Props";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
+import { ZoomListItemSmall } from "components/Icons/ZoomListItemSmall";
+import { zoomIntoBlock } from "src/utils/zoomIntoBlock";
 
 export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -77,6 +79,12 @@ export const ListToolbar = (props: { onClose: () => void }) => {
     "block/check-list",
   );
   let isList = useEntity(focusedBlock?.entityID || null, "block/is-list");
+  let isZoomRoot = useUIState(
+    (s) =>
+      !!focusedBlock &&
+      focusedBlock.entityType === "block" &&
+      s.zoomedBlocks[focusedBlock.parent] === focusedBlock.entityID,
+  );
 
   let block = siblings.find((s) => s.entityID === focusedBlock?.entityID);
   let previousBlock =
@@ -182,6 +190,25 @@ export const ListToolbar = (props: { onClose: () => void }) => {
         }}
       >
         <ListCheckboxSmall />
+      </ToolbarButton>
+      <Separator classname="h-6" />
+      <ToolbarButton
+        disabled={!isList?.data.value || isZoomRoot}
+        tooltipContent={
+          <div className="flex flex-col gap-1 justify-center">
+            <div className="text-center">Zoom into Item</div>
+            <div className="flex gap-1 justify-center">
+              <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
+              <ShortcutKey>Shift</ShortcutKey> + <ShortcutKey>:</ShortcutKey>
+            </div>
+          </div>
+        }
+        onClick={() => {
+          if (!block?.listData) return;
+          zoomIntoBlock(block.parent, block.entityID);
+        }}
+      >
+        <ZoomListItemSmall />
       </ToolbarButton>
     </div>
   );

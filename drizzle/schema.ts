@@ -192,6 +192,7 @@ export const document_versions = pgTable("document_versions", {
 	kind: text("kind").default('named').notNull(),
 	name: text("name"),
 	author_did: text("author_did"),
+	author_identity: uuid("author_identity").references(() => identities.id, { onDelete: "set null" } ),
 	closure_hash: text("closure_hash").notNull(),
 	snapshot: jsonb("snapshot"),
 	snapshot_path: text("snapshot_path"),

@@ -144,11 +144,7 @@ export function RenderedTextBlock(props: {
   let initialFact = useEntity(props.entityID, "block/text");
   let storedHeadingLevel = useEntity(props.entityID, "block/heading-level");
   let headingLevel =
-    props.pageID === props.entityID
-      ? 1
-      : props.type === "heading"
-        ? storedHeadingLevel?.data.value || 1
-        : undefined;
+    props.type === "heading" ? storedHeadingLevel?.data.value || 1 : undefined;
   let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
@@ -228,11 +224,7 @@ export function RenderedTextBlock(props: {
 function BaseTextBlock(props: BlockProps & { className?: string }) {
   let storedHeadingLevel = useEntity(props.entityID, "block/heading-level");
   let headingLevel =
-    props.parent === props.entityID
-      ? 1
-      : props.type === "heading"
-        ? storedHeadingLevel?.data.value || 1
-        : undefined;
+    props.type === "heading" ? storedHeadingLevel?.data.value || 1 : undefined;
   let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
@@ -328,8 +320,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
         {/* The overlays subscribe to the block's editor text; only mount them
             when one of them could show, so unfocused blocks carry no
             per-keystroke store subscription at all. */}
-        {((props.previousBlock === null &&
-          (props.nextBlock === null || props.parent === props.entityID)) ||
+        {((props.previousBlock === null && props.nextBlock === null) ||
           focused ||
           selected) && (
           <TextBlockOverlays
@@ -365,7 +356,7 @@ const TextBlockOverlays = (
     <>
       {textContent.length === 0 &&
       props.previousBlock === null &&
-      (props.nextBlock === null || props.parent === props.entityID) ? (
+      props.nextBlock === null ? (
         // if this is the only block on the page and is empty or is a canvas, show placeholder
         <div
           style={

@@ -390,6 +390,7 @@ export type Database = {
       document_versions: {
         Row: {
           author_did: string | null
+          author_identity: string | null
           byte_size: number
           closure_hash: string
           created_at: string
@@ -403,6 +404,7 @@ export type Database = {
         }
         Insert: {
           author_did?: string | null
+          author_identity?: string | null
           byte_size: number
           closure_hash: string
           created_at?: string
@@ -416,6 +418,7 @@ export type Database = {
         }
         Update: {
           author_did?: string | null
+          author_identity?: string | null
           byte_size?: number
           closure_hash?: string
           created_at?: string
@@ -428,6 +431,13 @@ export type Database = {
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "document_versions_author_identity_fkey"
+            columns: ["author_identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "document_versions_token_fkey"
             columns: ["token"]

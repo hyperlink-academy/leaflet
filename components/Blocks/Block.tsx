@@ -76,6 +76,7 @@ export type BlockProps = {
   previousBlock: Block | null;
   nextPosition: string | null;
   headingFoldable?: boolean;
+  displayDepth?: number;
 } & Block;
 
 export const Block = memo(function Block(
@@ -125,8 +126,7 @@ export const Block = memo(function Block(
       justify: "justify-start",
     }[alignment];
 
-  let displayedAsHeading =
-    props.type === "heading" || props.parent === props.entityID;
+  let displayedAsHeading = props.type === "heading";
 
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
@@ -247,6 +247,7 @@ function deepEqualsBlockProps(
     "type",
     "nextPosition",
     "headingFoldable",
+    "displayDepth",
     "preview",
   ] as const;
   if (scalarKeys.some((k) => prevProps[k] !== nextProps[k])) return false;
@@ -302,9 +303,7 @@ export const BaseBlock = (
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
     <>
-      {props.type === "heading" && props.headingFoldable && (
-        <HeadingFoldButton {...props} />
-      )}
+      {props.headingFoldable && <HeadingFoldButton {...props} />}
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -563,6 +562,7 @@ export const ListMarker = (
   props: Block & {
     previousBlock?: Block | null;
     nextBlock?: Block | null;
+    displayDepth?: number;
   } & {
     className?: string;
   },
@@ -574,7 +574,7 @@ export const ListMarker = (
   let children = useEntity(props.entityID, "card/block");
   let folded = useIsFolded(props.entityID) && children.length > 0;
 
-  let depth = props.listData?.depth;
+  let depth = props.displayDepth ?? props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
 

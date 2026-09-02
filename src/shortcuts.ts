@@ -8,12 +8,15 @@ export type Shortcut = {
   metaAndCtrl?: boolean;
   altKey?: boolean;
   shift?: boolean;
+  // Opt-in: several chords overlap editor bindings and rely on both firing.
+  skipIfDefaultPrevented?: boolean;
   key: string | string[];
   handler: () => void;
 };
 export function addShortcut(shortcuts: Shortcut | Shortcut[]) {
   let listener = (e: KeyboardEvent) => {
     for (let shortcut of [shortcuts].flat()) {
+      if (shortcut.skipIfDefaultPrevented && e.defaultPrevented) continue;
       if (e.shiftKey !== !!shortcut.shift) continue;
       if (e.altKey !== !!shortcut.altKey) continue;
       if (shortcut.metaAndCtrl) {
