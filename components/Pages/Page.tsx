@@ -16,6 +16,7 @@ import { PublicationMetadata } from "./PublicationMetadata";
 import { useLeafletPublicationPage } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "./useCardBorderHidden";
 import { focusPage } from "src/utils/focusPage";
+import { zoomIntoBlock } from "src/utils/zoomIntoBlock";
 import { PageOptions } from "./PageOptions";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useDrawerOpen } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/useDrawerOpen";
@@ -302,8 +303,7 @@ const ZoomedBlockHeader = (props: { pageEntity: string; entityID: string }) => {
       handler: () => {
         if (!parentEntity || parentEntity === props.pageEntity)
           zoomOut(props.pageEntity);
-        else
-          useUIState.getState().zoomIntoBlock(props.pageEntity, parentEntity);
+        else zoomIntoBlock(props.pageEntity, parentEntity);
       },
     });
   }, [isFocused, parentEntity, props.pageEntity, zoomOut]);

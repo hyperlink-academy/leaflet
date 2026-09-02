@@ -23,6 +23,7 @@ import { schema } from "../Blocks/TextBlock/schema";
 import { MarkType } from "prosemirror-model";
 import { useSelectingMouse, getSortedSelection } from "./selectionState";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
+import { zoomIntoBlock } from "src/utils/zoomIntoBlock";
 
 //How should I model selection? As ranges w/ a start and end? Store *blocks* so that I can just construct ranges?
 // How does this relate to *when dragging* ?
@@ -177,7 +178,7 @@ export function SelectionManager() {
           let [sortedBlocks] = await getSortedSelectionBound();
           let block = sortedBlocks[0];
           if (!block?.listData) return;
-          useUIState.getState().zoomIntoBlock(block.parent, block.entityID);
+          zoomIntoBlock(block.parent, block.entityID);
         },
       },
     ];
