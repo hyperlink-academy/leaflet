@@ -75,6 +75,8 @@ export type BlockProps = {
   previousBlock: Block | null;
   nextPosition: string | null;
   headingFoldable?: boolean;
+  displayAsTitle?: boolean;
+  displayDepth?: number;
 } & Block;
 
 export const Block = memo(function Block(
@@ -124,8 +126,7 @@ export const Block = memo(function Block(
       justify: "justify-start",
     }[alignment];
 
-  let displayedAsHeading =
-    props.type === "heading" || props.parent === props.entityID;
+  let displayedAsHeading = props.type === "heading" || props.displayAsTitle;
 
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
@@ -246,6 +247,8 @@ function deepEqualsBlockProps(
     "type",
     "nextPosition",
     "headingFoldable",
+    "displayAsTitle",
+    "displayDepth",
     "preview",
   ] as const;
   if (scalarKeys.some((k) => prevProps[k] !== nextProps[k])) return false;
@@ -301,10 +304,8 @@ export const BaseBlock = (
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
     <>
-      {props.type === "heading" && props.headingFoldable && (
-        <HeadingFoldButton {...props} />
-      )}
-      {props.listData && <ListMarker {...props} />}
+      {props.headingFoldable && <HeadingFoldButton {...props} />}
+      {props.listData && !props.displayAsTitle && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
           closeAreYouSure={() =>
@@ -529,13 +530,16 @@ const NonTextBlockOptions = (props: {
 // Disclosure triangle for folding a heading's section. Lives in the left gutter
 // (absolutely positioned in the wrapper padding) so it never shifts the heading
 // text, and only shows on hover unless the heading is currently folded.
-const HeadingFoldButton = (props: { entityID: string }) => {
+const HeadingFoldButton = (props: {
+  entityID: string;
+  displayAsTitle?: boolean;
+}) => {
   let { rep } = useReplicache();
   let folded = useIsFolded(props.entityID);
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let top =
-    headingLevel === 1
+    props.displayAsTitle || headingLevel === 1
       ? "top-[20px]"
       : headingLevel === 2
         ? "top-[14px]"
@@ -563,6 +567,7 @@ export const ListMarker = (
   props: Block & {
     previousBlock?: Block | null;
     nextBlock?: Block | null;
+    displayDepth?: number;
   } & {
     className?: string;
   },
@@ -574,7 +579,7 @@ export const ListMarker = (
   let children = useEntity(props.entityID, "card/block");
   let folded = useIsFolded(props.entityID) && children.length > 0;
 
-  let depth = props.listData?.depth;
+  let depth = props.displayDepth ?? props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
 

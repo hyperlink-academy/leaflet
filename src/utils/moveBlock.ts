@@ -97,8 +97,6 @@ const moveMultipleBlocks = async (
   sortedBlocks: BlockData[],
   direction: "up" | "down",
 ): Promise<boolean> => {
-  if (sortedBlocks.some((block) => isZoomedBlockRoot(block.entityID)))
-    return false;
   let folded = useUIState.getState().foldedBlocks;
   let page = sortedBlocks[0].parent;
   let parent = realParent(sortedBlocks[0]);

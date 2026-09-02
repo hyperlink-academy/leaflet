@@ -72,6 +72,7 @@ export function TextBlock(
           pageType={props.pageType}
           previousBlock={props.previousBlock}
           pageID={props.parent}
+          displayAsTitle={props.displayAsTitle}
         />
       )}
       {permission && !props.preview && !stale && (
@@ -140,11 +141,12 @@ export function RenderedTextBlock(props: {
   type: BlockProps["type"];
   previousBlock?: BlockProps["previousBlock"];
   pageID?: string;
+  displayAsTitle?: boolean;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let storedHeadingLevel = useEntity(props.entityID, "block/heading-level");
   let headingLevel =
-    props.pageID === props.entityID
+    props.displayAsTitle
       ? 1
       : props.type === "heading"
         ? storedHeadingLevel?.data.value || 1
@@ -228,7 +230,7 @@ export function RenderedTextBlock(props: {
 function BaseTextBlock(props: BlockProps & { className?: string }) {
   let storedHeadingLevel = useEntity(props.entityID, "block/heading-level");
   let headingLevel =
-    props.parent === props.entityID
+    props.displayAsTitle
       ? 1
       : props.type === "heading"
         ? storedHeadingLevel?.data.value || 1
@@ -329,7 +331,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
             when one of them could show, so unfocused blocks carry no
             per-keystroke store subscription at all. */}
         {((props.previousBlock === null &&
-          (props.nextBlock === null || props.parent === props.entityID)) ||
+          (props.nextBlock === null || props.displayAsTitle)) ||
           focused ||
           selected) && (
           <TextBlockOverlays
@@ -365,7 +367,7 @@ const TextBlockOverlays = (
     <>
       {textContent.length === 0 &&
       props.previousBlock === null &&
-      (props.nextBlock === null || props.parent === props.entityID) ? (
+      (props.nextBlock === null || props.displayAsTitle) ? (
         // if this is the only block on the page and is empty or is a canvas, show placeholder
         <div
           style={

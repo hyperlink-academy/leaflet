@@ -2,10 +2,10 @@
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
 
-import { useIsPageFocused } from "src/useUIState";
+import { useIsPageFocused, useUIState } from "src/useUIState";
 import { foldBlocks, unfoldBlocks } from "src/utils/foldBlocks";
 import { useFoldedBlocks } from "components/FoldStateProvider";
-import { isBlockHidden } from "src/replicache/getBlocks";
+import { filterBlocksForZoom, isBlockHidden } from "src/replicache/getBlocks";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -20,18 +20,28 @@ import { addShortcut } from "src/shortcuts";
 import { useHandleDrop } from "./useHandleDrop";
 import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
 
-export function Blocks(props: {
-  entityID: string;
-  zoomTitleBlock?: Block | null;
-}) {
+export function Blocks(props: { entityID: string }) {
+  let zoomedBlock = useUIState((s) => s.zoomedBlocks[props.entityID]);
   let isPageFocused = useIsPageFocused(props.entityID);
-  let blocks = useBlocks(props.entityID);
+  let pageBlocks = useBlocks(props.entityID);
+  let blocks = useMemo(
+    () => filterBlocksForZoom(pageBlocks, zoomedBlock),
+    [pageBlocks, zoomedBlock],
+  );
   let { rep } = useReplicache();
   let foldedBlocks = useFoldedBlocks();
-  let foldableHeadings = useMemo(
-    () => new Set(blocks.flatMap((b) => b.headingPath ?? [])),
-    [blocks],
-  );
+  let foldableParentSet = useMemo(() => foldableParents(blocks), [blocks]);
+  // Folds on ancestors outside the zoomed view don't hide anything inside it.
+  let visibleBlocks = useMemo(() => {
+    let folded = foldedBlocks.filter((entity) => foldableParentSet.has(entity));
+    return blocks.filter((block) => !isBlockHidden(block, folded));
+  }, [blocks, foldedBlocks, foldableParentSet]);
+  let zoomDepth = zoomedBlock ? blocks[0]?.listData?.depth : undefined;
+  let hasBlocks = pageBlocks.length > 0;
+  useEffect(() => {
+    if (zoomedBlock && hasBlocks && zoomDepth === undefined)
+      useUIState.getState().zoomOutOfBlock(props.entityID);
+  }, [hasBlocks, props.entityID, zoomDepth, zoomedBlock]);
   useEffect(() => {
     if (!isPageFocused) return;
     return addShortcut([
@@ -41,7 +51,7 @@ export function Blocks(props: {
         key: "ArrowUp",
         shift: true,
         handler: () => {
-          foldBlocks(rep, foldableParents(blocks));
+          foldBlocks(rep, [...foldableParentSet]);
         },
       },
       {
@@ -50,19 +60,17 @@ export function Blocks(props: {
         key: "ArrowDown",
         shift: true,
         handler: () => {
-          unfoldBlocks(rep, foldableParents(blocks));
+          unfoldBlocks(rep, [...foldableParentSet]);
         },
       },
     ]);
-  }, [blocks, isPageFocused, rep]);
+  }, [foldableParentSet, isPageFocused, rep]);
 
-  let lastRootBlock = blocks.findLast(
-    (f) => !f.listData || f.listData.depth === 1,
-  );
+  let lastRootBlock = zoomedBlock
+    ? blocks.findLast((block) => block.listData?.parent === zoomedBlock)
+    : blocks.findLast((block) => !block.listData || block.listData.depth === 1);
 
-  let lastVisibleBlock = blocks.findLast(
-    (f) => !isBlockHidden(f, foldedBlocks),
-  );
+  let lastVisibleBlock = visibleBlocks.at(-1);
 
   let { footnotes } = useFootnoteContext();
 
@@ -82,56 +90,61 @@ export function Blocks(props: {
       // collapse out through the container's top edge.
       className={`blocks w-full flow-root outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
     >
-      {blocks
-        .filter((f) => !isBlockHidden(f, foldedBlocks))
-        .map((f, index, arr) => {
-          let nextBlock = arr[index + 1];
-          let depth = f.listData?.depth || 1;
-          let nextDepth = nextBlock?.listData?.depth || 1;
-          let nextPosition: string | null;
-          if (depth === nextDepth) nextPosition = nextBlock?.position || null;
-          else nextPosition = null;
-          return (
-            <Block
-              pageType="doc"
-              {...f}
-              key={f.entityID}
-              entityID={f.entityID}
-              parent={props.entityID}
-              previousBlock={arr[index - 1] || props.zoomTitleBlock || null}
-              nextBlock={arr[index + 1] || null}
-              nextPosition={nextPosition}
-              headingFoldable={foldableHeadings.has(f.entityID)}
-            />
-          );
-        })}
+      {visibleBlocks.map((f, index, arr) => {
+        let displayAsTitle = f.entityID === zoomedBlock;
+        let nextBlock = arr[index + 1];
+        let depth = f.listData?.depth || 1;
+        let nextDepth = nextBlock?.listData?.depth || 1;
+        let nextPosition: string | null;
+        if (depth === nextDepth) nextPosition = nextBlock?.position || null;
+        else nextPosition = null;
+        return (
+          <Block
+            pageType="doc"
+            {...f}
+            key={f.entityID}
+            entityID={f.entityID}
+            previousBlock={arr[index - 1] || null}
+            nextBlock={arr[index + 1] || null}
+            nextPosition={nextPosition}
+            headingFoldable={
+              foldableParentSet.has(f.entityID) &&
+              (displayAsTitle || !f.listData)
+            }
+            displayAsTitle={displayAsTitle}
+            displayDepth={
+              zoomDepth && f.listData ? f.listData.depth - zoomDepth : undefined
+            }
+          />
+        );
+      })}
       <NewBlockButton
         lastBlock={lastRootBlock || null}
-        entityID={props.entityID}
+        entityID={zoomedBlock ?? props.entityID}
       />
 
       <BlockListBottom
         lastVisibleBlock={lastVisibleBlock || undefined}
         lastRootBlock={lastRootBlock || undefined}
-        entityID={props.entityID}
+        entityID={zoomedBlock ?? props.entityID}
         areFootnotes={areFootnotes}
       />
     </div>
   );
 }
 
-// Every foldable ancestor (list parents and enclosing headings) referenced by
-// any block, deduped — the set fold-all/unfold-all toggles.
-function foldableParents(blocks: Block[]): string[] {
-  return blocks.reduce((acc, block) => {
-    [
-      ...(block.listData?.path.map((p) => p.entity) ?? []),
-      ...(block.headingPath ?? []),
-    ].forEach((p) => {
-      if (!acc.includes(p)) acc.push(p);
-    });
-    return acc;
-  }, [] as string[]);
+// Every foldable ancestor (list parents and enclosing headings) of any block
+// that is itself in `blocks` — the set fold-all/unfold-all toggles.
+function foldableParents(blocks: Block[]) {
+  let blockIDs = new Set(blocks.map((block) => block.entityID));
+  return new Set(
+    blocks
+      .flatMap((block) => [
+        ...(block.listData?.path.slice(0, -1).map((p) => p.entity) ?? []),
+        ...(block.headingPath ?? []),
+      ])
+      .filter((entity) => blockIDs.has(entity)),
+  );
 }
 
 function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {

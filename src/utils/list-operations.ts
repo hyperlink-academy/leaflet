@@ -35,7 +35,8 @@ export async function indent(
   rep?: Replicache<ReplicacheMutators> | null,
   undoManager?: UndoManager,
 ): Promise<{ success: boolean }> {
-  if (!block.listData) return { success: false };
+  if (!block.listData || isZoomedBlockRoot(block.entityID))
+    return { success: false };
 
   // All lists use parent/child structure - move to new parent
   if (!previousBlock?.listData) return { success: false };
@@ -66,8 +67,9 @@ export async function outdentFull(
   undoManager?: UndoManager,
 ) {
   if (!block.listData) return;
-  if (isZoomedBlockRoot(block.parent)) return;
   let listData = block.listData;
+  if (isZoomedBlockRoot(block.entityID) || isZoomedBlockRoot(listData.parent))
+    return;
 
   let run = async () => {
     // make this block not a list
@@ -107,10 +109,12 @@ export async function outdent(
 ): Promise<{ success: boolean }> {
   if (!block.listData) return { success: false };
   let listData = block.listData;
+  // Neither the zoom root nor its direct children can leave the zoomed view.
+  if (isZoomedBlockRoot(block.entityID) || isZoomedBlockRoot(listData.parent))
+    return { success: false };
 
   // All lists use parent/child structure - move blocks between parents
   if (listData.depth === 1) {
-    if (isZoomedBlockRoot(block.parent)) return { success: false };
     let run = async () => {
       await rep?.mutate.assertFact({
         entity: block.entityID,

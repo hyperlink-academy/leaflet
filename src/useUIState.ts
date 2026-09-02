@@ -57,29 +57,14 @@ export const useUIState = create(
           };
         }),
       setFocusedBlock: (b: FocusedEntity) => set(() => ({ focusedEntity: b })),
-      // `parent` is whatever list the block was rendered in — the page itself,
-      // or the current zoom root when zooming deeper — so resolve it back to
-      // the page entity that keys the zoom.
-      zoomIntoBlock: (parent: string, blockEntity: string) =>
-        set((state) => {
-          let page =
-            Object.keys(state.zoomedBlocks).find(
-              (p) => state.zoomedBlocks[p] === parent,
-            ) ?? parent;
-          return {
-            zoomedBlocks: { ...state.zoomedBlocks, [page]: blockEntity },
-            selectedBlocks: [],
-            focusedEntity: { entityType: "page" as const, entityID: blockEntity },
-          };
-        }),
+      zoomIntoBlock: (page: string, blockEntity: string) =>
+        set((state) => ({
+          zoomedBlocks: { ...state.zoomedBlocks, [page]: blockEntity },
+        })),
       zoomOutOfBlock: (page: string) =>
         set((state) => {
           let { [page]: _, ...zoomedBlocks } = state.zoomedBlocks;
-          return {
-            zoomedBlocks,
-            selectedBlocks: [],
-            focusedEntity: { entityType: "page" as const, entityID: page },
-          };
+          return { zoomedBlocks };
         }),
       // Callers often pass full block-prop objects; store only {entityID, parent}
       // so selection entries stay slim and identity-stable. Re-selecting the
@@ -158,10 +143,5 @@ export const useIsPageFocused = (entityID: string) =>
       : s.focusedEntity?.parent === entityID,
   );
 
-export const getZoomedBlockPage = (entity: string) =>
-  Object.entries(useUIState.getState().zoomedBlocks).find(
-    ([, zoomed]) => zoomed === entity,
-  )?.[0];
-
 export const isZoomedBlockRoot = (entity: string) =>
-  getZoomedBlockPage(entity) !== undefined;
+  Object.values(useUIState.getState().zoomedBlocks).includes(entity);

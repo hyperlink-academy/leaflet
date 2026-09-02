@@ -1,4 +1,4 @@
-import { Block } from "components/Blocks/Block";
+import type { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import { Fact, ReplicacheMutators } from "src/replicache";
 import { Attribute } from "src/replicache/attributes";
@@ -148,6 +148,15 @@ function assembleBlocks(scan: SyncScan, entityID: string): Block[] {
   computeHeadingSections(result);
   computeDisplayNumbers(result);
   return result;
+}
+
+export function filterBlocksForZoom(pageBlocks: Block[], root?: string) {
+  if (!root) return pageBlocks;
+  return pageBlocks.filter(
+    (block) =>
+      block.entityID === root ||
+      block.listData?.path.some((ancestor) => ancestor.entity === root),
+  );
 }
 
 export const getBlocksWithTypeLocal = (

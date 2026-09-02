@@ -1,13 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useReplicache } from "src/replicache";
-import { isZoomedBlockRoot, useUIState } from "src/useUIState";
+import { useUIState } from "src/useUIState";
 import { toggleFold } from "src/utils/foldBlocks";
 import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
-import { getPageBlocks, isBlockHidden } from "src/replicache/getBlocks";
 import {
   multiSelectIndent,
   multiSelectOutdent,
@@ -41,9 +40,7 @@ export function SelectionManager() {
         metaKey: true,
         key: "ArrowUp",
         handler: async () => {
-          let [firstBlock] = rep
-            ? getPageBlocks(rep, useUIState.getState().selectedBlocks[0].parent)
-            : [];
+          let [, [firstBlock]] = await getSortedSelectionBound();
           if (firstBlock) focusBlock(firstBlock, { type: "start" });
         },
       },
@@ -51,12 +48,8 @@ export function SelectionManager() {
         metaKey: true,
         key: "ArrowDown",
         handler: async () => {
-          let blocks = rep
-            ? getPageBlocks(rep, useUIState.getState().selectedBlocks[0].parent)
-            : [];
-          let folded = useUIState.getState().foldedBlocks;
-          blocks = blocks.filter((f) => !isBlockHidden(f, folded));
-          let lastBlock = blocks[blocks.length - 1];
+          let [, siblings] = await getSortedSelectionBound();
+          let lastBlock = siblings.at(-1);
           if (lastBlock) focusBlock(lastBlock, { type: "end" });
         },
       },
@@ -264,8 +257,6 @@ export function SelectionManager() {
             e.preventDefault();
             let [sortedBlocks, siblings] = await getSortedSelectionBound();
             let selectedBlocks = useUIState.getState().selectedBlocks;
-            if (selectedBlocks.some((b) => isZoomedBlockRoot(b.entityID)))
-              return;
             let firstBlock = sortedBlocks[0];
 
             await rep?.mutate.removeBlock(
