@@ -6,7 +6,7 @@ import useSWR from "swr";
 
 import { Modal } from "components/Modal";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { HistorySmall } from "components/Icons/HistorySmall";
+import { VersionSmall } from "components/Icons/VersionSmall";
 import { Input } from "components/Input";
 import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
@@ -45,7 +45,7 @@ export function VersionHistory() {
       className="sm:w-[1000px] max-w-md w-full"
       open={open}
       onOpenChange={setOpen}
-      trigger={<ActionButton icon={<HistorySmall />} label="Versions" />}
+      trigger={<ActionButton icon={<VersionSmall />} label="Versions" />}
     >
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-0 leading-snug">
