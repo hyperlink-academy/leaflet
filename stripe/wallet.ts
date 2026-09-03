@@ -179,12 +179,30 @@ export async function walletCheckoutSessionCard(
     typeof si === "object" && si
       ? typeof si.payment_method === "string"
         ? si.payment_method
-        : (si.payment_method?.id ?? null)
+        : si.payment_method?.id ?? null
       : null;
   const customerId =
     typeof session.customer === "string"
       ? session.customer
-      : (session.customer?.id ?? null);
+      : session.customer?.id ?? null;
+  if (!pmId || !customerId) return null;
+  return { pmId, customerId };
+}
+
+// Pull the saved card and owning customer out of a confirmed SetupIntent (the
+// embedded Payment Element flow). Caller must verify the customer matches the
+// reader's wallet before trusting it (the id arrives from the client).
+export async function walletSetupIntentCard(
+  setupIntentId: string,
+): Promise<{ pmId: string; customerId: string } | null> {
+  const si = await getStripe().setupIntents.retrieve(setupIntentId);
+  if (si.status !== "succeeded") return null;
+  const pmId =
+    typeof si.payment_method === "string"
+      ? si.payment_method
+      : si.payment_method?.id ?? null;
+  const customerId =
+    typeof si.customer === "string" ? si.customer : si.customer?.id ?? null;
   if (!pmId || !customerId) return null;
   return { pmId, customerId };
 }
@@ -209,4 +227,54 @@ export async function provisionCardOnAccount(args: {
     { stripeAccount: args.stripeAccount },
   );
   return clonedPmId;
+}
+
+export async function updateStripeCustomerEmails(
+  identityId: string,
+  email: string,
+): Promise<void> {
+  const stripe = getStripe();
+  const [{ data: wallet }, { data: proSub }, { data: connected }] =
+    await Promise.all([
+      supabaseServerClient
+        .from("stripe_wallets")
+        .select("stripe_customer_id")
+        .eq("identity_id", identityId)
+        .maybeSingle(),
+      supabaseServerClient
+        .from("user_subscriptions")
+        .select("stripe_customer_id")
+        .eq("identity_id", identityId)
+        .maybeSingle(),
+      supabaseServerClient
+        .from("stripe_connected_customers")
+        .select("stripe_customer_id, stripe_account_id")
+        .eq("identity_id", identityId),
+    ]);
+  const platformCustomers = new Set(
+    [wallet?.stripe_customer_id, proSub?.stripe_customer_id].filter(
+      (id): id is string => !!id,
+    ),
+  );
+  await Promise.all([
+    ...[...platformCustomers].map((id) =>
+      stripe.customers.update(id, { email }).catch((e) => {
+        console.error(`[wallet] email update failed for ${id}:`, e);
+      }),
+    ),
+    ...(connected ?? []).map((c) =>
+      stripe.customers
+        .update(
+          c.stripe_customer_id,
+          { email },
+          { stripeAccount: c.stripe_account_id },
+        )
+        .catch((e) => {
+          console.error(
+            `[wallet] email update failed for ${c.stripe_customer_id} on ${c.stripe_account_id}:`,
+            e,
+          );
+        }),
+    ),
+  ]);
 }

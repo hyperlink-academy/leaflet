@@ -6,21 +6,25 @@ import { getViewerIdentity } from "actions/viewerIdentity";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { getDocumentPages } from "lexicons/src/normalize";
 import {
-  getGatedPostRequiredTierId,
+  getGatedPostPolicy,
   isEntitledToGatedPost,
   postHasMembersDelimiter,
-  resolveGateRequiredTier,
 } from "src/membership";
-import { getReaderMembership } from "src/membership.server";
+import {
+  getReaderMembership,
+  isPublicationSubscriber,
+} from "src/membership.server";
 import { collectAndFetchBlockResources } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/collectAndFetchBlockResources";
 import type { PollData } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/fetchPollData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import type { PubLeafletContent } from "lexicons/api";
 
 export type UnlockedPost = {
   pages: PubLeafletContent.Main["pages"];
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
 };
 
@@ -41,7 +45,6 @@ export async function getUnlockedPost(
       `data, uri,
        documents_in_publications(publications(uri, identity_did,
          publication_membership_settings(enabled),
-         publication_membership_tiers(id, monthly_price_cents),
          publication_contributors(contributor_did, confirmed)))`,
     )
     .eq("uri", uri)
@@ -59,19 +62,16 @@ export async function getUnlockedPost(
     ownerDid: pub.identity_did,
     contributors: pub.publication_contributors,
   };
-  const tiers = pub.publication_membership_tiers ?? [];
-  const requiredTier = resolveGateRequiredTier(
-    getGatedPostRequiredTierId(record),
-    tiers,
-  );
-  const entitled =
-    isEntitledToGatedPost({ ...rows, membership: null }) ||
-    isEntitledToGatedPost({
-      ...rows,
-      membership: await getReaderMembership(pub.uri, identity.id),
-      requiredTier,
-      tiers,
-    });
+  const [paidMembership, isSubscriber] = await Promise.all([
+    getReaderMembership(pub.uri, identity.id),
+    isPublicationSubscriber(pub.uri, identity),
+  ]);
+  const entitled = isEntitledToGatedPost({
+    ...rows,
+    paidMembership,
+    gatePolicy: getGatedPostPolicy(record),
+    isSubscriber,
+  });
   if (!entitled) return { entitled: false };
 
   const pages = getDocumentPages(record);
@@ -82,14 +82,18 @@ export async function getUnlockedPost(
     fetch: (...args) =>
       fetch(args[0], { ...args[1], next: { revalidate: 3600 } }),
   });
-  const { bskyPostData, standardSitePostData, pollData } =
-    await collectAndFetchBlockResources({
-      agent,
-      pages: pages as Parameters<
-        typeof collectAndFetchBlockResources
-      >[0]["pages"],
-      skipCodeBlocks: true,
-    });
+  const {
+    bskyPostData,
+    standardSitePostData,
+    standardSitePublicationData,
+    pollData,
+  } = await collectAndFetchBlockResources({
+    agent,
+    pages: pages as Parameters<
+      typeof collectAndFetchBlockResources
+    >[0]["pages"],
+    skipCodeBlocks: true,
+  });
 
   return {
     entitled: true,
@@ -99,6 +103,9 @@ export async function getUnlockedPost(
     // undefined-valued keys that RSC serialization otherwise preserves).
     bskyPostData: JSON.parse(JSON.stringify(bskyPostData)),
     standardSitePostData: JSON.parse(JSON.stringify(standardSitePostData)),
+    standardSitePublicationData: JSON.parse(
+      JSON.stringify(standardSitePublicationData),
+    ),
     pollData,
   };
 }

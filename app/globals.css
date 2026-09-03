@@ -1100,3 +1100,12 @@ img.ProseMirror-separator {
     transition: none !important;
   }
 }
+
+/* Stripe.js mounts its 3DS challenge iframe directly on <body>. While a Radix
+   modal Dialog is open (the join/card modals), Radix disables pointer events
+   everywhere outside the dialog — which would leave the challenge visible but
+   untappable (radix-ui/primitives#2122). Re-enable Stripe's frames. */
+body > iframe[name^="__privateStripeFrame"],
+body > iframe[src*="js.stripe.com"] {
+  pointer-events: auto !important;
+}

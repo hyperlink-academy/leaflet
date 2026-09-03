@@ -2,6 +2,7 @@
 
 import { getAuthIdentity } from "src/auth";
 import { getStripe } from "stripe/client";
+import { releaseSchedule } from "stripe/schedules";
 import { supabaseServerClient } from "supabase/serverClient";
 import {
   getOrCreateWallet,
@@ -9,6 +10,7 @@ import {
   getOrCreateConnectedCustomer,
   provisionCardOnAccount,
   walletCheckoutSessionCard,
+  walletSetupIntentCard,
   type WalletRow,
 } from "stripe/wallet";
 import { getPublicationURL } from "src/utils/getPublicationURL";
@@ -42,15 +44,26 @@ async function setCancelAtPeriodEnd(
   if (!m?.stripe_subscription_id || !m.stripe_account_id)
     return Err("not_found");
   try {
-    await getStripe().subscriptions.update(
+    const stripe = getStripe();
+    const opts = { stripeAccount: m.stripe_account_id };
+    // Stripe refuses cancellation changes on a subscription a schedule (a
+    // pending downgrade) manages; either toggle supersedes that downgrade.
+    const sub = await stripe.subscriptions.retrieve(
+      m.stripe_subscription_id,
+      opts,
+    );
+    await releaseSchedule(sub, opts);
+    await stripe.subscriptions.update(
       m.stripe_subscription_id,
       { cancel_at_period_end: cancel },
-      { stripeAccount: m.stripe_account_id },
+      opts,
     );
     await supabaseServerClient
       .from("publication_memberships")
       .update({
         cancel_at_period_end: cancel,
+        pending_tier: null,
+        pending_cadence: null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", membershipId);
@@ -73,10 +86,20 @@ export async function resumeMembership(
   return setCancelAtPeriodEnd(membershipId, false);
 }
 
-export async function downgradeMembershipToFree(args: {
+async function publicationHasNewsletter(publicationUri: string) {
+  const { data } = await supabaseServerClient
+    .from("publication_newsletter_settings")
+    .select("enabled")
+    .eq("publication", publicationUri)
+    .maybeSingle();
+  return !!data?.enabled;
+}
+
+export async function changeMembershipToFree(args: {
   membershipId: string;
   publicationUri: string;
-  newsletterMode: boolean;
+
+  newsletterMode?: boolean;
 }): Promise<Result<{ subscribed: boolean }, MembershipError>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
@@ -84,8 +107,12 @@ export async function downgradeMembershipToFree(args: {
   const cancelled = await setCancelAtPeriodEnd(args.membershipId, true);
   if (!cancelled.ok) return cancelled;
 
+  const newsletterMode =
+    args.newsletterMode ??
+    (await publicationHasNewsletter(args.publicationUri));
+
   try {
-    if (args.newsletterMode && identity.email) {
+    if (newsletterMode && identity.email) {
       const res = await requestPublicationEmailSubscription(
         args.publicationUri,
         identity.email,
@@ -103,24 +130,16 @@ export async function downgradeMembershipToFree(args: {
   }
 }
 
-// Switch tier and/or monthly↔annual on the single subscription item, letting
-// Stripe apply its default proration.
-//
-// Only works between paid tiers: a free-tier "member" is just a subscriber
-// with no membership row or Stripe subscription, so a free→paid upgrade must
-// go through the join/payment flow instead (JoinMembershipFlow routes on the
-// presence of an active paid membership). If a caller gets here anyway, the
-// missing stripe_subscription_id fails as not_found below.
-export async function switchMembership(args: {
+type ChangeArgs = {
   membershipId: string;
   tierId: string;
   cadence: "month" | "year";
-}): Promise<Result<null, MembershipError>> {
-  const identity = await getAuthIdentity();
-  if (!identity) return Err("not_authenticated");
-  const m = await loadOwnedMembership(identity.id, args.membershipId);
+};
+
+async function resolveChangeTarget(identityId: string, args: ChangeArgs) {
+  const m = await loadOwnedMembership(identityId, args.membershipId);
   if (!m?.stripe_subscription_id || !m.stripe_account_id)
-    return Err("not_found");
+    return Err("not_found" as const);
 
   const { data: tier } = await supabaseServerClient
     .from("publication_membership_tiers")
@@ -129,55 +148,219 @@ export async function switchMembership(args: {
     .eq("publication", m.publication)
     .eq("active", true)
     .maybeSingle();
-  if (!tier) return Err("tier_not_found");
+  if (!tier) return Err("tier_not_found" as const);
   const priceId =
     args.cadence === "year"
       ? tier.stripe_price_annual_id
       : tier.stripe_price_monthly_id;
-  if (!priceId) return Err("tier_not_found");
+  if (!priceId) return Err("tier_not_found" as const);
 
+  const sub = await getStripe().subscriptions.retrieve(
+    m.stripe_subscription_id,
+    { stripeAccount: m.stripe_account_id },
+  );
+  const item = sub.items.data[0];
+  if (!item) return Err("stripe_error" as const);
+
+  return Ok({
+    stripeAccount: m.stripe_account_id,
+    subscriptionId: m.stripe_subscription_id,
+    tier,
+    priceId,
+    sub,
+    itemId: item.id,
+    currentPeriodEnd: item.current_period_end ?? null,
+    // Repricing across intervals has to reset the billing cycle so the new
+    // interval starts now instead of stacking on the old period's end.
+    intervalChanged: item.price.recurring?.interval !== args.cadence,
+  });
+}
+
+type ChangeTarget = Extract<
+  Awaited<ReturnType<typeof resolveChangeTarget>>,
+  { ok: true }
+>["value"];
+
+export type MembershipChangePreview = {
+  // Charged now, prorated, vs. applied when the current period ends.
+  immediate: boolean;
+  // Prorated difference before any account credit; 0 means a same-price switch.
+  totalCents: number;
+  amountDueCents: number;
+  currency: string;
+  effectiveDate: string | null;
+};
+
+// Whether the switch would refund anything decides how it's applied: a plan
+// that costs the same or more is charged now, prorated for the rest of the
+// period; one that costs less waits for the period to end — like cancelling
+// does — instead of leaving a credit to burn down on future invoices.
+async function previewChange(
+  t: ChangeTarget,
+): Promise<MembershipChangePreview> {
+  const preview = await getStripe().invoices.createPreview(
+    {
+      subscription: t.subscriptionId,
+      subscription_details: {
+        items: [{ id: t.itemId, price: t.priceId }],
+        proration_behavior: "always_invoice",
+        billing_cycle_anchor: t.intervalChanged ? "now" : "unchanged",
+      },
+    },
+    { stripeAccount: t.stripeAccount },
+  );
+  const immediate = preview.total >= 0;
+  return {
+    immediate,
+    totalCents: preview.total,
+    amountDueCents: immediate ? preview.amount_due : 0,
+    currency: preview.currency,
+    effectiveDate: t.currentPeriodEnd
+      ? new Date(t.currentPeriodEnd * 1000).toISOString()
+      : null,
+  };
+}
+
+export async function previewMembershipChange(
+  args: ChangeArgs,
+): Promise<Result<MembershipChangePreview, MembershipError>> {
+  const identity = await getAuthIdentity();
+  if (!identity) return Err("not_authenticated");
   try {
-    const stripe = getStripe();
-    const sub = await stripe.subscriptions.retrieve(m.stripe_subscription_id, {
-      stripeAccount: m.stripe_account_id,
-    });
-    const itemId = sub.items.data[0]?.id;
-    if (!itemId) return Err("stripe_error");
-    await stripe.subscriptions.update(
-      m.stripe_subscription_id,
-      { items: [{ id: itemId, price: priceId }] },
-      { stripeAccount: m.stripe_account_id },
-    );
-    await supabaseServerClient
-      .from("publication_memberships")
-      .update({
-        tier: tier.id,
-        cadence: args.cadence,
-        stripe_price_id: priceId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", args.membershipId);
-    return Ok(null);
+    const resolved = await resolveChangeTarget(identity.id, args);
+    if (!resolved.ok) return resolved;
+    return Ok(await previewChange(resolved.value));
   } catch (e) {
-    console.error("[memberships] switch failed:", e);
+    console.error("[memberships] change preview failed:", e);
     return Err("stripe_error");
   }
 }
 
-// Save a card collected via the hosted setup Checkout to the wallet, then
-// re-clone it onto every membership's connected account and swap it in as the
-// subscription's payment method. Best-effort per membership: a failure on one
-// doesn't block the others.
-export async function updateWalletCard(sessionId: string): Promise<
-  Result<{ failedPublications: string[] }, MembershipError>
-> {
+export type MembershipChangeResult = Pick<
+  MembershipChangePreview,
+  "immediate" | "effectiveDate"
+>;
+
+export async function changeMembership(
+  args: ChangeArgs,
+): Promise<Result<MembershipChangeResult, MembershipError>> {
+  const identity = await getAuthIdentity();
+  if (!identity) return Err("not_authenticated");
+
+  try {
+    const resolved = await resolveChangeTarget(identity.id, args);
+    if (!resolved.ok) return resolved;
+    const t = resolved.value;
+    const stripe = getStripe();
+    const opts = { stripeAccount: t.stripeAccount };
+    const preview = await previewChange(t);
+    const metadata = {
+      ...t.sub.metadata,
+      tier_id: t.tier.id,
+      cadence: args.cadence,
+    };
+
+    // Any previously scheduled downgrade is superseded by this change.
+    await releaseSchedule(t.sub, opts);
+
+    if (preview.immediate) {
+      await stripe.subscriptions.update(
+        t.subscriptionId,
+        {
+          items: [{ id: t.itemId, price: t.priceId }],
+          proration_behavior: "always_invoice",
+          billing_cycle_anchor: t.intervalChanged ? "now" : "unchanged",
+          metadata,
+        },
+        opts,
+      );
+      await supabaseServerClient
+        .from("publication_memberships")
+        .update({
+          tier: t.tier.id,
+          cadence: args.cadence,
+          stripe_price_id: t.priceId,
+          pending_tier: null,
+          pending_cadence: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", args.membershipId);
+    } else {
+      const schedule = await stripe.subscriptionSchedules.create(
+        { from_subscription: t.subscriptionId },
+        opts,
+      );
+      const current = schedule.phases[0];
+      // A phase transition writes the phase's metadata onto the subscription,
+      // and from_subscription doesn't carry the existing metadata over, so
+      // both phases spell it out.
+      await stripe.subscriptionSchedules.update(
+        schedule.id,
+        {
+          end_behavior: "release",
+          phases: [
+            {
+              start_date: current.start_date,
+              end_date: current.end_date,
+              items: current.items.map((i) => ({
+                price: typeof i.price === "string" ? i.price : i.price.id,
+                quantity: i.quantity,
+              })),
+              metadata: t.sub.metadata,
+            },
+            {
+              items: [{ price: t.priceId, quantity: 1 }],
+              duration: { interval: args.cadence, interval_count: 1 },
+              proration_behavior: "none",
+              metadata,
+            },
+          ],
+        },
+        opts,
+      );
+      await supabaseServerClient
+        .from("publication_memberships")
+        .update({
+          pending_tier: t.tier.id,
+          pending_cadence: args.cadence,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", args.membershipId);
+    }
+    return Ok({
+      immediate: preview.immediate,
+      effectiveDate: preview.effectiveDate,
+    });
+  } catch (e) {
+    console.error("[memberships] change failed:", e);
+    return Err("stripe_error");
+  }
+}
+
+export async function updateWalletCard(
+  sessionId: string,
+): Promise<Result<{ failedPublications: string[] }, MembershipError>> {
+  return applyNewWalletCard(() => walletCheckoutSessionCard(sessionId));
+}
+
+export async function updateWalletCardFromSetupIntent(
+  setupIntentId: string,
+): Promise<Result<{ failedPublications: string[] }, MembershipError>> {
+  return applyNewWalletCard(() => walletSetupIntentCard(setupIntentId));
+}
+
+// Save a newly collected card as the wallet default, then re-clone it onto
+// every membership's connected account so renewals bill the new card.
+async function applyNewWalletCard(
+  getCard: () => Promise<{ pmId: string; customerId: string } | null>,
+): Promise<Result<{ failedPublications: string[] }, MembershipError>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
   const stripe = getStripe();
   try {
     const [wallet, card] = await Promise.all([
       getOrCreateWallet(identity),
-      walletCheckoutSessionCard(sessionId),
+      getCard(),
     ]);
     if (!card || card.customerId !== wallet.stripe_customer_id)
       return Err("not_found");
@@ -210,11 +393,7 @@ export async function updateWalletCard(sessionId: string): Promise<
           { stripeAccount: m.stripe_account_id },
         );
       } catch (e) {
-        console.error(
-          "[memberships] card swap failed for",
-          m.publication,
-          e,
-        );
+        console.error("[memberships] card swap failed for", m.publication, e);
         failedPublications.push(m.publication);
       }
     }
@@ -225,19 +404,12 @@ export async function updateWalletCard(sessionId: string): Promise<
   }
 }
 
-export type AvailableTier = {
-  id: string;
-  name: string;
-  monthly_price_cents: number;
-  annual_price_cents: number | null;
-};
-
 export type MyMembership = {
   id: string;
   publication: string;
   publicationName: string | null;
   publicationUrl: string;
-  tierId: string | null;
+  tierId: string;
   tierName: string | null;
   monthlyPriceCents: number | null;
   annualPriceCents: number | null;
@@ -245,8 +417,57 @@ export type MyMembership = {
   status: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
-  availableTiers: AvailableTier[];
+  // A scheduled downgrade that takes effect at currentPeriodEnd.
+  pendingPlan: {
+    tierName: string | null;
+    cadence: string | null;
+    priceCents: number | null;
+  } | null;
 };
+
+const MY_MEMBERSHIP_SELECT = `id, publication, tier, cadence, status, current_period_end, cancel_at_period_end, pending_cadence,
+  publications(uri, name, record),
+  publication_membership_tiers!publication_memberships_tier_publication_fkey(id, name, monthly_price_cents, annual_price_cents),
+  pending_tier_row:publication_membership_tiers!publication_memberships_pending_tier_fkey(id, name, monthly_price_cents, annual_price_cents)`;
+
+const myMembershipQuery = () =>
+  supabaseServerClient
+    .from("publication_memberships")
+    .select(MY_MEMBERSHIP_SELECT);
+
+type MyMembershipRow = NonNullable<
+  Awaited<ReturnType<typeof myMembershipQuery>>["data"]
+>[number];
+
+function toMyMembership(row: MyMembershipRow): MyMembership {
+  const pub = row.publications;
+  const tier = row.publication_membership_tiers;
+  const pending = row.pending_tier_row;
+  return {
+    id: row.id,
+    publication: row.publication,
+    publicationName: pub?.name ?? null,
+    publicationUrl: pub ? getPublicationURL(pub) : "",
+    tierId: row.tier,
+    tierName: tier?.name ?? null,
+    monthlyPriceCents: tier?.monthly_price_cents ?? null,
+    annualPriceCents: tier?.annual_price_cents ?? null,
+    cadence: row.cadence,
+    status: row.status,
+    currentPeriodEnd: row.current_period_end,
+    cancelAtPeriodEnd: row.cancel_at_period_end,
+    pendingPlan: pending
+      ? {
+          tierName: pending.name,
+          cadence: row.pending_cadence,
+          priceCents:
+            row.pending_cadence === "year"
+              ? pending.annual_price_cents
+              : pending.monthly_price_cents,
+        }
+      : null,
+  };
+}
 
 export type MyMembershipsData = {
   memberships: MyMembership[];
@@ -262,51 +483,13 @@ export async function getMyMembershipForPublication(
   const identity = await getAuthIdentity();
   if (!identity) return null;
 
-  const [{ data: row }, { data: tiers }] = await Promise.all([
-    supabaseServerClient
-      .from("publication_memberships")
-      .select(
-        `id, publication, tier, cadence, status, current_period_end, cancel_at_period_end,
-         publications(uri, name, record),
-         publication_membership_tiers(id, name, monthly_price_cents, annual_price_cents)`,
-      )
-      .eq("identity_id", identity.id)
-      .eq("publication", publicationUri)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabaseServerClient
-      .from("publication_membership_tiers")
-      .select("id, name, monthly_price_cents, annual_price_cents, sort_order")
-      .eq("publication", publicationUri)
-      .eq("active", true)
-      .eq("is_free", false)
-      .order("sort_order", { ascending: true }),
-  ]);
-  if (!row) return null;
-
-  const pub = row.publications;
-  const tier = row.publication_membership_tiers;
-  return {
-    id: row.id,
-    publication: row.publication,
-    publicationName: pub?.name ?? null,
-    publicationUrl: pub ? getPublicationURL(pub) : "",
-    tierId: row.tier,
-    tierName: tier?.name ?? null,
-    monthlyPriceCents: tier?.monthly_price_cents ?? null,
-    annualPriceCents: tier?.annual_price_cents ?? null,
-    cadence: row.cadence,
-    status: row.status,
-    currentPeriodEnd: row.current_period_end,
-    cancelAtPeriodEnd: row.cancel_at_period_end,
-    availableTiers: (tiers ?? []).map((t) => ({
-      id: t.id,
-      name: t.name,
-      monthly_price_cents: t.monthly_price_cents,
-      annual_price_cents: t.annual_price_cents,
-    })),
-  };
+  const { data: row } = await myMembershipQuery()
+    .eq("identity_id", identity.id)
+    .eq("publication", publicationUri)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return row ? toMyMembership(row) : null;
 }
 
 export async function getMyMemberships(): Promise<MyMembershipsData | null> {
@@ -314,13 +497,7 @@ export async function getMyMemberships(): Promise<MyMembershipsData | null> {
   if (!identity) return null;
 
   const [{ data: rows }, { data: wallet }] = await Promise.all([
-    supabaseServerClient
-      .from("publication_memberships")
-      .select(
-        `id, publication, tier, cadence, status, current_period_end, cancel_at_period_end,
-         publications(uri, name, record),
-         publication_membership_tiers(id, name, monthly_price_cents, annual_price_cents)`,
-      )
+    myMembershipQuery()
       .eq("identity_id", identity.id)
       .order("created_at", { ascending: false }),
     supabaseServerClient
@@ -330,46 +507,8 @@ export async function getMyMemberships(): Promise<MyMembershipsData | null> {
       .maybeSingle(),
   ]);
 
-  const publicationUris = Array.from(new Set((rows ?? []).map((r) => r.publication)));
-  const { data: allTiers } = publicationUris.length
-    ? await supabaseServerClient
-        .from("publication_membership_tiers")
-        .select("id, publication, name, monthly_price_cents, annual_price_cents, sort_order")
-        .in("publication", publicationUris)
-        .eq("active", true)
-        .eq("is_free", false)
-    : { data: [] };
-  const tiersByPublication = new Map<string, AvailableTier[]>();
-  for (const t of (allTiers ?? []).sort((a, b) => a.sort_order - b.sort_order)) {
-    const list = tiersByPublication.get(t.publication) ?? [];
-    list.push({
-      id: t.id,
-      name: t.name,
-      monthly_price_cents: t.monthly_price_cents,
-      annual_price_cents: t.annual_price_cents,
-    });
-    tiersByPublication.set(t.publication, list);
-  }
-
-  const memberships: MyMembership[] = (rows ?? []).map((r) => {
-    const pub = r.publications;
-    const tier = r.publication_membership_tiers;
-    return {
-      id: r.id,
-      publication: r.publication,
-      publicationName: pub?.name ?? null,
-      publicationUrl: pub ? getPublicationURL(pub) : "",
-      tierId: r.tier,
-      tierName: tier?.name ?? null,
-      monthlyPriceCents: tier?.monthly_price_cents ?? null,
-      annualPriceCents: tier?.annual_price_cents ?? null,
-      cadence: r.cadence,
-      status: r.status,
-      currentPeriodEnd: r.current_period_end,
-      cancelAtPeriodEnd: r.cancel_at_period_end,
-      availableTiers: tiersByPublication.get(r.publication) ?? [],
-    };
-  });
-
-  return { memberships, wallet: wallet ?? null };
+  return {
+    memberships: (rows ?? []).map(toMyMembership),
+    wallet: wallet ?? null,
+  };
 }

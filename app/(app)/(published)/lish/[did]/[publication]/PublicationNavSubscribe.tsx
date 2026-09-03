@@ -25,7 +25,7 @@ export function PublicationNavSubscribe(props: {
   if (props.input) {
     return (
       <div className="min-w-0 w-full max-w-sm mx-auto pb-1">
-        <SubscribeInput {...props} />
+        <SubscribeInput {...props} source={{ placement: "pub_nav" }} />
       </div>
     );
   }
@@ -33,7 +33,7 @@ export function PublicationNavSubscribe(props: {
   // resolves into, so nothing beside it moves when identity lands.
   return (
     <div className="sm:flex hidden justify-end min-w-40 max-w-64">
-      <SubscribeButton {...props} />
+      <SubscribeButton {...props} source={{ placement: "pub_nav" }} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { useState } from "react";
 import { useSpring, animated } from "@react-spring/web";
 import useMeasure from "react-use-measure";
-import { ReadOnlyAltText } from "./ReadOnlyAltText";
+import { AltTextBody, ReadOnlyAltText } from "./ReadOnlyAltText";
 
 // Overlaid on an image; visible on hover (within a `group/image`), while the
 // containing block is selected, or whenever alt text already exists. Opens the
@@ -16,6 +16,7 @@ export function ImageAltButton(props: {
   selected: boolean;
   canEdit?: boolean;
   className?: string;
+  onSeeMore?: () => void;
 }) {
   let canEdit = props.canEdit ?? true;
   let alt = useEntity(props.entityID, "image/alt")?.data.value;
@@ -26,14 +27,20 @@ export function ImageAltButton(props: {
   let altStyle = useSpring({
     height: showAlt ? altHeight : 0,
     opacity: showAlt ? 1 : 0,
-    config: { tension: 450, friction: 30 },
+    config: { tension: 450, friction: 30, clamp: true },
   });
 
   // Readers have nothing to interact with when there's no alt text.
   if (!canEdit && !hasAlt) return null;
   // Readers get the plain ALT pill + preview, shared with published posts.
   if (!canEdit)
-    return <ReadOnlyAltText alt={alt ?? ""} className={props.className} />;
+    return (
+      <ReadOnlyAltText
+        alt={alt ?? ""}
+        className={props.className}
+        onSeeMore={props.onSeeMore}
+      />
+    );
   return (
     <div
       // Hide the alt preview only when focus leaves the whole group — moving
@@ -91,9 +98,7 @@ export function ImageAltButton(props: {
       </div>
       <animated.div style={{ ...altStyle, overflow: "hidden" }}>
         <div className="pt-1" ref={altRef}>
-          <div className="opaque-container leading-snug text-secondary border-none! line-clamp-4 text-sm px-1.5 p-1 shrink-0">
-            {alt}
-          </div>
+          <AltTextBody alt={alt ?? ""} onSeeMore={props.onSeeMore} />
         </div>
       </animated.div>
     </div>

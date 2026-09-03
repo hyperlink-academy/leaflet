@@ -4,12 +4,15 @@ import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
-import { v7 } from "uuid";
+import { v5, v7 } from "uuid";
 import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
+import { useUIState } from "src/useUIState";
 
 export type MutationContext = {
   permission_token_id: string;
+  rootEntity: string;
+  sessionDid: string | null;
   createEntity: (args: {
     entityID: string;
     permission_set: string;
@@ -104,26 +107,29 @@ const addBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
-  if (args.list) {
+  let parentIsBlock =
+    !args.list &&
+    (await ctx.scanIndex.eav(args.parent, "block/type")).length > 0;
+  if (args.list || parentIsBlock) {
     await ctx.assertFact({
       entity: args.newEntityID,
       attribute: "block/is-list",
       data: { type: "boolean", value: true },
     });
-    if (args.list.listStyle) {
-      await ctx.assertFact({
-        entity: args.newEntityID,
-        attribute: "block/list-style",
-        data: { type: "list-style-union", value: args.list.listStyle },
-      });
-    }
-    if (args.list.checklist !== undefined) {
-      await ctx.assertFact({
-        entity: args.newEntityID,
-        attribute: "block/check-list",
-        data: { type: "boolean", value: args.list.checklist },
-      });
-    }
+  }
+  if (args.list?.listStyle) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "block/list-style",
+      data: { type: "list-style-union", value: args.list.listStyle },
+    });
+  }
+  if (args.list?.checklist !== undefined) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "block/check-list",
+      data: { type: "boolean", value: args.list.checklist },
+    });
   }
 };
 
@@ -155,6 +161,7 @@ const moveBlock: Mutation<{
   position:
     | { type: "first" }
     | { type: "end" }
+    | { type: "before"; entity: string }
     | { type: "after"; entity: string };
 }> = async (args, ctx) => {
   let children = (
@@ -184,6 +191,14 @@ const moveBlock: Mutation<{
       newPosition = generateKeyBetween(
         newSiblings[newSiblings.length - 1]?.data.position || null,
         null,
+      );
+      break;
+    }
+    case "before": {
+      let index = newSiblings.findIndex((f) => f.data.value == pos.entity);
+      newPosition = generateKeyBetween(
+        (index > 0 && newSiblings[index - 1].data.position) || null,
+        newSiblings[index]?.data.position || null,
       );
       break;
     }
@@ -1068,6 +1083,45 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
+const COLLAPSED_BLOCKS_FACT_NAMESPACE = "5f4bfb95-2a1f-49f4-8f6b-77f0f1a72897";
+const toggleCollapsedBlocks: Mutation<{
+  collapse?: string[];
+  uncollapse?: string[];
+}> = async (args, ctx) => {
+  await ctx.runOnClient(async () => {
+    useUIState.setState((s) => {
+      let foldedBlocks = s.foldedBlocks.filter(
+        (f) => !args.uncollapse?.includes(f),
+      );
+      for (let entity of args.collapse ?? [])
+        if (!foldedBlocks.includes(entity)) foldedBlocks.push(entity);
+      return { foldedBlocks };
+    });
+  });
+  if (!ctx.sessionDid) return;
+  let facts = await ctx.scanIndex.eav(ctx.rootEntity, "root/collapsed-blocks");
+  let mine = facts.find((f) => f.author_did === ctx.sessionDid);
+  let current = new Set(mine?.data.value ?? []);
+  for (let entity of args.uncollapse ?? []) current.delete(entity);
+  for (let entity of args.collapse ?? []) current.add(entity);
+  if (current.size === 0) {
+    if (mine) await ctx.retractFact(mine.id);
+    return;
+  }
+  await ctx.assertFact({
+    id:
+      mine?.id ??
+      v5(
+        `${ctx.rootEntity}:${ctx.sessionDid}`,
+        COLLAPSED_BLOCKS_FACT_NAMESPACE,
+      ),
+    entity: ctx.rootEntity,
+    attribute: "root/collapsed-blocks",
+    data: { type: "string-array", value: [...current] },
+    author_did: ctx.sessionDid,
+  });
+};
+
 // A comment and a reply share the same body: an entity holding the YJS
 // content plus author/created-at facts, all carrying the author's did so the
 // server's authentication gate (sessionDid must match author_did) verifies
@@ -1247,6 +1301,7 @@ export const mutations = {
   updatePublicationDraft,
   updateLeafletMetadata,
   toggleDraftContributor,
+  toggleCollapsedBlocks,
   createFootnote,
   deleteFootnote,
   createEditorComment,

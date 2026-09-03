@@ -5,7 +5,7 @@ import {
   readJoinResume,
   type JoinResume,
 } from "components/Memberships/joinReturn";
-import type { Tier } from "components/Memberships/TierGrid";
+import type { MembershipTiers } from "src/membership";
 
 // Hosts the paid join flow inline on the /join page — the same flow
 // PaidSubscribeButton opens in a modal. Viewer state (wallet, membership,
@@ -15,7 +15,7 @@ export function JoinPageContent(props: {
   publicationName: string;
   publicationUrl: string;
   newsletterMode: boolean;
-  tiers: Tier[];
+  tiers: MembershipTiers;
 }) {
   const [resume, setResume] = useState<JoinResume | null>(null);
 
@@ -34,6 +34,7 @@ export function JoinPageContent(props: {
       newsletterMode={props.newsletterMode}
       tiers={props.tiers}
       resume={resume}
+      source={{ placement: "join_page" }}
     />
   );
 }

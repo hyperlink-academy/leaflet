@@ -16,14 +16,19 @@ export function PublicationPostItemMedium(props: MediumProps) {
 
   return (
     <div className="postItemMedium relative flex w-full flex-col">
-      <PostLink href={props.href} />
+      <PostLink href={props.href} title={props.title} />
 
       <div className="postItemContent flex w-full items-stretch sm:max-h-36">
         <div
           className={`postItemInfo flex w-full grow flex-col justify-between min-w-0 py-2  ${props.inList ? "" : "px-3 py-2"} ${props.inList && !hasCoverImage ? "pr-0" : "pr-3"}`}
         >
           {props.pubInfo && props.pubInfo}
-          {props.membersOnly && <MembersBadge />}
+          {props.membersOnly && (
+            <MembersBadge
+              publicationUri={props.publicationUri}
+              gatePolicy={props.gatePolicy}
+            />
+          )}
 
           {/* Budget for title + description: the cover image's height
                 (w-24 / sm:w-48, square). useFitToHeight measures against it and
@@ -34,12 +39,15 @@ export function PublicationPostItemMedium(props: MediumProps) {
             className="postTitleAndDescription flex flex-col overflow-hidden grow min-h-0 "
           >
             {props.title && (
-              <h3
+              // h2 slots under the pub-name h1 in the outline; text-[1.125em]
+              // pins the h3-scale size the base-layer heading rules would
+              // otherwise bump.
+              <h2
                 ref={titleRef as React.RefObject<HTMLHeadingElement>}
-                className="postTitle text-primary leading-snug line-clamp-2"
+                className="postTitle text-primary leading-snug line-clamp-2 text-[1.125em]"
               >
                 {props.title}
-              </h3>
+              </h2>
             )}
             {/*the descriptionRef here is connected to useFitToHeight and is controlled the line clamp if theres not enough space for three lines*/}
             <p

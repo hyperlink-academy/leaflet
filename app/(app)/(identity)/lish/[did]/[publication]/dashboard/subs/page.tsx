@@ -5,12 +5,9 @@ import { getIdentityData } from "actions/getIdentityData";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { isActiveMembership } from "src/membership";
-import {
-  PublicationSubscribers,
-  type MergedSubscriber,
-  type SubscriberStatus,
-} from "../PublicationSubscribers";
+import { buildMembershipTiers } from "src/membership";
+import { PublicationSubscribers } from "../PublicationSubscribers";
+import { mergePublicationSubscribers } from "../mergeSubscribers";
 
 export default async function SubsPage(props: {
   params: Promise<{ did: string; publication: string }>;
@@ -31,6 +28,7 @@ export default async function SubsPage(props: {
         publicationShareUrl=""
         publicationUri=""
         showPageBackground={false}
+        tiers={null}
       />
     );
   }
@@ -48,87 +46,61 @@ export default async function SubsPage(props: {
   const emailSubs = newsletterEnabled
     ? pub.publication_email_subscribers || []
     : [];
+  const membershipsEnabled = !!pub.publication_membership_settings?.enabled;
+  const tiers = membershipsEnabled
+    ? buildMembershipTiers(
+        pub.publication_membership_settings,
+        pub.publication_membership_tiers ?? [],
+      )
+    : null;
 
-  const dids = new Set<string>();
+  const channelDids = new Set<string>();
   for (const s of atprotoSubs) {
-    if (s.identities?.atp_did) dids.add(s.identities.atp_did);
+    if (s.identities?.atp_did) channelDids.add(s.identities.atp_did);
   }
   for (const s of emailSubs) {
-    if (s.identities?.atp_did) dids.add(s.identities.atp_did);
+    if (s.identities?.atp_did) channelDids.add(s.identities.atp_did);
   }
 
-  const [profiles, { data: memberRows }] = await Promise.all([
-    getProfiles(Array.from(dids)),
+  const [{ data: memberRows }, channelProfiles] = await Promise.all([
     supabaseServerClient
       .from("publication_memberships")
       .select(
-        "status, current_period_end, publication_membership_tiers(name), identities(atp_did, email)",
+        "id, tier, status, current_period_end, created_at, publication_membership_tiers!publication_memberships_tier_publication_fkey(id, name), identities(atp_did, email)",
       )
       .eq("publication", pub.uri),
+    getProfiles(Array.from(channelDids)),
   ]);
 
-  // Active paying members, keyed by both DID and email so we can tag whichever
-  // subscriber-list identity they surface as.
-  const memberTierByDid = new Map<string, string>();
-  const memberTierByEmail = new Map<string, string>();
+  const profiles = new Map(channelProfiles);
+  const memberOnlyDids = new Set<string>();
   for (const m of memberRows ?? []) {
-    if (!isActiveMembership(m)) continue;
-    const tierName = m.publication_membership_tiers?.name ?? "Member";
     const did = m.identities?.atp_did;
-    const email = m.identities?.email;
-    if (did) memberTierByDid.set(did, tierName);
-    if (email) memberTierByEmail.set(email, tierName);
+    if (did && !profiles.has(did)) memberOnlyDids.add(did);
   }
-
-  const byDid = new Map<string, MergedSubscriber>();
-  const emailOnly: MergedSubscriber[] = [];
-
-  for (const s of atprotoSubs) {
-    const d = s.identities?.atp_did ?? undefined;
-    if (!d) continue;
-    byDid.set(d, {
-      key: `did:${d}`,
-      did: d,
-      handle: profiles.get(d)?.handle ?? undefined,
-      email: undefined,
-      created_at: s.created_at,
-      status: "subscribed",
-      memberTier: memberTierByDid.get(d),
-    });
-  }
-
-  for (const s of emailSubs) {
-    const status: SubscriberStatus =
-      s.state === "pending"
-        ? "unconfirmed"
-        : s.state === "unsubscribed"
-          ? "unsubscribed"
-          : "subscribed";
-    const linkedDid = s.identities?.atp_did ?? undefined;
-    const existing = linkedDid ? byDid.get(linkedDid) : undefined;
-    if (existing && status === "subscribed") {
-      existing.email = s.email;
-      continue;
+  if (memberOnlyDids.size > 0) {
+    for (const [did, profile] of await getProfiles(
+      Array.from(memberOnlyDids),
+    )) {
+      profiles.set(did, profile);
     }
-    emailOnly.push({
-      key: `email:${s.id}`,
-      did: linkedDid,
-      handle: linkedDid ? (profiles.get(linkedDid)?.handle ?? undefined) : undefined,
-      email: s.email,
-      created_at: s.created_at,
-      status,
-      memberTier:
-        (linkedDid ? memberTierByDid.get(linkedDid) : undefined) ??
-        (s.email ? memberTierByEmail.get(s.email) : undefined),
-    });
   }
+
+  const subscribers = mergePublicationSubscribers({
+    atprotoSubs,
+    emailSubs,
+    memberRows: memberRows ?? [],
+    profiles,
+    tiers,
+  });
 
   return (
     <PublicationSubscribers
-      subscribers={[...byDid.values(), ...emailOnly]}
+      subscribers={subscribers}
       publicationShareUrl={getPublicationURL(pub)}
       publicationUri={pub.uri}
       showPageBackground={showPageBackground}
+      tiers={tiers}
     />
   );
 }

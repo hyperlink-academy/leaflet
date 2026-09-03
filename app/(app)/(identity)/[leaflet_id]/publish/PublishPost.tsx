@@ -113,6 +113,7 @@ const PublishPostForm = (
   let [oauthError, setOauthError] = useState<
     import("src/atproto-oauth").OAuthSessionError | null
   >(null);
+  let [publishError, setPublishError] = useState<string | null>(null);
   let params = useParams();
   let { rep } = useReplicache();
 
@@ -194,27 +195,41 @@ const PublishPostForm = (
     if (isLoading) return;
     setIsLoading(true);
     setOauthError(null);
-    await rep?.push();
-    let result = await publishToPublication({
-      root_entity: props.root_entity,
-      publication_uri: props.publication_uri,
-      leaflet_id: props.leaflet_id,
-      title,
-      description,
-      tags: currentTags,
-      entitiesToDelete: props.entitiesToDelete,
-      publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
-      postPreferences,
-      // Posting quietly forces every share channel off, mirroring the UI where
-      // checking "Post Quietly" unchecks all the other options.
-      sendEmail: shareState.email && !shareState.quiet,
-      showInDiscover: shareState.postToReaders && !shareState.quiet,
-    });
+    setPublishError(null);
+    let result: Awaited<ReturnType<typeof publishToPublication>>;
+    try {
+      await rep?.push();
+      result = await publishToPublication({
+        root_entity: props.root_entity,
+        publication_uri: props.publication_uri,
+        leaflet_id: props.leaflet_id,
+        title,
+        description,
+        tags: currentTags,
+        entitiesToDelete: props.entitiesToDelete,
+        publishedAt:
+          localPublishedAt?.toISOString() || new Date().toISOString(),
+        postPreferences,
+        // Posting quietly forces every share channel off, mirroring the UI where
+        // checking "Post Quietly" unchecks all the other options.
+        sendEmail: shareState.email && !shareState.quiet,
+        showInDiscover: shareState.postToReaders && !shareState.quiet,
+      });
+    } catch (error) {
+      console.error(error);
+      setIsLoading(false);
+      setPublishError(
+        "Something went wrong while publishing. Please try again!",
+      );
+      return;
+    }
 
     if (!result.success) {
       setIsLoading(false);
       if (isOAuthSessionError(result.error)) {
         setOauthError(result.error);
+      } else {
+        setPublishError(result.error.message);
       }
       return;
     }
@@ -395,7 +410,7 @@ const PublishPostForm = (
                   <ButtonPrimary
                     type="submit"
                     className="place-self-end h-[30px]"
-                    disabled={charCount > 300 || nothingSelected}
+                    disabled={charCount > 300 || nothingSelected || isLoading}
                   >
                     {isLoading ? (
                       <DotLoader className="h-[23px]" />
@@ -409,6 +424,11 @@ const PublishPostForm = (
                     error={oauthError}
                     className="text-right text-sm text-accent-contrast"
                   />
+                )}
+                {publishError && (
+                  <div className="text-right text-sm text-accent-contrast leading-snug">
+                    {publishError}
+                  </div>
                 )}
               </div>
             </>

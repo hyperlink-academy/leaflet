@@ -1,4 +1,6 @@
 "use client";
+import { useRef } from "react";
+import { isValidHandle } from "@atproto/syntax";
 import { Input } from "components/Input";
 import { Combobox, ComboboxResult } from "components/Combobox";
 import {
@@ -39,6 +41,9 @@ export const HandleSearchInput = (props: {
   // handle was entered); cleared on focus via onFocus.
   highlight?: boolean;
   onFocus?: () => void;
+  // Reject typed values that aren't syntactically valid handles with a native
+  // validation bubble instead of submitting them (suggestion picks are trusted).
+  validateHandle?: boolean;
 }) => {
   let {
     handleValue,
@@ -51,10 +56,23 @@ export const HandleSearchInput = (props: {
     setHighlighted,
   } = useActorTypeahead();
 
+  let triggerRef = useRef<HTMLDivElement>(null);
+
   const handleSelect = async (handle?: string) => {
-    const selected = handle ?? handleValue;
+    let selected = handle ?? handleValue;
     if (!selected) return;
     const actor = suggestions.find((s) => s.handle === selected);
+    if (props.validateHandle && !actor) {
+      selected = selected.trim().replace(/^@/, "");
+      if (!isValidHandle(selected)) {
+        let input = triggerRef.current?.querySelector("input");
+        input?.setCustomValidity(
+          "Please enter a full handle, like name.bsky.social",
+        );
+        input?.reportValidity();
+        return;
+      }
+    }
     setHandleValue(selected);
     setDropdownOpen(false);
     setSuggestions([]);
@@ -87,6 +105,7 @@ export const HandleSearchInput = (props: {
       className="w-(--radix-popover-trigger-width)!"
       trigger={
         <div
+          ref={triggerRef}
           className={`handleInput input-with-border relative py-0! flex items-center gap-2 w-full ${props.large && "px-2!"} ${props.highlight ? INPUT_HIGHLIGHT_CLASS : ""} ${props.className}`}
           style={
             props.loading
@@ -112,6 +131,7 @@ export const HandleSearchInput = (props: {
             size={0}
             value={handleValue}
             onChange={(e) => {
+              e.currentTarget.setCustomValidity("");
               setHandleValue(e.target.value);
               props.onChange?.(e.target.value);
             }}
@@ -139,6 +159,7 @@ export const HandleSearchInput = (props: {
           ) : props.onSubmit && props.action ? (
             <button
               type="button"
+              className="shrink-0 whitespace-nowrap"
               onClick={(e) => {
                 e.stopPropagation();
                 handleSelect();

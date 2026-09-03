@@ -175,6 +175,7 @@ const Comment = (props: {
             index={[]}
             plaintext={props.record.plaintext}
             facets={props.record.facets}
+            ugcLinks
           />
         </pre>
         <Replies

@@ -13,6 +13,10 @@ const RootAttributes = {
     type: "reference",
     cardinality: "one",
   },
+  "root/collapsed-blocks": {
+    type: "string-array",
+    cardinality: "many",
+  },
 } as const;
 const PageAttributes = {
   "card/block": {
@@ -68,11 +72,15 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
-  // On a members-only delimiter: id of the lowest membership tier whose
-  // members can read past it. Absent = any paid membership.
-  "block/members-only-tier": {
+  "block/members-only-audience": {
     type: "string",
     cardinality: "one",
+  },
+  // Present only for a selected-tier audience: one fact per paid tier that can
+  // read past the delimiter.
+  "block/members-only-tier": {
+    type: "string",
+    cardinality: "many",
   },
   "block/is-locked": {
     type: "boolean",
@@ -450,6 +458,7 @@ export type Attribute = keyof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
   text: { type: "text"; value: string };
   string: { type: "string"; value: string };
+  "string-array": { type: "string-array"; value: string[] };
   "spatial-reference": {
     type: "spatial-reference";
     position: { x: number; y: number };

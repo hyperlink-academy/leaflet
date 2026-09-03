@@ -7,8 +7,6 @@ import { useSmoker, useToaster } from "../Toast";
 import { Menu, MenuItem } from "../Menu";
 import { ButtonPrimary } from "../Buttons";
 import { Modal } from "../Modal";
-import { MobileSheet } from "../MobileSheet";
-import { useIsMobile } from "src/hooks/isMobile";
 import { ShareTiny } from "../Icons/ShareTiny";
 import { DotLoader } from "../utils/DotLoader";
 import { useIdentityData } from "../IdentityProvider";
@@ -131,7 +129,6 @@ export const BskyShareModal = (props: {
   let editorStateRef = useRef<EditorState | null>(null);
   let [charCount, setCharCount] = useState(0);
   let [posting, setPosting] = useState(false);
-  let isMobile = useIsMobile();
 
   let profile = {
     avatar: identity?.bsky_profiles?.record.avatar,
@@ -272,27 +269,19 @@ export const BskyShareModal = (props: {
 
   return (
     <>
-      {isMobile ? (
-        <MobileSheet
-          open={props.shareModalOpen}
-          onOpenChange={props.setShareModalOpen}
-          title={loggedIn ? "Share on Bluesky" : undefined}
-          actionButton={loggedIn ? submitButton : undefined}
-        >
-          {shareContent}
-        </MobileSheet>
-      ) : (
-        <Modal
-          open={props.shareModalOpen}
-          onOpenChange={props.setShareModalOpen}
-          title={loggedIn ? "Share on Bluesky" : undefined}
-          actionButton={loggedIn ? submitButton : undefined}
-          className="max-w-full w-lg"
-        >
-          {loggedIn && <div className="spacer w-full h-2" />}
-          {shareContent}
-        </Modal>
-      )}
+      <Modal
+        sheetOnMobile
+        open={props.shareModalOpen}
+        onOpenChange={props.setShareModalOpen}
+        title={loggedIn ? "Share on Bluesky" : undefined}
+        actionButton={loggedIn ? submitButton : undefined}
+        className="max-w-full w-lg"
+      >
+        {/* sm: aligns with the useIsMobile breakpoint — the sheet's own header
+            spacing already covers this gap. */}
+        {loggedIn && <div className="spacer w-full h-2 hidden sm:block" />}
+        {shareContent}
+      </Modal>
     </>
   );
 };

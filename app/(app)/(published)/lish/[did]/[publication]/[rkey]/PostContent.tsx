@@ -35,7 +35,11 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
 import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
-import { StandardSitePublicationItem } from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
+import {
+  StandardSitePublicationItem,
+  StandardSitePublicationItemView,
+} from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import {
   WithPublicationTheme,
   PublicationThemeWrapper,
@@ -101,6 +105,7 @@ export function PostContent({
   pollData,
   footnoteIndexMap,
   postsListData,
+  standardSitePublicationData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -110,6 +115,9 @@ export function PostContent({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  // Server-fetched like standardSitePostData so the block is in the SSR HTML;
+  // callers that don't thread it fall back to the client SWR fetch.
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   footnoteIndexMap?: Map<string, number>;
@@ -129,6 +137,7 @@ export function PostContent({
             pages={pages}
             bskyPostData={bskyPostData}
             standardSitePostData={standardSitePostData}
+            standardSitePublicationData={standardSitePublicationData}
             block={b}
             did={did}
             key={index}
@@ -160,6 +169,7 @@ export let Block = ({
   prerenderedCodeBlocks,
   bskyPostData,
   standardSitePostData,
+  standardSitePublicationData,
   pageId,
   pages,
   pollData,
@@ -180,6 +190,7 @@ export let Block = ({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   footnoteIndexMap?: Map<string, number>;
   postsListData?: PostsListData;
@@ -331,6 +342,9 @@ export let Block = ({
           <PublishedStandardSitePublicationBlock
             uri={block.uri}
             showPublicationTheme={block.showPublicationTheme !== false}
+            initialData={standardSitePublicationData?.find(
+              (p) => p.uri === block.uri,
+            )}
           />
         </div>
       );
@@ -376,6 +390,7 @@ export let Block = ({
           <SubscribePanel
             publicationUri={document.publication.uri}
             publicationUrl={document.normalizedPublication?.url}
+            source={{ placement: "signup_block" }}
             publicationName={
               document.normalizedPublication?.name ?? document.publication.name
             }
@@ -452,6 +467,7 @@ export let Block = ({
               pages={pages}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
+              standardSitePublicationData={standardSitePublicationData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -473,6 +489,7 @@ export let Block = ({
               pages={pages}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
+              standardSitePublicationData={standardSitePublicationData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -582,8 +599,16 @@ export let Block = ({
             displayWidth={block.width}
             isFullBleed={isFullBleed}
             className={className}
+            // The first block of a page is the one image plausibly above the
+            // fold; everything below defers.
+            loading={isFirst ? undefined : "lazy"}
             onOpenLightbox={
               canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
+            }
+            onOpenAltInLightbox={
+              canOpenLightbox
+                ? () => openLightbox?.(pageId, cid, { altExpanded: true })
+                : undefined
             }
           />
         </div>
@@ -600,7 +625,7 @@ export let Block = ({
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={`blockquote py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
+          className={`blockquote whitespace-pre-wrap py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
           {...blockProps}
         >
           <TextBlock
@@ -617,7 +642,7 @@ export let Block = ({
     "pub.leaflet.blocks.text": (block) => {
       return (
         <p
-          className={`textBlock ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"}`}
+          className={`textBlock whitespace-pre-wrap ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"}`}
           {...blockProps}
           // em-based so small/large scale with the theme's custom base font
           // size, matching the editor's .textSizeSmall/.textSizeLarge classes.
@@ -666,44 +691,49 @@ export let Block = ({
             {children}
           </a>
         );
+      // Tags sit one level below the block's nominal level: the page's h1 is
+      // outside the body (PostHeader's title on posts, the publication name on
+      // publication pages), so body headings start at h2. Sizes stay on the
+      // nominal scale via the inline blockTextSize font-size, and the
+      // hNBlock class names keep matching the block level.
       if (block.level === 1)
         return (
-          <h1
-            className={`h1Block ${className} ${HeadingStyle[1]}`}
+          <h2
+            className={`h1Block whitespace-pre-wrap ${className} ${HeadingStyle[1]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h1>
+          </h2>
         );
       if (block.level === 2)
         return (
-          <h2
-            className={`h2Block ${className} ${HeadingStyle[2]}`}
+          <h3
+            className={`h2Block whitespace-pre-wrap ${className} ${HeadingStyle[2]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h2>
+          </h3>
         );
       if (block.level === 3)
         return (
-          <h3
-            className={`h3Block ${className} ${HeadingStyle[3]}`}
+          <h4
+            className={`h3Block whitespace-pre-wrap ${className} ${HeadingStyle[3]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h3>
+          </h4>
         );
       return (
-        <h6
-          className={`h6Block ${className} ${HeadingStyle[4]}`}
+        <h5
+          className={`h6Block whitespace-pre-wrap ${className} ${HeadingStyle[4]}`}
           {...headingProps}
           style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}
         >
           {link(<TextBlock {...textBlockProps} />)}
-        </h6>
+        </h5>
       );
     },
   };
@@ -714,8 +744,12 @@ export let Block = ({
 function PublishedStandardSitePublicationBlock(props: {
   uri: string;
   showPublicationTheme: boolean;
+  initialData?: StandardSitePublicationData;
 }) {
-  let { data: publication } = useStandardSitePublication(props.uri);
+  let { data: fetched } = useStandardSitePublication(
+    props.initialData ? null : props.uri,
+  );
+  let publication = props.initialData ?? fetched;
 
   return (
     <div className="standardSitePublicationBlock block-border overflow-hidden w-full">
@@ -725,7 +759,11 @@ function PublishedStandardSitePublicationBlock(props: {
         enabled={props.showPublicationTheme}
       >
         <div className="bg-bg-page">
-          <StandardSitePublicationItem uri={props.uri} />
+          {props.initialData ? (
+            <StandardSitePublicationItemView publication={props.initialData} />
+          ) : (
+            <StandardSitePublicationItem uri={props.uri} />
+          )}
         </div>
       </WithPublicationTheme>
     </div>
@@ -810,6 +848,7 @@ function ListItem(props: {
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pageId?: string;
   footnoteIndexMap?: Map<string, number>;
@@ -822,6 +861,7 @@ function ListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -841,6 +881,7 @@ function ListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -872,6 +913,7 @@ function ListItem(props: {
           pages={props.pages}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           block={{ block: props.item.content }}
           did={props.did}
           isList
@@ -894,6 +936,7 @@ function OrderedListItem(props: {
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pageId?: string;
   startIndex?: number;
@@ -909,6 +952,7 @@ function OrderedListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -929,6 +973,7 @@ function OrderedListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -959,6 +1004,7 @@ function OrderedListItem(props: {
           pages={props.pages}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           block={{ block: props.item.content }}
           did={props.did}
           isList

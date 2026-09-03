@@ -4,6 +4,8 @@ import { jsonToLex } from "@atproto/lexicon";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { resolveDocumentFilter } from "src/utils/resolveDocumentFilter";
+import { documentUriFilter } from "src/utils/uriHelpers";
+import { fetchPublicationForPage } from "../getPublicationForPage";
 
 // OG content is effectively immutable post-publish, and each regeneration is a
 // multi-second remote-browser render billed for its full wall time — unfurl
@@ -14,6 +16,11 @@ export async function generateStaticParams() {
   return [];
 }
 
+// The advertised dimensions match the screenshot fallback; the cover-blob
+// path serves the blob best-effort at its native size.
+export const size = { width: 1400, height: 733 };
+export const contentType = "image/png";
+export const alt = "Preview of this post";
 
 export default async function OpenGraphImage(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -24,10 +31,15 @@ export default async function OpenGraphImage(props: {
   let rkey = decodeURIComponent(params.rkey);
 
   // Try to get the document's cover image
+  let pub = await fetchPublicationForPage(did, publication);
   let { data: documents } = await supabaseServerClient
     .from("documents")
     .select("data")
-    .or(await resolveDocumentFilter(did, publication, rkey))
+    .or(
+      pub
+        ? await resolveDocumentFilter(did, pub.uri, rkey)
+        : documentUriFilter(did, rkey),
+    )
     .order("uri", { ascending: false })
     .limit(1);
   let document = documents?.[0];

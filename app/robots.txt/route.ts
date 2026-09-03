@@ -6,8 +6,17 @@ export async function GET(req: Request) {
   let host = req.headers.get("host");
   if (!host || !isMainSiteHost(host)) return new Response(null, { status: 404 });
 
+  // /new and /template/[template_id] create database rows on GET and are
+  // linked from the landing page — disallowing them stops crawlers from
+  // minting leaflets. The rest are internal test/debug harnesses.
   let body = `User-agent: *
 Allow: /
+Disallow: /new
+Disallow: /template/
+Disallow: /potluck
+Disallow: /test/
+Disallow: /debug/
+Disallow: /position-links
 
 Sitemap: ${MAIN_SITE_URL}/sitemap.xml
 `;

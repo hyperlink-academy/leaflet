@@ -18,6 +18,7 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { Fragment } from "react";
 import { PollData } from "./fetchPollData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { GlobalImageLightbox } from "./GlobalImageLightbox";
@@ -55,6 +56,7 @@ export type SharedPageProps = {
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
   document_uri: string;
   fullPageScroll: boolean;
@@ -126,7 +128,12 @@ export function PostPages({
   const { pages } = useLeafletContent();
   // Not props: a members-only unlock swaps the pages and these three channels
   // together, and only PostDataProvider knows when that happened.
-  const { bskyPostData, standardSitePostData, pollData } = usePostResources();
+  const {
+    bskyPostData,
+    standardSitePostData,
+    standardSitePublicationData,
+    pollData,
+  } = usePostResources();
   const { quotesAndMentions } = useDocument();
   const record = document?.normalizedDocument;
   if (!document || !record) return null;
@@ -153,6 +160,7 @@ export function PostPages({
     prerenderedCodeBlocks,
     bskyPostData,
     standardSitePostData,
+    standardSitePublicationData,
     pollData,
     document_uri,
     hasPageBackground,

@@ -50,6 +50,7 @@ export function EditorGalleryImageItem(
     editable: boolean;
     selected: boolean;
     onClick: () => void;
+    onSeeMoreAlt?: () => void;
   } & GalleryItemClasses,
 ) {
   let image = useGalleryImage(props.entityID);
@@ -69,6 +70,7 @@ export function EditorGalleryImageItem(
             entityID={props.entityID}
             selected={props.selected}
             canEdit={props.editable}
+            onSeeMore={props.onSeeMoreAlt}
           />
         </>
       }

@@ -100,12 +100,15 @@ const NewPubOnboarding = (props: { isOwner: boolean }) => {
         className="w-40 max-w-full mx-auto"
       />
       <h2> Welcome to {props.isOwner ? "your new" : "this"} Publication!</h2>
-      <p className="font-bold pb-1 -mt-1 text-lg">
-        Use the<span className="sm:inline hidden">Sidebar</span>{" "}
-        <span className="sm:hidden inline-flex gap-1 items-center align-middle mx-2 border border-border rounded-md">
+      <p className="font-bold pb-1  text-lg hidden sm:block">
+        Use the Sidebar to explore!
+      </p>
+      <p className="font-bold pb-1  text-lg sm:hidden block">
+        Tap the
+        <span className="sm:hidden inline-flex gap-1 items-center align-middle mx-2  border border-border rounded-md">
           <MenuSmall className="scale-80" />
         </span>
-        menu to explore
+        <span className="sm:hidden inline">menu</span> to explore!
       </p>
       <p>
         Start writing with
@@ -122,7 +125,7 @@ const NewPubOnboarding = (props: { isOwner: boolean }) => {
       </p>
       {props.isOwner && (
         <p>
-          Theme with
+          Change your theme and layout with
           <span className="inline-flex gap-1 items-center align-middle text-accent-contrast font-bold pr-1 pl-0.5  text-sm rounded-md ml-1.5 -mt-0.5 border-2 border-accent-contrast bg-page">
             <PaintSmall className="scale-80" /> Customize
           </span>

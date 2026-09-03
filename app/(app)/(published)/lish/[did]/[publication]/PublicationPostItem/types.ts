@@ -1,4 +1,5 @@
 import React from "react";
+import type { GatePolicy } from "src/membership";
 
 export type CommonProps = {
   href?: string;
@@ -13,6 +14,8 @@ export type CommonProps = {
   pubInfo?: React.ReactNode;
   inList?: boolean;
   membersOnly?: boolean;
+  publicationUri?: string;
+  gatePolicy?: GatePolicy | null;
 };
 
 export type LargeProps = CommonProps & {

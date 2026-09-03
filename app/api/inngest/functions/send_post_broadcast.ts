@@ -2,7 +2,7 @@ import { render } from "@react-email/render";
 import { AtUri } from "@atproto/syntax";
 import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PostEmail } from "emails/post";
+import { PostEmail, type PostEmailPage } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
 import {
   getDocumentPages,
@@ -14,9 +14,13 @@ import {
   resolveFromDomain,
   resolveReplyToEmail,
 } from "src/utils/newsletterSender";
-import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import {
+  PubLeafletPagesCanvas,
+  PubLeafletPagesLinearDocument,
+} from "lexicons/api";
 import type { AppBskyFeedDefs } from "@atproto/api";
 import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
+import { manageSubscriptionUrl } from "src/subscriptions/manageUrl";
 import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
 import { getProfiles } from "src/identity";
 import {
@@ -27,11 +31,10 @@ import {
 } from "src/utils/byline";
 import type { Json } from "supabase/database.types";
 import {
-  getMembersDelimiterTierId,
+  getMembersDelimiterGatePolicy,
   isEntitledToGatedPost,
+  membershipUnlocksGatedPost,
   pageHasMembersDelimiter,
-  resolveGateRequiredTier,
-  tierUnlocksGatedPost,
   truncateBlocksAtMembersDelimiter,
 } from "src/membership";
 
@@ -40,6 +43,8 @@ const BATCH_SIZE = 500;
 // so we only pay the React Email render cost once per batch.
 const UNSUB_PLACEHOLDER =
   "https://placeholder.leaflet.pub/unsubscribe-token-replace-me";
+const MANAGE_PLACEHOLDER =
+  "https://placeholder.leaflet.pub/manage-subscription-replace-me";
 
 export const send_post_broadcast = inngest.createFunction(
   {
@@ -70,7 +75,7 @@ export const send_post_broadcast = inngest.createFunction(
         supabaseServerClient
           .from("publications")
           .select(
-            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(id, monthly_price_cents, active, is_free)",
+            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(id, monthly_price_cents, active)",
           )
           .eq("uri", publication_uri)
           .maybeSingle(),
@@ -159,29 +164,44 @@ export const send_post_broadcast = inngest.createFunction(
     // The first page is the document body. Canvas pages don't map to a linear
     // email body — the email renders an empty postContent section and falls
     // back to the "See Full Post" link.
-    const firstPage = docRecord ? getDocumentPages(docRecord)?.[0] : undefined;
+    const docPages = docRecord ? (getDocumentPages(docRecord) ?? []) : [];
+    const firstPage = docPages[0];
     let blocks: PubLeafletPagesLinearDocument.Block[] =
       firstPage?.$type === "pub.leaflet.pages.linearDocument"
         ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
         : [];
-    // When the post is gated, subscribers with an active membership (plus the
-    // owner and confirmed contributors) get the full body by email; everyone
-    // else gets only the preview above the delimiter (the post link paywalls).
-    const gated =
+    // Pages without an id can't be the target of a page block.
+    const pages: PostEmailPage[] = docPages.flatMap((p): PostEmailPage[] => {
+      if (PubLeafletPagesLinearDocument.isMain(p) && p.id)
+        return [{ id: p.id, type: "doc", blocks: p.blocks ?? [] }];
+      if (PubLeafletPagesCanvas.isMain(p) && p.id)
+        return [{ id: p.id, type: "canvas", blocks: p.blocks ?? [] }];
+      return [];
+    });
+
+    const pubTiers = loaded.pub.publication_membership_tiers ?? [];
+    const hasDelimiter =
       !!loaded.pub.publication_membership_settings?.enabled &&
       pageHasMembersDelimiter({ blocks });
+    const gatePolicy = hasDelimiter
+      ? getMembersDelimiterGatePolicy(blocks)
+      : null;
+    // Every recipient is already a subscriber, so a subscriber gate can send
+    // the full body to the whole list. Invalid policies remain gated.
+    const gated = hasDelimiter && gatePolicy?.audience !== "subscribers";
     const previewBlocks = gated
       ? truncateBlocksAtMembersDelimiter(blocks)
       : blocks;
-    const pubTiers = loaded.pub.publication_membership_tiers ?? [];
-    const requiredTier = gated
-      ? resolveGateRequiredTier(getMembersDelimiterTierId(blocks), pubTiers)
-      : null;
-    // Non-members' emails end in a "subscribe to see the full content" box
-    // linking to the join page, priced from the cheapest active tier that
-    // actually unlocks this post.
+
     const activeTierPrices = pubTiers
-      .filter((t) => t.active && tierUnlocksGatedPost(t, requiredTier))
+      .filter(
+        (tier) =>
+          tier.active &&
+          membershipUnlocksGatedPost(
+            { kind: "paid", tierId: tier.id },
+            gatePolicy,
+          ),
+      )
       .map((t) => t.monthly_price_cents);
     const membersUpsell = {
       joinUrl: `${pubProps.publicationUrl.replace(/\/$/, "")}/join`,
@@ -264,9 +284,8 @@ export const send_post_broadcast = inngest.createFunction(
               viewerDid: null,
               ownerDid: null,
               contributors: [],
-              membership: m,
-              requiredTier,
-              tiers: pubTiers,
+              paidMembership: m,
+              gatePolicy,
             });
             if (!entitledMember) continue;
             identityIds.add(m.identity_id);
@@ -341,6 +360,7 @@ export const send_post_broadcast = inngest.createFunction(
               authorName,
               publishedAtLabel,
               blocks: group.blocks,
+              pages,
               bskyPosts,
               standardSitePosts,
               standardSitePublications,
@@ -348,6 +368,7 @@ export const send_post_broadcast = inngest.createFunction(
               did,
               assetsBaseUrl: `${assetsBaseUrl}/`,
               unsubscribeUrl: UNSUB_PLACEHOLDER,
+              manageUrl: MANAGE_PLACEHOLDER,
               membersUpsell: group.upsell ? membersUpsell : undefined,
             }),
           );
@@ -375,9 +396,16 @@ export const send_post_broadcast = inngest.createFunction(
               const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
                 sub.unsubscribe_token,
               )}`;
+              const manageUrl = manageSubscriptionUrl({
+                baseUrl: assetsBaseUrl,
+                email: sub.email,
+                publicationUrl: pubProps.publicationUrl,
+              });
               const htmlBody = htmlTemplate
                 .split(UNSUB_PLACEHOLDER)
-                .join(unsubscribeUrl);
+                .join(unsubscribeUrl)
+                .split(MANAGE_PLACEHOLDER)
+                .join(manageUrl.replace(/&/g, "&amp;"));
               return {
                 MessageStream: "broadcast",
                 From: fromHeader,

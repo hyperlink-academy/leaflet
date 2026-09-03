@@ -111,7 +111,20 @@ export async function ogScreenshotResponse(
     height: 733,
     ...options,
   });
-  if (!image) return new Response("Screenshot failed", { status: 502 });
+  if (!image) {
+    // An error status here breaks the advertised og:image URL and the post
+    // unfurls imageless; degrade to the site-wide card instead. Cached only
+    // briefly so a recovered screenshot isn't pinned out for the CDN window.
+    let fallback = await fetch(getOwnUrl("/open-graph.png")).catch(() => null);
+    if (fallback?.ok)
+      return new Response(await fallback.arrayBuffer(), {
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "public, max-age=300",
+        },
+      });
+    return new Response("Screenshot failed", { status: 502 });
+  }
   return new Response(new Uint8Array(image), {
     headers: {
       "Content-Type": "image/png",

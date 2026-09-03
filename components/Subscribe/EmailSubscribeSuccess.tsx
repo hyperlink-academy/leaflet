@@ -56,6 +56,7 @@ export const EmailSubscribeSuccess = (props: {
       )}
       <RecommendedPublications
         publicationName={publicationName}
+        recommendingPublicationUri={props.publicationUri}
         listings={listings}
       />
     </div>

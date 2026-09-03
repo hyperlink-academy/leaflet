@@ -8,7 +8,7 @@ import type {
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { hasLeafletContent } from "lexicons/src/normalize";
-import { postHasMembersDelimiter } from "src/membership";
+import { getGatedPostPolicy, postHasMembersDelimiter } from "src/membership";
 import type { Post } from "actions/reader/getReaderFeed";
 
 import Link from "next/link";
@@ -145,7 +145,6 @@ export const PostListing = (
       })
     : undefined;
 
-
   let author =
     namedContributors.length > 0 ? (
       <PostByline contributors={namedContributors} />
@@ -221,6 +220,8 @@ export const PostListing = (
             href={postUrl}
             onClick={onPostLinkClick}
             membersOnly={postHasMembersDelimiter(postRecord)}
+            publicationUri={props.publication?.uri}
+            gatePolicy={getGatedPostPolicy(postRecord)}
             title={postRecord.title}
             description={
               postRecord.description || getFirstParagraph(postRecord)

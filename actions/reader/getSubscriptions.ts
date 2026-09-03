@@ -68,6 +68,41 @@ export async function getSubscriptions(
   };
 }
 
+// Subscriptions that exist only as confirmed email-subscriber rows — no
+// atproto record to show up in getSubscriptions. Always scoped to the signed-in
+// viewer (never keyed by a caller-supplied did): email subscriptions are
+// private, so they must never surface on public profile subscription lists.
+export async function getEmailOnlySubscriptions(): Promise<
+  PublicationSubscription[]
+> {
+  const identity = await getAuthIdentity();
+  if (!identity) return [];
+
+  const [{ data: emailRows }, { data: atprotoRows }] = await Promise.all([
+    supabaseServerClient
+      .from("publication_email_subscribers")
+      .select("publication")
+      .eq("identity_id", identity.id)
+      .eq("state", "confirmed"),
+    identity.atp_did
+      ? supabaseServerClient
+          .from("publication_subscriptions")
+          .select("publication")
+          .eq("identity", identity.atp_did)
+      : { data: [] },
+  ]);
+
+  // Anything the viewer also holds an atproto subscription for already renders
+  // in the main list; the same pub can also appear on multiple subscriber rows
+  // (merged identities with several historical emails), which the Set folds.
+  const atprotoPubs = new Set((atprotoRows ?? []).map((s) => s.publication));
+  return getPublicationsByUris(
+    [...new Set((emailRows ?? []).map((r) => r.publication))].filter(
+      (uri) => !atprotoPubs.has(uri),
+    ),
+  );
+}
+
 // Full listing data for specific publications, in the same shape as
 // getSubscriptions — used to pin paid memberships regardless of where they
 // fall in the paginated subscription list.

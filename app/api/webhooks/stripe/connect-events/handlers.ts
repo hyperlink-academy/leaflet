@@ -3,6 +3,7 @@ import { render } from "@react-email/render";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { notifyNewMember } from "src/membership.server";
+import { ensureSubscriberRecordsForMembership } from "src/subscriptions/membership";
 import MembershipPaymentFailed from "emails/membershipPaymentFailed";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
@@ -13,6 +14,23 @@ function isMembershipSub(sub: Stripe.Subscription): boolean {
 
 function isActiveStatus(status: string | null | undefined): boolean {
   return status === "active" || status === "trialing";
+}
+
+// A membership activated by webhook needs the same subscriber mirroring the
+// inline join flow does.
+async function mirrorSubscriberRecords(
+  identityId: string,
+  publication: string,
+) {
+  const { data: identity } = await supabaseServerClient
+    .from("identities")
+    .select("id, email, atp_did")
+    .eq("id", identityId)
+    .maybeSingle();
+  if (!identity) return;
+  await ensureSubscriberRecordsForMembership(publication, identity, null, {
+    respectUnsubscribed: true,
+  });
 }
 
 // Reconcile a membership row from a connected-account subscription event. Keyed
@@ -28,7 +46,7 @@ export async function handleMembershipSubscriptionEvent(
 
   const { data: existing, error: readError } = await supabaseServerClient
     .from("publication_memberships")
-    .select("id, status")
+    .select("id, status, publication, pending_tier, pending_cadence")
     .eq("stripe_subscription_id", sub.id)
     .maybeSingle();
   // Throw so the route 500s and Stripe redelivers; treating a failed read as
@@ -46,9 +64,21 @@ export async function handleMembershipSubscriptionEvent(
   if (!opts?.fresh && stripeAccount) {
     sub = await getStripe().subscriptions.retrieve(sub.id, { stripeAccount });
   }
-  const periodEnd = sub.items.data[0]?.current_period_end ?? 0;
+  const item = sub.items.data[0];
+  const periodEnd = item?.current_period_end ?? 0;
 
   const wasActive = isActiveStatus(existing.status);
+
+  // The billed price is the tier of record: a scheduled downgrade swaps it at
+  // the period boundary with no call back into the app.
+  const plan = item
+    ? await planForPrice(existing.publication, item.price)
+    : null;
+  const pendingApplied =
+    !sub.schedule ||
+    (!!plan &&
+      plan.tier === existing.pending_tier &&
+      plan.cadence === existing.pending_cadence);
 
   const { error: writeError } = await supabaseServerClient
     .from("publication_memberships")
@@ -59,6 +89,8 @@ export async function handleMembershipSubscriptionEvent(
         ? new Date(periodEnd * 1000).toISOString()
         : null,
       cancel_at_period_end: sub.cancel_at_period_end,
+      ...(plan ?? {}),
+      ...(pendingApplied ? { pending_tier: null, pending_cadence: null } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq("stripe_subscription_id", sub.id);
@@ -66,7 +98,33 @@ export async function handleMembershipSubscriptionEvent(
 
   if (isActiveStatus(sub.status) && !wasActive) {
     await notifyNewMember(sub.metadata.publication, existing.id);
+    if (sub.metadata.publication && sub.metadata.identity_id)
+      await mirrorSubscriberRecords(
+        sub.metadata.identity_id,
+        sub.metadata.publication,
+      );
   }
+}
+
+// Resolves the tier a subscription item's price belongs to. A price no tier
+// claims (e.g. one retired before the member was repriced) keeps the row's
+// current tier.
+async function planForPrice(publication: string, price: Stripe.Price) {
+  const { data: tier, error } = await supabaseServerClient
+    .from("publication_membership_tiers")
+    .select("id")
+    .eq("publication", publication)
+    .or(
+      `stripe_price_monthly_id.eq.${price.id},stripe_price_annual_id.eq.${price.id}`,
+    )
+    .maybeSingle();
+  if (error) throw error;
+  if (!tier) return null;
+  return {
+    tier: tier.id,
+    cadence: price.recurring?.interval ?? null,
+    stripe_price_id: price.id,
+  };
 }
 
 // The join flow writes the membership row only after the Stripe subscription
@@ -83,9 +141,9 @@ async function reconcileUntrackedSubscription(
   // even re-fetch the subscription.
   if (!stripeAccount) return;
   const { publication, tier_id, identity_id, cadence } = eventSub.metadata;
-  if (!publication || !identity_id) {
+  if (!publication || !identity_id || !tier_id) {
     console.error(
-      `[connect-events] membership subscription ${eventSub.id} has no publication/identity metadata; cannot reconcile`,
+      `[connect-events] membership subscription ${eventSub.id} has incomplete publication/identity/tier metadata; cannot reconcile`,
     );
     return;
   }
@@ -114,13 +172,28 @@ async function reconcileUntrackedSubscription(
     updated_at: new Date().toISOString(),
   };
 
-  const { data: tracked, error: trackedError } = await supabaseServerClient
-    .from("publication_memberships")
-    .select("id, status, stripe_subscription_id")
-    .eq("publication", publication)
-    .eq("identity_id", identity_id)
-    .maybeSingle();
+  const [{ data: tracked, error: trackedError }, tierRes] = await Promise.all([
+    supabaseServerClient
+      .from("publication_memberships")
+      .select("id, status, stripe_subscription_id")
+      .eq("publication", publication)
+      .eq("identity_id", identity_id)
+      .maybeSingle(),
+    supabaseServerClient
+      .from("publication_membership_tiers")
+      .select("id")
+      .eq("id", tier_id)
+      .eq("publication", publication)
+      .maybeSingle(),
+  ]);
   if (trackedError) throw trackedError;
+  if (tierRes.error) throw tierRes.error;
+  if (!tierRes.data) {
+    console.error(
+      `[connect-events] membership subscription ${sub.id} references missing tier ${tier_id} for ${publication}; cannot reconcile`,
+    );
+    return;
+  }
 
   if (tracked) {
     // The reader's row tracks a different subscription. If that one is live,
@@ -138,17 +211,18 @@ async function reconcileUntrackedSubscription(
     }
     const { error } = await supabaseServerClient
       .from("publication_memberships")
-      .update({ ...fields, tier: tier_id ?? null })
+      .update({ ...fields, tier: tierRes.data.id })
       .eq("id", tracked.id);
     if (error) throw error;
     await notifyNewMember(publication, tracked.id);
+    await mirrorSubscriberRecords(identity_id, publication);
     return;
   }
 
   // FK guards: surface a permanently-unrecoverable insert loudly instead of
   // retry-looping on it. A missing identity means the subscription is billing
   // with no owner at all.
-  const [identityRes, pubRes, tierRes] = await Promise.all([
+  const [identityRes, pubRes] = await Promise.all([
     supabaseServerClient
       .from("identities")
       .select("id")
@@ -159,17 +233,9 @@ async function reconcileUntrackedSubscription(
       .select("uri")
       .eq("uri", publication)
       .maybeSingle(),
-    tier_id
-      ? supabaseServerClient
-          .from("publication_membership_tiers")
-          .select("id")
-          .eq("id", tier_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
   ]);
   if (identityRes.error) throw identityRes.error;
   if (pubRes.error) throw pubRes.error;
-  if (tierRes.error) throw tierRes.error;
   if (!identityRes.data) {
     console.error(
       `[connect-events] membership subscription ${sub.id} references missing identity ${identity_id}; billing with no owner, needs manual cancellation`,
@@ -189,7 +255,7 @@ async function reconcileUntrackedSubscription(
       {
         publication,
         identity_id,
-        tier: tierRes.data?.id ?? null,
+        tier: tierRes.data.id,
         ...fields,
       },
       { onConflict: "publication,identity_id" },
@@ -200,6 +266,7 @@ async function reconcileUntrackedSubscription(
 
   if (isActiveStatus(sub.status)) {
     await notifyNewMember(publication, inserted.id);
+    await mirrorSubscriberRecords(identity_id, publication);
   }
 }
 

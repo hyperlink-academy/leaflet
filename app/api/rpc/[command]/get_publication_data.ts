@@ -5,6 +5,7 @@ import { AtUri } from "@atproto/syntax";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { getAuthIdentity } from "src/auth";
 import { ids } from "lexicons/api/lexicons";
+import { LIVE_MEMBERSHIP_STATUSES } from "src/membership";
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -50,8 +51,8 @@ export const get_publication_data = makeRoute({
         publication_email_subscribers(*, identities(atp_did)),
         publication_domains(*),
         publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at),
-        publication_membership_settings(enabled),
-        publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, is_free),
+        publication_membership_settings(enabled, subscriber_tier_name, subscriber_tier_description),
+        publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, publication_memberships!publication_memberships_tier_publication_fkey(count)),
         leaflets_in_publications(*,
           documents(*),
           permission_tokens(*,
@@ -67,6 +68,10 @@ export const get_publication_data = makeRoute({
           `name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`,
         )
         .eq("identity_did", did)
+        .in(
+          "publication_membership_tiers.publication_memberships.status",
+          LIVE_MEMBERSHIP_STATUSES,
+        )
         .order("uri", { ascending: false })
         .limit(1)
         .single(),

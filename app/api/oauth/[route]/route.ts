@@ -1,7 +1,5 @@
-import {
-  backfillAtprotoSubscriptionsForIdentity,
-  subscribeToPublication,
-} from "actions/publications/subscribeToPublication";
+import { subscribeToPublication } from "actions/publications/subscribeToPublication";
+import { backfillAtprotoSubscriptionsForIdentity } from "src/subscriptions/atproto";
 import { recommendAction } from "actions/recommendAction";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -353,7 +351,11 @@ const handleAction = async (
   let url = absoluteTarget ?? new URL(redirectPath, "https://example.com");
 
   if (action?.action === "subscribe") {
-    let result = await subscribeToPublication(action.publication);
+    let result = await subscribeToPublication(
+      action.publication,
+      undefined,
+      action.source,
+    );
     if (!result.success) {
       if (reauthDid)
         return redirect(

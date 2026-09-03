@@ -3,6 +3,7 @@ import {
   MembershipTierInput,
   upsertMembershipTier,
   deleteMembershipTier,
+  updateSubscriberTier,
 } from "actions/publications/membershipSettings";
 import {
   ButtonSecondary,
@@ -16,9 +17,12 @@ import { DotLoader } from "components/utils/DotLoader";
 import { useState } from "react";
 import { Modal } from "components/Modal";
 import { Input, InputWithLabel } from "components/Input";
+import { TierDescription } from "components/Memberships/TierDescription";
+import { TierDescriptionEditor } from "components/Memberships/TierDescriptionEditor";
 import { usePublicationData } from "../PublicationSWRProvider";
 import { AddTiny } from "components/Icons/AddTiny";
 import { EditTiny } from "components/Icons/EditTiny";
+import { buildMembershipTiers } from "src/membership";
 
 type Tier = {
   id: string;
@@ -29,12 +33,18 @@ type Tier = {
   currency: string;
   active: boolean;
   sort_order: number;
-  is_free: boolean;
+  publication_memberships: { count: number }[];
 };
+
+const memberCount = (tier: Tier) =>
+  tier.publication_memberships?.[0]?.count ?? 0;
 
 export const MembershipTiers = (props: { publicationUri: string }) => {
   let { data, mutate } = usePublicationData();
   let toaster = useToaster();
+
+  let membershipSettings = data?.publication?.publication_membership_settings;
+  let subscriberTier = buildMembershipTiers(membershipSettings, []).subscriber;
 
   let tiers = (
     (data?.publication?.publication_membership_tiers ?? []) as Tier[]
@@ -47,6 +57,7 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
     );
 
   let [editingTier, setEditingTier] = useState<Tier | "new" | null>(null);
+  let [editingSubscriberTier, setEditingSubscriberTier] = useState(false);
   let [disabling, setDisabling] = useState(false);
 
   return (
@@ -65,9 +76,28 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
       </div>
 
       <div className="flex flex-col gap-2">
+        <div className="flex flex-col opaque-container py-2 px-3">
+          <div className="flex justify-between">
+            <h3 className="font-bold text-primary">{subscriberTier.name}</h3>
+            <button
+              type="button"
+              className="py-1.5 h-fit shrink-0"
+              onClick={() => setEditingSubscriberTier(true)}
+            >
+              <EditTiny />
+            </button>
+          </div>
+
+          {subscriberTier.description && (
+            <div className="text-tertiary text-sm leading-snug">
+              <TierDescription description={subscriberTier.description} />
+            </div>
+          )}
+        </div>
+
         {tiers.length === 0 && (
           <p className="text-tertiary text-sm leading-snug">
-            No tiers yet. Add one so readers can become members.
+            No paid tiers yet. Add one so readers can support your publication.
           </p>
         )}
         {tiers.map((tier) => (
@@ -78,18 +108,16 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
             <div className="flex justify-between">
               <div className="flex sm:flex-row flex-col sm:gap-3 gap-1 sm:items-center  grow">
                 <h3 className="font-bold text-primary">{tier.name}</h3>
-                {!tier.is_free && (
-                  <div className="prices flex gap-2 font-bold sm:pb-0 pb-2">
-                    <div className="accent-container px-2 text-secondary ">
-                      {formatPrice(tier.monthly_price_cents)}/mo
-                    </div>
-                    {tier.annual_price_cents && (
-                      <div className="accent-container px-1.5">
-                        {formatPrice(tier.annual_price_cents)}/yr
-                      </div>
-                    )}
+                <div className="prices flex gap-2 font-bold sm:pb-0 pb-2">
+                  <div className="accent-container px-2 text-secondary ">
+                    {formatPrice(tier.monthly_price_cents)}/mo
                   </div>
-                )}
+                  {tier.annual_price_cents && (
+                    <div className="accent-container px-1.5">
+                      {formatPrice(tier.annual_price_cents)}/yr
+                    </div>
+                  )}
+                </div>
               </div>
               <button
                 type="button"
@@ -102,7 +130,7 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
 
             {tier.description && (
               <div className="text-tertiary text-sm leading-snug">
-                {tier.description}
+                <TierDescription description={tier.description} />
               </div>
             )}
           </div>
@@ -156,7 +184,91 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
           }}
         />
       )}
+
+      {editingSubscriberTier && (
+        <SubscriberTierEditorModal
+          publicationUri={props.publicationUri}
+          name={subscriberTier.name}
+          description={subscriberTier.description}
+          onClose={() => setEditingSubscriberTier(false)}
+          onSaved={async () => {
+            setEditingSubscriberTier(false);
+            await mutate();
+          }}
+        />
+      )}
     </SettingsSection>
+  );
+};
+
+const SubscriberTierEditorModal = (props: {
+  publicationUri: string;
+  name: string;
+  description: string | null;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) => {
+  let toaster = useToaster();
+  let [name, setName] = useState(props.name);
+  let [description, setDescription] = useState<string | null>(
+    props.description,
+  );
+  let [saving, setSaving] = useState(false);
+
+  let onSave = async () => {
+    if (saving || !name.trim()) return;
+    setSaving(true);
+    let res = await updateSubscriberTier(props.publicationUri, {
+      name,
+      description,
+    });
+    setSaving(false);
+    if (!res.ok) {
+      toaster({
+        type: "error",
+        content: "We couldn't save the tier. Please try again!",
+      });
+      return;
+    }
+    toaster({ type: "success", content: "Tier saved!" });
+    await props.onSaved();
+  };
+
+  return (
+    <Modal
+      open
+      onOpenChange={(open) => {
+        if (!open) props.onClose();
+      }}
+      title="Edit Subscriber Tier"
+      className="max-w-full w-md"
+    >
+      <div className="flex flex-col gap-3">
+        <InputWithLabel
+          id="subscriberTierName"
+          label="Tier Name"
+          type="text"
+          value={name}
+          placeholder="Free"
+          onChange={(e) => setName(e.currentTarget.value)}
+        />
+        <TierDescriptionEditor
+          label="Description"
+          initialValue={description}
+          placeholder="Subscribe for free to get notified about new posts."
+          onChange={setDescription}
+        />
+        <div className="flex justify-end pt-1">
+          <ButtonPrimary
+            type="button"
+            disabled={saving || !name.trim()}
+            onClick={onSave}
+          >
+            {saving ? <DotLoader /> : "Save Tier"}
+          </ButtonPrimary>
+        </div>
+      </div>
+    </Modal>
   );
 };
 
@@ -167,9 +279,10 @@ const TierEditorModal = (props: {
   onSaved: () => Promise<void>;
 }) => {
   let toaster = useToaster();
-  let isFree = !!props.tier?.is_free;
   let [name, setName] = useState(props.tier?.name ?? "");
-  let [description, setDescription] = useState(props.tier?.description ?? "");
+  let [description, setDescription] = useState<string | null>(
+    props.tier?.description ?? null,
+  );
   let [monthly, setMonthly] = useState(
     props.tier ? (props.tier.monthly_price_cents / 100).toString() : "",
   );
@@ -178,8 +291,17 @@ const TierEditorModal = (props: {
       ? (props.tier.annual_price_cents / 100).toString()
       : "",
   );
+  // Until the owner sets an annual price themselves, it tracks the monthly one
+  // at ten months' worth — the usual "two months free" annual discount. A tier
+  // that already has one counts as set, so editing its monthly price doesn't
+  // overwrite a number the owner chose in an earlier session.
+  let [annualEdited, setAnnualEdited] = useState(
+    props.tier?.annual_price_cents != null,
+  );
   let [saving, setSaving] = useState(false);
   let [deleting, setDeleting] = useState(false);
+  let members = props.tier ? memberCount(props.tier) : 0;
+  let priceLocked = members > 0;
 
   let parsePrice = (value: string): number | null => {
     if (!value.trim()) return null;
@@ -188,37 +310,51 @@ const TierEditorModal = (props: {
     return Math.round(dollars * 100);
   };
 
+  let onMonthlyChange = (value: string) => {
+    setMonthly(value);
+    if (annualEdited && annual.trim()) return;
+    let dollars = Number(value);
+    setAnnual(
+      value.trim() && !isNaN(dollars) && dollars > 0
+        ? (Math.round(dollars * 1000) / 100).toString()
+        : "",
+    );
+  };
+
+  let missingRequired = !name.trim() || !monthly.trim() || !annual.trim();
+
   let onSave = async () => {
     if (saving) return;
     if (!name.trim()) {
       toaster({ type: "error", content: "Tiers need a name." });
       return;
     }
-    // The free tier keeps its price; only name/description are editable.
-    let monthlyCents = isFree ? 0 : parsePrice(monthly);
-    let annualCents = isFree ? null : parsePrice(annual);
-    if (!isFree) {
-      if (monthlyCents === null || monthlyCents < 100) {
-        toaster({
-          type: "error",
-          content: "Tiers need a monthly price of at least $1.",
-        });
-        return;
-      }
-      if (annual.trim() && (annualCents === null || annualCents < 100)) {
-        toaster({
-          type: "error",
-          content: "Annual price must be at least $1, or left blank.",
-        });
-        return;
-      }
+    let monthlyCents = parsePrice(monthly);
+    let annualCents = parsePrice(annual);
+    if (monthlyCents === null || monthlyCents < 100) {
+      toaster({
+        type: "error",
+        content: "Tiers need a monthly price of at least $1.",
+      });
+      return;
+    }
+    if (annualCents === null || annualCents < 100) {
+      toaster({
+        type: "error",
+        content: "Tiers need an annual price of at least $1.",
+      });
+      return;
     }
     let input: MembershipTierInput = {
       id: props.tier?.id,
       name: name.trim(),
-      description: description.trim() || null,
-      monthly_price_cents: monthlyCents ?? 0,
-      annual_price_cents: annualCents,
+      description,
+      monthly_price_cents: priceLocked
+        ? props.tier!.monthly_price_cents
+        : monthlyCents,
+      annual_price_cents: priceLocked
+        ? props.tier!.annual_price_cents
+        : annualCents,
       sort_order: props.tier?.sort_order,
     };
     setSaving(true);
@@ -228,9 +364,11 @@ const TierEditorModal = (props: {
       toaster({
         type: "error",
         content:
-          res.error === "stripe_error"
-            ? "We couldn't sync the tier with Stripe. Please try again!"
-            : "We couldn't save the tier. Please try again!",
+          res.error === "tier_has_members"
+            ? "This tier has members, so its price can't be changed."
+            : res.error === "stripe_error"
+              ? "We couldn't sync the tier with Stripe. Please try again!"
+              : "We couldn't save the tier. Please try again!",
       });
       return;
     }
@@ -273,60 +411,64 @@ const TierEditorModal = (props: {
           onChange={(e) => setName(e.currentTarget.value)}
         />
 
-        <InputWithLabel
-          id="tierDescription"
+        <TierDescriptionEditor
           label="Description"
-          type="textarea"
-          value={description}
+          initialValue={description}
           placeholder="Access to members-only posts"
-          onChange={(e) => setDescription(e.currentTarget.value)}
+          onChange={setDescription}
         />
-        {isFree ? null : (
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-1 grow min-w-0">
-              <label className="text-secondary font-bold" htmlFor="tierMonthly">
-                Monthly
-              </label>
-              <div className="input-with-border w-full text-primary flex gap-1 min-w-0">
-                <div className="w-fit text-tertiary">$</div>
-                <Input
-                  size={1}
-                  id="tierMonthly"
-                  type="number"
-                  className="w-full appearance-none!"
-                  min="1"
-                  step="0.01"
-                  value={monthly}
-                  placeholder="5"
-                  onChange={(e) => setMonthly(e.currentTarget.value)}
-                />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 grow">
-              <label className="text-secondary font-bold" htmlFor="tierAnnual">
-                Annual
-              </label>
-              <div className="input-with-border w-full text-primary flex gap-1">
-                <div className="w-fit text-tertiary">$</div>
-                <Input
-                  size={1}
-                  id="tierAnnual"
-                  type="number"
-                  className="w-full appearance-none!"
-                  min="1"
-                  step="0.01"
-                  value={annual}
-                  placeholder={
-                    Number(monthly) ? `${Number(monthly) * 10}` : "50"
-                  }
-                  onChange={(e) => setAnnual(e.currentTarget.value)}
-                />
-              </div>
+        <div className="flex gap-4">
+          <div className="flex flex-col gap-1 grow min-w-0">
+            <label className="text-secondary font-bold" htmlFor="tierMonthly">
+              Monthly
+            </label>
+            <div className="input-with-border w-full text-primary flex gap-1 min-w-0">
+              <div className="w-fit text-tertiary">$</div>
+              <Input
+                size={1}
+                id="tierMonthly"
+                type="number"
+                className="w-full appearance-none!"
+                min="1"
+                step="0.01"
+                value={monthly}
+                disabled={priceLocked}
+                onChange={(e) => onMonthlyChange(e.currentTarget.value)}
+              />
             </div>
           </div>
+          <div className="flex flex-col gap-1 grow">
+            <label className="text-secondary font-bold" htmlFor="tierAnnual">
+              Annual
+            </label>
+            <div className="input-with-border w-full text-primary flex gap-1">
+              <div className="w-fit text-tertiary">$</div>
+              <Input
+                size={1}
+                id="tierAnnual"
+                type="number"
+                className="w-full appearance-none!"
+                min="1"
+                step="0.01"
+                value={annual}
+                disabled={priceLocked}
+                onChange={(e) => {
+                  setAnnualEdited(true);
+                  setAnnual(e.currentTarget.value);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+        {priceLocked && (
+          <p className="text-tertiary text-sm leading-snug">
+            {members === 1 ? "1 member is" : `${members} members are`} on this
+            tier, so its price can't be changed. To offer a different price,
+            add a new tier.
+          </p>
         )}
         <div className="flex justify-between items-center pt-1">
-          {props.tier && !isFree ? (
+          {props.tier ? (
             <ButtonSecondary
               type="button"
               disabled={deleting}
@@ -337,7 +479,11 @@ const TierEditorModal = (props: {
           ) : (
             <div />
           )}
-          <ButtonPrimary type="button" disabled={saving} onClick={onSave}>
+          <ButtonPrimary
+            type="button"
+            disabled={saving || missingRequired}
+            onClick={onSave}
+          >
             {saving ? <DotLoader /> : "Save Tier"}
           </ButtonPrimary>
         </div>

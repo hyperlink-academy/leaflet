@@ -51,7 +51,6 @@ export async function notifyNewMember(
 // teardown in that case rather than orphan a live subscription.
 export async function cancelPublicationMemberSubscriptions(
   publicationUri: string,
-  fallbackStripeAccount?: string | null,
 ): Promise<boolean> {
   const { data: memberships, error } = await supabaseServerClient
     .from("publication_memberships")
@@ -67,9 +66,7 @@ export async function cancelPublicationMemberSubscriptions(
   let ok = true;
   for (const m of memberships ?? []) {
     if (!m.stripe_subscription_id) continue;
-    // Rows written before stripe_account_id existed fall back to the
-    // publisher's current connected account, where those subscriptions live.
-    const stripeAccount = m.stripe_account_id ?? fallbackStripeAccount;
+    const stripeAccount = m.stripe_account_id;
     if (!stripeAccount) {
       console.error(
         `[membership] membership ${m.id} has no connected account; cannot cancel subscription ${m.stripe_subscription_id}`,
@@ -108,6 +105,30 @@ export async function cancelPublicationMemberSubscriptions(
   return ok;
 }
 
+export async function isPublicationSubscriber(
+  publicationUri: string,
+  identity: { id: string; atp_did: string | null },
+): Promise<boolean> {
+  const [atproto, email] = await Promise.all([
+    identity.atp_did
+      ? supabaseServerClient
+          .from("publication_subscriptions")
+          .select("uri")
+          .eq("publication", publicationUri)
+          .eq("identity", identity.atp_did)
+          .limit(1)
+      : null,
+    supabaseServerClient
+      .from("publication_email_subscribers")
+      .select("id")
+      .eq("publication", publicationUri)
+      .eq("identity_id", identity.id)
+      .eq("state", "confirmed")
+      .limit(1),
+  ]);
+  return !!atproto?.data?.length || !!email.data?.length;
+}
+
 export async function getReaderMembership(
   publicationUri: string,
   identityId: string,
@@ -115,11 +136,10 @@ export async function getReaderMembership(
   const { data } = await supabaseServerClient
     .from("publication_memberships")
     .select(
-      "id, tier, status, current_period_end, stripe_customer_id, stripe_subscription_id, stripe_account_id, cadence",
+      "id, tier, status, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id, stripe_account_id, cadence",
     )
     .eq("publication", publicationUri)
     .eq("identity_id", identityId)
     .maybeSingle();
   return data;
 }
-

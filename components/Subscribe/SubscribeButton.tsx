@@ -24,20 +24,25 @@ import {
 } from "actions/publications/subscribeEmail";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { mainSiteAuthBase } from "src/utils/customDomain";
+import type { SubscriptionSource } from "src/subscriptionSource";
 
 import { useViewerSubscription } from "./viewerSubscription";
 import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { PaidSubscribeButton } from "./PaidSubscribeButton";
-import { useJoinableTiers } from "components/Memberships/useJoinableTiers";
+import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
 
 type SubscribeMode = "email" | "atproto";
 
 // Logged-out email subscribe goes through the main-site email-login flow with a
 // `subscribe` after-sign-in action, so the session is minted on the main site
 // and handed back to the custom domain (see postAuthRedirect).
-function redirectToEmailSubscribe(email: string, publicationUri: string) {
+function redirectToEmailSubscribe(
+  email: string,
+  publicationUri: string,
+  source?: SubscriptionSource,
+) {
   let base = mainSiteAuthBase() || window.location.origin;
   let url = new URL("/api/auth/email-login", base);
   url.searchParams.set("email", email);
@@ -47,6 +52,9 @@ function redirectToEmailSubscribe(email: string, publicationUri: string) {
     encodeActionToSearchParam({
       action: "subscribe",
       publication: publicationUri,
+      // The subscribe completes after a redirect, so stamp the originating
+      // page into the source now — the server won't see a useful Referer.
+      ...(source ? { source: { url: window.location.href, ...source } } : {}),
     }),
   );
   window.location.href = url.toString();
@@ -60,6 +68,8 @@ export type SubscribeProps = {
   publicationName: string;
   publicationDescription?: string;
   newsletterMode: boolean;
+  // Analytics: where on the page this subscribe control sits.
+  source?: SubscriptionSource;
 };
 
 export const SubscribePanel = (props: SubscribeProps) => {
@@ -110,7 +120,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [linkModalOpen, setLinkModalOpen] = useState(false);
   let [subscribeMode, setSubscribeMode] = useState<SubscribeMode>("email");
-  const joinable = useJoinableTiers(props.publicationUri);
+  const membershipTiers = useMembershipTiers(props.publicationUri);
   // Warm the success-modal data (pub name + recommended listings) while the
   // form is idle, so subscribing opens the modal without a loading spinner.
   useSubscribeSuccessData(props.publicationUri);
@@ -129,6 +139,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
     let res = await requestPublicationEmailSubscription(
       props.publicationUri,
       email,
+      props.source,
     );
     setRequesting(false);
     if (!res.ok) {
@@ -143,16 +154,13 @@ export const SubscribeInput = (props: SubscribeProps) => {
     setConfirmOpen(true);
   };
 
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
-  const isSubscribed = showManage || locallySubscribed;
+  const isSubscribed = user.subscribed || locallySubscribed;
   const modeMenu = (
     <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
   // Paid memberships replace the subscribe form with the paid join flow.
-  if (joinable.hasPaidTiers && joinable.tiers)
-    return <PaidSubscribeButton {...props} tiers={joinable.tiers} />;
+  if (membershipTiers.hasPaidTiers && membershipTiers.tiers)
+    return <PaidSubscribeButton {...props} tiers={membershipTiers.tiers} />;
   const emailForm = (
     <EmailInput
       publicationUrl={props.publicationUrl}
@@ -167,7 +175,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           setLinkModalOpen(true);
           return;
         }
-        redirectToEmailSubscribe(email, props.publicationUri);
+        redirectToEmailSubscribe(email, props.publicationUri, props.source);
       }}
       action={
         <ButtonPrimary
@@ -193,7 +201,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
 
           {props.newsletterMode &&
           user.atprotoSubscribed &&
-          !user.emailSubscribed ? (
+          !user.emailEnabled ? (
             <div
               className="text-secondary  w-full text-sm p-2 pt-1.5 mt-1 rounded-md flex flex-col gap-1"
               style={{
@@ -238,6 +246,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
             <EmailButton
               publicationUri={props.publicationUri}
               publicationUrl={props.publicationUrl}
+              source={props.source}
               email={user.email}
               handle={user.handle}
               onSubscribed={() => setLocallySubscribed(true)}
@@ -255,6 +264,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
               user={user}
               publicationUri={props.publicationUri}
               publicationUrl={props.publicationUrl}
+              source={props.source}
               onAtSuccess={() => setAtSuccessOpen(true)}
               leading={modeMenu}
             />
@@ -265,6 +275,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
           user={user}
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
+          source={props.source}
           onSubscribed={() => setLocallySubscribed(true)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
@@ -330,6 +341,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   email,
                   code,
                   linkToCurrent,
+                  props.source,
                 );
                 setConfirming(false);
                 if (!res.ok) {
@@ -356,15 +368,13 @@ export const SubscribeButton = (props: SubscribeProps) => {
   let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [atSuccessOpen, setAtSuccessOpen] = useState(false);
   let [emailSuccessOpen, setEmailSuccessOpen] = useState(false);
-  const joinable = useJoinableTiers(props.publicationUri);
+  const membershipTiers = useMembershipTiers(props.publicationUri);
 
   // Paid memberships replace the one-click subscribe with the paid join flow.
-  if (joinable.hasPaidTiers && joinable.tiers)
-    return <PaidSubscribeButton {...props} tiers={joinable.tiers} compact />;
-
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
+  if (membershipTiers.hasPaidTiers && membershipTiers.tiers)
+    return (
+      <PaidSubscribeButton {...props} tiers={membershipTiers.tiers} compact />
+    );
 
   const subscribeTrigger = (
     <ButtonPrimary compact className="pubPageSubscribe text-sm!">
@@ -374,7 +384,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
 
   return (
     <>
-      {showManage || locallySubscribed ? (
+      {user.subscribed || locallySubscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
@@ -387,6 +397,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
           user={user}
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
+          source={props.source}
           onSubscribed={() => setLocallySubscribed(true)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
@@ -395,6 +406,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
           compact
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
+          source={props.source}
           email={user.email}
           handle={user.handle}
           onSubscribed={() => setLocallySubscribed(true)}

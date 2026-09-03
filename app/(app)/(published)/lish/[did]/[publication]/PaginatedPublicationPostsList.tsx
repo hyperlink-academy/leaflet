@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef } from "react";
 import useSWRInfinite from "swr/infinite";
+import { SpeedyLink } from "components/SpeedyLink";
+import { getPublicationURL } from "src/utils/getPublicationURL";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationPostsList } from "./PublicationPostsList";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
@@ -70,6 +72,9 @@ export function PaginatedPublicationPostsList({
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const hasMore = cappedUris.length > size * POSTS_LIST_PAGE_SIZE;
+  // Posts this list won't reach: either still windowed off by pagination, or
+  // cut off entirely by `limit`.
+  const hasUnshownPosts = hasMore || cappedUris.length < uris.length;
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -107,6 +112,19 @@ export function PaginatedPublicationPostsList({
       {isValidating && hasMore && (
         <div className="text-center text-tertiary py-4">
           Loading more posts...
+        </div>
+      )}
+      {/* In the SSR HTML whenever posts are missing from it: only the first
+          batch is served, so crawlers need a plain anchor to the archive to
+          reach the rest. */}
+      {!disableLinks && hasUnshownPosts && (
+        <div className="text-center pt-3">
+          <SpeedyLink
+            href={`${getPublicationURL(publication).replace(/\/+$/, "")}/archive`}
+            className="text-sm text-tertiary hover:text-accent-contrast"
+          >
+            View all posts
+          </SpeedyLink>
         </div>
       )}
     </div>

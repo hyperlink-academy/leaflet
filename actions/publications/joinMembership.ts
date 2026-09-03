@@ -11,26 +11,34 @@ import {
   provisionCardOnAccount,
   walletCheckoutSessionCard,
 } from "stripe/wallet";
-import { isActiveMembership, filterJoinableTiers } from "src/membership";
+import {
+  isActiveMembership,
+  buildMembershipTiers,
+  type MembershipTiers,
+} from "src/membership";
 import { getReaderMembership, notifyNewMember } from "src/membership.server";
+import { ensureSubscriberRecordsForMembership } from "src/subscriptions/membership";
+import {
+  sanitizeSubscriptionSource,
+  type SubscriptionSource,
+} from "src/subscriptionSource";
 import { Ok, Err, type Result } from "src/result";
-import type { Tier } from "components/Memberships/TierGrid";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
 
 export type MembershipJoinViewer = {
   loggedIn: boolean;
+  hasEmail: boolean;
   isOwner: boolean;
-  // The viewer's active membership, for the switch/upgrade flow. Always a paid
-  // tier — the free tier is a plain subscription with no membership row. Its
-  // presence is what "is a member" means, so consumers derive that from here.
-  membership: {
+  // The persisted active paid-membership row. The join UI combines this with
+  // subscription state through resolvePublicationMembership; free membership
+  // deliberately has no row here.
+  paidMembership: {
     id: string;
-    tierId: string | null;
+    tierId: string;
     cadence: string | null;
     currentPeriodEnd: string | null;
   } | null;
-  walletCard: { brand: string | null; last4: string | null } | null;
 };
 
 // Viewer-scoped state for the paid join flow (JoinMembershipFlow), fetched
@@ -43,29 +51,24 @@ export async function getMembershipJoinViewer(
   if (!identity)
     return {
       loggedIn: false,
+      hasEmail: false,
       isOwner: false,
-      membership: null,
-      walletCard: null,
+      paidMembership: null,
     };
-  const [{ data: publication }, membership, { data: wallet }] =
-    await Promise.all([
-      supabaseServerClient
-        .from("publications")
-        .select("identity_did")
-        .eq("uri", publicationUri)
-        .maybeSingle(),
-      getReaderMembership(publicationUri, identity.id),
-      supabaseServerClient
-        .from("stripe_wallets")
-        .select("card_brand, card_last4")
-        .eq("identity_id", identity.id)
-        .maybeSingle(),
-    ]);
+  const [{ data: publication }, membership] = await Promise.all([
+    supabaseServerClient
+      .from("publications")
+      .select("identity_did")
+      .eq("uri", publicationUri)
+      .maybeSingle(),
+    getReaderMembership(publicationUri, identity.id),
+  ]);
   return {
     loggedIn: true,
+    hasEmail: !!identity.email,
     isOwner:
       !!identity.atp_did && identity.atp_did === publication?.identity_did,
-    membership:
+    paidMembership:
       membership && isActiveMembership(membership)
         ? {
             id: membership.id,
@@ -74,71 +77,32 @@ export async function getMembershipJoinViewer(
             currentPeriodEnd: membership.current_period_end,
           }
         : null,
-    walletCard: wallet?.card_last4
-      ? { brand: wallet.card_brand, last4: wallet.card_last4 }
-      : null,
   };
 }
 
-// The joinable tier list for a publication — what PaidSubscribeButton needs to
-// decide a pub takes paid memberships and to render the join modal. Empty when
-// memberships are disabled.
-export async function getJoinableTiers(publicationUri: string): Promise<Tier[]> {
+// The subscriber baseline lives on settings; only billable plans are tier rows.
+export async function getMembershipTiers(
+  publicationUri: string,
+): Promise<MembershipTiers | null> {
   const { data } = await supabaseServerClient
     .from("publications")
     .select(
-      `publication_membership_settings(enabled),
-       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order, stripe_price_monthly_id, is_free)`,
+      `publication_membership_settings(enabled, subscriber_tier_name, subscriber_tier_description),
+       publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order)`,
     )
     .eq("uri", publicationUri)
     .maybeSingle();
-  if (!data?.publication_membership_settings?.enabled) return [];
-  return filterJoinableTiers(data.publication_membership_tiers).map((t) => ({
-    id: t.id,
-    name: t.name,
-    description: t.description,
-    monthly_price_cents: t.monthly_price_cents,
-    annual_price_cents: t.annual_price_cents,
-    is_free: t.is_free,
-  }));
+  const settings = data?.publication_membership_settings;
+  if (!settings?.enabled) return null;
+  return buildMembershipTiers(
+    settings,
+    data?.publication_membership_tiers ?? [],
+  );
 }
 
-// First-time card collection is a Stripe-hosted setup-mode Checkout page (no
-// Stripe.js on our side). The card is saved off-session on the platform wallet
-// customer so it can be cloned to publishers' accounts and charged for renewals.
-// The reader returns to `returnUrl` with `?wallet_session=<id>`.
-export async function createWalletCheckoutSession(args: {
-  returnUrl: string;
-  // When set, the return URL carries the intended tier/cadence so the reader's
-  // join auto-completes on return instead of making them click Join again.
-  tierId?: string;
-  cadence?: "month" | "year";
-}): Promise<Result<{ url: string }, CheckoutSessionError>> {
-  const identity = await getAuthIdentity();
-  if (!identity) return Err("not_authenticated");
-  try {
-    const wallet = await getOrCreateWallet(identity);
-    const base = args.returnUrl.split("?")[0];
-    const joinParams =
-      args.tierId && args.cadence
-        ? `&join_tier=${encodeURIComponent(args.tierId)}&join_cadence=${args.cadence}`
-        : "";
-    const session = await getStripe().checkout.sessions.create({
-      mode: "setup",
-      customer: wallet.stripe_customer_id,
-      payment_method_types: ["card"],
-      success_url: `${base}?wallet_session={CHECKOUT_SESSION_ID}${joinParams}`,
-      cancel_url: base,
-    });
-    if (!session.url) return Err("stripe_error");
-    return Ok({ url: session.url });
-  } catch (e) {
-    console.error("[joinMembership] checkout session failed:", e);
-    return Err("stripe_error");
-  }
-}
-
-// Called on return from the hosted setup page: attach the collected card to the
+// Called on return from the hosted setup page (the pre-embedded-form flow;
+// kept so sessions that were in flight when it shipped still complete): attach
+// the collected card to the
 // wallet and make it the default. Verifies the session's customer is the caller's
 // own wallet customer (the session id comes from a client-controlled URL).
 export async function saveWalletCardFromSession(
@@ -185,6 +149,8 @@ export async function subscribeToTier(args: {
   publicationUri: string;
   tierId: string;
   cadence: "month" | "year";
+  // Analytics: where the join flow was opened from.
+  source?: SubscriptionSource;
 }): Promise<Result<SubscribeToTierResult, SubscribeError>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("not_authenticated");
@@ -209,8 +175,7 @@ export async function subscribeToTier(args: {
     return Err("memberships_not_enabled");
   if (identity.atp_did && identity.atp_did === publication.identity_did)
     return Err("own_publication");
-  // The free tier isn't a paid membership — it's reached via the subscribe flow.
-  if (!tier || tier.is_free) return Err("tier_not_found");
+  if (!tier) return Err("tier_not_found");
 
   const priceId =
     args.cadence === "year"
@@ -379,6 +344,13 @@ export async function subscribeToTier(args: {
       } catch (e) {
         console.error("[joinMembership] new member notification failed:", e);
       }
+      // Awaited (not after()) so the client's identity refetch on success
+      // sees the new rows.
+      await ensureSubscriberRecordsForMembership(
+        args.publicationUri,
+        { id: identity.id, email: identity.email, atp_did: identity.atp_did },
+        sanitizeSubscriptionSource(args.source),
+      );
     }
 
     // Concurrent joins (different tier/cadence, so different idempotency keys)

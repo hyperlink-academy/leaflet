@@ -14,7 +14,7 @@ CREATE UNIQUE INDEX publication_membership_tiers_one_free_idx
 -- Backfill: give every memberships-enabled publication its free tier.
 insert into public.publication_membership_tiers
   (publication, name, description, monthly_price_cents, annual_price_cents, is_free, active, sort_order)
-select s.publication, 'Free', 'Subscribe for free to get new posts.', 0, null, true, true, 0
+select s.publication, 'Free', 'Subscribe for free to get notified about new posts.', 0, null, true, true, 0
 from public.publication_membership_settings s
 where s.enabled
   and not exists (

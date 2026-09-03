@@ -23,6 +23,7 @@ import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
 import { RecommendedPublications } from "./RecommendedPublications";
 import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
+import type { SubscriptionSource } from "src/subscriptionSource";
 const apps = [
   { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
   { name: "Bluesky", logo: "https://leaflet.pub/logos/bluesky.svg" },
@@ -63,6 +64,7 @@ export const SubscribeWithHandle = (props: {
   compact?: boolean;
   publicationUri: string;
   publicationUrl?: string;
+  source?: SubscriptionSource;
   onSubscribed?: () => void;
   onAtSuccess?: () => void;
   leading?: React.ReactNode;
@@ -90,6 +92,11 @@ export const SubscribeWithHandle = (props: {
     let action = encodeActionToSearchParam({
       action: "subscribe",
       publication: props.publicationUri,
+      // The subscribe completes after the OAuth redirect, so stamp the
+      // originating page into the source now.
+      ...(props.source
+        ? { source: { url: window.location.href, ...props.source } }
+        : {}),
     });
     let inIframe = isInIframe();
     let url = new URL(window.location.href);
@@ -132,6 +139,7 @@ export const SubscribeWithHandle = (props: {
       let result = await subscribeToPublication(
         props.publicationUri,
         window.location.href,
+        props.source,
       );
       if (!result.success) {
         if (isOAuthSessionError(result.error)) setOauthError(result.error);
@@ -376,6 +384,7 @@ export const AtSubscribeSuccess = (props: { publicationUri?: string }) => {
       </div>
       <RecommendedPublications
         publicationName={publicationName}
+        recommendingPublicationUri={props.publicationUri}
         listings={listings}
       />
     </div>

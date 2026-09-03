@@ -3,6 +3,9 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
 import { PopoverArrow } from "./Icons/PopoverArrow";
+import { CheckboxChecked } from "./Icons/CheckboxChecked";
+import { CheckboxEmpty } from "./Icons/CheckboxEmpty";
+import { CheckboxIndeterminate } from "./Icons/CheckboxIndeterminate";
 import { PopoverOpenContext } from "./Popover/PopoverContext";
 import { useState } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
@@ -120,20 +123,48 @@ export const CheckboxMenuItem = (props: {
   className?: string;
   onSelect?: (e: Event) => void;
   checked?: boolean;
+  // Renders as a Checkbox — a box in the margin and plain type — rather than
+  // the filled pill, for dense multi-select lists like filters.
+  compact?: boolean;
+  // A parent whose children are only partly checked. Selecting it reports
+  // unchecked, so callers select the whole group.
+  indeterminate?: boolean;
 }) => {
+  let indeterminate = !props.checked && !!props.indeterminate;
+  let marked = props.checked || indeterminate;
+  let iconClassName = `shrink-0 mt-1 ${marked ? "text-accent-contrast" : "text-tertiary"}`;
   return (
     <DropdownMenu.CheckboxItem
+      checked={indeterminate ? "indeterminate" : !!props.checked}
       onSelect={props.onSelect}
-      className={`menuItem
-      ${props.checked && "bg-[var(--accent-light)]! border-accent-contrast! text-accent-contrast!"}
-        ${props.className}
-        `}
+      className={
+        props.compact
+          ? `menuItem items-start text-sm py-0!
+            ${marked ? "text-primary! font-bold!" : "text-tertiary! font-normal!"}
+            ${props.className}`
+          : `menuItem
+            ${props.checked && "bg-[var(--accent-light)]! border-accent-contrast! text-accent-contrast!"}
+            ${props.className}`
+      }
     >
+      {props.compact &&
+        (indeterminate ? (
+          <CheckboxIndeterminate className={iconClassName} />
+        ) : props.checked ? (
+          <CheckboxChecked className={iconClassName} />
+        ) : (
+          <CheckboxEmpty className={iconClassName} />
+        ))}
       {props.children}
     </DropdownMenu.CheckboxItem>
   );
 };
 
+export const MenuSeparator = () => {
+  return (
+    <DropdownMenu.Separator className="border-border-light w-full border-b my-0.5" />
+  );
+};
 export const MenuItem = (props: {
   children?: React.ReactNode;
   className?: string;

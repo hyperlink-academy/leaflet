@@ -76,9 +76,11 @@ export const InputWithLabel = (
     ${props.className}`;
   return (
     <label
-      className={`input-with-border flex flex-col gap-px text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]! ${props.disabled && "bg-border-light! cursor-not-allowed! hover:border-border! text-tertiary!"}`}
+      className={`input-with-border flex flex-col gap-px  leading-tight py-1! px-[6px]! ${props.disabled && "bg-border-light! cursor-not-allowed! hover:border-border! text-tertiary!"}`}
     >
-      {props.label}
+      <div className="text-tertiary text-sm  font-bold italic">
+        {props.label}
+      </div>
       {textarea ? (
         <textarea {...inputProps} className={style} />
       ) : (

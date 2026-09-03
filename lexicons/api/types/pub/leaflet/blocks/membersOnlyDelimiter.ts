@@ -14,11 +14,13 @@ const is$typed = _is$typed,
   validate = _validate
 const id = 'pub.leaflet.blocks.membersOnlyDelimiter'
 
-/** Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership. */
+/** Marks where members-only content begins and declares which publication members can read past it. */
 export interface Main {
   $type?: 'pub.leaflet.blocks.membersOnlyDelimiter'
-  /** Id of the lowest membership tier whose members can read past the delimiter; tiers rank by price, so pricier tiers read through too. Absent means any paid membership. */
-  tier?: string
+  /** Whether access is available to all subscribers, all paid members, or selected paid tiers. */
+  audience: 'subscribers' | 'paid' | 'tiers' | (string & {})
+  /** Paid tier ids that grant access when audience is tiers. An empty selection grants no membership access. */
+  tierIds?: string[]
 }
 
 const hashMain = 'main'

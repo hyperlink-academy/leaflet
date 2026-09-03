@@ -1597,13 +1597,22 @@ export const schemaDict = {
       main: {
         type: 'object',
         description:
-          'Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership.',
-        required: [],
+          'Marks where members-only content begins and declares which publication members can read past it.',
+        required: ['audience'],
         properties: {
-          tier: {
+          audience: {
             type: 'string',
+            knownValues: ['subscribers', 'paid', 'tiers'],
             description:
-              'Id of the lowest membership tier whose members can read past the delimiter; tiers rank by price, so pricier tiers read through too. Absent means any paid membership.',
+              'Whether access is available to all subscribers, all paid members, or selected paid tiers.',
+          },
+          tierIds: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description:
+              'Paid tier ids that grant access when audience is tiers. An empty selection grants no membership access.',
           },
         },
       },
@@ -2878,6 +2887,22 @@ export const schemaDict = {
             maxSize: 1000000,
           },
           width: {
+            type: 'integer',
+          },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.wordmark#aspectRatio',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
             type: 'integer',
           },
         },

@@ -10,6 +10,10 @@ export async function generateStaticParams() {
   return [];
 }
 
+// 620x324 viewport at deviceScaleFactor 2.
+export const size = { width: 1240, height: 648 };
+export const contentType = "image/png";
+export const alt = "Quoted passage from this post";
 
 export default async function OpenGraphImage(props: {
   params: Promise<{

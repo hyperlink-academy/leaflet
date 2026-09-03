@@ -1,9 +1,43 @@
 "use client";
-import { Fragment, useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { useDomainStatus } from "./useDomainStatus";
 import { DotLoader } from "components/utils/DotLoader";
 import { ButtonPrimary } from "components/Buttons";
+import { Modal } from "components/Modal";
 import { useSmoker } from "components/Toast";
+
+// DomainVerification renders nothing once the domain verifies, so only give this a
+// trigger while useDomainStatus reports the domain pending.
+export function DomainVerificationModal(props: {
+  domain: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="opaque-container text-tertiary w-full flex items-center gap-2 px-[6px] py-1 border rounded-md border-border-light border-dashed">
+      <Modal
+        asChild
+        title="Verify this Domain"
+        className="max-w-md"
+        trigger={
+          <button
+            type="button"
+            className="flex w-full justify-between items-center"
+          >
+            <span className="truncate text-left animate-pulse">
+              {props.domain}
+            </span>
+            <span className="text-accent-contrast text-xs mr-1 font-bold shrink-0">
+              Verify
+            </span>
+          </button>
+        }
+      >
+        <DomainVerification domain={props.domain} />
+      </Modal>
+      {props.children}
+    </div>
+  );
+}
 
 export function DomainVerification(props: { domain: string }) {
   let {

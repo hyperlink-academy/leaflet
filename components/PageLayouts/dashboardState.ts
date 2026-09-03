@@ -19,6 +19,8 @@ export type DashboardState = {
     unsubscribed: boolean;
   };
   membersOnly: boolean;
+  subscriberTierSelected: boolean;
+  memberTiers: string[];
 };
 
 type DashboardStore = {
@@ -41,6 +43,8 @@ const defaultDashboardState: DashboardState = {
     unsubscribed: false,
   },
   membersOnly: false,
+  subscriberTierSelected: false,
+  memberTiers: [],
 };
 
 // Existing identities have stored interface_state without newer fields

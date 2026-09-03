@@ -135,28 +135,40 @@ const UpdateButton = () => {
       labelOnMobile
       icon={<PublishSmall className="shrink-0" />}
       label={isLoading ? <DotLoader /> : "Update!"}
+      disabled={isLoading}
       onClick={async () => {
-        if (!pub) return;
+        if (!pub || isLoading) return;
         setIsLoading(true);
-        let result = await publishToPublication({
-          root_entity: rootEntity,
-          publication_uri: pub.publications?.uri,
-          leaflet_id: permission_token.id,
-          title: currentTitle,
-          description: currentDescription,
-          tags: currentTags,
-          publishedAt: publishedAt?.toISOString(),
-          postPreferences,
-        });
-        setIsLoading(false);
-        mutate();
+        let result: Awaited<ReturnType<typeof publishToPublication>>;
+        try {
+          result = await publishToPublication({
+            root_entity: rootEntity,
+            publication_uri: pub.publications?.uri,
+            leaflet_id: permission_token.id,
+            title: currentTitle,
+            description: currentDescription,
+            tags: currentTags,
+            publishedAt: publishedAt?.toISOString(),
+            postPreferences,
+          });
+        } catch (error) {
+          console.error(error);
+          toaster({
+            content: "We couldn't publish this. Please try again!",
+            type: "error",
+          });
+          return;
+        } finally {
+          setIsLoading(false);
+          mutate();
+        }
 
         if (!result.success) {
           toaster({
             content: isOAuthSessionError(result.error) ? (
               <OAuthErrorMessage error={result.error} />
             ) : (
-              "We couldn't publish this. Please try again!"
+              result.error.message
             ),
             type: "error",
           });
@@ -510,8 +522,10 @@ let useTitle = (entityID: string) => {
   // Only handle second block logic for linear documents, not canvas
   let isCanvas = canvasBlocks.length > 0;
   let secondBlock = !isCanvas ? blocks[1] : undefined;
-  let secondBlockTextValue = useEntity(secondBlock?.entityID || null, "block/text")
-    ?.data.value;
+  let secondBlockTextValue = useEntity(
+    secondBlock?.entityID || null,
+    "block/text",
+  )?.data.value;
   const secondBlockText = useMemo(() => {
     if (!secondBlockTextValue) return "";
     let doc = new Y.Doc();
@@ -536,7 +550,13 @@ let useTitle = (entityID: string) => {
       etod.push(secondBlock.entityID);
     }
     return etod;
-  }, [firstBlockEntity, firstBlockType, secondBlockText, secondBlock, isCanvas]);
+  }, [
+    firstBlockEntity,
+    firstBlockType,
+    secondBlockText,
+    secondBlock,
+    isCanvas,
+  ]);
 
   return { title: leafletTitle, entitiesToDelete };
 };

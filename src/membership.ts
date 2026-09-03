@@ -27,51 +27,63 @@ export function postHasMembersDelimiter(
   return !!pages?.[0] && pageHasMembersDelimiter(pages[0]);
 }
 
-// The delimiter's tier requirement, when the author picked one. null means the
-// delimiter (or its tier field) is absent: any paid membership reads through.
-export function getMembersDelimiterTierId(
-  blocks: { block?: { $type?: string; tier?: unknown } }[] | undefined,
-): string | null {
-  const delimiter = blocks?.find(
+export type GatePolicy =
+  | { audience: "subscribers" }
+  | { audience: "paid" }
+  | { audience: "tiers"; tierIds: string[] };
+
+type MembersDelimiterBlock = {
+  $type?: string;
+  audience?: unknown;
+  tierIds?: unknown;
+  // Pre-audience lexicon shape: absent tiers meant every paid tier, a
+  // non-empty list restricted to those tiers.
+  tiers?: unknown;
+};
+
+// Parse the policy stored on a delimiter. Invalid policies remain invalid so a
+// malformed or empty tier selection can never accidentally broaden access.
+export function getMembersDelimiterGatePolicy(
+  blocks: { block?: MembersDelimiterBlock }[] | undefined,
+): GatePolicy | null {
+  const block = blocks?.find(
     (b) => b?.block?.$type === ids.PubLeafletBlocksMembersOnlyDelimiter,
-  );
-  return typeof delimiter?.block?.tier === "string"
-    ? delimiter.block.tier
-    : null;
+  )?.block;
+  if (!block) return null;
+  if (block.audience === "subscribers") return { audience: "subscribers" };
+  if (block.audience === "paid") return { audience: "paid" };
+  if (block.audience === "tiers") {
+    if (!Array.isArray(block.tierIds)) return null;
+    return {
+      audience: "tiers",
+      tierIds: [
+        ...new Set(
+          block.tierIds.filter((id): id is string => typeof id === "string"),
+        ),
+      ],
+    };
+  }
+  if (block.audience !== undefined) return null;
+  if (block.tiers === undefined) return { audience: "paid" };
+  if (!Array.isArray(block.tiers)) return null;
+  const tierIds = [
+    ...new Set(
+      block.tiers.filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+  return tierIds.length > 0
+    ? { audience: "tiers", tierIds }
+    : { audience: "paid" };
 }
 
-export function getGatedPostRequiredTierId(
+export function getGatedPostPolicy(
   doc: NormalizedDocument | null,
-): string | null {
+): GatePolicy | null {
   const pages = doc ? getDocumentPages(doc) : undefined;
   const first = pages?.[0] as
-    | { blocks?: { block?: { $type?: string; tier?: unknown } }[] }
+    | { blocks?: { block?: MembersDelimiterBlock }[] }
     | undefined;
-  return getMembersDelimiterTierId(first?.blocks);
-}
-
-// Resolves a delimiter's tier id against the publication's tier rows. A tier
-// that no longer exists can't be ranked, so the gate falls back to
-// any-paid-membership rather than locking every member out.
-export function resolveGateRequiredTier<
-  T extends { id: string; monthly_price_cents: number },
->(requiredTierId: string | null | undefined, tiers: T[]): T | null {
-  if (!requiredTierId) return null;
-  return tiers.find((t) => t.id === requiredTierId) ?? null;
-}
-
-// Whether joining `tier` grants access past a delimiter requiring
-// `requiredTier`. Tiers rank by monthly price — equal or pricier tiers read
-// through — so "higher" tiers always include what lower tiers can see. The
-// free tier never unlocks gated content (free subscribers have no membership
-// row at all).
-export function tierUnlocksGatedPost(
-  tier: { is_free: boolean; monthly_price_cents: number },
-  requiredTier: { monthly_price_cents: number } | null | undefined,
-): boolean {
-  if (tier.is_free) return false;
-  if (!requiredTier) return true;
-  return tier.monthly_price_cents >= requiredTier.monthly_price_cents;
+  return getMembersDelimiterGatePolicy(first?.blocks);
 }
 
 // For render paths that work on a flat block list (RSS feed, newsletter
@@ -176,26 +188,70 @@ export function truncatePagesAtMembersDelimiter(pages: unknown[]): void {
   }
 }
 
-// Tiers a reader can actually join: active, and either free or provisioned in
-// Stripe (a paid tier without a monthly price id is half-created and can't be
-// subscribed to). Shared by the /join page and getJoinableTiers.
-export function filterJoinableTiers<
-  T extends {
-    active: boolean;
-    is_free: boolean;
-    stripe_price_monthly_id: string | null;
-    sort_order: number;
-  },
->(tiers: T[]): T[] {
-  return tiers
-    .filter((t) => t.active && (t.is_free || t.stripe_price_monthly_id))
-    .sort((a, b) => a.sort_order - b.sort_order);
-}
+// Statuses under which a member still holds a live Stripe subscription on
+// their tier's price. A canceled/incomplete row is history; these are the
+// members a price change would leave on a price the tier no longer offers.
+export const LIVE_MEMBERSHIP_STATUSES = ["active", "trialing", "past_due"];
 
 export type MembershipStatusFields = {
   status: string | null;
   current_period_end: string | null;
 };
+
+export type SubscriberTier = {
+  name: string;
+  description: string | null;
+};
+
+export type PaidTier = {
+  id: string;
+  name: string;
+  description: string | null;
+  monthly_price_cents: number;
+  annual_price_cents: number | null;
+};
+
+export type MembershipTiers = {
+  subscriber: SubscriberTier;
+  paid: PaidTier[];
+};
+
+// The subscriber plan is publication metadata rather than a billing row. Build
+// the public tiers here so every join, paywall, and dashboard surface sees
+// the same synthesized plan and the same active paid tiers.
+export function buildMembershipTiers<
+  T extends PaidTier & { active: boolean; sort_order: number },
+>(
+  settings:
+    | {
+        subscriber_tier_name: string;
+        subscriber_tier_description: string | null;
+      }
+    | null
+    | undefined,
+  tiers: T[],
+): MembershipTiers {
+  return {
+    subscriber: {
+      name: settings?.subscriber_tier_name ?? "Free",
+      description: settings?.subscriber_tier_description ?? null,
+    },
+    paid: tiers
+      .filter((tier) => tier.active)
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((tier) => ({
+        id: tier.id,
+        name: tier.name,
+        description: tier.description,
+        monthly_price_cents: tier.monthly_price_cents,
+        annual_price_cents: tier.annual_price_cents,
+      })),
+  };
+}
+
+export type ResolvedPublicationMembership =
+  | { kind: "free" }
+  | { kind: "paid"; tierId: string };
 
 export function isActiveMembership(
   m: MembershipStatusFields | null | undefined,
@@ -210,22 +266,52 @@ export function isActiveMembership(
   return true;
 }
 
+export function resolvePublicationMembership(input: {
+  isSubscriber: boolean;
+  paidMembership:
+    | (MembershipStatusFields & { tier: string })
+    | null
+    | undefined;
+}): ResolvedPublicationMembership | null {
+  const paidMembership = input.paidMembership;
+  if (paidMembership && isActiveMembership(paidMembership)) {
+    return {
+      kind: "paid",
+      tierId: paidMembership.tier,
+    };
+  }
+
+  return input.isSubscriber ? { kind: "free" } : null;
+}
+
+export function membershipUnlocksGatedPost(
+  membership: ResolvedPublicationMembership | null | undefined,
+  policy: GatePolicy | null | undefined,
+): boolean {
+  if (!membership || !policy) return false;
+  if (policy.audience === "subscribers") return true;
+  if (membership.kind !== "paid") return false;
+  if (policy.audience === "paid") return true;
+  return (
+    policy.tierIds.length > 0 && policy.tierIds.includes(membership.tierId)
+  );
+}
+
 // The full-access rule for a gated post, over already-fetched rows so the
 // decision is testable without a database: the publication owner, a confirmed
-// contributor, or an active member on a high-enough tier reads past the
-// delimiter. `requiredTier` (resolve it with resolveGateRequiredTier) and
-// `tiers` only matter when the delimiter names a tier; omitted, any active
-// membership qualifies.
+// contributor, or a resolved membership admitted by the gate reads past the
+// delimiter. Membership resolution and the gate decision intentionally happen
+// together so callers cannot apply only half of the access rule.
 export function isEntitledToGatedPost(input: {
   viewerDid: string | null | undefined;
   ownerDid: string | null | undefined;
   contributors: { contributor_did: string; confirmed: boolean | null }[];
-  membership:
-    | (MembershipStatusFields & { tier?: string | null })
+  paidMembership:
+    | (MembershipStatusFields & { tier: string })
     | null
     | undefined;
-  requiredTier?: { monthly_price_cents: number } | null;
-  tiers?: { id: string; monthly_price_cents: number }[];
+  gatePolicy: GatePolicy | null | undefined;
+  isSubscriber?: boolean;
 }): boolean {
   const { viewerDid } = input;
   if (viewerDid) {
@@ -237,15 +323,11 @@ export function isEntitledToGatedPost(input: {
     )
       return true;
   }
-  if (!isActiveMembership(input.membership)) return false;
-  if (!input.requiredTier) return true;
-  // A membership whose tier row is gone can't be ranked; treat it as below
-  // every named requirement.
-  const memberTier = input.membership?.tier
-    ? input.tiers?.find((t) => t.id === input.membership?.tier)
-    : undefined;
-  return (
-    !!memberTier &&
-    memberTier.monthly_price_cents >= input.requiredTier.monthly_price_cents
+  return membershipUnlocksGatedPost(
+    resolvePublicationMembership({
+      isSubscriber: !!input.isSubscriber,
+      paidMembership: input.paidMembership,
+    }),
+    input.gatePolicy,
   );
 }

@@ -1,12 +1,14 @@
 import { describe, expect, test } from "vitest";
-import { normalizeDocument, getDocumentPages } from "lexicons/src/normalize";
+import { getDocumentPages, normalizeDocument } from "lexicons/src/normalize";
 import {
-  getGatedPostRequiredTierId,
-  getMembersDelimiterTierId,
+  buildMembershipTiers,
+  getGatedPostPolicy,
+  getMembersDelimiterGatePolicy,
   isEntitledToGatedPost,
-  resolveGateRequiredTier,
-  tierUnlocksGatedPost,
+  membershipUnlocksGatedPost,
+  resolvePublicationMembership,
   truncatePagesAtMembersDelimiter,
+  type GatePolicy,
 } from "src/membership";
 
 const DELIMITER = "pub.leaflet.blocks.membersOnlyDelimiter";
@@ -19,7 +21,7 @@ function gatedPages() {
       blocks: [
         { block: { $type: "pub.leaflet.blocks.text", plaintext: "preview" } },
         { block: { $type: "pub.leaflet.blocks.page", id: "free-sub" } },
-        { block: { $type: DELIMITER } },
+        { block: { $type: DELIMITER, audience: "paid" } },
         { block: { $type: "pub.leaflet.blocks.text", plaintext: "paid" } },
         { block: { $type: "pub.leaflet.blocks.page", id: "paid-sub" } },
       ],
@@ -44,8 +46,7 @@ function gatedPages() {
 // getPostPageData returns BOTH the normalized document and the raw record it
 // was derived from, and gates them with a single in-place truncation. That only
 // works because normalizeDocument shares the pages array with the input — if it
-// ever starts copying (structuredClone, a deep map), the raw record in the
-// client payload would silently ship the gated blocks.
+// ever starts copying, the raw record could silently ship the gated blocks.
 describe("truncatePagesAtMembersDelimiter through normalizeDocument", () => {
   test("pub.leaflet.document: normalized pages alias the raw record's", () => {
     const raw = {
@@ -65,7 +66,6 @@ describe("truncatePagesAtMembersDelimiter through normalizeDocument", () => {
 
     truncatePagesAtMembersDelimiter(pages!);
 
-    // One pass gated both views.
     expect(raw.pages).toHaveLength(2);
     expect(raw.pages[0].blocks).toHaveLength(3);
     expect(raw.pages.map((p) => p.id)).toEqual(["root", "free-sub"]);
@@ -99,199 +99,69 @@ describe("truncatePagesAtMembersDelimiter through normalizeDocument", () => {
   });
 });
 
-describe("isEntitledToGatedPost", () => {
-  const owner = "did:plc:owner";
-  const contributor = "did:plc:contributor";
-  const active = { status: "active", current_period_end: null };
-
-  test("owner reads through", () => {
-    expect(
-      isEntitledToGatedPost({
-        viewerDid: owner,
-        ownerDid: owner,
-        contributors: [],
-        membership: null,
-      }),
-    ).toBe(true);
-  });
-
-  test("confirmed contributor reads through", () => {
-    expect(
-      isEntitledToGatedPost({
-        viewerDid: contributor,
-        ownerDid: owner,
-        contributors: [{ contributor_did: contributor, confirmed: true }],
-        membership: null,
-      }),
-    ).toBe(true);
-  });
-
-  test("unconfirmed contributor does not", () => {
-    expect(
-      isEntitledToGatedPost({
-        viewerDid: contributor,
-        ownerDid: owner,
-        contributors: [{ contributor_did: contributor, confirmed: false }],
-        membership: null,
-      }),
-    ).toBe(false);
-  });
-
-  test("active member reads through, even with no DID", () => {
-    expect(
-      isEntitledToGatedPost({
-        viewerDid: null,
-        ownerDid: owner,
-        contributors: [],
-        membership: active,
-      }),
-    ).toBe(true);
-  });
-
-  test("lapsed and canceled memberships do not", () => {
-    expect(
-      isEntitledToGatedPost({
-        viewerDid: "did:plc:reader",
-        ownerDid: owner,
-        contributors: [],
-        membership: {
-          status: "active",
-          current_period_end: new Date(Date.now() - 1000).toISOString(),
-        },
-      }),
-    ).toBe(false);
-    expect(
-      isEntitledToGatedPost({
-        viewerDid: "did:plc:reader",
-        ownerDid: owner,
-        contributors: [],
-        membership: { status: "canceled", current_period_end: null },
-      }),
-    ).toBe(false);
-  });
-
-  test("logged-out reader does not", () => {
-    expect(
-      isEntitledToGatedPost({
-        viewerDid: null,
-        ownerDid: owner,
-        contributors: [{ contributor_did: contributor, confirmed: true }],
-        membership: null,
-      }),
-    ).toBe(false);
-  });
-});
-
-describe("tiered gating", () => {
-  const owner = "did:plc:owner";
-  const tiers = [
-    { id: "basic", monthly_price_cents: 500 },
-    { id: "plus", monthly_price_cents: 1000 },
-    { id: "premium", monthly_price_cents: 2000 },
+describe("gate policy parsing", () => {
+  const blocksWith = (block: Record<string, unknown>) => [
+    { block: { $type: "pub.leaflet.blocks.text" } },
+    { block: { $type: DELIMITER, ...block } },
   ];
-  const requiredTier = tiers[1]; // plus
-  const activeOn = (tier: string | null) => ({
-    status: "active",
-    current_period_end: null,
-    tier,
-  });
-  const base = {
-    viewerDid: null,
-    ownerDid: owner,
-    contributors: [],
-    requiredTier,
-    tiers,
-  };
 
-  test("member on a lower tier is locked out", () => {
-    expect(
-      isEntitledToGatedPost({ ...base, membership: activeOn("basic") }),
-    ).toBe(false);
-  });
-
-  test("members on the required tier and above read through", () => {
-    expect(
-      isEntitledToGatedPost({ ...base, membership: activeOn("plus") }),
-    ).toBe(true);
-    expect(
-      isEntitledToGatedPost({ ...base, membership: activeOn("premium") }),
-    ).toBe(true);
-  });
-
-  test("membership pointing at a deleted tier can't be ranked", () => {
-    expect(isEntitledToGatedPost({ ...base, membership: activeOn(null) })).toBe(
-      false,
+  test.each([
+    ["subscribers", { audience: "subscribers" }],
+    ["paid", { audience: "paid" }],
+  ] as const)("parses the %s audience", (audience, expected) => {
+    expect(getMembersDelimiterGatePolicy(blocksWith({ audience }))).toEqual(
+      expected,
     );
+  });
+
+  test("parses and deduplicates selected paid tier ids", () => {
     expect(
-      isEntitledToGatedPost({ ...base, membership: activeOn("gone") }),
-    ).toBe(false);
+      getMembersDelimiterGatePolicy(
+        blocksWith({ audience: "tiers", tierIds: ["plus", "plus", "pro"] }),
+      ),
+    ).toEqual({ audience: "tiers", tierIds: ["plus", "pro"] });
   });
 
-  test("no tier requirement keeps the any-member rule", () => {
+  test("keeps an empty selected-tier policy explicit", () => {
     expect(
-      isEntitledToGatedPost({
-        ...base,
-        requiredTier: null,
-        membership: activeOn("basic"),
-      }),
-    ).toBe(true);
+      getMembersDelimiterGatePolicy(
+        blocksWith({ audience: "tiers", tierIds: [] }),
+      ),
+    ).toEqual({ audience: "tiers", tierIds: [] });
   });
 
-  test("owner bypasses the tier requirement", () => {
+  test("rejects unknown and malformed policies", () => {
     expect(
-      isEntitledToGatedPost({
-        ...base,
-        viewerDid: owner,
-        membership: null,
-      }),
-    ).toBe(true);
-  });
-
-  test("a lapsed member on a high tier is still locked out", () => {
+      getMembersDelimiterGatePolicy(blocksWith({ audience: "unknown" })),
+    ).toBe(null);
     expect(
-      isEntitledToGatedPost({
-        ...base,
-        membership: {
-          status: "canceled",
-          current_period_end: null,
-          tier: "premium",
-        },
-      }),
-    ).toBe(false);
+      getMembersDelimiterGatePolicy(
+        blocksWith({ audience: "tiers", tierIds: "plus" }),
+      ),
+    ).toBe(null);
+    expect(
+      getMembersDelimiterGatePolicy(blocksWith({ audience: "tiers" })),
+    ).toBe(null);
   });
 
-  test("resolveGateRequiredTier falls back to any-member when the tier is gone", () => {
-    expect(resolveGateRequiredTier("plus", tiers)).toBe(tiers[1]);
-    expect(resolveGateRequiredTier("deleted", tiers)).toBe(null);
-    expect(resolveGateRequiredTier(null, tiers)).toBe(null);
-  });
-
-  test("tierUnlocksGatedPost ranks by price and never unlocks free", () => {
-    const paid = (cents: number) => ({
-      is_free: false,
-      monthly_price_cents: cents,
+  test("falls back to the pre-audience lexicon shape", () => {
+    // No `audience`, no `tiers`: the old lexicon's default of every paid tier.
+    expect(getMembersDelimiterGatePolicy(blocksWith({}))).toEqual({
+      audience: "paid",
     });
-    expect(tierUnlocksGatedPost(paid(500), requiredTier)).toBe(false);
-    expect(tierUnlocksGatedPost(paid(1000), requiredTier)).toBe(true);
-    expect(tierUnlocksGatedPost(paid(2000), requiredTier)).toBe(true);
-    expect(tierUnlocksGatedPost(paid(500), null)).toBe(true);
     expect(
-      tierUnlocksGatedPost({ is_free: true, monthly_price_cents: 0 }, null),
-    ).toBe(false);
+      getMembersDelimiterGatePolicy(blocksWith({ tiers: ["plus", "pro"] })),
+    ).toEqual({ audience: "tiers", tierIds: ["plus", "pro"] });
+    // An empty legacy selection serialized the same as absent.
+    expect(getMembersDelimiterGatePolicy(blocksWith({ tiers: [] }))).toEqual({
+      audience: "paid",
+    });
+    expect(
+      getMembersDelimiterGatePolicy(blocksWith({ tiers: "plus" })),
+    ).toBe(null);
   });
 
-  test("reads the delimiter's tier off blocks and documents", () => {
-    const blocks = [
-      { block: { $type: "pub.leaflet.blocks.text", plaintext: "preview" } },
-      { block: { $type: DELIMITER, tier: "plus" } },
-      { block: { $type: "pub.leaflet.blocks.text", plaintext: "paid" } },
-    ];
-    expect(getMembersDelimiterTierId(blocks)).toBe("plus");
-    expect(getMembersDelimiterTierId(blocks.slice(2))).toBe(null);
-    expect(getMembersDelimiterTierId([{ block: { $type: DELIMITER } }])).toBe(
-      null,
-    );
-
+  test("reads the policy from the document's first page", () => {
     const doc = normalizeDocument(
       {
         $type: "pub.leaflet.document",
@@ -303,12 +173,302 @@ describe("tiered gating", () => {
           {
             $type: "pub.leaflet.pages.linearDocument",
             id: "root",
-            blocks,
+            blocks: blocksWith({
+              audience: "tiers",
+              tierIds: ["plus", "pro"],
+            }),
           },
         ],
       },
       "at://did:plc:author/pub.leaflet.document/rkey",
     );
-    expect(getGatedPostRequiredTierId(doc)).toBe("plus");
+    expect(getGatedPostPolicy(doc)).toEqual({
+      audience: "tiers",
+      tierIds: ["plus", "pro"],
+    });
+  });
+});
+
+describe("resolvePublicationMembership", () => {
+  const activeOn = (tier: string) => ({
+    status: "active",
+    current_period_end: null,
+    tier,
+  });
+
+  test("resolves a subscriber without a billing row to free", () => {
+    expect(
+      resolvePublicationMembership({
+        isSubscriber: true,
+        paidMembership: null,
+      }),
+    ).toEqual({ kind: "free" });
+  });
+
+  test("prefers an active paid membership", () => {
+    expect(
+      resolvePublicationMembership({
+        isSubscriber: true,
+        paidMembership: activeOn("plus"),
+      }),
+    ).toEqual({ kind: "paid", tierId: "plus" });
+  });
+
+  test("treats a trialing membership as paid", () => {
+    expect(
+      resolvePublicationMembership({
+        isSubscriber: false,
+        paidMembership: {
+          status: "trialing",
+          current_period_end: null,
+          tier: "plus",
+        },
+      }),
+    ).toEqual({ kind: "paid", tierId: "plus" });
+  });
+
+  test("falls back to free when the paid membership lapses", () => {
+    expect(
+      resolvePublicationMembership({
+        isSubscriber: true,
+        paidMembership: {
+          status: "canceled",
+          current_period_end: null,
+          tier: "plus",
+        },
+      }),
+    ).toEqual({ kind: "free" });
+  });
+
+  test("does not resolve an active row past its period end", () => {
+    expect(
+      resolvePublicationMembership({
+        isSubscriber: false,
+        paidMembership: {
+          status: "active",
+          current_period_end: new Date(Date.now() - 1_000).toISOString(),
+          tier: "plus",
+        },
+      }),
+    ).toBe(null);
+  });
+});
+
+describe("buildMembershipTiers", () => {
+  test("synthesizes the subscriber plan and exposes only active paid tiers", () => {
+    expect(
+      buildMembershipTiers(
+        {
+          subscriber_tier_name: "Reader",
+          subscriber_tier_description: "Follow along",
+        },
+        [
+          {
+            id: "later",
+            name: "Later",
+            description: null,
+            monthly_price_cents: 1000,
+            annual_price_cents: null,
+            active: true,
+            sort_order: 2,
+          },
+          {
+            id: "inactive",
+            name: "Inactive",
+            description: null,
+            monthly_price_cents: 500,
+            annual_price_cents: null,
+            active: false,
+            sort_order: 0,
+          },
+          {
+            id: "first",
+            name: "First",
+            description: "First paid plan",
+            monthly_price_cents: 700,
+            annual_price_cents: 7000,
+            active: true,
+            sort_order: 1,
+          },
+        ],
+      ),
+    ).toEqual({
+      subscriber: { name: "Reader", description: "Follow along" },
+      paid: [
+        {
+          id: "first",
+          name: "First",
+          description: "First paid plan",
+          monthly_price_cents: 700,
+          annual_price_cents: 7000,
+        },
+        {
+          id: "later",
+          name: "Later",
+          description: null,
+          monthly_price_cents: 1000,
+          annual_price_cents: null,
+        },
+      ],
+    });
+  });
+});
+
+describe("membershipUnlocksGatedPost", () => {
+  const free = { kind: "free" } as const;
+  const basic = { kind: "paid", tierId: "basic" } as const;
+  const plus = { kind: "paid", tierId: "plus" } as const;
+
+  test("paid members inherit subscriber access", () => {
+    const policy = { audience: "subscribers" } as const;
+    expect(membershipUnlocksGatedPost(free, policy)).toBe(true);
+    expect(membershipUnlocksGatedPost(basic, policy)).toBe(true);
+  });
+
+  test("a paid gate rejects free and accepts every paid tier", () => {
+    const policy = { audience: "paid" } as const;
+    expect(membershipUnlocksGatedPost(free, policy)).toBe(false);
+    expect(membershipUnlocksGatedPost(basic, policy)).toBe(true);
+    expect(membershipUnlocksGatedPost(plus, policy)).toBe(true);
+  });
+
+  test("a selected-tier gate accepts only the named paid tiers", () => {
+    const policy: GatePolicy = { audience: "tiers", tierIds: ["plus"] };
+    expect(membershipUnlocksGatedPost(free, policy)).toBe(false);
+    expect(membershipUnlocksGatedPost(basic, policy)).toBe(false);
+    expect(membershipUnlocksGatedPost(plus, policy)).toBe(true);
+  });
+
+  test("unknown and empty policies fail closed", () => {
+    expect(membershipUnlocksGatedPost(plus, null)).toBe(false);
+    expect(
+      membershipUnlocksGatedPost(plus, {
+        audience: "tiers",
+        tierIds: [],
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("isEntitledToGatedPost", () => {
+  const owner = "did:plc:owner";
+  const contributor = "did:plc:contributor";
+  const activeOn = (tier: string) => ({
+    status: "active",
+    current_period_end: null,
+    tier,
+  });
+  const base = {
+    viewerDid: null,
+    ownerDid: owner,
+    contributors: [] as {
+      contributor_did: string;
+      confirmed: boolean | null;
+    }[],
+    paidMembership: null,
+    isSubscriber: false,
+    gatePolicy: { audience: "paid" } as GatePolicy,
+  };
+
+  test("owner and confirmed contributor bypass the membership policy", () => {
+    expect(isEntitledToGatedPost({ ...base, viewerDid: owner })).toBe(true);
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        viewerDid: contributor,
+        contributors: [{ contributor_did: contributor, confirmed: true }],
+      }),
+    ).toBe(true);
+  });
+
+  test("unconfirmed and logged-out contributors do not bypass it", () => {
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        viewerDid: contributor,
+        contributors: [{ contributor_did: contributor, confirmed: false }],
+      }),
+    ).toBe(false);
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        contributors: [{ contributor_did: contributor, confirmed: true }],
+      }),
+    ).toBe(false);
+  });
+
+  test("resolves subscriber access inside the entitlement decision", () => {
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        isSubscriber: true,
+        gatePolicy: { audience: "subscribers" },
+      }),
+    ).toBe(true);
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        isSubscriber: true,
+        gatePolicy: { audience: "paid" },
+      }),
+    ).toBe(false);
+  });
+
+  test("resolves active paid access inside the entitlement decision", () => {
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        paidMembership: activeOn("plus"),
+        gatePolicy: { audience: "tiers", tierIds: ["plus"] },
+      }),
+    ).toBe(true);
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        paidMembership: activeOn("basic"),
+        gatePolicy: { audience: "tiers", tierIds: ["plus"] },
+      }),
+    ).toBe(false);
+  });
+
+  test("a lapsed paid membership falls back to subscriber access only", () => {
+    const paidMembership = {
+      status: "canceled",
+      current_period_end: null,
+      tier: "plus",
+    };
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        isSubscriber: true,
+        paidMembership,
+        gatePolicy: { audience: "subscribers" },
+      }),
+    ).toBe(true);
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        isSubscriber: true,
+        paidMembership,
+        gatePolicy: { audience: "paid" },
+      }),
+    ).toBe(false);
+  });
+
+  test("an invalid policy fails closed for members but not the owner", () => {
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        paidMembership: activeOn("plus"),
+        gatePolicy: null,
+      }),
+    ).toBe(false);
+    expect(
+      isEntitledToGatedPost({
+        ...base,
+        viewerDid: owner,
+        gatePolicy: null,
+      }),
+    ).toBe(true);
   });
 });

@@ -21,6 +21,7 @@ export function cachedServerMutationContext(
   permission_token_id: string,
   token_rights: PermissionToken["permission_token_rights"],
   sessionDid: string | null,
+  rootEntity: string,
 ) {
   let writeCache: WriteCacheEntry[] = [];
   let eavCache = new Map<string, DeepReadonly<Fact<Attribute>>[]>();
@@ -119,6 +120,8 @@ export function cachedServerMutationContext(
     } = {
       scanIndex,
       permission_token_id,
+      rootEntity,
+      sessionDid,
       async runOnServer(cb) {
         return cb({ supabase: supabaseServerClient });
       },

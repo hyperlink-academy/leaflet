@@ -18,7 +18,7 @@ import { entities } from "drizzle/schema";
 import { scanIndex } from "src/replicache/utils";
 
 export function useBlockKeyboardHandlers(
-  props: BlockProps,
+  props: BlockProps & { preview?: boolean },
   areYouSure: boolean,
   setAreYouSure: (value: boolean) => void,
 ) {
@@ -36,7 +36,9 @@ export function useBlockKeyboardHandlers(
   latest.current = { props, entity_set, areYouSure, setAreYouSure };
 
   useEffect(() => {
-    if (!isSelected || !rep) return;
+    // A preview copy (e.g. the list drag overlay) of a selected block must not
+    // attach a second listener for the same entity.
+    if (props.preview || !isSelected || !rep) return;
     let listener = async (e: KeyboardEvent) => {
       let { props, entity_set, areYouSure, setAreYouSure } = latest.current;
       // keymapping for textBlocks is handled in TextBlock/keymap
@@ -101,14 +103,13 @@ const AllowedIfTextBlock = ["Tab"];
 async function Tab({ e, props, rep }: Args) {
   // if tab or shift tab, indent or outdent
   if (useUIState.getState().selectedBlocks.length > 1) return false;
-  let { foldedBlocks, toggleFold } = useUIState.getState();
   if (e.shiftKey) {
     e.preventDefault();
-    await outdent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
+    await outdent(props, props.previousBlock, rep);
   } else {
     e.preventDefault();
     if (props.previousBlock) {
-      await indent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
+      await indent(props, props.previousBlock, rep);
     }
   }
 }

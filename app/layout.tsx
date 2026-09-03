@@ -14,6 +14,9 @@ export const metadata = {
   openGraph: {
     images: ["/open-graph.png"],
   },
+  twitter: {
+    card: "summary_large_image",
+  },
   appleWebApp: {
     title: "Leaflet",
     statusBarStyle: "black-translucent",

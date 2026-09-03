@@ -35,6 +35,13 @@ export function PublishedPageLinkBlock(props: {
 }) {
   let openPages = useOpenPages();
   let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
+  // The overlay anchor below needs real anchor text; mirror DocLinkBlock's
+  // title derivation (first text-ish block of the page).
+  let titleBlock = (props.blocks as { block: unknown }[])
+    .map((b) => b.block)
+    .find(
+      (b) => PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
+    ) as PubLeafletBlocksText.Main | PubLeafletBlocksHeader.Main | undefined;
   return (
     <div
       className={`w-full cursor-pointer
@@ -59,6 +66,19 @@ export function PublishedPageLinkBlock(props: {
         );
       }}
     >
+      {/* A real href (the same ?page= deep link the heading anchors use) so
+          the sub-page is reachable without JS. Clicks bubble to the wrapper's
+          handler, whose preventDefault cancels the navigation in favor of the
+          SPA page-opening flow; positioned children (the preview, the comments
+          button) paint above the overlay and stay interactive. An overlay
+          rather than an anchor wrapper because the preview can itself contain
+          links, and nested <a> tags get re-parented by the HTML parser. */}
+      <a
+        href={`?page=${props.pageId}`}
+        className="absolute inset-0"
+      >
+        <span className="sr-only">{titleBlock?.plaintext || "Open page"}</span>
+      </a>
       {props.isCanvas ? (
         <CanvasLinkBlock
           blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
@@ -106,7 +126,7 @@ function DocLinkBlock(props: {
             <div className="grow">
               {title && (
                 <div
-                  className={`pageBlockOne outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                  className={`pageBlockOne whitespace-pre-wrap outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={title.facets}
@@ -118,7 +138,7 @@ function DocLinkBlock(props: {
               )}
               {description && (
                 <div
-                  className={`pageBlockLineTwo outline-none resize-none align-top gap-2 ${description.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                  className={`pageBlockLineTwo whitespace-pre-wrap outline-none resize-none align-top gap-2 ${description.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={description.facets}
@@ -130,7 +150,7 @@ function DocLinkBlock(props: {
               )}
               {thirdLine && (
                 <div
-                  className={`pageBlockLineThree outline-none resize-none align-top gap-2 ${thirdLine.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                  className={`pageBlockLineThree whitespace-pre-wrap outline-none resize-none align-top gap-2 ${thirdLine.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={thirdLine.facets}

@@ -9,22 +9,19 @@ import {
   readJoinResume,
   type JoinResume,
 } from "components/Memberships/joinReturn";
-import type { Tier } from "components/Memberships/TierGrid";
 import type { MembershipJoinViewer } from "actions/publications/joinMembership";
+import type { GatePolicy, MembershipTiers } from "src/membership";
 
 // The subscribe control for publications with paid tiers. Styled like
 // SubscribeButton, but instead of one-click subscribing it opens the paid join
 // flow (JoinMembershipModal): identity, tier, then payment. Rendered wherever
 // SubscribeButton/SubscribeInput would be — they delegate here when
-// useJoinableTiers finds paid tiers.
+// useMembershipTiers finds paid tiers.
 export const PaidSubscribeButton = (
   props: SubscribeProps & {
-    tiers: Tier[];
-    // Badges the tiers with "Unlocks post" — set by the members-only paywall,
-    // where joining reveals the post the reader is on. unlocksPostTier is the
-    // post's tier requirement, narrowing the badge to tiers that meet it.
-    unlocksPost?: boolean;
-    unlocksPostTier?: { monthly_price_cents: number } | null;
+    tiers: MembershipTiers;
+    // Badges the plans admitted by the post's gate policy.
+    gatePolicy?: GatePolicy | null;
     // Test-harness seam, threaded to the modal.
     viewerOverride?: MembershipJoinViewer;
     compact?: boolean;
@@ -45,18 +42,16 @@ export const PaidSubscribeButton = (
     setOpen(true);
   }, []);
 
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
-
   return (
     <>
-      {showManage ? (
+      {user.subscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           newsletterMode={props.newsletterMode}
           user={user}
+          membershipTiers={props.tiers}
+          onChangeMembership={() => setOpen(true)}
         />
       ) : (
         <ButtonPrimary
@@ -69,7 +64,7 @@ export const PaidSubscribeButton = (
         </ButtonPrimary>
       )}
       {/* Stays mounted while the flow subscribes the reader mid-join, so the
-          payment step isn't lost when showManage flips. */}
+          payment step isn't lost when the trigger above flips to Manage. */}
       <JoinMembershipModal
         open={open}
         onOpenChange={setOpen}
@@ -78,9 +73,9 @@ export const PaidSubscribeButton = (
         publicationName={props.publicationName}
         newsletterMode={props.newsletterMode}
         tiers={props.tiers}
-        unlocksPost={props.unlocksPost}
-        unlocksPostTier={props.unlocksPostTier}
+        gatePolicy={props.gatePolicy}
         resume={resume}
+        source={props.source}
         viewerOverride={props.viewerOverride}
       />
     </>

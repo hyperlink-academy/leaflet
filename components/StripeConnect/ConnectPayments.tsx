@@ -11,6 +11,7 @@ import {
 import { startStripeConnectOnboarding } from "actions/startStripeConnectOnboarding";
 import { refreshStripeConnectAccount } from "actions/refreshStripeConnectAccount";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import { AccountEmailForm } from "components/AccountEmailForm";
 
 // Status + onboarding control for collecting payments via Stripe Connect.
 export function ConnectPayments() {
@@ -50,6 +51,7 @@ export function ConnectPayments() {
   }
 
   let status = connected?.status ?? null;
+  let needsEmail = !connected && !identity?.email;
 
   return (
     <>
@@ -102,7 +104,7 @@ export function ConnectPayments() {
           className="w-max"
           type="button"
           onClick={startOnboarding}
-          disabled={loading}
+          disabled={loading || needsEmail}
         >
           {loading ? (
             <DotLoader />
@@ -112,6 +114,14 @@ export function ConnectPayments() {
             "Set up payments with Stripe"
           )}
         </ButtonPrimary>
+      )}
+      {needsEmail && (
+        <div className="flex flex-col gap-2 pt-2 border-t border-border-light">
+          <div className="font-bold text-primary">
+            First, add an email to your account
+          </div>
+          <AccountEmailForm helpText="Stripe uses this address for your payments account and receipts." />
+        </div>
       )}
       {error && <div className="text-sm text-red-500">{error}</div>}
     </>

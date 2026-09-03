@@ -22,8 +22,6 @@ import { GoBackTiny } from "../Icons/GoBackTiny";
 import { DoubleArrowRightTiny } from "../Icons/DoubleArrowRightTiny";
 import { ButtonPrimary } from "../Buttons";
 import { StandardSitePostItem } from "../Blocks/StandardSitePostBlock/StandardSitePostItem";
-import { MobileSheet } from "../MobileSheet";
-import { useIsMobile } from "src/hooks/isMobile";
 
 // A post's comments and Bluesky mentions with a toggle between them, fetching
 // everything it needs from get_document_interactions and providing the
@@ -57,6 +55,7 @@ export function DiscussionContent(props: {
   const { isLoading, data, did, pages, documentContextValue, comments } =
     useDocumentDiscussionData(props.document_uri, props.open);
 
+<<<<<<< HEAD
   // Clicking a Bluesky post scopes down into its thread in place, exactly like
   // the post page's interaction drawer: a stack of thread views with Back /
   // back-to-root controls replacing the tabs. The context makes posts inside a
@@ -83,6 +82,8 @@ export function DiscussionContent(props: {
     topRef.current?.scrollIntoView({ block: "nearest" });
   }, [threadStack.length]);
 
+=======
+>>>>>>> 0cabef6f8e75638c77970d21a45455350be367a4
   // Restrict mentions to the page this modal is about (mirrors InteractionDrawer).
   const quotesAndMentions = (data?.quotesAndMentions ?? []).filter((q) => {
     if (!q.link) return !props.pageId;
@@ -216,6 +217,7 @@ export function DiscussionContent(props: {
   );
 }
 
+<<<<<<< HEAD
 export function DiscussionModal(
   props: React.ComponentProps<typeof DiscussionContent> & {
     onOpenChange: (open: boolean) => void;
@@ -238,11 +240,15 @@ export function DiscussionModal(
     );
   }
 
+=======
+>>>>>>> 0cabef6f8e75638c77970d21a45455350be367a4
   return (
     <Modal
+      sheetOnMobile
       open={props.open}
       onOpenChange={props.onOpenChange}
       className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]! h-[1000px]!"
+      sheetClassName="px-3! pt-0!"
     >
       {content}
     </Modal>

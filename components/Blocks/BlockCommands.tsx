@@ -507,7 +507,16 @@ export const blockCommands: Command[] = [
       let existing = getPageBlocks(rep, props.parent);
       if (existing.some((b) => b.type === "members-only-delimiter")) return;
       props.entityID && clearCommandSearchText(props.entityID);
-      await createBlockWithType(rep, props, "members-only-delimiter");
+      const entity = await createBlockWithType(
+        rep,
+        props,
+        "members-only-delimiter",
+      );
+      await rep.mutate.assertFact({
+        entity,
+        attribute: "block/members-only-audience",
+        data: { type: "string", value: "paid" },
+      });
       um.add({
         undo: () => {
           props.entityID && focusTextBlock(props.entityID);
