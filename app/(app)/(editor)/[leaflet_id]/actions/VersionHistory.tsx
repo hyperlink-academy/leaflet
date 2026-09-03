@@ -16,6 +16,7 @@ import { useReplicache } from "src/replicache";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { timeAgo } from "src/utils/timeAgo";
 import {
+  getVersioningAccess,
   getVersions,
   saveVersion,
   type DocumentVersionListing,
@@ -30,13 +31,21 @@ export function VersionHistory() {
   let [open, setOpen] = useState(false);
   let tokenId = permission_token.id;
   let flush = () => rep?.push();
+  let { data: access } = useSWR(`version-access-${tokenId}`, () =>
+    getVersioningAccess(tokenId),
+  );
+  // Non-Pro viewers only get the button if the doc already has versions, so we
+  // have to load the list up front for them rather than waiting for the modal.
+  let loadVersions = access?.enabled && (open || !access.canModify);
   let { data: versions, mutate } = useSWR(
-    open ? `versions-${tokenId}` : null,
+    loadVersions ? `versions-${tokenId}` : null,
     async () => {
       let res = await getVersions(tokenId);
       return res.ok ? res.value : [];
     },
   );
+
+  if (!access?.canModify && !versions?.length) return null;
 
   return (
     <Modal
@@ -51,20 +60,38 @@ export function VersionHistory() {
         <div className="flex flex-col gap-0 leading-snug">
           <h3>Version History</h3>
           <div className="text-sm text-tertiary">
-            {versions === undefined
-              ? null
-              : versions.length === 0
-                ? "Save versions of your document, restore or copy them later!"
-                : "Select a version to view it"}
+            {versions === undefined ? null : versions.length === 0 ? (
+              <>
+                Saved versions of your document will appear here. You can
+                restore or copy them later.
+              </>
+            ) : (
+              "Select a version to view it."
+            )}
+            {!access?.canModify && (
+              <>
+                {" "}
+                To save versions, upgrade to{" "}
+                <Link href="/upgrade">Leaflet Pro</Link>!
+              </>
+            )}
           </div>
         </div>
-        <SaveVersionForm tokenId={tokenId} flush={flush} onSaved={mutate} />
-        {versions === undefined ? null : versions.length === 0 ? (
+        {access?.canModify && (
+          <SaveVersionForm tokenId={tokenId} flush={flush} onSaved={mutate} />
+        )}
+        {versions === undefined ? (
+          <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
+            <span>loading</span>
+            <DotLoader />
+          </div>
+        ) : versions.length === 0 ? (
           <EmptyState container="light">
             <div className="font-bold">No versions yet…</div>
             <div>
-              Once you've saved a version of this document, you can view and
-              restore versions here.
+              {access?.canModify
+                ? "Once you've saved a version of this document, you can view and restore versions here."
+                : "Once a version of this document has been saved, you can view it here."}
             </div>
           </EmptyState>
         ) : (

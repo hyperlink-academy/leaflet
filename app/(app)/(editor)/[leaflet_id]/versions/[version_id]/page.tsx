@@ -8,6 +8,7 @@ import { isUuid } from "src/utils/isUuid";
 import { supabaseServerClient } from "supabase/serverClient";
 import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
+import { getVersionAccess } from "src/versioning/versionAccess";
 import { VersionViewer } from "./VersionViewer";
 
 type Props = {
@@ -35,8 +36,11 @@ const getVersionData = cache(async (token_id: string, version_id: string) => {
 
 export default async function VersionPage(props: Props) {
   let { leaflet_id, version_id } = await props.params;
-  let version = await getVersionData(leaflet_id, version_id);
-  if (!version) notFound();
+  let [version, access] = await Promise.all([
+    getVersionData(leaflet_id, version_id),
+    getVersionAccess(leaflet_id),
+  ]);
+  if (!version || !access.enabled) notFound();
 
   let facts = version.snapshot as unknown as Fact<Attribute>[];
   let rootEntity = version.permission_tokens.root_entity;
@@ -78,6 +82,7 @@ export default async function VersionPage(props: Props) {
         token={token}
         facts={facts}
         version={version}
+        canModify={access.canModify}
         staticLeafletData={staticLeafletData}
         initialHeadingFontId={headingFontId}
         initialBodyFontId={bodyFontId}
@@ -88,8 +93,11 @@ export default async function VersionPage(props: Props) {
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   let { leaflet_id, version_id } = await props.params;
-  let version = await getVersionData(leaflet_id, version_id);
-  if (!version) return { title: "Version not found" };
+  let [version, access] = await Promise.all([
+    getVersionData(leaflet_id, version_id),
+    getVersionAccess(leaflet_id),
+  ]);
+  if (!version || !access.enabled) return { title: "Version not found" };
   return {
     title: version.name ? `Version: ${version.name}` : "Saved version",
   };

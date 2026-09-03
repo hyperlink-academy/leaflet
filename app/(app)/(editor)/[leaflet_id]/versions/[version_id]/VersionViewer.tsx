@@ -19,6 +19,7 @@ export function VersionViewer(props: {
   token: PermissionToken;
   facts: Fact<Attribute>[];
   version: { id: string; name: string | null; created_at: string };
+  canModify: boolean;
   staticLeafletData: Exclude<GetLeafletDataReturnType["result"]["data"], null>;
   initialHeadingFontId?: string;
   initialBodyFontId?: string;
@@ -53,6 +54,7 @@ export function VersionViewer(props: {
                   savedAt: props.version.created_at,
                   tokenId: props.token.id,
                   versionId: props.version.id,
+                  canModify: props.canModify,
                 }}
               >
                 {firstPageType === "canvas" && <FloatingVersionBanner />}

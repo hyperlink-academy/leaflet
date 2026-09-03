@@ -13,6 +13,11 @@ import { Ok, Err, type Result } from "src/result";
 import { cutVersion, type SnapshotFact } from "src/versioning/cutVersion";
 import { restoreDocumentVersion } from "src/versioning/restoreVersion";
 import { copyLeafletContents } from "src/utils/copyLeafletContents";
+import {
+  getVersionAccess,
+  NO_VERSION_ACCESS,
+  type VersionAccess,
+} from "src/versioning/versionAccess";
 import type { PermissionToken } from "src/replicache";
 
 export type DocumentVersionListing = {
@@ -36,10 +41,18 @@ async function getWritableToken(tokenId: string) {
     : null;
 }
 
+export async function getVersioningAccess(
+  tokenId: string,
+): Promise<VersionAccess> {
+  if (!(await getWritableToken(tokenId))) return NO_VERSION_ACCESS;
+  return getVersionAccess(tokenId);
+}
+
 export async function getVersions(
   tokenId: string,
 ): Promise<Result<DocumentVersionListing[], string>> {
   if (!(await getWritableToken(tokenId))) return Err("No access");
+  if (!(await getVersionAccess(tokenId)).enabled) return Err("No access");
 
   let { data, error } = await supabaseServerClient
     .from("document_versions")
@@ -76,6 +89,8 @@ export async function saveVersion(
 ): Promise<Result<{ unchanged: boolean }, string>> {
   let token = await getWritableToken(tokenId);
   if (!token) return Err("You don't have permission to save versions");
+  if (!(await getVersionAccess(tokenId)).canModify)
+    return Err("Saving versions is a Leaflet Pro feature");
   let identity = await getAuthIdentity();
 
   const client = await pool.connect();
@@ -104,6 +119,8 @@ export async function restoreVersion(
   if (!isUuid(versionId)) return Err("Version not found");
   let token = await getWritableToken(tokenId);
   if (!token) return Err("You don't have permission to restore versions");
+  if (!(await getVersionAccess(tokenId)).canModify)
+    return Err("Restoring versions is a Leaflet Pro feature");
   let identity = await getAuthIdentity();
 
   let result = await restoreDocumentVersion({
@@ -122,6 +139,8 @@ export async function forkVersionAsNewLeaflet(
   if (!isUuid(versionId)) return Err("Version not found");
   let token = await getWritableToken(tokenId);
   if (!token) return Err("You don't have permission to copy versions");
+  if (!(await getVersionAccess(tokenId)).canModify)
+    return Err("Copying versions is a Leaflet Pro feature");
 
   let { data: version } = await supabaseServerClient
     .from("document_versions")

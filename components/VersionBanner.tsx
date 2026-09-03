@@ -78,6 +78,25 @@ function SavedVersionBannerContent({ version }: { version: SavedVersion }) {
 }
 
 function VersionActions({ version }: { version: SavedVersion }) {
+  return (
+    <div className="flex gap-2 items-center shrink-0">
+      <Link
+        href={`/${version.tokenId}`}
+        className="text-sm text-accent-contrast font-bold flex gap-1 items-center no-underline!"
+      >
+        <GoToArrowLined className="rotate-180" /> Back
+      </Link>
+      {version.canModify && (
+        <>
+          <Separator classname="h-4!" />
+          <VersionOptions version={version} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function VersionOptions({ version }: { version: SavedVersion }) {
   let [confirming, setConfirming] = useState<"restore" | "fork" | null>(null);
   let [busy, setBusy] = useState(false);
   let toaster = useToaster();
@@ -119,14 +138,7 @@ function VersionActions({ version }: { version: SavedVersion }) {
   };
 
   return (
-    <div className="flex gap-2 items-center shrink-0">
-      <Link
-        href={`/${version.tokenId}`}
-        className="text-sm text-accent-contrast font-bold flex gap-1 items-center no-underline!"
-      >
-        <GoToArrowLined className="rotate-180" /> Back
-      </Link>
-      <Separator classname="h-4!" />
+    <>
       <Menu
         align="end"
         trigger={
@@ -180,7 +192,7 @@ function VersionActions({ version }: { version: SavedVersion }) {
         </div>
         The current doc will be left as is.
       </ConfirmModal>
-    </div>
+    </>
   );
 }
 

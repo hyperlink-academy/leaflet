@@ -6,6 +6,7 @@ export type SavedVersion = {
   savedAt: string;
   tokenId: string;
   versionId: string;
+  canModify: boolean;
 };
 
 // Set only by the saved-version viewer; editor surfaces that shouldn't appear
