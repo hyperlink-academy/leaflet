@@ -49,6 +49,17 @@ export function useCollabText(entityID: string) {
 // ./schemaVersion): content from a newer schema is never applied to a doc an
 // editor binds to. The channel side of that gate lives in yjsRealtime; the
 // replicache side is here.
+// Every text doc with a debounced write still waiting to fire. Callers that
+// need the block/text facts to be current before they read them server-side
+// (saving a version) run these first, so a snapshot taken right after a
+// keystroke doesn't capture the pre-edit text.
+const pendingTextWrites = new Set<() => Promise<void>>();
+export async function flushPendingTextWrites() {
+  let pending = [...pendingTextWrites];
+  pendingTextWrites.clear();
+  await Promise.all(pending.map((write) => write()));
+}
+
 export function useYJSValue(entityID: string) {
   const [ydoc] = useState(() => new Y.Doc());
   const docStateFromReplicache = useEntity(entityID, "block/text");
@@ -114,6 +125,11 @@ export function useYJSValue(entityID: string) {
         },
       });
     };
+    const flushEarly = async () => {
+      if (timeout) clearTimeout(timeout);
+      timeout = null;
+      await updateReplicache();
+    };
     const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
       // Transactions with no origin come from replicache itself, and ones
       // originating from the realtime channel are persisted by the peer that
@@ -121,7 +137,10 @@ export function useYJSValue(entityID: string) {
       if (!transaction.origin) return;
       if (transaction.origin instanceof YjsRealtimeConnection) return;
       if (timeout) clearTimeout(timeout);
+      pendingTextWrites.add(flushEarly);
       timeout = window.setTimeout(async () => {
+        timeout = null;
+        pendingTextWrites.delete(flushEarly);
         updateReplicache();
       }, 300);
     };
@@ -129,6 +148,7 @@ export function useYJSValue(entityID: string) {
     yText.observeDeep(f);
     return () => {
       yText.unobserveDeep(f);
+      pendingTextWrites.delete(flushEarly);
     };
   }, [yText, entityID, rep, ydoc]);
   return { yText, awareness };

@@ -23,7 +23,10 @@ export function savedAccountLabel(entry: SavedAccountEntry) {
 // The signed-in accounts this browser can switch between: the current account
 // (highlighted, from live profile data) first, then the saved others, then an
 // add-account button.
-export const AccountList = (props: { onAddAccount: () => void }) => {
+export const AccountList = (props: {
+  onAddAccount: () => void;
+  redirectTo?: string;
+}) => {
   let { identity } = useIdentityData();
   let { data: entries } = useSavedAccounts();
 
@@ -37,9 +40,8 @@ export const AccountList = (props: { onAddAccount: () => void }) => {
     if (ok) {
       upsertSavedAccountEntry(entry);
       broadcastIdentityChange(entry.identity);
-      // Full navigation instead of mutating in place: Replicache, SWR caches,
-      // and realtime channels are all keyed to the previous identity.
-      window.location.href = "/home";
+
+      window.location.href = props.redirectTo ?? "/home";
       return;
     }
     removeSavedAccountEntry(entry.identity);

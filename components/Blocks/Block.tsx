@@ -620,9 +620,6 @@ const NonTextBlockOptions = (props: {
   );
 };
 
-// Disclosure triangle for folding a heading's section. Lives in the left gutter
-// (absolutely positioned in the wrapper padding) so it never shifts the heading
-// text, and only shows on hover unless the heading is currently folded.
 const HeadingFoldButton = (props: { entityID: string }) => {
   let { rep } = useReplicache();
   let folded = useIsFolded(props.entityID);
@@ -630,10 +627,10 @@ const HeadingFoldButton = (props: { entityID: string }) => {
     .value;
   let top =
     headingLevel === 1
-      ? "top-[20px]"
+      ? "top-[16px]"
       : headingLevel === 2
-        ? "top-[14px]"
-        : "top-[11px]";
+        ? "top-[11px]"
+        : "top-[8px]";
   return (
     <button
       className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-[3px] rounded-r-full text-bg-page  transition-opacity
