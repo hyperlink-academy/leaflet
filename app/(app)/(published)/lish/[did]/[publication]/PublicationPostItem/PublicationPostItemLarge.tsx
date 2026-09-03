@@ -27,11 +27,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
     <div
       className={`postLinkLarge relative flex flex-col w-full items-stretch ${widePage ? "sm:flex-row sm:max-h-[254px]" : ""} `}
     >
-<<<<<<< HEAD
-      <PostLink href={props.href} onClick={props.onClick} />
-=======
-      <PostLink href={props.href} title={props.title} />
->>>>>>> 0cabef6f8e75638c77970d21a45455350be367a4
+      <PostLink href={props.href} title={props.title} onClick={props.onClick} />
 
       {hasCoverImage && (
         <img

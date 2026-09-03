@@ -55,7 +55,6 @@ export function DiscussionContent(props: {
   const { isLoading, data, did, pages, documentContextValue, comments } =
     useDocumentDiscussionData(props.document_uri, props.open);
 
-<<<<<<< HEAD
   // Clicking a Bluesky post scopes down into its thread in place, exactly like
   // the post page's interaction drawer: a stack of thread views with Back /
   // back-to-root controls replacing the tabs. The context makes posts inside a
@@ -82,8 +81,6 @@ export function DiscussionContent(props: {
     topRef.current?.scrollIntoView({ block: "nearest" });
   }, [threadStack.length]);
 
-=======
->>>>>>> 0cabef6f8e75638c77970d21a45455350be367a4
   // Restrict mentions to the page this modal is about (mirrors InteractionDrawer).
   const quotesAndMentions = (data?.quotesAndMentions ?? []).filter((q) => {
     if (!q.link) return !props.pageId;
@@ -217,7 +214,6 @@ export function DiscussionContent(props: {
   );
 }
 
-<<<<<<< HEAD
 export function DiscussionModal(
   props: React.ComponentProps<typeof DiscussionContent> & {
     onOpenChange: (open: boolean) => void;
@@ -225,23 +221,6 @@ export function DiscussionModal(
 ) {
   const content = <DiscussionContent {...props} />;
 
-  // On mobile this renders in the slide-up sheet (like the interaction drawer)
-  // instead of a centered modal.
-  const isMobile = useIsMobile();
-  if (isMobile) {
-    return (
-      <MobileSheet
-        open={props.open}
-        onOpenChange={props.onOpenChange}
-        className="px-3! pt-0!"
-      >
-        {content}
-      </MobileSheet>
-    );
-  }
-
-=======
->>>>>>> 0cabef6f8e75638c77970d21a45455350be367a4
   return (
     <Modal
       sheetOnMobile
