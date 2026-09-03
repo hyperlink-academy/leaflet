@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 
@@ -12,6 +12,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { EmptyState } from "components/EmptyState";
 import { useToaster } from "components/Toast";
+import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
 import { useReplicache } from "src/replicache";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { timeAgo } from "src/utils/timeAgo";
@@ -30,7 +31,12 @@ export function VersionHistory() {
   let { permission_token, rep } = useReplicache();
   let [open, setOpen] = useState(false);
   let tokenId = permission_token.id;
-  let flush = () => rep?.push();
+  // Text blocks debounce their block/text write, so pending edits have to be
+  // run before the push or the snapshot captures the pre-edit text.
+  let flush = async () => {
+    await flushPendingTextWrites();
+    await rep?.push();
+  };
   let { data: access } = useSWR(`version-access-${tokenId}`, () =>
     getVersioningAccess(tokenId),
   );
@@ -98,10 +104,10 @@ export function VersionHistory() {
           <>
             <div className="flex flex-col gap-0.5">
               {versions.map((v) => (
-                <>
-                  <VersionRow key={v.id} version={v} tokenId={tokenId} />
+                <Fragment key={v.id}>
+                  <VersionRow version={v} tokenId={tokenId} />
                   <hr className="last:hidden" />
-                </>
+                </Fragment>
               ))}
             </div>
           </>
@@ -113,7 +119,7 @@ export function VersionHistory() {
 
 function SaveVersionForm(props: {
   tokenId: string;
-  flush: () => Promise<unknown> | undefined;
+  flush: () => Promise<unknown>;
   onSaved: () => void;
 }) {
   let [name, setName] = useState("");

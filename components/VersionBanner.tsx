@@ -10,6 +10,7 @@ import { Modal } from "components/Modal";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
+import { useIsMobile } from "src/hooks/isMobile";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { addDocToHome } from "src/utils/homeDocsStorage";
 import { restoreVersion, forkVersionAsNewLeaflet } from "actions/versions";
@@ -102,6 +103,7 @@ function VersionOptions({ version }: { version: SavedVersion }) {
   let toaster = useToaster();
   let { identity } = useIdentityData();
   let router = useRouter();
+  let isMobile = useIsMobile();
 
   let restore = async () => {
     if (busy) return;
@@ -131,7 +133,9 @@ function VersionOptions({ version }: { version: SavedVersion }) {
         globalMutate("leaflets");
       }
       setConfirming(null);
-      window.open(`/${res.value.token.id}`, "_blank");
+
+      if (isMobile) window.location.href = `/${res.value.token.id}`;
+      else window.open(`/${res.value.token.id}`, "_blank");
     } finally {
       setBusy(false);
     }

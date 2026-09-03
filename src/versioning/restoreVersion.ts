@@ -220,7 +220,12 @@ export async function restoreDocumentVersion(args: {
           let cur = currentById.get(sf.id);
           if (cur) {
             matchedCurrentIds.add(sf.id);
-            if (JSON.stringify(cur.data) === JSON.stringify(sf.data)) continue;
+
+            if (
+              cur.entity === sf.entity &&
+              JSON.stringify(cur.data) === JSON.stringify(sf.data)
+            )
+              continue;
           }
           await assertSnapshotFact(sf);
         }
