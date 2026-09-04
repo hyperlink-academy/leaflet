@@ -12,6 +12,7 @@ export const useReaderPostViewer = create<{
     opts?: { discussion?: boolean },
   ) => void;
   nextPost: () => void;
+  prevPost: () => void;
   closeViewer: () => void;
   setDiscussionOpen: (open: boolean) => void;
   setPreloadUrl: (url: string) => void;
@@ -32,6 +33,12 @@ export const useReaderPostViewer = create<{
       s.index === null || s.index >= s.queue.length - 1
         ? s
         : { index: s.index + 1, discussionOpen: false },
+    ),
+  prevPost: () =>
+    set((s) =>
+      s.index === null || s.index <= 0
+        ? s
+        : { index: s.index - 1, discussionOpen: false },
     ),
   closeViewer: () =>
     set({ queue: [], index: null, preloadUrl: null, discussionOpen: false }),

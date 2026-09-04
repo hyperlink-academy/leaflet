@@ -7,7 +7,7 @@ import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
 import { NewSmall } from "components/Icons/NewSmall";
 import { TrendingSmall } from "components/Icons/TrendingSmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
-import { ReaderContentArea } from "./ReaderContentArea";
+import { ReaderContentArea } from "./postViewer/ReaderContentArea";
 
 // Synchronous shell + suspended inner, same as the (identity) and
 // (home-pages) layouts above: a fresh mount of this segment (e.g. home →

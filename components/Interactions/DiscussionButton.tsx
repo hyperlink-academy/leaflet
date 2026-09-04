@@ -26,16 +26,11 @@ export function DiscussionButton(props: {
   onClick?: (e: React.MouseEvent) => void;
   onPrefetch?: () => void;
   showWhenEmpty?: boolean;
-  // Lets the caller track when the discussion is open — the reader feed uses
-  // this to keep the post listing highlighted while the modal is up.
   onOpenChange?: (open: boolean) => void;
+  className?: string;
 }) {
-  // Inside a published post body a DrawerThreadContext is in scope; there we open
-  // this post's discussion in the interaction drawer (like a Bluesky post's
-  // thread) instead of the standalone modal used in listings/feeds.
   const drawerNav = useContext(DrawerThreadContext);
   const [discussionsOpen, setDiscussionsOpen] = useState(false);
-
   const commentsAvailable =
     props.showComments && (props.showWhenEmpty || props.commentsCount > 0);
   const mentionsAvailable = props.showMentions && props.quotesCount > 0;
@@ -80,6 +75,7 @@ export function DiscussionButton(props: {
         onMouseEnter={props.onPrefetch}
         onTouchStart={props.onPrefetch}
         ariaLabel="Post discussions"
+        className={props.className}
       >
         {icon}
         {total > 0 ? ` ${total}` : null}
