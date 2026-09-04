@@ -35,7 +35,7 @@ export const LargeInteractionButton = (props: {
 }) => {
   return (
     <div
-      className={`largeInteractionButton relative flex gap-1 items-center text-accent-contrast py-1 pl-2 pr-3 rounded-full border border-accent-contrast shrink-0 hover:bg-accent-1 hover:text-accent-2 ${props.className}`}
+      className={`largeInteractionButton relative flex gap-1 items-center text-accent-contrast py-1 px-2 rounded-full border border-accent-contrast shrink-0 hover:bg-accent-1 hover:text-accent-2 ${props.className}`}
     >
       <button
         onClick={props.onClick}
