@@ -16,6 +16,9 @@ import { useEffect, useRef, useState } from "react";
 import { PostByline } from "./PostByline";
 import { namedBylineProfiles } from "src/utils/byline";
 import { useSelectedPostListing } from "src/useSelectedPostState";
+import { useReaderPostViewer } from "src/useReaderPostViewer";
+import { preload } from "swr";
+import { checkUrlFrameable } from "actions/checkUrlFrameable";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "src/utils/getPublicationURL";
@@ -26,7 +29,15 @@ import { InteractionShareButton } from "./Interactions/InteractionShareButton";
 import { PublicationPostItemLarge } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 
-export const PostListing = (props: Post & { selected?: boolean }) => {
+export const PostListing = (
+  props: Post & {
+    selected?: boolean;
+    onOpenInViewer?: () => void;
+    // Reader feeds: open discussions in the post viewer's in-box panel
+    // instead of the standalone DiscussionModal.
+    onOpenDiscussionsInViewer?: () => void;
+  },
+) => {
   let pubRecord = props.publication?.pubRecord as
     | NormalizedPublication
     | undefined;
@@ -90,6 +101,44 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
   // For standalone posts, link directly to the document
   let postUrl = getDocumentURL(postRecord, props.documents.uri, pubRecord);
 
+  // Modified clicks (new tab, etc.) fall through to the link instead of the
+  // reader's viewer.
+  let openInViewer = props.onOpenInViewer;
+  let onPostLinkClick = openInViewer
+    ? (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        openInViewer();
+      }
+    : undefined;
+
+  // Warm the viewer's hidden iframe (see useReaderPostViewer.preloadUrl) on
+  // hover intent or touch-down. The 150ms hover delay keeps a mouse transiting
+  // the feed from firing a page load per card; the delayed clear on touch-up
+  // outlives the tap's click, and clearing after the viewer opened is a no-op.
+  let setPreloadUrl = useReaderPostViewer((s) => s.setPreloadUrl);
+  let clearPreloadUrl = useReaderPostViewer((s) => s.clearPreloadUrl);
+  let hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  let startPreload = () => {
+    setPreloadUrl(postUrl);
+    if (!hasLeafletContent(postRecord))
+      preload(`frameable-${postUrl}`, () => checkUrlFrameable(postUrl));
+  };
+  let preloadHandlers = openInViewer
+    ? {
+        onMouseEnter: () => {
+          hoverTimer.current = setTimeout(startPreload, 150);
+        },
+        onMouseLeave: () => {
+          if (hoverTimer.current) clearTimeout(hoverTimer.current);
+          clearPreloadUrl(postUrl);
+        },
+        onTouchStart: startPreload,
+        onTouchEnd: () => setTimeout(() => clearPreloadUrl(postUrl), 300),
+        onTouchCancel: () => setTimeout(() => clearPreloadUrl(postUrl), 300),
+      }
+    : undefined;
+
   let coverImageSrc = postRecord.coverImage
     ? blobRefToSrc(postRecord.coverImage.ref, postUri.host, undefined, {
         width: COVER_THUMBNAIL_WIDTH.large,
@@ -113,7 +162,9 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
       />
     ) : undefined;
   let interactions = (
-    <div className="text-sm flex gap-4 items-center text-tertiary shrink-0">
+    // Above the card's full-bleed PostLink overlay (z-[1]) so these controls
+    // receive their clicks instead of the link/viewer.
+    <div className="relative z-[2] text-sm flex gap-4 items-center text-tertiary shrink-0">
       <Interactions
         postUrl={postUrl}
         quotesCount={quotes}
@@ -125,6 +176,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         documentUri={props.documents.uri}
         document={postRecord}
         publication={pubRecord}
+        openDiscussionsInViewer={props.onOpenDiscussionsInViewer}
       />
       <InteractionShareButton
         postRecord={postRecord}
@@ -137,7 +189,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
   );
 
   return (
-    <div className="postListing flex flex-col gap-1">
+    <div className="postListing flex flex-col gap-1" {...preloadHandlers}>
       <PublicationThemeWrapper postRecord={postRecord} pubRecord={pubRecord}>
         <div
           ref={elRef}
@@ -166,6 +218,7 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         >
           <PublicationPostItemLarge
             href={postUrl}
+            onClick={onPostLinkClick}
             membersOnly={postHasMembersDelimiter(postRecord)}
             publicationUri={props.publication?.uri}
             gatePolicy={getGatedPostPolicy(postRecord)}
@@ -201,7 +254,7 @@ const PubInfo = (props: {
     <div className="flex justify-between gap-4 w-full pb-1">
       <Link
         href={props.href}
-        className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
+        className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative z-[2] grow w-max shrink-0 min-w-0"
       >
         <PubIcon
           tiny
@@ -251,6 +304,7 @@ const Interactions = (props: {
   documentUri: string;
   document: NormalizedDocument;
   publication?: NormalizedPublication;
+  openDiscussionsInViewer?: () => void;
 }) => {
   let setSelectedPostListing = useSelectedPostListing(
     (s) => s.setSelectedPostListing,
@@ -273,6 +327,11 @@ const Interactions = (props: {
           showMentions={props.showMentions}
           postUrl={props.postUrl}
           title={props.document.title}
+          onClick={
+            props.openDiscussionsInViewer
+              ? () => props.openDiscussionsInViewer!()
+              : undefined
+          }
           onOpenChange={(open) => {
             // Keep the listing highlighted (read by the reader feed) while the
             // modal is up.

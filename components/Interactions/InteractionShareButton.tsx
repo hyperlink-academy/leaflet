@@ -40,9 +40,8 @@ export const InteractionShareButton = (props: {
   publication?: NormalizedPublication;
   pubUri: string | undefined;
   trigger?: React.ReactNode;
+  className?: string;
 }) => {
-  let { identity } = useIdentityData();
-
   let smoker = useSmoker();
   let [shareModalOpen, setShareModalOpen] = useState(false);
 
@@ -59,7 +58,7 @@ export const InteractionShareButton = (props: {
       <Menu
         trigger={
           <div
-            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold`}
+            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.className}`}
           >
             {props.trigger ? (
               props.trigger
@@ -159,7 +158,7 @@ export const BskyShareModal = (props: {
     // the post's card ships with it. If the prefetch failed,
     // preferUrlScreenshot has the server take its own screenshot instead.
     let prefetchedThumb = screenshot.promiseRef.current
-      ? ((await screenshot.promiseRef.current) ?? undefined)
+      ? (await screenshot.promiseRef.current) ?? undefined
       : undefined;
     // Runtime import keeps the prosemirror module graph out of the static
     // bundle; by submit time the composer chunk (same module) is loaded.
@@ -224,7 +223,7 @@ export const BskyShareModal = (props: {
     url: props.postUrl ?? "",
     title,
     description,
-    thumb: useScreenshot ? (screenshot.previewSrc ?? undefined) : coverThumb,
+    thumb: useScreenshot ? screenshot.previewSrc ?? undefined : coverThumb,
     thumbPending: useScreenshot && !screenshot.previewSrc,
     publishedAt,
     publication: props.publication,

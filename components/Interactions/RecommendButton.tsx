@@ -210,9 +210,7 @@ export function RecommendButton(props: {
   const { displayRecommended, count, recommendPost, loginOpen, setLoginOpen } =
     useRecommendPost(props.documentUri, props.recommendsCount);
   const [recommendsModalOpen, setRecommendsModalOpen] = useState(false);
-  // Inside a post body (or the post footer) a DrawerThreadContext is in scope;
-  // there the recommenders open in the interaction drawer, mirroring how the
-  // discussion count does. Elsewhere (listings, feeds) they open in a modal.
+
   const drawerNav = useContext(DrawerThreadContext);
 
   const ButtonWrapper = props.large
@@ -228,7 +226,12 @@ export function RecommendButton(props: {
         ariaLabel={displayRecommended ? "Remove recommend" : "Recommend"}
         className={props.className}
       >
-        {displayRecommended ? <FilledIcon /> : <EmptyIcon />}
+        {/* Small: the icon and the count are separate hover targets, so the
+            icon follows the recommend overlay rather than the whole row.
+            Large: the pill highlights as one. */}
+        <div className={props.large ? "" : "peer-hover:text-accent-contrast"}>
+          {displayRecommended ? <FilledIcon /> : <EmptyIcon />}
+        </div>
         {count > 0 ? (
           !props.recommendOnly ? (
             <button
