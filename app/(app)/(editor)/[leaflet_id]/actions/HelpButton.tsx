@@ -93,7 +93,8 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
                   name="Make List"
                   keys={[metaKey(), isMac() ? "Opt" : "Alt", "L"]}
                 />
-                {/* tab / shift + tab: indent / outdent */}
+                <KeyboardShortcut name="Indent Item" keys={["Tab"]} />
+                <KeyboardShortcut name="Outdent Item" keys={["Shift", "Tab"]} />
                 <KeyboardShortcut
                   name="Toggle Checkbox"
                   keys={[metaKey(), "Enter"]}
@@ -103,12 +104,24 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
                   keys={[metaKey(), "Shift", "Enter"]}
                 />
                 <KeyboardShortcut
+                  name="Toggle Fold (alt)"
+                  keys={[metaKey(), "Space"]}
+                />
+                <KeyboardShortcut
                   name="Fold All"
                   keys={[metaKey(), isMac() ? "Opt" : "Alt", "Shift", "↑"]}
                 />
                 <KeyboardShortcut
                   name="Unfold All"
                   keys={[metaKey(), isMac() ? "Opt" : "Alt", "Shift", "↓"]}
+                />
+                <KeyboardShortcut
+                  name="Zoom into Item"
+                  keys={[metaKey(), "Shift", ":"]}
+                />
+                <KeyboardShortcut
+                  name="Zoom Out"
+                  keys={[metaKey(), "Shift", "H"]}
                 />
               </div>
             </>
