@@ -8,13 +8,16 @@ export const InteractionButton = (props: {
 }) => {
   return (
     <div
-      className={`interactionButton relative flex gap-1 items-center hover:text-accent-contrast ${props.className}`}
+      className={`interactionButton relative flex gap-1 items-center ${props.className}`}
     >
+      {/* The overlay covers the row, so children can only be hovered on their
+          own when they sit above it (z-10); everything under it highlights off
+          `peer-hover` instead. Callers own those hover styles. */}
       <button
         onClick={props.onClick}
         onMouseEnter={props.onMouseEnter}
         onTouchStart={props.onTouchStart}
-        className="absolute inset-0 z-0"
+        className="peer absolute inset-0 z-0"
         aria-label={props.ariaLabel}
       />
       {props.children}
@@ -32,7 +35,7 @@ export const LargeInteractionButton = (props: {
 }) => {
   return (
     <div
-      className={`largeInteractionButton relative flex gap-1 items-center text-accent-contrast py-1 px-2 rounded-full border border-accent-contrast shrink-0 sm:hover:bg-accent-1 hover:text-accent-2 ${props.className}`}
+      className={`largeInteractionButton relative flex gap-1 items-center text-accent-contrast py-1 pl-2 pr-3 rounded-full border border-accent-contrast shrink-0 hover:bg-accent-1 hover:text-accent-2 ${props.className}`}
     >
       <button
         onClick={props.onClick}

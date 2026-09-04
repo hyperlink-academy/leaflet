@@ -147,7 +147,7 @@ const DialogModal = ({
           <div
             className={`
             opaque-container p-3
-            flex flex-col rounded-lg! min-h-0 overflow-y-scroll
+            flex flex-col rounded-lg! min-h-0 overflow-y-scroll mb-[30px]
             ${className}`}
           >
             {title ? (

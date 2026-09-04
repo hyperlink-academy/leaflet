@@ -65,7 +65,7 @@ export const PostViewer = () => {
   return (
     <div className="flex items-stretch h-full">
       <div
-        className={`readerPostViewer flex sm:flex-col-reverse flex-col w-full h-full sm:py-6 sm:pl-6 sm:gap-3 ${open ? "" : "absolute inset-0 invisible pointer-events-none"}`}
+        className={`readerPostViewer flex sm:flex-col-reverse flex-col w-full h-full sm:py-6 sm:pl-6 sm:gap-2 ${open ? "" : "absolute inset-0 invisible pointer-events-none"}`}
         aria-hidden={!open}
       >
         <div className="readerContent relative w-full grow min-h-0 overflow-hidden bg-bg-page sm:rounded-lg sm:border sm:border-border-light">
@@ -101,7 +101,7 @@ export const PostViewer = () => {
             />
           )}
         </div>
-        <div className="readerFooterWrapper relative sm:h-[24px] h-[69px] shrink-0 flex items-center">
+        <div className="readerFooterWrapper relative sm:h-[37px] h-[69px] shrink-0 flex items-center">
           <ReaderFooter post={post} postRecord={postRecord} postUrl={postUrl} />
         </div>
       </div>

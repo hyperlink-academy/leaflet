@@ -12,16 +12,16 @@ export const ReaderFooterDesktop = (props: ReaderFooterVariantProps) => {
     <div
       className={`
         desktopReaderFooter pointer-events-auto
-        absolute -bottom-px -left-0.5 -right-0.5 -top-1
-        flex gap-4 items-center
-        w-full px-1 pt-2`}
+        absolute top-0 inset-x-0
+      flex gap-4 items-center container border-none! rounded-lg!
+        w-full px-2 py-1`}
     >
       <ReaderFooterCloseButton {...props} />
       <ReaderFooterPostInfo
         {...props}
         className="transparent-container border-none! py-1 h-fit"
       />
-      <Separator />
+      <Separator classname="h-6!" />
       <ReaderFooterNav {...props} />
     </div>
   );

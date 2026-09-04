@@ -39,6 +39,10 @@ export function DiscussionContent(props: {
   showComments: boolean;
   showMentions: boolean;
   pageId?: string;
+  bgColor?: string;
+  // Replaces the header's link to the post, for surfaces that already have it
+  // on screen (the reader's post viewer) and need their own control instead.
+  postLinkButton?: React.ReactNode;
 }) {
   const commentsAvailable = props.showComments && props.commentsCount > 0;
   const mentionsAvailable = props.showMentions && props.quotesCount > 0;
@@ -47,7 +51,7 @@ export function DiscussionContent(props: {
   const [tab, setTab] = useState<"comments" | "quotes">(
     commentsAvailable ? "comments" : "quotes",
   );
-  // Reset to the most relevant tab each time the modal is opened.
+
   useEffect(() => {
     if (props.open) setTab(commentsAvailable ? "comments" : "quotes");
   }, [props.open]);
@@ -55,11 +59,6 @@ export function DiscussionContent(props: {
   const { isLoading, data, did, pages, documentContextValue, comments } =
     useDocumentDiscussionData(props.document_uri, props.open);
 
-  // Clicking a Bluesky post scopes down into its thread in place, exactly like
-  // the post page's interaction drawer: a stack of thread views with Back /
-  // back-to-root controls replacing the tabs. The context makes posts inside a
-  // pushed thread keep drilling deeper instead of falling back to openPage
-  // (which only the full post page renders).
   const [threadStack, setThreadStack] = useState<DrawerThread[]>([]);
   const drawerNav = useMemo(
     () => ({
@@ -74,14 +73,12 @@ export function DiscussionContent(props: {
     [],
   );
   const activeThread = threadStack[threadStack.length - 1];
-  // Navigating the stack starts each view scrolled to the top ("nearest" keeps
-  // ancestors beyond our scroll container untouched).
+
   const topRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     topRef.current?.scrollIntoView({ block: "nearest" });
   }, [threadStack.length]);
 
-  // Restrict mentions to the page this modal is about (mirrors InteractionDrawer).
   const quotesAndMentions = (data?.quotesAndMentions ?? []).filter((q) => {
     if (!q.link) return !props.pageId;
     const url = new URL(q.link);
@@ -94,20 +91,12 @@ export function DiscussionContent(props: {
   return (
     <>
       <div ref={topRef} />
-      {!activeThread && (
-        <div className="standardSitePostBlock block-border overflow-hidden w-full bg-bg-page my-3">
-          <StandardSitePostItem
-            pageWidth={448}
-            uri={props.document_uri}
-            size="small"
-            hideInteractions
-          />
-        </div>
-      )}
       {/* bg matches the surface it scrolls over: plain bg-page in the mobile
           sheet, the bg-light tint in the desktop modal (sm: aligns with the
           useIsMobile breakpoint). */}
-      <div className="discussionModalStickyHeader sticky top-0 z-10 bg-bg-page! sm:bg-[var(--color-bg-light)]! -mx-3">
+      <div
+        className={`discussionModalStickyHeader sticky top-0 z-10 bg-bg-page! ${props.bgColor ? props.bgColor : " sm:bg-[var(--color-bg-light)]!"} -mx-3`}
+      >
         <div className="flex items-center justify-between gap-3 pt-3 pb-2 px-3">
           {activeThread ? (
             <div className="flex items-center gap-2">
@@ -158,14 +147,16 @@ export function DiscussionContent(props: {
                 : `Bluesky Mentions (${props.quotesCount})`}
             </div>
           )}{" "}
-          <SpeedyLink
-            href={props.postUrl}
-            className="shrink-0 hover:no-underline!"
-          >
-            <ButtonPrimary className="text-sm py-[3px]! rounded-lg!">
-              Full Post <GoToArrow />
-            </ButtonPrimary>
-          </SpeedyLink>
+          {props.postLinkButton ?? (
+            <SpeedyLink
+              href={props.postUrl}
+              className="shrink-0 hover:no-underline!"
+            >
+              <ButtonPrimary className="text-sm py-[3px]! rounded-lg!">
+                <span className="sm:block hidden">Full </span>Post <GoToArrow />
+              </ButtonPrimary>
+            </SpeedyLink>
+          )}
         </div>
         <hr className="border-border-light" />
       </div>
@@ -219,8 +210,6 @@ export function DiscussionModal(
     onOpenChange: (open: boolean) => void;
   },
 ) {
-  const content = <DiscussionContent {...props} />;
-
   return (
     <Modal
       sheetOnMobile
@@ -229,7 +218,15 @@ export function DiscussionModal(
       className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]! h-[1000px]!"
       sheetClassName="px-3! pt-0!"
     >
-      {content}
+      <div className="standardSitePostBlock block-border overflow-hidden w-full bg-bg-page my-3">
+        <StandardSitePostItem
+          pageWidth={448}
+          uri={props.document_uri}
+          size="small"
+          hideInteractions
+        />
+      </div>
+      <DiscussionContent {...props} />
     </Modal>
   );
 }

@@ -29,7 +29,7 @@ export const ReaderFooterPostInfo = (
   let { post, postRecord, postUrl, pubRecord, interactions } = props;
   return (
     <div
-      className={`postInfo flex justify-between gap-3 items-center grow ${props.className ?? ""}`}
+      className={`postInfo min-w-0 flex justify-between gap-3 items-center grow ${props.className ?? ""}`}
     >
       <div className="flex gap-2 grow min-w-0 items-center">
         <PubIcon icon={props.pubIcon} pubName={pubRecord?.name} tiny />

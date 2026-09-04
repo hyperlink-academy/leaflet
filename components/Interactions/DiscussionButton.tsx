@@ -75,7 +75,7 @@ export function DiscussionButton(props: {
         onMouseEnter={props.onPrefetch}
         onTouchStart={props.onPrefetch}
         ariaLabel="Post discussions"
-        className={props.className}
+        className={`${props.large ? "" : "hover:text-accent-contrast"} ${props.className ?? ""}`}
       >
         {icon}
         {total > 0 ? ` ${total}` : null}
