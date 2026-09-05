@@ -18,7 +18,6 @@ import { getValidAuthToken } from "src/identityPayload";
 import { resolveAuthToken } from "src/auth";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
 import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
-import { after } from "next/server";
 import { trackActiveUser } from "src/activeUserAnalytics";
 
 export const preferredRegion = ["sfo1"];
@@ -54,17 +53,12 @@ export default async function LeafletPage(props: Props) {
 
   // Editing is tracked from pushes; a view-only visit is the "reader" signal.
   let canWrite = res.data.permission_token_rights.some((r) => r.write);
-  if (session && !canWrite) {
-    let identity = session.identity;
-    after(() =>
-      trackActiveUser({
-        identity,
-        role: "reader",
-        surface: "view_only",
-        entity: rootEntity,
-      }),
-    );
-  }
+  if (session && !canWrite)
+    trackActiveUser({
+      identity: session.identity,
+      role: "reader",
+      surface: "view_only",
+    });
 
   // Extract font settings from facts for server-side font loading
   const { headingFontId, bodyFontId } = extractFontsFromFacts(

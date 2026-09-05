@@ -17,7 +17,7 @@ export default function PublishedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ViewerIdentityProvider published>
+    <ViewerIdentityProvider>
       {children}
       <Suspense>
         <SubscriptionSuccessModal />

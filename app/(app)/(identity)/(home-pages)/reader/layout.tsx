@@ -7,7 +7,6 @@ import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
 import { NewSmall } from "components/Icons/NewSmall";
 import { TrendingSmall } from "components/Icons/TrendingSmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
-import { after } from "next/server";
 import { trackActiveUser } from "src/activeUserAnalytics";
 
 // Synchronous shell + suspended inner, same as the (identity) and
@@ -26,9 +25,7 @@ export default function ReaderLayout(props: { children: React.ReactNode }) {
 async function ReaderLayoutInner(props: { children: React.ReactNode }) {
   const identity = await getIdentityData();
   if (identity)
-    after(() =>
-      trackActiveUser({ identity, role: "reader", surface: "reader" }),
-    );
+    trackActiveUser({ identity, role: "reader", surface: "reader" });
   const tabs: { [name: string]: { href: string; icon: React.ReactNode } } = {};
   if (identity?.atp_did)
     tabs.Inbox = { href: "/reader", icon: <BlockMailboxSmall /> };

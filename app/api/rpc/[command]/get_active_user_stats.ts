@@ -23,15 +23,13 @@ export const get_active_user_stats = makeRoute({
       return { error: "unauthorized" as const };
     }
 
-    let [timeseries, day, week, month, recent] = await Promise.all([
+    let [timeseries, windows, recent] = await Promise.all([
       tinybird.activeUsersTimeseries.query({
         granularity,
         date_from: from,
         ...(to ? { date_to: to } : {}),
       }),
-      tinybird.activeUsersWindow.query({ window_days: 1 }),
-      tinybird.activeUsersWindow.query({ window_days: 7 }),
-      tinybird.activeUsersWindow.query({ window_days: 30 }),
+      tinybird.activeUsersWindows.query(),
       tinybird.activeUsersRecent.query({
         window_days: recent_window_days ?? 7,
         limit: 50,
@@ -46,9 +44,9 @@ export const get_active_user_stats = makeRoute({
       result: {
         timeseries: timeseries.data,
         windows: {
-          day: day.data[0] ?? null,
-          week: week.data[0] ?? null,
-          month: month.data[0] ?? null,
+          day: windows.data.find((w) => w.window_days === 1) ?? null,
+          week: windows.data.find((w) => w.window_days === 7) ?? null,
+          month: windows.data.find((w) => w.window_days === 30) ?? null,
         },
         recent: recent.data.map((r) => ({
           ...r,

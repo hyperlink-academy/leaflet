@@ -2,7 +2,6 @@
 
 import { supabaseServerClient } from "supabase/serverClient";
 import { cache } from "react";
-import { after } from "next/server";
 import { trackActiveUser } from "src/activeUserAnalytics";
 import { getProfiles } from "src/identity";
 import {
@@ -22,10 +21,7 @@ type Identity = Awaited<ReturnType<typeof getIdentityData>>;
 // without the dashboard-only embeds. Returns the exact Identity shape with the
 // omitted embeds empty so every consumer type-checks against either source;
 // the `Promise<Identity>` annotation is the drift guard.
-export const getViewerIdentity = cache(uncachedGetViewerIdentity);
-async function uncachedGetViewerIdentity(): Promise<Identity> {
-  return fetchViewerIdentity();
-}
+export const getViewerIdentity = cache(fetchViewerIdentity);
 
 // Published pages are cached, so this mount-time fetch is the one request
 // where a signed-in reader can be identified; it doubles as the "reader"
@@ -33,9 +29,7 @@ async function uncachedGetViewerIdentity(): Promise<Identity> {
 export async function getViewerIdentityOnPublishedPage(): Promise<Identity> {
   let identity = await fetchViewerIdentity();
   if (identity)
-    after(() =>
-      trackActiveUser({ identity, role: "reader", surface: "published" }),
-    );
+    trackActiveUser({ identity, role: "reader", surface: "published" });
   return identity;
 }
 

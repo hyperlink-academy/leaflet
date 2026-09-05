@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { tinybird } from "lib/tinybird";
 
 export type ActiveUserRole = "writer" | "reader";
@@ -8,26 +9,26 @@ export type ActiveUserSurface = "editor" | "published" | "view_only" | "reader";
 // Vercel analytics drain.
 export type ActiveUserIdentity = { id: string; atp_did?: string | null };
 
-// Deliberately unthrottled: dedupe happens in Tinybird (the active_users_daily
-// rollup), not here. Wrap calls in `after()` so ingestion never blocks or
-// fails the user-facing request.
-export async function trackActiveUser(event: {
+// Deliberately unthrottled: dedupe happens in Tinybird's endpoints, not here.
+// Ingestion runs in `after()` so it never blocks or fails the user-facing
+// request, which also means this must be called from a Next request context.
+export function trackActiveUser(event: {
   identity: ActiveUserIdentity;
   role: ActiveUserRole;
   surface: ActiveUserSurface;
-  entity?: string | null;
-}): Promise<void> {
+}) {
   if (!process.env.TINYBIRD_TOKEN) return;
-  try {
-    await tinybird.activeUserEvents.ingest({
-      timestamp: Date.now(),
-      identity_id: event.identity.id,
-      did: event.identity.atp_did ?? "",
-      role: event.role,
-      surface: event.surface,
-      entity: event.entity ?? "",
-    });
-  } catch (e) {
-    console.error("[trackActiveUser] ingest failed:", e);
-  }
+  after(async () => {
+    try {
+      await tinybird.activeUserEvents.ingest({
+        timestamp: Date.now(),
+        identity_id: event.identity.id,
+        did: event.identity.atp_did ?? "",
+        role: event.role,
+        surface: event.surface,
+      });
+    } catch (e) {
+      console.error("[trackActiveUser] ingest failed:", e);
+    }
+  });
 }

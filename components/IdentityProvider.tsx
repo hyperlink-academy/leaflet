@@ -1,9 +1,6 @@
 "use client";
 import { getIdentityData } from "actions/getIdentityData";
-import {
-  getViewerIdentity,
-  getViewerIdentityOnPublishedPage,
-} from "actions/viewerIdentity";
+import { getViewerIdentityOnPublishedPage } from "actions/viewerIdentity";
 import { getCurrentSessionToken } from "actions/savedAccounts";
 import {
   createContext,
@@ -90,7 +87,7 @@ export function IdentityContextProvider(props: {
 }) {
   const initialValue = props.identityPromise
     ? use(props.identityPromise)
-    : (props.initialValue ?? null);
+    : props.initialValue ?? null;
   let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
     fallbackData: initialValue,
     revalidateOnFocus: false,
@@ -218,12 +215,7 @@ export function ClientIdentityProvider(props: { children: React.ReactNode }) {
 // and crawlers never trigger the round-trip. Seeds from the dashboard's cache
 // entry when client-navigating over from a dashboard surface so known-logged-in
 // state never flashes logged-out.
-export function ViewerIdentityProvider(props: {
-  children: React.ReactNode;
-  // Set by the published layout so the identity fetch also records the viewer
-  // as an active reader; the editor layout's mount stays silent.
-  published?: boolean;
-}) {
+export function ViewerIdentityProvider(props: { children: React.ReactNode }) {
   const { cache } = useSWRConfig();
   // Read the dashboard cache every render, not once: on identity-gated routes
   // nested in the published group (pub dashboard/edit) the server-fed provider
@@ -237,10 +229,7 @@ export function ViewerIdentityProvider(props: {
     isValidating,
   } = useSWR<Identity>(
     VIEWER_IDENTITY_KEY,
-    () =>
-      props.published
-        ? getViewerIdentityOnPublishedPage()
-        : getViewerIdentity(),
+    () => getViewerIdentityOnPublishedPage(),
     {
       fallbackData: seed,
       revalidateOnFocus: false,
