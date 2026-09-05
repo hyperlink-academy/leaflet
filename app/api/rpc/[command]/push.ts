@@ -15,6 +15,8 @@ import type { Env } from "./route";
 import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { pool } from "supabase/pool";
+import { after } from "next/server";
+import { trackActiveUser } from "src/activeUserAnalytics";
 
 const mutationV0Schema = z.object({
   id: z.number(),
@@ -71,6 +73,8 @@ export const push = makeRoute({
     let authToken =
       cookieStore.get("auth_token")?.value ||
       cookieStore.get("external_auth_token")?.value;
+    let sessionDid: string | null = null;
+    let sessionIdentityId: string | null = null;
 
     let timeWaitingForLock: number;
     let timeWaitingForDbConnection: number;
@@ -120,14 +124,14 @@ export const push = makeRoute({
         // cookie doesn't error the transaction. No DID resolves for anonymous
         // or email-only sessions, in which case authenticated-fact writes are
         // dropped downstream.
-        let sessionDid: string | null = null;
         if (authToken && isUuid(authToken)) {
           let [row] = await tx
-            .select({ atp_did: identities.atp_did })
+            .select({ atp_did: identities.atp_did, id: identities.id })
             .from(email_auth_tokens)
             .leftJoin(identities, eq(email_auth_tokens.identity, identities.id))
             .where(eq(email_auth_tokens.id, authToken));
           sessionDid = row?.atp_did ?? null;
+          sessionIdentityId = row?.id ?? null;
         }
 
         let { getContext, flush } = cachedServerMutationContext(
@@ -209,6 +213,19 @@ export const push = makeRoute({
         event: "poke",
         payload: { message: "poke" },
       });
+
+      // A push that ran mutations is the "writer" signal for active-user stats.
+      if (mutationTimings.length > 0 && sessionIdentityId) {
+        let identity = { id: sessionIdentityId, atp_did: sessionDid };
+        after(() =>
+          trackActiveUser({
+            identity,
+            role: "writer",
+            surface: "editor",
+            entity: rootEntity,
+          }),
+        );
+      }
     } catch (e) {
       timeProcessingMutations = performance.now() - start;
       console.log(e);

@@ -27,6 +27,7 @@ import { get_publication_bsky_posts } from "./get_publication_bsky_posts";
 import { get_publication_subscribers_timeseries } from "./get_publication_subscribers_timeseries";
 import { get_user_mention_services } from "./get_user_mention_services";
 import { proxy_mention_search } from "./proxy_mention_search";
+import { get_active_user_stats } from "./get_active_user_stats";
 
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -63,6 +64,7 @@ let Routes = [
   get_publication_subscribers_timeseries,
   get_user_mention_services,
   proxy_mention_search,
+  get_active_user_stats,
 ];
 export async function POST(
   req: Request,

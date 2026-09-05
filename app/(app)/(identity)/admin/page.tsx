@@ -72,6 +72,12 @@ export default async function AdminPage() {
     <>
       <div className="w-full max-w-2xl mx-auto px-4 pt-8 -mb-8 flex justify-end gap-4">
         <Link
+          href="/admin/active-users"
+          className="text-sm text-accent-contrast hover:underline"
+        >
+          Active users →
+        </Link>
+        <Link
           href="/admin/import-ghost"
           className="text-sm text-accent-contrast hover:underline"
         >

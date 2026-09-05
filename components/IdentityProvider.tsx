@@ -1,6 +1,9 @@
 "use client";
 import { getIdentityData } from "actions/getIdentityData";
-import { getViewerIdentity } from "actions/viewerIdentity";
+import {
+  getViewerIdentity,
+  getViewerIdentityOnPublishedPage,
+} from "actions/viewerIdentity";
 import { getCurrentSessionToken } from "actions/savedAccounts";
 import {
   createContext,
@@ -215,7 +218,12 @@ export function ClientIdentityProvider(props: { children: React.ReactNode }) {
 // and crawlers never trigger the round-trip. Seeds from the dashboard's cache
 // entry when client-navigating over from a dashboard surface so known-logged-in
 // state never flashes logged-out.
-export function ViewerIdentityProvider(props: { children: React.ReactNode }) {
+export function ViewerIdentityProvider(props: {
+  children: React.ReactNode;
+  // Set by the published layout so the identity fetch also records the viewer
+  // as an active reader; the editor layout's mount stays silent.
+  published?: boolean;
+}) {
   const { cache } = useSWRConfig();
   // Read the dashboard cache every render, not once: on identity-gated routes
   // nested in the published group (pub dashboard/edit) the server-fed provider
@@ -227,13 +235,20 @@ export function ViewerIdentityProvider(props: { children: React.ReactNode }) {
     data: identity,
     mutate,
     isValidating,
-  } = useSWR<Identity>(VIEWER_IDENTITY_KEY, () => getViewerIdentity(), {
-    fallbackData: seed,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-    revalidateOnMount: false,
-  });
+  } = useSWR<Identity>(
+    VIEWER_IDENTITY_KEY,
+    () =>
+      props.published
+        ? getViewerIdentityOnPublishedPage()
+        : getViewerIdentity(),
+    {
+      fallbackData: seed,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      revalidateOnMount: false,
+    },
+  );
   // isValidating alone leaves a gap: it only flips once the fetcher below has
   // actually started, so the frame right after hydration would render as
   // logged-out for a viewer who has a session — the flash this flag exists to
