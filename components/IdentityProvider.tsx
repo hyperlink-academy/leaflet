@@ -1,6 +1,6 @@
 "use client";
 import { getIdentityData } from "actions/getIdentityData";
-import { getViewerIdentityOnPublishedPage } from "actions/viewerIdentity";
+import { getViewerIdentity } from "actions/viewerIdentity";
 import { getCurrentSessionToken } from "actions/savedAccounts";
 import {
   createContext,
@@ -87,7 +87,7 @@ export function IdentityContextProvider(props: {
 }) {
   const initialValue = props.identityPromise
     ? use(props.identityPromise)
-    : props.initialValue ?? null;
+    : (props.initialValue ?? null);
   let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
     fallbackData: initialValue,
     revalidateOnFocus: false,
@@ -227,17 +227,13 @@ export function ViewerIdentityProvider(props: { children: React.ReactNode }) {
     data: identity,
     mutate,
     isValidating,
-  } = useSWR<Identity>(
-    VIEWER_IDENTITY_KEY,
-    () => getViewerIdentityOnPublishedPage(),
-    {
-      fallbackData: seed,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      revalidateIfStale: false,
-      revalidateOnMount: false,
-    },
-  );
+  } = useSWR<Identity>(VIEWER_IDENTITY_KEY, () => getViewerIdentity(), {
+    fallbackData: seed,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+    revalidateOnMount: false,
+  });
   // isValidating alone leaves a gap: it only flips once the fetcher below has
   // actually started, so the frame right after hydration would render as
   // logged-out for a viewer who has a session — the flash this flag exists to

@@ -15,7 +15,7 @@ import type { Env } from "./route";
 import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { pool } from "supabase/pool";
-import { trackActiveUser } from "src/activeUserAnalytics";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 const mutationV0Schema = z.object({
   id: z.number(),
@@ -213,13 +213,8 @@ export const push = makeRoute({
         payload: { message: "poke" },
       });
 
-      // A push that ran mutations is the "writer" signal for active-user stats.
       if (mutationTimings.length > 0 && sessionIdentityId)
-        trackActiveUser({
-          identity: { id: sessionIdentityId, atp_did: sessionDid },
-          role: "writer",
-          surface: "editor",
-        });
+        trackUserEvent({ id: sessionIdentityId, atp_did: sessionDid }, "push");
     } catch (e) {
       timeProcessingMutations = performance.now() - start;
       console.log(e);

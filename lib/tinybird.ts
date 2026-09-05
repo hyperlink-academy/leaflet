@@ -121,31 +121,28 @@ export const subscriptionEvents = defineDatasource("subscription_events", {
 export type SubscriptionEventsRow = InferRow<typeof subscriptionEvents>;
 
 /**
- * Active-user events for signed-in sessions (see src/activeUserAnalytics.ts).
- *
- * Written unthrottled — every replicache push that ran mutations is a `writer`
- * row, every published-page identity fetch / view-only leaflet / reader-feed
- * load is a `reader` row — so the table is noisy and short-lived; the
- * endpoints below dedupe per (day, identity) at query time.
+ * Signed-in user events, ingested server-side (see src/activeUserAnalytics.ts).
+ * `event` names what happened; `properties` carries per-event context so new
+ * attributes don't need schema changes. Unthrottled, so the endpoints below
+ * dedupe per identity at query time.
  */
-export const activeUserEvents = defineDatasource("active_user_events", {
-  description: "Raw writer/reader activity events per signed-in identity",
+export const userEvents = defineDatasource("user_events", {
+  description: "Product events for signed-in identities",
   schema: {
     timestamp: t.uint64(),
     identity_id: t.string(),
     did: t.string().default(""),
-    role: t.string().lowCardinality(), // writer | reader
-    surface: t.string().lowCardinality(), // editor | published | view_only | reader
+    event: t.string().lowCardinality(), // page_view | push
+    properties: t.map(t.string(), t.string()),
   },
   engine: engine.mergeTree({
     sortingKey: ["timestamp", "identity_id"],
     partitionKey: "toYYYYMM(fromUnixTimestamp64Milli(timestamp))",
-    ttl: "toDateTime(intDiv(timestamp, 1000)) + INTERVAL 90 DAY",
   }),
   tokens: [{ token: PROD_TOKEN, scope: "APPEND" }],
 });
 
-export type ActiveUserEventsRow = InferRow<typeof activeUserEvents>;
+export type UserEventsRow = InferRow<typeof userEvents>;
 
 // ============================================================================
 // Endpoints
@@ -506,35 +503,14 @@ export type PublicationSubscribeSourcesOutput = InferOutputRow<
 // Active users
 // ============================================================================
 
-const ACTIVE_USER_DAY_SQL = "toDate(fromUnixTimestamp64Milli(timestamp))";
-
-// Per-identity role flags feed the same split in every endpoint below.
-const ACTIVE_USER_SPLIT_SQL = `
-  count() AS active,
-  countIf(is_writer AND is_reader) AS both_roles,
-  countIf(is_writer AND NOT is_reader) AS writers_only,
-  countIf(is_reader AND NOT is_writer) AS readers_only,
-  countIf(is_writer) AS writers,
-  countIf(is_reader) AS readers
-`;
-
-const ACTIVE_USER_SPLIT_OUTPUT = {
-  active: t.uint64(),
-  both_roles: t.uint64(),
-  writers_only: t.uint64(),
-  readers_only: t.uint64(),
-  writers: t.uint64(),
-  readers: t.uint64(),
-};
+const USER_EVENT_DAY_SQL = "toDate(fromUnixTimestamp64Milli(timestamp))";
 
 /**
- * active_users_timeseries – per calendar period (weeks start on Monday), how
- * many distinct identities were active and how they split into writers only,
- * readers only, and both.
+ * active_users_timeseries – distinct identities with any event per calendar
+ * period (weeks start on Monday).
  */
 export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
-  description:
-    "Active identities per day/week/month split by writer/reader role",
+  description: "Distinct active identities per day/week/month",
   tokens: [PROD_TOKEN_READ],
   params: {
     granularity: p.string().optional("day"), // day | week | month
@@ -543,39 +519,29 @@ export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
   },
   nodes: [
     node({
-      name: "per_identity",
+      name: "endpoint",
       sql: `
         SELECT
           multiIf(
-            {{String(granularity, 'day')}} = 'month', toStartOfMonth(${ACTIVE_USER_DAY_SQL}),
-            {{String(granularity, 'day')}} = 'week', toMonday(${ACTIVE_USER_DAY_SQL}),
-            ${ACTIVE_USER_DAY_SQL}
+            {{String(granularity, 'day')}} = 'month', toStartOfMonth(${USER_EVENT_DAY_SQL}),
+            {{String(granularity, 'day')}} = 'week', toMonday(${USER_EVENT_DAY_SQL}),
+            ${USER_EVENT_DAY_SQL}
           ) AS period,
-          identity_id,
-          max(role = 'writer') AS is_writer,
-          max(role = 'reader') AS is_reader
-        FROM active_user_events
+          uniqExact(identity_id) AS active
+        FROM user_events
         WHERE 1
           {% if defined(date_from) %}
-            AND ${ACTIVE_USER_DAY_SQL} >= toDate({{String(date_from)}})
+            AND ${USER_EVENT_DAY_SQL} >= toDate({{String(date_from)}})
           {% end %}
           {% if defined(date_to) %}
-            AND ${ACTIVE_USER_DAY_SQL} <= toDate({{String(date_to)}})
+            AND ${USER_EVENT_DAY_SQL} <= toDate({{String(date_to)}})
           {% end %}
-        GROUP BY period, identity_id
-      `,
-    }),
-    node({
-      name: "endpoint",
-      sql: `
-        SELECT period, ${ACTIVE_USER_SPLIT_SQL}
-        FROM per_identity
         GROUP BY period
         ORDER BY period ASC
       `,
     }),
   ],
-  output: { period: t.date(), ...ACTIVE_USER_SPLIT_OUTPUT },
+  output: { period: t.date(), active: t.uint64() },
 });
 
 export type ActiveUsersTimeseriesParams = InferParams<
@@ -586,96 +552,39 @@ export type ActiveUsersTimeseriesOutput = InferOutputRow<
 >;
 
 /**
- * active_users_windows – the same split over the last 1, 7 and 30 calendar
- * days (UTC, including today), one row per window.
+ * active_users_windows – distinct identities over the last 1, 7 and 30
+ * calendar days (UTC, including today), one row per window.
  */
 export const activeUsersWindows = defineEndpoint("active_users_windows", {
-  description: "Active identities over the last 1/7/30 calendar days",
+  description: "Distinct active identities over the last 1/7/30 calendar days",
   tokens: [PROD_TOKEN_READ],
   params: {},
   nodes: [
     node({
-      name: "per_identity",
-      sql: `
-        SELECT
-          window_days,
-          identity_id,
-          max(role = 'writer') AS is_writer,
-          max(role = 'reader') AS is_reader
-        FROM active_user_events
-        ARRAY JOIN [1, 7, 30] AS window_days
-        WHERE ${ACTIVE_USER_DAY_SQL} > today() - window_days
-        GROUP BY window_days, identity_id
-      `,
-    }),
-    node({
       name: "endpoint",
       sql: `
-        SELECT window_days, ${ACTIVE_USER_SPLIT_SQL}
-        FROM per_identity
+        SELECT window_days, uniqExact(identity_id) AS active
+        FROM user_events
+        ARRAY JOIN [1, 7, 30] AS window_days
+        WHERE ${USER_EVENT_DAY_SQL} > today() - window_days
         GROUP BY window_days
         ORDER BY window_days ASC
       `,
     }),
   ],
-  output: { window_days: t.uint8(), ...ACTIVE_USER_SPLIT_OUTPUT },
+  output: { window_days: t.uint8(), active: t.uint64() },
 });
 
 export type ActiveUsersWindowsOutput = InferOutputRow<
   typeof activeUsersWindows
 >;
 
-/**
- * active_users_recent – the most recently active identities, which roles they
- * held in the window, and on how many days.
- */
-export const activeUsersRecent = defineEndpoint("active_users_recent", {
-  description: "Most recently active identities with their roles",
-  tokens: [PROD_TOKEN_READ],
-  params: {
-    window_days: p.int32().optional(7),
-    limit: p.int32().optional(50),
-  },
-  nodes: [
-    node({
-      name: "endpoint",
-      sql: `
-        SELECT
-          identity_id,
-          anyLast(did) AS did,
-          max(timestamp) AS last_seen,
-          max(role = 'writer') AS is_writer,
-          max(role = 'reader') AS is_reader,
-          uniqExactIf(${ACTIVE_USER_DAY_SQL}, role = 'writer') AS writer_days,
-          uniqExactIf(${ACTIVE_USER_DAY_SQL}, role = 'reader') AS reader_days
-        FROM active_user_events
-        WHERE ${ACTIVE_USER_DAY_SQL} > today() - {{Int32(window_days, 7)}}
-        GROUP BY identity_id
-        ORDER BY last_seen DESC
-        LIMIT {{Int32(limit, 50)}}
-      `,
-    }),
-  ],
-  output: {
-    identity_id: t.string(),
-    did: t.string(),
-    last_seen: t.uint64(),
-    is_writer: t.uint8(),
-    is_reader: t.uint8(),
-    writer_days: t.uint64(),
-    reader_days: t.uint64(),
-  },
-});
-
-export type ActiveUsersRecentParams = InferParams<typeof activeUsersRecent>;
-export type ActiveUsersRecentOutput = InferOutputRow<typeof activeUsersRecent>;
-
 // ============================================================================
 // Client
 // ============================================================================
 
 export const tinybird = new Tinybird({
-  datasources: { analyticsEvents, subscriptionEvents, activeUserEvents },
+  datasources: { analyticsEvents, subscriptionEvents, userEvents },
   pipes: {
     publicationTraffic,
     publicationTopReferrers,
@@ -685,7 +594,6 @@ export const tinybird = new Tinybird({
     publicationSubscribeSources,
     activeUsersTimeseries,
     activeUsersWindows,
-    activeUsersRecent,
   },
   devMode: false,
 });
