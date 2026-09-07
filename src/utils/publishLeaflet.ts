@@ -70,14 +70,15 @@ export type PublishLeafletArgs = {
   entitiesToDelete?: string[];
   publishedAt?: string;
   postPreferences?: {
+    showInDiscover?: boolean;
     showComments?: boolean;
     showMentions?: boolean;
     showRecommends?: boolean;
   } | null;
   sendEmail?: boolean;
-  // Whether this post appears in Discover and aggregated feeds. Undefined leaves
-  // the record as-is; pass false (e.g. a "quiet" publish) to opt the document's
-  // own record out of those feeds.
+  // Whether this post appears in Discover and aggregated feeds. Undefined keeps
+  // what the draft or the already-published record says; pass false (e.g. a
+  // "quiet" publish) to opt the document's own record out of those feeds.
   showInDiscover?: boolean;
   // Record key for a first publish. Defaults to a fresh TID; an update always
   // keeps the existing document's rkey.
@@ -231,14 +232,28 @@ async function publish({
   }
 
   // Resolve preferences: explicit param > draft DB value
-  const basePreferences = postPreferences ?? draft?.preferences;
-  // When the caller opts the post out of Discover (e.g. a "quiet" publish), bake
-  // showInDiscover:false into the record itself (rather than a DB-only flag) so
-  // it survives the appview re-indexing the record from the firehose.
-  const preferences =
-    showInDiscover === false
-      ? { ...(basePreferences ?? {}), showInDiscover: false }
-      : basePreferences;
+  const { showInDiscover: draftShowInDiscover, ...basePreferences } =
+    (postPreferences ?? draft?.preferences ?? {}) as NonNullable<
+      PublishLeafletArgs["postPreferences"]
+    >;
+  // The Discover opt-out is baked into the record itself (rather than a DB-only
+  // flag) so it survives the appview re-indexing the record from the firehose.
+  // A caller that doesn't say (the editor's Update button) keeps the draft's
+  // choice, or failing that the published record's, so an update never
+  // silently re-lists a quietly published post.
+  const hideFromDiscover =
+    (showInDiscover ??
+      draftShowInDiscover ??
+      normalizedDoc?.preferences?.showInDiscover) === false;
+  // Records only carry the preferences the author set; the lexicon's defaults
+  // fill in the rest, so the generated type's required fields are cast away.
+  const preferences = (hideFromDiscover
+    ? { ...basePreferences, showInDiscover: false }
+    : Object.keys(basePreferences).length > 0
+      ? basePreferences
+      : undefined) as Partial<PubLeafletPublication.Preferences> as
+    | PubLeafletPublication.Preferences
+    | undefined;
 
   // Gather contributors from the draft so the published record records its
   // multi-contributor byline. Only relevant for publication documents, and only
@@ -434,6 +449,7 @@ async function publish({
         title: title,
         description: description,
         tags: resolvedTags ?? [],
+        preferences: (preferences ?? null) as Json,
       }),
     ]);
     linkError = results.find((r) => r.error)?.error ?? null;
@@ -445,6 +461,7 @@ async function publish({
         title: title || "",
         description: description || "",
         tags: resolvedTags ?? [],
+        preferences: (preferences ?? null) as Json,
       })
     ).error;
   }

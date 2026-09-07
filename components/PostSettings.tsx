@@ -9,22 +9,36 @@ import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 
 type PostPreferences = {
+  showInDiscover?: boolean;
   showComments?: boolean;
   showMentions?: boolean;
   showRecommends?: boolean;
 };
 
 export function PostSettings() {
-  let { data: pub, normalizedPublication } = useLeafletPublicationData();
+  let {
+    data: pub,
+    normalizedPublication,
+    normalizedDocument,
+  } = useLeafletPublicationData();
   let { rep } = useReplicache();
 
   let postPreferences = useSubscribe(rep, (tx) =>
     tx.get<PostPreferences | null>("post_preferences"),
   );
 
-  if (!pub || !pub.publications) return null;
+  if (!pub) return null;
+  // Before the first publish the publish page owns the Discover choice, and a
+  // standalone doc has nothing else to configure here.
+  let showDiscoverToggle = !!pub.doc;
+  if (!pub.publications && !showDiscoverToggle) return null;
 
   let pubPrefs = normalizedPublication?.preferences;
+
+  let showInDiscover =
+    postPreferences?.showInDiscover ??
+    normalizedDocument?.preferences?.showInDiscover ??
+    true;
 
   let showComments =
     postPreferences?.showComments ?? pubPrefs?.showComments ?? true;
@@ -33,10 +47,7 @@ export function PostSettings() {
   let showRecommends =
     postPreferences?.showRecommends ?? pubPrefs?.showRecommends ?? true;
 
-  const updatePreference = (
-    field: keyof PostPreferences,
-    value: boolean,
-  ) => {
+  const updatePreference = (field: keyof PostPreferences, value: boolean) => {
     let current: PostPreferences = postPreferences || {};
     rep?.mutate.updatePublicationDraft({
       preferences: { ...current, [field]: value },
@@ -49,46 +60,63 @@ export function PostSettings() {
       side="right"
       align="start"
       className="max-w-xs w-[1000px]"
-      trigger={
-        <ActionButton
-          icon={<SettingsSmall />}
-          label="Settings"
-        />
-      }
+      trigger={<ActionButton icon={<SettingsSmall />} label="Settings" />}
     >
       <div className="text-primary flex flex-col">
         <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1">
           This Post Settings
         </div>
         <div className="flex flex-col gap-2">
-          <Toggle
-            toggle={showComments}
-            onToggle={() => updatePreference("showComments", !showComments)}
-          >
-            <div className="font-bold">Show Comments</div>
-          </Toggle>
-          <Toggle
-            toggle={showMentions}
-            onToggle={() => updatePreference("showMentions", !showMentions)}
-          >
-            <div className="flex flex-col justify-start">
-              <div className="font-bold">Show Mentions</div>
-              <div className="text-tertiary text-sm leading-tight">
-                Display a list of Bluesky mentions about your post
+          {showDiscoverToggle && (
+            <Toggle
+              toggle={showInDiscover}
+              onToggle={() =>
+                updatePreference("showInDiscover", !showInDiscover)
+              }
+            >
+              <div className="flex flex-col justify-start">
+                <div className="font-bold">Show in Discover</div>
+                <div className="text-tertiary text-sm leading-tight">
+                  List this post in Leaflet&apos;s Discover feed and other
+                  standard.site reader feeds
+                </div>
               </div>
-            </div>
-          </Toggle>
-          <Toggle
-            toggle={showRecommends}
-            onToggle={() => updatePreference("showRecommends", !showRecommends)}
-          >
-            <div className="flex flex-col justify-start">
-              <div className="font-bold">Show Recommends</div>
-              <div className="text-tertiary text-sm leading-tight">
-                Allow readers to recommend/like your post
-              </div>
-            </div>
-          </Toggle>
+            </Toggle>
+          )}
+          {pub.publications && (
+            <>
+              <Toggle
+                toggle={showComments}
+                onToggle={() => updatePreference("showComments", !showComments)}
+              >
+                <div className="font-bold">Show Comments</div>
+              </Toggle>
+              <Toggle
+                toggle={showMentions}
+                onToggle={() => updatePreference("showMentions", !showMentions)}
+              >
+                <div className="flex flex-col justify-start">
+                  <div className="font-bold">Show Mentions</div>
+                  <div className="text-tertiary text-sm leading-tight">
+                    Display a list of Bluesky mentions about your post
+                  </div>
+                </div>
+              </Toggle>
+              <Toggle
+                toggle={showRecommends}
+                onToggle={() =>
+                  updatePreference("showRecommends", !showRecommends)
+                }
+              >
+                <div className="flex flex-col justify-start">
+                  <div className="font-bold">Show Recommends</div>
+                  <div className="text-tertiary text-sm leading-tight">
+                    Allow readers to recommend/like your post
+                  </div>
+                </div>
+              </Toggle>
+            </>
+          )}
         </div>
       </div>
     </Popover>

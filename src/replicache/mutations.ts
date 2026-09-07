@@ -901,6 +901,7 @@ const updatePublicationDraft: Mutation<{
   tags?: string[];
   localPublishedAt?: string | null;
   preferences?: {
+    showInDiscover?: boolean;
     showComments?: boolean;
     showMentions?: boolean;
     showRecommends?: boolean;
@@ -912,6 +913,7 @@ const updatePublicationDraft: Mutation<{
       title?: string;
       tags?: string[];
       preferences?: {
+        showInDiscover?: boolean;
         showComments?: boolean;
         showMentions?: boolean;
         showRecommends?: boolean;
