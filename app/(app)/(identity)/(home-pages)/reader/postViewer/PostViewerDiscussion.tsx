@@ -26,8 +26,8 @@ export const PostViewerDiscussion = (props: {
       postRecord={props.postRecord}
       pubRecord={props.post.publication?.pubRecord}
     >
-      <div className="absolute inset-0 overflow-y-auto overscroll-contain px-3 bg-bg-page sm:bg-bg-page">
-        <div className="max-w-lg mx-auto pb-24">
+      <div className="absolute inset-0 overflow-y-auto overscroll-contain px-3  bg-bg-page sm:bg-bg-page">
+        <div className="max-w-full sm:px-6  mx-auto pb-24">
           <DiscussionContent
             open
             bgColor="bg-bg-page"
@@ -40,13 +40,15 @@ export const PostViewerDiscussion = (props: {
             showMentions={showMentions}
             postLinkButton={
               <ButtonPrimary
-                className="text-sm h-[29px]! p-0! rounded-lg!"
+                className="text-sm!"
+                compact
                 aria-label="Back to post"
                 onClick={() => setDiscussionOpen(false)}
               >
-                <CloseTiny className="m-1.5 " />
+                Back to Post
               </ButtonPrimary>
             }
+            headerClassName="sm:pt-3"
           />
         </div>
       </div>

@@ -43,6 +43,7 @@ export function DiscussionContent(props: {
   // Replaces the header's link to the post, for surfaces that already have it
   // on screen (the reader's post viewer) and need their own control instead.
   postLinkButton?: React.ReactNode;
+  headerClassName?: string;
 }) {
   const commentsAvailable = props.showComments && props.commentsCount > 0;
   const mentionsAvailable = props.showMentions && props.quotesCount > 0;
@@ -91,11 +92,8 @@ export function DiscussionContent(props: {
   return (
     <>
       <div ref={topRef} />
-      {/* bg matches the surface it scrolls over: plain bg-page in the mobile
-          sheet, the bg-light tint in the desktop modal (sm: aligns with the
-          useIsMobile breakpoint). */}
       <div
-        className={`discussionModalStickyHeader sticky top-0 z-10 bg-bg-page! ${props.bgColor ? props.bgColor : " sm:bg-[var(--color-bg-light)]!"} -mx-3`}
+        className={`discussionModalStickyHeader sticky top-0 z-10 bg-bg-page! ${props.bgColor ? props.bgColor : " sm:bg-[var(--color-bg-light)]!"} -mx-3 ${props.headerClassName}`}
       >
         <div className="flex items-center justify-between gap-3 pt-3 pb-2 px-3">
           {activeThread ? (
