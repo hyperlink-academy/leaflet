@@ -2,7 +2,6 @@
 import { buildOauthLoginUrl } from "src/utils/customDomain";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Popover } from "components/Popover";
-import Link from "next/link";
 import { useState } from "react";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { subscribeToPublication } from "actions/publications/subscribeToPublication";
@@ -12,17 +11,13 @@ import { DotLoader } from "components/utils/DotLoader";
 import type { OAuthSessionError } from "src/atproto-oauth";
 import { HandleSearchInput } from "components/HandleSearchInput";
 import { Avatar } from "components/Avatar";
-import {
-  useIdentityData,
-  refreshIdentityData,
-} from "components/IdentityProvider";
+import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { LinkIdentityModal } from "./LinkIdentityModal";
+import { markLocallySubscribed } from "./viewerSubscription";
 import { RSSTiny } from "components/Icons/RSSTiny";
 import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
-import { RecommendedPublications } from "./RecommendedPublications";
-import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 import type { SubscriptionSource } from "src/subscriptionSource";
 const apps = [
   { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
@@ -65,7 +60,6 @@ export const SubscribeWithHandle = (props: {
   publicationUri: string;
   publicationUrl?: string;
   source?: SubscriptionSource;
-  onSubscribed?: () => void;
   onAtSuccess?: () => void;
   leading?: React.ReactNode;
   user: {
@@ -154,11 +148,7 @@ export const SubscribeWithHandle = (props: {
           type: "success",
         });
       }
-      props.onSubscribed?.();
-      // onSubscribed only flips this instance's local state; the subscription
-      // now on the identity is what every other SubscribeButton on the page
-      // reads, and on a published page nothing else will refetch it.
-      refreshIdentityData();
+      markLocallySubscribed(props.publicationUri, "atproto");
       setSubscribing(false);
     };
     let subscribeButton = (
@@ -349,44 +339,6 @@ export const LinkHandle = (props: { compact?: boolean }) => {
           }
         />
       </div>
-    </div>
-  );
-};
-
-export const AtSubscribeSuccess = (props: { publicationUri?: string }) => {
-  let { loading, publicationName, listings } = useSubscribeSuccessData(
-    props.publicationUri,
-  );
-  if (loading)
-    return (
-      <div className="flex justify-center items-center py-8 text-secondary w-full max-w-full sm:min-w-md">
-        <DotLoader />
-      </div>
-    );
-  return (
-    <div className="flex flex-col text-center justify-center p-4 text-secondary w-full max-w-full sm:w-auto sm:min-w-md sm:max-w-2xl">
-      <h2 className="text-primary pb-1">
-        {publicationName
-          ? `You've subscribed to ${publicationName}!`
-          : "You've Subscribed!"}
-      </h2>
-      You'll receive new posts in the <br />
-      <Link href={"https://leaflet.pub/reader"}>Leaflet Reader</Link>
-      <br />
-      <span className="text-tertiary text-sm">
-        or any standard.site enabled reader!
-      </span>
-      <hr className="my-4 border-border-light" />
-      <div className="flex flex-col">
-        <h4>Other ways to follow</h4>
-        <Link href="">Get the RSS Feed</Link>
-        <Link href="">Pin Custom Feed in Bluesky</Link>
-      </div>
-      <RecommendedPublications
-        publicationName={publicationName}
-        recommendingPublicationUri={props.publicationUri}
-        listings={listings}
-      />
     </div>
   );
 };

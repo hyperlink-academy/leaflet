@@ -9,20 +9,18 @@ import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { requestPublicationEmailSubscription } from "actions/publications/subscribeEmail";
 import { subscribeToPublication } from "actions/publications/subscribeToPublication";
-import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
+import { actionErrorContent } from "components/OAuthError";
 import { SUBSCRIBE_ERROR_MESSAGES } from "./subscribeErrors";
 import { onMouseDown as iosOnPointerDown } from "src/utils/iosInputMouseDown";
 import { theme } from "tailwind.config";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { Avatar } from "components/Avatar";
-import {
-  refreshIdentityData,
-  useIdentityData,
-} from "components/IdentityProvider";
+import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
 import { INPUT_HIGHLIGHT_CLASS } from "./inputHighlight";
+import { markLocallySubscribed } from "./viewerSubscription";
 import type { SubscriptionSource } from "src/subscriptionSource";
 
 export const EmailInput = (props: {
@@ -120,7 +118,6 @@ export const EmailButton = (props: {
   email: string;
   handle?: string;
   compact?: boolean;
-  onSubscribed?: () => void;
   // The dropdown can also subscribe via the linked atproto handle, so the
   // caller needs the mode to open the matching success modal. Falls back to a
   // toast when omitted.
@@ -166,10 +163,9 @@ export const EmailButton = (props: {
     if (!res.success) {
       toaster({
         type: "error",
-        content: isOAuthSessionError(res.error) ? (
-          <OAuthErrorMessage error={res.error} />
-        ) : (
-          "We couldn't subscribe you. Try again."
+        content: actionErrorContent(
+          res.error,
+          "We couldn't subscribe you. Try again.",
         ),
       });
       return false;
@@ -186,8 +182,7 @@ export const EmailButton = (props: {
     if (!ok) return;
     if (props.onSuccess) props.onSuccess(mode);
     else toaster({ content: <div>You're Subscribed!</div>, type: "success" });
-    props.onSubscribed?.();
-    refreshIdentityData();
+    markLocallySubscribed(props.publicationUri, mode);
     router.refresh();
   };
 

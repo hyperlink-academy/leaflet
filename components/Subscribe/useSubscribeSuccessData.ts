@@ -5,8 +5,8 @@ import { callRPC } from "app/api/rpc/client";
 import { getPublicationsByUris } from "actions/reader/getSubscriptions";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 
-// Everything the post-subscribe success modals need about the publication: its
-// name for the heading, and its recommendations hydrated into listings.
+// Everything the post-subscribe success modals need about the publication: the
+// publication itself, and its recommendations hydrated into listings.
 // `loading` covers all fetches so the modal can gate on a single flag.
 export function useSubscribeSuccessData(publicationUri: string | undefined) {
   let { data: publication, isLoading: publicationLoading } =
@@ -38,7 +38,7 @@ export function useSubscribeSuccessData(publicationUri: string | undefined) {
 
   return {
     loading: publicationLoading || recommendationsLoading || listingsLoading,
-    publicationName: publication?.record.name,
+    publication: publication ?? undefined,
     listings: listings ?? [],
   };
 }

@@ -1,19 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SubscribeWithHandle, AtSubscribeSuccess } from "./HandleSubscribe";
+import { SubscribeWithHandle } from "./HandleSubscribe";
 import { EmailInput, EmailButton, EmailConfirm } from "./EmailSubscribe";
-import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
+import { AtSubscribeSuccess, EmailSubscribeSuccess } from "./SubscribeSuccess";
 import { LinkIdentityModal } from "./LinkIdentityModal";
 import { SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES } from "./subscribeErrors";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
 import { useToaster } from "components/Toast";
-import {
-  refreshIdentityData,
-  useIdentityData,
-} from "components/IdentityProvider";
+import { useIdentityData } from "components/IdentityProvider";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { Menu, MenuItem, RadioMenuGroup, RadioMenuItem } from "components/Menu";
@@ -26,7 +23,10 @@ import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActi
 import { mainSiteAuthBase } from "src/utils/customDomain";
 import type { SubscriptionSource } from "src/subscriptionSource";
 
-import { useViewerSubscription } from "./viewerSubscription";
+import {
+  markLocallySubscribed,
+  useViewerSubscription,
+} from "./viewerSubscription";
 import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
@@ -94,7 +94,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let toaster = useToaster();
   let router = useRouter();
   const user = useViewerSubscription(props.publicationUri);
-  const { identity, mutate: mutateIdentity } = useIdentityData();
+  const { identity } = useIdentityData();
   let [email, setEmail] = useState(user.email ?? "");
   // On a published page identity resolves after first paint, so the initial
   // value above is always the logged-out one. Without this the email field
@@ -117,7 +117,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
   // merge from any existing email-only identity) instead of creating a
   // disconnected email-only account.
   let [linkToCurrent, setLinkToCurrent] = useState(false);
-  let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [linkModalOpen, setLinkModalOpen] = useState(false);
   let [subscribeMode, setSubscribeMode] = useState<SubscribeMode>("email");
   const membershipTiers = useMembershipTiers(props.publicationUri);
@@ -148,13 +147,12 @@ export const SubscribeInput = (props: SubscribeProps) => {
     }
     if (res.value.confirmed) {
       setConfirmState("success");
-      refreshIdentityData();
+      markLocallySubscribed(props.publicationUri, "email");
       router.refresh();
     }
     setConfirmOpen(true);
   };
 
-  const isSubscribed = user.subscribed || locallySubscribed;
   const modeMenu = (
     <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
@@ -190,14 +188,16 @@ export const SubscribeInput = (props: SubscribeProps) => {
   );
   return (
     <>
-      {isSubscribed ? (
+      {user.subscribed ? (
         <>
-          <ManageSubscription
-            publicationUri={props.publicationUri}
-            publicationUrl={props.publicationUrl}
-            newsletterMode={props.newsletterMode}
-            user={user}
-          />
+          <div className="flex justify-center">
+            <ManageSubscription
+              publicationUri={props.publicationUri}
+              publicationUrl={props.publicationUrl}
+              newsletterMode={props.newsletterMode}
+              user={user}
+            />
+          </div>
 
           {props.newsletterMode &&
           user.atprotoSubscribed &&
@@ -249,7 +249,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
               source={props.source}
               email={user.email}
               handle={user.handle}
-              onSubscribed={() => setLocallySubscribed(true)}
               onSuccess={(mode) => {
                 if (mode === "email") {
                   setConfirmState("success");
@@ -276,7 +275,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           source={props.source}
-          onSubscribed={() => setLocallySubscribed(true)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
       )}
@@ -300,11 +298,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
         open={atSuccessOpen}
         onOpenChange={(open) => {
           setAtSuccessOpen(open);
-          if (!open) {
-            setLocallySubscribed(true);
-            mutateIdentity();
-            router.refresh();
-          }
+          if (!open) router.refresh();
         }}
       >
         <AtSubscribeSuccess publicationUri={props.publicationUri} />
@@ -315,7 +309,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
           onOpenChange={(open) => {
             setConfirmOpen(open);
             if (!open) {
-              if (confirmState === "success") setLocallySubscribed(true);
               setConfirmState("confirm");
               setLinkToCurrent(false);
             }
@@ -352,7 +345,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   return;
                 }
                 setConfirmState("success");
-                refreshIdentityData();
+                markLocallySubscribed(props.publicationUri, "email");
                 router.refresh();
               }}
             />
@@ -365,7 +358,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
 
 export const SubscribeButton = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
-  let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [atSuccessOpen, setAtSuccessOpen] = useState(false);
   let [emailSuccessOpen, setEmailSuccessOpen] = useState(false);
   const membershipTiers = useMembershipTiers(props.publicationUri);
@@ -384,7 +376,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
 
   return (
     <>
-      {user.subscribed || locallySubscribed ? (
+      {user.subscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
@@ -398,7 +390,6 @@ export const SubscribeButton = (props: SubscribeProps) => {
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           source={props.source}
-          onSubscribed={() => setLocallySubscribed(true)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
       ) : props.newsletterMode && user.loggedIn && user.email ? (
@@ -409,7 +400,6 @@ export const SubscribeButton = (props: SubscribeProps) => {
           source={props.source}
           email={user.email}
           handle={user.handle}
-          onSubscribed={() => setLocallySubscribed(true)}
           onSuccess={(mode) => {
             if (mode === "email") setEmailSuccessOpen(true);
             else setAtSuccessOpen(true);

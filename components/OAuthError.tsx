@@ -42,6 +42,16 @@ export function OAuthErrorMessage({
   );
 }
 
+// Toast body for a failed action: the sign-in prompt when the atproto session
+// has expired, otherwise the caller's generic message.
+export function actionErrorContent(error: unknown, fallback: string) {
+  return isOAuthSessionError(error) ? (
+    <OAuthErrorMessage error={error} />
+  ) : (
+    fallback
+  );
+}
+
 export function isOAuthSessionError(
   error: unknown,
 ): error is OAuthSessionError {
