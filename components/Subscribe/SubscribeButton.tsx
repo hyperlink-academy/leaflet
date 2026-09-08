@@ -365,7 +365,13 @@ export const SubscribeInput = (props: SubscribeProps) => {
 
 export const SubscribeButton = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
-  let [locallySubscribed, setLocallySubscribed] = useState(false);
+  // The reader keeps one button mounted while the post — and so the
+  // publication — changes underneath it, so the optimistic subscribed state has
+  // to name the publication it was set for or it carries over to the next post.
+  let [locallySubscribedUri, setLocallySubscribedUri] = useState<string | null>(
+    null,
+  );
+  let locallySubscribed = locallySubscribedUri === props.publicationUri;
   let [atSuccessOpen, setAtSuccessOpen] = useState(false);
   let [emailSuccessOpen, setEmailSuccessOpen] = useState(false);
   const membershipTiers = useMembershipTiers(props.publicationUri);
@@ -398,7 +404,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           source={props.source}
-          onSubscribed={() => setLocallySubscribed(true)}
+          onSubscribed={() => setLocallySubscribedUri(props.publicationUri)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
       ) : props.newsletterMode && user.loggedIn && user.email ? (
@@ -409,7 +415,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
           source={props.source}
           email={user.email}
           handle={user.handle}
-          onSubscribed={() => setLocallySubscribed(true)}
+          onSubscribed={() => setLocallySubscribedUri(props.publicationUri)}
           onSuccess={(mode) => {
             if (mode === "email") setEmailSuccessOpen(true);
             else setAtSuccessOpen(true);

@@ -27,23 +27,19 @@ export const ReaderFooterPostInfo = (
   > & { className?: string },
 ) => {
   let { post, postRecord, postUrl, pubRecord, interactions } = props;
+
+  if (!post || !post.publication || !pubRecord) return;
   return (
     <div
-      className={`postInfo min-w-0 flex justify-between gap-3 items-center grow ${props.className ?? ""}`}
+      className={`postInfo min-w-0 flex flex-row sm:justify-end justify-between gap-4 items-center grow ${props.className ?? ""}`}
     >
-      <div className="flex gap-2 grow min-w-0 items-center">
-        <PubIcon icon={props.pubIcon} pubName={pubRecord?.name} tiny />
-        <div className="text-tertiary text-sm min-w-0 truncate">
-          {postRecord?.title}
-        </div>
-      </div>
-      <div className="postInteractions flex gap-2 items-center">
-        {post && postRecord && postUrl && interactions ? (
+      <div className="postInteractions flex sm:gap-2 items-center">
+        {postRecord && postUrl && interactions ? (
           <>
             <RecommendButton
               documentUri={post.documents.uri}
               recommendsCount={interactions.recommendsCount}
-              className="text-sm text-tertiary"
+              className="text-sm text-tertiary sm:pr-0 pr-2"
             />
             <DiscussionButton
               documentUri={post.documents.uri}
@@ -54,7 +50,7 @@ export const ReaderFooterPostInfo = (
               postUrl={postUrl}
               title={postRecord.title}
               onClick={() => props.setDiscussionOpen(!props.discussionOpen)}
-              className="text-sm text-tertiary"
+              className="text-sm text-tertiary px-2 sm:px-0"
             />
             <InteractionShareButton
               postRecord={postRecord}
@@ -62,7 +58,7 @@ export const ReaderFooterPostInfo = (
               documentUri={post.documents.uri}
               publication={pubRecord}
               pubUri={post.publication?.uri}
-              className="text-tertiary"
+              className="text-tertiary sm:pl-0 pl-2"
             />
           </>
         ) : (
@@ -73,18 +69,13 @@ export const ReaderFooterPostInfo = (
           </div>
         )}
       </div>
-      {/*{post?.publication && pubRecord && (
-        <>
-          <Separator classname="h-5!" />
-          <SubscribeButton
-            publicationUri={post.publication.uri}
-            publicationUrl={pubRecord.url}
-            publicationName={pubRecord.name || ""}
-            publicationDescription={pubRecord.description}
-            newsletterMode={props.newsletterMode}
-          />
-        </>
-      )}*/}
+      <SubscribeButton
+        publicationUri={post.publication.uri}
+        publicationUrl={pubRecord.url}
+        publicationName={pubRecord.name || ""}
+        publicationDescription={pubRecord.description}
+        newsletterMode={props.newsletterMode}
+      />
     </div>
   );
 };

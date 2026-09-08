@@ -199,7 +199,9 @@ export const EmailButton = (props: {
       className={`text-sm grow shrink! min-w-0 flex gap-2 items-center ${hasModeMenu ? "gap-1! rounded-r-none! hover:outline-transparent! focus:outline-transparent!" : ""} `}
     >
       {loading ? (
-        <DotLoader />
+        // DotLoader's default fixed height is taller than the label's line
+        // box, which grows the button while subscribing.
+        <DotLoader className="h-auto!" />
       ) : (
         <>
           <EmailTiny className="shrink-0" />

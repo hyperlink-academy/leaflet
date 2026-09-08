@@ -13,15 +13,19 @@ export const ReaderFooterMobile = (props: ReaderFooterVariantProps) => {
     <div
       className={`
         mobileReaderFooter pointer-events-auto
-        absolute -bottom-px -top-1 -left-px -right-px
+        absolute -bottom-px -left-px -right-px
         flex flex-col gap-2
-        w-[calc(100vw+2px)] px-1 pt-1 pwa-bottom-padding
+        w-[calc(100vw+2px)] h-fit
+        px-1 pt-1 pwa-bottom-padding
         rounded-t-lg
         border border-border-light
         bg-bg-page`}
     >
-      <ReaderFooterPostInfo {...props} className="light-container px-1 py-0" />
-      <div className="readerOptions flex gap-6 justify-between px-1 pb-2">
+      <ReaderFooterPostInfo
+        {...props}
+        className="light-container px-1 py-0.5"
+      />
+      <div className="readerOptions flex gap-6 justify-between px-1 pb-4">
         <ReaderFooterCloseButton {...props} />
         <ReaderFooterNav {...props} />
       </div>
