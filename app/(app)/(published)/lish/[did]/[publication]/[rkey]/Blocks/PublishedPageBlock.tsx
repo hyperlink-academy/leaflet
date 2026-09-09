@@ -6,7 +6,7 @@ import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { PostContent, Block } from "../PostContent";
 import {
   PubLeafletBlocksHeader,
-  PubLeafletBlocksText,
+  PubLeafletBlocksPage,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletPublication,
@@ -19,6 +19,13 @@ import { openPage, useOpenPages } from "../postPageState";
 import { openInteractionDrawer } from "../Interactions/Interactions";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { CanvasBackgroundPattern } from "components/Canvas";
+import { CompactPageLink } from "components/Blocks/CompactPageLink";
+import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
+import {
+  pageRecordTextBlocks,
+  type PageRecordTextBlock,
+} from "src/utils/pageRecordTextBlocks";
+import { normalizePageLinkDisplay } from "src/utils/pageLinkDisplay";
 
 export function PublishedPageLinkBlock(props: {
   blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
@@ -32,16 +39,17 @@ export function PublishedPageLinkBlock(props: {
   standardSitePostData: StandardSitePostData[];
   isCanvas?: boolean;
   pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  display?: PubLeafletBlocksPage.Main["display"];
 }) {
   let openPages = useOpenPages();
   let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
   // The overlay anchor below needs real anchor text; mirror DocLinkBlock's
   // title derivation (first text-ish block of the page).
-  let titleBlock = (props.blocks as { block: unknown }[])
-    .map((b) => b.block)
-    .find(
-      (b) => PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
-    ) as PubLeafletBlocksText.Main | PubLeafletBlocksHeader.Main | undefined;
+  let [titleBlock] = pageRecordTextBlocks(props.blocks, {
+    isCanvas: props.isCanvas,
+    limit: 1,
+  });
+  let compact = normalizePageLinkDisplay(props.display) === "compact";
   return (
     <div
       className={`w-full cursor-pointer
@@ -79,7 +87,13 @@ export function PublishedPageLinkBlock(props: {
       >
         <span className="sr-only">{titleBlock?.plaintext || "Open page"}</span>
       </a>
-      {props.isCanvas ? (
+      {compact ? (
+        <CompactLinkBlock
+          titleBlock={titleBlock}
+          pageId={props.pageId}
+          parentPageId={props.parentPageId}
+        />
+      ) : props.isCanvas ? (
         <CanvasLinkBlock
           blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
           did={props.did}
@@ -97,6 +111,38 @@ export function PublishedPageLinkBlock(props: {
     </div>
   );
 }
+function CompactLinkBlock(props: {
+  titleBlock: PageRecordTextBlock | undefined;
+  pageId: string;
+  parentPageId?: string;
+}) {
+  let { titleBlock } = props;
+  return (
+    <CompactPageLink
+      isHeading={PubLeafletBlocksHeader.isMain(titleBlock)}
+      title={
+        titleBlock && (
+          <div className="whitespace-pre-wrap">
+            <TextBlock
+              facets={titleBlock.facets}
+              plaintext={titleBlock.plaintext}
+              index={[]}
+              preview
+            />
+          </div>
+        )
+      }
+      trailing={
+        <Interactions
+          pageId={props.pageId}
+          parentPageId={props.parentPageId}
+          inline
+        />
+      }
+    />
+  );
+}
+
 function DocLinkBlock(props: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId: string;
@@ -107,11 +153,9 @@ function DocLinkBlock(props: {
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
-  let [title, description, thirdLine] = props.blocks
-    .map((b) => b.block)
-    .filter(
-      (b) => PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
-    );
+  let [title, description, thirdLine] = pageRecordTextBlocks(props.blocks, {
+    limit: 3,
+  });
 
   return (
     <div
@@ -220,7 +264,11 @@ function PagePreview(props: {
   );
 }
 
-const Interactions = (props: { pageId: string; parentPageId?: string }) => {
+const Interactions = (props: {
+  pageId: string;
+  parentPageId?: string;
+  inline?: boolean;
+}) => {
   const {
     uri: document_uri,
     commentsCountByPage,
@@ -233,7 +281,7 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
 
   return (
     <div
-      className={`flex gap-2 text-tertiary text-sm absolute bottom-2 bg-bg-page`}
+      className={`flex gap-2 text-tertiary text-sm ${props.inline ? "relative shrink-0" : "absolute bottom-2 bg-bg-page"}`}
     >
       <button
         className={`flex gap-1 items-center`}
@@ -293,13 +341,8 @@ const CanvasLinkBlock = (props: {
           <div className="w-full h-full pointer-events-none">
             <CanvasBackgroundPattern pattern="grid" />
           </div>
-          {props.blocks
-            .sort((a, b) => {
-              if (a.y === b.y) {
-                return a.x - b.x;
-              }
-              return a.y - b.y;
-            })
+          {[...props.blocks]
+            .sort(canvasBlockOrder)
             .map((canvasBlock, index) => {
               let { x, y, width, rotation } = canvasBlock;
               let transform = `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`;

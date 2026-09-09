@@ -37,6 +37,9 @@ import {
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { matchBlock, type BlockHandlers } from "src/utils/blockDispatch";
+import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
+import { normalizePageLinkDisplay } from "src/utils/pageLinkDisplay";
+import { pageRecordTextBlocks } from "src/utils/pageRecordTextBlocks";
 import { atUriToUrl, didToBlueskyUrl } from "src/utils/mentionUtils";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { emailPropsFromPublication } from "./fromPublication";
@@ -70,9 +73,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 export type PostEmailPage = {
   id: string;
   type: "doc" | "canvas";
-  blocks:
-    | PubLeafletPagesLinearDocument.Block[]
-    | PubLeafletPagesCanvas.Block[];
+  blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
 };
 
 type PostEmailProps = {
@@ -1469,6 +1470,7 @@ const BlockRenderer = ({
       return (
         <PageLinkEmailBlock
           page={page}
+          compact={normalizePageLinkDisplay(block.display) === "compact"}
           href={pageUrl(postUrl, block.id)}
           did={did}
           theme={theme}
@@ -1822,6 +1824,7 @@ const CANVAS_WIDTH = 1272;
 // (Gmail, Outlook) still get a thumbnail — only the 4° tilt is lost there.
 const PageLinkEmailBlock = ({
   page,
+  compact,
   href,
   did,
   theme,
@@ -1829,6 +1832,7 @@ const PageLinkEmailBlock = ({
   assetsBaseUrl,
 }: {
   page: PostEmailPage;
+  compact?: boolean;
   href: string;
   did: string;
   theme: EmailTheme;
@@ -1841,17 +1845,77 @@ const PageLinkEmailBlock = ({
     display: "block",
     textDecoration: "none",
   };
+  const cardStyle: CSSProperties = {
+    backgroundColor: theme.pageBackground,
+    border: `1px solid ${colors.borderLight}`,
+    borderRadius: 8,
+    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+    overflow: "hidden",
+    width: "100%",
+  };
+  if (compact)
+    return (
+      <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+        <div style={cardStyle}>
+          <Row style={{ minWidth: "100%" }}>
+            <Column
+              style={{ verticalAlign: "middle", wordBreak: "break-word" }}
+            >
+              <Link
+                href={href}
+                style={{ ...cellLinkStyle, padding: "8px 0 8px 12px" }}
+              >
+                <DocLinkLines
+                  blocks={page.blocks}
+                  isCanvas={isCanvas}
+                  limit={1}
+                  fallback={
+                    <span
+                      style={{
+                        color: colors.tertiary,
+                        display: "block",
+                        fontFamily: theme.bodyFont,
+                        fontSize: 14,
+                        fontStyle: "italic",
+                        lineHeight: "20px",
+                      }}
+                    >
+                      Untitled
+                    </span>
+                  }
+                  theme={theme}
+                  assetsBaseUrl={assetsBaseUrl}
+                />
+              </Link>
+            </Column>
+            <Column style={{ verticalAlign: "middle", width: 16 + 8 + 8 }}>
+              <Link
+                href={href}
+                style={{ ...cellLinkStyle, padding: "8px 8px 8px 8px" }}
+              >
+                <Img
+                  width={16}
+                  height={16}
+                  src={makeEmailIconUrl(
+                    assetsBaseUrl,
+                    "arrowRight",
+                    colors.tertiary,
+                  )}
+                  alt="Open page"
+                  style={{ display: "block" }}
+                />
+              </Link>
+            </Column>
+          </Row>
+        </div>
+      </Section>
+    );
   return (
     <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
       <div
         style={{
-          backgroundColor: theme.pageBackground,
-          border: `1px solid ${colors.borderLight}`,
-          borderRadius: 8,
-          boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+          ...cardStyle,
           height: isCanvas ? PAGE_LINK_CANVAS_HEIGHT : PAGE_LINK_DOC_HEIGHT,
-          overflow: "hidden",
-          width: "100%",
         }}
       >
         {isCanvas ? (
@@ -1924,20 +1988,21 @@ const stripLinkFeatures = (facets?: PubLeafletRichtextFacet.Main[]) =>
 
 const DocLinkLines = ({
   blocks,
+  isCanvas,
+  limit = PAGE_LINK_PREVIEW_LINES,
+  fallback,
   theme,
   assetsBaseUrl,
 }: {
-  blocks: PubLeafletPagesLinearDocument.Block[];
+  blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
+  isCanvas?: boolean;
+  limit?: number;
+  fallback?: React.ReactNode;
   theme: EmailTheme;
   assetsBaseUrl: string;
 }) => {
-  const lines = blocks
-    .map((b): unknown => b.block)
-    .filter(
-      (b): b is PubLeafletBlocksText.Main | PubLeafletBlocksHeader.Main =>
-        PubLeafletBlocksText.isMain(b) || PubLeafletBlocksHeader.isMain(b),
-    )
-    .slice(0, PAGE_LINK_PREVIEW_LINES);
+  const lines = pageRecordTextBlocks(blocks, { isCanvas, limit });
+  if (lines.length === 0) return fallback ?? null;
   return (
     <>
       {lines.map((line, i) => (
@@ -2031,9 +2096,7 @@ const CanvasThumbnail = ({
 }) => {
   const cardWidth = theme.pageWidth - CARD_HORIZONTAL_PADDING;
   const scale = (cardWidth - 36) / CANVAS_WIDTH;
-  const sorted = [...blocks].sort((a, b) =>
-    a.y === b.y ? a.x - b.x : a.y - b.y,
-  );
+  const sorted = [...blocks].sort(canvasBlockOrder);
   return (
     <div
       style={{
@@ -2185,8 +2248,7 @@ const MiniBlock = ({
         }}
       />
     ),
-    "pub.leaflet.blocks.website": (b) =>
-      text(b.title || b.src, { bold: true }),
+    "pub.leaflet.blocks.website": (b) => text(b.title || b.src, { bold: true }),
     "pub.leaflet.blocks.button": (b) => (
       <div
         style={{

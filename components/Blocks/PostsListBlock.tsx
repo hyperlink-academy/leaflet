@@ -22,6 +22,7 @@ import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
+import { BlockSettingOptions } from "./BlockSettingOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { EmptyState } from "components/EmptyState";
 import { ShortcutKey } from "components/Layout";
@@ -237,46 +238,22 @@ function PostsListSettingsButton(props: { entityID: string }) {
           <div>
             <h3>List Layout</h3>
           </div>
-          <div className="relative flex flex-row sm:gap-1 gap-2 w-full items-stretch">
-            {(
-              [
-                { value: "small", Icon: SmallIcon },
-                { value: "medium", Icon: MedIcon },
-                { value: "chapter", Icon: ChapterIcon },
-              ] as {
-                value: PostsListView;
-                Icon: (props: { selected: boolean }) => React.ReactNode;
-              }[]
-            ).map((option) => {
-              let selected = view === option.value;
-              return (
-                <button
-                  className={`PostBlockSizeSettingOption text-left flex flex-col flex-1 pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
-                  key={option.value}
-                  type="button"
-                  aria-pressed={selected}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    if (!rep) return;
-                    rep.mutate.assertFact({
-                      entity: props.entityID,
-                      attribute: "posts-list/view",
-                      data: {
-                        type: "posts-list-view-union",
-                        value: option.value,
-                      },
-                    });
-                  }}
-                >
-                  <div className="text-xs font-bold text-secondary uppercase pb-1">
-                    {option.value}
-                  </div>
-                  <div className="flex items-center grow w-full ">
-                    <option.Icon selected={selected} />
-                  </div>
-                </button>
-              );
-            })}
+          <BlockSettingOptions<PostsListView>
+            options={[
+              { value: "small", Icon: SmallIcon },
+              { value: "medium", Icon: MedIcon },
+              { value: "chapter", Icon: ChapterIcon },
+            ]}
+            value={view}
+            onSelect={(value) => {
+              if (!rep) return;
+              rep.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "posts-list/view",
+                data: { type: "posts-list-view-union", value },
+              });
+            }}
+          >
             {/* A sibling of the layout options rather than a child: the chapter
                 option is itself a button, and the row's last column is the
                 chapter icon, so its bottom right corner is this row's. */}
@@ -291,7 +268,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
                 <HelpSmall className="scale-75" />
               </button>
             )}
-          </div>
+          </BlockSettingOptions>
         </div>
         {view === "chapter" && chapterHelpOpen && (
           <div className="light-container p-2 text-tertiary text-sm leading-snug flex flex-col gap-1.5">

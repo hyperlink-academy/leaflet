@@ -282,6 +282,7 @@ export let Block = ({
           isCanvas={isCanvas}
           pages={pages}
           className={className}
+          display={block.display}
         />
       );
     },

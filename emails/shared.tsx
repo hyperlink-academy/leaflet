@@ -143,7 +143,7 @@ export const makeStaticUrl = (assetsBaseUrl: string) => {
 // SVG support across new Outlook + Outlook.com in late 2025.
 export const makeEmailIconUrl = (
   assetsBaseUrl: string,
-  name: "quote" | "comment" | "bluesky",
+  name: "quote" | "comment" | "bluesky" | "arrowRight",
   color: string,
   size = 16,
 ): string => {

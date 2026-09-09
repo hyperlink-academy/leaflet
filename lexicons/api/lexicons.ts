@@ -1687,6 +1687,10 @@ export const schemaDict = {
           id: {
             type: 'string',
           },
+          display: {
+            type: 'string',
+            knownValues: ['full', 'compact'],
+          },
         },
       },
     },

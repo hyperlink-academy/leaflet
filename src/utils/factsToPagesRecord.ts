@@ -2,6 +2,7 @@ import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { BlobRef } from "@atproto/lexicon";
+import { DEFAULT_PAGE_LINK_DISPLAY } from "src/utils/pageLinkDisplay";
 
 import {
   PubLeafletBlocksBlockquote,
@@ -231,10 +232,13 @@ export async function processBlocksToPages(opts: {
         });
       }
 
+      const [display] = scan.eav(b.entityID, "page-link/display");
       const block: $Typed<PubLeafletBlocksPage.Main> = {
         $type: "pub.leaflet.blocks.page",
         id: page.data.value,
       };
+      if (display && display.data.value !== DEFAULT_PAGE_LINK_DISPLAY)
+        block.display = display.data.value;
       return block;
     },
     "bluesky-post": async (b) => {

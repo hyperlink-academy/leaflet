@@ -12,6 +12,7 @@ import {
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { SmallIcon, MedIcon, LargeIcon } from "../PostSizeIcons";
+import { BlockSettingOptions } from "../BlockSettingOptions";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
 
 export const StandardSitePostBlock = (
@@ -110,50 +111,22 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
         <div>
           <h4>Post Size</h4>
         </div>
-        <div className="flex sm:flex-row flex-col sm:gap-1 gap-2 w-full items-stretch">
-          {(
-            [
-              { value: "small", Icon: SmallIcon },
-              { value: "medium", Icon: MedIcon },
-              { value: "large", Icon: LargeIcon },
-            ] as {
-              value: StandardSitePostSize;
-              Icon: (props: { selected: boolean }) => React.ReactNode;
-            }[]
-          ).map((option) => {
-            let selected =
-              size === option.value ||
-              (option.value === "medium" &&
-                size !== "small" &&
-                size !== "large");
-            return (
-              <button
-                className={`PostBlockSizeSettingOption text-left flex flex-col flex-1 pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
-                key={option.value}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => {
-                  if (!rep) return;
-                  rep.mutate.assertFact({
-                    entity: props.entityID,
-                    attribute: "standard-site-post/size",
-                    data: {
-                      type: "standard-site-post-size-union",
-                      value: option.value,
-                    },
-                  });
-                }}
-              >
-                <div className="text-xs font-bold text-secondary uppercase">
-                  {option.value}
-                </div>
-                <div className="flex items-center grow w-full ">
-                  <option.Icon selected={selected} />
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <BlockSettingOptions<StandardSitePostSize>
+          options={[
+            { value: "small", Icon: SmallIcon },
+            { value: "medium", Icon: MedIcon },
+            { value: "large", Icon: LargeIcon },
+          ]}
+          value={size === "small" || size === "large" ? size : "medium"}
+          onSelect={(value) => {
+            if (!rep) return;
+            rep.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "standard-site-post/size",
+              data: { type: "standard-site-post-size-union", value },
+            });
+          }}
+        />
         <hr className="border-border-light my-1" />
         <Toggle
           toggle={showPubTheme}

@@ -330,6 +330,7 @@ describe("Leaflet copy → paste round trip", () => {
     // The child reference has to point at the *new* child id, not the copied one.
     expect(factValue("card/block")).not.toBe("old-card-child");
     expect(newIDs).toContain(factValue("card/block"));
+    expect(factValue("page-link/display")).toBe("compact");
   });
 });
 

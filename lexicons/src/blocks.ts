@@ -29,6 +29,7 @@ export const PubLeafletBlocksPage: LexiconDoc = {
       required: ["id"],
       properties: {
         id: { type: "string" },
+        display: { type: "string", knownValues: ["full", "compact"] },
       },
     },
   },
