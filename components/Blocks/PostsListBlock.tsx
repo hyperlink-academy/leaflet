@@ -11,12 +11,15 @@ import { ChapterShelf } from "app/(app)/(published)/lish/[did]/[publication]/Pub
 import { buildChapterCards } from "src/utils/chapterGrouping";
 import {
   POSTS_LIST_PAGE_SIZE,
+  buildPostsListIndex,
   postsListFilterKey,
+  resolveReaderControls,
   sortPostsForList,
   filterPostsByTags,
   type LoadPostsBatch,
   type PostsListView,
 } from "src/utils/postsListPagination";
+import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
@@ -56,12 +59,37 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   );
 };
 
+function usePostsListReaderFlags(entityID: string) {
+  let readerControls = useEntity(entityID, "posts-list/reader-controls");
+  let readerSearch = useEntity(entityID, "posts-list/reader-search");
+  let readerTagFilter = useEntity(entityID, "posts-list/reader-tag-filter");
+  let readerSort = useEntity(entityID, "posts-list/reader-sort");
+  return {
+    readerControls: readerControls?.data.value,
+    readerSearch: readerSearch?.data.value,
+    readerTagFilter: readerTagFilter?.data.value,
+    readerSort: readerSort?.data.value,
+  };
+}
+
 function PostsListBlockContent({ entityID }: { entityID: string }) {
   let { data } = usePublicationData();
   let publicationRecord = useNormalizedPublicationRecord();
 
   let viewFact = useEntity(entityID, "posts-list/view");
   let view: PostsListView = viewFact?.data.value ?? "medium";
+
+  let readerFlags = usePostsListReaderFlags(entityID);
+  let readerControls = useMemo(
+    () => (view === "chapter" ? undefined : resolveReaderControls(readerFlags)),
+    [
+      view,
+      readerFlags.readerControls,
+      readerFlags.readerSearch,
+      readerFlags.readerTagFilter,
+      readerFlags.readerSort,
+    ],
+  );
 
   let highlightFirstFact = useEntity(
     entityID,
@@ -108,9 +136,12 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         view === "chapter" && data.publication
           ? buildChapterCards(ordered, data.publication)
           : undefined,
+      readerIndex: readerControls
+        ? buildPostsListIndex(ordered, (p) => getFirstParagraph(p.record))
+        : undefined,
       loadBatch,
     };
-  }, [data?.documents, data?.publication, filterTags, view]);
+  }, [data?.documents, data?.publication, filterTags, view, readerControls]);
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
@@ -149,6 +180,8 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
       view={view}
       highlightFirstPost={highlightFirst}
       limit={limit}
+      readerControls={readerControls}
+      readerIndex={listData.readerIndex}
       disableLinks
     />
   );
@@ -195,11 +228,30 @@ function PostsListSettingsButton(props: { entityID: string }) {
   let limitFact = useEntity(props.entityID, "posts-list/limit");
   let limit = limitFact?.data.value;
 
+  let readerFlags = usePostsListReaderFlags(props.entityID);
+  let readerControlsEnabled = !!readerFlags.readerControls;
+
   let [filterByTagEnabled, setFilterByTagEnabled] = useState(
     () => selectedTags.length > 0,
   );
   let [limitEnabled, setLimitEnabled] = useState(() => !!limit && limit > 0);
   let [chapterHelpOpen, setChapterHelpOpen] = useState(false);
+
+  let setReaderFlag = (
+    attribute:
+      | "posts-list/reader-controls"
+      | "posts-list/reader-search"
+      | "posts-list/reader-tag-filter"
+      | "posts-list/reader-sort",
+    value: boolean,
+  ) => {
+    if (!rep) return;
+    return rep.mutate.assertFact({
+      entity: props.entityID,
+      attribute,
+      data: { type: "boolean", value },
+    });
+  };
 
   let setLimit = (value: number) => {
     if (!rep) return;
@@ -432,6 +484,63 @@ function PostsListSettingsButton(props: { entityID: string }) {
               </div>
             ) : null}
           </div>
+
+          {view !== "chapter" && (
+            <div className="readerControls flex flex-col gap-1">
+              <Toggle
+                toggle={readerControlsEnabled}
+                onToggle={() =>
+                  undoManager.withUndoGroup(async () => {
+                    if (readerControlsEnabled) {
+                      await setReaderFlag("posts-list/reader-controls", false);
+                    } else {
+                      // Turning the feature on should show all three rather
+                      // than an empty control row.
+                      await setReaderFlag("posts-list/reader-controls", true);
+                      await setReaderFlag("posts-list/reader-search", true);
+                      await setReaderFlag("posts-list/reader-tag-filter", true);
+                      await setReaderFlag("posts-list/reader-sort", true);
+                    }
+                  })
+                }
+              >
+                <strong>Enable Reader Controls</strong>
+              </Toggle>
+              {readerControlsEnabled && (
+                <div className="flex flex-col gap-1 ml-8">
+                  {(
+                    [
+                      {
+                        label: "Search",
+                        attribute: "posts-list/reader-search",
+                        value: readerFlags.readerSearch ?? true,
+                      },
+                      {
+                        label: "Filter by Tag",
+                        attribute: "posts-list/reader-tag-filter",
+                        value: readerFlags.readerTagFilter ?? true,
+                      },
+                      {
+                        label: "Sort",
+                        attribute: "posts-list/reader-sort",
+                        value: readerFlags.readerSort ?? true,
+                      },
+                    ] as const
+                  ).map((option) => (
+                    <Toggle
+                      key={option.attribute}
+                      toggle={option.value}
+                      onToggle={() =>
+                        setReaderFlag(option.attribute, !option.value)
+                      }
+                    >
+                      {option.label}
+                    </Toggle>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Popover>

@@ -18,6 +18,8 @@ import type { ChapterCard } from "src/utils/chapterGrouping";
 import {
   postsListFilterKey,
   resolvePostsListView,
+  resolveReaderControls,
+  type PostsListIndexEntry,
 } from "src/utils/postsListPagination";
 import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
@@ -80,12 +82,14 @@ type PostsListData = {
   // Per tag-filter signature (postsListFilterKey), what the blocks using that
   // filter need: list views the full ordered URI list plus an SSR-seeded,
   // byline-resolved first batch; chapter views the server-grouped cards and
-  // the newest post for the "Latest" highlight.
+  // the newest post for the "Latest" highlight. `index` is only built for
+  // lists with reader controls, which search/sort across every post.
   initialByFilter: Record<
     string,
     {
       uris: string[];
       initialPosts: PublicationPostsListPost[];
+      index?: PostsListIndexEntry[];
       latestPost?: PublicationPostsListPost;
       chapters?: ChapterCard[];
     }
@@ -432,6 +436,8 @@ export let Block = ({
             view={view}
             highlightFirstPost={!!block.highlightFirstPost}
             limit={block.limit}
+            readerControls={resolveReaderControls(block)}
+            readerIndex={seed.index}
           />
         </div>
       );

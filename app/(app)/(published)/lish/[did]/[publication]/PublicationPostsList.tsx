@@ -71,20 +71,11 @@ export function PublicationPostsList({
   fakePosts?: PublicationPostsListFakePost[];
   view?: PublicationPostsListView;
   highlightFirstPost?: boolean;
-  // Posts already arrive newest-first (server keyset order). Skip the local
-  // publishedAt sort so paginated pages keep the order their cursor assumes.
   preSorted?: boolean;
   className?: string;
   inList?: boolean;
-  // In the editor the list is something you're laying out, not reading, so its
-  // posts render as plain cards that don't navigate away from the page.
   disableLinks?: boolean;
 }) {
-  // Resolve a byline name per post: the post's explicit contributors when
-  // present, otherwise the document author (publication owner). Server render
-  // paths attach `bylineProfiles` so they appear in the initial HTML; for any
-  // post without them (editor / theme preview) we resolve client-side here,
-  // batched into a single get_profiles lookup keyed on the full DID set.
   const unresolvedDids = useMemo(() => {
     const dids = new Set<string>();
     for (const post of posts ?? []) {

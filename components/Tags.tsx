@@ -11,23 +11,41 @@ export const Tag = (props: {
   name: string;
   selected?: boolean;
   onDelete?: (tag: string) => void;
+  onClick?: (tag: string) => void;
   className?: string;
 }) => {
+  let labelClassName = `px-1 py-0.5 hover:no-underline! ${props.selected ? "text-accent-2" : "text-tertiary"}`;
   return (
     <div
       className={`tag flex items-center text-xs  rounded-md border ${props.selected ? "bg-accent-1  border-accent-1 font-bold" : "bg-bg-page border-border"} ${props.className}`}
     >
-      <Link
-        href={`https://leaflet.pub/tag/${encodeURIComponent(props.name)}`}
-        className={`px-1 py-0.5 hover:no-underline! ${props.selected ? "text-accent-2" : "text-tertiary"}`}
-        aria-label={`Tag: ${props.name}`}
-      >
-        {props.name}{" "}
-      </Link>
-      {props.selected ? (
+      {props.onClick ? (
         <button
           type="button"
-          onClick={() => (props.onDelete ? props.onDelete(props.name) : null)}
+          className={labelClassName}
+          aria-pressed={!!props.selected}
+          onClick={() => props.onClick?.(props.name)}
+        >
+          {props.name}{" "}
+        </button>
+      ) : (
+        <Link
+          href={`https://leaflet.pub/tag/${encodeURIComponent(props.name)}`}
+          className={labelClassName}
+          aria-label={`Tag: ${props.name}`}
+        >
+          {props.name}{" "}
+        </Link>
+      )}
+      {props.selected && (props.onDelete || props.onClick) ? (
+        <button
+          type="button"
+          aria-label={`Remove tag: ${props.name}`}
+          onClick={() =>
+            props.onDelete
+              ? props.onDelete(props.name)
+              : props.onClick?.(props.name)
+          }
         >
           <CloseTiny className="scale-75 pr-1 text-accent-2" />
         </button>
