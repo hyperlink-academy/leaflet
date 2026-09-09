@@ -13,6 +13,7 @@ import { Blocks } from "components/Blocks";
 import { GoBackTiny } from "components/Icons/GoBackTiny";
 import { addShortcut } from "src/shortcuts";
 import { PublicationMetadata } from "./PublicationMetadata";
+import { InlineVersionBanner } from "components/VersionBanner";
 import { useLeafletPublicationPage } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "./useCardBorderHidden";
 import { focusPage } from "src/utils/focusPage";
@@ -98,11 +99,13 @@ export function Page(props: {
               pageType === "doc" &&
               !publicationPage &&
               !zoomedBlock && <PublicationMetadata />}
+            {props.first && pageType === "doc" && <InlineVersionBanner />}
             <PageContent
               entityID={props.entityID}
               first={props.first}
               zoomedBlock={zoomedBlock}
             />
+
           </PageWrapper>
           <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
           <FootnotePopover pageID={props.entityID} />

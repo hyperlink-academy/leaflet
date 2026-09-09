@@ -251,7 +251,7 @@ export async function revalidateAllPublicationPaths(
       .eq("publication", pubUri),
     supabaseServerClient
       .from("documents_in_publications")
-      .select("documents(uri, data)")
+      .select("documents(uri, path:data->>path)")
       .eq("publication", pubUri),
   ]);
   const subpaths = new Set<string>([
@@ -270,7 +270,7 @@ export async function revalidateAllPublicationPaths(
     if (!row.documents) continue;
     const docUri = new AtUri(row.documents.uri);
     subpaths.add(`/${docUri.rkey}`);
-    const docPath = (row.documents.data as { path?: string } | null)?.path;
+    const docPath = row.documents.path;
     if (docPath)
       subpaths.add(docPath.startsWith("/") ? docPath : `/${docPath}`);
     standalone.push(`/p/${docUri.host}/${docUri.rkey}`);

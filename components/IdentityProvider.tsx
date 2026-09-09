@@ -73,6 +73,25 @@ export function mutateIdentityData(
     { revalidate: false },
   );
 }
+
+// The global counterpart to mutateIdentityData: applies the recipe to whichever
+// identity snapshots are cached (both provider keys, so every consumer on the
+// page observes the change at once) and then revalidates so the server copy
+// wins. Stamps fetched_at so the edited snapshot outranks any older seed a
+// nav payload might replay over it.
+export function updateIdentityData(
+  recipe: (draft: Draft<NonNullable<Identity>>) => void,
+) {
+  const apply = (data: Identity | undefined) => {
+    if (!data) return data;
+    return produce(data, (draft) => {
+      recipe(draft);
+      draft.fetched_at = Date.now();
+    });
+  };
+  mutate<Identity>("identity", apply, { revalidate: true });
+  mutate<Identity>(VIEWER_IDENTITY_KEY, apply, { revalidate: true });
+}
 export function IdentityContextProvider(props: {
   children: React.ReactNode;
   // A promise lets the server mount this provider without awaiting identity

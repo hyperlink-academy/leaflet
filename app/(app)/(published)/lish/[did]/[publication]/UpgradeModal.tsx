@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { ButtonPrimary } from "components/Buttons";
 import { Modal } from "components/Modal";
 import { useState } from "react";
@@ -6,7 +7,7 @@ import { createCheckoutSession } from "actions/createCheckoutSession";
 import { DotLoader } from "components/utils/DotLoader";
 import { ToggleGroup } from "components/ToggleGroup";
 
-export const UpgradeContent = () => {
+export const UpgradeContent = (props: { signedOut?: boolean }) => {
   let [cadence, setCadence] = useState<"year" | "month">("year");
   let [loading, setLoading] = useState(false);
   let [error, setError] = useState<string | null>(null);
@@ -68,34 +69,30 @@ export const UpgradeContent = () => {
                 {cadence === "year" ? "/year" : "/month"}
               </div>
             </div>
-            <ButtonPrimary
-              fullWidth
-              className="mx-auto"
-              onClick={handleCheckout}
-              disabled={loading}
-            >
-              {loading ? <DotLoader /> : "Get it!"}
-            </ButtonPrimary>
+            {props.signedOut ? (
+              <Link
+                href={`/checkout/pro?cadence=${cadence}`}
+                className="no-underline!"
+              >
+                <ButtonPrimary fullWidth className="mx-auto">
+                  Get it!
+                </ButtonPrimary>
+              </Link>
+            ) : (
+              <ButtonPrimary
+                fullWidth
+                className="mx-auto"
+                onClick={handleCheckout}
+                disabled={loading}
+              >
+                {loading ? <DotLoader /> : "Get it!"}
+              </ButtonPrimary>
+            )}
 
             {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
           </div>
         </div>
       </div>
     </div>
-  );
-};
-
-const UpgradeModal = (props: {
-  trigger: React.ReactNode;
-  asChild?: boolean;
-}) => {
-  return (
-    <Modal
-      asChild={props.asChild}
-      className="sm:w-fit w-[90vw]"
-      trigger={<div className="sm:w-full">{props.trigger}</div>}
-    >
-      <UpgradeContent />
-    </Modal>
   );
 };

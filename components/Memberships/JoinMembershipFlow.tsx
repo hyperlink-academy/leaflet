@@ -7,13 +7,13 @@ import { Modal } from "components/Modal";
 import { useToaster, useSmoker } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
 import { EmailInput, EmailConfirm } from "components/Subscribe/EmailSubscribe";
-import { EmailSubscribeSuccess } from "components/Subscribe/EmailSubscribeSuccess";
+import {
+  AtSubscribeSuccess,
+  EmailSubscribeSuccess,
+} from "components/Subscribe/SubscribeSuccess";
 import { useSubscribeSuccessData } from "components/Subscribe/useSubscribeSuccessData";
 import { HandleSearchInput } from "components/HandleSearchInput";
-import {
-  AtmosphericHandleInfo,
-  AtSubscribeSuccess,
-} from "components/Subscribe/HandleSubscribe";
+import { AtmosphericHandleInfo } from "components/Subscribe/HandleSubscribe";
 import { SubscribeInputModeMenu } from "components/Subscribe/SubscribeButton";
 import { LinkIdentityModal } from "components/Subscribe/LinkIdentityModal";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
@@ -604,10 +604,6 @@ export function JoinMembershipFlow(props: {
                 <DotLoader />
               </div>
             )
-          ) : viewer?.isOwner ? (
-            <p className="text-tertiary text-lg text-center pt-1 pb-4">
-              This is your publication — this is what readers see.
-            </p>
           ) : identityPending ? (
             <div className="flex justify-center pt-1 pb-4">
               <DotLoader />

@@ -50,26 +50,13 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         throw Response.json({ error: "Block not found" }, { status: 404 });
       }
 
-      // Check for image to clean up
-      let [imageFact] = await tx
-        .select({ data: facts.data })
-        .from(facts)
-        .where(and(eq(facts.entity, blockId), eq(facts.attribute, "block/image")));
-
-      if (imageFact) {
-        let { createClient } = await import("@supabase/supabase-js");
-        let supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
-          process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-        );
-        let src = (imageFact.data as any).src;
-        if (src) {
-          let paths = src.split("/");
-          await supabase.storage
-            .from("minilink-user-assets")
-            .remove([paths[paths.length - 1]]);
-        }
-      }
+      await tx.execute(sql`
+        INSERT INTO blob_cleanup_queue (path)
+        SELECT split_part(split_part(data->>'src', '?', 1), '/', -1)
+        FROM facts
+        WHERE entity = ${blockId} AND attribute = 'block/image' AND data ? 'src'
+        ON CONFLICT DO NOTHING
+      `);
 
       // Delete the entity (cascades to facts)
       await tx.delete(entities).where(eq(entities.id, blockId));

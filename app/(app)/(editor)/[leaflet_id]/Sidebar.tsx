@@ -15,6 +15,7 @@ import { ShareOptions } from "app/(app)/(editor)/[leaflet_id]/actions/ShareOptio
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { PublishButton } from "./actions/PublishButton";
 import { PostSettings } from "components/PostSettings";
+import { VersionHistory } from "./actions/VersionHistory";
 import { Watermark } from "components/Watermark";
 import { BackToPubButton } from "./actions/BackToPubButton";
 import { useIdentityData } from "components/IdentityProvider";
@@ -71,6 +72,7 @@ export function LeafletSidebar() {
 
               <ShareOptions />
               <PostSettings />
+              <VersionHistory />
               <ThemePopover entityID={rootEntity} />
               <HelpButton />
               <hr className="text-border" />

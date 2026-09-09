@@ -7,8 +7,7 @@ import { Combobox, ComboboxResult } from "components/Combobox";
 import { InputSetting, SettingsSection } from "components/SettingsLayout";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { StandardSitePublicationItem } from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
-
-const MAX_RECOMMENDATIONS = 3;
+import { MAX_RECOMMENDATIONS } from "src/utils/publicationRecommendations";
 
 export function RecommendationSettings(props: {
   publicationUri: string;

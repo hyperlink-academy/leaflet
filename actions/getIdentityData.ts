@@ -3,9 +3,8 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { cache } from "react";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
+import { isLeafletManagedPublication } from "src/utils/isLeafletManagedPublication";
 import { getProfiles } from "src/identity";
-import { AtUri } from "@atproto/syntax";
-import { TID } from "@atproto/common";
 import {
   bskyProfileFromCache,
   ENTITLEMENT_EMBEDS,
@@ -92,7 +91,7 @@ async function uncachedGetIdentityData() {
     // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces,
     // then filter to only publications created by Leaflet
     const publications = deduplicateByUri(rawPublications || []).filter(
-      isLeafletPublication,
+      isLeafletManagedPublication,
     );
     const contributor_leaflets = (contributorLeafletRows ?? []).filter(
       (
@@ -104,8 +103,9 @@ async function uncachedGetIdentityData() {
     const rawContributorPubs = (contributorPubRows ?? [])
       .map((r) => r.publications)
       .filter((p): p is NonNullable<typeof p> => !!p);
-    const contributor_publications =
-      deduplicateByUri(rawContributorPubs).filter(isLeafletPublication);
+    const contributor_publications = deduplicateByUri(
+      rawContributorPubs,
+    ).filter(isLeafletManagedPublication);
     return {
       ...identity,
       // Orders identity snapshots by when they were fetched, so the client
@@ -133,27 +133,4 @@ async function uncachedGetIdentityData() {
     subscription: subscription ?? null,
     connectedAccount: processConnectedAccount(connectedAccount),
   };
-}
-
-function isLeafletPublication(p: { uri: string; record: unknown }): boolean {
-  try {
-    const rkey = new AtUri(p.uri).rkey;
-    if (!TID.is(rkey)) return false;
-  } catch {
-    return false;
-  }
-
-  const record = p.record as Record<string, any> | null;
-  if (!record) return true;
-
-  if (record.preferences?.greengale) return false;
-
-  if (
-    record.theme &&
-    record.theme.$type &&
-    record.theme.$type !== "pub.leaflet.publication#theme"
-  )
-    return false;
-
-  return true;
 }

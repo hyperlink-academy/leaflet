@@ -3,7 +3,7 @@
 // client gating and the server enforcement can never drift apart.
 
 // The single entitlement key that grants Leaflet Pro.
-const PRO_ENTITLEMENT_KEY = "publication_analytics";
+export const PRO_ENTITLEMENT_KEY = "publication_analytics";
 
 // Grants access to the in-progress Stripe Connect payments UI, so the feature
 // can be rolled out to specific users while it's still being built.

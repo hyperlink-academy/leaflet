@@ -120,6 +120,30 @@ export const subscriptionEvents = defineDatasource("subscription_events", {
 
 export type SubscriptionEventsRow = InferRow<typeof subscriptionEvents>;
 
+/**
+ * Signed-in user events, ingested server-side (see src/activeUserAnalytics.ts).
+ * `event` names what happened; `properties` carries per-event context so new
+ * attributes don't need schema changes. Unthrottled, so the endpoints below
+ * dedupe per identity at query time.
+ */
+export const userEvents = defineDatasource("user_events", {
+  description: "Product events for signed-in identities",
+  schema: {
+    timestamp: t.uint64(),
+    identity_id: t.string(),
+    did: t.string().default(""),
+    event: t.string().lowCardinality(), // page_view | push
+    properties: t.map(t.string(), t.string()),
+  },
+  engine: engine.mergeTree({
+    sortingKey: ["timestamp", "identity_id"],
+    partitionKey: "toYYYYMM(fromUnixTimestamp64Milli(timestamp))",
+  }),
+  tokens: [{ token: PROD_TOKEN, scope: "APPEND" }],
+});
+
+export type UserEventsRow = InferRow<typeof userEvents>;
+
 // ============================================================================
 // Endpoints
 // ============================================================================
@@ -476,11 +500,91 @@ export type PublicationSubscribeSourcesOutput = InferOutputRow<
 >;
 
 // ============================================================================
+// Active users
+// ============================================================================
+
+const USER_EVENT_DAY_SQL = "toDate(fromUnixTimestamp64Milli(timestamp))";
+
+/**
+ * active_users_timeseries – distinct identities with any event per calendar
+ * period (weeks start on Monday).
+ */
+export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
+  description: "Distinct active identities per day/week/month",
+  tokens: [PROD_TOKEN_READ],
+  params: {
+    granularity: p.string().optional("day"), // day | week | month
+    date_from: p.string().optional(),
+    date_to: p.string().optional(),
+  },
+  nodes: [
+    node({
+      name: "endpoint",
+      sql: `
+        SELECT
+          multiIf(
+            {{String(granularity, 'day')}} = 'month', toStartOfMonth(${USER_EVENT_DAY_SQL}),
+            {{String(granularity, 'day')}} = 'week', toMonday(${USER_EVENT_DAY_SQL}),
+            ${USER_EVENT_DAY_SQL}
+          ) AS period,
+          uniqExact(identity_id) AS active
+        FROM user_events
+        WHERE 1
+          {% if defined(date_from) %}
+            AND ${USER_EVENT_DAY_SQL} >= toDate({{String(date_from)}})
+          {% end %}
+          {% if defined(date_to) %}
+            AND ${USER_EVENT_DAY_SQL} <= toDate({{String(date_to)}})
+          {% end %}
+        GROUP BY period
+        ORDER BY period ASC
+      `,
+    }),
+  ],
+  output: { period: t.date(), active: t.uint64() },
+});
+
+export type ActiveUsersTimeseriesParams = InferParams<
+  typeof activeUsersTimeseries
+>;
+export type ActiveUsersTimeseriesOutput = InferOutputRow<
+  typeof activeUsersTimeseries
+>;
+
+/**
+ * active_users_windows – distinct identities over the last 1, 7 and 30
+ * calendar days (UTC, including today), one row per window.
+ */
+export const activeUsersWindows = defineEndpoint("active_users_windows", {
+  description: "Distinct active identities over the last 1/7/30 calendar days",
+  tokens: [PROD_TOKEN_READ],
+  params: {},
+  nodes: [
+    node({
+      name: "endpoint",
+      sql: `
+        SELECT window_days, uniqExact(identity_id) AS active
+        FROM user_events
+        ARRAY JOIN [1, 7, 30] AS window_days
+        WHERE ${USER_EVENT_DAY_SQL} > today() - window_days
+        GROUP BY window_days
+        ORDER BY window_days ASC
+      `,
+    }),
+  ],
+  output: { window_days: t.uint8(), active: t.uint64() },
+});
+
+export type ActiveUsersWindowsOutput = InferOutputRow<
+  typeof activeUsersWindows
+>;
+
+// ============================================================================
 // Client
 // ============================================================================
 
 export const tinybird = new Tinybird({
-  datasources: { analyticsEvents, subscriptionEvents },
+  datasources: { analyticsEvents, subscriptionEvents, userEvents },
   pipes: {
     publicationTraffic,
     publicationTopReferrers,
@@ -488,6 +592,8 @@ export const tinybird = new Tinybird({
     publicationBskyTraffic,
     publicationSubscribesTimeseries,
     publicationSubscribeSources,
+    activeUsersTimeseries,
+    activeUsersWindows,
   },
   devMode: false,
 });

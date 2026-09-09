@@ -39,8 +39,7 @@ export function useSubscribeSuccessData(publicationUri: string | undefined) {
 
   return {
     loading: publicationLoading || recommendationsLoading || listingsLoading,
-    publication,
-    publicationName: publication?.record.name,
+    publication: publication ?? undefined,
     listings: listings ?? [],
   };
 }

@@ -1,5 +1,4 @@
 "use client";
-import { refreshIdentityData } from "components/IdentityProvider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
@@ -23,8 +22,14 @@ import {
   mutateMyMembership,
 } from "components/Memberships/useMyMembership";
 import { LinkHandle } from "./HandleSubscribe";
+import { BLUESKY_SUBSCRIBED_FEED_URL } from "./blueskyFeed";
 import { EmailInput, EmailConfirm } from "./EmailSubscribe";
-import type { ViewerUser } from "./viewerSubscription";
+import {
+  markLocalEmailEnabled,
+  markLocallySubscribed,
+  markLocallyUnsubscribed,
+  type ViewerUser,
+} from "./viewerSubscription";
 import { type MyMembership } from "actions/memberships";
 import type { MembershipTiers, SubscriberTier } from "src/membership";
 import {
@@ -33,9 +38,6 @@ import {
   unsubscribeFromPublication,
   setEmailNotifications,
 } from "actions/publications/subscribeEmail";
-
-const BLUESKY_FEED_URL =
-  "https://bsky.app/profile/leaflet.pub/feed/subscribedPublications";
 
 const prefClassName =
   "flex gap-2 justify-between font-bold text-secondary items-center";
@@ -114,7 +116,7 @@ export const ManageSubscription = (props: {
       trigger={
         <button
           type="button"
-          className="manageSubPrefsTrigger flex gap-1 text-accent-contrast text-sm items-center "
+          className="manageSubPrefsTrigger flex gap-1 text-accent-contrast text-sm items-center"
         >
           {props.triggerLabel ? (
             <div className="hover:underline">{props.triggerLabel}</div>
@@ -220,10 +222,6 @@ const ManageSubscriptionContent = (props: {
     toaster({ type, content: <div className="font-bold">{message}</div> });
   const notifyError = (error: string, fallback: string) =>
     notify("error", ERROR_MESSAGES[error] ?? fallback);
-  const refreshSubscription = () => {
-    refreshIdentityData();
-    router.refresh();
-  };
 
   const emailEnabled = emailOverride ?? user.emailEnabled;
   useEffect(() => {
@@ -243,7 +241,15 @@ const ManageSubscriptionContent = (props: {
       );
       return;
     }
-    refreshSubscription();
+    markLocalEmailEnabled(props.publicationUri, next);
+    router.refresh();
+  };
+
+  const onEmailLinked = () => {
+    notify("success", "Email Linked!");
+    setLinkEmailOpen(false);
+    markLocallySubscribed(props.publicationUri, "email");
+    router.refresh();
   };
 
   const onRequestLink = async () => {
@@ -259,9 +265,7 @@ const ManageSubscriptionContent = (props: {
       return;
     }
     if (res.value.confirmed) {
-      notify("success", "Email Linked!");
-      setLinkEmailOpen(false);
-      refreshSubscription();
+      onEmailLinked();
       return;
     }
     setLinkEmailOpen(true);
@@ -280,9 +284,7 @@ const ManageSubscriptionContent = (props: {
       notifyError(res.error, "We couldn't confirm the code. Please try again!");
       return;
     }
-    notify("success", "Email Linked!");
-    setLinkEmailOpen(false);
-    refreshSubscription();
+    onEmailLinked();
   };
 
   const onUnsubscribe = async () => {
@@ -296,7 +298,8 @@ const ManageSubscriptionContent = (props: {
     }
     notify("success", "Unsubscribed!");
     mutateMyMembership(props.publicationUri);
-    refreshSubscription();
+    markLocallyUnsubscribed(props.publicationUri);
+    router.refresh();
   };
 
   if (isLoading)
@@ -373,7 +376,7 @@ const ManageSubscriptionContent = (props: {
         </a>
       )}
       <a
-        href={BLUESKY_FEED_URL}
+        href={BLUESKY_SUBSCRIBED_FEED_URL}
         target="_blank"
         rel="noopener noreferrer"
         className={`${prefClassName} no-underline hover:text-accent-contrast`}

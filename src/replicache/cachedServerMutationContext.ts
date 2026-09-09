@@ -22,7 +22,9 @@ export function cachedServerMutationContext(
   token_rights: PermissionToken["permission_token_rights"],
   sessionDid: string | null,
   rootEntity: string,
+  options?: { trustedAuthorWrites?: boolean },
 ) {
+  let trustedAuthorWrites = options?.trustedAuthorWrites ?? false;
   let writeCache: WriteCacheEntry[] = [];
   let eavCache = new Map<string, DeepReadonly<Fact<Attribute>>[]>();
   let permissionsCache: { [key: string]: boolean } = {};
@@ -172,8 +174,7 @@ export function cachedServerMutationContext(
             (f.fact.entity !== entity && f.fact.data.value !== entity),
         );
         for (let key of Object.keys(textAttributeWriteCache)) {
-          if (key.startsWith(`${entity}-`))
-            delete textAttributeWriteCache[key];
+          if (key.startsWith(`${entity}-`)) delete textAttributeWriteCache[key];
         }
       },
       async assertFact(f) {
@@ -197,19 +198,13 @@ export function cachedServerMutationContext(
           existing = await scanIndex.id(f.id);
         }
 
-        // Authentication gate. author_did is immutable once set.
-        let author_did: string | null;
-        if (existing) {
-          // Updating an existing fact: if it's authenticated, only the owning
-          // DID may write it, and the stored DID is preserved regardless of
-          // what the client sends.
-          if (existing.author_did && sessionDid !== existing.author_did) return;
-          author_did = existing.author_did ?? null;
-        } else {
-          // Creating a fact: you may only authenticate it as yourself.
-          if (f.author_did && sessionDid !== f.author_did) return;
-          author_did = f.author_did ?? null;
-        }
+        let author_did = f.author_did ?? null;
+        if (existing) author_did = existing.author_did ?? null;
+        if (!trustedAuthorWrites && author_did && sessionDid !== author_did)
+          return;
+
+        if (trustedAuthorWrites && f.author_did !== undefined)
+          author_did = f.author_did;
 
         if (
           attribute.type === "text" &&
@@ -239,8 +234,12 @@ export function cachedServerMutationContext(
       async retractFact(factID) {
         let existing = await scanIndex.id(factID);
         if (!existing || !(await this.checkPermission(existing.entity))) return;
-        // Only the owning DID may retract an authenticated fact.
-        if (existing.author_did && sessionDid !== existing.author_did) return;
+        if (
+          !trustedAuthorWrites &&
+          existing.author_did &&
+          sessionDid !== existing.author_did
+        )
+          return;
         // A genuine deletion must not be merged back by a later assert.
         delete textAttributeWriteCache[
           `${existing.entity}-${existing.attribute}`
@@ -274,8 +273,7 @@ export function cachedServerMutationContext(
       f.type === "del" ? [] : [f.fact],
     );
     for (let fact of factWrites) {
-      let tracked =
-        textAttributeWriteCache[`${fact.entity}-${fact.attribute}`];
+      let tracked = textAttributeWriteCache[`${fact.entity}-${fact.attribute}`];
       if (!tracked) continue;
       let values = Object.values(tracked.byClient);
       if (!values.includes(tracked.base)) values.push(tracked.base);
@@ -307,11 +305,12 @@ export function cachedServerMutationContext(
         )
         .onConflictDoUpdate({
           target: facts.id,
-          // author_did is intentionally omitted here: it is immutable, so an
-          // update of an existing fact must never overwrite the stored DID.
           set: {
             data: driz.sql`excluded.data`,
             entity: driz.sql`excluded.entity`,
+            ...(trustedAuthorWrites
+              ? { author_did: driz.sql`excluded.author_did` }
+              : {}),
           },
         });
     }

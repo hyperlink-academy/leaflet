@@ -4,8 +4,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Modal } from "components/Modal";
 import { useToaster } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
-import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
-import { AtSubscribeSuccess } from "./HandleSubscribe";
+import { AtSubscribeSuccess, EmailSubscribeSuccess } from "./SubscribeSuccess";
 import {
   SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES,
   type SubscribeError,

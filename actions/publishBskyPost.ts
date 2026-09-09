@@ -11,6 +11,7 @@ import { AtUri } from "@atproto/syntax";
 import { getAuthIdentity } from "src/auth";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
+import type { OAuthSession } from "@atproto/oauth-client-node";
 import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
@@ -19,6 +20,8 @@ import { uploadCoverImageThumb } from "src/utils/uploadCoverImageThumb";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import { truncateDocumentRecordForPDS } from "src/membership";
 import { addBskyPostUtm, BskyUtmCampaign } from "src/utils/bskyPostUtm";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { Err, Ok, Result } from "src/result";
 
 type StrongRef = {
   $type: "com.atproto.repo.strongRef";
@@ -26,9 +29,59 @@ type StrongRef = {
   cid: string;
 };
 
-type PublishBskyResult =
+export type PublishBskyResult =
   | { success: true; uri: string }
   | { success: false; error: OAuthSessionError };
+
+type UploadThumb = (bytes: Buffer) => Promise<BlobRef>;
+
+// Restores the OAuth session for `did` (the viewer's own by default) along
+// with the client and thumbnail uploader both publishers need.
+async function postingSession(did?: string): Promise<
+  Result<
+    {
+      postAuthorDid: string;
+      credentialSession: OAuthSession;
+      agent: AtpBaseClient;
+      uploadThumb: UploadThumb;
+    },
+    OAuthSessionError
+  >
+> {
+  let identity = await getAuthIdentity();
+  if (!identity || !identity.atp_did)
+    return Err({
+      type: "oauth_session_expired",
+      message: "Not authenticated",
+      did: "",
+    });
+  let postAuthorDid = did || identity.atp_did;
+  let sessionResult = await restoreOAuthSession(postAuthorDid);
+  if (!sessionResult.ok) return Err(sessionResult.error);
+  let credentialSession = sessionResult.value;
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
+  let uploadThumb: UploadThumb = (bytes) =>
+    agent.com.atproto.repo
+      .uploadBlob(bytes, { headers: { "Content-Type": "image/webp" } })
+      .then((r) => r.data.blob);
+  return Ok({ postAuthorDid, credentialSession, agent, uploadThumb });
+}
+
+// The client's prefetched screenshot, uploaded as the card thumb; undefined
+// when there is none or the upload fails so the caller falls through to its
+// next thumb source.
+async function uploadPrefetchedThumb(
+  prefetchedThumb: string | undefined,
+  uploadThumb: UploadThumb,
+): Promise<BlobRef | undefined> {
+  if (!prefetchedThumb) return undefined;
+  return uploadThumb(Buffer.from(prefetchedThumb, "base64")).catch((e) => {
+    console.error("Failed to upload prefetched bsky card thumbnail:", e);
+    return undefined;
+  });
+}
 
 export async function publishPostToBsky(args: {
   text: string;
@@ -50,32 +103,9 @@ export async function publishPostToBsky(args: {
   prefetchedThumb?: string;
   langs?: string[];
 }): Promise<PublishBskyResult> {
-  let identity = await getAuthIdentity();
-  if (!identity || !identity.atp_did) {
-    return {
-      success: false,
-      error: {
-        type: "oauth_session_expired",
-        message: "Not authenticated",
-        did: "",
-      },
-    };
-  }
-  let postAuthorDid = args.ownerDid || identity.atp_did;
-
-  const sessionResult = await restoreOAuthSession(postAuthorDid);
-  if (!sessionResult.ok) {
-    return { success: false, error: sessionResult.error };
-  }
-  let credentialSession = sessionResult.value;
-  let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
-  );
-
-  let uploadThumb = (bytes: Buffer) =>
-    agent.com.atproto.repo
-      .uploadBlob(bytes, { headers: { "Content-Type": "image/webp" } })
-      .then((r) => r.data.blob);
+  let session = await postingSession(args.ownerDid);
+  if (!session.ok) return { success: false, error: session.error };
+  let { postAuthorDid, credentialSession, agent, uploadThumb } = session.value;
 
   let documentRecord = args.document_record;
   let rkey = args.rkey;
@@ -92,58 +122,13 @@ export async function publishPostToBsky(args: {
   // When the share wants a screenshot card (quote share, or no cover image),
   // use the client's prefetched screenshot (or take one now if the prefetch
   // failed) and fall back to the cover only if that fails too.
-  let thumb: BlobRef | undefined;
-  if (args.prefetchedThumb) {
-    thumb = await uploadThumb(
-      Buffer.from(args.prefetchedThumb, "base64"),
-    ).catch((e) => {
-      console.error("Failed to upload prefetched bsky card thumbnail:", e);
-      return undefined;
-    });
-  }
+  let thumb = await uploadPrefetchedThumb(args.prefetchedThumb, uploadThumb);
   if (!thumb && args.preferUrlScreenshot) {
     thumb = await screenshotCardThumb(args.url, uploadThumb);
   }
   thumb ??=
     (await uploadCoverImageThumb(coverImage, coverImageDid, uploadThumb)) ??
     undefined;
-
-  // The post's rkey is minted before the record is created so the shared link
-  // can carry the post's identity in its utm params: analytics later resolves
-  // utm_content back to this post's at-uri to attribute traffic to it.
-  // Screenshots keep using the clean args.url — the params don't change the
-  // page and would only bust the client's prefetch.
-  let postRkey = TID.nextStr();
-  let campaign: BskyUtmCampaign = args.url.includes("/l-quote/")
-    ? "quote"
-    : rkey
-      ? "publish"
-      : "share";
-  let taggedUrl = addBskyPostUtm(args.url, {
-    did: credentialSession.did!,
-    rkey: postRkey,
-    campaign,
-  });
-  // Any link facet in the composed text pointing at the shared page gets the
-  // same tagged url (byte ranges are untouched — only the link target changes).
-  let facets = args.facets.map((facet) => ({
-    ...facet,
-    features: facet.features.map((feature) =>
-      AppBskyRichtextFacet.isLink(feature) && feature.uri === args.url
-        ? { ...feature, uri: taggedUrl }
-        : feature,
-    ),
-  }));
-
-  // associatedRefs hangs off the external embed card alongside uri/title/etc.
-  // It isn't in the published @atproto/api types yet, so widen External here.
-  let external: AppBskyEmbedExternal.External & {
-    associatedRefs?: StrongRef[];
-  } = {
-    uri: taggedUrl,
-    title,
-    description: description ?? "",
-  };
 
   // On publish, fall back to a page screenshot when there's no other thumb.
   if (rkey && !thumb) {
@@ -165,34 +150,26 @@ export async function publishPostToBsky(args: {
     publicationRefUri = args.publicationUri;
   }
 
-  let associatedRefs: StrongRef[] = [];
-  for (let uri of [documentRefUri, publicationRefUri]) {
-    if (!uri) continue;
-    let ref = await getRecordStrongRef(uri);
-    if (ref) associatedRefs.push(ref);
-  }
-  if (associatedRefs.length > 0) external.associatedRefs = associatedRefs;
+  let associatedRefs = await resolveStrongRefs([
+    documentRefUri,
+    publicationRefUri,
+  ]);
 
-  if (thumb) external.thumb = thumb;
-
-  let bsky = new BskyAgent(credentialSession);
-  let post = await bsky.app.bsky.feed.post.create(
-    {
-      repo: credentialSession.did!,
-      rkey: postRkey,
-    },
-    {
-      text: args.text,
-      createdAt: new Date().toISOString(),
-      facets,
-      // The post lexicon caps langs at 3 entries.
-      langs: args.langs?.filter(Boolean).slice(0, 3),
-      embed: {
-        $type: "app.bsky.embed.external",
-        external,
-      },
-    },
-  );
+  let post = await createExternalCardPost(credentialSession, {
+    text: args.text,
+    facets: args.facets,
+    url: args.url,
+    title,
+    description,
+    thumb,
+    associatedRefs,
+    campaign: args.url.includes("/l-quote/")
+      ? "quote"
+      : rkey
+        ? "publish"
+        : "share",
+    langs: args.langs,
+  });
 
   if (rkey) {
     let record = documentRecord;
@@ -224,12 +201,141 @@ export async function publishPostToBsky(args: {
   return { success: true, uri: post.uri };
 }
 
+// Shares a publication's home page (rather than a post) to Bluesky. The card
+// carries the publication's name/description and a strong ref to the
+// publication record, with a screenshot of the page as its thumbnail (the
+// publication icon when that fails).
+export async function publishPublicationShareToBsky(args: {
+  text: string;
+  facets: AppBskyRichtextFacet.Main[];
+  url: string;
+  publicationUri: string;
+  prefetchedThumb?: string;
+  langs?: string[];
+}): Promise<PublishBskyResult> {
+  let session = await postingSession();
+  if (!session.ok) return { success: false, error: session.error };
+  let { credentialSession, uploadThumb } = session.value;
+
+  let { data: pub } = await supabaseServerClient
+    .from("publications")
+    .select("uri, record")
+    .eq("uri", args.publicationUri)
+    .single();
+  let record = normalizePublicationRecord(pub?.record);
+  if (!pub || !record) throw new Error("Publication not found");
+
+  let thumb = await uploadPrefetchedThumb(args.prefetchedThumb, uploadThumb);
+  thumb ??= await screenshotCardThumb(args.url, uploadThumb);
+  thumb ??=
+    (await uploadCoverImageThumb(
+      record.icon,
+      new AtUri(pub.uri).host,
+      uploadThumb,
+    )) ?? undefined;
+
+  let post = await createExternalCardPost(credentialSession, {
+    text: args.text,
+    facets: args.facets,
+    url: args.url,
+    title: record.name,
+    description: record.description,
+    thumb,
+    associatedRefs: await resolveStrongRefs([pub.uri]),
+    campaign: "share",
+    langs: args.langs,
+  });
+  return { success: true, uri: post.uri };
+}
+
+// Creates the app.bsky.feed.post carrying an external-link card for `url`.
+async function createExternalCardPost(
+  credentialSession: OAuthSession,
+  args: {
+    text: string;
+    facets: AppBskyRichtextFacet.Main[];
+    url: string;
+    title: string;
+    description?: string;
+    thumb?: BlobRef;
+    associatedRefs: StrongRef[];
+    campaign: BskyUtmCampaign;
+    langs?: string[];
+  },
+) {
+  // The post's rkey is minted before the record is created so the shared link
+  // can carry the post's identity in its utm params: analytics later resolves
+  // utm_content back to this post's at-uri to attribute traffic to it.
+  // Screenshots keep using the clean args.url — the params don't change the
+  // page and would only bust the client's prefetch.
+  let postRkey = TID.nextStr();
+  let taggedUrl = addBskyPostUtm(args.url, {
+    did: credentialSession.did!,
+    rkey: postRkey,
+    campaign: args.campaign,
+  });
+  // Any link facet in the composed text pointing at the shared page gets the
+  // same tagged url (byte ranges are untouched — only the link target changes).
+  let facets = args.facets.map((facet) => ({
+    ...facet,
+    features: facet.features.map((feature) =>
+      AppBskyRichtextFacet.isLink(feature) && feature.uri === args.url
+        ? { ...feature, uri: taggedUrl }
+        : feature,
+    ),
+  }));
+
+  // associatedRefs hangs off the external embed card alongside uri/title/etc.
+  // It isn't in the published @atproto/api types yet, so widen External here.
+  let external: AppBskyEmbedExternal.External & {
+    associatedRefs?: StrongRef[];
+  } = {
+    uri: taggedUrl,
+    title: args.title,
+    description: args.description ?? "",
+  };
+  if (args.associatedRefs.length > 0)
+    external.associatedRefs = args.associatedRefs;
+  if (args.thumb) external.thumb = args.thumb;
+
+  let bsky = new BskyAgent(credentialSession);
+  return bsky.app.bsky.feed.post.create(
+    {
+      repo: credentialSession.did!,
+      rkey: postRkey,
+    },
+    {
+      text: args.text,
+      createdAt: new Date().toISOString(),
+      facets,
+      // The post lexicon caps langs at 3 entries.
+      langs: args.langs?.filter(Boolean).slice(0, 3),
+      embed: {
+        $type: "app.bsky.embed.external",
+        external,
+      },
+    },
+  );
+}
+
+async function resolveStrongRefs(
+  uris: (string | undefined)[],
+): Promise<StrongRef[]> {
+  let refs: StrongRef[] = [];
+  for (let uri of uris) {
+    if (!uri) continue;
+    let ref = await getRecordStrongRef(uri);
+    if (ref) refs.push(ref);
+  }
+  return refs;
+}
+
 // Screenshot `url` and upload it as a 1200x630 webp external-card thumbnail.
 // Returns undefined (rather than throwing) so a failed screenshot degrades to a
 // card without an image instead of failing the whole post.
 async function screenshotCardThumb(
   url: string,
-  uploadThumb: (bytes: Buffer) => Promise<BlobRef>,
+  uploadThumb: UploadThumb,
 ): Promise<BlobRef | undefined> {
   let image = await screenshotBskyCardImage(url);
   if (!image) return undefined;

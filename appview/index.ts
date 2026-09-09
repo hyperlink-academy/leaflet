@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database, Json } from "supabase/database.types";
-import { IdResolver } from "@atproto/identity";
+import { IdResolver, MemoryCache } from "@atproto/identity";
 import Client from "ioredis";
-const idResolver = new IdResolver();
+const idResolver = new IdResolver({ didCache: new MemoryCache() });
 import { Firehose, MemoryRunner, Event } from "@atproto/sync";
 import { ids } from "lexicons/api/lexicons";
 import {
@@ -59,6 +59,74 @@ const profileCache: RedisProfileCache | null = redisClient
 
 const QUOTE_PARAM = "/l-quote/";
 
+// Nearly every indexed publication belongs to another standard.site app and is
+// only ever read back out of the index, so the Leaflet-specific follow-ups
+// (ISR revalidation, the metadata sync job) run only for publications Leaflet
+// manages: those with a draft leaflet or a draft linked into them. The draft
+// leaflet alone isn't enough — older publications only get one on their next
+// editor visit.
+const MANAGED_MARKERS = "draft_leaflet, leaflets_in_publications(leaflet)";
+type ManagedMarkers = {
+  draft_leaflet: string | null;
+  leaflets_in_publications: { leaflet: string }[];
+};
+function isManaged(pub: ManagedMarkers | null | undefined) {
+  return (
+    !!pub &&
+    (pub.draft_leaflet !== null || pub.leaflets_in_publications.length > 0)
+  );
+}
+
+async function isLeafletPublication(uri: string) {
+  let { data } = await supabase
+    .from("publications")
+    .select(MANAGED_MARKERS)
+    .eq("uri", uri)
+    .limit(1, { referencedTable: "leaflets_in_publications" })
+    .maybeSingle();
+  return isManaged(data);
+}
+
+async function isInLeafletPublication(documentUri: string) {
+  let { data } = await supabase
+    .from("documents_in_publications")
+    .select(`publications(${MANAGED_MARKERS})`)
+    .eq("document", documentUri)
+    .limit(1, { referencedTable: "publications.leaflets_in_publications" })
+    .maybeSingle();
+  return isManaged(data?.publications);
+}
+
+// Bridgy mirrors fediverse blogs into atproto repos; keeping those out of the
+// index keeps them out of the discover feeds. The DID cache makes this one
+// directory lookup per repo rather than per record.
+async function isBridgyRepo(did: string) {
+  try {
+    let doc = await idResolver.did.resolve(did);
+    return !!doc?.service?.some(
+      (s) =>
+        typeof s.serviceEndpoint === "string" &&
+        s.serviceEndpoint.includes("atproto.brid.gy"),
+    );
+  } catch (e) {
+    console.error("did resolution failed for", did, e);
+    return false;
+  }
+}
+
+// Not an upsert: identities.home_page defaults to a function that creates a
+// homepage (entity set, entity, permission token), and Postgres evaluates the
+// default before the ON CONFLICT check, so upserting an existing did leaks an
+// orphaned homepage every time.
+async function ensureIdentity(did: string) {
+  let { data } = await supabase
+    .from("identities")
+    .select("id")
+    .eq("atp_did", did)
+    .maybeSingle();
+  if (!data) await supabase.from("identities").insert({ atp_did: did });
+}
+
 // The published pages are ISR-cached with a long revalidate window; indexing
 // a record from the firehose is the freshness signal for writes that don't go
 // through Leaflet's own actions, so tell the Next app to drop the affected
@@ -84,31 +152,43 @@ async function notifyRevalidate(event: AppviewRevalidateEvent) {
 
 // Deletes remove the rows the document's paths are derived from, so snapshot
 // them first and hand them to the revalidation endpoint.
-async function deleteDocumentAndRevalidate(uri: string) {
+async function deleteDocument(uri: string) {
   let { data: doc } = await supabase
     .from("documents")
-    .select("data, sort_date, documents_in_publications(publication)")
+    .select(
+      `data, sort_date, documents_in_publications(publication, publications(${MANAGED_MARKERS}))`,
+    )
     .eq("uri", uri)
+    .limit(1, {
+      referencedTable:
+        "documents_in_publications.publications.leaflets_in_publications",
+    })
     .maybeSingle();
   await supabase.from("documents").delete().eq("uri", uri);
+  let link = doc?.documents_in_publications[0];
+  if (!link || !isManaged(link.publications)) return;
   await notifyRevalidate({
     kind: "document",
     uri,
     snapshot: {
-      publication: doc?.documents_in_publications[0]?.publication ?? null,
+      publication: link.publication,
       path: (doc?.data as { path?: string } | null)?.path ?? null,
       sort_date: doc?.sort_date ?? null,
     },
   });
 }
 
-async function deletePublicationAndRevalidate(uri: string) {
+// The managed check has to happen before the delete: the draft links cascade
+// away with the publication row.
+async function deletePublication(uri: string) {
   let { data: prev } = await supabase
     .from("publications")
-    .select("name")
+    .select(`name, ${MANAGED_MARKERS}`)
     .eq("uri", uri)
+    .limit(1, { referencedTable: "leaflets_in_publications" })
     .maybeSingle();
   await supabase.from("publications").delete().eq("uri", uri);
+  if (!isManaged(prev)) return;
   await notifyRevalidate({ kind: "publication", uri, names: [prev?.name] });
 }
 
@@ -234,6 +314,10 @@ async function handleEvent(evt: Event) {
         console.log(record.error);
         return;
       }
+      if (await isBridgyRepo(evt.did)) return;
+      let managed =
+        !!record.value.publication &&
+        (await isLeafletPublication(record.value.publication));
       if (
         !(await isGatedLeafletManagedDoc(
           evt.uri.toString(),
@@ -244,17 +328,21 @@ async function handleEvent(evt: Event) {
         let docResult = await supabase.from("documents").upsert({
           uri: evt.uri.toString(),
           data: record.value as Json,
+          indexed: true,
         });
         if (docResult.error) console.log(docResult.error);
       }
-      await inngest.send({
-        name: "appview/sync-document-metadata",
-        data: {
-          document_uri: evt.uri.toString(),
-          bsky_post_uri: record.value.postRef?.uri,
-          event_type: evt.event,
-        },
-      });
+      // The sync job polls Bluesky like counts and claims newsletter sends;
+      // neither applies to a third-party post with no Bluesky post.
+      if (managed || record.value.postRef)
+        await inngest.send({
+          name: "appview/sync-document-metadata",
+          data: {
+            document_uri: evt.uri.toString(),
+            bsky_post_uri: record.value.postRef?.uri,
+            event_type: evt.event,
+          },
+        });
       if (record.value.publication) {
         let publicationURI = new AtUri(record.value.publication);
 
@@ -278,10 +366,11 @@ async function handleEvent(evt: Event) {
         if (docInPublicationResult.error)
           console.log(docInPublicationResult.error);
       }
-      await notifyRevalidate({ kind: "document", uri: evt.uri.toString() });
+      if (managed)
+        await notifyRevalidate({ kind: "document", uri: evt.uri.toString() });
     }
     if (evt.event === "delete") {
-      await deleteDocumentAndRevalidate(evt.uri.toString());
+      await deleteDocument(evt.uri.toString());
     }
   }
   if (evt.collection === ids.PubLeafletPublication) {
@@ -292,26 +381,26 @@ async function handleEvent(evt: Event) {
       // so they get dropped too.
       let { data: prev } = await supabase
         .from("publications")
-        .select("name")
+        .select(`name, ${MANAGED_MARKERS}`)
         .eq("uri", evt.uri.toString())
+        .limit(1, { referencedTable: "leaflets_in_publications" })
         .maybeSingle();
-      await supabase
-        .from("identities")
-        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await ensureIdentity(evt.did);
       await supabase.from("publications").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,
         name: record.value.name,
         record: record.value as Json,
       });
-      await notifyRevalidate({
-        kind: "publication",
-        uri: evt.uri.toString(),
-        names: [record.value.name, prev?.name],
-      });
+      if (isManaged(prev))
+        await notifyRevalidate({
+          kind: "publication",
+          uri: evt.uri.toString(),
+          names: [record.value.name, prev?.name],
+        });
     }
     if (evt.event === "delete") {
-      await deletePublicationAndRevalidate(evt.uri.toString());
+      await deletePublication(evt.uri.toString());
     }
   }
   if (evt.collection === ids.PubLeafletComment) {
@@ -325,10 +414,11 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       // Comment counts are server-rendered into post pages and listings.
-      await notifyRevalidate({
-        kind: "interaction",
-        document: record.value.subject,
-      });
+      if (await isInLeafletPublication(record.value.subject))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: record.value.subject,
+        });
     }
     if (evt.event === "delete") {
       let { data: comment } = await supabase
@@ -340,7 +430,7 @@ async function handleEvent(evt: Event) {
         .from("comments_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
-      if (comment?.document)
+      if (comment?.document && (await isInLeafletPublication(comment.document)))
         await notifyRevalidate({
           kind: "interaction",
           document: comment.document,
@@ -388,9 +478,7 @@ async function handleEvent(evt: Event) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletInteractionsRecommend.validateRecord(evt.record);
       if (!record.success) return;
-      await supabase
-        .from("identities")
-        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await ensureIdentity(evt.did);
       let { error } = await supabase.from("recommends_on_documents").upsert({
         uri: evt.uri.toString(),
         recommender_did: evt.did,
@@ -399,10 +487,11 @@ async function handleEvent(evt: Event) {
       });
       if (error) console.log("Error upserting recommend:", error);
       // Recommend counts are server-rendered into post pages and listings.
-      await notifyRevalidate({
-        kind: "interaction",
-        document: record.value.subject,
-      });
+      if (await isInLeafletPublication(record.value.subject))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: record.value.subject,
+        });
     }
     if (evt.event === "delete") {
       let { data: recommend } = await supabase
@@ -414,7 +503,10 @@ async function handleEvent(evt: Event) {
         .from("recommends_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
-      if (recommend?.document)
+      if (
+        recommend?.document &&
+        (await isInLeafletPublication(recommend.document))
+      )
         await notifyRevalidate({
           kind: "interaction",
           document: recommend.document,
@@ -467,9 +559,7 @@ async function handleEvent(evt: Event) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletGraphSubscription.validateRecord(evt.record);
       if (!record.success) return;
-      await supabase
-        .from("identities")
-        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await ensureIdentity(evt.did);
       // App-created subscriptions insert their row (and track their own
       // analytics event) before the firehose echoes the record back, so only
       // a previously unseen row counts as a firehose-originated subscribe.
@@ -529,14 +619,18 @@ async function handleEvent(evt: Event) {
       // the firehose record has `pages: []` and would clobber the fully
       // inflated copy that publishToPublication wrote optimistically. The
       // inngest sync_document_metadata function is the writer in that case.
+      if (await isBridgyRepo(evt.did)) return;
       const hasBlobPages =
         PubLeafletContent.isMain(record.value.content) &&
         !!record.value.content.blobPages;
+      const inPublication = !!record.value.site?.startsWith("at://");
+      let managed =
+        inPublication && (await isLeafletPublication(record.value.site!));
       if (
         !hasBlobPages &&
         !(await isGatedLeafletManagedDoc(
           evt.uri.toString(),
-          !!record.value.site?.startsWith("at://"),
+          inPublication,
           PubLeafletContent.isMain(record.value.content)
             ? record.value.content.pages?.[0]
             : undefined,
@@ -545,17 +639,22 @@ async function handleEvent(evt: Event) {
         let docResult = await supabase.from("documents").upsert({
           uri: evt.uri.toString(),
           data: record.value as Json,
+          indexed: true,
         });
         if (docResult.error) console.log(docResult.error);
       }
-      await inngest.send({
-        name: "appview/sync-document-metadata",
-        data: {
-          document_uri: evt.uri.toString(),
-          bsky_post_uri: record.value.bskyPostRef?.uri,
-          event_type: evt.event,
-        },
-      });
+      // The sync job inflates blob pages, polls Bluesky like counts and claims
+      // newsletter sends; none of that applies to a third-party post with no
+      // Bluesky post.
+      if (managed || hasBlobPages || record.value.bskyPostRef)
+        await inngest.send({
+          name: "appview/sync-document-metadata",
+          data: {
+            document_uri: evt.uri.toString(),
+            bsky_post_uri: record.value.bskyPostRef?.uri,
+            event_type: evt.event,
+          },
+        });
 
       // site.standard.document uses "site" field to reference the publication
       // For documents in publications, site is an AT-URI (at://did:plc:xxx/site.standard.publication/rkey)
@@ -595,11 +694,11 @@ async function handleEvent(evt: Event) {
       }
       // Blob-offloaded records aren't readable until sync_document_metadata
       // inflates them; that function revalidates when it's done.
-      if (!hasBlobPages)
+      if (managed && !hasBlobPages)
         await notifyRevalidate({ kind: "document", uri: evt.uri.toString() });
     }
     if (evt.event === "delete") {
-      await deleteDocumentAndRevalidate(evt.uri.toString());
+      await deleteDocument(evt.uri.toString());
     }
   }
 
@@ -614,12 +713,11 @@ async function handleEvent(evt: Event) {
       // so they get dropped too.
       let { data: prev } = await supabase
         .from("publications")
-        .select("name")
+        .select(`name, ${MANAGED_MARKERS}`)
         .eq("uri", evt.uri.toString())
+        .limit(1, { referencedTable: "leaflets_in_publications" })
         .maybeSingle();
-      await supabase
-        .from("identities")
-        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await ensureIdentity(evt.did);
       let { error } = await supabase.from("publications").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,
@@ -627,14 +725,15 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log(error);
-      await notifyRevalidate({
-        kind: "publication",
-        uri: evt.uri.toString(),
-        names: [record.value.name, prev?.name],
-      });
+      if (isManaged(prev))
+        await notifyRevalidate({
+          kind: "publication",
+          uri: evt.uri.toString(),
+          names: [record.value.name, prev?.name],
+        });
     }
     if (evt.event === "delete") {
-      await deletePublicationAndRevalidate(evt.uri.toString());
+      await deletePublication(evt.uri.toString());
     }
   }
 
@@ -643,9 +742,7 @@ async function handleEvent(evt: Event) {
     if (evt.event === "create" || evt.event === "update") {
       let record = SiteStandardGraphRecommend.validateRecord(evt.record);
       if (!record.success) return;
-      await supabase
-        .from("identities")
-        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await ensureIdentity(evt.did);
       let { error } = await supabase.from("recommends_on_documents").upsert({
         uri: evt.uri.toString(),
         recommender_did: evt.did,
@@ -654,10 +751,11 @@ async function handleEvent(evt: Event) {
       });
       if (error) console.log("Error upserting recommend:", error);
       // Recommend counts are server-rendered into post pages and listings.
-      await notifyRevalidate({
-        kind: "interaction",
-        document: record.value.document,
-      });
+      if (await isInLeafletPublication(record.value.document))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: record.value.document,
+        });
     }
     if (evt.event === "delete") {
       let { data: recommend } = await supabase
@@ -669,7 +767,10 @@ async function handleEvent(evt: Event) {
         .from("recommends_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
-      if (recommend?.document)
+      if (
+        recommend?.document &&
+        (await isInLeafletPublication(recommend.document))
+      )
         await notifyRevalidate({
           kind: "interaction",
           document: recommend.document,
@@ -682,9 +783,7 @@ async function handleEvent(evt: Event) {
     if (evt.event === "create" || evt.event === "update") {
       let record = SiteStandardGraphSubscription.validateRecord(evt.record);
       if (!record.success) return;
-      await supabase
-        .from("identities")
-        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await ensureIdentity(evt.did);
       let { data: existing } = await supabase
         .from("publication_subscriptions")
         .select("uri")
