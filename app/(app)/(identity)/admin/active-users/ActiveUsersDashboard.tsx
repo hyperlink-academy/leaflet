@@ -20,7 +20,6 @@ import {
   niceYMax,
 } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/analytics/dates";
 import { ChartSkeleton } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/analytics/Skeletons";
-import { ChartTooltip } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/analytics/ChartTooltip";
 
 type Granularity = "day" | "week" | "month";
 type Stats = Extract<GetActiveUserStatsReturnType, { result: any }>["result"];
@@ -69,7 +68,8 @@ export const ActiveUsersDashboard = () => {
         <h2>Active users</h2>
         <div className="text-secondary leading-snug">
           Signed-in users who viewed a page or edited a document. Days are UTC.
-          Each person counts once across devices.
+          Each person counts once across devices. Pro is the user&apos;s status
+          at the time of the activity.
         </div>
       </div>
 
@@ -110,12 +110,19 @@ export const ActiveUsersDashboard = () => {
 
 const WindowTile = (props: {
   title: string;
-  value: number | null | undefined;
+  value: { active: number; pro_active: number } | null | undefined;
 }) => (
   <div className="flex flex-col gap-1 border border-border-light rounded-md px-3 py-2">
     <div className="text-sm text-secondary">{props.title}</div>
     <div className="text-2xl font-bold tabular-nums">
-      {props.value == null ? "–" : props.value.toLocaleString()}
+      {props.value == null ? "–" : props.value.active.toLocaleString()}
+    </div>
+    <div className="text-sm text-tertiary tabular-nums">
+      {props.value == null
+        ? "–"
+        : `${props.value.pro_active.toLocaleString()} pro · ${(
+            props.value.active - props.value.pro_active
+          ).toLocaleString()} free`}
     </div>
   </div>
 );
@@ -127,14 +134,19 @@ function fillPeriods(
   granularity: Granularity,
   from: string,
 ) {
-  let byPeriod = new Map(rows.map((r) => [String(r.period), r.active]));
-  let out: { period: string; active: number }[] = [];
+  let byPeriod = new Map(rows.map((r) => [String(r.period), r]));
+  let out: { period: string; pro: number; free: number }[] = [];
   let cursor = new Date(from + "T00:00:00Z");
   let today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   while (cursor <= today) {
     let key = cursor.toISOString().slice(0, 10);
-    out.push({ period: key, active: byPeriod.get(key) ?? 0 });
+    let row = byPeriod.get(key);
+    out.push({
+      period: key,
+      pro: row?.pro_active ?? 0,
+      free: row ? row.active - row.pro_active : 0,
+    });
     if (granularity === "day") cursor.setUTCDate(cursor.getUTCDate() + 1);
     else if (granularity === "week") cursor.setUTCDate(cursor.getUTCDate() + 7);
     else cursor.setUTCMonth(cursor.getUTCMonth() + 1);
@@ -180,21 +192,55 @@ const ActiveUsersChart = (props: {
             width={40}
             domain={[0, (max: number) => niceYMax(max)]}
           />
-          <Tooltip
-            isAnimationActive={false}
-            content={(p) => <ChartTooltip {...p} unit="active users" />}
-          />
+          <Tooltip isAnimationActive={false} content={StackedTooltip} />
           <Area
             type="monotone"
-            dataKey="active"
-            name="Active users"
+            stackId="active"
+            dataKey="free"
+            name="Free"
             stroke="var(--color-accent-contrast)"
             fill="var(--color-accent-contrast)"
             fillOpacity={0.1}
             isAnimationActive={false}
           />
+          <Area
+            type="monotone"
+            stackId="active"
+            dataKey="pro"
+            name="Pro"
+            stroke="var(--color-accent-contrast)"
+            fill="var(--color-accent-contrast)"
+            fillOpacity={0.4}
+            isAnimationActive={false}
+          />
         </AreaChart>
       </ResponsiveContainer>
+    </div>
+  );
+};
+
+const StackedTooltip = (props: {
+  active?: boolean;
+  payload?: ReadonlyArray<{
+    value?: number | string;
+    dataKey?: string | number;
+  }>;
+  label?: string | number;
+}) => {
+  if (!props.active || !props.payload?.length) return null;
+  let get = (key: string) =>
+    Number(props.payload?.find((p) => p.dataKey === key)?.value ?? 0);
+  let pro = get("pro");
+  let free = get("free");
+  return (
+    <div className="light-container px-2 py-1 text-sm shadow-sm">
+      <div className="text-tertiary text-xs">
+        {formatDayTick(String(props.label))}
+      </div>
+      <div>{(pro + free).toLocaleString()} active users</div>
+      <div className="text-secondary text-xs">
+        {pro.toLocaleString()} pro · {free.toLocaleString()} free
+      </div>
     </div>
   );
 };

@@ -1,5 +1,8 @@
 import { after } from "next/server";
 import { tinybird } from "lib/tinybird";
+import { supabaseServerClient } from "supabase/serverClient";
+import { keyEntitlements } from "./identityPayload";
+import { isPro, PRO_ENTITLEMENT_KEY } from "./entitlements";
 
 // Active-user counts are "distinct identities with any event"; finer questions
 // (who moved from reading to writing) are query-time filters on `event` and
@@ -29,10 +32,34 @@ export function trackUserEvent(
         identity_id: identity.id,
         did: identity.atp_did ?? "",
         event,
-        properties: new Map(Object.entries(properties)),
+        properties: new Map(
+          Object.entries({ ...properties, ...(await proProperties(identity)) }),
+        ),
       });
     } catch (e) {
       console.error("[trackUserEvent] ingest failed:", e);
     }
   });
+}
+
+// Stamped on every event so the active-user pipes can split by Pro status as
+// it was at the time, rather than joining today's status onto old rows. Looked
+// up here instead of at the call sites because none of them load entitlements,
+// and running inside `after()` keeps it off the request path. A failed lookup
+// leaves the row unstamped (counted as free) rather than losing the event.
+async function proProperties(identity: TrackedIdentity) {
+  const { data, error } = await supabaseServerClient
+    .from("user_entitlements")
+    .select("entitlement_key, granted_at, expires_at, source, metadata")
+    .eq("identity_id", identity.id)
+    .eq("entitlement_key", PRO_ENTITLEMENT_KEY);
+  if (error) {
+    console.error("[trackUserEvent] entitlement lookup failed:", error);
+    return {};
+  }
+  const entitlements = keyEntitlements(data);
+  return {
+    pro: String(isPro(entitlements)),
+    pro_source: entitlements[PRO_ENTITLEMENT_KEY]?.source ?? "",
+  };
 }

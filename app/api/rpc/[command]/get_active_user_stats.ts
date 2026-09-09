@@ -30,8 +30,10 @@ export const get_active_user_stats = makeRoute({
       tinybird.activeUsersWindows.query(),
     ]);
 
-    let byWindow = (days: number) =>
-      windows.data.find((w) => w.window_days === days)?.active ?? null;
+    let byWindow = (days: number) => {
+      let row = windows.data.find((w) => w.window_days === days);
+      return row ? { active: row.active, pro_active: row.pro_active } : null;
+    };
 
     return {
       result: {

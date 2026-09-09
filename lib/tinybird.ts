@@ -507,7 +507,9 @@ const USER_EVENT_DAY_SQL = "toDate(fromUnixTimestamp64Milli(timestamp))";
 
 /**
  * active_users_timeseries – distinct identities with any event per calendar
- * period (weeks start on Monday).
+ * period (weeks start on Monday). `pro_active` counts identities that were Pro
+ * on at least one event in the period (events are stamped with the status at
+ * the time), so an identity that flips mid-period counts as Pro.
  */
 export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
   description: "Distinct active identities per day/week/month",
@@ -527,7 +529,8 @@ export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
             {{String(granularity, 'day')}} = 'week', toMonday(${USER_EVENT_DAY_SQL}),
             ${USER_EVENT_DAY_SQL}
           ) AS period,
-          uniqExact(identity_id) AS active
+          uniqExact(identity_id) AS active,
+          uniqExactIf(identity_id, properties['pro'] = 'true') AS pro_active
         FROM user_events
         WHERE 1
           {% if defined(date_from) %}
@@ -541,7 +544,7 @@ export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
       `,
     }),
   ],
-  output: { period: t.date(), active: t.uint64() },
+  output: { period: t.date(), active: t.uint64(), pro_active: t.uint64() },
 });
 
 export type ActiveUsersTimeseriesParams = InferParams<
@@ -563,7 +566,10 @@ export const activeUsersWindows = defineEndpoint("active_users_windows", {
     node({
       name: "endpoint",
       sql: `
-        SELECT window_days, uniqExact(identity_id) AS active
+        SELECT
+          window_days,
+          uniqExact(identity_id) AS active,
+          uniqExactIf(identity_id, properties['pro'] = 'true') AS pro_active
         FROM user_events
         ARRAY JOIN [1, 7, 30] AS window_days
         WHERE ${USER_EVENT_DAY_SQL} > today() - window_days
@@ -572,7 +578,11 @@ export const activeUsersWindows = defineEndpoint("active_users_windows", {
       `,
     }),
   ],
-  output: { window_days: t.uint8(), active: t.uint64() },
+  output: {
+    window_days: t.uint8(),
+    active: t.uint64(),
+    pro_active: t.uint64(),
+  },
 });
 
 export type ActiveUsersWindowsOutput = InferOutputRow<
