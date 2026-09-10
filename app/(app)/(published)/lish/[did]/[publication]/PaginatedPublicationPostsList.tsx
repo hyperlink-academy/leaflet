@@ -22,7 +22,7 @@ import {
 
 const DEFAULT_READER_STATE: PostsListReaderState = {
   search: "",
-  tag: null,
+  tags: [],
   sort: "latest",
 };
 
@@ -41,6 +41,7 @@ export function PaginatedPublicationPostsList({
   emptyState,
   className,
   disableLinks = false,
+  pageWidth,
 }: {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
@@ -58,6 +59,9 @@ export function PaginatedPublicationPostsList({
   // Set by the editor, where the list is being laid out rather than read, so
   // clicking a post doesn't navigate away from the page you're customizing.
   disableLinks?: boolean;
+  // Overrides the publication record's page width, which the editor needs
+  // because its draft theme hasn't been published yet.
+  pageWidth?: number;
 }) {
   const [readerState, setReaderState] =
     useState<PostsListReaderState>(DEFAULT_READER_STATE);
@@ -75,7 +79,7 @@ export function PaginatedPublicationPostsList({
 
     return readerControlledUris(readerIndex, {
       search: searchEnabled ? debouncedSearch : "",
-      tag: tagFilterEnabled ? readerState.tag : null,
+      tags: tagFilterEnabled ? readerState.tags : null,
       sort: sortEnabled ? readerState.sort : "latest",
     });
   }, [
@@ -85,7 +89,7 @@ export function PaginatedPublicationPostsList({
     tagFilterEnabled,
     sortEnabled,
     debouncedSearch,
-    readerState.tag,
+    readerState.tags,
     readerState.sort,
   ]);
 
@@ -159,6 +163,7 @@ export function PaginatedPublicationPostsList({
             highlightFirstPost={highlightFirstPost}
             preSorted
             disableLinks={disableLinks}
+            pageWidth={pageWidth}
           />
           {/* Fires the next batch while still ~1200px from the list's end. */}
           <div

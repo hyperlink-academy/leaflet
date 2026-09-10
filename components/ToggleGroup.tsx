@@ -24,7 +24,7 @@ export function ToggleGroup<T extends string>(props: {
           className={`px-1 rounded-md font-bold ${props.fullWidth ? "flex-1" : ""} ${
             props.value === option.value
               ? `${light ? "bg-bg-page text-secondary border border-border-light" : "bg-accent-2 text-accent-1"} ${props.selectedOptionClassName}`
-              : `bg-transparent ${light ? "text-tertiary" : "text-accent-2"}`
+              : `bg-transparent ${light ? "text-tertiary border border-transparent" : "text-accent-2"}`
           }
           ${props.optionClassName}
             `}

@@ -64,6 +64,7 @@ export function PublicationPostsList({
   className,
   inList,
   disableLinks = false,
+  pageWidth,
 }: {
   publication: PublicationForURL;
   publicationRecord: NormalizedPublication | null;
@@ -75,7 +76,13 @@ export function PublicationPostsList({
   className?: string;
   inList?: boolean;
   disableLinks?: boolean;
+  // The width the list is actually being rendered at, which the editor passes
+  // from the draft theme — the published record's page width only catches up
+  // on publish, so a highlighted post would otherwise lay itself out for a
+  // width the editor isn't showing.
+  pageWidth?: number;
 }) {
+  const effectivePageWidth = pageWidth ?? publicationRecord?.theme?.pageWidth;
   const unresolvedDids = useMemo(() => {
     const dids = new Set<string>();
     for (const post of posts ?? []) {
@@ -210,7 +217,7 @@ export function PublicationPostsList({
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}
                     coverImageAlt={doc_record.title}
-                    pageWidth={publicationRecord?.theme?.pageWidth}
+                    pageWidth={effectivePageWidth}
                   />
                   <hr className="last:hidden border-border-light" />
                 </React.Fragment>

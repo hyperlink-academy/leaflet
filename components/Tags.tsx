@@ -12,6 +12,8 @@ export const Tag = (props: {
   selected?: boolean;
   onDelete?: (tag: string) => void;
   onClick?: (tag: string) => void;
+  // How many posts carry this tag, rendered inside the chip after the name.
+  count?: number;
   className?: string;
 }) => {
   let labelClassName = `px-1 py-0.5 hover:no-underline! ${props.selected ? "text-accent-2" : "text-tertiary"}`;
@@ -37,6 +39,13 @@ export const Tag = (props: {
           {props.name}{" "}
         </Link>
       )}
+      {props.count !== undefined ? (
+        <span
+          className={`pr-1 ${props.selected ? "text-accent-2" : "text-tertiary"}`}
+        >
+          ({props.count})
+        </span>
+      ) : null}
       {props.selected && (props.onDelete || props.onClick) ? (
         <button
           type="button"
@@ -47,7 +56,7 @@ export const Tag = (props: {
               : props.onClick?.(props.name)
           }
         >
-          <CloseTiny className="scale-75 pr-1 text-accent-2" />
+          <CloseTiny className="scale-80 pr-1 text-accent-2" />
         </button>
       ) : null}
     </div>

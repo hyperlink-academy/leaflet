@@ -75,6 +75,10 @@ function usePostsListReaderFlags(entityID: string) {
 function PostsListBlockContent({ entityID }: { entityID: string }) {
   let { data } = usePublicationData();
   let publicationRecord = useNormalizedPublicationRecord();
+  let { rootEntity } = useReplicache();
+  // The draft's theme facts are the width the editor is rendering at; the
+  // publication record only catches up on publish.
+  let pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
 
   let viewFact = useEntity(entityID, "posts-list/view");
   let view: PostsListView = viewFact?.data.value ?? "medium";
@@ -183,6 +187,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
       readerControls={readerControls}
       readerIndex={listData.readerIndex}
       disableLinks
+      pageWidth={pageWidth}
     />
   );
 }

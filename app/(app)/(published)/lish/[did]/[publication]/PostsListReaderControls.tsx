@@ -14,10 +14,11 @@ import {
   type PostsListReaderControls,
   type PostsListSort,
 } from "src/utils/postsListPagination";
+import { SearchTiny } from "components/Icons/SearchTiny";
 
 export type PostsListReaderState = {
   search: string;
-  tag: string | null;
+  tags: string[];
   sort: PostsListSort;
 };
 
@@ -40,21 +41,14 @@ export function PostsListReaderControlsBar({
   state: PostsListReaderState;
   setState: (next: PostsListReaderState) => void;
 }) {
-  const tagCounts = useMemo(
-    () => (controls.tagFilter ? tagCountsForIndex(index) : []),
-    [controls.tagFilter, index],
-  );
-
   return (
     <div
-      className="postsListReaderControls flex flex-row gap-2 items-center w-full pb-3"
-      // In the editor these sit inside a block; clicking them shouldn't
-      // select the block underneath them.
+      className="postsListReaderControls flex flex-row items-center gap-6 w-full pb-2"
       onMouseDown={(e) => e.stopPropagation()}
     >
       {controls.search && (
-        <label className="input-with-border py-0! px-[6px]! grow min-w-0 flex items-center gap-1 text-secondary">
-          <SearchSmall className="shrink-0 text-tertiary" />
+        <label className="readerSearch border border-transparent focus-within:border-border rounded-lg py-0! px-0 focus-within:px-[6px]! transition-[padding] duration-100 ease-out grow min-w-0 flex items-center gap-2 text-secondary">
+          <SearchTiny className="shrink-0 text-tertiary" />
           <Input
             className="appearance-none! bg-transparent grow min-w-0 py-1! outline-none! text-primary"
             placeholder="Search posts…"
@@ -77,59 +71,22 @@ export function PostsListReaderControlsBar({
           )}
         </label>
       )}
-      <div className="tagFilter flex flex-row gap-2 items-center shrink-0 ml-auto">
+
+      <div
+        className={`readerFilterAndSort gap-3 items-center ${!controls.tagFilter && !controls.sort ? "hidden" : "flex"} ${controls.tagFilter && controls.sort && controls.search ? " flex-row" : "flex-row-reverse"} `}
+      >
         {controls.tagFilter && (
-          <Popover
-            asChild
-            align="end"
-            className="tagSelector max-w-xs max-h-64 overflow-y-auto"
-            trigger={
-              <button
-                type="button"
-                aria-label={
-                  state.tag ? `Filtering by tag: ${state.tag}` : "Filter by tag"
-                }
-                className={`shrink-0 flex items-center gap-1 ${
-                  state.tag
-                    ? "text-accent-contrast font-bold"
-                    : "text-tertiary hover:text-accent-contrast"
-                }`}
-              >
-                <TagSmall />
-                {state.tag && (
-                  <span className="text-sm max-w-24 truncate">{state.tag}</span>
-                )}
-              </button>
-            }
-          >
-            {tagCounts.length === 0 ? (
-              <div className="text-tertiary italic text-sm">no tags yet</div>
-            ) : (
-              <div className="flex flex-col gap-2 text-primary">
-                {tagCounts.map(({ tag, count }) => (
-                  <div key={tag} className="flex items-center gap-2">
-                    <Tag
-                      name={tag}
-                      selected={state.tag === tag}
-                      className="min-w-0"
-                      onClick={() =>
-                        setState({
-                          ...state,
-                          tag: state.tag === tag ? null : tag,
-                        })
-                      }
-                    />
-                    <div className="text-tertiary text-sm ml-auto">{count}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Popover>
+          <TagSelector
+            index={index}
+            tags={state.tags}
+            setTags={(tags) => setState({ ...state, tags })}
+          />
         )}
+
         {controls.sort && (
           <ToggleGroup<PostsListSort>
             background="light"
-            className="shrink-0"
+            className="readerSort shrink-0"
             value={state.sort}
             options={SORT_OPTIONS}
             onChange={(sort) => setState({ ...state, sort })}
@@ -139,3 +96,64 @@ export function PostsListReaderControlsBar({
     </div>
   );
 }
+
+const TagSelector = ({
+  index,
+  tags,
+  setTags,
+}: {
+  index: PostsListIndexEntry[];
+  tags: string[];
+  setTags: (next: string[]) => void;
+}) => {
+  const tagCounts = useMemo(() => tagCountsForIndex(index), [index]);
+
+  return (
+    <Popover
+      asChild
+      align="end"
+      className="readerTagFilter max-w-xs max-h-64 overflow-y-auto"
+      trigger={
+        <button
+          type="button"
+          aria-label={
+            tags.length
+              ? `Filtering by tags: ${tags.join(", ")}`
+              : "Filter by tag"
+          }
+          className={`shrink-0 flex items-center gap-1 ${
+            tags.length
+              ? "text-accent-contrast font-bold"
+              : "text-tertiary hover:text-accent-contrast"
+          }`}
+        >
+          <TagSmall />
+          {tags.length > 0 && <span className="text-sm ">{tags.length}</span>}
+        </button>
+      }
+    >
+      {tagCounts.length === 0 ? (
+        <div className="text-tertiary italic text-sm">no tags yet</div>
+      ) : (
+        <div className="flex flex-wrap gap-2 text-primary">
+          {tagCounts.map(({ tag, count }) => {
+            let selected = tags.includes(tag);
+            return (
+              <Tag
+                key={tag}
+                name={tag}
+                selected={selected}
+                count={count}
+                onClick={() =>
+                  setTags(
+                    selected ? tags.filter((t) => t !== tag) : [...tags, tag],
+                  )
+                }
+              />
+            );
+          })}
+        </div>
+      )}
+    </Popover>
+  );
+};

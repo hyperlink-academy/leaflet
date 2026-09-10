@@ -165,16 +165,20 @@ function matchesSearch(entry: PostsListIndexEntry, terms: string[]): boolean {
 // order as `sortPostsForList`, so the server-seeded first batch still lines up.
 export function readerControlledUris(
   index: PostsListIndexEntry[],
-  state: { search?: string; tag?: string | null; sort?: PostsListSort },
+  state: { search?: string; tags?: string[] | null; sort?: PostsListSort },
 ): string[] {
   const terms = (state.search ?? "")
     .toLowerCase()
     .trim()
     .split(/\s+/)
     .filter(Boolean);
-  const tag = state.tag ?? null;
+  // Selecting several tags widens the list rather than narrowing it, matching
+  // the author-side `filterPostsByTags`.
+  const tags = state.tags ?? [];
   const filtered = index.filter(
-    (e) => (!tag || !!e.tags?.includes(tag)) && matchesSearch(e, terms),
+    (e) =>
+      (tags.length === 0 || !!e.tags?.some((t) => tags.includes(t))) &&
+      matchesSearch(e, terms),
   );
   const sorted = [...filtered].sort((a, b) => {
     if (state.sort === "oldest") return -compareLatest(a, b);
