@@ -56,11 +56,7 @@ export function PaginatedPublicationPostsList({
   readerIndex?: PostsListIndexEntry[];
   emptyState?: React.ReactNode;
   className?: string;
-  // Set by the editor, where the list is being laid out rather than read, so
-  // clicking a post doesn't navigate away from the page you're customizing.
   disableLinks?: boolean;
-  // Overrides the publication record's page width, which the editor needs
-  // because its draft theme hasn't been published yet.
   pageWidth?: number;
 }) {
   const [readerState, setReaderState] =
@@ -109,7 +105,7 @@ export function PaginatedPublicationPostsList({
     return ["posts-batch", listId, slice] as const;
   };
 
-  const { data, size, setSize, isValidating } = useSWRInfinite(
+  const { data, size, setSize, isValidating, isLoading } = useSWRInfinite(
     getKey,
     ([, , slice]) => loadBatch(slice),
     {
@@ -121,6 +117,11 @@ export function PaginatedPublicationPostsList({
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const hasMore = cappedUris.length > size * POSTS_LIST_PAGE_SIZE;
+  // `data` gains a page only once the whole array resolves, so a size that has
+  // outrun it means a batch is in flight. `isValidating` alone also fires for
+  // focus revalidation, and `hasMore` describes the page *after* the one being
+  // loaded — it goes false on the final batch, the one readers wait on.
+  const isLoadingMore = isValidating && size > (data?.length ?? 0);
   const hasUnshownPosts = hasMore || cappedUris.length < orderedUris.length;
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -141,9 +142,23 @@ export function PaginatedPublicationPostsList({
 
   return (
     <div className={`relative w-full ${className ?? ""}`}>
-      {readerControls && readerIndex && (
+      {/*{readerControls && readerIndex && (
+
         <PostsListReaderControlsBar
           controls={readerControls}
+          index={readerIndex}
+          state={readerState}
+          setState={setReaderState}
+        />
+      )}*/}
+
+      {readerIndex && (
+        <PostsListReaderControlsBar
+          controls={{
+            search: true,
+            tagFilter: true,
+            sort: true,
+          }}
           index={readerIndex}
           state={readerState}
           setState={setReaderState}
@@ -155,23 +170,28 @@ export function PaginatedPublicationPostsList({
         </div>
       ) : (
         <>
-          <PublicationPostsList
-            publication={publication}
-            publicationRecord={publicationRecord}
-            posts={allPosts}
-            view={view}
-            highlightFirstPost={highlightFirstPost}
-            preSorted
-            disableLinks={disableLinks}
-            pageWidth={pageWidth}
-          />
+          <div
+            className={isLoading ? "opacity-50 transition-opacity" : ""}
+            aria-busy={isLoading || undefined}
+          >
+            <PublicationPostsList
+              publication={publication}
+              publicationRecord={publicationRecord}
+              posts={allPosts}
+              view={view}
+              highlightFirstPost={highlightFirstPost}
+              preSorted
+              disableLinks={disableLinks}
+              pageWidth={pageWidth}
+            />
+          </div>
           {/* Fires the next batch while still ~1200px from the list's end. */}
           <div
             ref={loadMoreRef}
             className="absolute bottom-[1200px] left-0 w-full h-px pointer-events-none"
             aria-hidden="true"
           />
-          {isValidating && hasMore && (
+          {isLoadingMore && (
             <div className="text-center text-tertiary py-4">
               Loading more posts...
             </div>

@@ -376,7 +376,7 @@ export let Block = ({
       );
     },
     "pub.leaflet.blocks.horizontalRule": () => {
-      return <hr className="my-2 w-full border-border-light" />;
+      return <hr className="my-4 w-full border-border-light" />;
     },
     "pub.leaflet.blocks.membersOnlyDelimiter": () => {
       // Full-access viewers read straight through; for everyone else the

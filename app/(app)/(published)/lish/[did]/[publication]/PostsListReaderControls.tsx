@@ -35,8 +35,6 @@ export function PostsListReaderControlsBar({
   setState,
 }: {
   controls: PostsListReaderControls;
-  // The block's full post index. Tag counts describe the whole list, not the
-  // current search — so the dropdown doesn't reshuffle as you type.
   index: PostsListIndexEntry[];
   state: PostsListReaderState;
   setState: (next: PostsListReaderState) => void;
