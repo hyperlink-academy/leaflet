@@ -28,12 +28,8 @@ export const useUIState = create(
       zoomedBlocks: {} as { [pageEntity: string]: string },
       openPages: [] as EditorOpenPage[],
       selectedBlocks: [] as SelectedBlock[],
-      openPopover: null as string | null,
     },
     (set) => ({
-      setOpenPopover: (id: string | null) => {
-        set({ openPopover: id });
-      },
       openPage: (parent: EditorOpenPage, page: EditorOpenPage) =>
         set((state) => {
           let parentKey = getEditorPageKey(parent);

@@ -1,5 +1,4 @@
 import { useEntity, useReplicache } from "src/replicache";
-import { useUIState } from "src/useUIState";
 import { Popover } from "components/Popover";
 import { SettingsTriggerButton } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
@@ -19,9 +18,6 @@ export function usePageLinkDisplay(entityID: string): PageLinkDisplay {
 export function PageLinkSettingsButton(props: { entityID: string }) {
   let { rep } = useReplicache();
   let display = usePageLinkDisplay(props.entityID);
-  let popoverKey = `${props.entityID}-settings`;
-  let setOpenPopover = useUIState((s) => s.setOpenPopover);
-  let isOpen = useUIState((s) => s.openPopover === popoverKey);
 
   return (
     <Popover
@@ -29,8 +25,6 @@ export function PageLinkSettingsButton(props: { entityID: string }) {
       side="top"
       align="end"
       className="p-0!"
-      open={isOpen}
-      onOpenChange={(o) => setOpenPopover(o ? popoverKey : null)}
       onOpenAutoFocus={(e) => e.preventDefault()}
       trigger={
         <SettingsTriggerButton
