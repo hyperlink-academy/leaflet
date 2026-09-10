@@ -93,13 +93,13 @@ const METRIC_GROUPS: { title: string; metrics: Metric[] }[] = [
         key: "subscribes",
         title: "Subscriptions",
         unit: "subscriptions",
-        trackedSince: "2026-09-10",
+        trackedSince: "2026-08-27",
       },
       {
         key: "unsubscribes",
         title: "Unsubscribes",
         unit: "unsubscribes",
-        trackedSince: "2026-09-10",
+        trackedSince: "2026-08-27",
       },
       {
         key: "memberships_joined",
