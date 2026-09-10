@@ -62,7 +62,12 @@ export function ShareOptions() {
           icon=<ShareSmall />
           className="sm:w-full! w-fit!"
           secondary
-          label={`Share ${pub ? "Draft" : ""}`}
+          label={
+            <div className="w-max">
+              Share
+              {pub ? <span className="hidden sm:inline"> Draft</span> : null}
+            </div>
+          }
           labelOnMobile
         />
       }
