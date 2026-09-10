@@ -352,6 +352,22 @@ const PostsListBlockAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "posts-list/reader-controls": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-search": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-tag-filter": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-sort": {
+    type: "boolean",
+    cardinality: "one",
+  },
 } as const;
 
 const ThemeAttributes = {

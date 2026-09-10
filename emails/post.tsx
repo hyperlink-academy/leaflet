@@ -1355,7 +1355,7 @@ const BlockRenderer = ({
         style={{
           border: "none",
           borderTop: `1px solid ${colors.borderLight}`,
-          margin: "12px 0",
+          margin: "16px 0",
           width: "100%",
         }}
       />
