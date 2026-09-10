@@ -512,7 +512,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
                 <strong>Enable Reader Controls</strong>
               </Toggle>
               {readerControlsEnabled && (
-                <div className="flex flex-col gap-1 ml-8">
+                <div className="flex flex-col gap-1 py-1 px-2 opaque-container text-secondary">
                   {(
                     [
                       {
