@@ -52,6 +52,10 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
+import {
+  MobileMultiselectIndicator,
+  useMobileMultiselectIndicator,
+} from "./MobileMultiselectIndicator";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -253,6 +257,12 @@ export const Block = memo(function Block(
       }`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
+      {!props.preview && (
+        <MobileMultiselectIndicator
+          entityID={props.entityID}
+          parent={props.parent}
+        />
+      )}
       {dropIndicator && <ListDropIndicator indicator={dropIndicator} />}
       {props.preview || !entity_set.permissions.write ? (
         baseBlock
@@ -620,11 +630,14 @@ const NonTextBlockOptions = (props: {
   );
 };
 
-const HeadingFoldButton = (props: { entityID: string }) => {
+const HeadingFoldButton = (props: { entityID: string; parent: string }) => {
   let { rep } = useReplicache();
   let folded = useIsFolded(props.entityID);
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
+  // Both sit on the block's left edge; the multiselect tab wins while shown.
+  let multiselectIndicator = useMobileMultiselectIndicator(props);
+  if (multiselectIndicator) return null;
   let top =
     headingLevel === 1
       ? "top-[16px]"

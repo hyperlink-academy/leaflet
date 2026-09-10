@@ -14,6 +14,7 @@ import { useEntity } from "src/replicache";
 // ViewportSizeLayout keeps it above the iOS keyboard.
 export function PublicationEditMobileFooter() {
   let focusedEntity = useUIState((s) => s.focusedEntity);
+  let isMultiselected = useUIState((s) => s.selectedBlocks.length > 1);
   let entity_set = useEntitySetContext();
   let blockType = useEntity(focusedEntity?.entityID || null, "block/type")?.data
     .value;
@@ -21,7 +22,8 @@ export function PublicationEditMobileFooter() {
   if (!entity_set.permissions.write || !focusedEntity) return null;
 
   let toolbar =
-    focusedEntity.entityType === "block" && hasBlockToolbar(blockType) ? (
+    focusedEntity.entityType === "block" &&
+    (hasBlockToolbar(blockType) || isMultiselected) ? (
       <Toolbar
         pageID={focusedEntity.parent}
         blockID={focusedEntity.entityID}

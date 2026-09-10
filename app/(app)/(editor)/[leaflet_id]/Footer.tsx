@@ -35,6 +35,7 @@ export function hasBlockToolbar(blockType: string | null | undefined) {
 }
 export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
+  let isMultiselected = useUIState((s) => s.selectedBlocks.length > 1);
   let entity_set = useEntitySetContext();
   let { identity } = useIdentityData();
   let { permission_token } = useReplicache();
@@ -71,7 +72,7 @@ export function LeafletFooter(props: { entityID: string }) {
     >
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
-      hasBlockToolbar(blockType) &&
+      (hasBlockToolbar(blockType) || isMultiselected) &&
       entity_set.permissions.write ? (
         <FooterLayout
           onMouseDown={(e) => {
