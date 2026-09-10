@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ClientRect,
   CollisionDetection,
@@ -8,7 +8,6 @@ import {
   DragMoveEvent,
   DragOverlay,
   DragStartEvent,
-  PointerSensor,
   closestCenter,
   pointerWithin,
   useSensor,
@@ -29,34 +28,20 @@ import {
   useListDragState,
 } from "./ListDndState";
 import { Block, BlockProps } from "./Block";
+import { BlockDragSensor } from "./BlockDragSensor";
 
-// Drag and drop reordering for list items. Each Block registers itself as a
-// draggable (activated from its ListMarker by long press) and a droppable,
-// and each page's Blocks registers its visible block list (see ListDndState).
-// This provider mounts once above all open pages, so an item can be dropped
+// Drag and drop reordering for blocks. Each Block registers itself as a
+// draggable and a droppable, and each page's Blocks registers its visible
+// block list (see ListDndState). A list item is picked up from its ListMarker;
+// a non-text block is also picked up by a long press anywhere on its body.
+// This provider mounts once above all open pages, so a block can be dropped
 // into any of them: it computes where the drop would land, publishes it
 // through useListDragState for the indicator line, and applies it on drop.
 export function ListDndProvider(props: { children: React.ReactNode }) {
   let { rep, undoManager } = useReplicache();
   let foldedBlocks = useFoldedBlocks();
 
-  let sensors = useSensors(
-    useSensor(PointerSensor, {
-      // The drag starts on whichever comes first: a 250ms hold (the OS
-      // long-press timeout isn't exposed to the web; 250ms matches native
-      // drag-lift timing and dnd-kit's recommended touch delay) or 8px of
-      // pointer travel. A quick clean tap still falls through as a click.
-      // dnd-kit reuses the one tolerance field as a movement-cancel in both
-      // constraint branches, and checks it before the distance start — the
-      // sentinel keeps any finite movement resolving as a drag start, never
-      // a cancel.
-      activationConstraint: {
-        delay: 250,
-        distance: 8,
-        tolerance: Number.MAX_SAFE_INTEGER,
-      },
-    }),
-  );
+  let sensors = useSensors(useSensor(BlockDragSensor));
 
   let [active, setActive] = useState<BlockProps | null>(null);
 
@@ -70,6 +55,22 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
   let dropRef = useRef<ListDropTarget | null>(null);
   let foldedRef = useRef(foldedBlocks);
   foldedRef.current = foldedBlocks;
+
+  // A block body can't opt out of touch scrolling the way the marker does
+  // (touch-none would swallow every scroll that starts on a block), and once
+  // the browser starts scrolling it cancels the pointer stream, ending the
+  // drag. Refusing touch moves while a drag is in flight keeps the page still.
+  useEffect(() => {
+    let controller = new AbortController();
+    window.addEventListener(
+      "touchmove",
+      (e) => {
+        if (dragRef.current && e.cancelable) e.preventDefault();
+      },
+      { signal: controller.signal, passive: false },
+    );
+    return () => controller.abort();
+  }, []);
 
   let collisionDetection = useCallback<CollisionDetection>((args) => {
     pointerRef.current = args.pointerCoordinates;
@@ -86,7 +87,7 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
     let arr = page.blocks;
     let index = arr.findIndex((b) => b.entityID === dragActive.id);
     let block = arr[index];
-    if (!block?.listData) return;
+    if (!block) return;
     let rowLeft =
       document
         .getElementById(elementId.block(block.entityID).container)
@@ -118,10 +119,13 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
       previousBlock: arr[index - 1] || null,
       nextBlock,
       nextPosition:
-        block.listData.depth === nextDepth ? nextBlock?.position || null : null,
-      displayDepth: page.zoomDepth
-        ? block.listData.depth - page.zoomDepth + 1
-        : undefined,
+        (block.listData?.depth || 1) === nextDepth
+          ? nextBlock?.position || null
+          : null,
+      displayDepth:
+        page.zoomDepth && block.listData
+          ? block.listData.depth - page.zoomDepth + 1
+          : undefined,
     });
     useListDragState.setState({ activeId: block.entityID, dropTarget: null });
   };
@@ -172,13 +176,13 @@ export function ListDndProvider(props: { children: React.ReactNode }) {
     let target = dropRef.current;
     let block = dragRef.current?.block;
     reset();
-    if (!rep || !target || !block?.listData) return;
+    if (!rep || !target || !block) return;
     if (target.unfold) unfoldBlocks(rep, [target.unfold]);
     let adopt = target.adopt;
-    if (!adopt)
+    if (!adopt || !block.listData)
       return rep.mutate.moveBlock({
         block: block.entityID,
-        oldParent: block.listData.parent,
+        oldParent: block.listData?.parent ?? block.parent,
         newParent: target.newParent,
         position: target.position,
       });
@@ -278,7 +282,6 @@ function computeDropTarget(
   foldedBlocks: readonly string[],
 ): ListDropTarget | null {
   let activeBlock = drag.block;
-  if (!activeBlock.listData) return null;
   let { blocks, pageID } = page;
   // The shallowest depth this view may host: 1, or the zoom root's child
   // depth in a zoomed view (so nothing lands outside the zoomed subtree).
@@ -341,17 +344,27 @@ function computeDropTarget(
     : above
       ? 1
       : minDepth;
-  let offsetX = pointer.x - overRect.left - drag.startRelX;
-  let neutralDepth = Math.min(
-    maxDepth,
-    Math.max(minDepth, activeBlock.listData.depth),
-  );
-  let depth = Math.min(
-    maxDepth,
-    Math.max(minDepth, neutralDepth + Math.round(offsetX / drag.indentWidth)),
-  );
+  let depth: number;
+  if (activeBlock.listData) {
+    let offsetX = pointer.x - overRect.left - drag.startRelX;
+    let neutralDepth = Math.min(
+      maxDepth,
+      Math.max(minDepth, activeBlock.listData.depth),
+    );
+    depth = Math.min(
+      maxDepth,
+      Math.max(minDepth, neutralDepth + Math.round(offsetX / drag.indentWidth)),
+    );
+  } else {
+    // A block that isn't a list item stays a root block: it only lands in
+    // gaps at depth 1, and never through a list split, which would hand it
+    // children that only render under list items.
+    if (minDepth > 1 || (below?.listData && below.listData.depth !== 1))
+      return null;
+    depth = 1;
+  }
   // Back in its own slot at its own depth: not a move.
-  if (ownSlot && depth === activeBlock.listData.depth) return null;
+  if (ownSlot && depth === (activeBlock.listData?.depth || 1)) return null;
 
   if (below?.listData && depth === below.listData.depth)
     return {
