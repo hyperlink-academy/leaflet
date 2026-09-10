@@ -141,29 +141,16 @@ export function PaginatedPublicationPostsList({
   const allPosts = data ? data.flatMap((page) => page) : [];
 
   return (
-    <div className={`relative w-full ${className ?? ""}`}>
-      {/*{readerControls && readerIndex && (
-
+    <div className={`relative w-full py-2 ${className ?? ""}`}>
+      {readerControls && readerIndex && (
         <PostsListReaderControlsBar
           controls={readerControls}
           index={readerIndex}
           state={readerState}
           setState={setReaderState}
         />
-      )}*/}
-
-      {readerIndex && (
-        <PostsListReaderControlsBar
-          controls={{
-            search: true,
-            tagFilter: true,
-            sort: true,
-          }}
-          index={readerIndex}
-          state={readerState}
-          setState={setReaderState}
-        />
       )}
+
       {cappedUris.length === 0 ? (
         <div className="text-center text-tertiary italic py-4">
           No posts match
