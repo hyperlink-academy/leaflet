@@ -8,10 +8,14 @@ import {
   createConnectedMerchantAccount,
   createOnboardingLink,
 } from "stripe/connect";
+import { isStripeConnectCountry } from "stripe/connectCountries";
 
-export async function startStripeConnectOnboarding(
-  returnUrl: string,
-): Promise<Result<{ url: string }, string>> {
+// `country` is only consulted when creating the account; it's fixed on Stripe's
+// side afterwards, so later calls (resuming onboarding) ignore it.
+export async function startStripeConnectOnboarding(args: {
+  returnUrl: string;
+  country?: string;
+}): Promise<Result<{ url: string }, string>> {
   const identity = await getAuthIdentity();
   if (!identity) return Err("Not authenticated");
   if (!identity.email)
@@ -28,6 +32,8 @@ export async function startStripeConnectOnboarding(
   if (existing?.stripe_account_id) {
     stripeAccountId = existing.stripe_account_id;
   } else {
+    if (!isStripeConnectCountry(args.country))
+      return Err("Choose the country you're based in to set up payments");
     const handle = identity.atp_did
       ? (await getProfiles([identity.atp_did])).get(identity.atp_did)?.handle
       : undefined;
@@ -37,6 +43,7 @@ export async function startStripeConnectOnboarding(
         email: identity.email,
         displayName: handle || identity.email,
         identityId: identity.id,
+        country: args.country,
       });
     } catch (e) {
       console.error("Stripe Connect account creation failed:", e);
@@ -62,8 +69,8 @@ export async function startStripeConnectOnboarding(
   try {
     link = await createOnboardingLink({
       accountId: stripeAccountId,
-      refreshUrl: returnUrl,
-      returnUrl,
+      refreshUrl: args.returnUrl,
+      returnUrl: args.returnUrl,
     });
   } catch (e) {
     console.error("Stripe Connect onboarding link creation failed:", e);

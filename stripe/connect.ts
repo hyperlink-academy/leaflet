@@ -4,6 +4,7 @@ import {
   deriveConnectedAccountStatus,
   type ConnectedAccountStatus,
 } from "stripe/accountStatus";
+import type { StripeConnectCountry } from "stripe/connectCountries";
 
 // Platform fee taken from each membership payment, applied as
 // application_fee_percent on the publisher's direct-charge subscription.
@@ -21,17 +22,18 @@ export type ConnectedAccountState = {
 // full dashboard, Stripe collects its fees from the account, and Stripe carries
 // loss liability. The publisher owns the account; members are charged directly
 // on it and our platform cut arrives as application fees
-// (application_fee_percent).
+// (application_fee_percent). Stripe fixes `country` at creation (the update
+// endpoint has no such field), so the publisher must pick it before this runs.
 export async function createConnectedMerchantAccount(args: {
   email: string;
   displayName?: string;
   identityId: string;
+  country: StripeConnectCountry;
 }) {
   return getStripe().accounts.create(
     {
       email: args.email,
-      // Required to onboard; default US until we collect the publisher's country.
-      country: "US",
+      country: args.country,
       controller: {
         fees: { payer: "account" },
         losses: { payments: "stripe" },
@@ -52,8 +54,12 @@ export async function createConnectedMerchantAccount(args: {
     // the account already created instead of orphaning a second one. The suffix
     // versions the request shape: replaying an older key against a changed
     // request body inside Stripe's idempotency window would error instead of
-    // creating.
-    { idempotencyKey: `connect-account-v1b-${args.identityId}` },
+    // creating. The country is part of the key for the same reason — a
+    // publisher who picks a different country after a failed attempt should
+    // get a fresh create, not an idempotency mismatch error.
+    {
+      idempotencyKey: `connect-account-v1c-${args.identityId}-${args.country}`,
+    },
   );
 }
 
