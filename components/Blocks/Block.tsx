@@ -4,8 +4,11 @@ import { Fact, useEntity, useReplicache } from "src/replicache";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import {
+  BlockBodyDragContext,
   ListDragHandleContext,
   didListDragJustEnd,
+  dragHandleAttr,
+  useBlockBodyDrag,
   useListDragHandle,
   useListDragState,
 } from "./ListDndState";
@@ -257,7 +260,11 @@ export const Block = memo(function Block(
       {props.preview || !entity_set.permissions.write ? (
         baseBlock
       ) : (
-        <BlockListDnd entityID={props.entityID} isListItem={!!props.listData}>
+        <BlockListDnd
+          entityID={props.entityID}
+          isListItem={!!props.listData}
+          bodyDraggable={!isTextBlock[props.type]}
+        >
           {baseBlock}
         </BlockListDnd>
       )}
@@ -265,21 +272,24 @@ export const Block = memo(function Block(
   );
 }, deepEqualsBlockProps);
 
-// Registers the block as a draggable list item and a drop target, and hands
-// the activator down to the ListMarker through ListDragHandleContext. Lives in
-// its own leaf component because dnd-kit's hooks re-render their consumers on
-// every `over` change during a drag: everything they touch here is memoized,
-// so the block subtree (passed through as `children`) bails out and only this
-// wiring re-renders. The measured node is an inset overlay div rather than the
-// block wrapper itself for the same reason.
+// Registers the block as a draggable and a drop target, and hands the
+// activator down to its handles: the ListMarker through ListDragHandleContext
+// and, for blocks that aren't text editors, the body through
+// BlockBodyDragContext (read by BlockLayout). Lives in its own leaf component
+// because dnd-kit's hooks re-render their consumers on every `over` change
+// during a drag: everything they touch here is memoized, so the block subtree
+// (passed through as `children`) bails out and only this wiring re-renders.
+// The measured node is an inset overlay div rather than the block wrapper
+// itself for the same reason.
 const BlockListDnd = (props: {
   entityID: string;
   isListItem: boolean;
+  bodyDraggable: boolean;
   children: React.ReactNode;
 }) => {
   let draggable = useDraggable({
     id: props.entityID,
-    disabled: !props.isListItem,
+    disabled: !props.isListItem && !props.bodyDraggable,
   });
   let droppable = useDroppable({ id: props.entityID });
   let setNodeRef = useCallback(
@@ -303,7 +313,11 @@ const BlockListDnd = (props: {
         aria-hidden
       />
       <ListDragHandleContext.Provider value={dragHandle}>
-        {props.children}
+        <BlockBodyDragContext.Provider
+          value={props.bodyDraggable ? listeners : null}
+        >
+          {props.children}
+        </BlockBodyDragContext.Provider>
       </ListDragHandleContext.Provider>
     </>
   );
@@ -494,9 +508,26 @@ export const BlockLayout = (props: {
   extraOptions?: React.ReactNode;
 }) => {
   // this is used to wrap non-text blocks in consistent selected styling, spacing, and top level options like delete
+  let bodyDrag = useBlockBodyDrag();
   return (
     <div
-      className={`nonTextBlockAndControls relative ${props.hasAlignment ? "w-fit" : "w-full"}`}
+      className={`nonTextBlockAndControls relative ${props.hasAlignment ? "w-fit" : "w-full"} ${bodyDrag ? "[-webkit-touch-callout:none]" : ""}`}
+      {...(bodyDrag ? dragHandleAttr("body") : {})}
+      onPointerDown={
+        bodyDrag
+          ? (e) => {
+              // A hold on a control inside the block (a vote button, a caption
+              // input, the embed's resize handle) is meant for the control.
+              if (
+                (e.target as Element).closest(
+                  "button, a, input, textarea, select, [contenteditable], [data-draggable]",
+                )
+              )
+                return;
+              bodyDrag.onPointerDown?.(e);
+            }
+          : undefined
+      }
     >
       <div
         className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
@@ -512,7 +543,12 @@ export const BlockLayout = (props: {
         }
         `}
       >
-        {props.children}
+        {/* A block's own list marker sits beside its body, so any ListMarker
+            rendered inside (a page link's preview of its page's title) must
+            not inherit the handle and pick this block up. */}
+        <ListDragHandleContext.Provider value={null}>
+          {props.children}
+        </ListDragHandleContext.Provider>
       </div>
       {props.isSelected && (
         <NonTextBlockOptions
@@ -731,6 +767,7 @@ export const ListMarker = (
         ref={dragHandle?.setActivatorNodeRef}
         {...dragHandle?.attributes}
         {...dragHandle?.listeners}
+        {...(dragHandle ? dragHandleAttr("marker") : {})}
         onPointerDown={(e) => {
           dragHandle?.listeners?.onPointerDown?.(e);
           // Keep the hold from also triggering the block wrapper's own

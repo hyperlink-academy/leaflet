@@ -1,6 +1,6 @@
 import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
-import { useIsBlockSelected, useUIState } from "src/useUIState";
+import { useIsBlockSelected } from "src/useUIState";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
@@ -90,9 +90,6 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
     "standard-site-post/show-publication-theme",
   );
   let showPubTheme = showPubThemeFact?.data.value !== false;
-  let popoverKey = `${props.entityID}-settings`;
-  let setOpenPopover = useUIState((s) => s.setOpenPopover);
-  let isOpen = useUIState((s) => s.openPopover === popoverKey);
 
   return (
     <Popover
@@ -100,8 +97,6 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
       side="top"
       align="end"
       className="p-0!"
-      open={isOpen}
-      onOpenChange={(o) => setOpenPopover(o ? popoverKey : null)}
       onOpenAutoFocus={(e) => e.preventDefault()}
       trigger={
         <SettingsTriggerButton aria-label="Standard Site Post Settings" />

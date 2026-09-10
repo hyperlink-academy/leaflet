@@ -67,6 +67,21 @@ export const ListDragHandleContext = createContext<null | {
 }>(null);
 export const useListDragHandle = () => useContext(ListDragHandleContext);
 
+// The same block's second handle: its body, for blocks that aren't text
+// editors, picked up by a long press. Handed down to BlockLayout.
+export const BlockBodyDragContext =
+  createContext<null | DraggableSyntheticListeners>(null);
+export const useBlockBodyDrag = () => useContext(BlockBodyDragContext);
+
+// Both handles share the block's one draggable and one sensor, so each
+// handle's element carries this attribute and the sensor reads which handle
+// the pointer went down on from it (see BlockDragSensor).
+export type DragHandle = "marker" | "body";
+export const DRAG_HANDLE_ATTR = "data-drag-handle";
+export const dragHandleAttr = (handle: DragHandle) => ({
+  [DRAG_HANDLE_ATTR]: handle,
+});
+
 // The browser fires a click on the handle after a drop; the marker's own
 // click action (fold toggle) needs a way to ignore it.
 let lastDragEndedAt = 0;
