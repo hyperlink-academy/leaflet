@@ -38,7 +38,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
       )}
 
       <div
-        className={`relative flex flex-col pt-2 ${widePage ? "sm:py-2 sm:px-4 " : ""} ${!props.inList && "px-3 py-2"}`}
+        className={`relative flex flex-col pt-2 ${hasCoverImage ? "" : ""}  ${props.inList ? (hasCoverImage && widePage ? "sm:py-2 sm:px-4" : "px-0") : "px-3 py-2"}`}
       >
         {props.pubInfo}
         {props.membersOnly && (

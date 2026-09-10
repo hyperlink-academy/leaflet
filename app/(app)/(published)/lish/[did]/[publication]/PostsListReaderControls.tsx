@@ -77,12 +77,12 @@ export function PostsListReaderControlsBar({
           )}
         </label>
       )}
-      <div className="flex flex-row gap-2 items-center shrink-0 ml-auto">
+      <div className="tagFilter flex flex-row gap-2 items-center shrink-0 ml-auto">
         {controls.tagFilter && (
           <Popover
             asChild
             align="end"
-            className="max-w-xs max-h-64 overflow-y-auto"
+            className="tagSelector max-w-xs max-h-64 overflow-y-auto"
             trigger={
               <button
                 type="button"
@@ -128,6 +128,7 @@ export function PostsListReaderControlsBar({
         )}
         {controls.sort && (
           <ToggleGroup<PostsListSort>
+            background="light"
             className="shrink-0"
             value={state.sort}
             options={SORT_OPTIONS}
