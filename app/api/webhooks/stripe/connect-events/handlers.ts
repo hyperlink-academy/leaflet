@@ -5,6 +5,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { notifyNewMember } from "src/membership.server";
 import { ensureSubscriberRecordsForMembership } from "src/subscriptions/membership";
 import MembershipPaymentFailed from "emails/membershipPaymentFailed";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
 
@@ -16,12 +17,18 @@ function isActiveStatus(status: string | null | undefined): boolean {
   return status === "active" || status === "trialing";
 }
 
-// A membership activated by webhook needs the same subscriber mirroring the
-// inline join flow does.
+// A membership activated by webhook needs the same subscriber mirroring and
+// analytics the inline join flow does.
 async function mirrorSubscriberRecords(
   identityId: string,
   publication: string,
+  sub: Stripe.Subscription,
 ) {
+  trackUserEvent({ id: identityId }, "join_membership", {
+    publication,
+    tier: sub.metadata.tier_id ?? "",
+    cadence: sub.metadata.cadence ?? "",
+  });
   const { data: identity } = await supabaseServerClient
     .from("identities")
     .select("id, email, atp_did")
@@ -102,6 +109,7 @@ export async function handleMembershipSubscriptionEvent(
       await mirrorSubscriberRecords(
         sub.metadata.identity_id,
         sub.metadata.publication,
+        sub,
       );
   }
 }
@@ -215,7 +223,7 @@ async function reconcileUntrackedSubscription(
       .eq("id", tracked.id);
     if (error) throw error;
     await notifyNewMember(publication, tracked.id);
-    await mirrorSubscriberRecords(identity_id, publication);
+    await mirrorSubscriberRecords(identity_id, publication, sub);
     return;
   }
 
@@ -266,7 +274,7 @@ async function reconcileUntrackedSubscription(
 
   if (isActiveStatus(sub.status)) {
     await notifyNewMember(publication, inserted.id);
-    await mirrorSubscriberRecords(identity_id, publication);
+    await mirrorSubscriberRecords(identity_id, publication, sub);
   }
 }
 

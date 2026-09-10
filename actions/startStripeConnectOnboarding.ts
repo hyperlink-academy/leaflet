@@ -9,6 +9,7 @@ import {
   createOnboardingLink,
 } from "stripe/connect";
 import { isStripeConnectCountry } from "stripe/connectCountries";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 // `country` is only consulted when creating the account; it's fixed on Stripe's
 // side afterwards, so later calls (resuming onboarding) ignore it.
@@ -63,6 +64,7 @@ export async function startStripeConnectOnboarding(args: {
         { onConflict: "identity_id", ignoreDuplicates: true },
       );
     if (error) return Err("Failed to save connected account");
+    trackUserEvent(identity, "connect_onboarding_started");
   }
 
   let link;

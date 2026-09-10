@@ -5,6 +5,7 @@ import {
   type ConnectedAccountStatus,
 } from "stripe/accountStatus";
 import type { StripeConnectCountry } from "stripe/connectCountries";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 // Platform fee taken from each membership payment, applied as
 // application_fee_percent on the publisher's direct-charge subscription.
@@ -90,6 +91,11 @@ export async function syncConnectedAccountState(
     details_submitted: account.details_submitted ?? false,
   };
   const requirements = (account.requirements ?? null) as any;
+  const { data: previous } = await supabaseServerClient
+    .from("stripe_connected_accounts")
+    .select("identity_id, charges_enabled")
+    .eq("stripe_account_id", stripeAccountId)
+    .maybeSingle();
   await supabaseServerClient
     .from("stripe_connected_accounts")
     .update({
@@ -98,6 +104,8 @@ export async function syncConnectedAccountState(
       updated_at: new Date().toISOString(),
     })
     .eq("stripe_account_id", stripeAccountId);
+  if (previous && !previous.charges_enabled && flags.charges_enabled)
+    trackUserEvent({ id: previous.identity_id }, "connect_account_enabled");
   return {
     ...flags,
     status: deriveConnectedAccountStatus({ ...flags, requirements }),

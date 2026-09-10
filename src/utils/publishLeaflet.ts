@@ -63,6 +63,7 @@ export type PublishResult =
       record: SiteStandardDocument.Record;
       // False when this publish updated an already-published document.
       firstPublish: boolean;
+      blocks: number;
     }
   | { success: false; error: PublishError };
 
@@ -564,6 +565,7 @@ async function publish({
     rkey,
     record: JSON.parse(JSON.stringify(record)),
     firstPublish: !existingDocUri,
+    blocks: pagesArray.reduce((n, p) => n + p.blocks.length, 0),
   };
 }
 

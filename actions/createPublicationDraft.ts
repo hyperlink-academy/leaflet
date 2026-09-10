@@ -16,13 +16,17 @@ export async function createPublicationDraft(publication_uri: string) {
   if (!publication) return null;
 
   let isOwner = publication.identity_did === identity.atp_did;
-  if (!isOwner && !(await isConfirmedContributor(publication_uri, identity.atp_did)))
+  if (
+    !isOwner &&
+    !(await isConfirmedContributor(publication_uri, identity.atp_did))
+  )
     return null;
 
   let newLeaflet = await createNewLeaflet({
     pageType: "doc",
     redirectUser: false,
     firstBlockType: "text",
+    analytics: { kind: "publication_draft", publication: publication_uri },
   });
 
   await supabaseServerClient

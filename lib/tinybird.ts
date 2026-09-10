@@ -394,13 +394,29 @@ const USER_EVENT_DAY_SQL = "toDate(fromUnixTimestamp64Milli(timestamp))";
 // endpoints. `posts_published` counts only first publishes: republishing an
 // edit is a `publish` event too, but not a new post.
 const ACTIVITY_COUNT_SQL = `
-          countIf(event = 'subscribe') AS subscribes,
+          countIf(event = 'signup') AS signups,
+          countIf(event = 'create_document') AS documents_created,
           countIf(event = 'publish' AND properties['first_publish'] = 'true') AS posts_published,
-          countIf(event = 'create_publication') AS publications_created`;
+          countIf(event = 'create_publication') AS publications_created,
+          countIf(event = 'subscribe') AS subscribes,
+          countIf(event = 'unsubscribe') AS unsubscribes,
+          countIf(event = 'join_membership') AS memberships_joined,
+          countIf(event = 'pro_upgrade') AS pro_upgrades,
+          countIf(event = 'pro_cancel') AS pro_cancels,
+          countIf(event = 'connect_onboarding_started') AS connect_onboardings_started,
+          countIf(event = 'connect_account_enabled') AS connect_accounts_enabled`;
 const ACTIVITY_COUNT_OUTPUT = {
-  subscribes: t.uint64(),
+  signups: t.uint64(),
+  documents_created: t.uint64(),
   posts_published: t.uint64(),
   publications_created: t.uint64(),
+  subscribes: t.uint64(),
+  unsubscribes: t.uint64(),
+  memberships_joined: t.uint64(),
+  pro_upgrades: t.uint64(),
+  pro_cancels: t.uint64(),
+  connect_onboardings_started: t.uint64(),
+  connect_accounts_enabled: t.uint64(),
 };
 
 /**

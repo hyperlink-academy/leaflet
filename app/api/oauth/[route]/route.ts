@@ -24,6 +24,7 @@ import { idResolver } from "src/identity";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 import { postAuthRedirect } from "src/postAuthRedirect";
 import { buildOauthLoginUrl } from "src/utils/customDomain";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -173,7 +174,11 @@ export async function GET(
               currentIdentity.id,
               session.did,
             );
-            return handleAction(s.action, redirectPath, currentAuthToken ?? null);
+            return handleAction(
+              s.action,
+              redirectPath,
+              currentAuthToken ?? null,
+            );
           }
           if (identity.id !== currentIdentity.id) {
             if (s.autoMerge) {
@@ -211,7 +216,11 @@ export async function GET(
               currentIdentity.id,
               session.did,
             );
-            return handleAction(s.action, redirectPath, currentAuthToken ?? null);
+            return handleAction(
+              s.action,
+              redirectPath,
+              currentAuthToken ?? null,
+            );
           }
           const { data } = await supabaseServerClient
             .from("identities")
@@ -219,6 +228,12 @@ export async function GET(
             .select()
             .single();
           identity = data;
+          if (identity)
+            trackUserEvent(
+              { id: identity.id, atp_did: session.did },
+              "signup",
+              { method: "bluesky", source: s.action?.action ?? "" },
+            );
         } else if (
           currentIdentity &&
           currentIdentity.id !== identity.id &&

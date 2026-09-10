@@ -1,13 +1,17 @@
 import { supabaseServerClient } from "supabase/serverClient";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 export async function handleSubscriptionDeleted(subscriptionId: string) {
-  await supabaseServerClient
+  const { data: proSub } = await supabaseServerClient
     .from("user_subscriptions")
     .update({
       status: "canceled",
       updated_at: new Date().toISOString(),
     })
-    .eq("stripe_subscription_id", subscriptionId);
+    .eq("stripe_subscription_id", subscriptionId)
+    .select("identity_id")
+    .maybeSingle();
+  if (proSub) trackUserEvent({ id: proSub.identity_id }, "pro_cancel");
 
   // Entitlements expire naturally via expires_at — no need to delete them
 

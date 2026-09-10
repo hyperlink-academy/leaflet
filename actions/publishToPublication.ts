@@ -34,6 +34,7 @@ export async function publishToPublication(
     trackUserEvent(identity, "publish", {
       publication: args.publication_uri ?? "",
       first_publish: String(result.firstPublish),
+      blocks: String(result.blocks),
     });
   return result;
 }
