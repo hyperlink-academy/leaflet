@@ -24,20 +24,18 @@ import { ChartSkeleton } from "app/(app)/(identity)/lish/[did]/[publication]/das
 type Granularity = "day" | "week" | "month";
 type Stats = Extract<GetActiveUserStatsReturnType, { result: any }>["result"];
 type Window = NonNullable<Stats["windows"]["day"]>;
-type MetricKey =
-  | "active"
-  | "pro_active"
-  | "subscribes"
-  | "posts_published"
-  | "publications_created";
-
-// Periods before an event was tracked are gaps, not zeros.
-const METRICS: {
+type MetricKey = Exclude<keyof Stats["timeseries"][number], "period">;
+type Metric = {
   key: MetricKey;
   title: string;
   unit: string;
+  // Periods before an event was tracked are gaps, not zeros.
   trackedSince: string;
-}[] = [
+  // Used beside a number when this metric rides another chart as a secondary line.
+  short?: string;
+};
+
+const CORE_METRICS: Metric[] = [
   {
     key: "active",
     title: "Active users",
@@ -49,25 +47,96 @@ const METRICS: {
     title: "Pro active users",
     unit: "users",
     trackedSince: "2026-09-09",
+    short: "pro",
+  },
+];
+
+const METRIC_GROUPS: { title: string; metrics: Metric[] }[] = [
+  {
+    title: "Acquisition",
+    metrics: [
+      {
+        key: "signups",
+        title: "Signups",
+        unit: "signups",
+        trackedSince: "2026-09-10",
+      },
+    ],
   },
   {
-    key: "subscribes",
-    title: "Subscriptions",
-    unit: "subscriptions",
-    // Backfilled from subscription_events (scripts/backfill-user-events-subscriptions.mts).
-    trackedSince: "2026-08-27",
+    title: "Writing",
+    metrics: [
+      {
+        key: "documents_created",
+        title: "Documents created",
+        unit: "documents",
+        trackedSince: "2026-09-10",
+      },
+      {
+        key: "posts_published",
+        title: "Posts published",
+        unit: "posts",
+        trackedSince: "2026-09-10",
+      },
+      {
+        key: "publications_created",
+        title: "Publications created",
+        unit: "publications",
+        trackedSince: "2026-09-10",
+      },
+    ],
   },
   {
-    key: "posts_published",
-    title: "Posts published",
-    unit: "posts",
-    trackedSince: "2026-09-10",
+    title: "Readers",
+    metrics: [
+      {
+        key: "subscribes",
+        title: "Subscriptions",
+        unit: "subscriptions",
+        trackedSince: "2026-09-10",
+      },
+      {
+        key: "unsubscribes",
+        title: "Unsubscribes",
+        unit: "unsubscribes",
+        trackedSince: "2026-09-10",
+      },
+      {
+        key: "memberships_joined",
+        title: "Memberships joined",
+        unit: "memberships",
+        trackedSince: "2026-09-10",
+      },
+    ],
   },
   {
-    key: "publications_created",
-    title: "Publications created",
-    unit: "publications",
-    trackedSince: "2026-09-10",
+    title: "Revenue",
+    metrics: [
+      {
+        key: "pro_upgrades",
+        title: "Pro upgrades",
+        unit: "upgrades",
+        trackedSince: "2026-09-10",
+      },
+      {
+        key: "pro_cancels",
+        title: "Pro cancellations",
+        unit: "cancellations",
+        trackedSince: "2026-09-10",
+      },
+      {
+        key: "connect_onboardings_started",
+        title: "Payments onboarding started",
+        unit: "creators",
+        trackedSince: "2026-09-10",
+      },
+      {
+        key: "connect_accounts_enabled",
+        title: "Payments enabled",
+        unit: "creators",
+        trackedSince: "2026-09-10",
+      },
+    ],
   },
 ];
 
@@ -121,7 +190,7 @@ export const ActiveUsersDashboard = () => {
     [data?.timeseries, granularity, from],
   );
   let initialLoad = isLoading && !data;
-  let [main, ...multiples] = METRICS;
+  let [main, pro] = CORE_METRICS;
 
   return (
     <div
@@ -151,6 +220,7 @@ export const ActiveUsersDashboard = () => {
 
       <BehaviorChart
         metric={main}
+        secondary={pro}
         periods={periods}
         granularity={granularity}
         isLoading={initialLoad}
@@ -158,20 +228,207 @@ export const ActiveUsersDashboard = () => {
         showXAxis
       />
 
-      <div className="flex flex-col gap-4">
-        {multiples.map((metric, i) => (
-          <BehaviorChart
-            key={metric.key}
-            metric={metric}
-            periods={periods}
-            granularity={granularity}
-            isLoading={initialLoad}
-            size="small"
-            showXAxis={i === multiples.length - 1}
-          />
-        ))}
-      </div>
+      <MetricIndex
+        periods={periods}
+        granularity={granularity}
+        isLoading={initialLoad}
+      />
     </div>
+  );
+};
+
+// Every activity metric as a sparkline row; a row expands to its full chart in
+// place so the index doubles as the way to jump to one.
+const MetricIndex = (props: {
+  periods: Period[];
+  granularity: Granularity;
+  isLoading: boolean;
+}) => {
+  let [expanded, setExpanded] = useState<Set<MetricKey>>(() => new Set());
+  let all = METRIC_GROUPS.flatMap((g) => g.metrics.map((m) => m.key));
+  let allExpanded = expanded.size === all.length;
+  let toggle = (key: MetricKey) =>
+    setExpanded((prev) => {
+      let next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex justify-between items-baseline gap-2">
+        <h2>Activity</h2>
+        <button
+          type="button"
+          className="text-sm text-accent-contrast hover:underline"
+          onClick={() => setExpanded(allExpanded ? new Set() : new Set(all))}
+        >
+          {allExpanded ? "Collapse all" : "Expand all"}
+        </button>
+      </div>
+      {METRIC_GROUPS.map((group) => (
+        <div key={group.title} className="flex flex-col gap-1">
+          <div className="text-sm text-tertiary">{group.title}</div>
+          {group.metrics.map((metric) => (
+            <MetricRow
+              key={metric.key}
+              metric={metric}
+              periods={props.periods}
+              granularity={props.granularity}
+              isLoading={props.isLoading}
+              expanded={expanded.has(metric.key)}
+              onToggle={() => toggle(metric.key)}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const MetricRow = (props: {
+  metric: Metric;
+  periods: Period[];
+  granularity: Granularity;
+  isLoading: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+}) => {
+  let series = useMemo(
+    () => buildPoints(props.periods, props.metric, props.granularity),
+    [props.periods, props.metric, props.granularity],
+  );
+  return (
+    <div className="flex flex-col border-t border-border-light">
+      <button
+        type="button"
+        onClick={props.onToggle}
+        aria-expanded={props.expanded}
+        className="flex items-center gap-3 py-2 text-left hover:bg-border-light/40 -mx-2 px-2 rounded-md"
+      >
+        <span className="grow font-bold">{props.metric.title}</span>
+        {!props.isLoading && (
+          <span className={props.expanded ? "invisible" : ""}>
+            <Sparkline {...series} />
+          </span>
+        )}
+        <span className="w-28 shrink-0 text-right text-sm text-secondary">
+          {series.lastComplete?.complete == null ? (
+            "–"
+          ) : (
+            <>
+              <span className="text-primary font-bold">
+                {series.lastComplete.complete.toLocaleString()}
+              </span>{" "}
+              {LAST_COMPLETE_LABEL[props.granularity]}
+            </>
+          )}
+        </span>
+      </button>
+      {props.expanded && (
+        <div className="pb-4">
+          <BehaviorChart
+            metric={props.metric}
+            periods={props.periods}
+            granularity={props.granularity}
+            isLoading={props.isLoading}
+            size="small"
+            showXAxis
+            hideHeader
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SPARK_W = 96;
+const SPARK_H = 24;
+
+// Word-sized: the limits band, the line broken at gaps, signals as neutral
+// dots, and the partial period hollow.
+const Sparkline = (props: ReturnType<typeof buildPoints>) => {
+  let { points, limits, yMax } = props;
+  let n = points.length;
+  let x = (i: number) => (n > 1 ? (i / (n - 1)) * SPARK_W : SPARK_W / 2);
+  let y = (v: number) => SPARK_H - (v / yMax) * (SPARK_H - 4) - 2;
+
+  let runs: string[] = [];
+  let current: string[] = [];
+  points.forEach((p, i) => {
+    if (p.complete == null) {
+      if (current.length) runs.push(current.join(" "));
+      current = [];
+    } else current.push(`${x(i)},${y(p.complete)}`);
+  });
+  if (current.length) runs.push(current.join(" "));
+
+  let partialIndex = points.findIndex((p) => p.isPartial && p.value != null);
+  let bridgeFrom = partialIndex - 1;
+
+  return (
+    <svg
+      width={SPARK_W}
+      height={SPARK_H}
+      className="shrink-0 overflow-visible"
+      aria-hidden
+    >
+      {limits && (
+        <rect
+          x={0}
+          y={y(limits.upper)}
+          width={SPARK_W}
+          height={Math.max(0, y(limits.lower) - y(limits.upper))}
+          fill="var(--color-accent-contrast)"
+          fillOpacity={0.08}
+        />
+      )}
+      {runs.map((r, i) => (
+        <polyline
+          key={i}
+          points={r}
+          fill="none"
+          stroke="var(--color-accent-contrast)"
+          strokeWidth={1.25}
+          strokeLinejoin="round"
+        />
+      ))}
+      {partialIndex >= 0 &&
+        bridgeFrom >= 0 &&
+        points[bridgeFrom].complete != null && (
+          <line
+            x1={x(bridgeFrom)}
+            y1={y(points[bridgeFrom].complete!)}
+            x2={x(partialIndex)}
+            y2={y(points[partialIndex].value!)}
+            stroke="var(--color-accent-contrast)"
+            strokeWidth={1.25}
+            strokeDasharray="2 2"
+          />
+        )}
+      {points.map((p, i) =>
+        p.signal && p.complete != null ? (
+          <circle
+            key={p.period}
+            cx={x(i)}
+            cy={y(p.complete)}
+            r={2.5}
+            fill="var(--color-primary)"
+          />
+        ) : null,
+      )}
+      {partialIndex >= 0 && (
+        <circle
+          cx={x(partialIndex)}
+          cy={y(points[partialIndex].value!)}
+          r={2}
+          fill="var(--color-bg-page)"
+          stroke="var(--color-accent-contrast)"
+          strokeWidth={1}
+        />
+      )}
+    </svg>
   );
 };
 
@@ -264,7 +521,7 @@ function processLimits(values: number[]) {
 
 function buildPoints(
   periods: Period[],
-  metric: (typeof METRICS)[number],
+  metric: Metric,
   granularity: Granularity,
 ) {
   let trackedSince = new Date(metric.trackedSince + "T00:00:00Z").getTime();
@@ -308,21 +565,42 @@ function buildPoints(
 
   let lastComplete = [...points].reverse().find((p) => p.complete != null);
   let dataMax = Math.max(0, ...points.map((p) => p.value ?? 0));
-  let yMax = niceYMax(Math.max(dataMax, limits?.upper ?? 0));
+  let yMax = Math.ceil(niceYMax(Math.max(dataMax, limits?.upper ?? 0)));
   return { points, limits, lastComplete, yMax };
 }
 
+// `secondary` rides the same axes as a lighter line with no limits of its own;
+// it must never exceed the primary (Pro active users ⊂ active users).
 const BehaviorChart = (props: {
-  metric: (typeof METRICS)[number];
+  metric: Metric;
+  secondary?: Metric;
   periods: Period[];
   granularity: Granularity;
   isLoading: boolean;
   size: "large" | "small";
   showXAxis: boolean;
+  hideHeader?: boolean;
 }) => {
   let { points, limits, lastComplete, yMax } = useMemo(
     () => buildPoints(props.periods, props.metric, props.granularity),
     [props.periods, props.metric, props.granularity],
+  );
+  let secondary = useMemo(
+    () =>
+      props.secondary
+        ? buildPoints(props.periods, props.secondary, props.granularity)
+        : null,
+    [props.periods, props.secondary, props.granularity],
+  );
+  let chartData = useMemo(
+    () =>
+      points.map((p, i) => ({
+        ...p,
+        secondary: secondary?.points[i]?.complete ?? null,
+        secondaryPartial: secondary?.points[i]?.partial ?? null,
+        secondaryValue: secondary?.points[i]?.value ?? null,
+      })),
+    [points, secondary],
   );
   let xTicks = useMemo(() => pickTicks(points.map((p) => p.period)), [points]);
 
@@ -331,29 +609,47 @@ const BehaviorChart = (props: {
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex justify-between items-baseline gap-2">
-        <h3 className={props.size === "small" ? "text-base font-bold" : ""}>
-          {props.metric.title}
-        </h3>
-        <div className="text-sm text-secondary">
-          {lastComplete?.complete == null ? (
-            "–"
-          ) : (
-            <>
-              <span className="text-primary font-bold">
-                {lastComplete.complete.toLocaleString()}
-              </span>{" "}
-              {LAST_COMPLETE_LABEL[props.granularity]}
-            </>
-          )}
+      {!props.hideHeader && (
+        <div className="flex justify-between items-baseline gap-2">
+          <h3 className={props.size === "small" ? "text-base font-bold" : ""}>
+            {props.metric.title}
+            {props.secondary && (
+              <span className="font-normal text-sm text-secondary ml-3">
+                <LineKey opacity={1} width={2} /> {props.metric.title}
+                <span className="ml-2">
+                  <LineKey opacity={SECONDARY_OPACITY} width={1.25} />{" "}
+                  {props.secondary.title}
+                </span>
+              </span>
+            )}
+          </h3>
+          <div className="text-sm text-secondary">
+            {lastComplete?.complete == null ? (
+              "–"
+            ) : (
+              <>
+                <span className="text-primary font-bold">
+                  {lastComplete.complete.toLocaleString()}
+                </span>{" "}
+                {LAST_COMPLETE_LABEL[props.granularity]}
+                {secondary?.lastComplete?.complete != null && (
+                  <span className="text-tertiary">
+                    {" "}
+                    · {secondary.lastComplete.complete.toLocaleString()}{" "}
+                    {props.secondary!.short ?? props.secondary!.title}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       {props.isLoading ? (
         <ChartSkeleton />
       ) : (
         <div className={`${heightClass} w-full`}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={points} margin={CHART_MARGIN}>
+            <LineChart data={chartData} margin={CHART_MARGIN}>
               <XAxis
                 dataKey="period"
                 ticks={xTicks}
@@ -420,11 +716,45 @@ const BehaviorChart = (props: {
                   <BehaviorTooltip
                     {...p}
                     unit={props.metric.unit}
+                    secondaryLabel={
+                      props.secondary?.short ?? props.secondary?.title
+                    }
                     granularity={props.granularity}
                     limits={limits}
                   />
                 )}
               />
+              {secondary && (
+                <>
+                  <Line
+                    type="linear"
+                    dataKey="secondaryPartial"
+                    stroke="var(--color-accent-contrast)"
+                    strokeOpacity={SECONDARY_OPACITY}
+                    strokeWidth={1.25}
+                    strokeDasharray="3 3"
+                    dot={false}
+                    activeDot={false}
+                    isAnimationActive={false}
+                    connectNulls={false}
+                  />
+                  <Line
+                    type="linear"
+                    dataKey="secondary"
+                    stroke="var(--color-accent-contrast)"
+                    strokeOpacity={SECONDARY_OPACITY}
+                    strokeWidth={1.25}
+                    dot={{
+                      r: 1.5,
+                      strokeWidth: 0,
+                      fillOpacity: SECONDARY_OPACITY,
+                    }}
+                    activeDot={{ r: 3, strokeWidth: 0 }}
+                    isAnimationActive={false}
+                    connectNulls={false}
+                  />
+                </>
+              )}
               <Line
                 type="linear"
                 dataKey="partial"
@@ -453,6 +783,22 @@ const BehaviorChart = (props: {
     </div>
   );
 };
+
+const SECONDARY_OPACITY = 0.45;
+
+const LineKey = (props: { opacity: number; width: number }) => (
+  <svg width={14} height={6} className="inline-block align-middle">
+    <line
+      x1={0}
+      y1={3}
+      x2={14}
+      y2={3}
+      stroke="var(--color-accent-contrast)"
+      strokeOpacity={props.opacity}
+      strokeWidth={props.width}
+    />
+  </svg>
+);
 
 const limitLabel = (value: number) => ({
   value: Math.round(value).toLocaleString(),
@@ -548,9 +894,12 @@ function formatPeriod(period: string, granularity: Granularity) {
 
 const BehaviorTooltip = (props: {
   active?: boolean;
-  payload?: ReadonlyArray<{ payload?: Point }>;
+  payload?: ReadonlyArray<{
+    payload?: Point & { secondaryValue?: number | null };
+  }>;
   label?: string | number;
   unit: string;
+  secondaryLabel?: string;
   granularity: Granularity;
   limits: ReturnType<typeof processLimits>;
 }) => {
@@ -573,6 +922,12 @@ const BehaviorTooltip = (props: {
       </div>
       <div>
         {point.value.toLocaleString()} {props.unit}
+        {props.secondaryLabel && point.secondaryValue != null && (
+          <span className="text-secondary">
+            {" "}
+            · {point.secondaryValue.toLocaleString()} {props.secondaryLabel}
+          </span>
+        )}
       </div>
       {note && <div className="text-secondary text-xs">{note}</div>}
     </div>
