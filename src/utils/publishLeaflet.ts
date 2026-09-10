@@ -57,7 +57,13 @@ export type PublishError =
   | { type: "publish_failed"; message: string };
 
 export type PublishResult =
-  | { success: true; rkey: string; record: SiteStandardDocument.Record }
+  | {
+      success: true;
+      rkey: string;
+      record: SiteStandardDocument.Record;
+      // False when this publish updated an already-published document.
+      firstPublish: boolean;
+    }
   | { success: false; error: PublishError };
 
 export type PublishLeafletArgs = {
@@ -553,7 +559,12 @@ async function publish({
   // the post's page metadata is built from.
   await revalidateDocumentPaths(result.uri);
 
-  return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
+  return {
+    success: true,
+    rkey,
+    record: JSON.parse(JSON.stringify(record)),
+    firstPublish: !existingDocUri,
+  };
 }
 
 /**

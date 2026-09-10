@@ -32,7 +32,9 @@ export const get_active_user_stats = makeRoute({
 
     let byWindow = (days: number) => {
       let row = windows.data.find((w) => w.window_days === days);
-      return row ? { active: row.active, pro_active: row.pro_active } : null;
+      if (!row) return null;
+      let { window_days: _window, ...counts } = row;
+      return counts;
     };
 
     return {

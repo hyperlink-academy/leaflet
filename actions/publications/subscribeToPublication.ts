@@ -4,8 +4,6 @@ import { getAuthIdentity } from "src/auth";
 import { OAuthSessionError } from "src/atproto-oauth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { after } from "next/server";
-import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
 import {
   sanitizeSubscriptionSource,
   type SubscriptionSource,
@@ -13,6 +11,10 @@ import {
 import { buildOauthLoginUrl } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { createAtprotoSubscription } from "src/subscriptions/atproto";
+import {
+  subscriptionSourceProperties,
+  trackUserEvent,
+} from "src/activeUserAnalytics";
 
 type SubscribeResult =
   | { success: true }
@@ -52,21 +54,13 @@ export async function subscribeToPublication(
   );
   if (!created.ok) return { success: false, error: created.error };
   // Null when a subscription already existed, which isn't a new subscribe.
-  if (created.value) {
-    let recordUri = created.value.uri;
-    let subscriberDid = identity.atp_did;
-    after(() =>
-      trackSubscriptionEvent({
-        event: "subscribe",
-        method: "atproto",
-        origin: "app",
-        publicationUri: publication,
-        subscriberDid,
-        recordUri,
-        source: subscribeSource,
-      }),
-    );
-  }
+  if (created.value)
+    trackUserEvent(identity, "subscribe", {
+      publication,
+      method: "atproto",
+      record_uri: created.value.uri,
+      ...subscriptionSourceProperties(subscribeSource),
+    });
 
   return { success: true };
 }

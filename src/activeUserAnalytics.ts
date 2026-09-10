@@ -3,13 +3,30 @@ import { tinybird } from "lib/tinybird";
 import { supabaseServerClient } from "supabase/serverClient";
 import { keyEntitlements } from "./identityPayload";
 import { isPro, PRO_ENTITLEMENT_KEY } from "./entitlements";
+import type { SubscriptionSource } from "./subscriptionSource";
 
 // Active-user counts are "distinct identities with any event"; finer questions
 // (who moved from reading to writing) are query-time filters on `event` and
 // `properties`, so add event names and properties freely rather than columns.
 export type UserEvent =
   | "page_view" // client beacon on every route change (see actions/trackPageView.ts)
-  | "push"; // ran replicache mutations
+  | "push" // ran replicache mutations
+  // Subscribe/unsubscribe props: publication, method, record_uri,
+  // source_placement, source_publication, source_url.
+  | "subscribe"
+  | "unsubscribe"
+  | "publish" // published a document; props publication, first_publish
+  | "create_publication"; // props publication
+
+export function subscriptionSourceProperties(
+  source: SubscriptionSource | null | undefined,
+) {
+  return {
+    source_placement: source?.placement ?? "",
+    source_publication: source?.publication ?? "",
+    source_url: source?.url ?? "",
+  };
+}
 
 // Only signed-in sessions are tracked: the identity row keys the actor so a
 // person on several devices counts once, and anonymous traffic is left to the

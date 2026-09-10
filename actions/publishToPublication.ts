@@ -6,6 +6,7 @@ import {
   type PublishLeafletArgs,
   type PublishResult,
 } from "src/utils/publishLeaflet";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 // The rkey is server-chosen here: a caller-supplied one could target an
 // existing record in the publication owner's repo. Only trusted server-side
@@ -25,5 +26,14 @@ export async function publishToPublication(
     };
   }
   let { rkey: _ignored, ...safeArgs } = args as PublishLeafletArgs;
-  return publishLeaflet({ ...safeArgs, actorDid: identity.atp_did });
+  let result = await publishLeaflet({
+    ...safeArgs,
+    actorDid: identity.atp_did,
+  });
+  if (result.success)
+    trackUserEvent(identity, "publish", {
+      publication: args.publication_uri ?? "",
+      first_publish: String(result.firstPublish),
+    });
+  return result;
 }

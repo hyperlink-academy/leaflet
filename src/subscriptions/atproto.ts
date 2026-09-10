@@ -4,7 +4,6 @@ import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { Ok, Err, type Result } from "src/result";
-import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
 import {
   Notification,
   pingIdentityToUpdateNotification,
@@ -113,11 +112,12 @@ export async function backfillAtprotoSubscriptionsForIdentity(
 // is the effective part (it drives rosters, counts, and the viewer's
 // subscribed state); a PDS delete blocked by a dead OAuth session just leaves
 // a stale record behind, which we tolerate the same way we tolerate records
-// deleted out-of-band from another client.
+// deleted out-of-band from another client. Resolves to the removed record's
+// uri, or null when there was no subscription to remove.
 export async function deleteAtprotoSubscriptionForDid(
   atp_did: string,
   publication: string,
-): Promise<void> {
+): Promise<string | null> {
   try {
     let { data: existingSubscription } = await supabaseServerClient
       .from("publication_subscriptions")
@@ -125,7 +125,7 @@ export async function deleteAtprotoSubscriptionForDid(
       .eq("identity", atp_did)
       .eq("publication", publication)
       .maybeSingle();
-    if (!existingSubscription) return;
+    if (!existingSubscription) return null;
 
     const sessionResult = await restoreOAuthSession(atp_did);
     if (sessionResult.ok) {
@@ -151,14 +151,7 @@ export async function deleteAtprotoSubscriptionForDid(
       .eq("identity", atp_did)
       .eq("publication", publication);
 
-    await trackSubscriptionEvent({
-      event: "unsubscribe",
-      method: "atproto",
-      origin: "app",
-      publicationUri: publication,
-      subscriberDid: atp_did,
-      recordUri: existingSubscription.uri,
-    });
+    return existingSubscription.uri;
   } catch (e) {
     console.error(
       "[deleteAtprotoSubscriptionForDid] failed:",
@@ -166,5 +159,6 @@ export async function deleteAtprotoSubscriptionForDid(
       publication,
       e,
     );
+    return null;
   }
 }
