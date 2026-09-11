@@ -5,7 +5,7 @@ import {
   useNormalizedPublicationRecord,
 } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useIdentityData } from "components/IdentityProvider";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { DefaultPublicationHomepage } from "app/(app)/(published)/lish/[did]/[publication]/DefaultPublicationHomepage";
 import { buildPublicationPosts } from "src/utils/buildPublicationPosts";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";

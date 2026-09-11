@@ -8,7 +8,14 @@ import {
 } from "components/ActionBar/DesktopNavigation";
 import { Sidebar, useSidebarStore } from "components/ActionBar/Sidebar";
 import { DashboardIdContext } from "./dashboardState";
-import { NotificationContent } from "./NotificationContent";
+import dynamic from "next/dynamic";
+
+// Notification rows render post text and bluesky embeds; the overlay is opened
+// rarely enough that every dashboard page shouldn't carry them.
+const NotificationContent = dynamic(
+  () => import("./NotificationContent").then((m) => m.NotificationContent),
+  { ssr: false },
+);
 
 type DashboardShellProps = {
   id: string;

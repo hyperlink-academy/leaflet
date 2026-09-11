@@ -3,7 +3,7 @@
 import { EmptyState } from "components/EmptyState";
 import { useEffect, useRef, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { PubLeafletComment, PubLeafletDocument } from "lexicons/api";
 import { ReplyTiny } from "components/Icons/ReplyTiny";
 import { Avatar } from "components/Avatar";
@@ -105,8 +105,7 @@ export const ProfileCommentsContent = (props: {
 const CommentItem = ({ comment }: { comment: ProfileComment }) => {
   const record = comment.record as PubLeafletComment.Record;
   const profile = comment.profile;
-  const displayName =
-    profile?.displayName || profile?.handle || "Unknown";
+  const displayName = profile?.displayName || profile?.handle || "Unknown";
 
   const isReply = !!record.reply;
 
@@ -121,8 +120,7 @@ const CommentItem = ({ comment }: { comment: ProfileComment }) => {
     | PubLeafletComment.Record
     | undefined;
   const parentProfile = comment.parentComment?.profile;
-  const parentDisplayName =
-    parentProfile?.displayName || parentProfile?.handle;
+  const parentDisplayName = parentProfile?.displayName || parentProfile?.handle;
 
   // Build direct link to the comment
   const commentLink = useMemo(() => {

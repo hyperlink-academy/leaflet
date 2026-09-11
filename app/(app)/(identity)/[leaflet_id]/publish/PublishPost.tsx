@@ -12,7 +12,7 @@ import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { publishPostToBsky } from "actions/publishBskyPost";
 import { viewerPostLangs } from "src/utils/bskyPostLangs";
 import { ShareOptions, type ShareState } from "./ShareOptions";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";

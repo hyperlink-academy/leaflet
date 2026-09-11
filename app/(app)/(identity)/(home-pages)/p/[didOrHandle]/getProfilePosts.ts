@@ -10,7 +10,7 @@ import {
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 import { idResolver } from "src/identity";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 
 export type Cursor = {
   sort_date: string;

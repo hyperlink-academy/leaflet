@@ -7,12 +7,13 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { CSSProperties, useRef } from "react";
 import {
   useBlocks,
   useCanvasBlocksWithType,
 } from "src/hooks/queries/useBlocks";
 import { CompactPageLink } from "./CompactPageLink";
+import { PreviewBlockList } from "./PreviewBlocks";
 import {
   PageLinkSettingsButton,
   usePageLinkDisplay,
@@ -277,19 +278,10 @@ function PagePreview(props: { entityID: string }) {
             }}
           />
         )}
-        {blocks.slice(0, 20).map((b, index, arr) => {
-          return (
-            <BlockPreview
-              pageType="doc"
-              previousBlock={arr[index - 1] || null}
-              nextBlock={arr[index + 1] || null}
-              nextPosition={""}
-              previewRef={previewRef}
-              {...b}
-              key={b.factID}
-            />
-          );
-        })}
+        <PreviewBlockList
+          blocks={blocks.slice(0, 20)}
+          previewRef={previewRef}
+        />
       </div>
     </div>
   );
@@ -319,30 +311,3 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
     </div>
   );
 };
-
-export function BlockPreview(
-  b: BlockProps & {
-    previewRef: React.RefObject<HTMLDivElement | null>;
-  },
-) {
-  let ref = useRef<HTMLDivElement | null>(null);
-  let [isVisible, setIsVisible] = useState(true);
-  useEffect(() => {
-    if (!ref.current) return;
-    let observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          } else {
-            setIsVisible(false);
-          }
-        });
-      },
-      { threshold: 0.01, root: b.previewRef.current },
-    );
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [b.previewRef]);
-  return <div ref={ref}>{isVisible && <Block {...b} preview />}</div>;
-}

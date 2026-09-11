@@ -5,8 +5,8 @@ import {
   PubLeafletPublication,
 } from "lexicons/api";
 import { PostPageData } from "src/utils/getPostPageData";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { AppBskyFeedDefs } from "@atproto/api";
+import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import { useMemo } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
@@ -22,7 +22,7 @@ import {
   type BylineProfile,
 } from "./PostHeader/PostHeader";
 import { useInlineDrawer } from "./Interactions/useDrawerOpen";
-import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
+import { DrawerThreadPageProvider } from "./Interactions/DrawerThreadPageProvider";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";

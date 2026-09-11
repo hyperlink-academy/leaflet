@@ -1,7 +1,7 @@
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedQuoteNotification } from "src/notifications";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { Avatar } from "components/Avatar";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 

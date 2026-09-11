@@ -2,8 +2,8 @@
 import { Checkbox } from "components/Checkbox";
 import { BlueskyPostComposer } from "components/BlueskyPostComposer/BlueskyPostComposer";
 import { EditorState } from "prosemirror-state";
-import { AtUri } from "@atproto/api";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { AtUri } from "@atproto/syntax";
+import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { useState } from "react";

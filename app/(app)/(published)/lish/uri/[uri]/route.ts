@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import {
   normalizeDocumentRecord,
@@ -50,7 +50,9 @@ export async function GET(
       // Document link - need to find the publication it belongs to
       const { data: docInPub } = await supabaseServerClient
         .from("documents_in_publications")
-        .select("publication, documents!inner(data), publications!inner(record)")
+        .select(
+          "publication, documents!inner(data), publications!inner(record)",
+        )
         .eq("document", atUriString)
         .single();
 

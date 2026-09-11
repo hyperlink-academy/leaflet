@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { CommentTiny } from "components/Icons/CommentTiny";
 
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
 import { LoginModal } from "components/LoginButton";

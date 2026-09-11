@@ -9,7 +9,7 @@ import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInAct
 import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { blobRefToSrc, EMAIL_ICON_TRANSFORM } from "src/utils/blobRefToSrc";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { requestOrigin } from "src/utils/requestOrigin";
 
 // Custom-domain email login bounces here first. If the user already has a

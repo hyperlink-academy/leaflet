@@ -1,11 +1,18 @@
 "use client";
-import { BlockPreview } from "components/Blocks/PageLinkBlock";
-import { useEffect, useRef, useState } from "react";
+import { PreviewBlockList } from "components/Blocks/PreviewBlocks";
+import { useRef } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity } from "src/replicache";
-import { CanvasContent } from "components/Canvas";
+import dynamic from "next/dynamic";
 import styles from "./LeafletPreview.module.css";
 import { PublicationMetadataPreview } from "components/Pages/PublicationMetadata";
+
+// The canvas renderer reaches every block component; only canvas leaflets pay
+// for it.
+const CanvasContent = dynamic(
+  () => import("components/Canvas").then((m) => m.CanvasContent),
+  { ssr: false },
+);
 
 export const LeafletContent = (props: {
   entityID: string;
@@ -47,20 +54,12 @@ export const LeafletContent = (props: {
       >
         <PublicationMetadataPreview />
 
-        {props.isOnScreen &&
-          blocks.slice(0, 10).map((b, index, arr) => {
-            return (
-              <BlockPreview
-                pageType="doc"
-                previousBlock={arr[index - 1] || null}
-                nextBlock={arr[index + 1] || null}
-                nextPosition={""}
-                previewRef={previewRef}
-                {...b}
-                key={b.factID}
-              />
-            );
-          })}
+        {props.isOnScreen && (
+          <PreviewBlockList
+            blocks={blocks.slice(0, 10)}
+            previewRef={previewRef}
+          />
+        )}
       </div>
     </div>
   );

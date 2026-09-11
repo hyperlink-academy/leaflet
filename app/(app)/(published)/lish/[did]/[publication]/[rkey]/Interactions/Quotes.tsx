@@ -2,7 +2,7 @@
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { useIsMobile } from "src/hooks/isMobile";
 import { setInteractionState } from "./Interactions";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { AtUri, AppBskyFeedPost, AppBskyEmbedExternal } from "@atproto/api";
 import {
   PubLeafletBlocksText,
@@ -21,7 +21,7 @@ import {
 } from "src/utils/quotePosition";
 import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
-import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import type { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
 import { openPage } from "../postPageState";
 import useSWR, { mutate } from "swr";

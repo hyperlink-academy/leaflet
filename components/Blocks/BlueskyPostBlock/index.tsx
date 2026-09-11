@@ -10,7 +10,7 @@ import { PostNotAvailable } from "./BlueskyEmbed";
 import { BlueskyPostEmpty } from "./BlueskyEmpty";
 
 import { BskyPostContent } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/BskyPostContent";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -40,7 +40,11 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   	  ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={() => {
             focusBlock(
-              { type: props.type, entityID: props.entityID, parent: props.parent },
+              {
+                type: props.type,
+                entityID: props.entityID,
+                parent: props.parent,
+              },
               { type: "start" },
             );
           }}

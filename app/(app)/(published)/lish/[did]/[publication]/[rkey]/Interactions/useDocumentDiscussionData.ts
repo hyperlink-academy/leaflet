@@ -1,6 +1,6 @@
 "use client";
 import useSWR from "swr";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { callRPC } from "app/api/rpc/client";
 import type { DocumentContextValue } from "contexts/DocumentContext";
 import {
@@ -40,7 +40,7 @@ export function useDocumentDiscussionData(
   }
 
   const documentRecord = data?.document ?? null;
-  const pages = documentRecord ? (getDocumentPages(documentRecord) ?? []) : [];
+  const pages = documentRecord ? getDocumentPages(documentRecord) ?? [] : [];
 
   const commentsCountByPage: Record<string, number> = {};
   for (const c of data?.comments ?? []) {
