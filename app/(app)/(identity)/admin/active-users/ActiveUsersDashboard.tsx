@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import {
   LineChart,
   Line,
@@ -14,6 +15,8 @@ import {
 } from "recharts";
 import { callRPC } from "app/api/rpc/client";
 import type { GetActiveUserStatsReturnType } from "app/api/rpc/[command]/get_active_user_stats";
+import type { ActiveUserEventRow } from "app/api/rpc/[command]/get_active_user_events";
+import type { ActivityMetric } from "lib/tinybird";
 import { ToggleGroup } from "components/ToggleGroup";
 import {
   formatYTick,
@@ -34,6 +37,12 @@ type Metric = {
   // Used beside a number when this metric rides another chart as a secondary line.
   short?: string;
 };
+// Metrics that count events (not identities) can expand to their event rows.
+type ActivityMetricDef = Metric & {
+  key: ActivityMetric;
+  // Collapse rows sharing this property into one expandable row.
+  groupBy?: "publication";
+};
 
 const CORE_METRICS: Metric[] = [
   {
@@ -51,7 +60,7 @@ const CORE_METRICS: Metric[] = [
   },
 ];
 
-const METRIC_GROUPS: { title: string; metrics: Metric[] }[] = [
+const METRIC_GROUPS: { title: string; metrics: ActivityMetricDef[] }[] = [
   {
     title: "Acquisition",
     metrics: [
@@ -77,6 +86,7 @@ const METRIC_GROUPS: { title: string; metrics: Metric[] }[] = [
         title: "Posts published",
         unit: "posts",
         trackedSince: "2026-09-10",
+        groupBy: "publication",
       },
       {
         key: "publications_created",
@@ -231,6 +241,7 @@ export const ActiveUsersDashboard = () => {
       <MetricIndex
         periods={periods}
         granularity={granularity}
+        from={from}
         isLoading={initialLoad}
       />
     </div>
@@ -242,6 +253,7 @@ export const ActiveUsersDashboard = () => {
 const MetricIndex = (props: {
   periods: Period[];
   granularity: Granularity;
+  from: string;
   isLoading: boolean;
 }) => {
   let [expanded, setExpanded] = useState<Set<MetricKey>>(() => new Set());
@@ -276,6 +288,7 @@ const MetricIndex = (props: {
               metric={metric}
               periods={props.periods}
               granularity={props.granularity}
+              from={props.from}
               isLoading={props.isLoading}
               expanded={expanded.has(metric.key)}
               onToggle={() => toggle(metric.key)}
@@ -288,9 +301,10 @@ const MetricIndex = (props: {
 };
 
 const MetricRow = (props: {
-  metric: Metric;
+  metric: ActivityMetricDef;
   periods: Period[];
   granularity: Granularity;
+  from: string;
   isLoading: boolean;
   expanded: boolean;
   onToggle: () => void;
@@ -327,7 +341,7 @@ const MetricRow = (props: {
         </span>
       </button>
       {props.expanded && (
-        <div className="pb-4">
+        <div className="pb-4 flex flex-col gap-3">
           <BehaviorChart
             metric={props.metric}
             periods={props.periods}
@@ -337,11 +351,344 @@ const MetricRow = (props: {
             showXAxis
             hideHeader
           />
+          <MetricEvents metric={props.metric} from={props.from} />
         </div>
       )}
     </div>
   );
 };
+
+// The event rows behind a metric, newest first, over the same range as the
+// chart. Fetched only once opened: it's a raw scan per metric.
+const MetricEvents = (props: { metric: ActivityMetricDef; from: string }) => {
+  let [open, setOpen] = useState(false);
+  if (!open)
+    return (
+      <button
+        type="button"
+        className="self-start text-sm text-accent-contrast hover:underline"
+        onClick={() => setOpen(true)}
+      >
+        Show events
+      </button>
+    );
+  return <EventsTable metric={props.metric} from={props.from} />;
+};
+
+const EventsTable = (props: { metric: ActivityMetricDef; from: string }) => {
+  let { data, error, size, setSize, isValidating } = useSWRInfinite(
+    (_index, previous: { nextBefore: number | null } | null) => {
+      if (previous && previous.nextBefore == null) return null;
+      return [
+        "active-user-events",
+        props.metric.key,
+        props.from,
+        previous?.nextBefore ?? null,
+      ] as const;
+    },
+    async ([, metric, from, before]) => {
+      let res = await callRPC("get_active_user_events", {
+        metric,
+        from,
+        ...(before ? { before } : {}),
+      });
+      if ("error" in res) throw new Error(res.error);
+      return res.result;
+    },
+    { revalidateFirstPage: false, revalidateOnFocus: false },
+  );
+  let { events, groups } = useMemo(() => {
+    let events = data?.flatMap((page) => page.events) ?? [];
+    return { events, groups: groupEvents(events, props.metric.groupBy) };
+  }, [data, props.metric.groupBy]);
+  let hasMore = data ? data[data.length - 1]?.nextBefore != null : false;
+  let loading = isValidating && (!data || data.length < size);
+
+  if (error)
+    return <div className="text-sm text-secondary">Couldn't load events.</div>;
+  if (!data) return <div className="text-sm text-tertiary">Loading…</div>;
+  if (events.length === 0)
+    return (
+      <div className="text-sm text-tertiary">
+        No {props.metric.unit} since {props.from}.
+      </div>
+    );
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="text-left text-xs text-tertiary">
+              <th className="font-normal py-1 pr-3 whitespace-nowrap">When</th>
+              <th className="font-normal py-1 pr-3">Who</th>
+              <th className="font-normal py-1">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((group) =>
+              group.length === 1 ? (
+                <EventRow key={rowKey(group[0])} row={group[0]} />
+              ) : (
+                <GroupedEventRows
+                  key={rowKey(group[0])}
+                  rows={group}
+                  unit={props.metric.unit}
+                />
+              ),
+            )}
+          </tbody>
+        </table>
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          disabled={loading}
+          className="self-start text-sm text-accent-contrast hover:underline disabled:opacity-50"
+          onClick={() => setSize(size + 1)}
+        >
+          {loading ? "Loading…" : "Load more"}
+        </button>
+      )}
+    </div>
+  );
+};
+
+const rowKey = (row: ActiveUserEventRow) => `${row.timestamp}:${row.user.id}`;
+
+// Rows sharing the group property collapse into one entry ordered by their
+// newest event; rows without it stay on their own.
+function groupEvents(
+  events: ActiveUserEventRow[],
+  groupBy: ActivityMetricDef["groupBy"],
+): ActiveUserEventRow[][] {
+  if (!groupBy) return events.map((row) => [row]);
+  let groups: ActiveUserEventRow[][] = [];
+  let byKey = new Map<string, ActiveUserEventRow[]>();
+  for (let row of events) {
+    let key = row.properties[groupBy];
+    if (!key) {
+      groups.push([row]);
+      continue;
+    }
+    let group = byKey.get(key);
+    if (group) group.push(row);
+    else {
+      group = [row];
+      byKey.set(key, group);
+      groups.push(group);
+    }
+  }
+  return groups;
+}
+
+const GroupedEventRows = (props: {
+  rows: ActiveUserEventRow[];
+  unit: string;
+}) => {
+  let [open, setOpen] = useState(false);
+  let [newest] = props.rows;
+  let oldest = props.rows[props.rows.length - 1];
+  let authors = new Set(props.rows.map((r) => r.user.id));
+  return (
+    <>
+      <tr className="border-t border-border-light align-top">
+        <td className="py-1.5 pr-3 whitespace-nowrap text-secondary">
+          {eventTimeFormatter.format(new Date(newest.timestamp))}
+          <div className="text-xs text-tertiary">
+            to {eventTimeFormatter.format(new Date(oldest.timestamp))}
+          </div>
+        </td>
+        <td className="py-1.5 pr-3">
+          {authors.size === 1 ? (
+            <UserCell
+              user={newest.user}
+              pro={props.rows.some((r) => r.properties.pro === "true")}
+            />
+          ) : (
+            <span className="text-secondary whitespace-nowrap">
+              {authors.size} authors
+            </span>
+          )}
+        </td>
+        <td className="py-1.5">
+          <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-baseline">
+            <button
+              type="button"
+              aria-expanded={open}
+              onClick={() => setOpen(!open)}
+              className="font-bold hover:underline"
+            >
+              {open ? "▾" : "▸"} {props.rows.length} {props.unit}
+            </button>
+            {newest.publication ? (
+              <span className="text-secondary">
+                in{" "}
+                <ExternalLink href={newest.publication.url}>
+                  {newest.publication.name}
+                </ExternalLink>
+              </span>
+            ) : (
+              <AtUriLink
+                uri={newest.properties.publication}
+                label="publication"
+              />
+            )}
+          </div>
+        </td>
+      </tr>
+      {open &&
+        props.rows.map((row) => (
+          <EventRow key={rowKey(row)} row={row} nested />
+        ))}
+    </>
+  );
+};
+
+const eventTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+// Properties rendered as links or in the Who column rather than as chips.
+const HANDLED_PROPERTIES = new Set([
+  "publication",
+  "source_publication",
+  "document",
+  "record_uri",
+  "pro",
+  "pro_source",
+]);
+
+const EventRow = (props: { row: ActiveUserEventRow; nested?: boolean }) => {
+  let { row } = props;
+  let chips = Object.entries(row.properties).filter(
+    ([key, value]) => value !== "" && !HANDLED_PROPERTIES.has(key),
+  );
+  return (
+    <tr
+      className={`border-t align-top ${
+        props.nested
+          ? "border-border-light/50 bg-border-light/20"
+          : "border-border-light"
+      }`}
+    >
+      <td
+        className={`py-1.5 pr-3 whitespace-nowrap text-secondary ${props.nested ? "pl-4" : ""}`}
+      >
+        {eventTimeFormatter.format(new Date(row.timestamp))}
+      </td>
+      <td className="py-1.5 pr-3">
+        <UserCell user={row.user} pro={row.properties.pro === "true"} />
+      </td>
+      <td className="py-1.5">
+        <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-baseline">
+          {row.document ? (
+            <ExternalLink href={row.document.url}>
+              {row.document.title}
+            </ExternalLink>
+          ) : (
+            row.properties.document && (
+              <AtUriLink uri={row.properties.document} label="document" />
+            )
+          )}
+          {row.publication ? (
+            <span className="text-secondary">
+              {row.document ? "in " : ""}
+              <ExternalLink href={row.publication.url}>
+                {row.publication.name}
+              </ExternalLink>
+            </span>
+          ) : (
+            row.properties.publication && (
+              <AtUriLink uri={row.properties.publication} label="publication" />
+            )
+          )}
+          {row.sourcePublication ? (
+            <span className="text-secondary">
+              via{" "}
+              <ExternalLink href={row.sourcePublication.url}>
+                {row.sourcePublication.name}
+              </ExternalLink>
+            </span>
+          ) : (
+            row.properties.source_publication && (
+              <AtUriLink
+                uri={row.properties.source_publication}
+                label="via publication"
+              />
+            )
+          )}
+          {row.properties.record_uri && (
+            <AtUriLink uri={row.properties.record_uri} label="record" />
+          )}
+          {chips.map(([key, value]) => (
+            <span key={key} className="text-xs text-tertiary font-mono">
+              {key}={value}
+            </span>
+          ))}
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+const UserCell = (props: {
+  user: ActiveUserEventRow["user"];
+  pro: boolean;
+}) => {
+  let { user } = props;
+  let primary = user.handle
+    ? `@${user.handle}`
+    : user.displayName || user.email || user.id.slice(0, 8);
+  let secondary =
+    user.email && primary !== user.email
+      ? user.email
+      : !user.handle && user.did
+        ? user.did
+        : null;
+  return (
+    <div className="flex flex-col leading-snug">
+      <div className="whitespace-nowrap">
+        {user.did ? (
+          <ExternalLink href={`/p/${user.handle || user.did}`}>
+            {primary}
+          </ExternalLink>
+        ) : (
+          primary
+        )}
+        {props.pro && (
+          <span className="ml-1 text-xs text-tertiary font-bold">pro</span>
+        )}
+      </div>
+      {secondary && (
+        <div className="text-xs text-tertiary truncate max-w-48">
+          {secondary}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ExternalLink = (props: { href: string; children: React.ReactNode }) => (
+  <a
+    href={props.href}
+    target="_blank"
+    rel="noreferrer"
+    className="text-accent-contrast hover:underline"
+  >
+    {props.children}
+  </a>
+);
+
+// at:// URIs aren't navigable; pdsls resolves them to the record.
+const AtUriLink = (props: { uri: string; label: string }) => (
+  <ExternalLink href={`https://pdsls.dev/${props.uri}`}>
+    {props.label}
+  </ExternalLink>
+);
 
 const SPARK_W = 96;
 const SPARK_H = 24;

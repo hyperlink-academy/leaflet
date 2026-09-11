@@ -390,34 +390,41 @@ export type PublicationBskyTrafficOutput = InferOutputRow<
 
 const USER_EVENT_DAY_SQL = "toDate(fromUnixTimestamp64Milli(timestamp))";
 
+// One activity metric per dashboard row: the event that counts toward it and,
+// optionally, a property the event must carry. Drives both the per-period
+// counts and the raw event listing so the two can't disagree about what a
+// metric means.
+export const ACTIVITY_METRICS = {
+  signups: { event: "signup" },
+  documents_created: { event: "create_document" },
+  // Republishing an edit is a `publish` event too, but not a new post.
+  posts_published: { event: "publish", where: ["first_publish", "true"] },
+  publications_created: { event: "create_publication" },
+  subscribes: { event: "subscribe" },
+  unsubscribes: { event: "unsubscribe" },
+  memberships_joined: { event: "join_membership" },
+  pro_upgrades: { event: "pro_upgrade" },
+  pro_cancels: { event: "pro_cancel" },
+  connect_onboardings_started: { event: "connect_onboarding_started" },
+  connect_accounts_enabled: { event: "connect_account_enabled" },
+} as const satisfies Record<
+  string,
+  { event: string; where?: readonly [key: string, value: string] }
+>;
+export type ActivityMetric = keyof typeof ACTIVITY_METRICS;
+
 // Per-period event counts (not distinct identities) shared by both active-user
-// endpoints. `posts_published` counts only first publishes: republishing an
-// edit is a `publish` event too, but not a new post.
-const ACTIVITY_COUNT_SQL = `
-          countIf(event = 'signup') AS signups,
-          countIf(event = 'create_document') AS documents_created,
-          countIf(event = 'publish' AND properties['first_publish'] = 'true') AS posts_published,
-          countIf(event = 'create_publication') AS publications_created,
-          countIf(event = 'subscribe') AS subscribes,
-          countIf(event = 'unsubscribe') AS unsubscribes,
-          countIf(event = 'join_membership') AS memberships_joined,
-          countIf(event = 'pro_upgrade') AS pro_upgrades,
-          countIf(event = 'pro_cancel') AS pro_cancels,
-          countIf(event = 'connect_onboarding_started') AS connect_onboardings_started,
-          countIf(event = 'connect_account_enabled') AS connect_accounts_enabled`;
-const ACTIVITY_COUNT_OUTPUT = {
-  signups: t.uint64(),
-  documents_created: t.uint64(),
-  posts_published: t.uint64(),
-  publications_created: t.uint64(),
-  subscribes: t.uint64(),
-  unsubscribes: t.uint64(),
-  memberships_joined: t.uint64(),
-  pro_upgrades: t.uint64(),
-  pro_cancels: t.uint64(),
-  connect_onboardings_started: t.uint64(),
-  connect_accounts_enabled: t.uint64(),
-};
+// endpoints.
+const ACTIVITY_COUNT_SQL = Object.entries(ACTIVITY_METRICS)
+  .map(([key, m]) => {
+    let where =
+      "where" in m ? ` AND properties['${m.where[0]}'] = '${m.where[1]}'` : "";
+    return `          countIf(event = '${m.event}'${where}) AS ${key}`;
+  })
+  .join(",\n");
+const ACTIVITY_COUNT_OUTPUT = Object.fromEntries(
+  Object.keys(ACTIVITY_METRICS).map((key) => [key, t.uint64()]),
+) as Record<ActivityMetric, ReturnType<typeof t.uint64>>;
 
 /**
  * active_users_timeseries – distinct identities with any event per calendar
@@ -512,6 +519,65 @@ export type ActiveUsersWindowsOutput = InferOutputRow<
   typeof activeUsersWindows
 >;
 
+/**
+ * user_events_list – raw rows for one event name, newest first, for the
+ * admin dashboard's per-metric event table. `before` (Unix millis) pages
+ * backwards from the previous page's oldest row.
+ */
+export const userEventsList = defineEndpoint("user_events_list", {
+  description: "Raw user events for one event name, newest first",
+  tokens: [PROD_TOKEN_READ],
+  params: {
+    event: p.string(),
+    date_from: p.string().optional(),
+    date_to: p.string().optional(),
+    property_key: p.string().optional(),
+    property_value: p.string().optional(),
+    before: p.int64().optional(),
+    limit: p.int32().optional(50),
+  },
+  nodes: [
+    node({
+      name: "endpoint",
+      sql: `
+        SELECT
+          timestamp,
+          identity_id,
+          did,
+          event,
+          toJSONString(properties) AS properties_json
+        FROM user_events
+        WHERE event = {{String(event)}}
+          {% if defined(date_from) %}
+            AND ${USER_EVENT_DAY_SQL} >= toDate({{String(date_from)}})
+          {% end %}
+          {% if defined(date_to) %}
+            AND ${USER_EVENT_DAY_SQL} <= toDate({{String(date_to)}})
+          {% end %}
+          {% if defined(property_key) %}
+            AND properties[{{String(property_key)}}] = {{String(property_value, '')}}
+          {% end %}
+          {% if defined(before) %}
+            AND timestamp < {{Int64(before)}}
+          {% end %}
+        ORDER BY timestamp DESC
+        LIMIT {{Int32(limit, 50)}}
+      `,
+    }),
+  ],
+  output: {
+    timestamp: t.uint64(),
+    identity_id: t.string(),
+    did: t.string(),
+    event: t.string(),
+    // JSON-encoded Map(String, String). Not aliased to `properties`: a
+    // same-named alias would shadow the map column in the WHERE clause.
+    properties_json: t.string(),
+  },
+});
+
+export type UserEventsListOutput = InferOutputRow<typeof userEventsList>;
+
 // ============================================================================
 // Client
 // ============================================================================
@@ -525,6 +591,7 @@ export const tinybird = new Tinybird({
     publicationBskyTraffic,
     activeUsersTimeseries,
     activeUsersWindows,
+    userEventsList,
   },
   devMode: false,
 });

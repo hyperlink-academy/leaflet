@@ -33,6 +33,7 @@ export async function publishToPublication(
   if (result.success)
     trackUserEvent(identity, "publish", {
       publication: args.publication_uri ?? "",
+      document: result.uri,
       first_publish: String(result.firstPublish),
       blocks: String(result.blocks),
     });

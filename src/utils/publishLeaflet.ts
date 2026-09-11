@@ -60,6 +60,7 @@ export type PublishResult =
   | {
       success: true;
       rkey: string;
+      uri: string;
       record: SiteStandardDocument.Record;
       // False when this publish updated an already-published document.
       firstPublish: boolean;
@@ -563,6 +564,7 @@ async function publish({
   return {
     success: true,
     rkey,
+    uri: result.uri,
     record: JSON.parse(JSON.stringify(record)),
     firstPublish: !existingDocUri,
     blocks: pagesArray.reduce((n, p) => n + p.blocks.length, 0),

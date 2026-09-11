@@ -16,7 +16,7 @@ export type UserEvent =
   // source_placement, source_publication, source_url.
   | "subscribe"
   | "unsubscribe"
-  | "publish" // published a document; props publication, first_publish, blocks
+  | "publish" // published a document; props publication, document, first_publish, blocks
   | "create_publication" // props publication
   | "signup" // identity row created; props method (email | bluesky), source
   | "create_document" // props kind (doc | canvas | template | duplicate | publication_draft), publication
