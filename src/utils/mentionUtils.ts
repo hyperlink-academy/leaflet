@@ -47,7 +47,10 @@ export function atUriToUrl(atUri: string): string {
   try {
     const uri = new AtUri(atUri);
 
-    if (isPublicationCollection(uri.collection) || isDocumentCollection(uri.collection)) {
+    if (
+      isPublicationCollection(uri.collection) ||
+      isDocumentCollection(uri.collection)
+    ) {
       return `/lish/uri/${encodeURIComponent(atUri)}`;
     }
 
@@ -59,4 +62,3 @@ export function atUriToUrl(atUri: string): string {
     return "#";
   }
 }
-
